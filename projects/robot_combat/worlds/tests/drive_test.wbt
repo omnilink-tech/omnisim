@@ -1,0 +1,221 @@
+#VRML_SIM R2025a utf8
+
+# drive_test -- straight-line wheel-drive verification for the Newton wheel-flapping work.
+# Two identical 4-wheel rovers (no weapon, no opponent, no damage layer) command all wheels
+# forward via the drive_demo controller:
+#   DEF FLAP "flapper" -- wheels authored the BATTLEBOX way: rotation 1 0 0 1.5708 on the wheel
+#     Solid BODY frame + a bare boundingObject Cylinder. Reproduces the Newton "flap".
+#   DEF ROLL "roller"  -- wheels authored the HUSKY way: identity wheel body, the rotation moved
+#     into a Pose around the visual + the boundingObject. Should roll straight even pre-fix.
+# WorldInfo mirrors battlebox_duel exactly (XPBD default, statics/robotColliders/substeps 4) so
+# the test reproduces the real bug. Run from PowerShell; compare under Newton vs OMNISIM_FORCE_ODE=1.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "Newton wheel drive test"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.9 ]
+      bounce 0.05
+      bounceVelocity 0.5
+    }
+  ]
+  # MuJoCo solver: XPBD structurally cannot drive a multi-wheel rover (lateral wheel pairs
+  # lock; see scripts/dev/wheel_model_diff.py). This world is the regression that proves the
+  # demos' wheels roll. Run `drive_test.py newton` (MuJoCo) vs `drive_test.py ode` (oracle).
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  newtonRobotColliders TRUE
+  newtonSubsteps 4
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position -2 0 14
+}
+Background { skyColor [ 0.5 0.6 0.75 ] }
+DirectionalLight { direction -0.5 0.4 -0.6 color 0.9 0.9 1.0 intensity 1.6 ambientIntensity 0.6 castShadows FALSE }
+Floor { translation 4 0 0 size 60 60 }
+
+DEF FLAP Robot {
+  translation -5 -1.5 0.14
+  rotation 0 0 1 0
+  name "flapper"
+  controller "drive_demo"
+  controllerArgs [ "12" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.8 0.15 0.15 metalness 0 roughness 1 }
+      geometry Box { size 0.6 0.4 0.18 }
+    }
+    DEF FLAP_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 0.21 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 30 maxTorque 12 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF FLAP_FL_WHEEL Solid {
+        translation 0.22 0.21 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.1 0.1 0.1 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.05 radius 0.09 }
+        } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 0.6 }
+      }
+    }
+    DEF FLAP_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 -0.21 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 30 maxTorque 12 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF FLAP_FR_WHEEL Solid {
+        translation 0.22 -0.21 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.1 0.1 0.1 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.05 radius 0.09 }
+        } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 0.6 }
+      }
+    }
+    DEF FLAP_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 0.21 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 30 maxTorque 12 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF FLAP_RL_WHEEL Solid {
+        translation -0.22 0.21 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.1 0.1 0.1 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.05 radius 0.09 }
+        } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 0.6 }
+      }
+    }
+    DEF FLAP_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 -0.21 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 30 maxTorque 12 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF FLAP_RR_WHEEL Solid {
+        translation -0.22 -0.21 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.1 0.1 0.1 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.05 radius 0.09 }
+        } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 0.6 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.6 0.4 0.18 }
+  physics Physics { density -1 mass 10.0 }
+}
+
+DEF ROLL Robot {
+  translation -5 1.5 0.14
+  rotation 0 0 1 0
+  name "roller"
+  controller "drive_demo"
+  controllerArgs [ "12" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.15 0.35 0.8 metalness 0 roughness 1 }
+      geometry Box { size 0.6 0.4 0.18 }
+    }
+    DEF ROLL_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 0.21 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 30 maxTorque 12 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF ROLL_FL_WHEEL Solid {
+        translation 0.22 0.21 -0.05
+        rotation 0 0 1 0
+        name "front_left_wheel"
+        children [ Pose { rotation 1 0 0 1.5708 children [ Shape {
+          appearance PBRAppearance { baseColor 0.1 0.1 0.1 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.05 radius 0.09 }
+        } ] } ]
+        boundingObject Pose { rotation 1 0 0 1.5708 children [ Cylinder { height 0.05 radius 0.09 } ] }
+        physics Physics { density -1 mass 0.6 }
+      }
+    }
+    DEF ROLL_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 -0.21 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 30 maxTorque 12 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF ROLL_FR_WHEEL Solid {
+        translation 0.22 -0.21 -0.05
+        rotation 0 0 1 0
+        name "front_right_wheel"
+        children [ Pose { rotation 1 0 0 1.5708 children [ Shape {
+          appearance PBRAppearance { baseColor 0.1 0.1 0.1 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.05 radius 0.09 }
+        } ] } ]
+        boundingObject Pose { rotation 1 0 0 1.5708 children [ Cylinder { height 0.05 radius 0.09 } ] }
+        physics Physics { density -1 mass 0.6 }
+      }
+    }
+    DEF ROLL_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 0.21 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 30 maxTorque 12 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF ROLL_RL_WHEEL Solid {
+        translation -0.22 0.21 -0.05
+        rotation 0 0 1 0
+        name "rear_left_wheel"
+        children [ Pose { rotation 1 0 0 1.5708 children [ Shape {
+          appearance PBRAppearance { baseColor 0.1 0.1 0.1 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.05 radius 0.09 }
+        } ] } ]
+        boundingObject Pose { rotation 1 0 0 1.5708 children [ Cylinder { height 0.05 radius 0.09 } ] }
+        physics Physics { density -1 mass 0.6 }
+      }
+    }
+    DEF ROLL_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 -0.21 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 30 maxTorque 12 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF ROLL_RR_WHEEL Solid {
+        translation -0.22 -0.21 -0.05
+        rotation 0 0 1 0
+        name "rear_right_wheel"
+        children [ Pose { rotation 1 0 0 1.5708 children [ Shape {
+          appearance PBRAppearance { baseColor 0.1 0.1 0.1 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.05 radius 0.09 }
+        } ] } ]
+        boundingObject Pose { rotation 1 0 0 1.5708 children [ Cylinder { height 0.05 radius 0.09 } ] }
+        physics Physics { density -1 mass 0.6 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.6 0.4 0.18 }
+  physics Physics { density -1 mass 10.0 }
+}

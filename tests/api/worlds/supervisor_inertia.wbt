@@ -1,0 +1,105 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.5355323814858177 -0.7765876921546181 -0.33183825092067476 1.4693669
+  position -10.440191 16.74779 4.6128968
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  direction 1 -1 -0.5
+  castShadows TRUE
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+DEF BALL Solid {
+  translation 0 6 0
+  children [
+    DEF BALL_SHAPE Shape {
+      geometry Sphere {
+        radius 0.1
+        subdivision 2
+      }
+    }
+  ]
+  boundingObject USE BALL_SHAPE
+  physics Physics {
+  }
+}
+Robot {
+  children [
+    TouchSensor {
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.9 0.3 0.3
+            }
+          }
+          geometry DEF TOUCH_SENSOR_SHAPE Box {
+            size 1 1 1
+          }
+        }
+      ]
+      name "red_collider"
+      boundingObject USE TOUCH_SENSOR_SHAPE
+    }
+    TouchSensor {
+      translation 2 0 2
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.3 0.9 0.3
+            }
+          }
+          geometry USE TOUCH_SENSOR_SHAPE
+        }
+      ]
+      name "green_collider"
+      boundingObject USE TOUCH_SENSOR_SHAPE
+    }
+    TestSuiteEmitter {
+    }
+  ]
+  controller "supervisor_inertia"
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

@@ -1,0 +1,58 @@
+#VRML_SIM R2025a utf8
+
+# G1 open-loop CPG walker demo, NEWTON physics. Same role as
+# spot_model_walk_newton_demo.wbt — applies CPG-on-nominal without any
+# learned policy to verify the analytical layer can stand+walk before
+# adding RL on top.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 model walker (Newton)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 5
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 40 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+Solid { translation 3 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 0 } geometry Cylinder { radius 0.06 height 1 } } ] name "m3" }
+Solid { translation 6 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0.6 0 } geometry Cylinder { radius 0.06 height 1 } } ] name "m6" }
+Solid { translation 9 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 1 0 } geometry Cylinder { radius 0.06 height 1 } } ] name "m9" }
+Solid { translation 12 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 1 0 } geometry Cylinder { radius 0.06 height 1 } } ] name "m12" }
+
+URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.76
+  name "g1"
+  supervisor TRUE
+  controller "g1_model_walk"
+  physicsBackend "newton"
+}

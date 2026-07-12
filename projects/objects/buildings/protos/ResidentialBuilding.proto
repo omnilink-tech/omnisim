@@ -1,0 +1,218 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/buildings/protos/ResidentialBuilding.proto
+# keywords: building/apartment
+# template language: javascript
+# A seven-storey brick apartment block: punched windows with stone sills modelled as
+# geometry, balconies on the street side, a cornice, a parapet and two chimneys.
+# No facade textures (the brick comes from the Apache-2.0 RedBricks appearance).
+# The base sits at z = 0 and the entrance faces +y.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/RedBricks.proto"
+
+PROTO ResidentialBuilding [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "residential building"
+]
+{
+  %<
+    const width = 20.0;      // along x
+    const depth = 14.0;      // along y
+    const groundHeight = 3.6;
+    const floors = 6;
+    const floorHeight = 3.0;
+    const height = groundHeight + floors * floorHeight;   // 21.6 m
+    const hx = width / 2.0;
+    const hy = depth / 2.0;
+
+    let paneDefined = false;
+    let sillDefined = false;
+    function window(x, y, z, yaw) {
+      let s = '      Pose { translation ' + x.toFixed(3) + ' ' + y.toFixed(3) + ' ' + z.toFixed(3);
+      s += ' rotation 0 0 1 ' + yaw.toFixed(4) + ' children [ ';
+      if (paneDefined)
+        s += 'USE WINDOW_PANE';
+      else {
+        s += 'DEF WINDOW_PANE Shape { appearance USE GLASS_APP geometry Box { size 1.5 0.16 1.8 } }';
+        paneDefined = true;
+      }
+      s += ' ] }\n';
+      // stone sill just under the opening
+      s += '      Pose { translation ' + x.toFixed(3) + ' ' + y.toFixed(3) + ' ' + (z - 1.05).toFixed(3);
+      s += ' rotation 0 0 1 ' + yaw.toFixed(4) + ' children [ ';
+      if (sillDefined)
+        s += 'USE WINDOW_SILL';
+      else {
+        s += 'DEF WINDOW_SILL Shape { appearance USE TRIM_APP geometry Box { size 1.9 0.26 0.16 } }';
+        sillDefined = true;
+      }
+      return s + ' ] }\n';
+    }
+
+    function row(count, from, to, fixed, z, yaw, alongX) {
+      let s = '';
+      const step = (to - from) / (count - 1);
+      for (let i = 0; i < count; ++i) {
+        const p = from + i * step;
+        s += alongX ? window(p, fixed, z, yaw) : window(fixed, p, z, yaw);
+      }
+      return s;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "residential building"
+    children [
+      # ---- brick mass -------------------------------------------------------
+      Pose {
+        translation 0 0 %<= height / 2.0 >%
+        children [
+          Shape {
+            appearance DEF WALL_APP RedBricks {
+              textureTransform TextureTransform { scale 10 11 }
+            }
+            geometry Box { size %<= width >% %<= depth >% %<= height >% }
+          }
+        ]
+      }
+
+      # ---- stone plinth (also carries the trim appearance) -------------------
+      Pose {
+        translation 0 0 0.5
+        children [
+          Shape {
+            appearance DEF TRIM_APP PBRAppearance {
+              baseColor 0.72 0.70 0.66
+              roughness 0.85
+              metalness 0
+            }
+            geometry Box { size %<= width + 0.3 >% %<= depth + 0.3 >% 1.0 }
+          }
+        ]
+      }
+
+      # ---- ground-floor shopfronts / entrance (also carries the glass) -------
+      Pose {
+        translation 0 %<= hy + 0.06 >% 2.4
+        children [
+          DEF SHOPFRONT Shape {
+            appearance DEF GLASS_APP PBRAppearance {
+              baseColor 0.14 0.16 0.18
+              roughness 0.2
+              metalness 0.6
+            }
+            geometry Box { size %<= width - 4 >% 0.14 2.2 }
+          }
+        ]
+      }
+      Pose { translation 0 %<= -hy - 0.06 >% 2.4 children [ USE SHOPFRONT ] }
+      Pose {
+        translation 0 %<= hy + 0.2 >% 1.4
+        children [
+          Shape {
+            appearance DEF DOOR_APP PBRAppearance {
+              baseColor 0.25 0.18 0.12
+              roughness 0.7
+              metalness 0
+            }
+            geometry Box { size 2.2 0.3 2.8 }
+          }
+        ]
+      }
+
+      # ---- punched windows on the upper storeys -----------------------------
+      %< for (let f = 0; f < floors; ++f) {
+           const z = groundHeight + (f + 0.5) * floorHeight; >%
+      %<= row(5, -hx + 2.6, hx - 2.6, hy + 0.08, z, 0, true) >%
+      %<= row(5, -hx + 2.6, hx - 2.6, -hy - 0.08, z, 0, true) >%
+      %<= row(3, -hy + 3.0, hy - 3.0, hx + 0.08, z, 1.5708, false) >%
+      %<= row(3, -hy + 3.0, hy - 3.0, -hx - 0.08, z, 1.5708, false) >%
+      # street-side balconies on every other storey
+      %< if (f % 2 === 1) { >%
+      Pose {
+        translation 0 %<= hy + 0.65 >% %<= groundHeight + f * floorHeight + 0.1 >%
+        children [
+          %< if (f === 1) { >%
+          DEF BALCONY Shape {
+            appearance USE TRIM_APP
+            geometry Box { size %<= width - 6 >% 1.4 0.2 }
+          }
+          %< } else { >%
+          USE BALCONY
+          %< } >%
+        ]
+      }
+      Pose {
+        translation 0 %<= hy + 1.3 >% %<= groundHeight + f * floorHeight + 0.65 >%
+        children [
+          %< if (f === 1) { >%
+          DEF BALCONY_RAIL Shape {
+            appearance DEF RAIL_APP PBRAppearance {
+              baseColor 0.20 0.20 0.22
+              roughness 0.6
+              metalness 0.5
+            }
+            geometry Box { size %<= width - 6 >% 0.08 1.0 }
+          }
+          %< } else { >%
+          USE BALCONY_RAIL
+          %< } >%
+        ]
+      }
+      %< } >%
+      %< } >%
+
+      # ---- cornice, parapet, chimneys ---------------------------------------
+      Pose {
+        translation 0 0 %<= height + 0.25 >%
+        children [
+          Shape {
+            appearance USE TRIM_APP
+            geometry Box { size %<= width + 1.0 >% %<= depth + 1.0 >% 0.5 }
+          }
+        ]
+      }
+      Pose {
+        translation 0 %<= hy - 0.25 >% %<= height + 1.1 >%
+        children [
+          DEF PARAPET_NS Shape {
+            appearance USE WALL_APP
+            geometry Box { size %<= width >% 0.5 1.2 }
+          }
+        ]
+      }
+      Pose { translation 0 %<= -hy + 0.25 >% %<= height + 1.1 >% children [ USE PARAPET_NS ] }
+      Pose {
+        translation %<= hx - 0.25 >% 0 %<= height + 1.1 >%
+        children [
+          DEF PARAPET_EW Shape {
+            appearance USE WALL_APP
+            geometry Box { size 0.5 %<= depth >% 1.2 }
+          }
+        ]
+      }
+      Pose { translation %<= -hx + 0.25 >% 0 %<= height + 1.1 >% children [ USE PARAPET_EW ] }
+      Pose {
+        translation -6 -3 %<= height + 2.2 >%
+        children [
+          DEF CHIMNEY Shape {
+            appearance USE WALL_APP
+            geometry Box { size 1.4 1.4 3.4 }
+          }
+        ]
+      }
+      Pose { translation 6 -3 %<= height + 2.2 >% children [ USE CHIMNEY ] }
+    ]
+    boundingObject Pose {
+      translation 0 0 %<= height / 2.0 >%
+      children [
+        Box { size %<= width >% %<= depth >% %<= height >% }
+      ]
+    }
+    locked TRUE
+  }
+}

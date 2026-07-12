@@ -1,0 +1,134 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/factory/tools/protos/CapScrew.proto
+# keywords: industrial/ironmongery
+# A socket-head cap screw of configurable radius and length: a cylindrical head with a hex socket
+# and a threaded shank. The shank runs along the local +x axis, the head sits at the origin.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/OldSteel.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/ScrewThread.proto"
+
+PROTO CapScrew [
+  field SFVec3f    translation           0 0 0.01
+  field SFRotation rotation              0 0 1 0
+  field SFString   name                  "cap screw"
+  field SFNode     appearance            OldSteel {}  # Defines the appearance of the screw.
+  field SFFloat    screwRadius           0.006        # Defines the radius of the screw.
+  field SFFloat    screwLength           0.05         # Defines the length of the screw.
+  field SFString   contactMaterial       "default"    # Is `Solid.contactMaterial`.
+  field SFBool     enablePhysics         TRUE         # Defines whether the screw should have physics.
+  field SFBool     enableBoundingObject  TRUE         # Defines whether the screw should have a bounding object.
+]
+{
+  %<
+    let radius = fields.screwRadius.value;
+    if (radius <= 0.0) {
+      radius = fields.screwRadius.defaultValue;
+      console.error('\'screwRadius\' must be strictly positive. Value reset to ' + radius + '.');
+    }
+
+    let length = fields.screwLength.value;
+    if (length <= 0.0) {
+      length = fields.screwLength.defaultValue;
+      console.error('\'screwLength\' must be strictly positive. Value reset to ' + length + '.');
+    }
+
+    // socket-head cap screw proportions (roughly ISO 4762: head diameter 1.5 d, head height 1.0 d)
+    const headRadius = 1.5 * radius;
+    const headHeight = 2.0 * radius;
+    const socketRadius = 0.55 * headRadius;
+    const socketDepth = 0.45 * headHeight;
+
+    // the screw grows along +x: head in [-headHeight, 0], shank in [0, length]
+    const headCenter = -0.5 * headHeight;
+    const shankCenter = 0.5 * length;
+    const socketCenter = -headHeight + 0.5 * socketDepth;
+
+    // one thread turn every 0.4 d, mapped onto the shank's v texture coordinate
+    const turns = Math.max(1, Math.round(length / (0.8 * radius)));
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "cap screw"
+    contactMaterial IS contactMaterial
+    children [
+      # ---- cylindrical head ----
+      Pose {
+        translation %<= headCenter >% 0 0
+        rotation 0 1 0 1.5708
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Cylinder {
+              radius %<= headRadius >%
+              height %<= headHeight >%
+              subdivision 24
+            }
+          }
+        ]
+      }
+      # ---- hex socket sunk into the head ----
+      Pose {
+        translation %<= socketCenter >% 0 0
+        rotation 0 1 0 1.5708
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.12 0.12 0.13
+              roughness 0.75
+              metalness 1
+            }
+            geometry Cylinder {
+              radius %<= socketRadius >%
+              height %<= socketDepth >%
+              subdivision 6
+              bottom FALSE
+            }
+          }
+        ]
+      }
+      # ---- threaded shank ----
+      Pose {
+        translation %<= shankCenter >% 0 0
+        rotation 0 1 0 1.5708
+        children [
+          Shape {
+            appearance ScrewThread {
+              textureTransform TextureTransform {
+                scale 1 %<= turns >%
+              }
+            }
+            geometry Cylinder {
+              radius %<= radius >%
+              height %<= length >%
+              subdivision 16
+              top FALSE
+            }
+          }
+        ]
+      }
+    ]
+    %< if (fields.enableBoundingObject.value) { >%
+    boundingObject Pose {
+      translation %<= 0.5 * (length - headHeight) >% 0 0
+      rotation 0 1 0 1.5708
+      children [
+        Cylinder {
+          radius %<= headRadius >%
+          height %<= length + headHeight >%
+          subdivision 12
+        }
+      ]
+    }
+    %< } >%
+    %< if (fields.enablePhysics.value && fields.enableBoundingObject.value) { >%
+    physics Physics {
+      density 7800
+    }
+    %< } >%
+  }
+}

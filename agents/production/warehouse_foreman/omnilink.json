@@ -1,0 +1,13 @@
+{
+  "name": "warehouse_foreman",
+  "display_name": "Warehouse Foreman",
+  "omnilink_agent_name": "Warehouse Foreman",
+  "world": "projects/samples/demos/worlds/flagship/warehouse_logistics.wbt",
+  "bridge_port": 6070,
+  "agent_script": "agents/production/warehouse_foreman/warehouse_foreman_agent.py",
+  "agent_port": 51521,
+  "agent_port_env": "FOREMAN_PORT",
+  "bridge_url_env": "FOREMAN_BRIDGE_URL",
+  "description": "Orchestrator that delegates pallet pick + arm placement to picker + Axis.",
+  "tags": ["orchestrator", "warehouse", "multi-agent"]
+}

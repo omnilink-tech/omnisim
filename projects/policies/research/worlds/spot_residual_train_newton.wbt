@@ -1,0 +1,65 @@
+#VRML_SIM R2025a utf8
+
+# Spot residual-RL training world, NEWTON physics.
+#
+# Same controller (spot_residual_agent) as the ODE-physics
+# spot_residual_train.wbt -- the model walker (gait + IK + balance) +
+# tiny policy that adds <=3cm foot offsets. Only difference is:
+#   1. physicsBackend "newton"  (was "ode")
+#   2. URDF points at spot.classic.urdf — the pre-widened-hip_y URDF
+#      that the current OmniSim binary's URDF importer can parse
+#      cleanly. The widened spot.urdf adds <rest> tags + opens hip_y
+#      to [-0.5, 3.20] for on-back self-righting; this binary's
+#      importer (built May 18) doesn't yet understand <rest>, so the
+#      joints spawn at angle 0 (straight legs) and Spot collapses.
+#      Rebuild the binary after the engine migration to use the
+#      widened URDF here too.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Spot residual-RL training (Newton)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 4
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 60 12
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/boston_dynamics/spot/urdf/spot.classic.urdf"
+  translation 0 0 0.70
+  name "spot"
+  supervisor TRUE
+  controller "spot_residual_agent"
+  controllerArgs [ "--port" "7100" ]
+  physicsBackend "newton"
+}

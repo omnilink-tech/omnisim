@@ -1,0 +1,186 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/bathroom/protos/Toilet.proto
+# keywords: interior/bathroom
+# A close-coupled toilet built from primitives: a porcelain pedestal and bowl, a coloured seat and lid, a cistern with a back panel and a brushed-aluminium flush button. The origin sits on the floor, under the bowl.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+
+PROTO Toilet [
+  field SFVec3f    translation    0 0 0
+  field SFRotation rotation       0 0 1 0
+  field SFString   name           "toilet"
+  field SFColor    lidColor       0.45 0.62 0.81  # Defines the color of the lid.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      # ------------------------------------------------------------ porcelain
+      # pedestal
+      Pose {
+        translation 0.02 0 0.16
+        children [
+          DEF TOILET_PORCELAIN Shape {
+            appearance PBRAppearance {
+              baseColor 0.95 0.95 0.94
+              roughness 0.25
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.13
+              height 0.32
+              subdivision 20
+            }
+          }
+        ]
+      }
+      # bowl
+      Pose {
+        translation 0.06 0 0.37
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.95 0.95 0.94
+              roughness 0.25
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.185
+              height 0.14
+              subdivision 24
+            }
+          }
+        ]
+      }
+      # back panel joining the bowl to the cistern
+      Pose {
+        translation -0.14 0 0.3
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.95 0.95 0.94
+              roughness 0.25
+              metalness 0
+            }
+            geometry Box {
+              size 0.18 0.24 0.6
+            }
+          }
+        ]
+      }
+      # -------------------------------------------------------------- cistern
+      Pose {
+        translation -0.21 0 0.585
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.95 0.95 0.94
+              roughness 0.25
+              metalness 0
+            }
+            geometry Box {
+              size 0.18 0.38 0.47
+            }
+          }
+        ]
+      }
+      Pose {
+        translation -0.21 0 0.835
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.95 0.95 0.94
+              roughness 0.25
+              metalness 0
+            }
+            geometry Box {
+              size 0.2 0.4 0.03
+            }
+          }
+        ]
+      }
+      # flush button
+      Pose {
+        translation -0.21 0 0.856
+        children [
+          Shape {
+            appearance BrushedAluminium {
+              textureTransform TextureTransform {
+                scale 4 4
+              }
+            }
+            geometry Cylinder {
+              radius 0.028
+              height 0.012
+              subdivision 16
+            }
+          }
+        ]
+      }
+      # ---------------------------------------------------------- seat + lid
+      Pose {
+        translation 0.06 0 0.4525
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.97 0.97 0.97
+              roughness 0.35
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.19
+              height 0.025
+              subdivision 24
+            }
+          }
+        ]
+      }
+      Pose {
+        translation 0.06 0 0.476
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS lidColor
+              roughness 0.35
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.19
+              height 0.022
+              subdivision 24
+            }
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "toilet"
+    recognitionColors [
+      0.95 0.95 0.94
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0.04 0 0.24
+          children [
+            Box {
+              size 0.42 0.38 0.49
+            }
+          ]
+        }
+        Pose {
+          translation -0.19 0 0.58
+          children [
+            Box {
+              size 0.22 0.4 0.53
+            }
+          ]
+        }
+      ]
+    }
+    locked TRUE
+  }
+}

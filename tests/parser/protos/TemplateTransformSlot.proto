@@ -1,0 +1,12 @@
+#VRML_SIM R2025a utf8
+# template language: javascript
+
+PROTO TemplateTransformSlot [
+  field MFNode slot []
+]
+{
+  %< const test = fields.slot.value; >%
+  Pose {
+    children IS slot
+  }
+}

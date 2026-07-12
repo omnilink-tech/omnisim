@@ -1,0 +1,61 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/apartment_structure/protos/Wall.proto
+# keywords: building/component
+# A straight wall panel: a `size` box lifted so that its foot rests on the z = 0 floor plane.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+
+PROTO Wall [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "wall"
+  field SFVec3f    size        0.2 1 2.4                                                        # Defines the size of the wall.
+  field SFNode     appearance  Roughcast { textureTransform TextureTransform { scale 2.4 1 } }  # Defines the appearance of the wall.
+]
+{
+  %<
+    // A zero or negative extent has no meaningful geometry, so fall back to the
+    // declared default rather than emit a degenerate Box.
+    const want = fields.size.value;
+    const fallback = fields.size.defaultValue;
+    const sx = want.x > 0 ? want.x : fallback.x;
+    const sy = want.y > 0 ? want.y : fallback.y;
+    const sz = want.z > 0 ? want.z : fallback.z;
+    if (sx !== want.x || sy !== want.y || sz !== want.z)
+      console.error('Wall: every component of \'size\' must be strictly positive. Reset to (' + sx + ', ' + sy + ', ' + sz + ').');
+
+    // The panel is modelled about its own centre, so raise it by half its height to
+    // stand the wall on the floor instead of burying half of it.
+    const lift = 0.5 * sz;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Pose {
+        translation 0 0 %<= lift >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Box {
+              size %<= sx >% %<= sy >% %<= sz >%
+            }
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "wall"
+    boundingObject Pose {
+      translation 0 0 %<= lift >%
+      children [
+        Box {
+          size %<= sx >% %<= sy >% %<= sz >%
+        }
+      ]
+    }
+  }
+}

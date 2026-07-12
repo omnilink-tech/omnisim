@@ -1,0 +1,44 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo { basicTimeStep 16  title "Newton 30 huskies" }
+Viewpoint { orientation -0.5773 0.5773 0.5773 2.0944  position 0 -50 25.0 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena { floorSize 60 60  wallHeight 0.5  floorAppearance Asphalt { colorOverride 0.55 0.57 0.60 } }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -29 0.3 name "h0" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -27 0.3 name "h1" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -25 0.3 name "h2" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -23 0.3 name "h3" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -21 0.3 name "h4" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -19 0.3 name "h5" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -17 0.3 name "h6" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -15 0.3 name "h7" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -13 0.3 name "h8" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -11 0.3 name "h9" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -9 0.3 name "h10" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -7 0.3 name "h11" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -5 0.3 name "h12" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -3 0.3 name "h13" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 -1 0.3 name "h14" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 1 0.3 name "h15" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 3 0.3 name "h16" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 5 0.3 name "h17" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 7 0.3 name "h18" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 9 0.3 name "h19" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 11 0.3 name "h20" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 13 0.3 name "h21" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 15 0.3 name "h22" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 17 0.3 name "h23" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 19 0.3 name "h24" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 21 0.3 name "h25" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 23 0.3 name "h26" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 25 0.3 name "h27" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 27 0.3 name "h28" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -8 29 0.3 name "h29" controller "drive_forward" physicsBackend "newton" }

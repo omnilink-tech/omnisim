@@ -1,0 +1,23 @@
+# The PBRAppearance node specifies the visual properties of geometry using a
+# physically based shading model and several textures to define material
+# properties.
+
+PBRAppearance {
+  w3dField SFColor  baseColor            1 1 1
+  field    SFNode   baseColorMap         NULL
+  w3dField SFFloat  transparency         0
+  w3dField SFFloat  roughness            0
+  field    SFNode   roughnessMap         NULL
+  w3dField SFFloat  metalness            1
+  field    SFNode   metalnessMap         NULL
+  w3dField SFFloat  IBLStrength          1
+  field    SFNode   normalMap            NULL
+  w3dField SFFloat  normalMapFactor      1
+  field    SFNode   occlusionMap         NULL
+  w3dField SFFloat  occlusionMapStrength 1
+  w3dField SFColor  emissiveColor        0 0 0
+  field    SFNode   emissiveColorMap     NULL
+  w3dField SFFloat  emissiveIntensity    1
+  field    SFNode   textureTransform     NULL
+  field    SFString name                 "PBRAppearance"
+}

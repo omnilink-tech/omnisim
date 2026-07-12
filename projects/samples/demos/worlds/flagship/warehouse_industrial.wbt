@@ -1,0 +1,176 @@
+#VRML_SIM R2025a utf8
+
+# Industrial warehouse interior — built end-to-end through the agent-facing
+# validation harness (scripts/harness/README.md).
+#
+# Open-roof walled-bay layout (same lighting recipe as warehouse_husky.wbt
+# and the husky_maze worlds): perimeter walls, no ceiling, NightSky for the
+# bowl, DirectionalLights for sun-through-skylights. This composition makes
+# the interior fully visible from a top-down or elevated 3/4 view.
+#
+# Layout (top-down, +X east, +Y north). 12 m x 26 m bay with two N-S rack
+# columns flanking a central conveyor + work zone. Forklift parked at the
+# south loading bay.
+#
+#                       wall_N (y=+13)
+#       +-------------------------------------+
+#       |  rack_W       conveyor       rack_E |
+#       |    :             :              :   |
+#       |    :           clutter           :  |
+#       |  forklift                   crates  |
+#       +-------------------------------------+
+#                       wall_S (y=-13)
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughConcrete.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/pallet/protos/WoodenPalletStack.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/conveyors/protos/ConveyorBelt.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/forklift/protos/Forklift.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/CardboardBox.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/PlasticCrate.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/WoodenBox.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/DoubleFluorescentLamp.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Industrial Warehouse"
+}
+
+# Elevated outside-SW 3/4 view, derived as rotation from default forward (+X)
+# to the unit vector from (-10, -16, 10) to (0, 0, 1).
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 50
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# Key light from the south-east, simulating sun through skylights.
+# Fill light from the opposite side so shaded racks stay readable.
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 0.5
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 14 28
+  tileSize 2 2
+  appearance RoughConcrete {
+    textureTransform TextureTransform { scale 4 8 }
+  }
+}
+
+# ============================================================================
+# Outer perimeter walls. 12 m x 26 m interior, 0.2 m thick, 4 m tall.
+# ============================================================================
+Wall {
+  name "wall_N"
+  translation 0 13 0
+  size 12.2 0.2 4
+}
+Wall {
+  name "wall_S"
+  translation 0 -13 0
+  size 12.2 0.2 4
+}
+Wall {
+  name "wall_E"
+  translation 6 0 0
+  size 0.2 26.2 4
+}
+Wall {
+  name "wall_W"
+  translation -6 0 0
+  size 0.2 26.2 4
+}
+
+# ============================================================================
+# Pallet rack columns — west at x=-3.5, east at x=+3.5.
+# 11 stacks per column, 2 m N-S spacing.
+# ============================================================================
+WoodenPalletStack { translation -3.5 -10 0 name "rack_W_00" palletNumber 7 }
+WoodenPalletStack { translation -3.5  -8 0 name "rack_W_01" palletNumber 6 }
+WoodenPalletStack { translation -3.5  -6 0 name "rack_W_02" palletNumber 8 }
+WoodenPalletStack { translation -3.5  -4 0 name "rack_W_03" palletNumber 5 }
+WoodenPalletStack { translation -3.5  -2 0 name "rack_W_04" palletNumber 7 }
+WoodenPalletStack { translation -3.5   0 0 name "rack_W_05" palletNumber 6 }
+WoodenPalletStack { translation -3.5   2 0 name "rack_W_06" palletNumber 8 }
+WoodenPalletStack { translation -3.5   4 0 name "rack_W_07" palletNumber 7 }
+WoodenPalletStack { translation -3.5   6 0 name "rack_W_08" palletNumber 5 }
+WoodenPalletStack { translation -3.5   8 0 name "rack_W_09" palletNumber 6 }
+WoodenPalletStack { translation -3.5  10 0 name "rack_W_10" palletNumber 7 }
+
+WoodenPalletStack { translation  3.5 -10 0 name "rack_E_00" palletNumber 6 }
+WoodenPalletStack { translation  3.5  -8 0 name "rack_E_01" palletNumber 8 }
+WoodenPalletStack { translation  3.5  -6 0 name "rack_E_02" palletNumber 5 }
+WoodenPalletStack { translation  3.5  -4 0 name "rack_E_03" palletNumber 7 }
+WoodenPalletStack { translation  3.5  -2 0 name "rack_E_04" palletNumber 6 }
+WoodenPalletStack { translation  3.5   0 0 name "rack_E_05" palletNumber 8 }
+WoodenPalletStack { translation  3.5   2 0 name "rack_E_06" palletNumber 7 }
+WoodenPalletStack { translation  3.5   4 0 name "rack_E_07" palletNumber 6 }
+WoodenPalletStack { translation  3.5   6 0 name "rack_E_08" palletNumber 5 }
+WoodenPalletStack { translation  3.5   8 0 name "rack_E_09" palletNumber 7 }
+WoodenPalletStack { translation  3.5  10 0 name "rack_E_10" palletNumber 6 }
+
+# ============================================================================
+# Central conveyor running N-S between the rack columns.
+# ============================================================================
+ConveyorBelt {
+  translation 0 -2 0
+  rotation 0 0 1 1.5708
+  name "conveyor_main"
+  size 16 0.8 0.7
+  speed 0.4
+}
+
+# ============================================================================
+# Forklift parked at the south loading bay, facing north toward the racks.
+# ============================================================================
+Forklift {
+  translation -1.8 -11.5 0.81
+  rotation 0 0 1 -1.5708
+  name "forklift_01"
+}
+
+# ============================================================================
+# Cardboard / wooden boxes sitting on top of the pallet stacks. Z is the
+# stack top (palletNumber * 0.14 m per pallet) plus the box half-height.
+# ============================================================================
+CardboardBox { translation -3.5 -10  1.13 rotation 0 0 1  0.3 name "box_01" }   # rack_W_00 (7 pallets, top 0.98)
+CardboardBox { translation -3.5  -4  0.85 rotation 0 0 1  1.1 name "box_02" }   # rack_W_03 (5 pallets, top 0.70)
+CardboardBox { translation -3.5   0  0.99 rotation 0 0 1 -0.4 name "box_03" }   # rack_W_05 (6 pallets, top 0.84)
+CardboardBox { translation -3.5  10  1.13 rotation 0 0 1  0.2 name "box_05" }   # rack_W_10 (7 pallets, top 0.98)
+CardboardBox { translation  3.5   8  1.13 rotation 0 0 1  0.6 name "box_07" }   # rack_E_09 (7 pallets, top 0.98)
+WoodenBox    { translation  3.5  -8  1.27 rotation 0 0 1  0.0 name "box_04" }   # rack_E_01 (8 pallets, top 1.12)
+WoodenBox    { translation  3.5   4  0.99 rotation 0 0 1 -0.2 name "box_06" }   # rack_E_07 (6 pallets, top 0.84)
+
+# ============================================================================
+# Ceiling lighting — visual fluorescent fixtures + matching PointLights so
+# the racks actually receive illumination (the lamp PROTO is emissive only).
+# Two rows of four fixtures along the ceiling, evenly spaced.
+# ============================================================================
+DoubleFluorescentLamp { translation -1.8 -9 4.0 name "lamp_W_0" intensity 5 }
+DoubleFluorescentLamp { translation -1.8 -3 4.0 name "lamp_W_1" intensity 5 }
+DoubleFluorescentLamp { translation -1.8  3 4.0 name "lamp_W_2" intensity 5 }
+DoubleFluorescentLamp { translation -1.8  9 4.0 name "lamp_W_3" intensity 5 }
+DoubleFluorescentLamp { translation  1.8 -9 4.0 name "lamp_E_0" intensity 5 }
+DoubleFluorescentLamp { translation  1.8 -3 4.0 name "lamp_E_1" intensity 5 }
+DoubleFluorescentLamp { translation  1.8  3 4.0 name "lamp_E_2" intensity 5 }
+DoubleFluorescentLamp { translation  1.8  9 4.0 name "lamp_E_3" intensity 5 }
+
+PointLight { location -1.8 -9 3.9 color 0.95 0.96 1.0 intensity 3 attenuation 0 0 1 castShadows FALSE }
+PointLight { location -1.8 -3 3.9 color 0.95 0.96 1.0 intensity 3 attenuation 0 0 1 castShadows FALSE }
+PointLight { location -1.8  3 3.9 color 0.95 0.96 1.0 intensity 3 attenuation 0 0 1 castShadows FALSE }
+PointLight { location -1.8  9 3.9 color 0.95 0.96 1.0 intensity 3 attenuation 0 0 1 castShadows FALSE }
+PointLight { location  1.8 -9 3.9 color 0.95 0.96 1.0 intensity 3 attenuation 0 0 1 castShadows FALSE }
+PointLight { location  1.8 -3 3.9 color 0.95 0.96 1.0 intensity 3 attenuation 0 0 1 castShadows FALSE }
+PointLight { location  1.8  3 3.9 color 0.95 0.96 1.0 intensity 3 attenuation 0 0 1 castShadows FALSE }
+PointLight { location  1.8  9 3.9 color 0.95 0.96 1.0 intensity 3 attenuation 0 0 1 castShadows FALSE }

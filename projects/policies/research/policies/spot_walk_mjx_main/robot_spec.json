@@ -1,0 +1,85 @@
+{
+  "name": "spot",
+  "urdf_path": "projects/robots/boston_dynamics/spot/urdf/spot.urdf",
+  "joint_names": [
+    "front_left_hip_x",
+    "front_left_hip_y",
+    "front_left_knee",
+    "front_right_hip_x",
+    "front_right_hip_y",
+    "front_right_knee",
+    "rear_left_hip_x",
+    "rear_left_hip_y",
+    "rear_left_knee",
+    "rear_right_hip_x",
+    "rear_right_hip_y",
+    "rear_right_knee"
+  ],
+  "nominal_pose": [
+    0.3,
+    0.3,
+    -0.6,
+    -0.3,
+    0.3,
+    -0.6,
+    0.3,
+    0.3,
+    -0.6,
+    -0.3,
+    0.3,
+    -0.6
+  ],
+  "joint_limits_lo": [
+    0.001,
+    0.001,
+    -1.2,
+    -0.6,
+    0.001,
+    -1.2,
+    0.001,
+    0.001,
+    -1.2,
+    -0.6,
+    0.001,
+    -1.2
+  ],
+  "joint_limits_hi": [
+    0.6,
+    0.6,
+    -0.01,
+    -0.001,
+    0.6,
+    -0.01,
+    0.6,
+    0.6,
+    -0.01,
+    -0.001,
+    0.6,
+    -0.01
+  ],
+  "action_scale": 0.05,
+  "obs_dim": 49,
+  "spawn_translation": [
+    0.0,
+    0.0,
+    0.7
+  ],
+  "spawn_rotation": [
+    0.0,
+    0.0,
+    1.0,
+    0.0
+  ],
+  "max_episode_steps": 1024,
+  "obs_recipe": "legged_locomotion",
+  "motor_pid": [
+    500.0,
+    0.0,
+    5.0
+  ],
+  "motor_pid_per_joint": [],
+  "cpg_freq_hz": 0.0,
+  "cpg_hip_y_amp": 0.0,
+  "cpg_knee_amp": 0.0,
+  "cpg_leg_phase": []
+}

@@ -1,0 +1,169 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/bathroom/protos/BathroomSink.proto
+# keywords: furniture/bathroom
+# A vanity unit: a ceramic bowl standing on a counter plate over a cabinet, with a pillar tap behind it.
+# The whole assembly is built from primitives. It stands off a wall at the origin and reaches out
+# along +x, so a Wall at x = 0 puts the splashback exactly where it belongs.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/VarnishedPine.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/MarbleTiles.proto"
+
+PROTO BathroomSink [
+  field SFVec3f    translation       0 0 0.05
+  field SFRotation rotation          0 0 1 0
+  field SFString   name              "sink"
+  field SFNode     upperAppearance   VarnishedPine { }  # Defines the appearance of the upper plate.
+  field SFNode     bottomAppearance  MarbleTiles { }  # Defines the appearance of the upper plate.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "sink"
+    children [
+      # --- the cabinet under the counter ------------------------------------
+      DEF SINK_CABINET Pose {
+        translation 0.19 0.005 -0.001
+        children [
+          Shape {
+            appearance IS bottomAppearance
+            geometry Box {
+              size 0.34 0.66 0.088
+            }
+          }
+        ]
+      }
+      # --- the counter plate the bowl stands on -------------------------------
+      DEF SINK_COUNTER Pose {
+        translation 0.18 0.005 0.058
+        children [
+          Shape {
+            appearance IS upperAppearance
+            geometry Box {
+              size 0.37 0.70 0.03
+            }
+          }
+        ]
+      }
+      # --- the bowl. A vessel basin: it SITS ON the counter rather than being
+      #     cut into it, which is why the rim is proud of the plate ------------
+      DEF SINK_BOWL Pose {
+        translation 0.23 0.005 0.128
+        children [
+          Shape {
+            appearance DEF CERAMIC PBRAppearance {
+              baseColor 0.96 0.96 0.95
+              roughness 0.12
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.2
+              height 0.11
+              subdivision 32
+            }
+          }
+        ]
+      }
+      # the hollow of the bowl -- a shallower disc sunk into the rim
+      DEF SINK_BASIN Pose {
+        translation 0.23 0.005 0.176
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.88 0.89 0.89
+              roughness 0.2
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.17
+              height 0.02
+              subdivision 32
+            }
+          }
+        ]
+      }
+      # --- the tap, standing behind the bowl ----------------------------------
+      DEF SINK_TAP_PILLAR Pose {
+        translation 0.06 0.005 0.19
+        children [
+          Shape {
+            appearance DEF CHROME PBRAppearance {
+              baseColor 0.85 0.86 0.88
+              roughness 0.12
+              metalness 1
+            }
+            geometry Cylinder {
+              radius 0.022
+              height 0.28
+              subdivision 16
+            }
+          }
+        ]
+      }
+      DEF SINK_TAP_SPOUT Pose {
+        translation 0.105 0.005 0.315
+        rotation 0 1 0 1.5708
+        children [
+          Shape {
+            appearance USE CHROME
+            geometry Cylinder {
+              radius 0.016
+              height 0.11
+              subdivision 12
+            }
+          }
+        ]
+      }
+      DEF SINK_TAP_LEVER Pose {
+        translation 0.035 0.005 0.345
+        rotation 0 1 0 0.6
+        children [
+          Shape {
+            appearance USE CHROME
+            geometry Cylinder {
+              radius 0.008
+              height 0.07
+              subdivision 10
+            }
+          }
+        ]
+      }
+    ]
+    # Three colliders: the block of the unit, the bowl standing on it, and the
+    # tap. The spout is left out on purpose -- nothing useful ever collides with
+    # it, and a thin horizontal cylinder is an expensive way to find that out.
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0.185 0.005 0.0175
+          children [
+            Box {
+              size 0.37 0.7 0.135
+            }
+          ]
+        }
+        Pose {
+          translation 0.23 0.005 0.13
+          children [
+            Cylinder {
+              height 0.12
+              radius 0.2
+            }
+          ]
+        }
+        Pose {
+          translation 0.06 0.005 0.19
+          children [
+            Cylinder {
+              height 0.28
+              radius 0.025
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

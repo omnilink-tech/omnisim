@@ -1,0 +1,34 @@
+#VRML_SIM R2025a utf8
+
+# OmniLink — Husarion Rosbot
+# Small 4-wheel diff-drive bot (skid-steer). Same prompts as Husky.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — Rosbot"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 2.350 -2.502 2.499
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 6 6
+}
+
+DEF ROSBOT URDFRobot {
+  url "../../../../robots/husarion/rosbot_description/urdf/rosbot.urdf"
+  translation 0 0 0.05
+  name "rosbot"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "rosbot" "--port" "8765" ]
+  window "omnilink_chat"
+}

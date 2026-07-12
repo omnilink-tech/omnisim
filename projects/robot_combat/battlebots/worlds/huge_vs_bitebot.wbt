@@ -1,0 +1,533 @@
+#VRML_SIM R2025a utf8
+
+# HUGE vs BiteBot — giant-wheels overhead-spinner vs vertical disc.
+#
+# HUGE    (HUGE tribute)        4 enormous wheels + overhead bar spinner
+# BITEBOT (Bite Force tribute)  vertical disc spinner
+#
+# Real-bot inspiration: HUGE's signature is its **giant wheels** that
+# are much larger than the opponent's weapons. A horizontal/vertical
+# spinner can't reach HUGE's chassis without first going through ~0.3 m
+# of pneumatic tire. Meanwhile HUGE's own bar spins overhead at a
+# height most opponents can't get under. Asymmetric but effective.
+#
+# Spec sheet (publicly-known approximations):
+#
+#   HUGE
+#     mass            ~110 kg
+#     wheel base       0.70 x 0.40 (chassis only; wheels stick out)
+#     wheels          radius 0.30 m, 6 kg each
+#     overhead bar    1.00 m long, 0.05 wide, 0.04 thick, 20 kg
+#                     mounted at z=+0.20 above chassis center
+#     bar omega max    70 rad/s (~670 RPM, tip speed 35 m/s)
+#     bar motor T      250 N.m stall
+#     bar inertia      I = (1/12) * 20 * 1.0^2 = 1.67 kg.m^2
+#     KE at full       ~4 kJ
+#
+#   BiteBot (same as gravedigger_vs_biteforce.wbt)
+
+EXTERNPROTO "omnisim://projects/robot_combat/battlebots/protos/BattleBox.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 4
+  title "HUGE vs BiteBot — Giant Wheels vs Vertical Disc"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.9 ]
+      bounce 0.05
+      bounceVelocity 0.5
+    }
+  ]
+  # Newton combat config. MuJoCo solver REQUIRED -- the default XPBD solver structurally
+  # cannot drive a multi-wheel rover (lateral left/right wheel pairs lock; proven in pure
+  # Python via scripts/dev/wheel_model_diff.py). MuJoCo + ODE drive them; MuJoCo also gives
+  # the robust frictional contact combat ramming needs.
+  newtonSolver "mujoco"
+  # Register arena walls as collision surfaces, else bots drive through them:
+  newtonStatics TRUE
+  # Give each bot's chassis Box a real collider so ramming registers chassis contacts
+  # (without it a Robot wrapper gets a 1 mm placeholder and bots phase through each other):
+  newtonRobotColliders TRUE
+  # 4 sub-steps keep high closing-speed ram impacts from diverging XPBD to NaN:
+  newtonSubsteps 4
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 14
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+BattleBox {
+  enableKillsaw TRUE
+  enablePushers TRUE
+  enableScrews TRUE
+}
+
+# ===========================================================================
+# HUGE — giant-wheel bot with overhead bar spinner. Spawns at -X.
+#   Chassis sits high off the ground (wheel radius 0.30 m).
+# ===========================================================================
+DEF HUGE Robot {
+  translation -3.0 0 0.36
+  rotation 0 0 1 0
+  name "huge"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "bitebot" "--strategy" "aggressor" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    # ---------------- HUGE-style chassis visuals ----------------
+    # Compact orange-and-black body with giant pneumatic-tire wheels
+    # sticking way out the sides. The chassis is small relative to the
+    # wheels — that's the whole point of HUGE.
+    Shape {
+      appearance PBRAppearance { baseColor 0.07 0.07 0.09 metalness 0 roughness 1 }
+      geometry Box { size 0.70 0.40 0.12 }
+    }
+    # Orange accent panel on top.
+    Transform {
+      translation 0 0 0.07
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.45 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.50 0.32 0.02 }
+      } ]
+    }
+    # Orange side accents.
+    Transform {
+      translation 0 0.21 0
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.45 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.65 0.01 0.04 }
+      } ]
+    }
+    Transform {
+      translation 0 -0.21 0
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.45 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.65 0.01 0.04 }
+      } ]
+    }
+    # Spinner support pylon (vertical post connecting chassis top to
+    # the overhead bar) — short black pillar.
+    Transform {
+      translation 0 0 0.16
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.18 0.18 0.20 metalness 0 roughness 1 }
+        geometry Cylinder { height 0.10 radius 0.06 }
+      } ]
+    }
+    # ---------------- 4 giant wheels (0.30 m radius) ----------------
+    DEF HUGE_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 0.27 -0.06 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 30 maxTorque 60 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF HUGE_FL_WHEEL Solid {
+        translation 0.22 0.27 -0.06
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.05 0.05 0.05 metalness 0 roughness 1 }
+            geometry Cylinder { height 0.08 radius 0.30 }
+          }
+          # Bright orange hub centre.
+          Transform {
+            translation 0 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 1.0 0.45 0.05 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.082 radius 0.08 }
+            } ]
+          }
+        ]
+        boundingObject Cylinder { height 0.08 radius 0.30 }
+        physics Physics { density -1 mass 6.0 }
+      }
+    }
+    DEF HUGE_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 -0.27 -0.06 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 30 maxTorque 60 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF HUGE_FR_WHEEL Solid {
+        translation 0.22 -0.27 -0.06
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.05 0.05 0.05 metalness 0 roughness 1 }
+            geometry Cylinder { height 0.08 radius 0.30 }
+          }
+          Transform {
+            translation 0 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 1.0 0.45 0.05 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.082 radius 0.08 }
+            } ]
+          }
+        ]
+        boundingObject Cylinder { height 0.08 radius 0.30 }
+        physics Physics { density -1 mass 6.0 }
+      }
+    }
+    DEF HUGE_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 0.27 -0.06 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 30 maxTorque 60 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF HUGE_RL_WHEEL Solid {
+        translation -0.22 0.27 -0.06
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.05 0.05 0.05 metalness 0 roughness 1 }
+            geometry Cylinder { height 0.08 radius 0.30 }
+          }
+          Transform {
+            translation 0 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 1.0 0.45 0.05 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.082 radius 0.08 }
+            } ]
+          }
+        ]
+        boundingObject Cylinder { height 0.08 radius 0.30 }
+        physics Physics { density -1 mass 6.0 }
+      }
+    }
+    DEF HUGE_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 -0.27 -0.06 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 30 maxTorque 60 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF HUGE_RR_WHEEL Solid {
+        translation -0.22 -0.27 -0.06
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.05 0.05 0.05 metalness 0 roughness 1 }
+            geometry Cylinder { height 0.08 radius 0.30 }
+          }
+          Transform {
+            translation 0 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 1.0 0.45 0.05 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.082 radius 0.08 }
+            } ]
+          }
+        ]
+        boundingObject Cylinder { height 0.08 radius 0.30 }
+        physics Physics { density -1 mass 6.0 }
+      }
+    }
+    # ---------------- Overhead horizontal bar spinner ----------------
+    # Bar mounted high above the chassis on a vertical axle. Bar length
+    # 1.0 m, mass 20 kg. Inertia = (1/12) * 20 * 1.0^2 = 1.67 kg.m^2.
+    # At maxVelocity 70 rad/s tip speed is 35 m/s, KE ~4 kJ.
+    DEF HUGE_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 0 1 anchor 0 0 0.24 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 70 maxTorque 250 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF HUGE_WEAPON Solid {
+        translation 0 0 0.24
+        name "weapon_bar"
+        children [
+          # Silver-grey bar.
+          Shape {
+            appearance PBRAppearance { baseColor 0.78 0.78 0.80 metalness 0 roughness 1 }
+            geometry Box { size 1.00 0.05 0.04 }
+          }
+          # Orange hub disc.
+          Transform {
+            translation 0 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 1.0 0.45 0.05 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.06 radius 0.08 }
+            } ]
+          }
+          # Red impact teeth at the tips.
+          Transform {
+            translation 0.45 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 }
+              geometry Box { size 0.08 0.07 0.06 }
+            } ]
+          }
+          Transform {
+            translation -0.45 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 }
+              geometry Box { size 0.08 0.07 0.06 }
+            } ]
+          }
+        ]
+        boundingObject Box { size 1.00 0.05 0.04 }
+        physics Physics { density -1 mass 20.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.70 0.40 0.12 }
+  physics Physics { density -1 mass 50.0 }
+}
+
+# ===========================================================================
+# BITEBOT — vertical disc spinner. Same spec as gravedigger_vs_biteforce.
+# ===========================================================================
+DEF BITEBOT Robot {
+  translation 3.0 0 0.30
+  rotation 0 0 1 3.14159265
+  name "bitebot"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "huge" "--strategy" "aggressor" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.07 0.07 0.09 metalness 0 roughness 1 }
+      geometry Box { size 0.74 0.50 0.16 }
+    }
+    Transform {
+      translation 0 0 0.09
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.10 0.10 0.12 metalness 0 roughness 1 }
+        geometry Box { size 0.50 0.42 0.02 }
+      } ]
+    }
+    Transform {
+      translation 0 0 0.10
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.90 0.15 0.10 metalness 0 roughness 1 }
+        geometry Box { size 0.55 0.04 0.005 }
+      } ]
+    }
+    Transform {
+      translation 0 0.255 0.02
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.90 0.15 0.10 metalness 0 roughness 1 }
+        geometry Box { size 0.70 0.01 0.04 }
+      } ]
+    }
+    Transform {
+      translation 0 -0.255 0.02
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.90 0.15 0.10 metalness 0 roughness 1 }
+        geometry Box { size 0.70 0.01 0.04 }
+      } ]
+    }
+    Transform {
+      translation 0.32 0 -0.06
+      rotation 0 1 0 -0.38
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.15 0.15 0.17 metalness 0 roughness 1 }
+        geometry Box { size 0.14 0.45 0.04 }
+      } ]
+    }
+    Transform {
+      translation 0.30 0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.18 0.18 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    Transform {
+      translation 0.30 -0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.18 0.18 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    Transform {
+      translation -0.30 0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.18 0.18 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    Transform {
+      translation -0.30 -0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.18 0.18 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    DEF BITEBOT_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.30 0.30 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF BITEBOT_FL_WHEEL Solid {
+        translation 0.30 0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BITEBOT_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.30 -0.30 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF BITEBOT_FR_WHEEL Solid {
+        translation 0.30 -0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BITEBOT_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.30 0.30 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF BITEBOT_RL_WHEEL Solid {
+        translation -0.30 0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BITEBOT_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.30 -0.30 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF BITEBOT_RR_WHEEL Solid {
+        translation -0.30 -0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BITEBOT_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.42 0 0.0 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 120 maxTorque 100 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF BITEBOT_WEAPON Solid {
+        translation 0.42 0 0.0
+        rotation 1 0 0 1.5708
+        name "weapon_disc"
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.95 0.30 0.05 metalness 0 roughness 1 }
+            geometry Cylinder { height 0.04 radius 0.20 }
+          }
+          Transform {
+            translation 0 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.12 0.12 0.14 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.045 radius 0.06 }
+            } ]
+          }
+          Solid {
+            translation 0.18 0 0
+            name "tooth_a"
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 }
+              geometry Box { size 0.05 0.04 0.05 }
+            } ]
+          }
+          Solid {
+            translation -0.18 0 0
+            name "tooth_b"
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 }
+              geometry Box { size 0.05 0.04 0.05 }
+            } ]
+          }
+          Solid {
+            translation 0 0 0.18
+            name "tooth_c"
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 }
+              geometry Box { size 0.05 0.04 0.05 }
+            } ]
+          }
+          Solid {
+            translation 0 0 -0.18
+            name "tooth_d"
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 }
+              geometry Box { size 0.05 0.04 0.05 }
+            } ]
+          }
+        ]
+        boundingObject Cylinder { height 0.04 radius 0.20 }
+        physics Physics { density -1 mass 10.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.80 0.55 0.18 }
+  physics Physics { density -1 mass 80.0 }
+}
+
+DEF DIRECTOR Robot {
+  name "damage_director"
+  translation 0 0 8
+  controller "battlebot_damage_director"
+  customData "{\"fighters\": [\"huge\", \"bitebot\"], \"arena_size\": 8.0, \"fail_wheels\": 3, \"contact_gate_m\": 1.8, \"timer_s\": 240.0, \"output\": \"_scratch/huge_vs_bitebot.json\", \"hp\": {\"chassis\": 250.0, \"wheel\": 30.0, \"weapon\": 35.0}, \"impulse_threshold_J\": {\"chassis\": 35.0, \"wheel\": 1.5, \"weapon\": 8.0}}"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}
+
+DEF TRACKER Robot {
+  name "duel_tracker"
+  translation 0 0 7
+  controller "duel_tracker"
+  customData "{\"fighters\": [\"HUGE\", \"BITEBOT\"]}"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}

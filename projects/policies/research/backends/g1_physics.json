@@ -1,0 +1,112 @@
+{
+  "_doc": [
+    "SINGLE SOURCE OF TRUTH for the G1 Newton walk train<->deploy physical model.",
+    "",
+    "Both the GPU trainer (projects/policies/research/training/gpu_newton_g1_walk_trainer.py) and",
+    "the OmniSim deploy (the embedded-Python Newton backend, driven via the",
+    "OMNISIM_NEWTON_* env vars emitted by scripts/dev/g1_deploy_launch.py) derive",
+    "their physics model from THIS file + the prim URDF. Nothing here may be",
+    "re-declared as a literal constant on either side -- import g1_physics_spec",
+    "instead. The geometry / inertia / per-joint position+velocity+effort limits",
+    "are NOT duplicated here: they are read live from the prim URDF by the loader.",
+    "",
+    "Every value below equals the WINNING walker's value",
+    "(runs/gpu_newton_g1_walk_ft_pdoff_clamp, 5.9 m / 33.8 s). Changing a value",
+    "here changes the physics for BOTH sides -- retrain + redeploy to validate.",
+    "Known trainer<->deploy residuals that are NOT yet unified are listed under",
+    "'_residuals' so they are explicit, not silent."
+  ],
+
+  "urdf": {
+    "prim": "projects/robots/unitree/g1/urdf/g1_23dof_omnisim_prim.urdf",
+    "full": "projects/robots/unitree/g1/urdf/g1_23dof_omnisim.urdf",
+    "legs_prim": "projects/robots/unitree/g1/urdf/g1_legs_omnisim.urdf"
+  },
+
+  "solver": {
+    "kind": "mujoco_warp",
+    "substeps": 4,
+    "dt": 0.016,
+    "njmax": 128,
+    "nconmax": 128
+  },
+
+  "gains": {
+    "ke": 100.0,
+    "kd": 5.0,
+    "armature": 0.0
+  },
+
+  "contact": {
+    "ground_mu": 1.0,
+    "contact_ke": 2500.0,
+    "contact_kd": 100.0
+  },
+
+  "model": {
+    "use_inertia": true,
+    "seed_pose": true,
+    "self_collision": false,
+    "foot_box": {
+      "size": [0.17, 0.06, 0.012],
+      "origin": [0.035, 0.0, -0.030]
+    }
+  },
+
+  "clamp": {
+    "enabled": true
+  },
+
+  "contract": {
+    "spawn_z": 0.78,
+    "act_scale": 0.3,
+    "obs_dim": 50,
+    "nj": 13,
+    "nominal_legs": [
+      -0.30, 0.00, 0.00, 0.52, -0.23, 0.00,
+      -0.30, 0.00, 0.00, 0.52, -0.23, 0.00,
+       0.00
+    ],
+    "arm_nominal": [
+       0.00, 0.20, 0.00, 0.00, 0.00,
+       0.00, -0.20, 0.00, 0.00, 0.00
+    ]
+  },
+
+  "probe": {
+    "_doc": [
+      "DETERMINISTIC OPEN-LOOP PHYSICS PROBE (no RL) for binary-level trainer<->deploy",
+      "parity certification. The SAME scripted joint-target sequence is applied in the",
+      "trainer Python solver (build_g1_native-style) AND in the deploy binary (the",
+      "humanoid_stand_deploy controller in omnisim-bin), and the resulting per-tick",
+      "trajectories are diffed. This is the FIRST test that steps the real binary, not the",
+      "g1_deploy_runtime.py extract. Probe the model + stepping, NOT balance/durability.",
+      "static_base welds the floating base (staticBase) so the inverted-pendulum chaos",
+      "cannot confound a real physics gap with chaotic amplification -- that is the",
+      "chaos-free numerical-equality lane. Free the base (static_base=false) for the",
+      "realistic lane. 'hold' = freeze every joint at pose; 'sinusoid' = a deterministic",
+      "per-joint sweep (the most sensitive probe). ke/kd default to the deterministic",
+      "STAND gains (a stiff position-PD that tracks the target tightly so the trajectory",
+      "is dominated by the commanded motion + the model's true dynamics). pose_legs/",
+      "arm_pose default to the spec's nominal (deep squat) when omitted. See",
+      "docs/developer/binary-parity-probe.md."
+    ],
+    "ke": 400.0,
+    "kd": 60.0,
+    "static_base": true,
+    "settle_ticks": 80,
+    "duration_ticks": 200,
+    "sequence": "sinusoid",
+    "sine_amp": 0.15,
+    "sine_period_ticks": 100
+  },
+
+  "_residuals": {
+    "contact_ke_kd": "Deploy sets contact_ke=2500/contact_kd=100; the trainer currently uses Newton ModelBuilder defaults (does NOT apply these). spec.apply_contact_to_trainer is OFF by default so this refactor is behavior-preserving. Flip it + retrain to close the residual.",
+    "njmax_nconmax": "Deploy single-robot auto-sizes (default 256); trainer pins 128 for the 2048-env batch. Kept side-specific by necessity.",
+    "nominal_legs": "Used only in the NON-human-gait fallback. The winning recipe runs G1_GAIT_MODEL=human, where BOTH sides take the nominal from g1_human_gait.standing_pose(GaitParams) -- already a shared module. nominal_legs here must equal the deploy controller's NOMINAL_LEGS fallback.",
+    "joint_limit_precision": "The trainer's post-step joint clamp uses MJ.JOINT_LIMITS_LO/HI rounded to 3 decimals (e.g. -2.531); the winning policy was TRAINED against those exact boundaries, so they stay pinned to it. The deploy controller + backend + this spec's leg_limits() read full URDF precision (e.g. -2.5307). Gap <=4e-4 rad (sub-milliradian), only relevant at a joint pinned exactly to its limit. Unify by retraining with SPEC.leg_limits() full-precision clamp.",
+    "deploy_link_com": "FIXED (opt-in, 24eeab2d). The deploy runtime's World.add_body previously took no COM arg -> every link COM at the link origin (vs the trainer's true URDF COM; body_ipos up to 0.154 m, the dominant cause of trainer-vs-deploy trajectory drift). add_body now accepts a com (newton add_link(com=...)); WbSolid::addBody passes the link COM when OMNISIM_NEWTON_USE_LINK_COM is set (default OFF = legacy COM-at-origin, so every other Newton robot is unchanged). With the flag the golden test shows body_ipos PASS (0.0) -> full trainer/deploy MjModel parity (only representational nbody/body_mass-rollup/body_pos diffs remain). NATIVE BUILD DONE (2026-06-18): the binary was rebuilt with the COM caller (verified in-binary: OMNISIM_NEWTON_USE_LINK_COM + the embedded com param are present); the Qt5/Qt6 build blocker was fixed (src/omnisim/Makefile: user_commands TUs now get the bundled Qt6 QtNetwork). DEPLOY RE-VALIDATION (flag on): the deploy loads + steps cleanly and walks +3.93 m, but the EXISTING policy (gpu_newton_g1_walk_ft_pdoff_clamp) FALLS at ~11.7 s vs the old-COM doc baseline 33.8 s. The COM fix is proven-correct (golden-test body_ipos parity with the trainer), so this means the old long walk leaned on the deploy's INCORRECT COM -- the existing policy is not robust on the now-parity physics. A clean flag-OFF control run on the current binary could not be obtained (another sim held the GPU/log). DECISION: keep the flag OPT-IN (default off) so the existing policy + every other Newton robot are unchanged; the corrected (parity) deploy is now the RETRAIN target. Retrain on Modal (the trainer already uses true COM via add_urdf, so it is already aligned), validate the new policy with OMNISIM_NEWTON_USE_LINK_COM=1, then default it on by adding it to newton_env().",
+    "mjcf_mass_force_clamp": "FIXED (5cdc4bea). make_g1_mjcf.py now sets compiler.fusestatic=0 (the 9 fixed-joint child links were being fused away with saveinertial=0 -> ~1.28 kg lost on serialization; total was 32.85 vs 34.13 kg) and forcelimited/ctrllimited=FALSE (the live trainer+deploy leave force/ctrl unbounded PD-only; the MJCF had clamped them). The canonical MJCF now matches the trainer (P1 vs P3) on ALL structural fields incl. mass (34.1339 kg), forcerange, ctrlrange. The deploy-from-MJCF / trainer-from-MJCF switch is still GPU/rebuild-gated (a behavior change to validate), but the artifact is now faithful."
+  }
+}

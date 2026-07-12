@@ -1,0 +1,10 @@
+# Upstream Webots regenerates these from the WREN renderer's Emscripten
+# build pipeline (which OmniSim does not run locally). OmniSim instead
+# vendors the prebuilt copies fetched from upstream so the streaming
+# viewer + HTML5 export work without phoning home to cyberbotics.com.
+# When upgrading the OmnisimView ecosystem, refresh these via:
+#
+#   curl -o enum.js     https://cyberbotics.com/wwi/R<rel>/enum.js
+#   curl -o wrenjs.js   https://cyberbotics.com/wwi/R<rel>/wrenjs.js
+#   curl -o wrenjs.wasm https://cyberbotics.com/wwi/R<rel>/wrenjs.wasm
+#   curl -o wrenjs.data https://cyberbotics.com/wwi/R<rel>/wrenjs.data

@@ -1,0 +1,13 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/SolidCylinder.proto"
+EXTERNPROTO "omnisim://tests/protos/protos/BaseProtoWithDefaultParameter.proto"
+
+PROTO DerivedProtoWithDefaultParameter [
+  field MFNode derivedExtensionSlot SolidCylinder { }
+]
+{
+  BaseProtoWithDefaultParameter {
+    extensionSlot IS derivedExtensionSlot
+  }
+}

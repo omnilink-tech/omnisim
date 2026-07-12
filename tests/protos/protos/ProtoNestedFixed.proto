@@ -1,0 +1,15 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/DerivedBoxShape.proto"
+
+PROTO ProtoNestedFixed [
+]
+{
+  Solid {
+    children [
+      DerivedBoxShape {
+        boxSize 1 1 1
+      }
+    ]
+  }
+}

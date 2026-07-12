@@ -1,0 +1,13 @@
+{
+  "name": "warehouse_picker",
+  "display_name": "Warehouse Picker",
+  "omnilink_agent_name": "Warehouse Picker",
+  "world": "projects/samples/demos/worlds/flagship/warehouse_logistics.wbt",
+  "bridge_port": 6070,
+  "agent_script": "agents/production/warehouse_picker/warehouse_picker_agent.py",
+  "agent_port": 51520,
+  "agent_port_env": "PICKER_PORT",
+  "bridge_url_env": "PICKER_BRIDGE_URL",
+  "description": "Husky pallet-picker — a specialist agent the foreman delegates to.",
+  "tags": ["husky", "warehouse", "specialist"]
+}

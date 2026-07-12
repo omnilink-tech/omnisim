@@ -1,0 +1,63 @@
+name: G1 physics-spec conformance
+
+# Enforcement layer for the G1 Newton walk single-source-of-truth spec
+# (projects/policies/research/backends/g1_physics_spec.py). Fails loudly the moment the
+# trainer / deploy controller / spec drift apart -- the drift that previously
+# cost months of "G1 collapses at ~1s" debugging.
+#
+# Tier 1 of tests/test_g1_physics_spec_conformance.py is pure CPU (stdlib +
+# numpy) and runs here. Tier 2 (GPU/Newton golden trajectory) auto-skips
+# without warp/newton/CUDA.
+#
+# tests/test_g1_env_core_parity.py is the sibling enforcement for the
+# single-source OBSERVATION + INITIAL-CONDITION layer (g1_env_core.py): it
+# locks the obs/IC definitions the trainer and deploy controller share, so the
+# "loop around the model" can't drift (the documented H1 corollary). Numpy-only;
+# the torch-parity checks self-skip on the CPU lane.
+
+on:
+  push:
+    paths:
+      - 'projects/policies/**'
+      - 'tests/test_g1_physics_spec_conformance.py'
+      - 'tests/test_g1_env_core_parity.py'
+      - 'tests/test_newton_pins_parity.py'
+      - 'scripts/packaging/newton_runtime_pins.py'
+      - 'projects/policies/research/training/requirements-train.txt'
+      - '.github/workflows/g1-spec-conformance.yml'
+  pull_request:
+    paths:
+      - 'projects/policies/**'
+      - 'tests/test_g1_physics_spec_conformance.py'
+      - 'tests/test_g1_env_core_parity.py'
+      - 'tests/test_newton_pins_parity.py'
+      - 'scripts/packaging/newton_runtime_pins.py'
+      - 'projects/policies/research/training/requirements-train.txt'
+      - '.github/workflows/g1-spec-conformance.yml'
+
+concurrency:
+  group: g1-spec-conformance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test deps (numpy + pytest only)
+        run: python -m pip install --upgrade pip numpy pytest
+
+      - name: Run G1 physics-spec conformance (Tier 1; Tier 2 auto-skips on CPU)
+        run: python -m pytest tests/test_g1_physics_spec_conformance.py -v
+
+      - name: Run G1 env-core obs/IC parity (torch checks self-skip on CPU)
+        run: python -m pytest tests/test_g1_env_core_parity.py -v
+
+      - name: Run Newton train/deploy version-pin parity (stdlib only)
+        run: python -m pytest tests/test_newton_pins_parity.py -v

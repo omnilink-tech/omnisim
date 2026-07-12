@@ -1,0 +1,212 @@
+#VRML_SIM R2025a utf8
+
+# Husky fleet arena — top-down capture variant.
+# Identical to husky_fleet_arena.wbt but with DEF SUN_MARKER removed: a
+# straight-down camera centred on the arena would otherwise frame the
+# glowing sun-marker sphere (default position 0 0 8, directly above the
+# origin) dead-centre. Lighting is unchanged — the OmniSimSun keeps its
+# default direction and the static DirectionalLight below still fills the
+# chassis. See husky_fleet_arena.wbt for the canonical (draggable) world.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky Fleet - Arena (top-down)"
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 32
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+# Key light from the SE, simulating moonlight.
+# Fill light from the opposite side to keep shaded chassis readable.
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+RectangleArena {
+  floorSize 20 20
+  wallHeight 0.4
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# ============================================================================
+# Fleet: 10 Huskies in a 5 x 2 grid, 4 m apart on x and 8 m on y. Drop
+# height 0.1 m matches the realistic-spawn convention used elsewhere in
+# this repo. Each robot runs the husky_random controller; supervisor TRUE
+# enables the position-based no-progress stuck detector. customData carries
+# the arena bounds — currently unused in random-walk mode (no craters), but
+# preserved so the same world drops into goal-seeker mode if a future
+# variant adds obstacles.
+# ============================================================================
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 6 0.1
+  name "husky_01"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -4 6 0.1
+  name "husky_02"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 6 0.1
+  name "husky_03"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 4 6 0.1
+  name "husky_04"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 6 0.1
+  name "husky_05"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 2 0.1
+  name "husky_06"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -4 2 0.1
+  name "husky_07"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 2 0.1
+  name "husky_08"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 4 2 0.1
+  name "husky_09"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 2 0.1
+  name "husky_10"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -2 0.1
+  name "husky_11"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -4 -2 0.1
+  name "husky_12"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 -2 0.1
+  name "husky_13"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 4 -2 0.1
+  name "husky_14"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -2 0.1
+  name "husky_15"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -6 0.1
+  name "husky_16"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -4 -6 0.1
+  name "husky_17"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 -6 0.1
+  name "husky_18"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 4 -6 0.1
+  name "husky_19"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -6 0.1
+  name "husky_20"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}

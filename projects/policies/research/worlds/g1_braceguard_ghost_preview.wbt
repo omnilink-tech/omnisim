@@ -1,0 +1,46 @@
+#VRML_SIM R2025a utf8
+
+# GHOST PREVIEW -- the BRACEGUARD defensive REFERENCE motion ALONE (no physics robot), so we
+# design + agree on the ghost BEFORE building the mimic (the ghost-first rule). A single
+# kinematic, translucent G1 (staticBase, no Newton) holds the secure guard stance and plays
+# the ORIENT-AND-BAR hand-block on loop: it yaws the waist to face an incoming cube and throws
+# both forearms up into a two-hand "bar" across its torso front, then returns to guard.
+# Replays projects/policies/research/shadowing/ghosts/g1_braceguard_replay.csv (feasibility-certified, 0.82).
+#
+# Launch: scripts/dev/run_g1_braceguard_ghost_preview.ps1
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "G1 BraceGuard defense -- GHOST preview (design the motion)"
+}
+Viewpoint {
+  orientation -0.2671 0.2730 0.9244 1.6450
+  position 3.1 -2.4 1.4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 8 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+# ----- The ghost: kinematic, translucent; holds the guard stance + plays ORIENT-AND-BAR on loop -----
+DEF G1_GHOST URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 0 0.74
+  name "g1_ghost"
+  supervisor TRUE
+  controller "g1_standwave_ghost"
+  staticBase TRUE
+}

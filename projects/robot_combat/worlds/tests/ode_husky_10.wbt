@@ -1,0 +1,41 @@
+#VRML_SIM R2025a utf8
+
+# Same as newton_husky_10.wbt but on ODE (default) physics. If this
+# loads cleanly while the Newton variant hangs, the hang is in
+# Newton's joint-queueing path. If both hang, it's OmniSim-side
+# world-load (URDFRobot, mesh import, etc.) scaling.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "ODE 10 husky control"
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 -40 18.0
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 40 40
+  wallHeight 0.5
+  floorAppearance Asphalt { colorOverride 0.55 0.57 0.60 }
+}
+
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -10 -10 0.3 name "h0" controller "drive_forward" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -10 -6 0.3 name "h1" controller "drive_forward" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -10 -2 0.3 name "h2" controller "drive_forward" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -10  2 0.3 name "h3" controller "drive_forward" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -10  6 0.3 name "h4" controller "drive_forward" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation  10 -10 0.3 rotation 0 0 1 3.14159 name "h5" controller "drive_forward" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation  10 -6 0.3 rotation 0 0 1 3.14159 name "h6" controller "drive_forward" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation  10 -2 0.3 rotation 0 0 1 3.14159 name "h7" controller "drive_forward" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation  10  2 0.3 rotation 0 0 1 3.14159 name "h8" controller "drive_forward" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation  10  6 0.3 rotation 0 0 1 3.14159 name "h9" controller "drive_forward" }

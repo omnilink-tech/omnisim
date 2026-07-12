@@ -1,0 +1,178 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/factory/tools/protos/PlatformCart.proto
+# keywords: industrial/cart
+# A platform cart with overall dimensions 90Lx50Wx85H cm: a flat deck on four swivel casters with a
+# tubular push handle. The `slot` field adds children at the deck surface.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+
+PROTO PlatformCart [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "platform cart"
+  field MFNode     slot        []               # Extends the cart with new nodes in the slot.
+  field SFNode     physics     Physics {}       # Is `Solid.physics`.
+]
+{
+  %<
+    const deckLength = 0.9;
+    const deckWidth = 0.5;
+    const deckThickness = 0.04;
+    const deckTop = 0.24;                       // deck surface height
+    const deckCenter = deckTop - 0.5 * deckThickness;
+
+    const casterRadius = 0.05;
+    const stemHeight = deckTop - deckThickness - 2.0 * casterRadius;
+    const casters = [
+      {x:  0.35, y:  0.19},
+      {x:  0.35, y: -0.19},
+      {x: -0.35, y:  0.19},
+      {x: -0.35, y: -0.19}
+    ];
+
+    const handleTop = 0.85;
+    const handleX = -0.43;
+    const handleY = 0.22;
+    const uprightHeight = handleTop - deckTop - 0.02;
+    const uprightCenter = deckTop + 0.5 * uprightHeight;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "platform cart"
+    children [
+      # ---- deck ----
+      Pose {
+        translation 0 0 %<= deckCenter >%
+        children [
+          Shape {
+            appearance DEF PC_DECK_APP PBRAppearance {
+              baseColor 0.16 0.35 0.5
+              roughness 0.75
+              metalness 0.2
+            }
+            geometry Box {
+              size %<= deckLength >% %<= deckWidth >% %<= deckThickness >%
+            }
+          }
+        ]
+      }
+      # ---- four swivel casters: a stem, a fork plate and a wheel ----
+      %< for (let i = 0; i < casters.length; ++i) {
+           const cx = casters[i].x;
+           const cy = casters[i].y;
+      >%
+      Pose {
+        translation %<= cx >% %<= cy >% %<= 2.0 * casterRadius + 0.5 * stemHeight >%
+        children [
+          %< if (i === 0) { >%
+          DEF PC_STEM Shape {
+            appearance DEF PC_STEEL BrushedAluminium {
+              colorOverride 0.6 0.61 0.63
+            }
+            geometry Box {
+              size 0.05 0.05 %<= stemHeight >%
+            }
+          }
+          %< } else { >%
+          USE PC_STEM
+          %< } >%
+        ]
+      }
+      Pose {
+        translation %<= cx >% %<= cy >% %<= casterRadius >%
+        rotation 1 0 0 1.5708
+        children [
+          %< if (i === 0) { >%
+          DEF PC_WHEEL Shape {
+            appearance PBRAppearance {
+              baseColor 0.12 0.12 0.13
+              roughness 0.95
+              metalness 0
+            }
+            geometry Cylinder {
+              radius %<= casterRadius >%
+              height 0.035
+              subdivision 20
+            }
+          }
+          %< } else { >%
+          USE PC_WHEEL
+          %< } >%
+        ]
+      }
+      %< } >%
+      # ---- push handle: two uprights, a mid rail and a grip bar ----
+      %< for (let i = 0; i < 2; ++i) {
+           const hy = (i === 0 ? handleY : -handleY);
+      >%
+      Pose {
+        translation %<= handleX >% %<= hy >% %<= uprightCenter >%
+        children [
+          %< if (i === 0) { >%
+          DEF PC_UPRIGHT Shape {
+            appearance USE PC_STEEL
+            geometry Box {
+              size 0.04 0.04 %<= uprightHeight >%
+            }
+          }
+          %< } else { >%
+          USE PC_UPRIGHT
+          %< } >%
+        ]
+      }
+      %< } >%
+      Pose {
+        translation %<= handleX >% 0 %<= handleTop >%
+        rotation 1 0 0 1.5708
+        children [
+          DEF PC_BAR Shape {
+            appearance USE PC_STEEL
+            geometry Cylinder {
+              radius 0.018
+              height %<= 2.0 * handleY + 0.04 >%
+              subdivision 16
+            }
+          }
+        ]
+      }
+      Pose {
+        translation %<= handleX >% 0 %<= deckTop + 0.5 * uprightHeight >%
+        rotation 1 0 0 1.5708
+        children [
+          USE PC_BAR
+        ]
+      }
+      # ---- user extension slot, at the deck surface ----
+      Pose {
+        translation 0 0 %<= deckTop >%
+        children IS slot
+      }
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 %<= 0.5 * deckTop >%
+          children [
+            Box {
+              size %<= deckLength >% %<= deckWidth >% %<= deckTop >%
+            }
+          ]
+        }
+        Pose {
+          translation %<= handleX >% 0 %<= uprightCenter >%
+          children [
+            Box {
+              size 0.04 %<= 2.0 * handleY + 0.04 >% %<= uprightHeight >%
+            }
+          ]
+        }
+      ]
+    }
+    physics IS physics
+  }
+}

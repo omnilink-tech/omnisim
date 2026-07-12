@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omnisim-bridges"
+version = "0.1.0"
+description = "OmniLink-driven bridge primitives for OmniSim and real robots. Zero Webots dependency."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "OmniLink", email = "support@omnilink-agents.com" }]
+requires-python = ">=3.9"
+keywords = ["omnilink", "omnisim", "robotics", "agents", "bridge", "webots"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Robotics",
+]
+dependencies = [
+    "omnilink>=0.6.1",
+    "truststore>=0.9; platform_system=='Windows'",
+]
+
+[project.urls]
+Homepage      = "https://github.com/omnilink-tech/omnisim"
+Repository    = "https://github.com/omnilink-tech/omnisim"
+Documentation = "https://github.com/omnilink-tech/omnisim/tree/main/packages/omnisim-bridges"
+Issues        = "https://github.com/omnilink-tech/omnisim/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"omnisim_bridges" = ["py.typed"]

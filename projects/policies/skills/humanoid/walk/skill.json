@@ -1,0 +1,80 @@
+{
+  "schema": 2,
+  "name": "walk",
+  "title": "Walk (forward locomotion, heading-aware, velocity-tracked)",
+  "class": "humanoid",
+  "robots": ["g1"],
+  "kind": "rl",
+  "method": "shadowing",
+  "status": "verified",
+  "motion_class": "cyclic",
+  "summary": "The foundational G1 walk: an LSTM+REF_OBS whole-body policy that shadows the recorded official-motion ghost through bounded leg corridors (leg = ghost(phase) + a*GHOST_RESIDUAL) with a tent velocity reward, heading-in-obs, and human arm swing. It is the BATON PRIMARY policy every sequence rides on, and its crane can steer whichever policy walks. Walks clean from a standstill along ANY heading (heading-relative obs), ~0.2 m/s live.",
+
+  "ghost": {
+    "lut": "projects/policies/controllers/g1_ghost/ghost_official_full_v3_lut.json",
+    "provenance": "recorded",
+    "validator": "PASS",
+    "preview_world": "projects/policies/worlds/g1_walk_ghost_wide.wbt",
+    "owner_signoff": "2026-07-06",
+    "notes": "AUTHENTIC official motion.pt re-recording (legs + true 2.54deg sway); arms are owner-endorsed DESIGN (no official arm reference exists)."
+  },
+
+  "policy": {
+    "checkpoint": "projects/policies/training/runs/wr_navigator.pt",
+    "arch": "lstm",
+    "hidden": 256,
+    "obs": {"family": "whole_body", "ref_obs_k": 3, "ref_obs_wb": false, "dim": 120},
+    "action": {"dim": 23, "space": "whole_body", "decode": "ghost(phase) + residual*GHOST_RESIDUAL"},
+    "alt_checkpoints": {
+      "wr_decent_walker": "projects/policies/training/runs/wr_decent_walker.pt (flagship 0.868 WBMATCH; the durable loop-carrying walker)"
+    }
+  },
+
+  "baton": {
+    "blend": "cyclic",
+    "mode": "walk",
+    "nb": 64,
+    "vx": "0.45",
+    "attractor": "locomotion",
+    "handover_in": "warm",
+    "gate": "double_support",
+    "notes": "The cyclic 120-dim obs family; element-wise blendable with the other cyclic specialists (stand, carry). walk-exits are double-support-gated (BATON_DS_GATE)."
+  },
+
+  "train": {
+    "trainer": "projects.policies.training.g1_walk_recipe:g1_walk_recipe_step",
+    "launcher": "projects/policies/training/run_walk_rl.sh",
+    "recipe_env": {
+      "GHOST_LUT_JSON": "projects/policies/controllers/g1_ghost/ghost_official_full_v3_lut.json",
+      "GHOST_RESIDUAL": "0.100",
+      "WHOLE_BODY": "1",
+      "REF_OBS": "1",
+      "POLICY_ARCH": "lstm"
+    },
+    "status": "reconstructed",
+    "notes": "Recipe = tent velocity + heading-in-obs + ghost leg-imitation corridor + asymmetric privileged critic + push/motor/latency/IC DR. Exact frozen bundle: see docs/developer/g1-walk-recipe.md + memory project_g1_walk_recipe_solved / project_lstm_foresight_breakthrough. VERIFY before re-training."
+  },
+
+  "deploy": {
+    "primary_env": {
+      "RES_POLICY": "projects/policies/training/runs/wr_navigator.pt",
+      "GHOST_LUT_JSON": "projects/policies/controllers/g1_ghost/ghost_official_full_v3_lut.json",
+      "GHOST_RESIDUAL": "0.100",
+      "ARM_RESIDUAL": "0.100",
+      "ELBOW_TARGET": "1.6",
+      "ELBOW_RESIDUAL": "0.10",
+      "SHRY_TARGET": "0.15",
+      "SHRY_YAW_TARGET": "0.0",
+      "SHRY_RESIDUAL": "0.10"
+    }
+  },
+
+  "verification": {
+    "date": "2026-07-08",
+    "engine": "Newton/mujoco_warp",
+    "result": "Walks clean +x 5 m and clean +y 7 m from a standstill, 0 falls, upright z~0.747. Live pace ~0.2 m/s. Long straights have a residual live fall rate (~open durability)."
+  },
+  "doc": "docs/developer/g1-walk-recipe.md",
+  "memory": "project_g1_walk_recipe_solved",
+  "related": ["turn_in_place", "carry_box", "stand_rl", "climb_stairs"]
+}

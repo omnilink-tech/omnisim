@@ -1,0 +1,68 @@
+#VRML_SIM R2025a utf8
+
+# STAND + WAVE deploy. Two G1s side by side:
+#   - DEF G1_REAL: the real, Newton-simulated, physics G1 that SHADOWS the stand+wave ghost
+#     (legs hold the statically-stable stand, arms track the wave; the base balances itself);
+#   - DEF G1_GHOST: a kinematic, translucent G1 (staticBase, no physics) replaying the ghost
+#     reference -- "the motion the robot should reproduce".
+# The robot shadows the ghost: balance = the solved standing primitive, the wave = the ghost.
+#
+# Launch: scripts/dev/run_g1_standwave_deploy.ps1  (GUI, real-time). Newton env set there.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 -- stand + wave: real robot shadows the ghost"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.2671 0.2730 0.9244 1.6450
+  position 3.4 -2.2 1.5
+  follow "g1"
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 8 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF G1_REAL URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_stand_arms_deploy"
+  physicsBackend "newton"
+}
+
+DEF G1_GHOST URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 1.0 0.78
+  name "g1_ghost"
+  supervisor TRUE
+  controller "g1_standwave_ghost"
+  staticBase TRUE
+}

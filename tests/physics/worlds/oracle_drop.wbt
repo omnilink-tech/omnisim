@@ -1,0 +1,115 @@
+#VRML_SIM R2025a utf8
+
+# Physics dual-backend oracle world (default-flip-plan.md §3.3).
+# Three staggered free boxes fall onto a floor. Free-fall is near-identical across backends; the
+# interesting divergence is CONTACT resolution, which is exactly where ODE and Newton differ — so this
+# is the signal the oracle measures. Run by scripts/dev/physics_oracle.py twice (OMNISIM_LEGACY=1 = ODE
+# reference vs migration default = Newton) and diffed. All shapes are boxes (Newton-supported primitive),
+# so the bodies actually run on Newton rather than falling back to ODE.
+
+WorldInfo {
+  basicTimeStep 4
+  FPS 30
+}
+Viewpoint {
+  orientation 0 0 -1 3.141592653589793
+  position -3.5 -3.5 1.2
+}
+Background {
+  skyColor [ 0.15 0.20 0.30 ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  color 1.0 0.95 0.85
+  direction -0.5 -0.5 -0.6
+  intensity 2.5
+  castShadows TRUE
+}
+DEF FLOOR Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.5 0.5 0.5
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 4 4 0.1
+  }
+}
+DEF FALLER1 Solid {
+  translation -0.4 0 0.9
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.30 0.25
+      }
+      geometry Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  name "faller1"
+  boundingObject Box {
+    size 0.2 0.2 0.2
+  }
+  physics Physics {
+    density -1
+    mass 1.0
+  }
+}
+DEF FALLER2 Solid {
+  translation 0 0 1.2
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.65 0.85
+      }
+      geometry Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  name "faller2"
+  boundingObject Box {
+    size 0.2 0.2 0.2
+  }
+  physics Physics {
+    density -1
+    mass 1.0
+  }
+}
+DEF FALLER3 Solid {
+  translation 0.4 0 1.5
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.40 0.80 0.40
+      }
+      geometry Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  name "faller3"
+  boundingObject Box {
+    size 0.2 0.2 0.2
+  }
+  physics Physics {
+    density -1
+    mass 1.0
+  }
+}
+DEF ORACLE_DUMPER Robot {
+  name "oracle_dumper"
+  controller "oracle_dumper"
+  supervisor TRUE
+  children [
+  ]
+}

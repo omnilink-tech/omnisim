@@ -1,0 +1,57 @@
+#VRML_SIM R2025a utf8
+
+# Spot FORWARD-LEAP deploy world -- the shadowing pipeline's flight-phase stress test.
+# Spot SHADOWS the MPPI-generated jump ghost (shadowing/ghosts/spot_jump_ghost.npz)
+# under the generic reference-tracking controller (spot_getup_mimic teleports to the
+# ghost's first frame = standing, tracks the leap, then fades to a stable stand).
+# Launch: scripts/dev/run_spot_jump_deploy.ps1
+# Engine: KE500/KD60/SUBSTEPS8/MJWARP (matches the ghost's generation dynamics).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Spot forward-leap deploy (shadowing)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.30 0.13 0.945 2.30
+  position 3.0 -2.6 1.7
+  follow "spot"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 12 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF SPOT_REAL URDFRobot {
+  url "../../../robots/boston_dynamics/spot/urdf/spot.urdf"
+  translation 0 0 0.56
+  name "spot"
+  supervisor TRUE
+  controller "spot_getup_mimic"
+  physicsBackend "newton"
+}

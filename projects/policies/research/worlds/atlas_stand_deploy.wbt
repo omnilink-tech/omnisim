@@ -1,0 +1,62 @@
+#VRML_SIM R2025a utf8
+
+# Deploy world for the Atlas standing policy from
+# projects/policies/research/training/gpu_mjwarp_atlas_stand_trainer.py.
+#
+# Loads the 30-DOF Boston Dynamics Atlas URDF. The controller
+# (atlas_stand_deploy) loads policy.onnx from
+# projects/policies/research/training/runs/gpu_atlas_stand_robust/ and applies ±0.05 rad
+# joint deltas on top of NOMINAL + a coupled ankle/hip/back balance PD.
+# Falls back to NOMINAL + balance PD if ONNX is missing or fails.
+# NOTE: the shipped policy converges to the analytic baseline (PPO can't
+# beat it at 30 DOF) — see docs/developer/atlas-stand-rl-journey.md and
+# docs/developer/rl-current-state.md.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Atlas standing PPO deploy"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 5
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/boston_dynamics/atlas/urdf/atlas_convex_hull.urdf"
+  translation 0 0 0.95
+  name "atlas"
+  supervisor TRUE
+  controller "atlas_stand_deploy"
+  physicsBackend "newton"
+}

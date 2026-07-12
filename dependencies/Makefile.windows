@@ -1,0 +1,130 @@
+OMNISIM_HOME ?= ..
+WEBOTS_HOME := $(OMNISIM_HOME)
+
+WEBOTS_HOME_PATH=$(strip $(subst \,/,$(WEBOTS_HOME)))
+
+WEBOTS_DEPENDENCY_PATH ?= $(WEBOTS_HOME_PATH)/dependencies
+# --- Build dependencies -------------------------------------------------------
+# OmniSim mirrors its own prebuilt build dependencies, so that building this project
+# does NOT depend on upstream (Cyberbotics) infrastructure. Every archive fetched here
+# is MD5-verified below, so a mirror serving identical bytes is safe by construction.
+#
+# Override OMNISIM_DEPS_URL to use an internal mirror or a local directory.
+OMNISIM_DEPS_TAG ?= deps-windows-v1
+OMNISIM_DEPS_URL ?= https://github.com/omnilink-tech/omnisim/releases/download/$(OMNISIM_DEPS_TAG)
+DEPENDENCIES_URL = $(OMNISIM_DEPS_URL)
+# TRANSITIONAL fallback, used only if the mirror above does not serve the file yet.
+# Populate the mirror with scripts/packaging/mirror_build_deps.sh, then delete this line.
+DEPENDENCIES_FALLBACK_URL = https://cyberbotics.com/files/repository/dependencies/windows/release
+
+ASSIMP_PACKAGE = assimp-5.2.3.zip
+OPEN_VR_PACKAGE = openvr-1.0.7.zip
+OIS_PACKAGE = libOIS.zip
+
+PACKAGES = assimp open-vr ois
+PACKAGES_CLEAN = $(addsuffix -clean, $(PACKAGES))
+null :=
+space := $(null) $(null)
+TARGET_PATH = $(subst $(space),\ ,$(WEBOTS_HOME_PATH)/msys64/mingw64/bin)
+
+.PHONY: release debug distrib profile clean cleanse msys64 $(PACKAGES) $(PACKAGES_CLEAN)
+
+release debug distrib profile: ../.clang-format msys64 $(PACKAGES)
+
+clean:
+
+cleanse: $(PACKAGES_CLEAN)
+	@rm -f $(TARGET_PATH)/zlib1.dll
+	@rm -f $(TARGET_PATH)/libjpeg-8.dll
+	@rm -f $(TARGET_PATH)/OmniLink.OmniSim.Mingw64.Libraries.manifest
+	@rm -f ../.clang-format
+
+.ONESHELL:
+
+../.clang-format:
+	@echo "# copying clang-format configuration file"
+	cp .clang-format-9 $@
+
+msys64: $(TARGET_PATH) \
+	$(TARGET_PATH)/zlib1.dll \
+	$(TARGET_PATH)/libjpeg-8.dll \
+	$(TARGET_PATH)/OmniLink.OmniSim.Mingw64.Libraries.manifest \
+	$(WEBOTS_HOME_PATH)/msys64/mingw64/lib
+
+$(TARGET_PATH)/zlib1.dll: $(TARGET_PATH)
+	@cp /mingw64/bin/zlib1.dll $(TARGET_PATH)/
+
+$(TARGET_PATH)/libjpeg-8.dll: $(TARGET_PATH)
+	@cp /mingw64/bin/libjpeg-8.dll $(TARGET_PATH)/
+
+$(TARGET_PATH)/OmniLink.OmniSim.Mingw64.Libraries.manifest: $(TARGET_PATH)
+	@cp OmniLink.OmniSim.Mingw64.Libraries.manifest $(TARGET_PATH)/
+
+$(WEBOTS_HOME_PATH)/msys64/mingw64/lib:
+	@mkdir -p $(WEBOTS_HOME_PATH)/msys64/mingw64/lib
+
+$(TARGET_PATH):
+	@mkdir -p $(TARGET_PATH)
+
+assimp-clean:
+	@rm -f "$(WEBOTS_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE)"
+	@rm -f "$(TARGET_PATH)/libassimp-5.dll"
+	@rm -rf "$(WEBOTS_HOME_PATH)/dependencies/assimp"
+
+assimp: $(TARGET_PATH)/libassimp-5.dll
+
+$(TARGET_PATH)/libassimp-5.dll: $(ASSIMP_PACKAGE)
+	@echo "# uncompressing $(ASSIMP_PACKAGE)"
+	@unzip -q -o "$(WEBOTS_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE)" -d "$(WEBOTS_HOME_PATH)"
+	@touch "$(TARGET_PATH)/libassimp-5.dll"
+
+$(ASSIMP_PACKAGE):
+	@echo "# downloading $(ASSIMP_PACKAGE)"
+	@rm -f "$(WEBOTS_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE)"
+	@wget -qq "$(DEPENDENCIES_URL)/$(ASSIMP_PACKAGE)" -P "$(WEBOTS_DEPENDENCY_PATH)" || wget -qq "$(DEPENDENCIES_FALLBACK_URL)/$(ASSIMP_PACKAGE)" -P "$(WEBOTS_DEPENDENCY_PATH)"
+	@if [ "$$(md5sum $(ASSIMP_PACKAGE) | awk '{print $$1;}')" != "5942c8a16a4dc9c0ab01e50b6a1c4795" ]; then echo "MD5 checksum failed for $(ASSIMP_PACKAGE)"; exit 1; fi
+	@touch $(ASSIMP_PACKAGE)
+
+open-vr-clean:
+	@rm -rf "$(WEBOTS_HOME_PATH)/include/openvr" $(TARGET_PATH)/openvr_api.dll "$(WEBOTS_DEPENDENCY_PATH)/openvr-1.0.7"
+
+open-vr: $(TARGET_PATH)/openvr_api.dll $(WEBOTS_HOME_PATH)/include/openvr
+
+$(WEBOTS_HOME_PATH)/include/openvr: $(WEBOTS_DEPENDENCY_PATH)/openvr-1.0.7
+	@mkdir -p "$(WEBOTS_HOME_PATH)/include/openvr"
+	@cp -f "$(WEBOTS_DEPENDENCY_PATH)"/openvr-1.0.7/headers/* "$(WEBOTS_HOME_PATH)/include/openvr"
+
+$(TARGET_PATH)/openvr_api.dll: $(WEBOTS_DEPENDENCY_PATH)/openvr-1.0.7
+	@mkdir -p $(TARGET_PATH)
+	@cp "$(WEBOTS_DEPENDENCY_PATH)/openvr-1.0.7/bin/win64/openvr_api.dll" "$@"
+
+$(WEBOTS_DEPENDENCY_PATH)/openvr-1.0.7:
+	@echo "# downloading $(OPEN_VR_PACKAGE)"
+	@rm -f "$(WEBOTS_DEPENDENCY_PATH)/$(OPEN_VR_PACKAGE)"
+	@wget -qq "$(DEPENDENCIES_URL)/$(OPEN_VR_PACKAGE)" -P "$(WEBOTS_DEPENDENCY_PATH)" || wget -qq "$(DEPENDENCIES_FALLBACK_URL)/$(OPEN_VR_PACKAGE)" -P "$(WEBOTS_DEPENDENCY_PATH)"
+	@if [ "$$(md5sum $(OPEN_VR_PACKAGE) | awk '{print $$1;}')" != "5aa5208fdf403ab64a2ccdb7abc1f789" ]; then echo "MD5 checksum failed for $(OPEN_VR_PACKAGE)"; exit 1; fi
+	@echo "# uncompressing $(OPEN_VR_PACKAGE)"
+	@unzip -q -o "$(WEBOTS_DEPENDENCY_PATH)/$(OPEN_VR_PACKAGE)" -d "$(WEBOTS_DEPENDENCY_PATH)"
+	@rm -f "$(WEBOTS_DEPENDENCY_PATH)/$(OPEN_VR_PACKAGE)"
+	@touch "$(WEBOTS_DEPENDENCY_PATH)/openvr-1.0.7"
+
+ois-clean:
+	@rm -rf "$(WEBOTS_DEPENDENCY_PATH)/$(OIS_PACKAGE)" $(TARGET_PATH)/OIS.dll $(TARGET_PATH)/XInput9_1_0.dll "$(WEBOTS_HOME_PATH)/include/libOIS"
+
+ois: $(TARGET_PATH)/OIS.dll
+
+$(TARGET_PATH)/OIS.dll: $(WEBOTS_DEPENDENCY_PATH)/$(OIS_PACKAGE)
+	@echo "# uncompressing $(OIS_PACKAGE)"
+	@mkdir -p $(TARGET_PATH)
+	@unzip -q -o "$(WEBOTS_DEPENDENCY_PATH)/$(OIS_PACKAGE)" -d "$(WEBOTS_HOME_PATH)"
+	@mv "$(WEBOTS_HOME_PATH)/OIS.dll" "$(TARGET_PATH)/"
+	@mv "$(WEBOTS_HOME_PATH)/XInput9_1_0.dll" "$(TARGET_PATH)/"
+	@touch "$@"
+
+$(WEBOTS_DEPENDENCY_PATH)/$(OIS_PACKAGE):
+	@echo "# downloading $(OIS_PACKAGE)"
+	@rm -f "$(WEBOTS_DEPENDENCY_PATH)/$(OIS_PACKAGE)"
+	@wget -qq "$(DEPENDENCIES_URL)/$(OIS_PACKAGE)" -P "$(WEBOTS_DEPENDENCY_PATH)" || wget -qq "$(DEPENDENCIES_FALLBACK_URL)/$(OIS_PACKAGE)" -P "$(WEBOTS_DEPENDENCY_PATH)"
+	@if [ "$$(md5sum $(OIS_PACKAGE) | awk '{print $$1;}')" != "32c0b9a81ac3a27fe313598c4f8daad1" ]; then echo "MD5 checksum failed for $(OIS_PACKAGE)"; exit 1; fi
+	touch "$(WEBOTS_DEPENDENCY_PATH)/$(OIS_PACKAGE)"
+

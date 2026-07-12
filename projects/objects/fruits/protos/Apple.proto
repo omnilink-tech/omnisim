@@ -1,0 +1,85 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/fruits/protos/Apple.proto
+# keywords: household/kitchen
+# An apple (0.1 x 0.1 x 0.1 m at scale 1): a slightly squashed red sphere with a woody stem sunk into its dimple.
+# template language: javascript
+
+PROTO Apple [
+  field SFVec3f    translation         0 0 0.05
+  field SFRotation rotation            0 0 1 0
+  field SFString   name                "apple"
+  field SFFloat    scale               1
+  field SFFloat    mass                0.15      # Defines the mass of the apple in kg.
+  field MFNode     immersionProperties []        # Is `Solid.immersionProperties`.
+]
+{
+  %<
+    // Unit apple, in metres, before the `scale` field is applied.
+    const bodyRadius = 0.05;    // matches the bounding sphere
+    const squash = 0.93;        // apples are a touch wider than they are tall
+    const dimple = 0.008;       // how deep the stem sits in the top of the fruit
+    const stemRadius = 0.0035;
+    const stemLength = 0.03;
+    const stemTilt = 0.18;      // rad, so the stem does not look machined
+    const stemBase = bodyRadius * squash - dimple;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    recognitionColors [ 0.59 0.75 0.28 ]
+    children [
+      Transform {
+        scale %<= fields.scale.value >% %<= fields.scale.value >% %<= fields.scale.value >%
+        children [
+          DEF APPLE_BODY Transform {
+            scale 1 1 %<= squash >%
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.76 0.13 0.11
+                  metalness 0
+                  roughness 0.35
+                }
+                geometry Sphere {
+                  radius %<= bodyRadius >%
+                  subdivision 24
+                  ico FALSE
+                }
+              }
+            ]
+          }
+          DEF APPLE_STEM Pose {
+            translation 0 %<= -Math.sin(stemTilt) * 0.5 * stemLength >% %<= stemBase + Math.cos(stemTilt) * 0.5 * stemLength >%
+            rotation 1 0 0 %<= stemTilt >%
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.36 0.24 0.13
+                  metalness 0
+                  roughness 0.9
+                }
+                geometry Cylinder {
+                  radius %<= stemRadius >%
+                  height %<= stemLength >%
+                  subdivision 8
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "apple"
+    immersionProperties IS immersionProperties
+    boundingObject Sphere {
+      radius %<= fields.scale.value * 0.05 >%
+    }
+    physics Physics {
+      density -1
+      mass IS mass
+    }
+  }
+}

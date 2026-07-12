@@ -1,0 +1,204 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/buildings/protos/HollowBuilding.proto
+# keywords: building/apartment
+# template language: javascript
+# A six-storey courtyard block: four wings around an open 20 x 20 m courtyard.
+# Windows are modelled as geometry (a tiled grid of glass panes), not as a facade texture.
+# The base of the building sits at z = 0.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+
+PROTO HollowBuilding [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "hollow building"
+]
+{
+  %<
+    const outer = 40.0;              // outer footprint (square)
+    const court = 20.0;              // courtyard opening (square)
+    const wing = (outer - court) / 2.0;   // 10 m deep wings
+    const floors = 6;
+    const floorHeight = 4.0;
+    const height = floors * floorHeight;  // 24 m
+    const o = outer / 2.0;           // 20
+    const c = court / 2.0;           // 10
+    const w = wing / 2.0;            // 5
+    const wingMid = c + w;           // 15 -- wing centre line
+
+    let paneDefined = false;
+    // one glazed pane, thin along the local y axis; yaw turns it onto a side facade
+    function pane(x, y, z, yaw) {
+      let s = '      Pose { translation ' + x.toFixed(3) + ' ' + y.toFixed(3) + ' ' + z.toFixed(3);
+      s += ' rotation 0 0 1 ' + yaw.toFixed(4) + ' children [ ';
+      if (paneDefined)
+        s += 'USE WINDOW_PANE';
+      else {
+        s += 'DEF WINDOW_PANE Shape { appearance USE GLASS_APP geometry Box { size 2.2 0.12 1.8 } }';
+        paneDefined = true;
+      }
+      return s + ' ] }\n';
+    }
+
+    // a row of panes spread along an axis on one facade plane
+    function row(count, from, to, fixed, z, yaw, alongX) {
+      let s = '';
+      const step = (to - from) / (count - 1);
+      for (let i = 0; i < count; ++i) {
+        const p = from + i * step;
+        if (alongX)
+          s += pane(p, fixed, z, yaw);
+        else
+          s += pane(fixed, p, z, yaw);
+      }
+      return s;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "hollow building"
+    children [
+      # ---- the four wings ---------------------------------------------------
+      Pose {
+        translation 0 %<= wingMid >% %<= height / 2.0 >%
+        children [
+          DEF WING_NS Shape {
+            appearance DEF WALL_APP Roughcast {
+              colorOverride 0.82 0.78 0.70
+              textureTransform TextureTransform { scale 12 8 }
+            }
+            geometry Box { size %<= outer >% %<= wing >% %<= height >% }
+          }
+        ]
+      }
+      Pose { translation 0 %<= -wingMid >% %<= height / 2.0 >% children [ USE WING_NS ] }
+      Pose {
+        translation %<= wingMid >% 0 %<= height / 2.0 >%
+        children [
+          DEF WING_EW Shape {
+            appearance USE WALL_APP
+            geometry Box { size %<= wing >% %<= court >% %<= height >% }
+          }
+        ]
+      }
+      Pose { translation %<= -wingMid >% 0 %<= height / 2.0 >% children [ USE WING_EW ] }
+
+      # ---- paved courtyard --------------------------------------------------
+      Pose {
+        translation 0 0 0.05
+        children [
+          Shape {
+            appearance DEF STONE_APP PBRAppearance {
+              baseColor 0.58 0.57 0.55
+              roughness 0.95
+              metalness 0
+            }
+            geometry Box { size %<= court >% %<= court >% 0.1 }
+          }
+        ]
+      }
+
+      # ---- ground-floor glazed shopfront band (defines the glass) -----------
+      Pose {
+        translation 0 %<= o + 0.05 >% 1.9
+        children [
+          DEF SHOPFRONT_NS Shape {
+            appearance DEF GLASS_APP PBRAppearance {
+              baseColor 0.15 0.22 0.26
+              roughness 0.15
+              metalness 0.85
+            }
+            geometry Box { size %<= outer - 4 >% 0.12 2.6 }
+          }
+        ]
+      }
+      Pose { translation 0 %<= -o - 0.05 >% 1.9 children [ USE SHOPFRONT_NS ] }
+      Pose {
+        translation %<= o + 0.05 >% 0 1.9
+        children [
+          DEF SHOPFRONT_EW Shape {
+            appearance USE GLASS_APP
+            geometry Box { size 0.12 %<= outer - 4 >% 2.6 }
+          }
+        ]
+      }
+      Pose { translation %<= -o - 0.05 >% 0 1.9 children [ USE SHOPFRONT_EW ] }
+
+      # ---- window grid: outer envelope (upper storeys) ----------------------
+      %< for (let f = 1; f < floors; ++f) {
+           const z = f * floorHeight + floorHeight / 2.0 - 0.3; >%
+      %<= row(8, -o + 2.5, o - 2.5, o + 0.06, z, 0, true) >%
+      %<= row(8, -o + 2.5, o - 2.5, -o - 0.06, z, 0, true) >%
+      %<= row(8, -o + 2.5, o - 2.5, o + 0.06, z, 1.5708, false) >%
+      %<= row(8, -o + 2.5, o - 2.5, -o - 0.06, z, 1.5708, false) >%
+      # ---- window grid: courtyard faces -------------------------------------
+      %<= row(4, -c + 2.5, c - 2.5, c - 0.06, z, 0, true) >%
+      %<= row(4, -c + 2.5, c - 2.5, -c + 0.06, z, 0, true) >%
+      %<= row(4, -c + 2.5, c - 2.5, c - 0.06, z, 1.5708, false) >%
+      %<= row(4, -c + 2.5, c - 2.5, -c + 0.06, z, 1.5708, false) >%
+      %< } >%
+
+      # ---- entrance passage on the +y side ----------------------------------
+      Pose {
+        translation 0 %<= o + 0.15 >% 1.6
+        children [
+          Shape {
+            appearance DEF TRIM_APP PBRAppearance {
+              baseColor 0.35 0.33 0.31
+              roughness 0.6
+              metalness 0.2
+            }
+            geometry Box { size 5 0.3 3.2 }
+          }
+        ]
+      }
+
+      # ---- parapet ring -----------------------------------------------------
+      Pose {
+        translation 0 %<= o - 0.2 >% %<= height + 0.5 >%
+        children [
+          DEF PARAPET_NS Shape {
+            appearance USE TRIM_APP
+            geometry Box { size %<= outer >% 0.4 1 }
+          }
+        ]
+      }
+      Pose { translation 0 %<= -o + 0.2 >% %<= height + 0.5 >% children [ USE PARAPET_NS ] }
+      Pose {
+        translation %<= o - 0.2 >% 0 %<= height + 0.5 >%
+        children [
+          DEF PARAPET_EW Shape {
+            appearance USE TRIM_APP
+            geometry Box { size 0.4 %<= outer >% 1 }
+          }
+        ]
+      }
+      Pose { translation %<= -o + 0.2 >% 0 %<= height + 0.5 >% children [ USE PARAPET_EW ] }
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 %<= wingMid >% %<= height / 2.0 >%
+          children [ Box { size %<= outer >% %<= wing >% %<= height >% } ]
+        }
+        Pose {
+          translation 0 %<= -wingMid >% %<= height / 2.0 >%
+          children [ Box { size %<= outer >% %<= wing >% %<= height >% } ]
+        }
+        Pose {
+          translation %<= wingMid >% 0 %<= height / 2.0 >%
+          children [ Box { size %<= wing >% %<= court >% %<= height >% } ]
+        }
+        Pose {
+          translation %<= -wingMid >% 0 %<= height / 2.0 >%
+          children [ Box { size %<= wing >% %<= court >% %<= height >% } ]
+        }
+      ]
+    }
+    locked TRUE
+  }
+}

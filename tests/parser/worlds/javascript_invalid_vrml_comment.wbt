@@ -1,0 +1,13 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/parser/protos/JavaScriptVrmlComment.proto"
+EXTERNPROTO "omnisim://tests/parser/protos/ParserTestSupervisor.proto"
+
+WorldInfo {
+}
+Viewpoint {
+}
+JavaScriptVrmlComment {
+}
+ParserTestSupervisor {
+}

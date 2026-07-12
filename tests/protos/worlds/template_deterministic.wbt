@@ -1,0 +1,109 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/TemplateNonDeterministic.proto"
+EXTERNPROTO "omnisim://tests/protos/protos/TemplateDeterministic.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.6876755283330899 0.6737831083667648 0.2704046793445451 1.0514687
+  position 1.0273097 1.3138891 0.64712036
+  near 0.001
+}
+Background {
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+TemplateNonDeterministic {
+  translation 0.1 0 -0.7
+  seed 1
+}
+TemplateNonDeterministic {
+  translation 0.2 0 -0.7
+  seed 2
+}
+TemplateDeterministic {
+  translation 0 0 -0.7
+}
+TemplateDeterministic {
+  translation -0.1 0 -0.7
+}
+Robot {
+  children [
+    TestSuiteEmitter {
+    }
+    DistanceSensor {
+      translation 0.2 0 0
+      rotation 0 1 0 1.5707997
+      name "non deterministic 1"
+      lookupTable [
+        0 0 0
+        2 2 0
+      ]
+    }
+    DistanceSensor {
+      translation 0.1 0 0
+      rotation 0 1 0 1.5707997
+      name "non deterministic 2"
+      lookupTable [
+        0 0 0
+        2 2 0
+      ]
+    }
+    DistanceSensor {
+      rotation 0 1 0 1.5707997
+      name "deterministic 1"
+      lookupTable [
+        0 0 0
+        2 2 0
+      ]
+    }
+    DistanceSensor {
+      translation -0.1 0 0
+      rotation 0 1 0 1.5707997
+      name "deterministic 2"
+      lookupTable [
+        0 0 0
+        2 2 0
+      ]
+    }
+  ]
+  controller "template_deterministic"
+  controllerArgs [
+    "template_deterministic"
+  ]
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Local CI: run the smoke world set before pushing.
+# Bypass with: OMNISIM_SKIP_PUSH_CHECK=1 git push
+set -e
+
+if [ "${OMNISIM_SKIP_PUSH_CHECK:-}" = "1" ]; then
+    echo "[pre-push] OMNISIM_SKIP_PUSH_CHECK=1 set — skipping smoke run."
+    exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+# Read all pushed refs from stdin. Skip only if EVERY destination is a
+# scratch/* branch (personal sandbox); otherwise run the smoke check.
+# Also note whether any RENDER-relevant file changed in the pushed range: the render gate (below) needs
+# a GUI window for the wgpu self-check, so we only pop one when render code actually changed.
+all_scratch=1
+any_ref=0
+render_touched=0
+zero=0000000000000000000000000000000000000000
+render_re='^(src/omnisim/render/|src/omnisim/nodes/WbWgpu|src/omnisim/gui/(WbView3D|WbWgpuView)|scripts/dev/render_oracle)'
+while read local_ref local_sha remote_ref remote_sha; do
+    any_ref=1
+    case "${remote_ref:-}" in
+        refs/heads/scratch/*) ;;
+        *) all_scratch=0 ;;
+    esac
+    if [ "$local_sha" = "$zero" ]; then
+        continue  # branch deletion — nothing to render-check
+    fi
+    if [ "$remote_sha" = "$zero" ]; then
+        render_touched=1  # new branch: can't cheaply scope the diff — run the render gate to be safe
+    elif git diff --name-only "$remote_sha" "$local_sha" 2>/dev/null | grep -Eq "$render_re"; then
+        render_touched=1
+    fi
+done
+
+if [ "$any_ref" = "1" ] && [ "$all_scratch" = "1" ]; then
+    echo "[pre-push] all destinations are scratch/* — skipping smoke run."
+    exit 0
+fi
+
+# Champion-checkpoint tracking guard. runs/ is gitignored and champions are
+# force-added at milestones (training/README.md); the public release publishes
+# the tracked tree, so every tracked checkpoint must be referenced (by
+# basename) somewhere in the tracked tree — an unreferenced one is training
+# residue that would ship in the snapshot. Reference it (doc/demo/manifest)
+# in the same commit, or `git rm --cached` it.
+ckpt_orphans=""
+for f in $(git ls-files 'projects/policies/training/runs/*'); do
+    n="${f##*/}"
+    git grep -qF "$n" -- ':!projects/policies/training/runs' || ckpt_orphans="$ckpt_orphans $f"
+done
+if [ -n "$ckpt_orphans" ]; then
+    echo "[pre-push] FAILED: tracked checkpoints under training/runs/ referenced by nothing:"
+    for f in $ckpt_orphans; do echo "[pre-push]   $f"; done
+    echo "[pre-push] Reference each (doc/demo/skill manifest) or 'git rm --cached' it."
+    echo "[pre-push] Bypass with: OMNISIM_SKIP_PUSH_CHECK=1 git push"
+    exit 1
+fi
+
+# Newton physics gate FIRST — Newton is the default backend since the Stage 3 flip
+# (default-flip-plan.md §4.3). --require-newton makes it assert Newton was ACTUALLY
+# active (not a silent ODE fallback), so this genuinely validates the default backend.
+# Reliable: the gate uses --no-rendering + a retry backstop (the §3.5 launch-race fix).
+echo "[pre-push] Running Newton physics gate (physics_oracle.py --gate --require-newton)."
+if ! python "$ROOT/scripts/dev/physics_oracle.py" --gate --require-newton; then
+    echo ""
+    echo "[pre-push] FAILED: Newton physics gate (invariant violation, or Newton not active)."
+    echo "[pre-push] Fix the regression — or, if warp/newton isn't importable in this shell,"
+    echo "[pre-push] push from one where it is — or bypass with:"
+    echo "[pre-push]   OMNISIM_SKIP_PUSH_CHECK=1 git push"
+    exit 1
+fi
+echo "[pre-push] Newton gate passed."
+echo ""
+
+# Render gate (architectural-baseline.md §2 B2/B4) — WREN-vs-wgpu parity + the panda golden, via
+# render_oracle.py. Runs ONLY when render code changed (it needs a brief GUI window for the wgpu
+# self-check; we don't pop one on every push). Lenient by design: a WREN-only binary or a launch flake
+# reports UNAVAILABLE and does NOT block (render_oracle.py exits 0); only a real parity divergence or a
+# golden mismatch fails the push. Skip just this gate with OMNISIM_SKIP_RENDER_GATE=1.
+if [ "$render_touched" = "1" ] && [ "${OMNISIM_SKIP_RENDER_GATE:-}" != "1" ]; then
+    echo "[pre-push] Render code changed — running render gate (render_oracle.py: coverage parity)."
+    echo "[pre-push] A wgpu self-check window may appear briefly. Skip with OMNISIM_SKIP_RENDER_GATE=1."
+    # NOTE: the byte-level golden (B2) was keyed to the Franka panda.wbt parity world, which no longer
+    # ships. The gate now runs the hard COVERAGE check on the warehouse_husky demo world (catches a
+    # dropped floor / vanished geometry). To restore the B2 byte-golden, bake a golden on a wgpu build
+    # and re-add the --golden flag here:
+    #   python scripts/dev/render_oracle.py \
+    #     --world projects/samples/demos/worlds/showcase/warehouse_husky.wbt \
+    #     --golden docs/developer/wgpu-golden/warehouse_husky_selfcheck.wgpu.png --update-golden
+    if ! python "$ROOT/scripts/dev/render_oracle.py" \
+            --world projects/samples/demos/worlds/showcase/warehouse_husky.wbt; then
+        echo ""
+        echo "[pre-push] FAILED: render gate (wgpu coverage regression — geometry vanished)."
+        echo "[pre-push] Or bypass with OMNISIM_SKIP_RENDER_GATE=1 (render only) / OMNISIM_SKIP_PUSH_CHECK=1 (all)."
+        exit 1
+    fi
+    echo "[pre-push] Render gate passed."
+    echo ""
+fi
+
+echo "[pre-push] Running smoke worlds (set OMNISIM_SKIP_PUSH_CHECK=1 to bypass)."
+echo "[pre-push] This typically takes 1-3 minutes."
+
+# `|| rc=$?` keeps a non-zero exit from aborting the hook under `set -e`,
+# so the exit-2 diagnosis and bypass hints below actually print.
+rc=0
+python "$ROOT/tests/smoke/run_smoke.py" --nomake || rc=$?
+if [ "$rc" = "2" ]; then
+    # run_smoke.py exit 2 = environment problem (e.g. port 1234 occupied by a
+    # running Webots GUI). Message has already been printed to stderr.
+    echo ""
+    echo "[pre-push] Smoke runner could not start. Bypass with:"
+    echo "[pre-push]   OMNISIM_SKIP_PUSH_CHECK=1 git push"
+    exit 1
+elif [ "$rc" != "0" ]; then
+    echo ""
+    echo "[pre-push] FAILED. Either fix the smoke regression or bypass with:"
+    echo "[pre-push]   OMNISIM_SKIP_PUSH_CHECK=1 git push"
+    exit 1
+fi
+
+echo "[pre-push] Smoke run passed."

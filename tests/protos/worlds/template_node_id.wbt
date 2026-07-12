@@ -1,0 +1,84 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://projects/objects/traffic/protos/SignPole.proto"
+EXTERNPROTO "omnisim://tests/protos/protos/TemplateRobot.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.8189298808408902 0.5253239596234646 0.23105970594512992 0.9857656392773531
+  position 4.988097069962056 8.48483144212403 7.131677837172221
+  near 0.001
+}
+Background {
+  skyColor [
+    1 1 1
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  direction 0.2 -1 0.55
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+SignPole {
+}
+DEF ROBOT TemplateRobot {
+  controller "copy_args_in_custom_data"
+  slot [
+    DEF SHAPE Shape {
+      appearance PBRAppearance {
+        baseColorMap DEF TEXTURE ImageTexture {
+          url [
+            "omnisim://projects/default/worlds/textures/water.jpg"
+          ]
+        }
+      }
+      geometry Box {
+        size 0.1 0.1 0.1
+      }
+    }
+  ]
+}
+Robot {
+  children [
+    TestSuiteEmitter {
+    }
+  ]
+  name "supervisor"
+  controller "template_node_id"
+  controllerArgs [
+    "template_node_id"
+  ]
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

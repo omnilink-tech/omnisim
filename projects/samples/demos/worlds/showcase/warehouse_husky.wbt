@@ -1,0 +1,191 @@
+#VRML_SIM R2025a utf8
+
+# Warehouse + Husky demo.
+# A 30 m x 18 m walled warehouse interior with three rows of pallet stacks
+# running east->west, scattered crates in the aisles, and a Husky parked at
+# the loading-dock end (west side, -X). Roof is open so the NightSky shows
+# above the perimeter walls - same lighting recipe as husky_maze.wbt.
+#
+# Layout (top-down, +X east, +Y north):
+#
+#   wall_W                    rack_row_N                       wall_E
+#     |  +-----+ +-----+ +-----+ +-----+ +-----+                |
+#     |       (loading dock)                                    |
+#     |  H    +-----+ +-----+ +-----+ +-----+ +-----+           |
+#     |       (aisle)                                           |
+#     |       +-----+ +-----+ +-----+ +-----+ +-----+           |
+#     +---------------------------------------------------------+
+#                                wall_S
+#
+# H = Husky spawn, drop height 0.1 m. Controller left as <none>; swap to a
+# nav controller (e.g. omnibot_controller) to drive it.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/pallet/protos/WoodenPalletStack.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/CardboardBox.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/PlasticCrate.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/WoodenBox.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  # 32 ms (not the usual 16) is the fast-forward profile. It caps realtime at
+  # ~31 FPS, but on the GPU warp solver below the fast-forward button reaches
+  # ~3.6x (vs ~2x on the CPU solver). The 6 even sub-steps keep each sub-step
+  # at ~5.3 ms so the pivot hop stays ~6 mm. See newtonSolver/newtonSubsteps.
+  basicTimeStep 32
+  title "Warehouse Husky"
+  # Skid-steer pivots need bounded lateral wheel slip. XPBD's soft positional
+  # contact has none -- the four wheels jam the moment the controller commands
+  # a pivot and the husky never leaves its spawn. SolverMuJoCo's frictional
+  # contact slips correctly. "mujoco_warp" runs that solver on the GPU (vs the
+  # CPU "mujoco"): identical physics, but in FAST mode it reaches ~3.6x here
+  # (vs ~2x on CPU) because the CUDA-graph step replay makes sub-steps cheap.
+  # REQUIRES a CUDA GPU + warp (assumed for all OmniSim users -- same as the RL
+  # worlds): without one, SolverMuJoCo construction fails and Newton falls back
+  # to XPBD, which cannot hold the skid-steer pivot, so the husky jams. NOTE:
+  # newtonSubsteps (below) MUST be even or the CUDA-graph replay is disabled and
+  # the step runs SLOWER than the CPU solver.
+  newtonSolver "mujoco_warp"
+  # Walls, racks and crates must be Newton collision surfaces, or the
+  # husky drives straight through them and out of the building.
+  newtonStatics TRUE
+  # ...and the husky BODY needs its own collider, or only its four wheels
+  # collide: the chassis (which overhangs the wheels by ~0.24 m at the front)
+  # clips straight through crates, boxes and rack faces. By default a robot
+  # wrapper gets a 1 mm placeholder so a wheel-engulfing chassis box can't pin
+  # the body -- but the Husky's chassis collision box floats ~0.13 m above the
+  # ground, clear of the wheels, so it's safe to use. Turning this on gives the
+  # body a real box collider; it now bumps off crates/boxes instead of phasing
+  # through, and the wheels still carry the load (verified: drives normally).
+  newtonRobotColliders TRUE
+  # Skid-steer pivots scrub all four wheels laterally at once; too large a
+  # solver step lets the wheels penetrate and the contact push-out launches
+  # the chassis (~60 mm "hop" at one step). 6 sub-steps over the 32 ms step =
+  # ~5.3 ms each, which holds the hop at ~6 mm (measured). MUST stay EVEN: the
+  # GPU warp solver's CUDA-graph replay only engages on an even sub-step count
+  # -- an odd value disables it and the step runs ~4x slower than CPU.
+  newtonSubsteps 6
+}
+Viewpoint {
+  orientation 0.000000 1.000000 0.000000 1.570796
+  position 0.000 0.000 51.387
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+# Key light from the SE, simulating moonlight through skylights.
+# Fill light from the opposite side to keep shaded racks readable.
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 32 20
+  tileSize 32 20
+  appearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# ============================================================================
+# Outer perimeter walls. 30 m x 18 m interior, walls 0.2 m thick, 3 m tall.
+# ============================================================================
+Wall {
+  name "wall_N"
+  translation 0 9 0
+  size 30.2 0.2 3
+}
+Wall {
+  name "wall_S"
+  translation 0 -9 0
+  size 30.2 0.2 3
+}
+Wall {
+  name "wall_E"
+  translation 15 0 0
+  size 0.2 18.2 3
+}
+Wall {
+  name "wall_W"
+  translation -15 0 0
+  size 0.2 18.2 3
+}
+
+# ============================================================================
+# Pallet racks. Three east-west rows of 7 stacks each, 4 pallets per stack.
+# Rows at y = +5, 0, -5. Stacks pitched 2.4 m apart, starting x = -3.
+# Loading dock occupies x < -5.
+# palletNumber/palletLathNumber are kept low (4/4 vs the 6/6 default): each
+# pallet is ~20 separate box shapes and WREN does not batch them, so the full
+# 6/6 racks cost ~2600 unbatched draw calls (~4 ms/frame, the scene's dominant
+# render cost). 4/4 still reads as a full stack and recovers the frame budget.
+# ============================================================================
+WoodenPalletStack { translation -3.0  5 0 name "rack_N_0" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation -0.6  5 0 name "rack_N_1" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  1.8  5 0 name "rack_N_2" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  4.2  5 0 name "rack_N_3" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  6.6  5 0 name "rack_N_4" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  9.0  5 0 name "rack_N_5" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation 11.4  5 0 name "rack_N_6" palletNumber 4 palletLathNumber 4 }
+
+WoodenPalletStack { translation -3.0  0 0 name "rack_M_0" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation -0.6  0 0 name "rack_M_1" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  1.8  0 0 name "rack_M_2" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  4.2  0 0 name "rack_M_3" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  6.6  0 0 name "rack_M_4" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  9.0  0 0 name "rack_M_5" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation 11.4  0 0 name "rack_M_6" palletNumber 4 palletLathNumber 4 }
+
+WoodenPalletStack { translation -3.0 -5 0 name "rack_S_0" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation -0.6 -5 0 name "rack_S_1" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  1.8 -5 0 name "rack_S_2" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  4.2 -5 0 name "rack_S_3" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  6.6 -5 0 name "rack_S_4" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation  9.0 -5 0 name "rack_S_5" palletNumber 4 palletLathNumber 4 }
+WoodenPalletStack { translation 11.4 -5 0 name "rack_S_6" palletNumber 4 palletLathNumber 4 }
+
+# ============================================================================
+# Loose crates - aisle clutter so the floor doesn't look empty. Mix of
+# cardboard, plastic, and wooden so the demo exercises three protos.
+# ============================================================================
+CardboardBox { translation -7.5  3.0 0 rotation 0 0 1 0.3   name "crate_01" }
+CardboardBox { translation -8.2  6.5 0 rotation 0 0 1 1.1   name "crate_02" }
+CardboardBox { translation -6.8 -2.5 0 rotation 0 0 1 -0.4  name "crate_03" }
+PlasticCrate { translation -7.0 -6.0 0 rotation 0 0 1 0.7   name "crate_04" }
+PlasticCrate { translation -9.0  0.5 0 rotation 0 0 1 1.4   name "crate_05" }
+WoodenBox    { translation -6.5  7.5 0 rotation 0 0 1 0.0   name "crate_06" }
+
+CardboardBox { translation -1.6  2.5 0 rotation 0 0 1 0.2   name "crate_07" }
+PlasticCrate { translation  3.0  2.5 0 rotation 0 0 1 -0.3  name "crate_08" }
+CardboardBox { translation  7.5  2.5 0 rotation 0 0 1 0.9   name "crate_09" }
+WoodenBox    { translation 10.5  2.5 0 rotation 0 0 1 -0.1  name "crate_10" }
+
+CardboardBox { translation  0.5 -2.5 0 rotation 0 0 1 1.2   name "crate_11" }
+PlasticCrate { translation  5.0 -2.5 0 rotation 0 0 1 0.0   name "crate_12" }
+CardboardBox { translation  8.0 -2.5 0 rotation 0 0 1 -0.6  name "crate_13" }
+
+CardboardBox { translation 13.5  6.5 0 rotation 0 0 1 0.4   name "crate_14" }
+WoodenBox    { translation 13.0 -6.5 0 rotation 0 0 1 -0.2  name "crate_15" }
+PlasticCrate { translation 14.0  0.0 0 rotation 0 0 1 0.8   name "crate_16" }
+
+# ============================================================================
+# Husky robot, parked at the loading-dock end facing east (+X) toward the
+# racks. Drop height 0.1 m matches the realistic-spawn convention used
+# elsewhere in this repo. Controller left as <none> - swap in a nav or
+# manual controller (e.g. omnibot_controller) to drive it.
+# ============================================================================
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -11 0 0.1
+  name "husky"
+  controller "husky_random"
+  supervisor TRUE
+}

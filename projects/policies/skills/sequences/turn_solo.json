@@ -1,0 +1,26 @@
+{
+  "schema": 2,
+  "name": "turn_solo",
+  "title": "Turn solo: settle -> 90 deg footwork turn -> decel-stop -> hold",
+  "class": "humanoid",
+  "robot": "g1",
+  "status": "experimental",
+  "summary": "Show the footwork turn specialist (wr_stepturn) BY ITSELF: the G1 settles to a stand, then turns ~90 deg by REAL footwork (BATON solo-turn context; crane-yaw auto-OFF => wtz=0, pure footwork, no rope), decelerates to a stop, holds. The turn is at its most reliable from a clean stand (in-sequence variance comes from the walk->turn handoff, not the turn itself). Uses the walker (wr_navigator) only as the warmup/settle context.",
+
+  "profile": "g1_shadow_deploy",
+  "world": "projects/policies/worlds/g1_turn_demo.wbt",
+  "primary": "walk",
+  "skills": ["turn_in_place"],
+  "arbiter": {"kind": "schedule", "value": "walk:4,turn:120"},
+  "env": {
+    "BATON_TURN_SETTLE_TICKS": "180",
+    "TURN_DECEL_DEG": "20"
+  },
+  "props": ["ghost turn reference (yawlock) beside the robot"],
+  "duration_default": 90,
+  "gui_default": "gui",
+
+  "verified": {"date": "2026-07-08", "engine": "Newton/mujoco_warp", "result": "turns ~86-90 deg CCW pure footwork from a clean stand, upright, holds; reliable from a stand"},
+  "reproduces": "projects/policies/demos/run_turn_solo.sh",
+  "memory": "project_baton_policy_switching"
+}

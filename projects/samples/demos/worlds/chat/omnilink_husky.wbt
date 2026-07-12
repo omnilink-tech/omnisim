@@ -1,0 +1,36 @@
+#VRML_SIM R2025a utf8
+
+# OmniLink — Clearpath Husky
+# 4-wheel skid-steer. Prompts: "forward 1 m", "turn left 90 degrees",
+# "back 50 cm", "spin", "stop", "reset".
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — Husky"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 2.350 -2.502 2.649
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 12 12
+  wallHeight 0.1
+}
+
+DEF HUSKY URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 0 0.2
+  name "husky"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8765" ]
+  window "omnilink_chat"
+}

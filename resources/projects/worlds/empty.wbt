@@ -1,0 +1,13 @@
+#VRML_SIM R2025a utf8
+
+# Empty world template. When adding robots or solids, set
+# `physicsBackend "newton"` on the URDFRobot / Robot / Solid to use
+# OmniSim's GPU-accelerated solver (recommended default for new worlds).
+# Use `physicsBackend "ode"` only when you need ODE-specific semantics
+# (legacy compat, deterministic regression tests, no-NVIDIA-hardware
+# scenarios). See docs/guide/newton-physics-backend.md.
+
+WorldInfo {
+}
+Viewpoint {
+}

@@ -1,0 +1,134 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/factory/tools/protos/Bolt.proto
+# keywords: industrial/ironmongery
+# A hexagon-head bolt of configurable radius and length: a six-sided head, a washer flange and a
+# threaded shank. The shank runs along the local +x axis, the head sits at the origin.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/OldSteel.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/ScrewThread.proto"
+
+PROTO Bolt [
+  field SFVec3f    translation      0 0 0.013
+  field SFRotation rotation         0 0 1 0
+  field SFString   name             "bolt"
+  field SFNode     appearance       OldSteel {}  # Defines the appearance of the bolt.
+  field SFFloat    screwRadius      0.0055       # Defines the radius of the screw.
+  field SFFloat    screwLength      0.035        # Defines the length of the screw.
+  field SFString   contactMaterial  "default"    # Is `Solid.contactMaterial`.
+  field SFBool     enablePhysics    TRUE         # Defines whether the bolt should have physics.
+]
+{
+  %<
+    let radius = fields.screwRadius.value;
+    if (radius <= 0.0) {
+      radius = fields.screwRadius.defaultValue;
+      console.error('\'screwRadius\' must be strictly positive. Value reset to ' + radius + '.');
+    }
+
+    let length = fields.screwLength.value;
+    if (length <= 0.0) {
+      length = fields.screwLength.defaultValue;
+      console.error('\'screwLength\' must be strictly positive. Value reset to ' + length + '.');
+    }
+
+    // hexagon-head proportions (roughly ISO 4014: across-corners 1.9 d, head height 0.7 d)
+    const headRadius = 1.9 * radius;
+    const headHeight = 1.4 * radius;
+    const flangeRadius = 1.55 * radius;
+    const flangeHeight = 0.35 * radius;
+
+    // the bolt grows along +x: head in [-headHeight - flangeHeight, -flangeHeight],
+    // washer flange in [-flangeHeight, 0], shank in [0, length]
+    const headCenter = -flangeHeight - 0.5 * headHeight;
+    const flangeCenter = -0.5 * flangeHeight;
+    const shankCenter = 0.5 * length;
+
+    const totalLength = length + headHeight + flangeHeight;
+    const boundCenter = 0.5 * (length - headHeight - flangeHeight);
+
+    // one thread turn every 0.8 d, mapped onto the shank's v texture coordinate
+    const turns = Math.max(1, Math.round(length / (0.8 * radius)));
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "bolt"
+    contactMaterial IS contactMaterial
+    children [
+      # ---- hexagonal head ----
+      Pose {
+        translation %<= headCenter >% 0 0
+        rotation 0 1 0 1.5708
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Cylinder {
+              radius %<= headRadius >%
+              height %<= headHeight >%
+              subdivision 6
+            }
+          }
+        ]
+      }
+      # ---- washer flange under the head ----
+      Pose {
+        translation %<= flangeCenter >% 0 0
+        rotation 0 1 0 1.5708
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.42 0.43 0.45
+              roughness 0.55
+              metalness 1
+            }
+            geometry Cylinder {
+              radius %<= flangeRadius >%
+              height %<= flangeHeight >%
+              subdivision 24
+            }
+          }
+        ]
+      }
+      # ---- threaded shank ----
+      Pose {
+        translation %<= shankCenter >% 0 0
+        rotation 0 1 0 1.5708
+        children [
+          Shape {
+            appearance ScrewThread {
+              textureTransform TextureTransform {
+                scale 1 %<= turns >%
+              }
+            }
+            geometry Cylinder {
+              radius %<= radius >%
+              height %<= length >%
+              subdivision 16
+              top FALSE
+            }
+          }
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation %<= boundCenter >% 0 0
+      rotation 0 1 0 1.5708
+      children [
+        Cylinder {
+          radius %<= headRadius >%
+          height %<= totalLength >%
+          subdivision 12
+        }
+      ]
+    }
+    %< if (fields.enablePhysics.value) { >%
+    physics Physics {
+      density 7800
+    }
+    %< } >%
+  }
+}

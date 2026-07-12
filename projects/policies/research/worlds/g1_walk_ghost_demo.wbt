@@ -1,0 +1,72 @@
+#VRML_SIM R2025a utf8
+
+# GHOST / REFERENCE-OVERLAY demo. Two G1s walk side by side:
+#   - DEF G1_REAL: the real, physics-simulated, RL-stabilised robot (Newton),
+#     driven by the g1_walk_deploy controller (the human-gait Winter policy);
+#   - DEF G1_GHOST: a SECOND, identical G1 URDF with NO physics (staticBase
+#     TRUE -> kinematic root; no newton backend) that plays the PURE gait
+#     MODEL reference -- no RL, no balance, just the commanded human
+#     kinematics. It is "the ideal we are optimising toward". The g1_ghost
+#     controller positions it beside the real robot and keeps its leg cycle
+#     locked to the real robot's forward progress.
+#
+# Launch: scripts/dev/run_g1_walk_ghost_demo.ps1  (GUI, real-time paced).
+# Same Newton env as the arms deploy world (set by the launch script).
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 -- real robot + kinematic gait-model ghost"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5 1.8
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 24 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF G1_REAL URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_walk_deploy"
+  physicsBackend "newton"
+}
+
+DEF G1_GHOST URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 1.1 0.78
+  name "g1_ghost"
+  supervisor TRUE
+  controller "g1_ghost"
+  staticBase TRUE
+}

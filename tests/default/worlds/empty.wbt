@@ -1,0 +1,12 @@
+#VRML_SIM R2025a utf8
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+}
+Robot {
+  controller "test_suite_supervisor"
+  customData "empty parser"
+  supervisor TRUE
+}

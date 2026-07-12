@@ -1,0 +1,97 @@
+{
+  "file_paths_webots": {
+    "description": "files/dirs whose path contains 'webots' (case-insensitive)",
+    "count": 16,
+    "expected_min": 0,
+    "expected_max": 850,
+    "in_range": true,
+    "samples": [
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbgeometry.js",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbrandom.js",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbrotation.js",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbutility.js",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbvector2.js",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbvector3.js",
+      "scripts/packaging/webots_distro.py",
+      "scripts/packaging/webots_version.txt",
+      "src/controller/launcher/webots_controller.c",
+      "src/omnisim/core/WbWebotsUpdateManager.cpp"
+    ]
+  },
+  "webots_yaml_files": {
+    "description": "project metadata files literally named webots.yaml",
+    "count": 0,
+    "expected_min": 0,
+    "expected_max": 0,
+    "in_range": true,
+    "samples": []
+  },
+  "include_c_webots": {
+    "description": "C/C++ #include <webots/...> or \"webots/...\"",
+    "count": 1490,
+    "expected_min": 0,
+    "expected_max": 1600,
+    "in_range": true,
+    "samples": [
+      "docs/guide/controller-programming.md",
+      "docs/guide/supervisor-programming.md",
+      "docs/guide/using-numerical-optimization-methods.md",
+      "docs/guide/using-omnisim-makefiles.md",
+      "docs/reference/accelerometer.md",
+      "docs/reference/altimeter.md",
+      "docs/reference/brake.md",
+      "docs/reference/c-string-api.md",
+      "docs/reference/camera.md",
+      "docs/reference/compass.md"
+    ]
+  },
+  "wb_class_use": {
+    "description": "occurrences of Wb<Pascal> class-style identifiers",
+    "count": 46975,
+    "expected_min": 0,
+    "expected_max": 50000,
+    "in_range": true,
+    "samples": [
+      ".githooks/pre-push",
+      ".github/ISSUE_TEMPLATE/bug_report.md",
+      ".gitignore",
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "agents/production/husky_maze/docs/OVERVIEW.md",
+      "agents/production/husky_maze/docs/RESULTS.md",
+      "agents/production/husky_maze/scripts/generate_maze_world.py",
+      "agents/production/warehouse_foreman/docs/ARCHITECTURE.md",
+      "agents/production/warehouse_patrol/README.md"
+    ]
+  },
+  "webots_url_scheme": {
+    "description": "webots:// URL references inside text files",
+    "count": 7,
+    "expected_min": 0,
+    "expected_max": 500,
+    "in_range": true,
+    "samples": [
+      "CHANGELOG.md",
+      "scripts/dev/migrate_url_scheme.py"
+    ]
+  },
+  "webots_home_env": {
+    "description": "WEBOTS_HOME env-var reads / writes inside text files",
+    "count": 182,
+    "expected_min": 0,
+    "expected_max": 200,
+    "in_range": true,
+    "samples": [
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "Makefile",
+      "TRADEMARKS.md",
+      "build_omni.bat",
+      "docs/README.md",
+      "docs/developer/codebase-audit-2026-07.md",
+      "docs/developer/newton-robot-combat-completion-plan.md",
+      "docs/developer/quickstart.md"
+    ]
+  }
+}

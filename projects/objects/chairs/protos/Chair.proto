@@ -1,0 +1,180 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/chairs/protos/Chair.proto
+# keywords: furniture/chair
+# A chair (0.5 x 0.5 x 1 m): a leather-topped seat and backrest carried on a varnished pine frame of four legs and two rear posts.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/VarnishedPine.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/ShinyLeather.proto"
+
+PROTO Chair [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "chair"
+  field SFColor    color       1 1 1                # Define the color of the chair.
+  field SFNode     physics     NULL                 # Define the physcis of the chair.
+]
+{
+  %<
+    // ---------------------------------------------------------------------
+    // A fixed 0.5 x 0.5 x 1 m chair. The numbers below are the whole model:
+    // everything else in the body is placed from them.
+    // ---------------------------------------------------------------------
+    const seatHeight = 0.40;        // top of the legs / underside of the cushion
+    const seatThickness = 0.10;
+    const legSection = 0.06;
+    const legInset = 0.22;          // leg centres, from the chair axis
+    const backTilt = -0.07;         // rad, the backrest leans away from the sitter
+    const backCentre = 0.75;        // height of the middle of the backrest
+    const backOffset = -0.237;      // the backrest sits behind the seat
+
+    // Four legs, then the two rear ones continued upwards as the backrest posts.
+    const legs = [
+      {x:  legInset, y:  legInset},
+      {x: -legInset, y:  legInset},
+      {x:  legInset, y: -legInset},
+      {x: -legInset, y: -legInset}
+    ];
+    const postHeight = 1.0 - seatHeight;
+    const posts = [
+      {x: -legInset, y:  legInset},
+      {x: -legInset, y: -legInset}
+    ];
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      DEF FRAME Group {
+        children [
+          %< for (let i = 0; i < legs.length; ++i) { >%
+          Pose { # leg
+            translation %<= legs[i].x >% %<= legs[i].y >% %<= 0.5 * seatHeight >%
+            children [
+              Shape {
+                appearance VarnishedPine {
+                  textureTransform TextureTransform {
+                    scale 7 7
+                  }
+                }
+                geometry Box {
+                  size %<= legSection >% %<= legSection >% %<= seatHeight >%
+                }
+              }
+            ]
+          }
+          %< } >%
+          %< for (let i = 0; i < posts.length; ++i) { >%
+          Pose { # backrest post
+            translation %<= posts[i].x >% %<= posts[i].y >% %<= seatHeight + 0.5 * postHeight >%
+            rotation 0 1 0 %<= backTilt >%
+            children [
+              Shape {
+                appearance VarnishedPine {
+                  textureTransform TextureTransform {
+                    scale 7 7
+                  }
+                }
+                geometry Box {
+                  size %<= legSection >% %<= legSection >% %<= postHeight >%
+                }
+              }
+            ]
+          }
+          %< } >%
+        ]
+      }
+      DEF SEAT Pose {
+        translation 0 0 %<= seatHeight + 0.5 * seatThickness >%
+        children [
+          Shape {
+            appearance ShinyLeather {
+              colorOverride IS color
+              textureTransform TextureTransform {
+                scale 8 8
+              }
+            }
+            geometry Box {
+              size 0.5 0.5 %<= seatThickness >%
+            }
+          }
+        ]
+      }
+      DEF BACKREST Pose {
+        translation %<= backOffset >% 0 %<= backCentre >%
+        rotation 0 1 0 %<= backTilt >%
+        children [
+          Shape {
+            appearance ShinyLeather {
+              colorOverride IS color
+              textureTransform TextureTransform {
+                scale 8 8
+              }
+            }
+            geometry Box {
+              size 0.05 0.44 0.46
+            }
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "chair"
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 0.45
+          children [
+            Box {
+              size 0.5 0.5 0.1
+            }
+          ]
+        }
+        Pose {
+          translation 0.22 0.22 0.2
+          children [
+            Box {
+              size 0.06 0.06 0.4
+            }
+          ]
+        }
+        Pose {
+          translation -0.22 0.22 0.2
+          children [
+            Box {
+              size 0.06 0.06 0.4
+            }
+          ]
+        }
+        Pose {
+          translation 0.22 -0.22 0.2
+          children [
+            Box {
+              size 0.06 0.06 0.4
+            }
+          ]
+        }
+        Pose {
+          translation -0.22 -0.22 0.2
+          children [
+            Box {
+              size 0.06 0.06 0.4
+            }
+          ]
+        }
+        Pose {
+          translation -0.237 0 0.75
+          rotation 0 1 0 -0.07
+          children [
+            Box {
+              size 0.06 0.5 0.5
+            }
+          ]
+        }
+      ]
+    }
+    physics IS physics
+  }
+}

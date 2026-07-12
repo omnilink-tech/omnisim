@@ -1,0 +1,523 @@
+#VRML_SIM R2025a utf8
+# license: Apache-2.0
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim
+# keywords: construction/site/scene/omnilink
+# ConstructionSiteEnvironment — a large, sprawling construction-site
+# backdrop bundled as one reusable node. Drop a single instance into a
+# world and it provides the dirt ground (with collision), perimeter
+# safety fencing + cones, buildings under construction, a hand-built
+# tower crane, site office / storage containers, material laydown yards
+# (pallet stacks, barrels, pipe + girder racks, sand piles), site
+# lighting, a parked forklift, and welfare facilities.
+#
+# Everything sits OUTSIDE the central work cell (roughly x in [-2.5, 5.5],
+# y in [-3, 3]) so it never fouls a robot workspace or a transport lane.
+# The ground is an infinite collision Plane at z=0; the dirt visual sits
+# 2 cm lower so it does not z-fight a host world's central work pad.
+#
+# All decorative geometry is static (no physics): props stay put and the
+# scene is cheap to simulate.
+
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/Warehouse.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/Fence.proto"
+EXTERNPROTO "omnisim://projects/objects/traffic/protos/TrafficCone.proto"
+EXTERNPROTO "omnisim://projects/objects/traffic/protos/WorkBarrier.proto"
+EXTERNPROTO "omnisim://projects/objects/freight/protos/IntermodalContainer.proto"
+EXTERNPROTO "omnisim://projects/objects/freight/protos/IntermodalOfficeContainer.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/pallet/protos/WoodenPalletStack.proto"
+EXTERNPROTO "omnisim://projects/objects/obstacles/protos/OilBarrel.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/forklift/protos/Forklift.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/ConstructionLamp.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/WorkTrashContainer.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/PublicToilet.proto"
+EXTERNPROTO "omnisim://projects/samples/demos/protos/TowerCrane.proto"
+EXTERNPROTO "omnisim://projects/samples/demos/protos/ConstructionFrameBuilding.proto"
+EXTERNPROTO "omnisim://projects/samples/demos/protos/DumpTruck.proto"
+EXTERNPROTO "omnisim://projects/samples/demos/protos/Excavator.proto"
+EXTERNPROTO "omnisim://projects/samples/demos/protos/ConcreteMixer.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/SandyGround.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/DryMud.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Sand.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RustyMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/GalvanizedMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/OldPlywood.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughConcrete.proto"
+
+PROTO ConstructionSiteEnvironment [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "construction site environment"
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "construction site environment"
+    children [
+
+      # ── Dirt ground (visual). Top sits 2 cm below z=0 so a host world's
+      #    central work pad reads as a poured slab proud of the dirt. ──
+      Pose {
+        translation 0 0 -0.22
+        children [
+          Shape {
+            appearance SandyGround {
+              colorOverride 0.78 0.72 0.60
+              textureTransform TextureTransform { scale 150 150 }
+            }
+            geometry Box { size 400 400 0.4 }
+          }
+        ]
+      }
+      # Churned-mud patches for a worked-in look.
+      Pose {
+        translation -6 -2 -0.019
+        children [
+          Shape {
+            appearance DryMud { textureTransform TextureTransform { scale 6 6 } }
+            geometry Box { size 7 5 0.004 }
+          }
+        ]
+      }
+      Pose {
+        translation 9 6 -0.019
+        children [
+          Shape {
+            appearance DryMud { textureTransform TextureTransform { scale 5 5 } }
+            geometry Box { size 6 5 0.004 }
+          }
+        ]
+      }
+
+      # ── The hero structure: a concrete-frame high-rise under construction,
+      #    set north of the work cell so the tower crane appears to serve it
+      #    (shots read work cell -> crane -> rising tower). ──
+      ConstructionFrameBuilding {
+        translation -4 26 0
+        rotation 0 0 1 1.5708
+        floors 11
+        wrapFloors 5
+        wrapColor 0.74 0.74 0.70
+        name "hero_tower"
+      }
+      # More frame towers in varied states — an under-construction skyline.
+      ConstructionFrameBuilding { translation 14 40 0 rotation 0 0 1 0.2 floors 14 baysX 3 baysY 3 bay 4.0 wrapFloors 9 wrapColor 0.70 0.70 0.66 name "tower_north" }
+      ConstructionFrameBuilding { translation -30 26 0 rotation 0 0 1 0.5 floors 8 baysX 4 baysY 2 bay 4.2 wrapFloors 2 wrapColor 0.74 0.74 0.70 name "tower_west" }
+      ConstructionFrameBuilding { translation 32 16 0 rotation 0 0 1 -0.6 floors 10 baysX 3 baysY 3 bay 4.2 wrapFloors 6 wrapColor 0.72 0.72 0.68 name "tower_east" }
+      ConstructionFrameBuilding { translation 6 64 0 rotation 0 0 1 0.1 floors 16 baysX 3 baysY 3 bay 4.0 wrapFloors 12 wrapColor 0.68 0.69 0.66 name "tower_far" }
+      Warehouse {
+        translation 48 -28 0
+        rotation 0 0 1 1.5708
+        name "backdrop_warehouse"
+      }
+
+      # ── Tower crane (procedural lattice). Base NW of the cell; the jib
+      #    reaches east and the hoist hook hangs over the work zone. ──
+      TowerCrane {
+        translation -9 8 0
+        rotation 0 0 1 -0.73
+        mastHeight 22
+        jibLength 22
+        counterJibLength 8
+        hookHeight 3.5
+        name "site_crane"
+      }
+
+      # ── Perimeter site hoarding (solid mesh panels) with W & E gate gaps.
+      #    Blue boards on a galvanised frame, yellow top rail. ──
+      Pose { translation 1.5 -4 0.95 children [ Shape { appearance DEF HOARDING PBRAppearance { baseColor 0.18 0.40 0.56 roughness 0.75 metalness 0.1 } geometry Box { size 10.2 0.08 1.8 } } ] }
+      Pose { translation 1.5  4 0.95 children [ Shape { appearance USE HOARDING geometry Box { size 10.2 0.08 1.8 } } ] }
+      Pose { translation -3.5 -2.75 0.95 children [ Shape { appearance USE HOARDING geometry Box { size 0.08 2.6 1.8 } } ] }
+      Pose { translation -3.5  2.75 0.95 children [ Shape { appearance USE HOARDING geometry Box { size 0.08 2.6 1.8 } } ] }
+      Pose { translation  6.5 -2.75 0.95 children [ Shape { appearance USE HOARDING geometry Box { size 0.08 2.6 1.8 } } ] }
+      Pose { translation  6.5  2.75 0.95 children [ Shape { appearance USE HOARDING geometry Box { size 0.08 2.6 1.8 } } ] }
+      # Yellow top rails (south & north runs)
+      Pose { translation 1.5 -4 1.88 children [ Shape { appearance DEF HOARDTOP PBRAppearance { baseColor 0.92 0.82 0.16 roughness 0.6 metalness 0.1 } geometry Box { size 10.3 0.12 0.12 } } ] }
+      Pose { translation 1.5  4 1.88 children [ Shape { appearance USE HOARDTOP geometry Box { size 10.3 0.12 0.12 } } ] }
+      # Gate barriers in the openings
+      WorkBarrier { translation -3.5 0 0 rotation 0 0 1 1.5708 name "gate_west" }
+      WorkBarrier { translation 6.5 0 0 rotation 0 0 1 1.5708 name "gate_east" }
+
+      # ── Traffic cones lining the inner perimeter (clear of the cell) ──
+      TrafficCone { translation -3.0 -3.6 0 scale 1.1 name "cone_s1" }
+      TrafficCone { translation -1.0 -3.7 0 scale 1.1 name "cone_s2" }
+      TrafficCone { translation  1.0 -3.7 0 scale 1.1 name "cone_s3" }
+      TrafficCone { translation  3.5 -3.6 0 scale 1.1 name "cone_s4" }
+      TrafficCone { translation  6.0 -3.6 0 scale 1.1 name "cone_s5" }
+      TrafficCone { translation -3.0  3.6 0 scale 1.1 name "cone_n1" }
+      TrafficCone { translation -1.0  3.7 0 scale 1.1 name "cone_n2" }
+      TrafficCone { translation  3.5  3.6 0 scale 1.1 name "cone_n3" }
+      TrafficCone { translation  6.0  3.6 0 scale 1.1 name "cone_n4" }
+
+      # ── Site office + storage containers (south-west compound) ──
+      IntermodalOfficeContainer {
+        translation -11 -8 0
+        rotation 0 0 1 1.5708
+        primaryColor 0.85 0.85 0.82
+        secondaryColor 0.2 0.35 0.55
+        name "site_office"
+      }
+      IntermodalContainer {
+        translation -11 -11 0
+        rotation 0 0 1 1.5708
+        color 0.15 0.4 0.6
+        name "store_blue"
+      }
+      IntermodalContainer {
+        translation -15 -11 0
+        rotation 0 0 1 1.5708
+        color 0.55 0.35 0.18
+        name "store_rust"
+      }
+
+      # ── Material laydown: pallet stacks (west) ──
+      WoodenPalletStack { translation -6 -6 0 palletNumber 6 palletMass 0 name "pallets_1" }
+      WoodenPalletStack { translation -7.4 -6 0 palletNumber 4 palletMass 0 name "pallets_2" }
+      WoodenPalletStack { translation -6.7 -7.4 0 rotation 0 0 1 0.3 palletNumber 5 palletMass 0 name "pallets_3" }
+
+      # ── Oil-drum cluster (east laydown) ──
+      OilBarrel { translation 9.0 -6.0 0.44 name "barrel_1" }
+      OilBarrel { translation 9.7 -6.2 0.44 name "barrel_2" }
+      OilBarrel { translation 9.3 -6.7 0.44 name "barrel_3" }
+      OilBarrel { translation 8.6 -6.5 0.44 name "barrel_4" }
+
+      # ── Pipe rack (east) — steel pipes lying in a stacked pyramid ──
+      Pose {
+        translation 11 -9 0
+        children [
+          Pose { translation 0 -0.4 0.18 rotation 0 1 0 1.5708 children [ Shape { appearance DEF PIPE GalvanizedMetal { textureTransform TextureTransform { scale 0.3 0.3 } } geometry Cylinder { radius 0.17 height 4 } } ] }
+          Pose { translation 0  0.0 0.18 rotation 0 1 0 1.5708 children [ Shape { appearance USE PIPE geometry Cylinder { radius 0.17 height 4 } } ] }
+          Pose { translation 0  0.4 0.18 rotation 0 1 0 1.5708 children [ Shape { appearance USE PIPE geometry Cylinder { radius 0.17 height 4 } } ] }
+          Pose { translation 0 -0.2 0.52 rotation 0 1 0 1.5708 children [ Shape { appearance USE PIPE geometry Cylinder { radius 0.17 height 4 } } ] }
+          Pose { translation 0  0.2 0.52 rotation 0 1 0 1.5708 children [ Shape { appearance USE PIPE geometry Cylinder { radius 0.17 height 4 } } ] }
+          Pose { translation 0  0.0 0.86 rotation 0 1 0 1.5708 children [ Shape { appearance USE PIPE geometry Cylinder { radius 0.17 height 4 } } ] }
+        ]
+      }
+
+      # ── Girder / I-beam stack (north-east) — rusty steel ──
+      Pose {
+        translation 9 9 0.1
+        children [
+          Pose { translation 0  0.0 0.0 children [ Shape { appearance DEF GIRDER RustyMetal { textureTransform TextureTransform { scale 1 0.4 } } geometry Box { size 6 0.12 0.12 } } ] }
+          Pose { translation 0  0.18 0.0 children [ Shape { appearance USE GIRDER geometry Box { size 6 0.12 0.12 } } ] }
+          Pose { translation 0 -0.18 0.0 children [ Shape { appearance USE GIRDER geometry Box { size 6 0.12 0.12 } } ] }
+          Pose { translation 0  0.09 0.13 children [ Shape { appearance USE GIRDER geometry Box { size 6 0.12 0.12 } } ] }
+          Pose { translation 0 -0.09 0.13 children [ Shape { appearance USE GIRDER geometry Box { size 6 0.12 0.12 } } ] }
+        ]
+      }
+
+      # ── Sand / aggregate piles ──
+      Pose {
+        translation -8 3 0
+        children [ Shape {
+          appearance Sand { textureTransform TextureTransform { scale 2 2 } }
+          geometry Cone { bottomRadius 1.7 height 1.3 }
+        } ]
+      }
+      Pose {
+        translation -10 1 0
+        children [ Shape {
+          appearance DryMud { textureTransform TextureTransform { scale 2 2 } }
+          geometry Cone { bottomRadius 1.3 height 1.0 }
+        } ]
+      }
+
+      # ── Brick pallet (north) ──
+      Pose {
+        translation 5 7 0.3
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.6 0.25 0.18 roughness 0.95 metalness 0 }
+          geometry Box { size 1.2 0.9 0.6 }
+        } ]
+      }
+
+      # ── Parked forklift (east laydown) ──
+      Forklift {
+        translation 6.5 -7 0.81
+        rotation 0 0 1 2.2
+        enablePhysics FALSE
+        name "site_forklift"
+      }
+
+      # ── Welfare facilities (south-west, by the office) ──
+      PublicToilet { translation -4.5 -6.5 0 rotation 0 0 1 1.5708 name "site_wc" }
+      WorkTrashContainer { translation -3.0 -6.2 0 name "site_skip" }
+
+      # ── Groundwork: concrete hardstanding, haul road, ruts, puddles, spoil ──
+      Pose { translation 1.5 0 0.011 children [ Shape { appearance DEF CONCPAD RoughConcrete { colorOverride 0.85 0.85 0.85 textureTransform TextureTransform { scale 4 4 } } geometry Box { size 11 8 0.02 } } ] }
+      Pose { translation 1.5 -9.5 0.008 children [ Shape { appearance DEF HAULROAD PBRAppearance { baseColor 0.40 0.38 0.34 roughness 1 metalness 0 } geometry Box { size 4.6 12 0.016 } } ] }
+      Pose { translation 0.7 -9.5 0.013 children [ Shape { appearance DEF RUT PBRAppearance { baseColor 0.26 0.22 0.16 roughness 0.6 metalness 0 } geometry Box { size 0.5 12 0.008 } } ] }
+      Pose { translation 2.3 -9.5 0.013 children [ Shape { appearance USE RUT geometry Box { size 0.5 12 0.008 } } ] }
+      Pose { translation 1.1 -6.8 0.014 children [ Shape { appearance DEF PUDDLE PBRAppearance { baseColor 0.16 0.18 0.20 roughness 0.07 metalness 0.1 } geometry Box { size 1.5 0.9 0.006 } } ] }
+      Pose { translation 2.4 -12 0.014 children [ Shape { appearance USE PUDDLE geometry Box { size 1.0 1.4 0.006 } } ] }
+      Pose { translation 13 4 0 children [ Shape { appearance DEF SPOIL DryMud { textureTransform TextureTransform { scale 3 3 } } geometry Cone { bottomRadius 2.3 height 1.5 } } ] }
+      Pose { translation 11.5 6.5 0 children [ Shape { appearance USE SPOIL geometry Cone { bottomRadius 1.6 height 1.1 } } ] }
+
+      # ── Concrete mixer truck (serving the tower) ──
+      ConcreteMixer { translation 4 14 0 rotation 0 0 1 -1.25 name "site_mixer" }
+
+      # ── Standalone scaffold tower (by the building) ──
+      Pose {
+        translation 3 20 0
+        children [
+          Pose { translation -1.2 -1.2 3 children [ Shape { appearance DEF SCAFP GalvanizedMetal { textureTransform TextureTransform { scale 0.3 0.3 } } geometry Box { size 0.07 0.07 6 } } ] }
+          Pose { translation  1.2 -1.2 3 children [ Shape { appearance USE SCAFP geometry Box { size 0.07 0.07 6 } } ] }
+          Pose { translation -1.2  1.2 3 children [ Shape { appearance USE SCAFP geometry Box { size 0.07 0.07 6 } } ] }
+          Pose { translation  1.2  1.2 3 children [ Shape { appearance USE SCAFP geometry Box { size 0.07 0.07 6 } } ] }
+          Pose { translation 0 -1.2 2 children [ Shape { appearance USE SCAFP geometry Box { size 2.4 0.05 0.05 } } ] }
+          Pose { translation 0  1.2 2 children [ Shape { appearance USE SCAFP geometry Box { size 2.4 0.05 0.05 } } ] }
+          Pose { translation 0 -1.2 4 children [ Shape { appearance USE SCAFP geometry Box { size 2.4 0.05 0.05 } } ] }
+          Pose { translation 0  1.2 4 children [ Shape { appearance USE SCAFP geometry Box { size 2.4 0.05 0.05 } } ] }
+          Pose { translation -1.2 0 2 children [ Shape { appearance USE SCAFP geometry Box { size 0.05 2.4 0.05 } } ] }
+          Pose { translation  1.2 0 4 children [ Shape { appearance USE SCAFP geometry Box { size 0.05 2.4 0.05 } } ] }
+          Pose { translation 0 0 2.05 children [ Shape { appearance DEF SCAFBOARD OldPlywood { textureTransform TextureTransform { scale 0.8 0.8 } } geometry Box { size 2.4 2.4 0.05 } } ] }
+          Pose { translation 0 0 4.05 children [ Shape { appearance USE SCAFBOARD geometry Box { size 2.4 2.4 0.05 } } ] }
+        ]
+      }
+
+      # ── Rebar cages / bundles (laydown, north-east) ──
+      Pose {
+        translation 11 8 0.25
+        rotation 0 0 1 0.4
+        children [
+          Pose { translation 0  0.18 0 rotation 0 1 0 1.5708 children [ Shape { appearance DEF REBARM RustyMetal { textureTransform TextureTransform { scale 0.5 0.5 } } geometry Cylinder { radius 0.04 height 5 } } ] }
+          Pose { translation 0  0.06 0.1 rotation 0 1 0 1.5708 children [ Shape { appearance USE REBARM geometry Cylinder { radius 0.04 height 5 } } ] }
+          Pose { translation 0 -0.06 0 rotation 0 1 0 1.5708 children [ Shape { appearance USE REBARM geometry Cylinder { radius 0.04 height 5 } } ] }
+          Pose { translation 0 -0.18 0.1 rotation 0 1 0 1.5708 children [ Shape { appearance USE REBARM geometry Cylinder { radius 0.04 height 5 } } ] }
+          Pose { translation 0  0.12 0.22 rotation 0 1 0 1.5708 children [ Shape { appearance USE REBARM geometry Cylinder { radius 0.04 height 5 } } ] }
+          Pose { translation 0 -0.12 0.22 rotation 0 1 0 1.5708 children [ Shape { appearance USE REBARM geometry Cylinder { radius 0.04 height 5 } } ] }
+        ]
+      }
+
+      # ── Concrete block / formwork stacks (north) ──
+      Pose { translation 6.5 8 0.3 children [ Shape { appearance DEF BLOCKS RoughConcrete { textureTransform TextureTransform { scale 1.5 1.5 } } geometry Box { size 1.2 0.8 0.6 } } ] }
+      Pose { translation 6.5 8 0.85 children [ Shape { appearance USE BLOCKS geometry Box { size 1.1 0.7 0.5 } } ] }
+      Pose { translation 7.8 8.3 0.3 children [ Shape { appearance USE BLOCKS geometry Box { size 1.0 0.8 0.6 } } ] }
+
+      # ── Hazard board at the south gate ──
+      Pose { translation 1.5 -4.2 1.2 children [ Shape { appearance PBRAppearance { baseColor 0.92 0.1 0.1 roughness 0.6 metalness 0 } geometry Box { size 1.4 0.06 0.9 } } ] }
+
+      # ── Site safety information board (south, by the gate) ──
+      Pose { translation 4.2 -4.4 0 children [
+        Pose { translation -0.7 0 0.9 children [ Shape { appearance DEF SIGNPOST PBRAppearance { baseColor 0.3 0.3 0.32 roughness 0.6 metalness 0.4 } geometry Box { size 0.08 0.08 1.8 } } ] }
+        Pose { translation  0.7 0 0.9 children [ Shape { appearance USE SIGNPOST geometry Box { size 0.08 0.08 1.8 } } ] }
+        Pose { translation 0 0 1.5 children [ Shape { appearance PBRAppearance { baseColor 0.15 0.32 0.62 roughness 0.7 } geometry Box { size 1.8 0.05 1.0 } } ] }
+        Pose { translation 0 -0.03 1.78 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.85 0.1 roughness 0.7 } geometry Box { size 1.8 0.02 0.18 } } ] }
+      ] }
+
+      # ── Hi-vis workers (scale + life) ──
+      Pose { translation 2.6 -1.6 0 rotation 0 0 1 1.1 children [
+        Pose { translation 0 0 0.45 children [ Shape { appearance DEF TROUSER PBRAppearance { baseColor 0.12 0.15 0.3 roughness 0.9 } geometry Box { size 0.32 0.26 0.9 } } ] }
+        Pose { translation 0 0 1.16 children [ Shape { appearance DEF HIVIS PBRAppearance { baseColor 0.96 0.55 0.05 roughness 0.85 } geometry Capsule { height 0.5 radius 0.22 } } ] }
+        Pose { translation 0 0 1.62 children [ Shape { appearance DEF SKIN PBRAppearance { baseColor 0.78 0.6 0.46 roughness 0.8 } geometry Sphere { radius 0.11 } } ] }
+        Pose { translation 0 0 1.72 children [ Shape { appearance DEF HELMET PBRAppearance { baseColor 0.95 0.85 0.1 roughness 0.45 } geometry Cylinder { radius 0.13 height 0.12 } } ] }
+      ] }
+      Pose { translation -1.0 15.5 0 rotation 0 0 1 -2.4 children [
+        Pose { translation 0 0 0.45 children [ Shape { appearance USE TROUSER geometry Box { size 0.32 0.26 0.9 } } ] }
+        Pose { translation 0 0 1.16 children [ Shape { appearance USE HIVIS geometry Capsule { height 0.5 radius 0.22 } } ] }
+        Pose { translation 0 0 1.62 children [ Shape { appearance USE SKIN geometry Sphere { radius 0.11 } } ] }
+        Pose { translation 0 0 1.72 children [ Shape { appearance USE HELMET geometry Cylinder { radius 0.13 height 0.12 } } ] }
+      ] }
+      Pose { translation 6.0 12.6 0 rotation 0 0 1 0.4 children [
+        Pose { translation 0 0 0.45 children [ Shape { appearance USE TROUSER geometry Box { size 0.32 0.26 0.9 } } ] }
+        Pose { translation 0 0 1.16 children [ Shape { appearance USE HIVIS geometry Capsule { height 0.5 radius 0.22 } } ] }
+        Pose { translation 0 0 1.62 children [ Shape { appearance USE SKIN geometry Sphere { radius 0.11 } } ] }
+        Pose { translation 0 0 1.72 children [ Shape { appearance USE HELMET geometry Cylinder { radius 0.13 height 0.12 } } ] }
+      ] }
+
+      # ── Clutter: leaning ladder, timber offcuts, buckets, wheelbarrow, dropped cone ──
+      Pose { translation -2.5 -3.2 0 rotation 0 1 0 0.32 children [
+        Pose { translation -0.22 0 1.6 children [ Shape { appearance DEF LADDER PBRAppearance { baseColor 0.85 0.78 0.2 roughness 0.6 metalness 0.3 } geometry Box { size 0.06 0.06 3.4 } } ] }
+        Pose { translation  0.22 0 1.6 children [ Shape { appearance USE LADDER geometry Box { size 0.06 0.06 3.4 } } ] }
+        Pose { translation 0 0 0.6 children [ Shape { appearance USE LADDER geometry Box { size 0.5 0.04 0.04 } } ] }
+        Pose { translation 0 0 1.2 children [ Shape { appearance USE LADDER geometry Box { size 0.5 0.04 0.04 } } ] }
+        Pose { translation 0 0 1.8 children [ Shape { appearance USE LADDER geometry Box { size 0.5 0.04 0.04 } } ] }
+        Pose { translation 0 0 2.4 children [ Shape { appearance USE LADDER geometry Box { size 0.5 0.04 0.04 } } ] }
+      ] }
+      Pose { translation -7 -3 0.08 children [
+        Pose { translation 0 0 0 rotation 0 0 1 0.2 children [ Shape { appearance DEF TIMBER OldPlywood { textureTransform TextureTransform { scale 0.4 0.4 } } geometry Box { size 2.4 0.18 0.06 } } ] }
+        Pose { translation 0 0.05 0.08 rotation 0 0 1 -0.1 children [ Shape { appearance USE TIMBER geometry Box { size 2.4 0.18 0.06 } } ] }
+        Pose { translation 0.1 -0.1 0.16 rotation 0 0 1 0.05 children [ Shape { appearance USE TIMBER geometry Box { size 2.2 0.18 0.06 } } ] }
+      ] }
+      Pose { translation 3.1 -1.8 0.13 children [ Shape { appearance DEF BUCKET PBRAppearance { baseColor 0.9 0.45 0.05 roughness 0.7 } geometry Cylinder { radius 0.16 height 0.26 } } ] }
+      Pose { translation 3.45 -1.5 0.13 children [ Shape { appearance USE BUCKET geometry Cylinder { radius 0.16 height 0.26 } } ] }
+      Pose { translation 5.5 12 0 rotation 0 0 1 0.6 children [
+        Pose { translation 0 0 0.35 children [ Shape { appearance PBRAppearance { baseColor 0.2 0.45 0.7 roughness 0.5 metalness 0.3 } geometry Box { size 0.9 0.55 0.3 } } ] }
+        Pose { translation 0.55 0 0.2 rotation 1 0 0 1.5708 children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.09 roughness 0.9 } geometry Cylinder { radius 0.18 height 0.1 } } ] }
+        Pose { translation -0.5 0.22 0.5 rotation 0 1 0 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.3 0.3 0.32 roughness 0.6 metalness 0.4 } geometry Box { size 0.9 0.04 0.04 } } ] }
+        Pose { translation -0.5 -0.22 0.5 rotation 0 1 0 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.3 0.3 0.32 roughness 0.6 metalness 0.4 } geometry Box { size 0.9 0.04 0.04 } } ] }
+      ] }
+      TrafficCone { translation 2.0 -8.5 0.25 rotation 0 1 0 1.5708 scale 1.0 name "cone_dropped" }
+
+      # ═══════════════════ Expanded site content ═══════════════════
+      # All additions sit OUTSIDE the fenced work cell (x[-3.5,6.5], y[-4,4]).
+
+      # ── More frame towers (extend the under-construction skyline) ──
+      ConstructionFrameBuilding { translation 24 40 0 rotation 0 0 1 0.3 floors 9 baysX 3 baysY 3 bay 4.0 wrapFloors 5 wrapColor 0.71 0.71 0.67 name "tower_ne2" }
+      ConstructionFrameBuilding { translation -18 42 0 rotation 0 0 1 -0.2 floors 12 baysX 3 baysY 3 bay 4.2 wrapFloors 8 wrapColor 0.69 0.70 0.66 name "tower_nw2" }
+      ConstructionFrameBuilding { translation 44 8 0 rotation 0 0 1 1.2 floors 11 baysX 3 baysY 3 bay 4.0 wrapFloors 6 wrapColor 0.72 0.72 0.68 name "tower_e2" }
+
+      # ── Second tower crane (serving the northern tower cluster) ──
+      TowerCrane { translation 18 34 0 rotation 0 0 1 2.0 mastHeight 26 jibLength 20 counterJibLength 7 hookHeight 4 name "site_crane_2" }
+
+      # ── Dump truck (on the haul road, south-east) ──
+      DumpTruck { translation 12 -14 0 rotation 0 0 1 -0.6 name "site_dumptruck" }
+
+      # ── Tracked excavator (east, by the spoil heaps) ──
+      Excavator { translation 16 -3 0 rotation 0 0 1 1.0 name "site_excavator" }
+
+      # ── Extra forklifts ──
+      Forklift { translation -7 3 0.81 rotation 0 0 1 1.0 enablePhysics FALSE name "site_forklift_2" }
+      Forklift { translation 19 -7 0.81 rotation 0 0 1 -1.5 enablePhysics FALSE name "site_forklift_3" }
+
+      # ── Welfare / office compound (west), with a stacked container ──
+      IntermodalOfficeContainer { translation -17 -5 0 rotation 0 0 1 1.5708 primaryColor 0.88 0.86 0.5 secondaryColor 0.3 0.3 0.32 name "site_office_2" }
+      IntermodalContainer { translation -17 -8 0 rotation 0 0 1 1.5708 color 0.2 0.55 0.3 name "store_green" }
+      IntermodalContainer { translation -17 -8 2.59 rotation 0 0 1 1.5708 color 0.55 0.2 0.2 name "store_red_stacked" }
+
+      # ── Site infrastructure: generator, water tank, fuel bowser, cable reels ──
+      Pose {
+        translation -13 -4 0
+        children [
+          Pose { translation 0 0 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.85 0.5 0.1 roughness 0.6 metalness 0.3 } geometry Box { size 1.7 0.95 0.95 } } ] }
+          Pose { translation 0.7 0.35 1.15 children [ Shape { appearance PBRAppearance { baseColor 0.1 0.1 0.1 roughness 0.6 metalness 0.6 } geometry Cylinder { radius 0.05 height 0.5 } } ] }
+        ]
+      }
+      Pose {
+        translation 22 -12 0
+        children [
+          Pose { translation 0 0 1.7 children [ Shape { appearance PBRAppearance { baseColor 0.85 0.87 0.9 roughness 0.5 metalness 0.2 } geometry Cylinder { radius 1.2 height 3.0 } } ] }
+          Pose { translation 0 0 0.15 children [ Shape { appearance DEF STEELBASE PBRAppearance { baseColor 0.3 0.3 0.33 roughness 0.7 metalness 0.5 } geometry Cylinder { radius 1.25 height 0.3 } } ] }
+        ]
+      }
+      Pose {
+        translation 10 -13 0 rotation 0 0 1 0.3
+        children [
+          Pose { translation 0 0 0.9 rotation 0 1 0 1.5708 children [ Shape { appearance PBRAppearance { baseColor 0.7 0.15 0.12 roughness 0.5 metalness 0.4 } geometry Cylinder { radius 0.6 height 2.4 } } ] }
+          Pose { translation 0.9 0.55 0.45 rotation 1 0 0 1.5708 children [ Shape { appearance DEF BOWSERTIRE PBRAppearance { baseColor 0.06 0.06 0.07 roughness 0.9 } geometry Cylinder { radius 0.4 height 0.25 } } ] }
+          Pose { translation 0.9 -0.55 0.45 rotation 1 0 0 1.5708 children [ Shape { appearance USE BOWSERTIRE geometry Cylinder { radius 0.4 height 0.25 } } ] }
+          Pose { translation -1.6 0 0.4 children [ Shape { appearance USE STEELBASE geometry Box { size 1.2 0.1 0.1 } } ] }
+        ]
+      }
+      Pose {
+        translation -12 -3 0 rotation 0 0 1 0.2
+        children [
+          Pose { translation 0 0.35 0.7 rotation 1 0 0 1.5708 children [ Shape { appearance DEF REELWOOD OldPlywood { textureTransform TextureTransform { scale 0.4 0.4 } } geometry Cylinder { radius 0.8 height 0.08 } } ] }
+          Pose { translation 0 -0.35 0.7 rotation 1 0 0 1.5708 children [ Shape { appearance USE REELWOOD geometry Cylinder { radius 0.8 height 0.08 } } ] }
+          Pose { translation 0 0 0.7 rotation 1 0 0 1.5708 children [ Shape { appearance PBRAppearance { baseColor 0.2 0.2 0.22 roughness 0.6 metalness 0.4 } geometry Cylinder { radius 0.42 height 0.6 } } ] }
+        ]
+      }
+      Pose {
+        translation 13 -12 0 rotation 0 0 1 -0.4
+        children [
+          Pose { translation 0 0.35 0.7 rotation 1 0 0 1.5708 children [ Shape { appearance USE REELWOOD geometry Cylinder { radius 0.8 height 0.08 } } ] }
+          Pose { translation 0 -0.35 0.7 rotation 1 0 0 1.5708 children [ Shape { appearance USE REELWOOD geometry Cylinder { radius 0.8 height 0.08 } } ] }
+          Pose { translation 0 0 0.7 rotation 1 0 0 1.5708 children [ Shape { appearance PBRAppearance { baseColor 0.2 0.2 0.22 roughness 0.6 metalness 0.4 } geometry Cylinder { radius 0.42 height 0.6 } } ] }
+        ]
+      }
+
+      # ── Jersey barriers lining the haul road ──
+      Pose { translation 4.2 -7 0.45 children [ Shape { appearance DEF JERSEY RoughConcrete { colorOverride 0.8 0.8 0.78 textureTransform TextureTransform { scale 1 1 } } geometry Box { size 0.4 1.5 0.85 } } ] }
+      Pose { translation 4.2 -9.5 0.45 children [ Shape { appearance USE JERSEY geometry Box { size 0.4 1.5 0.85 } } ] }
+      Pose { translation 4.2 -12 0.45 children [ Shape { appearance USE JERSEY geometry Box { size 0.4 1.5 0.85 } } ] }
+      Pose { translation 4.2 -14.5 0.45 children [ Shape { appearance USE JERSEY geometry Box { size 0.4 1.5 0.85 } } ] }
+      Pose { translation -1.2 -8 0.45 children [ Shape { appearance USE JERSEY geometry Box { size 0.4 1.5 0.85 } } ] }
+      Pose { translation -1.2 -10.5 0.45 children [ Shape { appearance USE JERSEY geometry Box { size 0.4 1.5 0.85 } } ] }
+      Pose { translation -1.2 -13 0.45 children [ Shape { appearance USE JERSEY geometry Box { size 0.4 1.5 0.85 } } ] }
+
+      # ── More material laydown ──
+      WoodenPalletStack { translation -8 -9 0 palletNumber 5 palletMass 0 name "pallets_4" }
+      WoodenPalletStack { translation 16 -9 0 palletNumber 6 palletMass 0 name "pallets_5" }
+      WoodenPalletStack { translation 17.4 -9.4 0 rotation 0 0 1 0.4 palletNumber 4 palletMass 0 name "pallets_6" }
+      # extra pipe rack
+      Pose {
+        translation 14 -9 0
+        children [
+          Pose { translation 0 -0.4 0.18 rotation 0 1 0 1.5708 children [ Shape { appearance USE PIPE geometry Cylinder { radius 0.17 height 4 } } ] }
+          Pose { translation 0  0.0 0.18 rotation 0 1 0 1.5708 children [ Shape { appearance USE PIPE geometry Cylinder { radius 0.17 height 4 } } ] }
+          Pose { translation 0  0.4 0.18 rotation 0 1 0 1.5708 children [ Shape { appearance USE PIPE geometry Cylinder { radius 0.17 height 4 } } ] }
+          Pose { translation 0 -0.2 0.52 rotation 0 1 0 1.5708 children [ Shape { appearance USE PIPE geometry Cylinder { radius 0.17 height 4 } } ] }
+          Pose { translation 0  0.2 0.52 rotation 0 1 0 1.5708 children [ Shape { appearance USE PIPE geometry Cylinder { radius 0.17 height 4 } } ] }
+        ]
+      }
+      # extra rebar bundle
+      Pose {
+        translation 12.5 9.6 0.25 rotation 0 0 1 0.5
+        children [
+          Pose { translation 0  0.12 0 rotation 0 1 0 1.5708 children [ Shape { appearance USE REBARM geometry Cylinder { radius 0.04 height 5 } } ] }
+          Pose { translation 0 -0.12 0 rotation 0 1 0 1.5708 children [ Shape { appearance USE REBARM geometry Cylinder { radius 0.04 height 5 } } ] }
+          Pose { translation 0  0.0 0.18 rotation 0 1 0 1.5708 children [ Shape { appearance USE REBARM geometry Cylinder { radius 0.04 height 5 } } ] }
+        ]
+      }
+      # aggregate piles
+      Pose { translation 18 -5 0 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 2 2 } } geometry Cone { bottomRadius 1.8 height 1.3 } } ] }
+      Pose { translation -15 4 0 children [ Shape { appearance USE SPOIL geometry Cone { bottomRadius 1.5 height 1.1 } } ] }
+      Pose { translation 23 -2 0 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 2 2 } } geometry Cone { bottomRadius 1.4 height 1.0 } } ] }
+      # extra scaffold towers (reuse the standalone-scaffold pattern)
+      Pose {
+        translation 1 18 0
+        children [
+          Pose { translation -1.2 -1.2 3 children [ Shape { appearance USE SCAFP geometry Box { size 0.07 0.07 6 } } ] }
+          Pose { translation  1.2 -1.2 3 children [ Shape { appearance USE SCAFP geometry Box { size 0.07 0.07 6 } } ] }
+          Pose { translation -1.2  1.2 3 children [ Shape { appearance USE SCAFP geometry Box { size 0.07 0.07 6 } } ] }
+          Pose { translation  1.2  1.2 3 children [ Shape { appearance USE SCAFP geometry Box { size 0.07 0.07 6 } } ] }
+          Pose { translation 0 -1.2 4 children [ Shape { appearance USE SCAFP geometry Box { size 2.4 0.05 0.05 } } ] }
+          Pose { translation 0  1.2 4 children [ Shape { appearance USE SCAFP geometry Box { size 2.4 0.05 0.05 } } ] }
+          Pose { translation 0 0 4.05 children [ Shape { appearance USE SCAFBOARD geometry Box { size 2.4 2.4 0.05 } } ] }
+        ]
+      }
+      # skips
+      WorkTrashContainer { translation 8 -13 0 name "site_skip_2" }
+      WorkTrashContainer { translation -2 -9 0 name "site_skip_3" }
+      # timber offcuts (reuse TIMBER appearance)
+      Pose {
+        translation -9 -4 0.08
+        children [
+          Pose { translation 0 0 0 rotation 0 0 1 0.2 children [ Shape { appearance USE TIMBER geometry Box { size 2.4 0.18 0.06 } } ] }
+          Pose { translation 0 0.05 0.08 rotation 0 0 1 -0.1 children [ Shape { appearance USE TIMBER geometry Box { size 2.4 0.18 0.06 } } ] }
+        ]
+      }
+
+      # ── More hi-vis workers (reuse worker appearance DEFs) ──
+      Pose { translation 8 -2 0 rotation 0 0 1 0.7 children [
+        Pose { translation 0 0 0.45 children [ Shape { appearance USE TROUSER geometry Box { size 0.32 0.26 0.9 } } ] }
+        Pose { translation 0 0 1.16 children [ Shape { appearance USE HIVIS geometry Capsule { height 0.5 radius 0.22 } } ] }
+        Pose { translation 0 0 1.62 children [ Shape { appearance USE SKIN geometry Sphere { radius 0.11 } } ] }
+        Pose { translation 0 0 1.72 children [ Shape { appearance USE HELMET geometry Cylinder { radius 0.13 height 0.12 } } ] }
+      ] }
+      Pose { translation -7 6 0 rotation 0 0 1 -1.8 children [
+        Pose { translation 0 0 0.45 children [ Shape { appearance USE TROUSER geometry Box { size 0.32 0.26 0.9 } } ] }
+        Pose { translation 0 0 1.16 children [ Shape { appearance USE HIVIS geometry Capsule { height 0.5 radius 0.22 } } ] }
+        Pose { translation 0 0 1.62 children [ Shape { appearance USE SKIN geometry Sphere { radius 0.11 } } ] }
+        Pose { translation 0 0 1.72 children [ Shape { appearance USE HELMET geometry Cylinder { radius 0.13 height 0.12 } } ] }
+      ] }
+      Pose { translation 16 10 0 rotation 0 0 1 2.5 children [
+        Pose { translation 0 0 0.45 children [ Shape { appearance USE TROUSER geometry Box { size 0.32 0.26 0.9 } } ] }
+        Pose { translation 0 0 1.16 children [ Shape { appearance USE HIVIS geometry Capsule { height 0.5 radius 0.22 } } ] }
+        Pose { translation 0 0 1.62 children [ Shape { appearance USE SKIN geometry Sphere { radius 0.11 } } ] }
+        Pose { translation 0 0 1.72 children [ Shape { appearance USE HELMET geometry Cylinder { radius 0.13 height 0.12 } } ] }
+      ] }
+      Pose { translation 20 -5 0 rotation 0 0 1 0.2 children [
+        Pose { translation 0 0 0.45 children [ Shape { appearance USE TROUSER geometry Box { size 0.32 0.26 0.9 } } ] }
+        Pose { translation 0 0 1.16 children [ Shape { appearance USE HIVIS geometry Capsule { height 0.5 radius 0.22 } } ] }
+        Pose { translation 0 0 1.62 children [ Shape { appearance USE SKIN geometry Sphere { radius 0.11 } } ] }
+        Pose { translation 0 0 1.72 children [ Shape { appearance USE HELMET geometry Cylinder { radius 0.13 height 0.12 } } ] }
+      ] }
+
+      # ── A few more cones around the new laydown ──
+      TrafficCone { translation 3.5 -7 0 scale 1.0 name "cone_x1" }
+      TrafficCone { translation 10 -11 0 scale 1.0 name "cone_x2" }
+      TrafficCone { translation 15 -6 0 scale 1.0 name "cone_x3" }
+
+      # ── Site flood lamps at the fence corners ──
+      ConstructionLamp { translation -3.5 -4 0 spotLightIntensity 3 spotLightCastShadows FALSE name "lamp_sw" }
+      ConstructionLamp { translation  6.5 -4 0 spotLightIntensity 3 spotLightCastShadows FALSE name "lamp_se" }
+      ConstructionLamp { translation -3.5  4 0 spotLightIntensity 3 spotLightCastShadows FALSE name "lamp_nw" }
+      ConstructionLamp { translation  6.5  4 0 spotLightIntensity 3 spotLightCastShadows FALSE name "lamp_ne" }
+    ]
+    # Infinite ground collision plane at z=0 (matches the host work pad).
+    boundingObject Plane { }
+  }
+}

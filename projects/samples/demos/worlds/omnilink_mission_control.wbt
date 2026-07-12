@@ -1,0 +1,701 @@
+#VRML_SIM R2025a utf8
+
+# OmniSim Mission Control Campus.
+#
+# A 30 x 30 m simulated logistics campus with twelve named zones,
+# six Husky ferries parked at the south edge, painted road network,
+# and totem markers at every zone. The OmniLink "MissionControl" agent
+# orchestrates the fleet via natural-language operator missions.
+#
+# Layout (top-down, +X east, +Y north):
+#
+#         charging_station         dock_b
+#              warehouse              .
+#   dock_a       .                    .
+#       .       north_gate            .
+#       .                             .
+#   west_gate . . lab . charging . . east_gate
+#       .                             .
+#       .       south_gate            .
+#   dock_c       .                    .
+#              cafeteria              .
+#                                  dock_d
+#
+# Bridges:
+#   husky_1 .. husky_6  --  omnilink_mobile_bridge on ports 8765..8770
+#   mission_control_scene  --  supervisor on port 8780
+#
+# Conventions:
+#   - All zone markers are visual-only (no boundingObject) per the
+#     kinematic-only-props rule so Huskies pass through them.
+#   - Roads are painted decals on the floor; visual only.
+#   - Buildings are visual-only boxes as landmarks.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniSim Mission Control Campus"
+  info [
+    "6-Husky fleet on a 30 x 30 m logistics campus with 12 named zones."
+    "Dispatch via natural-language operator missions through OmniLink."
+  ]
+}
+
+Viewpoint {
+  orientation -0.305 0.305 0.902 1.66
+  position 22 -22 28
+  follow "husky_1"
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# Three-light setup. Main key light from the SE, fill from the NW,
+# and a low rim from the north to pick out totems against the dark
+# sky. Together they make the campus read as a "real" outdoor scene
+# rather than a flat-floor sketch.
+DirectionalLight {
+  direction -0.5 0.5 -0.7
+  color 0.80 0.85 1.0
+  intensity 1.6
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+DirectionalLight {
+  direction 0.0 -0.7 -0.3
+  color 1.0 0.92 0.78
+  intensity 0.9
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 32 32
+  tileSize 32 32
+  appearance Asphalt {
+    colorOverride 0.20 0.22 0.25
+  }
+}
+
+# ── Road network (yellow lines painted on the floor) ────────────
+# 4 cardinal arms from the centre to the perimeter + a diagonal X
+# connecting the four corner docks.
+DEF ROAD_NS Solid {
+  translation 0 0 0.002
+  children [ Shape {
+    appearance PBRAppearance {
+      baseColor 0.95 0.82 0.10
+      emissiveColor 0.30 0.24 0.03
+      roughness 0.7 metalness 0
+    }
+    geometry Box { size 0.20 26 0.004 }
+  } ]
+  name "road_ns"
+}
+DEF ROAD_EW Solid {
+  translation 0 0 0.002
+  children [ Shape {
+    appearance PBRAppearance {
+      baseColor 0.95 0.82 0.10
+      emissiveColor 0.30 0.24 0.03
+      roughness 0.7 metalness 0
+    }
+    geometry Box { size 26 0.20 0.004 }
+  } ]
+  name "road_ew"
+}
+DEF ROAD_DIAG1 Solid {
+  translation 0 0 0.003
+  rotation 0 0 1 0.7853981
+  children [ Shape {
+    appearance PBRAppearance {
+      baseColor 0.85 0.72 0.10
+      emissiveColor 0.18 0.14 0.02
+      roughness 0.7 metalness 0
+    }
+    geometry Box { size 0.14 32 0.003 }
+  } ]
+  name "road_diag1"
+}
+DEF ROAD_DIAG2 Solid {
+  translation 0 0 0.003
+  rotation 0 0 1 -0.7853981
+  children [ Shape {
+    appearance PBRAppearance {
+      baseColor 0.85 0.72 0.10
+      emissiveColor 0.18 0.14 0.02
+      roughness 0.7 metalness 0
+    }
+    geometry Box { size 0.14 32 0.003 }
+  } ]
+  name "road_diag2"
+}
+
+# ── Buildings (visual-only landmarks) ────────────────────────────
+# Box solids near the corners between the zones. No boundingObject
+# so the Huskies aren't snagged on them during dispatch.
+DEF BUILDING_NW Solid {
+  translation -10.5 10.5 1.5
+  children [ Shape {
+    appearance Roughcast { colorOverride 0.42 0.46 0.50 }
+    geometry Box { size 3.5 3.5 3.0 }
+  } ]
+  name "building_nw"
+}
+DEF BUILDING_NE Solid {
+  translation 10.5 10.5 2.0
+  children [ Shape {
+    appearance Roughcast { colorOverride 0.50 0.48 0.42 }
+    geometry Box { size 3.0 3.0 4.0 }
+  } ]
+  name "building_ne"
+}
+DEF BUILDING_SW Solid {
+  translation -10.5 -10.5 1.2
+  children [ Shape {
+    appearance Roughcast { colorOverride 0.48 0.42 0.40 }
+    geometry Box { size 4.0 3.0 2.4 }
+  } ]
+  name "building_sw"
+}
+DEF BUILDING_SE Solid {
+  translation 10.5 -10.5 1.8
+  children [ Shape {
+    appearance Roughcast { colorOverride 0.40 0.44 0.46 }
+    geometry Box { size 3.5 3.0 3.6 }
+  } ]
+  name "building_se"
+}
+
+# ── Zone totems ────────────────────────────────────────────────
+# Each zone is a 1.5 m wide colored pad + a 2.8 m tall pillar with
+# a colored top cap (the "totem"). Distinct emissive colors so each
+# zone is identifiable from anywhere on the campus. PROTO-less so
+# we can tweak per-zone trivia in the world file.
+#
+# Pattern: pad colored faintly, post 2.8m tall, top cap glows.
+
+DEF ZONE_NORTH_GATE Group {
+  children [
+    Solid {
+      translation 0 12 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.95 0.82 0.10
+          emissiveColor 0.30 0.24 0.02
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 1.6 1.6 0.010 }
+      } ]
+      name "zone_north_gate_pad"
+    }
+    Solid {
+      translation 0 12 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_north_gate_post"
+    }
+    Solid {
+      translation 0 12 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.95 0.85 0.10
+          emissiveColor 0.85 0.72 0.08
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_north_gate_top"
+    }
+  ]
+}
+
+DEF ZONE_SOUTH_GATE Group {
+  children [
+    Solid {
+      translation 0 -12 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.95 0.82 0.10
+          emissiveColor 0.30 0.24 0.02
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 1.6 1.6 0.010 }
+      } ]
+      name "zone_south_gate_pad"
+    }
+    Solid {
+      translation 0 -12 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_south_gate_post"
+    }
+    Solid {
+      translation 0 -12 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.95 0.85 0.10
+          emissiveColor 0.85 0.72 0.08
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_south_gate_top"
+    }
+  ]
+}
+
+DEF ZONE_EAST_GATE Group {
+  children [
+    Solid {
+      translation 12 0 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.95 0.82 0.10
+          emissiveColor 0.30 0.24 0.02
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 1.6 1.6 0.010 }
+      } ]
+      name "zone_east_gate_pad"
+    }
+    Solid {
+      translation 12 0 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_east_gate_post"
+    }
+    Solid {
+      translation 12 0 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.95 0.85 0.10
+          emissiveColor 0.85 0.72 0.08
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_east_gate_top"
+    }
+  ]
+}
+
+DEF ZONE_WEST_GATE Group {
+  children [
+    Solid {
+      translation -12 0 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.95 0.82 0.10
+          emissiveColor 0.30 0.24 0.02
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 1.6 1.6 0.010 }
+      } ]
+      name "zone_west_gate_pad"
+    }
+    Solid {
+      translation -12 0 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_west_gate_post"
+    }
+    Solid {
+      translation -12 0 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.95 0.85 0.10
+          emissiveColor 0.85 0.72 0.08
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_west_gate_top"
+    }
+  ]
+}
+
+DEF ZONE_DOCK_A Group {
+  children [
+    Solid {
+      translation -8 8 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.15 0.35 0.85
+          emissiveColor 0.04 0.10 0.30
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 1.6 1.6 0.010 }
+      } ]
+      name "zone_dock_a_pad"
+    }
+    Solid {
+      translation -8 8 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_dock_a_post"
+    }
+    Solid {
+      translation -8 8 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.20 0.55 0.95
+          emissiveColor 0.10 0.32 0.85
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_dock_a_top"
+    }
+  ]
+}
+
+DEF ZONE_DOCK_B Group {
+  children [
+    Solid {
+      translation 8 8 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.15 0.35 0.85
+          emissiveColor 0.04 0.10 0.30
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 1.6 1.6 0.010 }
+      } ]
+      name "zone_dock_b_pad"
+    }
+    Solid {
+      translation 8 8 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_dock_b_post"
+    }
+    Solid {
+      translation 8 8 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.20 0.55 0.95
+          emissiveColor 0.10 0.32 0.85
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_dock_b_top"
+    }
+  ]
+}
+
+DEF ZONE_DOCK_C Group {
+  children [
+    Solid {
+      translation -8 -8 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.15 0.35 0.85
+          emissiveColor 0.04 0.10 0.30
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 1.6 1.6 0.010 }
+      } ]
+      name "zone_dock_c_pad"
+    }
+    Solid {
+      translation -8 -8 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_dock_c_post"
+    }
+    Solid {
+      translation -8 -8 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.20 0.55 0.95
+          emissiveColor 0.10 0.32 0.85
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_dock_c_top"
+    }
+  ]
+}
+
+DEF ZONE_DOCK_D Group {
+  children [
+    Solid {
+      translation 8 -8 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.15 0.35 0.85
+          emissiveColor 0.04 0.10 0.30
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 1.6 1.6 0.010 }
+      } ]
+      name "zone_dock_d_pad"
+    }
+    Solid {
+      translation 8 -8 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_dock_d_post"
+    }
+    Solid {
+      translation 8 -8 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.20 0.55 0.95
+          emissiveColor 0.10 0.32 0.85
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_dock_d_top"
+    }
+  ]
+}
+
+DEF ZONE_WAREHOUSE Group {
+  children [
+    Solid {
+      translation 0 5 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.45 0.45 0.48
+          emissiveColor 0.10 0.10 0.12
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 2.0 2.0 0.010 }
+      } ]
+      name "zone_warehouse_pad"
+    }
+    Solid {
+      translation 0 5 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_warehouse_post"
+    }
+    Solid {
+      translation 0 5 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.85 0.85 0.88
+          emissiveColor 0.45 0.45 0.50
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_warehouse_top"
+    }
+  ]
+}
+
+DEF ZONE_LAB Group {
+  children [
+    Solid {
+      translation -5 0 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.10 0.55 0.20
+          emissiveColor 0.04 0.20 0.05
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 1.6 1.6 0.010 }
+      } ]
+      name "zone_lab_pad"
+    }
+    Solid {
+      translation -5 0 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_lab_post"
+    }
+    Solid {
+      translation -5 0 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.20 0.85 0.30
+          emissiveColor 0.10 0.55 0.12
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_lab_top"
+    }
+  ]
+}
+
+DEF ZONE_CAFETERIA Group {
+  children [
+    Solid {
+      translation 5 0 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.85 0.45 0.10
+          emissiveColor 0.30 0.12 0.02
+          roughness 0.6 metalness 0
+        }
+        geometry Box { size 1.6 1.6 0.010 }
+      } ]
+      name "zone_cafeteria_pad"
+    }
+    Solid {
+      translation 5 0 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.10 }
+      } ]
+      name "zone_cafeteria_post"
+    }
+    Solid {
+      translation 5 0 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.95 0.55 0.15
+          emissiveColor 0.60 0.30 0.05
+          roughness 0.4 metalness 0.2
+        }
+        geometry Box { size 0.55 0.55 0.20 }
+      } ]
+      name "zone_cafeteria_top"
+    }
+  ]
+}
+
+DEF ZONE_CHARGING_STATION Group {
+  children [
+    Solid {
+      translation 0 0 0.005
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.90 0.90 0.92
+          emissiveColor 0.40 0.40 0.42
+          roughness 0.5 metalness 0
+        }
+        geometry Box { size 2.4 2.4 0.010 }
+      } ]
+      name "zone_charging_pad"
+    }
+    Solid {
+      translation 0 0 1.4
+      children [ Shape {
+        appearance BrushedAluminium {}
+        geometry Cylinder { height 2.8 radius 0.14 }
+      } ]
+      name "zone_charging_post"
+    }
+    Solid {
+      translation 0 0 2.9
+      children [ Shape {
+        appearance PBRAppearance {
+          baseColor 0.20 0.92 0.55
+          emissiveColor 0.05 0.65 0.30
+          roughness 0.3 metalness 0.3
+        }
+        geometry Box { size 0.70 0.70 0.24 }
+      } ]
+      name "zone_charging_top"
+    }
+  ]
+}
+
+# ── Husky fleet ──────────────────────────────────────────────────
+# 6 Huskies parked in a row at the south edge. Each on its own
+# omnilink_mobile_bridge port + --name.
+
+DEF HUSKY_1 URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -5 -13 0.2
+  rotation 0 0 1 1.5707963
+  name "husky_1"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8765" "--name" "husky_1" ]
+  window "omnilink_chat"
+}
+DEF HUSKY_2 URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -3 -13 0.2
+  rotation 0 0 1 1.5707963
+  name "husky_2"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8766" "--name" "husky_2" ]
+  window "omnilink_chat"
+}
+DEF HUSKY_3 URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -1 -13 0.2
+  rotation 0 0 1 1.5707963
+  name "husky_3"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8767" "--name" "husky_3" ]
+  window "omnilink_chat"
+}
+DEF HUSKY_4 URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 1 -13 0.2
+  rotation 0 0 1 1.5707963
+  name "husky_4"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8768" "--name" "husky_4" ]
+  window "omnilink_chat"
+}
+DEF HUSKY_5 URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 3 -13 0.2
+  rotation 0 0 1 1.5707963
+  name "husky_5"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8769" "--name" "husky_5" ]
+  window "omnilink_chat"
+}
+DEF HUSKY_6 URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 5 -13 0.2
+  rotation 0 0 1 1.5707963
+  name "husky_6"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8770" "--name" "husky_6" ]
+  window "omnilink_chat"
+}
+
+# ── Mission Control scene supervisor ─────────────────────────────
+Robot {
+  name "mission_control_scene"
+  supervisor TRUE
+  controller "mission_control_scene"
+  children []
+}

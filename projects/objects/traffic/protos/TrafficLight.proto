@@ -1,0 +1,182 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/traffic/protos/TrafficLight.proto
+# keywords: traffic/sign
+# A 3.2 m kerbside traffic light: base plate, mast and a three-aspect signal head carrying
+# red / amber / green LED devices. The bulbs come from the `lamp_geometry` field (none by default).
+
+EXTERNPROTO "omnisim://projects/appearances/protos/OldSteel.proto"
+
+PROTO TrafficLight [
+  field SFVec3f    translation        0 0 0
+  field SFRotation rotation           0 0 1 0
+  field SFString   name               "traffic light"
+  field SFString   red_light          "red light"                # Defines the name of the red LED device.
+  field SFString   orange_light       "orange light"             # Defines the name of the orange LED device.
+  field SFString   green_light        "green light"              # Defines the name of the green LED device.
+  field SFNode     lamp_geometry      NULL                       # Defines the geometry of the lamps.
+  field SFRotation lamp_rotation      0 0 1 0                    # Defines the rotation of the lamps.
+  field MFColor    recognitionColors  [ 0.25 0.25 0.25, 0 0 0 ]  # Is `Solid.recognitionColors`.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "traffic light"
+    recognitionColors IS recognitionColors
+    children [
+      # --- foundation -------------------------------------------------------
+      DEF FOOT Pose {
+        translation 0 0 0.025
+        children [
+          Shape {
+            appearance OldSteel {
+              colorOverride 0.28 0.29 0.3
+            }
+            geometry Cylinder {
+              radius 0.15
+              height 0.05
+              subdivision 20
+            }
+          }
+        ]
+      }
+      # --- mast -------------------------------------------------------------
+      DEF MAST Pose {
+        translation 0 0 1.6
+        children [
+          Shape {
+            appearance DEF SIGNAL_PAINT PBRAppearance {
+              baseColor 0.22 0.23 0.24
+              roughness 0.55
+              metalness 0.7
+            }
+            geometry Cylinder {
+              radius 0.055
+              height 3.1
+              subdivision 16
+            }
+          }
+        ]
+      }
+      # --- signal head ------------------------------------------------------
+      DEF HEAD Pose {
+        translation 0 0 2.7
+        children [
+          Shape {
+            appearance USE SIGNAL_PAINT
+            geometry Box {
+              size 0.26 0.3 1.05
+            }
+          }
+        ]
+      }
+      DEF HOOD_RED Pose {
+        translation 0.19 0 3.12
+        children [
+          DEF HOOD Shape {
+            appearance USE SIGNAL_PAINT
+            geometry Box {
+              size 0.12 0.28 0.02
+            }
+          }
+        ]
+      }
+      DEF HOOD_ORANGE Pose {
+        translation 0.19 0 2.82
+        children [
+          USE HOOD
+        ]
+      }
+      DEF HOOD_GREEN Pose {
+        translation 0.19 0 2.52
+        children [
+          USE HOOD
+        ]
+      }
+      # --- lamps ------------------------------------------------------------
+      # The LED node recolours the emissiveColor of its FIRST child, so the Shape has to be
+      # the direct child; `lamp_rotation` is therefore applied on the LED node itself.
+      DEF RED_LAMP LED {
+        translation 0.14 0 3.0
+        rotation IS lamp_rotation
+        name IS red_light
+        color [
+          1 0 0
+        ]
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.45 0.08 0.08
+              roughness 0.25
+              metalness 0
+              emissiveColor 0 0 0
+            }
+            geometry IS lamp_geometry
+          }
+        ]
+      }
+      DEF ORANGE_LAMP LED {
+        translation 0.14 0 2.7
+        rotation IS lamp_rotation
+        name IS orange_light
+        color [
+          1 0.55 0
+        ]
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.45 0.28 0.06
+              roughness 0.25
+              metalness 0
+              emissiveColor 0 0 0
+            }
+            geometry IS lamp_geometry
+          }
+        ]
+      }
+      DEF GREEN_LAMP LED {
+        translation 0.14 0 2.4
+        rotation IS lamp_rotation
+        name IS green_light
+        color [
+          0 1 0.2
+        ]
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.08 0.4 0.14
+              roughness 0.25
+              metalness 0
+              emissiveColor 0 0 0
+            }
+            geometry IS lamp_geometry
+          }
+        ]
+      }
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 1.6
+          children [
+            Cylinder {
+              radius 0.09
+              height 3.2
+            }
+          ]
+        }
+        Pose {
+          translation 0 0 2.7
+          children [
+            Box {
+              size 0.26 0.3 1.05
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

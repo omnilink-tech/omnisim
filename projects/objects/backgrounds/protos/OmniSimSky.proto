@@ -1,0 +1,27 @@
+#VRML_SIM R2025a utf8
+# tags: no3dView
+# keywords: primitive/background
+# OmniSim canonical daylight sky.
+#
+# Part of the standard OmniSim world recipe (see docs/WORLD_RECIPE.md).
+# Pair with OmniSimSun + OmniSimSunMarker — all three together reproduce
+# the Spot demo lighting that is the canonical look across every demo,
+# sample, generated, and RL world in this repo.
+#
+# Defaults match `projects/robots/boston_dynamics/spot/worlds/spot.wbt`
+# verbatim. Extend by adding new optional fields with defaults — that is a
+# backward-compatible change. Do not change defaults in place; that would
+# silently re-skin every world that uses the PROTO.
+
+PROTO OmniSimSky [
+  field MFColor  skyColor       [ 0.15 0.20 0.30 ]   # Daylight blue. Same as spot.wbt.
+  field SFString atmosphericSky "earth"              # "earth" | "mars" | "" for cubemap-only.
+  field SFFloat  luminosity     1.0                  # Multiplier on Background.luminosity.
+]
+{
+  Background {
+    skyColor       IS skyColor
+    luminosity     IS luminosity
+    atmosphericSky IS atmosphericSky
+  }
+}

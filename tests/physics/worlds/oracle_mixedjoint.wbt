@@ -1,0 +1,122 @@
+#VRML_SIM R2025a utf8
+
+# Capability-gate Tier-A (correctness) test (default-flip-plan.md §4.1). ROOT -HingeJoint-> MID -BallJoint
+# -> TIP. The hinge brings the articulation to the gate (WbBasicJoint::postFinalize resolves parent/child
+# backend for Hinge/Slider joints); the gate's articulation walk then finds the deeper BallJoint and
+# routes the WHOLE articulation to ODE — preventing the mixed state (hinge links on Newton, ball link on
+# ODE). Verify by grepping OMNISIM_LOG_PATH for "[capability-gate] 'root' ... ODE".
+
+WorldInfo {
+  basicTimeStep 4
+  FPS 30
+}
+Viewpoint {
+  orientation 0 0 -1 3.141592653589793
+  position -2 -2 1
+}
+Background {
+  skyColor [ 0.15 0.20 0.30 ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  color 1.0 0.95 0.85
+  direction -0.5 -0.5 -0.6
+  intensity 2.5
+}
+DEF FLOOR Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.5 0.5 0.5
+      }
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 4 4 0.1
+  }
+}
+DEF ROOT Solid {
+  translation 0 0 1.0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.6 0.6 0.2
+      }
+      geometry Box {
+        size 0.12 0.12 0.12
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        anchor 0 0 1.0
+        axis 0 1 0
+      }
+      endPoint DEF MID Solid {
+        translation 0 0 0.7
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.30 0.65 0.85
+            }
+            geometry Box {
+              size 0.06 0.06 0.3
+            }
+          }
+          BallJoint {
+            jointParameters BallJointParameters {
+              anchor 0 0 0.55
+            }
+            endPoint DEF TIP Solid {
+              translation 0 0 0.4
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.85 0.30 0.25
+                  }
+                  geometry Box {
+                    size 0.05 0.05 0.25
+                  }
+                }
+              ]
+              name "tip"
+              boundingObject Box {
+                size 0.05 0.05 0.25
+              }
+              physics Physics {
+                density -1
+                mass 0.3
+              }
+            }
+          }
+        ]
+        name "mid"
+        boundingObject Box {
+          size 0.06 0.06 0.3
+        }
+        physics Physics {
+          density -1
+          mass 0.5
+        }
+      }
+    }
+  ]
+  name "root"
+  boundingObject Box {
+    size 0.12 0.12 0.12
+  }
+  physics Physics {
+    density -1
+    mass 1.0
+  }
+}
+DEF ORACLE_DUMPER Robot {
+  name "oracle_dumper"
+  controller "oracle_dumper"
+  supervisor TRUE
+  children [
+  ]
+}

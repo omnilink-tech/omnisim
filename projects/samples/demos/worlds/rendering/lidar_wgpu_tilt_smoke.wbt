@@ -1,0 +1,59 @@
+#VRML_SIM R2025a utf8
+
+# R5i smoke world: a single-layer Lidar with tiltAngle 0.3 rad facing a box
+# offset UP (centre z=0.25). Tilt pitches the scan up, so the centre ray points
+# at elevation +0.3, hitting the box front face (x=0.7) at z=0.7*tan(0.3)=0.216
+# -> range = 0.70/cos(0.3) = 0.733 m. This DEFINITIVELY tests the tilt sign +
+# magnitude: range 0.70 would mean tilt was ignored; ~maxRange (the ray at
+# elevation -0.3 -> z=-0.216, below the box bottom -0.05) would mean the tilt
+# pitched the WRONG way. Only correct tilt-up gives 0.733.
+#
+# Companion to docs/developer/engine-migration-plan.md R5 WbLidar tilt.
+
+WorldInfo {
+  info [
+    "R5i smoke -- wgpu Lidar tilt (pitch the scan up)"
+  ]
+  title "R5i wgpu Lidar tilt"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 64
+      fieldOfView 0.8
+      verticalFieldOfView 0.1
+      numberOfLayers 1
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      tiltAngle 0.3
+      type "fixed"
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0.25
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "lidar_wgpu_tilt_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

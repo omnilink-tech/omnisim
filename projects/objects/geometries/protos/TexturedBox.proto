@@ -1,0 +1,54 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/geometries/protos/TexturedBox.proto
+# keywords: primitive/geometry
+# A rectangular box geometry with a selectable texture mapping and per-face visibility.
+# Available texture mappings:
+# - `cube` mapping: the six faces are cut from a cross-shaped cube map
+# - `compact` cube mapping: the same, from a tightly packed 3 x 2 cube map
+# - `flat` mapping: the whole texture is projected onto the front face
+# - `metric` mapping: like `default`, but the texture keeps its aspect ratio instead of being stretched to each face
+# - `default` mapping: the whole texture is repeated on every face
+# - `none`: no texture mapping
+# Setting a face field (front, back, left, right, top, bottom) to FALSE removes that face from the mesh.
+# A demo of these mappings is available in projects/samples/geometries/worlds/textured_boxes.wbt.
+
+EXTERNPROTO "TexturedParallelepiped.proto"
+
+PROTO TexturedBox [
+  field SFVec3f  size    0.1 0.1 0.1  # Defines the size of the box.
+  field SFString{"cube", "compact", "flat", "metric", "default", "none"}
+                 mapping "flat"       # Defines the texture mapping.
+  field SFBool   front   TRUE         # Defines whether the front face should be included.
+  field SFBool   back    TRUE         # Defines whether the back face should be included.
+  field SFBool   left    TRUE         # Defines whether the left face should be included.
+  field SFBool   right   TRUE         # Defines whether the right face should be included.
+  field SFBool   top     TRUE         # Defines whether the top face should be included.
+  field SFBool   bottom  TRUE         # Defines whether the bottom face should be included.
+]
+{
+  # A box is the right-angled special case of a parallelepiped, so this PROTO is a
+  # box-shaped instance of TexturedParallelepiped rather than a second mesh generator.
+  # The three shear angles are pinned accordingly:
+  #   angles.x = 0    -> front and back faces are not skewed across y,
+  #   angles.y = pi/2 -> the side edges of each parallelogram face stand square to
+  #                      its base, which is what turns the parallelogram into a
+  #                      rectangle (the y offset it would otherwise introduce is
+  #                      halfSize.z * cos(angles.y), and cos(pi/2) is 0),
+  #   angles.z = 0    -> front and back faces are not skewed across z.
+  # Everything the two PROTOs share -- the six texture mappings and the six face
+  # switches -- is forwarded straight through, so a TexturedBox is guaranteed to map
+  # its texture exactly the way the parallelepiped does.
+  TexturedParallelepiped {
+    size IS size
+    angles 0 1.5707963267948966 0
+    mapping IS mapping
+    front IS front
+    back IS back
+    left IS left
+    right IS right
+    top IS top
+    bottom IS bottom
+  }
+}

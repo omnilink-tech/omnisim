@@ -1,0 +1,41 @@
+#VRML_SIM R2025a utf8
+
+# R3.3b smoke world: a single Robot with one Camera that asks for
+# the wgpu rendering backend via `renderBackend "wgpu"`. The
+# camera_wgpu_smoke controller enables the camera, runs a few
+# steps, samples the center pixel, and logs whether it's magenta
+# (= wgpu clear path fired) or not (= fell through to WREN).
+#
+# Companion to docs/developer/engine-migration-plan.md §14.3 R3.3b.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+
+WorldInfo {
+  info [
+    "R3.3b smoke world — Camera with renderBackend \"wgpu\""
+  ]
+  title "R3.3b wgpu camera smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position 0 -2 1
+}
+OmniSimSky { }
+RectangleArena {
+}
+Robot {
+  translation 0 0 0.05
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 64
+      height 48
+      renderBackend "wgpu"
+    }
+  ]
+  controller "camera_wgpu_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

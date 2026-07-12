@@ -1,0 +1,13 @@
+{
+  "name": "husky_maze",
+  "display_name": "Husky Maze",
+  "omnilink_agent_name": "Husky Maze",
+  "world": "projects/samples/demos/worlds/flagship/husky_maze.wbt",
+  "bridge_port": 6070,
+  "agent_script": "agents/production/husky_maze/husky_maze_agent.py",
+  "agent_port": 51517,
+  "agent_port_env": "HUSKY_AGENT_PORT",
+  "bridge_url_env": "HUSKY_BRIDGE_URL",
+  "description": "Clearpath Husky in a 4-world maze series with progressively harder briefs. Vision sidecar husky_eye on :6071.",
+  "tags": ["husky", "maze", "vision", "first-party"]
+}

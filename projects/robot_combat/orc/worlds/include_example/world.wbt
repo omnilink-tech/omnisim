@@ -1,0 +1,59 @@
+#VRML_SIM R2025a utf8
+
+# Minimal demonstration of OmniSim's `#include` preprocessor.
+#
+# IMPORTANT: EXTERNPROTO declarations needed by the included file must
+# also appear here at the top-level. The PROTO manager scans this file
+# for EXTERNPROTOs BEFORE the include is expanded, so any proto used
+# inside _base_env.wbt has to be declared here as well.
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+#
+# This world declares its own WorldInfo + Viewpoint, then pulls in
+# the environment fragment in _base_env.wbt (which provides the sky,
+# sun, light, and floor). The result is equivalent to inlining the
+# fragment's content here.
+#
+# Path resolution rules (any of these work):
+#   #include "_base_env.wbt"                    relative to this file
+#   #include "/absolute/path/world.wbt"         absolute path
+#   #include "omnisim://projects/.../world.wbt" omnisim:// URL
+
+# IMPORTANT: the #include must sit BEFORE any node (WorldInfo /
+# Viewpoint / Solid / ...). The Webots parser only accepts EXTERNPROTO
+# and IMPORTABLE declarations at the top of the file — once a real
+# node has been parsed, an EXTERNPROTO spliced in by an include is
+# rejected as an "unknown node". Keep #include in the EXTERNPROTO band.
+#include "_base_env.wbt"
+
+WorldInfo {
+  basicTimeStep 8
+  title "include directive demonstration"
+}
+
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 12
+}
+
+# Anything declared after the include continues from there. The
+# spliced content is bracketed in the expansion with
+#   # >>> begin omnisim #include "..."
+#   ...
+#   # <<< end omnisim #include "..."
+# so when you debug the expanded text (or hit a parse error) the
+# origin of each line is obvious.
+
+# A single visible marker so a successful load is obvious in the GUI.
+Solid {
+  translation 0 0 0.5
+  name "include_marker"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.85 0.45 0.05 metalness 0 roughness 1 }
+      geometry Sphere { radius 0.5 }
+    }
+  ]
+  boundingObject Sphere { radius 0.5 }
+}

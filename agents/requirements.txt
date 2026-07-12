@@ -1,0 +1,15 @@
+# OmniLink agent runtime dependencies.
+#
+# Pin the minimum library version that ships the APIs the SDK in
+# `_lib/runner_base.py` calls into: OmniLinkClient.list_profiles /
+# create_profile / update_profile / get_memory and UsageMeter.start /
+# snapshot. v0.6.1 (2026-04 release) is the floor.
+omnilink>=0.6.1
+
+# Core HTTP client used by every bridge proxy in agent `tools/` packages.
+requests>=2.31
+
+# Used by warehouse_picker for image processing
+# in its perception sidecar. Optional but the smoke test does NOT
+# import it; only specific agents do.
+# Pillow>=10.0

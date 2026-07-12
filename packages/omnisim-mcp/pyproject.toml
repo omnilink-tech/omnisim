@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omnisim-mcp"
+version = "0.1.0"
+description = "Model Context Protocol server over the OmniSim World Harness — drive world authoring/inspection from Claude Desktop, Cursor, and other MCP clients. Zero runtime dependencies (pure stdlib)."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "OmniLink", email = "support@omnilink-agents.com" }]
+requires-python = ">=3.9"
+keywords = ["omnisim", "mcp", "model-context-protocol", "robotics", "agents", "harness"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Robotics",
+]
+# Intentionally NO runtime dependencies: the MCP stdio protocol and the harness
+# HTTP client are both implemented on the stdlib so this runs on a fresh clone
+# (and under OmniSim's embedded interpreter) with nothing installed.
+dependencies = []
+
+[project.scripts]
+omnisim-mcp = "omnisim_mcp.server:main"
+
+[project.urls]
+Homepage      = "https://github.com/omnilink-tech/omnisim"
+Repository    = "https://github.com/omnilink-tech/omnisim"
+Documentation = "https://github.com/omnilink-tech/omnisim/tree/main/packages/omnisim-mcp"
+Issues        = "https://github.com/omnilink-tech/omnisim/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

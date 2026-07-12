@@ -1,0 +1,104 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  contactProperties [
+    ContactProperties {
+      bounce 1
+    }
+  ]
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation 0.11393601737364886 -0.9398841433191845 -0.3219260490892193 3.9231
+  position 2.49266 2.62338 -2.36077
+}
+Background {
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  ambientIntensity 1
+  direction 0.1 -1 0.2
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+DEF FLOOR Solid {
+  children [
+    DEF FLOOR_SHAPE Pose {
+      rotation 1 0 0 -1.57079632679
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.8 0.5 0.5
+            }
+          }
+          geometry Plane {
+            size 2 2
+          }
+        }
+      ]
+    }
+  ]
+  boundingObject USE FLOOR_SHAPE
+}
+DEF BALL Solid {
+  translation 0 1 0
+  children [
+    DEF BALL_SHAPE Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.5 0.7 0.8
+        }
+      }
+      geometry Sphere {
+        radius 0.1
+        subdivision 2
+      }
+    }
+  ]
+  name "ball"
+  boundingObject USE BALL_SHAPE
+  physics Physics {
+    density -1
+    mass 1
+  }
+}
+Robot {
+  children [
+    TestSuiteEmitter {
+    }
+  ]
+  controller "supervisor_simulation_mode"
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

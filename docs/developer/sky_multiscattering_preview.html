@@ -1,0 +1,381 @@
+<!--
+  OmniSim multi-scattering LUT visualiser.
+
+  Runs the same GLSL math that lives in
+  resources/wren/shaders/sky_multiscattering.frag, but in a browser
+  against a fullscreen quad, so the LUT can be validated visually
+  before / independently of the OmniSim rebuild.
+
+  Pre-computes the transmittance LUT to an off-screen RGBA16F target
+  exactly as the OmniSim PPE pipeline will, then runs the multi-
+  scattering pass sampling it.  This mirrors the in-OmniSim architecture
+  so a difference between the browser preview and the in-OmniSim LUT
+  means a real bug, not a tooling artefact.
+
+  Parameterisation:
+    x axis: mu_sun = cos(sun-from-zenith), maps linearly to [-1, 1].
+            Left edge = sun on the opposite side of the planet,
+            right edge = sun overhead.
+    y axis: altitude h in [0, atmosphereHeightKm].  Bottom = on the
+            ground, top = at the atmosphere boundary.
+
+  What you should see:
+    - Earth: warm cyan/teal smudge concentrated in the top-right
+      (sun overhead, high altitude — most multi-scatter contribution
+      from the bright zenith), trailing toward dim purple at the
+      bottom-left (sun below horizon, on the ground — multi-scatter
+      mostly from low-angle ground reflection and stratospheric bounce).
+    - Mars: warmer, oranger smudge with stronger contribution at low
+      altitudes (Mars dust scatters dust at the surface a lot more
+      than Earth Rayleigh does), narrower bright band because there's
+      less atmosphere top-to-bottom.
+
+  Keep this shader byte-equivalent to sky_multiscattering.frag.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OmniSim multi-scattering LUT — preview</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #000; color: #ccc;
+               font-family: ui-monospace, "Cascadia Code", Consolas, monospace; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
+  #hud { position: fixed; top: 12px; left: 12px; padding: 10px 14px;
+         background: rgba(0,0,0,0.55); border: 1px solid #333; border-radius: 6px;
+         font-size: 12px; line-height: 1.55; backdrop-filter: blur(6px); user-select: none; min-width: 280px; }
+  #hud h1 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #fff;
+            text-transform: uppercase; letter-spacing: 0.05em; }
+  #hud .seg { display: inline-flex; gap: 2px; margin-top: 4px; }
+  #hud .seg button { background: #1a1a1a; color: #888; border: 1px solid #333;
+                     padding: 4px 10px; font: inherit; font-size: 11px; cursor: pointer; }
+  #hud .seg button.on { background: #fff; color: #000; border-color: #fff; }
+  #hud .legend { color: #888; font-size: 11px; margin-top: 8px; line-height: 1.6; }
+  #hud .legend span { color: #fff; }
+  #hud .row { display: flex; justify-content: space-between; gap: 16px; margin-top: 4px; }
+  #hud input[type=range] { width: 130px; vertical-align: middle; }
+  #hud .v { color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <h1>Multi-scattering LUT</h1>
+  <div class="seg" id="preset">
+    <button data-preset="earth" class="on">Earth</button>
+    <button data-preset="mars">Mars</button>
+  </div>
+  <div class="row">
+    <label>exposure</label>
+    <span class="v" id="exposureV">25.0</span>
+  </div>
+  <input type="range" id="exposure" min="1" max="200" step="1" value="25">
+  <div class="legend">
+    x-axis: <span>&mu;<sub>sun</sub></span> = cos(sun from zenith), &minus;1 to +1<br>
+    y-axis: altitude, 0 (ground) to atmosphere top<br>
+    colour: per-channel multi-scattered luminance / sun illuminance<br>
+    (boosted by exposure for visibility — multi-scatter is faint)
+  </div>
+</div>
+<script>
+"use strict";
+
+const VERT = `#version 300 es
+in vec2 vPos;
+out vec2 vUv;
+void main() {
+  vUv = vPos * 0.5 + 0.5;
+  gl_Position = vec4(vPos, 0.0, 1.0);
+}`;
+
+// Transmittance shader — byte-equivalent to sky_transmittance.frag.
+const TRANSMITTANCE_FRAG = `#version 300 es
+precision highp float;
+in  vec2 vUv;
+out vec4 outColor;
+
+uniform float bottomRadiusKm;
+uniform float topRadiusKm;
+uniform vec3  rayleighScattering;
+uniform float rayleighDensityExpScale;
+uniform vec3  mieScattering;
+uniform vec3  mieAbsorption;
+uniform float mieDensityExpScale;
+uniform vec3  absorptionExtinction;
+
+const int OPTICAL_DEPTH_STEPS = 40;
+const float METRES_PER_KM = 1000.0;
+
+float raySphereExit(vec3 o, vec3 d, float r) {
+  float b = dot(o, d), c = dot(o, o) - r*r, disc = b*b - c;
+  return disc < 0.0 ? -1.0 : -b + sqrt(disc);
+}
+float raySphereEnter(vec3 o, vec3 d, float r) {
+  float b = dot(o, d), c = dot(o, o) - r*r, disc = b*b - c;
+  if (disc < 0.0) return -1.0;
+  float t = -b - sqrt(disc);
+  return t < 0.0 ? -1.0 : t;
+}
+
+void main() {
+  float mu = vUv.x * 2.0 - 1.0;
+  float h  = vUv.y * (topRadiusKm - bottomRadiusKm);
+  vec3 origin = vec3(0.0, bottomRadiusKm + h, 0.0);
+  vec3 dir = vec3(sqrt(max(0.0, 1.0 - mu*mu)), mu, 0.0);
+  if (raySphereEnter(origin, dir, bottomRadiusKm) > 0.0) { outColor = vec4(0,0,0,1); return; }
+  float tEnd = raySphereExit(origin, dir, topRadiusKm);
+  float dt = tEnd / float(OPTICAL_DEPTH_STEPS);
+  vec3 tau = vec3(0.0);
+  for (int i = 0; i < OPTICAL_DEPTH_STEPS; ++i) {
+    vec3 p = origin + dir * (dt * (float(i) + 0.5));
+    float alt = max(0.0, length(p) - bottomRadiusKm);
+    float rd = exp(alt * rayleighDensityExpScale);
+    float md = exp(alt * mieDensityExpScale);
+    vec3 ext = rayleighScattering*rd + (mieScattering + mieAbsorption)*md + absorptionExtinction*rd;
+    tau += ext * dt * METRES_PER_KM;
+  }
+  outColor = vec4(exp(-tau), 1.0);
+}`;
+
+// Multi-scattering shader — byte-equivalent to sky_multiscattering.frag.
+// Sampler binding via inputTextures[0] in WREN; named here for browser.
+const MULTI_FRAG = `#version 300 es
+precision highp float;
+in  vec2 vUv;
+out vec4 outColor;
+
+uniform float bottomRadiusKm;
+uniform float topRadiusKm;
+uniform vec3  rayleighScattering;
+uniform float rayleighDensityExpScale;
+uniform vec3  mieScattering;
+uniform vec3  mieAbsorption;
+uniform float mieDensityExpScale;
+uniform vec3  absorptionExtinction;
+uniform float groundAlbedo;
+uniform sampler2D transmittanceLut;
+uniform float exposure;
+
+const int SPHERE_DIRECTION_COUNT = 64;
+const int MARCH_STEPS = 32;
+const float PI = 3.14159265358979;
+const float METRES_PER_KM = 1000.0;
+const float ISOTROPIC_PHASE = 1.0 / (4.0 * PI);
+
+float raySphereExit(vec3 o, vec3 d, float r) {
+  float b = dot(o, d), c = dot(o, o) - r*r, disc = b*b - c;
+  return disc < 0.0 ? -1.0 : -b + sqrt(disc);
+}
+float raySphereEnter(vec3 o, vec3 d, float r) {
+  float b = dot(o, d), c = dot(o, o) - r*r, disc = b*b - c;
+  if (disc < 0.0) return -1.0;
+  float t = -b - sqrt(disc);
+  return t < 0.0 ? -1.0 : t;
+}
+vec3 tLut(vec3 origin, vec3 dir) {
+  float r = length(origin);
+  vec3 zenith = origin / r;
+  float mu = dot(dir, zenith);
+  float h = r - bottomRadiusKm;
+  vec2 uv = vec2(mu * 0.5 + 0.5, h / (topRadiusKm - bottomRadiusKm));
+  return texture(transmittanceLut, uv).rgb;
+}
+void scatteringValues(vec3 p, out vec3 rSc, out vec3 mSc, out vec3 ext) {
+  float alt = max(0.0, length(p) - bottomRadiusKm);
+  float rd = exp(alt * rayleighDensityExpScale);
+  float md = exp(alt * mieDensityExpScale);
+  rSc = rayleighScattering * rd;
+  mSc = mieScattering * md;
+  ext = rSc + mSc + mieAbsorption*md + absorptionExtinction*rd;
+}
+vec3 sphericalFibonacci(int i, int n) {
+  float phi = (1.0 + sqrt(5.0)) * 0.5;
+  float u = (float(i) + 0.5) / float(n);
+  float v = fract(float(i) * (phi - 1.0));
+  float cosTheta = 1.0 - 2.0 * u;
+  float sinTheta = sqrt(max(0.0, 1.0 - cosTheta*cosTheta));
+  float phiAngle = 2.0 * PI * v;
+  return vec3(sinTheta * cos(phiAngle), cosTheta, sinTheta * sin(phiAngle));
+}
+
+void main() {
+  float muSun = vUv.x * 2.0 - 1.0;
+  float h = vUv.y * (topRadiusKm - bottomRadiusKm);
+  vec3 origin = vec3(0.0, bottomRadiusKm + h, 0.0);
+  vec3 sunDir = vec3(sqrt(max(0.0, 1.0 - muSun*muSun)), muSun, 0.0);
+  vec3 L2Sum = vec3(0.0);
+  vec3 fmsSum = vec3(0.0);
+  for (int s = 0; s < SPHERE_DIRECTION_COUNT; ++s) {
+    vec3 viewDir = sphericalFibonacci(s, SPHERE_DIRECTION_COUNT);
+    float tExit = raySphereExit(origin, viewDir, topRadiusKm);
+    float tGround = raySphereEnter(origin, viewDir, bottomRadiusKm);
+    float tEnd = (tGround > 0.0) ? tGround : tExit;
+    if (tEnd <= 0.0) continue;
+    float dt = tEnd / float(MARCH_STEPS);
+    vec3 transmittanceFromOrigin = vec3(1.0);
+    vec3 L2 = vec3(0.0);
+    vec3 fms = vec3(0.0);
+    for (int j = 0; j < MARCH_STEPS; ++j) {
+      vec3 p = origin + viewDir * (dt * (float(j) + 0.5));
+      vec3 rSc, mSc, ext; scatteringValues(p, rSc, mSc, ext);
+      vec3 stepT = exp(-ext * dt * METRES_PER_KM);
+      vec3 sunT = tLut(p, sunDir);
+      if (raySphereEnter(p, sunDir, bottomRadiusKm) > 0.0) sunT = vec3(0.0);
+      vec3 inScatter = (rSc + mSc) * sunT * ISOTROPIC_PHASE;
+      vec3 sIntegral = (inScatter - inScatter * stepT) / max(ext, vec3(1e-10));
+      L2 += transmittanceFromOrigin * sIntegral;
+      vec3 fmsIn = (rSc + mSc) * ISOTROPIC_PHASE;
+      vec3 fmsIntegral = (fmsIn - fmsIn * stepT) / max(ext, vec3(1e-10));
+      fms += transmittanceFromOrigin * fmsIntegral;
+      transmittanceFromOrigin *= stepT;
+    }
+    if (tGround > 0.0) {
+      vec3 hp = origin + viewDir * tGround;
+      vec3 hz = normalize(hp);
+      float cosSun = max(0.0, dot(hz, sunDir));
+      vec3 gT = tLut(hp, sunDir);
+      if (raySphereEnter(hp, sunDir, bottomRadiusKm) > 0.0) gT = vec3(0.0);
+      L2 += transmittanceFromOrigin * groundAlbedo * (1.0 / PI) * cosSun * gT;
+    }
+    L2Sum += L2 / float(SPHERE_DIRECTION_COUNT);
+    fmsSum += fms / float(SPHERE_DIRECTION_COUNT);
+  }
+  vec3 multi = L2Sum / max(vec3(1.0) - fmsSum, vec3(1e-10));
+  // Boost for visibility — multi-scatter is a small contribution in
+  // absolute terms.  Same colour data, just brighter on screen.
+  multi *= exposure;
+  multi = pow(multi, vec3(1.0/2.2));  // sRGB encode
+  outColor = vec4(multi, 1.0);
+}`;
+
+const canvas = document.getElementById("c");
+const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
+if (!gl) { document.body.innerHTML='<p style="color:#fff;padding:20px;">WebGL2 required.</p>'; throw 0; }
+const ext = gl.getExtension("EXT_color_buffer_float");
+if (!ext) { document.body.innerHTML='<p style="color:#fff;padding:20px;">EXT_color_buffer_float required (Chrome/Firefox).</p>'; throw 0; }
+
+function compile(t, s) {
+  const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(sh)); throw new Error("compile"); }
+  return sh;
+}
+function makeProg(vertSrc, fragSrc) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vertSrc));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fragSrc));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) { console.error(gl.getProgramInfoLog(p)); throw new Error("link"); }
+  return p;
+}
+
+const progT = makeProg(VERT, TRANSMITTANCE_FRAG);
+const progM = makeProg(VERT, MULTI_FRAG);
+
+// Fullscreen triangle.
+const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+const vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+
+function bindQuad(prog) {
+  const aPos = gl.getAttribLocation(prog, "vPos");
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+}
+
+// Off-screen transmittance LUT (256x64, RGBA16F).
+const tTex = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, tTex);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, 256, 64, 0, gl.RGBA, gl.FLOAT, null);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+const tFbo = gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, tFbo);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tTex, 0);
+
+const PRESETS = {
+  earth: {
+    bottomRadiusKm: 6360.0, topRadiusKm: 6460.0,
+    rayleighScattering: [5.802e-6, 13.558e-6, 33.1e-6],
+    rayleighDensityExpScale: -1.0/8.0,
+    mieScattering: [3.996e-6, 3.996e-6, 3.996e-6],
+    mieAbsorption: [4.4e-6, 4.4e-6, 4.4e-6],
+    mieDensityExpScale: -1.0/1.2,
+    absorptionExtinction: [0.65e-6, 1.881e-6, 0.085e-6],
+    groundAlbedo: 0.3,
+  },
+  mars: {
+    bottomRadiusKm: 3389.5, topRadiusKm: 3489.5,
+    rayleighScattering: [1.9918e-6, 1.357e-6, 0.575e-6],
+    rayleighDensityExpScale: -1.0/11.1,
+    mieScattering: [2.0e-5, 1.7e-5, 1.4e-5],
+    mieAbsorption: [1.0e-5, 1.2e-5, 1.5e-5],
+    mieDensityExpScale: -1.0/11.0,
+    absorptionExtinction: [0.15e-6, 0.3e-6, 0.85e-6],
+    groundAlbedo: 0.15,
+  },
+};
+
+function pushAtmosphere(prog, p) {
+  gl.uniform1f(gl.getUniformLocation(prog, "bottomRadiusKm"), p.bottomRadiusKm);
+  gl.uniform1f(gl.getUniformLocation(prog, "topRadiusKm"), p.topRadiusKm);
+  gl.uniform3fv(gl.getUniformLocation(prog, "rayleighScattering"), p.rayleighScattering);
+  gl.uniform1f(gl.getUniformLocation(prog, "rayleighDensityExpScale"), p.rayleighDensityExpScale);
+  gl.uniform3fv(gl.getUniformLocation(prog, "mieScattering"), p.mieScattering);
+  gl.uniform3fv(gl.getUniformLocation(prog, "mieAbsorption"), p.mieAbsorption);
+  gl.uniform1f(gl.getUniformLocation(prog, "mieDensityExpScale"), p.mieDensityExpScale);
+  gl.uniform3fv(gl.getUniformLocation(prog, "absorptionExtinction"), p.absorptionExtinction);
+  if (gl.getUniformLocation(prog, "groundAlbedo"))
+    gl.uniform1f(gl.getUniformLocation(prog, "groundAlbedo"), p.groundAlbedo);
+}
+
+const state = { preset: "earth", exposure: 25.0 };
+
+function bakeTransmittance() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, tFbo);
+  gl.viewport(0, 0, 256, 64);
+  gl.useProgram(progT);
+  bindQuad(progT);
+  pushAtmosphere(progT, PRESETS[state.preset]);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function drawMulti() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.useProgram(progM);
+  bindQuad(progM);
+  pushAtmosphere(progM, PRESETS[state.preset]);
+  gl.uniform1f(gl.getUniformLocation(progM, "exposure"), state.exposure);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, tTex);
+  gl.uniform1i(gl.getUniformLocation(progM, "transmittanceLut"), 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function render() { bakeTransmittance(); drawMulti(); }
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(window.innerWidth * dpr);
+  canvas.height = Math.floor(window.innerHeight * dpr);
+  render();
+}
+function setPreset(name) {
+  state.preset = name;
+  for (const b of document.querySelectorAll("#preset button"))
+    b.classList.toggle("on", b.dataset.preset === name);
+  render();
+}
+
+window.addEventListener("resize", resize);
+for (const b of document.querySelectorAll("#preset button"))
+  b.addEventListener("click", () => setPreset(b.dataset.preset));
+document.getElementById("exposure").addEventListener("input", (e) => {
+  state.exposure = parseFloat(e.target.value);
+  document.getElementById("exposureV").textContent = state.exposure.toFixed(1);
+  render();
+});
+
+resize();
+</script>
+</body>
+</html>

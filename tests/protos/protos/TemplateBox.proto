@@ -1,0 +1,12 @@
+#VRML_SIM R2025a utf8
+# template language: javascript
+
+PROTO TemplateBox [
+  field SFFloat xSize 0.1
+  field SFFloat ySize 0.1
+]
+{
+  Box {
+    size %<= fields.xSize.value >% %<= fields.ySize.value >% 0.1
+  }
+}

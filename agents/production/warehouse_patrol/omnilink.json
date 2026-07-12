@@ -1,0 +1,13 @@
+{
+  "name": "warehouse_patrol",
+  "display_name": "Warehouse Patrol",
+  "omnilink_agent_name": "Warehouse Patrol",
+  "world": "projects/samples/demos/worlds/flagship/warehouse_patrol.wbt",
+  "bridge_port": 6070,
+  "agent_script": "agents/production/warehouse_patrol/warehouse_patrol_agent.py",
+  "agent_port": 51519,
+  "agent_port_env": "PATROL_PORT",
+  "bridge_url_env": "PATROL_BRIDGE_URL",
+  "description": "Two-husky cross-session-memory patrol. Each sweep diffs against the prior — long-term memory demo.",
+  "tags": ["husky", "warehouse", "long-term-memory"]
+}

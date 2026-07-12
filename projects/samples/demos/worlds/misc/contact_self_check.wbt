@@ -1,0 +1,45 @@
+#VRML_SIM R2025a utf8
+
+# Contact-points self-read check (verification harness for the contact API).
+# A box rests on a RectangleArena floor; the contact_self_check supervisor reads
+# its own getContactPoints() and asserts a non-zero count. This is the reliable
+# contact-generating gate the contact-impulse/depth landing extends to assert
+# depth > 0 (see docs/developer/physics-contact-impulse-api.md §6).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+
+WorldInfo {
+  basicTimeStep 16
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 4
+}
+Background {
+  skyColor [ 0.2 0.2 0.2 ]
+}
+DirectionalLight {
+  direction 0 0 -1
+  intensity 3
+}
+RectangleArena {
+  floorSize 4 4
+}
+DEF BOX Robot {
+  translation 0 0 0.25
+  children [
+    Shape {
+      geometry Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.2 0.2 0.2
+  }
+  physics Physics {
+    mass 1
+  }
+  supervisor TRUE
+  controller "contact_self_check"
+}

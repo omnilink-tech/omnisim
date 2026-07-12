@@ -1,0 +1,23 @@
+{
+  "_note": "Runtime profile for G1 Shadowing deploy. This is the env that is IDENTICAL across every BATON demo (box delivery, walk-turn-walk, turn solo) -- the recipe deploy entry point, the LSTM+REF_OBS whole-body obs family, and the crane/harness gains. Skill- and sequence-specific env (checkpoints, ghosts, corridors, course/schedule, world) live in the skill and sequence manifests and layer ON TOP of this. Extracted from the common core of projects/policies/demos/run_*.sh.",
+  "name": "g1_shadow_deploy",
+  "robot": "g1",
+  "engine": "Newton/mujoco_warp (train==deploy, bit-exact)",
+  "env": {
+    "OMNISIM_INENGINE_PYMOD": "projects.policies.training.g1_walk_recipe:g1_walk_recipe_deploy",
+    "WHOLE_BODY": "1",
+    "REF_OBS": "1",
+    "REF_OBS_K": "3",
+    "POLICY_ARCH": "lstm",
+    "PPO_HID": "256",
+    "STAND_SEED": "1",
+    "WALK_WARM_TICKS": "30",
+    "HARNESS_KYAW": "150",
+    "HARNESS_LAM0": "0.9",
+    "HARNESS_KP": "600",
+    "HARNESS_KD": "60",
+    "HARNESS_FY": "400",
+    "HARNESS_KZ": "2000",
+    "HARNESS_DZ": "150"
+  }
+}

@@ -1,0 +1,15 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/SlotNode.proto"
+EXTERNPROTO "omnisim://tests/protos/protos/ProtoWithSlotExtension.proto"
+
+PROTO DerivedPotoWithSlotExtension [
+  field SFNode slotExtension SlotNode { }
+  field SFString controller "<none>"
+]
+{
+  ProtoWithSlotExtension {
+    slotExtension IS slotExtension
+    controller IS controller
+  }
+}

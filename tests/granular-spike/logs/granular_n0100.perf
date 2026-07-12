@@ -1,0 +1,10 @@
+World: tests/granular-spike/worlds/granular_n0100.wbt
+World metrics: 110 solids, 0 joints, 105 graphical geometries
+Threads count: 1
+Shadows disabled: true
+Anti-aliasing disabled: true
+Average speed factor: 35.073x
+<mode> <stepsCount> <loading(ms)> <prePhysics(ms)> <physics(ms)> <postPhysics(ms)> <mainRendering(ms)> <virtualRealityHeadsetRendering(ms)> <gpuMemoryTransfer(ms)> <trianglesCount> <mainFPS> <controller:spike_quit(ms)>
+AVG             395       936.628            0.001         0.545             0.163              13.208                                0.000                   0.000              nan     0.000                       0.753 
+TOT             395       936.628            0.553       215.168            64.292              13.208                                0.000                   0.000            0.000     0.000                     140.833 
+

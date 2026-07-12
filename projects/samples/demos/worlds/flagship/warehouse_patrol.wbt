@@ -1,0 +1,313 @@
+#VRML_SIM R2025a utf8
+
+# Warehouse patrol demo — substrate for the Warehouse Patrol Squad.
+# Same 30 x 18 m walled warehouse as warehouse_logistics.wbt, but stripped
+# of the loading dock + arm (patrol doesn't need them) and adapted for a
+# two-husky cross-session-memory demo:
+#
+#   - 8 small coloured "crates" scattered through the warehouse interior.
+#     Each crate is a small emissive cube with a unique colour, large
+#     enough that the husky_eye sidecar's _analyze_bgra classifier can
+#     identify the colour from a 4 m vantage. Crates have physics so an
+#     external supervisor script can teleport them between sweeps to
+#     simulate "something moved."
+#   - Two huskies parked symmetrically at the west end. HUSKY_NORTH covers
+#     the northern half of the warehouse (y > 0), HUSKY_SOUTH covers the
+#     southern half. Each has its own husky_eye sidecar Robot tracking
+#     it via getFromDef on its parent's name.
+#
+# Mission brief lives in WorldInfo.info; both Patrol Husky agents read
+# the same brief but their sector assignment is determined by which
+# runner they're attached to (PATROL_SECTOR env var on the runner).
+#
+# The cross-session memory dividend: each sweep persists a structured
+# manifest of {crate_color, world_position} via save_local_memory.
+# On the next sweep, the agent calls recall to pull the prior manifest,
+# compares against what it now sees, and narrates the diff.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Warehouse Patrol"
+  info [
+    "Mission: patrol your sector and report anything that moved since the last sweep."
+    ""
+    "Eight coloured crates are scattered through the warehouse:"
+    "  red, green, blue, yellow, magenta, cyan, orange, white."
+    "Each Patrol Husky covers one sector (north y > 0, south y < 0)."
+    ""
+    "Workflow per sweep: (1) recall the prior sweep's manifest from local memory,"
+    "(2) drive to each crate vantage in your sector and call scan_for_tag,"
+    "(3) call sweep_summary to persist the new manifest, (4) call diff_sweeps"
+    "to compare prior vs current, (5) narrate the diff via complete_mission."
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 50
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 32 20
+  tileSize 32 20
+  appearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# ============================================================================
+# Outer perimeter walls. 30 m x 18 m interior, walls 0.2 m thick, 3 m tall.
+# Closed west wall — no dock opening on this world (patrol is interior-only).
+# ============================================================================
+Wall { name "wall_N" translation 0  9 0 size 30.2 0.2 3 }
+Wall { name "wall_S" translation 0 -9 0 size 30.2 0.2 3 }
+Wall { name "wall_E" translation 15  0 0 size 0.2 18.2 3 }
+Wall { name "wall_W" translation -15 0 0 size 0.2 18.2 3 }
+
+# ============================================================================
+# Eight coloured crates scattered through the interior. Each is a single
+# Solid with a Box visual + matching boundingObject + Physics so an
+# external supervisor script can teleport them between sweeps and the
+# husky's bumper interactions don't pass through them. The colours match
+# what husky_eye._analyze_bgra recognises (red/green/blue/yellow/magenta/cyan).
+# Two extras (orange, white) get classified as their nearest neighbour
+# colour — useful for testing that the diff logic handles ambiguous tags.
+#
+# Layout: four crates in the north sector (y > 0), four in south (y < 0).
+# Patrol Husky NORTH covers the +y crates, SOUTH covers -y.
+# ============================================================================
+
+# --- North sector crates ---
+DEF CRATE_RED Solid {
+  translation -6 +5 0.20
+  name "crate_red"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.05 0.05
+        emissiveColor 0.50 0.02 0.02
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.40 0.40 0.40 }
+    }
+  ]
+  boundingObject Box { size 0.40 0.40 0.40 }
+  physics Physics { density -1 mass 8 }
+}
+
+DEF CRATE_GREEN Solid {
+  translation +2 +5 0.20
+  name "crate_green"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.05 0.85 0.10
+        emissiveColor 0.02 0.45 0.05
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.40 0.40 0.40 }
+    }
+  ]
+  boundingObject Box { size 0.40 0.40 0.40 }
+  physics Physics { density -1 mass 8 }
+}
+
+DEF CRATE_BLUE Solid {
+  translation +9 +6 0.20
+  name "crate_blue"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.05 0.20 0.95
+        emissiveColor 0.02 0.08 0.45
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.40 0.40 0.40 }
+    }
+  ]
+  boundingObject Box { size 0.40 0.40 0.40 }
+  physics Physics { density -1 mass 8 }
+}
+
+DEF CRATE_ORANGE Solid {
+  translation +5 +2 0.20
+  name "crate_orange"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.98 0.55 0.10
+        emissiveColor 0.45 0.20 0.04
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.40 0.40 0.40 }
+    }
+  ]
+  boundingObject Box { size 0.40 0.40 0.40 }
+  physics Physics { density -1 mass 8 }
+}
+
+# --- South sector crates ---
+DEF CRATE_YELLOW Solid {
+  translation -6 -5 0.20
+  name "crate_yellow"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.98 0.85 0.05
+        emissiveColor 0.50 0.45 0.02
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.40 0.40 0.40 }
+    }
+  ]
+  boundingObject Box { size 0.40 0.40 0.40 }
+  physics Physics { density -1 mass 8 }
+}
+
+DEF CRATE_MAGENTA Solid {
+  translation +2 -5 0.20
+  name "crate_magenta"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.92 0.10 0.78
+        emissiveColor 0.45 0.04 0.38
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.40 0.40 0.40 }
+    }
+  ]
+  boundingObject Box { size 0.40 0.40 0.40 }
+  physics Physics { density -1 mass 8 }
+}
+
+DEF CRATE_CYAN Solid {
+  translation +9 -6 0.20
+  name "crate_cyan"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.05 0.92 0.95
+        emissiveColor 0.02 0.45 0.50
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.40 0.40 0.40 }
+    }
+  ]
+  boundingObject Box { size 0.40 0.40 0.40 }
+  physics Physics { density -1 mass 8 }
+}
+
+DEF CRATE_WHITE Solid {
+  translation +5 -2 0.20
+  name "crate_white"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.95 0.95
+        emissiveColor 0.45 0.45 0.45
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.40 0.40 0.40 }
+    }
+  ]
+  boundingObject Box { size 0.40 0.40 0.40 }
+  physics Physics { density -1 mass 8 }
+}
+
+# ============================================================================
+# Two huskies parked at the west end, one in each sector. Each runs the
+# husky_omnilink_bridge controller on a different port (configurable via
+# controllerArgs in iter 1; iter 0 ships with the bridges hard-coded so
+# only ONE husky's bridge will respond — the other is visual-only until
+# the multiplexing change lands).
+# ============================================================================
+DEF HUSKY_NORTH URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -12 +5 0.1
+  rotation 0 0 1 0
+  name "husky_north"
+  controller "husky_omnilink_bridge"
+  controllerArgs ["--port" "6070" "--eye-port" "6071"]
+  supervisor TRUE
+}
+
+DEF HUSKY_SOUTH URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -12 -5 0.1
+  rotation 0 0 1 0
+  name "husky_south"
+  controller "husky_omnilink_bridge"
+  controllerArgs ["--port" "6080" "--eye-port" "6081"]
+  supervisor TRUE
+}
+
+# Eye sidecars — one per husky. Each gets a different listening port +
+# tracks its own husky DEF via the new --track-def controllerArg landed
+# in iter 1. The blue-tinted sphere is the north eye, orange-tinted is
+# south, so an operator scrolling around in OmniSim can tell them apart.
+Robot {
+  name "husky_eye_north"
+  translation -12 +5 1
+  supervisor TRUE
+  controller "husky_eye"
+  controllerArgs ["--port" "6071" "--track-def" "HUSKY_NORTH"]
+  children [
+    Camera {
+      name "front_camera"
+      width 320
+      height 240
+      fieldOfView 1.4
+      rotation 0 1 0 0.35
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.6 1.0
+        emissiveColor 0.05 0.15 0.3
+        roughness 0.4
+      }
+      geometry Sphere { radius 0.05 }
+    }
+  ]
+}
+
+Robot {
+  name "husky_eye_south"
+  translation -12 -5 1
+  supervisor TRUE
+  controller "husky_eye"
+  controllerArgs ["--port" "6081" "--track-def" "HUSKY_SOUTH"]
+  children [
+    Camera {
+      name "front_camera"
+      width 320
+      height 240
+      fieldOfView 1.4
+      rotation 0 1 0 0.35
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.6 0.2
+        emissiveColor 0.3 0.15 0.05
+        roughness 0.4
+      }
+      geometry Sphere { radius 0.05 }
+    }
+  ]
+}

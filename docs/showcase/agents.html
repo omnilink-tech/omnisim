@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniSim — agent gallery</title>
+<style>
+  /* OmniSim brand palette: black / cream / mimosa */
+  :root {
+    --bg: #0b0b0c;
+    --bg-card: #121214;
+    --bg-card-2: #161618;
+    --border: #1d1d20;
+    --cream: #f3eddc;
+    --muted: #8a8472;
+    --mimosa: #fbe283;
+    --mimosa-dim: #d6a72d;
+    --green: #6dd178;
+    --red: #ff8a82;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    background: var(--bg); color: var(--cream);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.5;
+  }
+  a { color: var(--mimosa); text-decoration: none; }
+  a:hover { color: #ffe890; text-decoration: underline; }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.9em; background: #08080a; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--border); }
+  pre { background: #08080a; border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font-size: 13px; }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 28px 24px 22px;
+    text-align: center;
+  }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: 0.04em; font-size: 14px; }
+  .orb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fbe283 0%, #d6a72d 55%, #6e4e0d 100%);
+    box-shadow: 0 0 10px rgba(251, 226, 131, 0.5);
+  }
+  h1 { margin: 12px 0 6px; font-size: 30px; font-weight: 700; }
+  .tagline { color: var(--muted); font-size: 15px; max-width: 720px; margin: 0 auto; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 36px 24px 80px; }
+
+  section { margin-bottom: 56px; }
+  h2 { font-size: 22px; margin: 0 0 8px; }
+  .section-hint { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+
+  .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+  @media (min-width: 720px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1024px) { .grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    display: flex; flex-direction: column;
+  }
+  .card-media {
+    background: #08080a;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    aspect-ratio: 16 / 9;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 12px; text-align: center; padding: 12px;
+    margin-bottom: 14px;
+  }
+  .card h3 { margin: 4px 0 6px; font-size: 17px; }
+  .card .role { color: var(--mimosa); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .card p { margin: 0 0 12px; color: var(--cream); font-size: 14px; }
+  .card .prompt {
+    background: #08080a; border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; margin: 0 0 12px; font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; color: var(--mimosa);
+  }
+  .card .prompt::before { content: "type: "; color: var(--muted); font-family: inherit; }
+  .card .links { display: flex; gap: 14px; flex-wrap: wrap; margin-top: auto; font-size: 13px; }
+
+  .first-party { background: linear-gradient(180deg, #161618 0%, #121214 100%); }
+  .first-party h3::after { content: " · first-party"; color: var(--mimosa-dim); font-size: 11px; font-weight: 400; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+  td code { font-size: 11px; }
+
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    background: #2a2417; color: var(--mimosa); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  }
+  .pill.green { background: #143820; color: var(--green); }
+
+  footer {
+    border-top: 1px solid var(--border);
+    text-align: center; color: var(--muted); font-size: 12px;
+    padding: 24px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="orb"></span><span>OmniSim · by OmniLink, for OmniLink agents</span></div>
+  <h1>Agent gallery</h1>
+  <p class="tagline">
+    OmniLink agents that drive OmniSim robots — the starter templates and the
+    per-robot chat demos, each with a one-line prompt to try and the world it
+    runs against. Full-runner agents live in
+    <a href="../../agents/production/">agents/production/</a>.
+  </p>
+</header>
+
+<main>
+
+<!-- ───────────── First-party specialist agents ────────────── -->
+<section>
+  <h2>Specialist agents</h2>
+  <p class="section-hint">
+    Profile-only starter agents built on top of OmniSim's bridge HTTP surface.
+    Each is a copy-paste starting point for your own purpose-built agent.
+    One is shown below; see <a href="../../agents/templates/">agents/templates/</a>
+    for the full set.
+  </p>
+
+  <div class="grid grid-3">
+
+    <article class="card first-party">
+      <div class="role">mobile-base patroller</div>
+      <h3>OmniSim-Roomba</h3>
+      <p>
+        Waypoint loops, return-to-dock, and conversational drive commands
+        for any wheeled base. Profile-only — just register and chat from
+        the web UI. Targets Husky, Jackal, TB3, Rosbot, or your own robot.
+      </p>
+      <div class="prompt">patrol the floor four times then dock</div>
+      <div class="links">
+        <a href="../../agents/templates/roomba/README.md">README</a>
+        <a href="../../agents/templates/roomba/profile.json">profile.json</a>
+        <a href="../guide/omnilink-sim-to-real.md">drive a real base →</a>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- ───────────── Per-robot default agents ──────────────────── -->
+<section>
+  <h2>Per-robot default agents</h2>
+  <p class="section-hint">
+    Each of these chat demos auto-registers its own
+    <code>OmniSim-&lt;robot_id&gt;</code> profile on the platform.
+    Pick the profile in the web UI and the robot is online — no extra
+    process to run. Demo recipes:
+    <a href="../guide/omnilink-chat-demos.md">omnilink-chat-demos.md</a>.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Agent profile</th><th>World</th><th>Class</th><th>One-line prompt</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>OmniSim-tb3_burger</code></td><td><code>omnilink_tb3_burger.wbt</code></td><td>diff-drive</td><td>forward 1 m</td></tr>
+      <tr><td><code>OmniSim-tb3_waffle</code></td><td><code>omnilink_tb3_waffle.wbt</code></td><td>diff-drive</td><td>turn left 90</td></tr>
+      <tr><td><code>OmniSim-tb3_waffle_pi</code></td><td><code>omnilink_tb3_waffle_pi.wbt</code></td><td>diff-drive</td><td>forward 1 m</td></tr>
+      <tr><td><code>OmniSim-husky</code></td><td><code>omnilink_husky.wbt</code></td><td>skid-steer</td><td>circle</td></tr>
+      <tr><td><code>OmniSim-jackal</code></td><td><code>omnilink_jackal.wbt</code></td><td>skid-steer</td><td>turn around</td></tr>
+      <tr><td><code>OmniSim-rosbot</code></td><td><code>omnilink_rosbot.wbt</code></td><td>diff-drive</td><td>forward 1 m</td></tr>
+      <tr><td><code>OmniSim-rosbot_xl</code></td><td><code>omnilink_rosbot_xl.wbt</code></td><td>diff-drive</td><td>forward 1 m</td></tr>
+      <tr><td><code>OmniSim-spot</code></td><td><code>omnilink_spot.wbt</code></td><td>quadruped (poses only — no walking)</td><td>wave hello</td></tr>
+    </tbody>
+  </table>
+
+  <p class="section-hint" style="margin-top:18px">
+    The ninth chat demo, <code>omnilink_mavic.wbt</code> (DJI Mavic 2 Pro), works
+    differently: it runs the <code>mavic_omnilink_bridge</code> controller on port
+    <code>6090</code> and does <em>not</em> auto-register an
+    <code>OmniSim-&lt;robot_id&gt;</code> profile. Drive it with right-click chat
+    verbs (<code>takeoff</code>, <code>forward 1 m</code>, <code>land</code>) or
+    with the Drone Surveyor agent.
+  </p>
+</section>
+
+<!-- ───────────── Real-robot port ──────────────────── -->
+<section>
+  <h2>From sim to real</h2>
+  <p class="section-hint">
+    The <em>agent control surface</em> is simulator-agnostic: the tool names,
+    argument schemas, and HTTP endpoints do not change. Replace the controller
+    with a real-robot bridge and every prompt, every tool, every profile keeps
+    working. <strong>Physics and policy transfer are a separate problem and are
+    not claimed</strong> — see the
+    <a href="../guide/omnilink-sim-to-real.md">scope box in the sim-to-real guide</a>.
+  </p>
+
+  <div class="card">
+    <div class="role">starter kit</div>
+    <h3>Real-robot bridge stub</h3>
+    <p>
+      A runnable example with no simulator dependency. Copy
+      <code>mobile_bridge_stub.py</code>, replace the <strong>mock driver</strong>
+      (it logs the commands it would send — no hardware is driven out of the box)
+      with your robot SDK, and the same
+      <span class="pill green">Roomba</span> profile addresses your real fleet.
+    </p>
+    <div class="prompt">python agents/bridges/mobile_bridge_stub.py</div>
+    <div class="links">
+      <a href="../../agents/bridges/README.md">README</a>
+      <a href="../../agents/bridges/bridge_base.py">bridge_base.py</a>
+      <a href="../../agents/bridges/mobile_bridge_stub.py">mobile_bridge_stub.py</a>
+      <a href="../guide/omnilink-sim-to-real.md">sim-to-real walkthrough</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  OmniSim · agent gallery · the platform: <a href="https://omnilink-agents.com">omnilink-agents.com</a>
+</footer>
+
+</body>
+</html>

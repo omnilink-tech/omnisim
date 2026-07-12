@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!--
+Robotiq EPick — single-cup vacuum gripper. No moving parts at the
+kinematic level; the controller toggles a virtual "activated" state
+that should drive a sticky contact / detach event in the world,
+typically via supervisor APIs rather than joint motion. Shipped as a
+rigid kinematic mount with the EPick visual signature.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="robotiq_epick" params="parent_link prefix:=robotiq_epick *origin">
+    <link name="${prefix}_link">
+      <visual>
+        <origin xyz="0 0 0.040" rpy="0 0 0"/>
+        <geometry><cylinder length="0.080" radius="0.050"/></geometry>
+        <material name="${prefix}_dark"><color rgba="0.16 0.16 0.16 1.0"/></material>
+      </visual>
+      <visual>
+        <origin xyz="0 0 0.085" rpy="0 0 0"/>
+        <geometry><cylinder length="0.010" radius="0.020"/></geometry>
+        <material name="${prefix}_red"><color rgba="0.65 0.10 0.10 1.0"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.040" rpy="0 0 0"/>
+        <geometry><cylinder length="0.090" radius="0.050"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.040" rpy="0 0 0"/>
+        <mass value="0.71"/>
+        <inertia ixx="6.5e-4" ixy="0" ixz="0" iyy="6.5e-4" iyz="0" izz="4.4e-4"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+  </xacro:macro>
+</robot>

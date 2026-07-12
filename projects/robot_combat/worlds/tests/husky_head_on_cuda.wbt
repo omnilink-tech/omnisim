@@ -1,0 +1,3135 @@
+#VRML_SIM R2025a utf8
+
+# Husky head-on collision test — two huskies driving toward each other
+# from opposite ends of a long arena, hitting head-on at different
+# speeds. Used to validate that the damage system reads "realistic"
+# under symmetric and asymmetric impacts: matching speeds should split
+# damage roughly evenly across both front bumpers; mismatched speeds
+# should bias damage to whichever robot delivered more momentum.
+#
+# Only one husky (named "husky") is tracked by the harness_supervisor's
+# damage tracker — the other ("husky_b") is the unmonitored attacker.
+# The damage gating still applies to whichever is named "husky".
+#
+# See docs/developer/damage-system-plan.md.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky Head-On -- CUDA Particle Pool variant"
+  info [
+    "Two huskies head-on, plus a cuda_particle_pool supervisor that"
+    "absorbs all smoke/spark spawning into a pre-allocated GPU buffer."
+    "damage_tracker tries pool spawn first (~310us/particle); falls back"
+    "to importMFNodeFromString only if the pool isn't running."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.8 ]
+      bounce 0.3
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 18
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+# Long, wide arena so the huskies have ~18 m of runway each to ramp
+# up to commanded speed before a clean head-on at the centreline.
+RectangleArena {
+  floorSize 40 10
+  wallHeight 0.5
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# Husky 1 (tracked). Faces +X, drives east at full base_velocity_rad_s.
+# Starts at the west end with ~18 m of runway to accelerate to ~7-8 m/s.
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -18 0 0.1
+  name "husky"
+  supervisor TRUE
+  controller "drive_forward"
+  controllerArgs [ "50" ]
+}
+
+# Husky 2 (attacker). Faces -X (rotation 180 deg about Z), drives west
+# at 30 % wheel scaling so the closing speed is asymmetric — the heavier
+# damage should land on whichever bumper delivered more momentum. Scaling
+# applied through customData written by the supervisor's behavior-gate
+# pass; we have no way to plumb a per-husky scale from world to
+# controller without trips through customData (which only the supervisor
+# writes — the world-file-set initial value gets truncated by OmniSim's
+# VRML SFString parser when it contains \" escapes).
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 18 0 0.1
+  rotation 0 0 1 3.14159265
+  name "husky_b"
+  supervisor TRUE
+  controller "drive_forward"
+  controllerArgs [ "30" ]
+}
+
+# Harness supervisor — tracks `husky` (name set via DAMAGE_ROBOT_NAME
+# default). customData carries `use_particle_pool: true` so damage_tracker
+# routes smoke / spark spawns to the cuda_particle_pool on :6791 and
+# suppresses the legacy importMFNodeFromString fallback (which would
+# flood the VRML parser and slow the sim enough to starve the pool
+# itself -- a deadlock-by-starvation). No inject schedule; we want
+# pure organic damage from the head-on impact.
+Robot {
+  name "harness_supervisor"
+  translation 0 0 12.5
+  controller "harness_supervisor"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+  customData "{\"use_particle_pool\": true}"
+}
+
+# CUDA particle pool supervisor: owns a numba.cuda buffer of N=200
+# sprite particles. Listens on 127.0.0.1:6791 so damage_tracker can
+# push smoke/spark spawns to the pool instead of importing each as
+# its own OmniSim Solid via the slow VRML parser.
+Robot {
+  name "cuda_particle_pool"
+  translation 0 0 13.5
+  controller "cuda_particle_pool"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}
+
+# Pre-allocated particle pool: 200 small spheres parked at z=-100
+# until the cuda_particle_pool supervisor moves them. DEFs are
+# zero-padded so getFromDef finds them deterministically.
+Group {
+  children [
+    DEF particle_0000 Solid {
+      translation 0 0 -100
+      name "particle_0000"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0001 Solid {
+      translation 0 0 -100
+      name "particle_0001"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0002 Solid {
+      translation 0 0 -100
+      name "particle_0002"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0003 Solid {
+      translation 0 0 -100
+      name "particle_0003"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0004 Solid {
+      translation 0 0 -100
+      name "particle_0004"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0005 Solid {
+      translation 0 0 -100
+      name "particle_0005"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0006 Solid {
+      translation 0 0 -100
+      name "particle_0006"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0007 Solid {
+      translation 0 0 -100
+      name "particle_0007"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0008 Solid {
+      translation 0 0 -100
+      name "particle_0008"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0009 Solid {
+      translation 0 0 -100
+      name "particle_0009"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0010 Solid {
+      translation 0 0 -100
+      name "particle_0010"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0011 Solid {
+      translation 0 0 -100
+      name "particle_0011"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0012 Solid {
+      translation 0 0 -100
+      name "particle_0012"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0013 Solid {
+      translation 0 0 -100
+      name "particle_0013"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0014 Solid {
+      translation 0 0 -100
+      name "particle_0014"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0015 Solid {
+      translation 0 0 -100
+      name "particle_0015"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0016 Solid {
+      translation 0 0 -100
+      name "particle_0016"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0017 Solid {
+      translation 0 0 -100
+      name "particle_0017"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0018 Solid {
+      translation 0 0 -100
+      name "particle_0018"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0019 Solid {
+      translation 0 0 -100
+      name "particle_0019"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0020 Solid {
+      translation 0 0 -100
+      name "particle_0020"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0021 Solid {
+      translation 0 0 -100
+      name "particle_0021"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0022 Solid {
+      translation 0 0 -100
+      name "particle_0022"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0023 Solid {
+      translation 0 0 -100
+      name "particle_0023"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0024 Solid {
+      translation 0 0 -100
+      name "particle_0024"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0025 Solid {
+      translation 0 0 -100
+      name "particle_0025"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0026 Solid {
+      translation 0 0 -100
+      name "particle_0026"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0027 Solid {
+      translation 0 0 -100
+      name "particle_0027"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0028 Solid {
+      translation 0 0 -100
+      name "particle_0028"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0029 Solid {
+      translation 0 0 -100
+      name "particle_0029"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0030 Solid {
+      translation 0 0 -100
+      name "particle_0030"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0031 Solid {
+      translation 0 0 -100
+      name "particle_0031"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0032 Solid {
+      translation 0 0 -100
+      name "particle_0032"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0033 Solid {
+      translation 0 0 -100
+      name "particle_0033"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0034 Solid {
+      translation 0 0 -100
+      name "particle_0034"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0035 Solid {
+      translation 0 0 -100
+      name "particle_0035"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0036 Solid {
+      translation 0 0 -100
+      name "particle_0036"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0037 Solid {
+      translation 0 0 -100
+      name "particle_0037"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0038 Solid {
+      translation 0 0 -100
+      name "particle_0038"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0039 Solid {
+      translation 0 0 -100
+      name "particle_0039"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0040 Solid {
+      translation 0 0 -100
+      name "particle_0040"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0041 Solid {
+      translation 0 0 -100
+      name "particle_0041"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0042 Solid {
+      translation 0 0 -100
+      name "particle_0042"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0043 Solid {
+      translation 0 0 -100
+      name "particle_0043"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0044 Solid {
+      translation 0 0 -100
+      name "particle_0044"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0045 Solid {
+      translation 0 0 -100
+      name "particle_0045"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0046 Solid {
+      translation 0 0 -100
+      name "particle_0046"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0047 Solid {
+      translation 0 0 -100
+      name "particle_0047"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0048 Solid {
+      translation 0 0 -100
+      name "particle_0048"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0049 Solid {
+      translation 0 0 -100
+      name "particle_0049"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0050 Solid {
+      translation 0 0 -100
+      name "particle_0050"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0051 Solid {
+      translation 0 0 -100
+      name "particle_0051"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0052 Solid {
+      translation 0 0 -100
+      name "particle_0052"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0053 Solid {
+      translation 0 0 -100
+      name "particle_0053"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0054 Solid {
+      translation 0 0 -100
+      name "particle_0054"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0055 Solid {
+      translation 0 0 -100
+      name "particle_0055"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0056 Solid {
+      translation 0 0 -100
+      name "particle_0056"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0057 Solid {
+      translation 0 0 -100
+      name "particle_0057"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0058 Solid {
+      translation 0 0 -100
+      name "particle_0058"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0059 Solid {
+      translation 0 0 -100
+      name "particle_0059"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0060 Solid {
+      translation 0 0 -100
+      name "particle_0060"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0061 Solid {
+      translation 0 0 -100
+      name "particle_0061"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0062 Solid {
+      translation 0 0 -100
+      name "particle_0062"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0063 Solid {
+      translation 0 0 -100
+      name "particle_0063"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0064 Solid {
+      translation 0 0 -100
+      name "particle_0064"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0065 Solid {
+      translation 0 0 -100
+      name "particle_0065"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0066 Solid {
+      translation 0 0 -100
+      name "particle_0066"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0067 Solid {
+      translation 0 0 -100
+      name "particle_0067"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0068 Solid {
+      translation 0 0 -100
+      name "particle_0068"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0069 Solid {
+      translation 0 0 -100
+      name "particle_0069"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0070 Solid {
+      translation 0 0 -100
+      name "particle_0070"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0071 Solid {
+      translation 0 0 -100
+      name "particle_0071"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0072 Solid {
+      translation 0 0 -100
+      name "particle_0072"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0073 Solid {
+      translation 0 0 -100
+      name "particle_0073"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0074 Solid {
+      translation 0 0 -100
+      name "particle_0074"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0075 Solid {
+      translation 0 0 -100
+      name "particle_0075"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0076 Solid {
+      translation 0 0 -100
+      name "particle_0076"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0077 Solid {
+      translation 0 0 -100
+      name "particle_0077"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0078 Solid {
+      translation 0 0 -100
+      name "particle_0078"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0079 Solid {
+      translation 0 0 -100
+      name "particle_0079"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0080 Solid {
+      translation 0 0 -100
+      name "particle_0080"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0081 Solid {
+      translation 0 0 -100
+      name "particle_0081"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0082 Solid {
+      translation 0 0 -100
+      name "particle_0082"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0083 Solid {
+      translation 0 0 -100
+      name "particle_0083"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0084 Solid {
+      translation 0 0 -100
+      name "particle_0084"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0085 Solid {
+      translation 0 0 -100
+      name "particle_0085"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0086 Solid {
+      translation 0 0 -100
+      name "particle_0086"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0087 Solid {
+      translation 0 0 -100
+      name "particle_0087"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0088 Solid {
+      translation 0 0 -100
+      name "particle_0088"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0089 Solid {
+      translation 0 0 -100
+      name "particle_0089"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0090 Solid {
+      translation 0 0 -100
+      name "particle_0090"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0091 Solid {
+      translation 0 0 -100
+      name "particle_0091"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0092 Solid {
+      translation 0 0 -100
+      name "particle_0092"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0093 Solid {
+      translation 0 0 -100
+      name "particle_0093"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0094 Solid {
+      translation 0 0 -100
+      name "particle_0094"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0095 Solid {
+      translation 0 0 -100
+      name "particle_0095"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0096 Solid {
+      translation 0 0 -100
+      name "particle_0096"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0097 Solid {
+      translation 0 0 -100
+      name "particle_0097"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0098 Solid {
+      translation 0 0 -100
+      name "particle_0098"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0099 Solid {
+      translation 0 0 -100
+      name "particle_0099"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0100 Solid {
+      translation 0 0 -100
+      name "particle_0100"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0101 Solid {
+      translation 0 0 -100
+      name "particle_0101"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0102 Solid {
+      translation 0 0 -100
+      name "particle_0102"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0103 Solid {
+      translation 0 0 -100
+      name "particle_0103"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0104 Solid {
+      translation 0 0 -100
+      name "particle_0104"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0105 Solid {
+      translation 0 0 -100
+      name "particle_0105"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0106 Solid {
+      translation 0 0 -100
+      name "particle_0106"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0107 Solid {
+      translation 0 0 -100
+      name "particle_0107"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0108 Solid {
+      translation 0 0 -100
+      name "particle_0108"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0109 Solid {
+      translation 0 0 -100
+      name "particle_0109"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0110 Solid {
+      translation 0 0 -100
+      name "particle_0110"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0111 Solid {
+      translation 0 0 -100
+      name "particle_0111"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0112 Solid {
+      translation 0 0 -100
+      name "particle_0112"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0113 Solid {
+      translation 0 0 -100
+      name "particle_0113"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0114 Solid {
+      translation 0 0 -100
+      name "particle_0114"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0115 Solid {
+      translation 0 0 -100
+      name "particle_0115"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0116 Solid {
+      translation 0 0 -100
+      name "particle_0116"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0117 Solid {
+      translation 0 0 -100
+      name "particle_0117"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0118 Solid {
+      translation 0 0 -100
+      name "particle_0118"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0119 Solid {
+      translation 0 0 -100
+      name "particle_0119"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0120 Solid {
+      translation 0 0 -100
+      name "particle_0120"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0121 Solid {
+      translation 0 0 -100
+      name "particle_0121"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0122 Solid {
+      translation 0 0 -100
+      name "particle_0122"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0123 Solid {
+      translation 0 0 -100
+      name "particle_0123"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0124 Solid {
+      translation 0 0 -100
+      name "particle_0124"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0125 Solid {
+      translation 0 0 -100
+      name "particle_0125"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0126 Solid {
+      translation 0 0 -100
+      name "particle_0126"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0127 Solid {
+      translation 0 0 -100
+      name "particle_0127"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0128 Solid {
+      translation 0 0 -100
+      name "particle_0128"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0129 Solid {
+      translation 0 0 -100
+      name "particle_0129"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0130 Solid {
+      translation 0 0 -100
+      name "particle_0130"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0131 Solid {
+      translation 0 0 -100
+      name "particle_0131"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0132 Solid {
+      translation 0 0 -100
+      name "particle_0132"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0133 Solid {
+      translation 0 0 -100
+      name "particle_0133"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0134 Solid {
+      translation 0 0 -100
+      name "particle_0134"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0135 Solid {
+      translation 0 0 -100
+      name "particle_0135"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0136 Solid {
+      translation 0 0 -100
+      name "particle_0136"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0137 Solid {
+      translation 0 0 -100
+      name "particle_0137"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0138 Solid {
+      translation 0 0 -100
+      name "particle_0138"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0139 Solid {
+      translation 0 0 -100
+      name "particle_0139"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0140 Solid {
+      translation 0 0 -100
+      name "particle_0140"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0141 Solid {
+      translation 0 0 -100
+      name "particle_0141"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0142 Solid {
+      translation 0 0 -100
+      name "particle_0142"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0143 Solid {
+      translation 0 0 -100
+      name "particle_0143"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0144 Solid {
+      translation 0 0 -100
+      name "particle_0144"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0145 Solid {
+      translation 0 0 -100
+      name "particle_0145"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0146 Solid {
+      translation 0 0 -100
+      name "particle_0146"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0147 Solid {
+      translation 0 0 -100
+      name "particle_0147"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0148 Solid {
+      translation 0 0 -100
+      name "particle_0148"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0149 Solid {
+      translation 0 0 -100
+      name "particle_0149"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0150 Solid {
+      translation 0 0 -100
+      name "particle_0150"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0151 Solid {
+      translation 0 0 -100
+      name "particle_0151"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0152 Solid {
+      translation 0 0 -100
+      name "particle_0152"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0153 Solid {
+      translation 0 0 -100
+      name "particle_0153"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0154 Solid {
+      translation 0 0 -100
+      name "particle_0154"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0155 Solid {
+      translation 0 0 -100
+      name "particle_0155"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0156 Solid {
+      translation 0 0 -100
+      name "particle_0156"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0157 Solid {
+      translation 0 0 -100
+      name "particle_0157"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0158 Solid {
+      translation 0 0 -100
+      name "particle_0158"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0159 Solid {
+      translation 0 0 -100
+      name "particle_0159"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0160 Solid {
+      translation 0 0 -100
+      name "particle_0160"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0161 Solid {
+      translation 0 0 -100
+      name "particle_0161"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0162 Solid {
+      translation 0 0 -100
+      name "particle_0162"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0163 Solid {
+      translation 0 0 -100
+      name "particle_0163"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0164 Solid {
+      translation 0 0 -100
+      name "particle_0164"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0165 Solid {
+      translation 0 0 -100
+      name "particle_0165"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0166 Solid {
+      translation 0 0 -100
+      name "particle_0166"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0167 Solid {
+      translation 0 0 -100
+      name "particle_0167"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0168 Solid {
+      translation 0 0 -100
+      name "particle_0168"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0169 Solid {
+      translation 0 0 -100
+      name "particle_0169"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0170 Solid {
+      translation 0 0 -100
+      name "particle_0170"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0171 Solid {
+      translation 0 0 -100
+      name "particle_0171"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0172 Solid {
+      translation 0 0 -100
+      name "particle_0172"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0173 Solid {
+      translation 0 0 -100
+      name "particle_0173"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0174 Solid {
+      translation 0 0 -100
+      name "particle_0174"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0175 Solid {
+      translation 0 0 -100
+      name "particle_0175"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0176 Solid {
+      translation 0 0 -100
+      name "particle_0176"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0177 Solid {
+      translation 0 0 -100
+      name "particle_0177"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0178 Solid {
+      translation 0 0 -100
+      name "particle_0178"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0179 Solid {
+      translation 0 0 -100
+      name "particle_0179"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0180 Solid {
+      translation 0 0 -100
+      name "particle_0180"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0181 Solid {
+      translation 0 0 -100
+      name "particle_0181"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0182 Solid {
+      translation 0 0 -100
+      name "particle_0182"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0183 Solid {
+      translation 0 0 -100
+      name "particle_0183"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0184 Solid {
+      translation 0 0 -100
+      name "particle_0184"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0185 Solid {
+      translation 0 0 -100
+      name "particle_0185"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0186 Solid {
+      translation 0 0 -100
+      name "particle_0186"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0187 Solid {
+      translation 0 0 -100
+      name "particle_0187"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0188 Solid {
+      translation 0 0 -100
+      name "particle_0188"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0189 Solid {
+      translation 0 0 -100
+      name "particle_0189"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0190 Solid {
+      translation 0 0 -100
+      name "particle_0190"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0191 Solid {
+      translation 0 0 -100
+      name "particle_0191"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0192 Solid {
+      translation 0 0 -100
+      name "particle_0192"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0193 Solid {
+      translation 0 0 -100
+      name "particle_0193"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0194 Solid {
+      translation 0 0 -100
+      name "particle_0194"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0195 Solid {
+      translation 0 0 -100
+      name "particle_0195"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0196 Solid {
+      translation 0 0 -100
+      name "particle_0196"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0197 Solid {
+      translation 0 0 -100
+      name "particle_0197"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0198 Solid {
+      translation 0 0 -100
+      name "particle_0198"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+    DEF particle_0199 Solid {
+      translation 0 0 -100
+      name "particle_0199"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.55 0.20
+            roughness 0.5
+            emissiveColor 0.6 0.4 0.15
+            transparency 0.2
+          }
+          geometry Sphere { radius 0.06 subdivision 1 }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+#VRML_SIM R2025a utf8
+# license: Apache-2.0
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim
+# keywords: construction/vehicle/concrete mixer/cement truck
+# ConcreteMixer — a detailed procedural concrete mixer truck: chassis,
+# glazed cab, a back-tilted rotating drum with conical ends and spiral
+# fins, discharge chute, access ladder, and front + twin-rear dual
+# wheels. Static decoration (no physics).
+
+PROTO ConcreteMixer [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "concrete mixer"
+  field SFColor    cabColor    0.80 0.16 0.13
+  field SFColor    drumColor   0.86 0.80 0.20
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "concrete mixer"
+    children [
+      # chassis + bumper
+      Pose { translation -0.2 0 0.62 children [ Shape { appearance DEF CM_CHASSIS PBRAppearance { baseColor 0.16 0.16 0.18 roughness 0.8 metalness 0.5 } geometry Box { size 6.4 1.5 0.3 } } ] }
+      Pose { translation 3.0 0 0.5 children [ Shape { appearance USE CM_CHASSIS geometry Box { size 0.2 2.0 0.35 } } ] }
+
+      # cab + glazing
+      Pose { translation 2.1 0 1.4 children [ Shape { appearance DEF CM_CAB PBRAppearance { baseColor IS cabColor roughness 0.4 metalness 0.4 } geometry Box { size 1.5 2.05 1.5 } } ] }
+      Pose { translation 2.1 0 2.18 children [ Shape { appearance USE CM_CAB geometry Box { size 1.55 2.1 0.12 } } ] }
+      Pose { translation 2.86 0 1.65 rotation 0 1 0 0.5 children [ Shape { appearance DEF CM_GLASS PBRAppearance { baseColor 0.07 0.1 0.14 roughness 0.15 metalness 0.5 } geometry Box { size 0.08 1.85 0.8 } } ] }
+      Pose { translation 2.1 1.03 1.65 children [ Shape { appearance USE CM_GLASS geometry Box { size 1.1 0.06 0.7 } } ] }
+      Pose { translation 2.1 -1.03 1.65 children [ Shape { appearance USE CM_GLASS geometry Box { size 1.1 0.06 0.7 } } ] }
+      Pose { translation 3.03 0.7 1.2 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.93 0.7 roughness 0.2 emissiveColor 0.3 0.28 0.12 } geometry Box { size 0.06 0.3 0.25 } } ] }
+      Pose { translation 3.03 -0.7 1.2 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.93 0.7 roughness 0.2 emissiveColor 0.3 0.28 0.12 } geometry Box { size 0.06 0.3 0.25 } } ] }
+
+      # drum support frame
+      Pose { translation -1.2 0 1.0 children [ Shape { appearance USE CM_CHASSIS geometry Box { size 4.2 1.3 0.4 } } ] }
+      Pose { translation -3.4 0 1.4 children [ Shape { appearance USE CM_CHASSIS geometry Box { size 0.3 1.2 1.4 } } ] }   # rear A-frame
+
+      # ── rotating drum (tilted up toward the rear), conical ends + fins ──
+      Pose { translation -1.25 0 1.95 rotation 0 1 0 1.74 children [ Shape { appearance DEF CM_DRUM PBRAppearance { baseColor IS drumColor roughness 0.55 metalness 0.25 } geometry Cylinder { radius 1.12 height 3.0 } } ] }
+      Pose { translation 0.32 0 1.66 rotation 0 1 0 1.74 children [ Shape { appearance USE CM_DRUM geometry Cone { bottomRadius 1.12 height 1.0 } } ] }      # front taper
+      Pose { translation -2.78 0 2.24 rotation 0 1 0 -1.40 children [ Shape { appearance USE CM_DRUM geometry Cone { bottomRadius 1.12 height 1.1 } } ] }    # rear taper (to opening)
+      # spiral fin hints
+      Pose { translation -1.0 0 3.0 rotation 0 1 0 0.5 children [ Shape { appearance DEF CM_FIN PBRAppearance { baseColor 0.5 0.47 0.13 roughness 0.6 metalness 0.3 } geometry Box { size 1.8 0.05 0.18 } } ] }
+      Pose { translation -1.6 0 3.0 rotation 0 1 0 -0.5 children [ Shape { appearance USE CM_FIN geometry Box { size 1.8 0.05 0.18 } } ] }
+
+      # discharge chute (rear)
+      Pose { translation -3.7 0 1.3 rotation 0 1 0 0.6 children [ Shape { appearance DEF CM_STEEL PBRAppearance { baseColor 0.4 0.4 0.43 roughness 0.5 metalness 0.7 } geometry Box { size 1.5 0.6 0.18 } } ] }
+      # access ladder (rear)
+      Pose { translation -3.45 0.5 1.9 children [ Shape { appearance USE CM_STEEL geometry Box { size 0.05 0.05 1.6 } } ] }
+      Pose { translation -3.45 0.8 1.9 children [ Shape { appearance USE CM_STEEL geometry Box { size 0.05 0.05 1.6 } } ] }
+
+      # ── wheels: front single + twin-rear dual ──
+      Pose { translation 2.0 1.02 0.6 rotation 1 0 0 1.5708 children [
+        Shape { appearance DEF CM_TIRE PBRAppearance { baseColor 0.05 0.05 0.06 roughness 0.9 } geometry Cylinder { radius 0.6 height 0.36 } }
+        Pose { translation 0 0.2 0 children [ Shape { appearance DEF CM_HUB PBRAppearance { baseColor 0.5 0.5 0.52 roughness 0.5 metalness 0.7 } geometry Cylinder { radius 0.22 height 0.06 } } ] } ] }
+      Pose { translation 2.0 -1.02 0.6 rotation 1 0 0 1.5708 children [
+        Shape { appearance USE CM_TIRE geometry Cylinder { radius 0.6 height 0.36 } }
+        Pose { translation 0 -0.2 0 children [ Shape { appearance USE CM_HUB geometry Cylinder { radius 0.22 height 0.06 } } ] } ] }
+      Pose { translation -0.9 1.02 0.6 rotation 1 0 0 1.5708 children [ Shape { appearance USE CM_TIRE geometry Cylinder { radius 0.6 height 0.34 } } ] }
+      Pose { translation -0.9 1.38 0.6 rotation 1 0 0 1.5708 children [ Shape { appearance USE CM_TIRE geometry Cylinder { radius 0.6 height 0.34 } } ] }
+      Pose { translation -0.9 -1.02 0.6 rotation 1 0 0 1.5708 children [ Shape { appearance USE CM_TIRE geometry Cylinder { radius 0.6 height 0.34 } } ] }
+      Pose { translation -0.9 -1.38 0.6 rotation 1 0 0 1.5708 children [ Shape { appearance USE CM_TIRE geometry Cylinder { radius 0.6 height 0.34 } } ] }
+      Pose { translation -2.1 1.02 0.6 rotation 1 0 0 1.5708 children [ Shape { appearance USE CM_TIRE geometry Cylinder { radius 0.6 height 0.34 } } ] }
+      Pose { translation -2.1 1.38 0.6 rotation 1 0 0 1.5708 children [ Shape { appearance USE CM_TIRE geometry Cylinder { radius 0.6 height 0.34 } } ] }
+      Pose { translation -2.1 -1.02 0.6 rotation 1 0 0 1.5708 children [ Shape { appearance USE CM_TIRE geometry Cylinder { radius 0.6 height 0.34 } } ] }
+      Pose { translation -2.1 -1.38 0.6 rotation 1 0 0 1.5708 children [ Shape { appearance USE CM_TIRE geometry Cylinder { radius 0.6 height 0.34 } } ] }
+    ]
+  }
+}

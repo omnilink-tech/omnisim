@@ -1,0 +1,95 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/floors/protos/Floor.proto
+# keywords: primitive/ground
+# A flat rectangular ground plane of arbitrary size, with a repeating tiled appearance.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Parquetry.proto"
+
+PROTO Floor [
+  field SFVec3f    translation     0 0 0
+  field SFRotation rotation        0 0 1 0
+  field SFString   name            "floor"
+  field SFString   contactMaterial "default"                       # Is `Solid.contactMaterial`.
+  field SFVec2f    size            10 10                           # Defines the size of the floor.
+  field SFVec2f    tileSize        0.5 0.5                         # Defines the size of texture used for the floor.
+  field SFNode     appearance      Parquetry { type "chequered" }  # Defines the appearance of the floor.
+
+  # Deprecated in R2019a
+  hiddenField MFString   texture  "omnisim://projects/default/worlds/textures/checkered_parquetry.jpg"
+]
+{
+  # The floor is one axis-aligned quad lying in the local z = 0 plane, wound
+  # counter-clockwise so its face normal points up (+z). The appearance node is
+  # supplied by the caller, so tiling cannot be done with a TextureTransform --
+  # instead the quad carries explicit texture coordinates that run from 0 to
+  # (size / tileSize) across each axis. One texture tile therefore covers exactly
+  # `tileSize` metres of ground regardless of how large the floor is, which is
+  # what makes a 3 x 3 floor and a 300 x 300 floor look like the same material.
+  %<
+    // Both size fields divide or scale the mesh, so a non-positive value would
+    // collapse the quad (or divide by zero). Fall back to the declared default
+    // and tell the author, rather than emitting a degenerate floor.
+    let size = fields.size.value;
+    if (size.x <= 0.0 || size.y <= 0.0) {
+      size = fields.size.defaultValue;
+      console.error('Floor: \'size\' must be strictly positive on both axes. Falling back to ' +
+                    size.x + ' x ' + size.y + '.');
+    }
+
+    let tileSize = fields.tileSize.value;
+    if (tileSize.x <= 0.0 || tileSize.y <= 0.0) {
+      tileSize = fields.tileSize.defaultValue;
+      console.error('Floor: \'tileSize\' must be strictly positive on both axes. Falling back to ' +
+                    tileSize.x + ' x ' + tileSize.y + '.');
+    }
+
+    if (fields.texture.value[0] !== fields.texture.defaultValue[0])
+      console.error('Floor: the \'texture\' field is deprecated and ignored; set \'appearance\' instead.');
+
+    const hx = size.x * 0.5;
+    const hy = size.y * 0.5;
+    const tu = size.x / tileSize.x;  // texture repeats along local +x
+    const tv = size.y / tileSize.y;  // texture repeats along local +y
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Shape {
+        appearance IS appearance
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+              %<= -hx >% %<= -hy >% 0
+              %<=  hx >% %<= -hy >% 0
+              %<=  hx >% %<=  hy >% 0
+              %<= -hx >% %<=  hy >% 0
+            ]
+          }
+          texCoord TextureCoordinate {
+            point [
+              0 0
+              %<= tu >% 0
+              %<= tu >% %<= tv >%
+              0 %<= tv >%
+            ]
+          }
+          coordIndex    [ 0 1 2 3 -1 ]
+          texCoordIndex [ 0 1 2 3 -1 ]
+        }
+      }
+    ]
+    name IS name
+    model "floor"
+    # An infinite-extent Plane is the cheapest exact collider for a flat ground
+    # and avoids the thin-box tunnelling that a Box collider would risk.
+    boundingObject Plane {
+      size IS size
+    }
+    contactMaterial IS contactMaterial
+    locked TRUE
+  }
+}

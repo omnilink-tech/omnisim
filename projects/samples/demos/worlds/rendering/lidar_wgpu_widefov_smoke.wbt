@@ -1,0 +1,60 @@
+#VRML_SIM R2025a utf8
+
+# R5g smoke world: a single-layer, non-rotating, WIDE-FOV Lidar (fieldOfView
+# 2.0 rad = 115deg) facing the centred cyan box. 2.0 > 1.4 rad, so the wgpu path
+# splits the azimuth into N = ceil(2.0/1.2) = 2 sub-frustums and stitches them.
+#
+# The box (front face 0.7 m, half-angle atan(0.3/0.7)=0.405) sits at azimuth 0,
+# which is exactly the SEAM between the two frustums -- so it straddles the
+# stitch. range[theta] = 0.70/cos(theta) must stay smooth across theta=0
+# (a bad stitch would show a discontinuity there), and the wide flanks
+# (|theta| > 0.5) see nothing -> maxRange. This is the multi-frustum seam test.
+#
+# Companion to docs/developer/engine-migration-plan.md R5 WbLidar wide-FOV.
+
+WorldInfo {
+  info [
+    "R5g smoke -- wgpu wide-FOV Lidar (2-frustum stitch)"
+  ]
+  title "R5g wgpu wide-FOV Lidar smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 96
+      fieldOfView 2.0
+      verticalFieldOfView 0.1
+      numberOfLayers 1
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      type "fixed"
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "lidar_wgpu_widefov_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

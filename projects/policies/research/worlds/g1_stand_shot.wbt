@@ -1,0 +1,71 @@
+#VRML_SIM R2025a utf8
+
+# Screenshot variant of g1_stand_deploy.wbt: identical G1 + solved config, plus a
+# DEF CAMBOT camera-bot (controller g1_shot) that photographs the standing robot
+# via Camera.saveImage. Launch with rendering ON (no --batch / --no-window) and the
+# solved Newton env (ke=400 / kd=60 / GROUND_MU=2.0 / STATICS / SUBSTEPS=4 / MJWARP /
+# FORCE_MUJOCO / URDF_USE_INERTIA) + G1_BALANCE_FALLBACK=1. PNGs -> _scratch/g1_shots/.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 standing -- screenshot"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 5
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_legs_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_stand_deploy"
+  physicsBackend "newton"
+}
+
+DEF CAMBOT Robot {
+  translation -3.0 -2.3 1.25
+  children [
+    Camera {
+      name "cam"
+      width 1024
+      height 768
+      fieldOfView 0.9
+    }
+  ]
+  name "cambot"
+  controller "g1_shot"
+  supervisor TRUE
+}

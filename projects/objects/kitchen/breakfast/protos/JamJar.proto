@@ -1,0 +1,110 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/kitchen/breakfast/protos/JamJar.proto
+# keywords: household/kitchen
+# A graspable jar of jam: a translucent glass cylinder holding a dark red preserve, closed by a screw lid wrapped in the `textureLidUrl` artwork. The origin sits under the jar.
+# template language: javascript
+
+PROTO JamJar [
+  field SFVec3f    translation   0 0 0
+  field SFRotation rotation      0 0 1 0
+  field SFString   name          "jam jar"
+  field MFString   textureLidUrl "textures/blue_jar_lid.jpg"  # Defines the texture used for the lid of the jar.
+  field SFFloat    mass          0.5                          # Defines the mass of the jar in kg.
+]
+{
+%<
+  const mass = fields.mass.value;
+
+  const jarRadius = 0.035;
+  const jarHeight = 0.085;
+  const lidRadius = 0.037;
+  const lidHeight = 0.018;
+  const totalHeight = jarHeight + lidHeight - 0.004;  // the lid overlaps the neck
+>%
+Solid {
+  translation IS translation
+  rotation IS rotation
+  children [
+    # the jam, seen through the glass
+    Pose {
+      translation 0 0 %<= 0.5 * (jarHeight - 0.02) >%
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.42 0.07 0.09
+            roughness 0.35
+            metalness 0
+          }
+          geometry Cylinder {
+            radius %<= jarRadius - 0.002 >%
+            height %<= jarHeight - 0.02 >%
+            subdivision 24
+          }
+        }
+      ]
+    }
+    # the glass
+    Pose {
+      translation 0 0 %<= 0.5 * jarHeight >%
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.88 0.86
+            transparency 0.72
+            roughness 0.08
+            metalness 0
+          }
+          geometry Cylinder {
+            radius %<= jarRadius >%
+            height %<= jarHeight >%
+            subdivision 24
+          }
+        }
+      ]
+    }
+    # the screw lid
+    Pose {
+      translation 0 0 %<= jarHeight - 0.004 + 0.5 * lidHeight >%
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColorMap ImageTexture {
+              url IS textureLidUrl
+            }
+            roughness 0.45
+            metalness 0.2
+          }
+          geometry Cylinder {
+            radius %<= lidRadius >%
+            height %<= lidHeight >%
+            subdivision 24
+          }
+        }
+      ]
+    }
+  ]
+  name IS name
+  model "jam jar"
+  recognitionColors [
+    0.42 0.07 0.09
+  ]
+  boundingObject Pose {
+    translation 0 0 %<= 0.5 * totalHeight >%
+    children [
+      Cylinder {
+        radius %<= lidRadius >%
+        height %<= totalHeight >%
+        subdivision 16
+      }
+    ]
+  }
+%< if (mass > 0) { >%
+  physics Physics {
+    density -1
+    mass IS mass
+  }
+%< } >%
+}
+}

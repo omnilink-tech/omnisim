@@ -1,0 +1,96 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/factory/containers/protos/WoodenBox.proto
+# keywords: industrial/container
+# A wooden shipping crate: a resizable box finished in rough pine, static by default and
+# dynamic as soon as a positive `mass` is given.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughPine.proto"
+
+PROTO WoodenBox [
+  field SFVec3f    translation         0 0 0.3
+  field SFRotation rotation            0 0 1 0
+  field SFString   name                "wooden box"
+  field SFVec3f    size                0.6 0.6 0.6  # Defines the size of the wooden box.
+  field SFFloat    mass                0            # Defines the mass of the wooden box in kg. A value smaller or equal to 0 remove the physics of the wooden box.
+  field MFNode     immersionProperties []           # Is `Solid.immersionProperties`.
+  field SFBool     locked              FALSE        # Is `Solid.locked`.
+]
+{
+%<
+  // A crate smaller than a centimetre or larger than three metres is almost always a
+  // unit mix-up, so clamp rather than emit something unusable.
+  const MIN_EDGE = 0.01;
+  const MAX_EDGE = 3;
+
+  const clampEdge = (value, label) => {
+    if (value < MIN_EDGE) {
+      console.error('WoodenBox: \'size.' + label + '\' is below the minimum edge (' + MIN_EDGE + '). Value clamped.');
+      return MIN_EDGE;
+    }
+    if (value > MAX_EDGE) {
+      console.error('WoodenBox: \'size.' + label + '\' is above the maximum edge (' + MAX_EDGE + '). Value clamped.');
+      return MAX_EDGE;
+    }
+    return value;
+  };
+
+  const want = fields.size.value;
+  const sx = clampEdge(want.x, 'x');
+  const sy = clampEdge(want.y, 'y');
+  const sz = clampEdge(want.z, 'z');
+
+  // Keep the crate's density physically sane. Anchoring the bounds on volume^(2/3)
+  // admits roughly 0.01 kg to 10 kg for a 1000 cm3 crate, i.e. balsa through to solid
+  // hardwood, and scales that band with the crate.
+  const volume = sx * sy * sz;
+  const minMass = Math.pow(volume, 2 / 3);
+  const maxMass = 1000 * minMass;
+
+  let mass = fields.mass.value;
+  if (mass > 0 && mass < minMass) {
+    console.error('WoodenBox: \'mass\' is below the minimum for this size (' + minMass + ' kg). Value clamped.');
+    mass = minMass;
+  } else if (mass > maxMass) {
+    console.error('WoodenBox: \'mass\' is above the maximum for this size (' + maxMass + ' kg). Value clamped.');
+    mass = maxMass;
+  }
+
+  // Follow the crate's footprint with the wood grain so a long crate shows more planks
+  // instead of a few stretched ones.
+  const grainU = 2 * sx;
+  const grainV = 2 * sz;
+>%
+Solid {
+  translation IS translation
+  rotation IS rotation
+  children [
+    Shape {
+      appearance RoughPine {
+        colorOverride 0.85 0.72 0.53
+        textureTransform TextureTransform {
+          scale %<= grainU >% %<= grainV >%
+        }
+      }
+      geometry Box {
+        size %<= sx >% %<= sy >% %<= sz >%
+      }
+    }
+  ]
+  name IS name
+  model "wooden box"
+  immersionProperties IS immersionProperties
+  boundingObject Box {
+    size %<= sx >% %<= sy >% %<= sz >%
+  }
+  %< if (mass > 0) { >%
+  physics Physics {
+    density -1
+    mass %<= mass >%
+  }
+  %< } >%
+  locked IS locked
+}
+}

@@ -1,0 +1,80 @@
+#VRML_SIM R2025a utf8
+# license: Apache-2.0
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim
+# keywords: construction/vehicle/dump truck/tipper
+# DumpTruck — a detailed procedural rigid dump truck (tipper): chassis,
+# cab with glazing, tipping body with raised cab-guard, twin rear axles
+# with dual wheels, mudguards, hydraulic ram, exhaust stack and beacon.
+# Static decoration (no physics).
+
+PROTO DumpTruck [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "dump truck"
+  field SFColor    bodyColor   0.86 0.62 0.06   # Cab / chassis livery.
+  field SFColor    bedColor    0.32 0.33 0.36   # Tipping body.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "dump truck"
+    children [
+      # ── appearances (DEF once) ──
+      Group { children [
+        # chassis
+        Pose { translation -0.2 0 0.62 children [ Shape { appearance DEF DT_CHASSIS PBRAppearance { baseColor 0.18 0.18 0.2 roughness 0.8 metalness 0.5 } geometry Box { size 6.2 1.5 0.3 } } ] }
+        Pose { translation 2.7 0 0.5 children [ Shape { appearance USE DT_CHASSIS geometry Box { size 0.2 2.0 0.35 } } ] }   # front bumper
+
+        # engine hood + cab
+        Pose { translation 2.05 0 1.15 children [ Shape { appearance DEF DT_BODY PBRAppearance { baseColor IS bodyColor roughness 0.4 metalness 0.4 } geometry Box { size 1.5 2.05 0.95 } } ] }
+        Pose { translation 1.0 0 1.75 children [ Shape { appearance USE DT_BODY geometry Box { size 1.45 2.05 1.25 } } ] }      # cab
+        Pose { translation 1.0 0 2.42 children [ Shape { appearance USE DT_BODY geometry Box { size 1.5 2.1 0.12 } } ] }         # cab roof
+        # glazing
+        Pose { translation 1.78 0 1.95 rotation 0 1 0 0.5 children [ Shape { appearance DEF DT_GLASS PBRAppearance { baseColor 0.07 0.1 0.14 roughness 0.15 metalness 0.5 } geometry Box { size 0.08 1.85 0.8 } } ] }  # windscreen
+        Pose { translation 1.0 1.03 1.95 children [ Shape { appearance USE DT_GLASS geometry Box { size 1.1 0.06 0.7 } } ] }     # side window L
+        Pose { translation 1.0 -1.03 1.95 children [ Shape { appearance USE DT_GLASS geometry Box { size 1.1 0.06 0.7 } } ] }    # side window R
+        # headlights + grille + beacon + exhaust
+        Pose { translation 2.81 0.7 1.0 children [ Shape { appearance DEF DT_LIGHT PBRAppearance { baseColor 0.95 0.93 0.7 roughness 0.2 emissiveColor 0.3 0.28 0.12 } geometry Box { size 0.06 0.3 0.25 } } ] }
+        Pose { translation 2.81 -0.7 1.0 children [ Shape { appearance USE DT_LIGHT geometry Box { size 0.06 0.3 0.25 } } ] }
+        Pose { translation 1.0 0 2.6 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.6 0.05 roughness 0.3 emissiveColor 0.4 0.2 0.0 } geometry Cylinder { radius 0.12 height 0.12 } } ] }   # amber beacon
+        Pose { translation 0.35 0.92 1.9 children [ Shape { appearance DEF DT_STEEL PBRAppearance { baseColor 0.25 0.25 0.27 roughness 0.5 metalness 0.7 } geometry Cylinder { radius 0.07 height 1.8 } } ] }  # exhaust stack
+
+        # ── tipping body (cab guard slopes up over the cab) ──
+        Pose { translation -1.7 0 1.05 children [ Shape { appearance DEF DT_BED PBRAppearance { baseColor IS bedColor roughness 0.6 metalness 0.6 } geometry Box { size 4.2 2.3 0.18 } } ] }      # bed floor
+        Pose { translation -1.7 1.16 1.55 children [ Shape { appearance USE DT_BED geometry Box { size 4.2 0.12 1.1 } } ] }       # side wall L
+        Pose { translation -1.7 -1.16 1.55 children [ Shape { appearance USE DT_BED geometry Box { size 4.2 0.12 1.1 } } ] }      # side wall R
+        Pose { translation -3.75 0 1.55 children [ Shape { appearance USE DT_BED geometry Box { size 0.14 2.3 1.1 } } ] }         # tailboard
+        Pose { translation 0.4 0 1.95 children [ Shape { appearance USE DT_BED geometry Box { size 0.14 2.3 1.9 } } ] }           # cab-guard (front, tall)
+        Pose { translation -1.0 0 1.45 rotation 0 1 0 0.18 children [ Shape { appearance USE DT_STEEL geometry Cylinder { radius 0.09 height 1.6 } } ] }  # hydraulic ram
+
+        # ── mudguards ──
+        Pose { translation -1.6 1.18 1.25 children [ Shape { appearance USE DT_CHASSIS geometry Box { size 2.2 0.45 0.1 } } ] }
+        Pose { translation -1.6 -1.18 1.25 children [ Shape { appearance USE DT_CHASSIS geometry Box { size 2.2 0.45 0.1 } } ] }
+      ] }
+
+      # ── wheels: front axle (single) + two rear axles (dual) ──
+      # front
+      DEF DT_WHEEL_F Pose { translation 1.9 1.02 0.62 rotation 1 0 0 1.5708 children [
+        Shape { appearance DEF DT_TIRE PBRAppearance { baseColor 0.05 0.05 0.06 roughness 0.9 } geometry Cylinder { radius 0.62 height 0.38 } }
+        Pose { translation 0 0.2 0 children [ Shape { appearance DEF DT_HUB PBRAppearance { baseColor 0.5 0.5 0.52 roughness 0.5 metalness 0.7 } geometry Cylinder { radius 0.24 height 0.06 } } ] }
+      ] }
+      Pose { translation 1.9 -1.02 0.62 rotation 1 0 0 1.5708 children [
+        Shape { appearance USE DT_TIRE geometry Cylinder { radius 0.62 height 0.38 } }
+        Pose { translation 0 -0.2 0 children [ Shape { appearance USE DT_HUB geometry Cylinder { radius 0.24 height 0.06 } } ] }
+      ] }
+      # rear axle 1 (dual)
+      Pose { translation -1.0 1.02 0.62 rotation 1 0 0 1.5708 children [ Shape { appearance USE DT_TIRE geometry Cylinder { radius 0.62 height 0.36 } } ] }
+      Pose { translation -1.0 1.4 0.62 rotation 1 0 0 1.5708 children [ Shape { appearance USE DT_TIRE geometry Cylinder { radius 0.62 height 0.36 } } ] }
+      Pose { translation -1.0 -1.02 0.62 rotation 1 0 0 1.5708 children [ Shape { appearance USE DT_TIRE geometry Cylinder { radius 0.62 height 0.36 } } ] }
+      Pose { translation -1.0 -1.4 0.62 rotation 1 0 0 1.5708 children [ Shape { appearance USE DT_TIRE geometry Cylinder { radius 0.62 height 0.36 } } ] }
+      # rear axle 2 (dual)
+      Pose { translation -2.2 1.02 0.62 rotation 1 0 0 1.5708 children [ Shape { appearance USE DT_TIRE geometry Cylinder { radius 0.62 height 0.36 } } ] }
+      Pose { translation -2.2 1.4 0.62 rotation 1 0 0 1.5708 children [ Shape { appearance USE DT_TIRE geometry Cylinder { radius 0.62 height 0.36 } } ] }
+      Pose { translation -2.2 -1.02 0.62 rotation 1 0 0 1.5708 children [ Shape { appearance USE DT_TIRE geometry Cylinder { radius 0.62 height 0.36 } } ] }
+      Pose { translation -2.2 -1.4 0.62 rotation 1 0 0 1.5708 children [ Shape { appearance USE DT_TIRE geometry Cylinder { radius 0.62 height 0.36 } } ] }
+    ]
+  }
+}

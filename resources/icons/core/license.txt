@@ -1,0 +1,22 @@
+OmniSim core icons.
+
+Contents
+--------
+* omnisim.png, omnisim64x64.png, omnisim_doc.png, omnisim_doc.ico
+  OmniSim / OmniLink brand marks. (c) OmniLink. The code is Apache-2.0; the marks are
+  trademarks governed by TRADEMARKS.md - you may fork the code, but rename and replace
+  the branding if you ship a modified fork.
+
+* warning.png
+  Google Material Symbols - Apache License 2.0.
+  https://github.com/google/material-design-icons
+
+* horizontal_splitter.png, vertical_splitter.png
+  OmniSim original artwork (splitter grip dots). Apache-2.0, (c) OmniLink.
+
+History
+-------
+This directory previously carried an icons8 / CC BY-NoDerivs notice. That notice was
+incorrect: it was applied to OmniSim's own brand marks, which were never icons8 artwork.
+The one genuine glyph here (warning.png) was replaced with an Apache-2.0 source in
+v5.0.0. No icons8 artwork remains.

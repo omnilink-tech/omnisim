@@ -1,0 +1,77 @@
+{
+  "schema": 2,
+  "name": "turn_in_place",
+  "title": "Turn in place ~90 deg by real footwork (no rope)",
+  "class": "humanoid",
+  "robots": ["g1"],
+  "kind": "rl",
+  "method": "shadowing",
+  "status": "experimental",
+  "motion_class": "sequence",
+  "summary": "The footwork step-turn: the G1 turns ~90 deg by REAL stepping (wtz=0, no crane yaw torque), shadowing a SOLVED-by-construction step-turn ghost (footstep plan + IK, COM kept over the stance foot). Needs foot torsional friction (OMNISIM_FOOT_TORSION) -- a flat foot at condim=3 freewheels and loses ~2/3 of the yaw. Because it is a slow WHOLE-BODY SEQUENCE (nb~225, 153-dim REF_OBS_WB obs) it CANNOT element-wise blend with the fast cyclic 120-dim family, so BATON runs it via a SOLO CONTEXT-SWAP (whole deploy runs it alone during a turn segment) instead of a blend.",
+
+  "ghost": {
+    "lut": "projects/policies/controllers/g1_ghost/ghost_turn_180_lut.json",
+    "provenance": "solved",
+    "validator": "WARN",
+    "preview_world": "projects/policies/worlds/g1_step_turn_preview.wbt",
+    "owner_signoff": "2026-07-07",
+    "notes": "build_step_turn_ghost.py: footstep-planned + IK, COM-over-support (IK 0.3mm, COM-inside 54/54 single-support frames). A 180 ghost so a sustained turner learns steady-state turning and decel-stops at TURN_TO_DEG. Validator WARNs (turns are legitimately asymmetric)."
+  },
+
+  "policy": {
+    "checkpoint": "projects/policies/training/runs/wr_stepturn.pt",
+    "arch": "lstm",
+    "hidden": 256,
+    "obs": {"family": "whole_body_seq", "ref_obs_k": 3, "ref_obs_wb": true, "dim": 153},
+    "action": {"dim": 23, "space": "whole_body", "decode": "ghost(seq_phase) + residual*GHOST_RESIDUAL"}
+  },
+
+  "baton": {
+    "blend": "solo_swap",
+    "mode": "turn",
+    "nb": 225,
+    "vx": "0",
+    "attractor": "locomotion",
+    "handover_in": "cold",
+    "notes": "solo_swap: _wr_turn_swap replaces every world._wr_* deploy field with the turner's context for the turn segment; blend + warm loop are skipped while in the turn; cold-hidden both ways. Continuous-turn + decel-stop (TURN_TO_DEG/TURN_DECEL_DEG) arrests the spin. Reliability is fragile in-sequence (the open wall)."
+  },
+
+  "train": {
+    "trainer": "projects.policies.training.g1_walk_recipe:g1_walk_recipe_step",
+    "launcher": "projects/policies/training/run_walk_rl.sh",
+    "recipe_env": {
+      "GHOST_SEQ": "1",
+      "GHOST_LUT_JSON": "projects/policies/controllers/g1_ghost/ghost_turn_180_lut.json",
+      "OMNISIM_FOOT_TORSION": "0.25",
+      "REF_OBS_WB": "1",
+      "SEQ_RSI": "1",
+      "W_TRACK_ANG": "5"
+    },
+    "status": "reconstructed",
+    "notes": "turnstep10: SEQ tracker on the 180 ghost, tight feedforward (GHOST_RESIDUAL=0.08, W_GHOST=26). Foot torsion MUST match train<->deploy. VERIFY frozen bundle; see docs/developer/step-turn-method.md + memory project_baton_policy_switching Rounds 10-11c."
+  },
+
+  "deploy": {
+    "solo_swap_env": {
+      "BATON_TURN_CKPT": "projects/policies/training/runs/wr_stepturn.pt",
+      "BATON_TURN_LUT": "projects/policies/controllers/g1_ghost/ghost_turn_180_lut.json",
+      "BATON_TURN_REF_WB": "1",
+      "OMNISIM_FOOT_TORSION": "0.25",
+      "TURN_TO_DEG": "90",
+      "TURN_DECEL_DEG": "15",
+      "BATON_TURN_SETTLE_TICKS": "120",
+      "HEADING_TARGET": "0.0",
+      "HARNESS_FY_HEADING": "1"
+    }
+  },
+
+  "verification": {
+    "date": "2026-07-08",
+    "engine": "Newton/mujoco_warp",
+    "result": "SOLO from a clean stand: turns ~86-90 deg CCW pure footwork (wtz=0), upright z~0.68, decel-holds. IN-SEQUENCE: SOLVED 2026-07-10 by TURN-LOOP (walk_turn_walk sequence: the 90-deg turner wr_turn90 replays partial passes of its modular 15-deg-staircase ghost until the ACTUAL heading reaches target, always finishing through the end-hold; TURN_HOLD_LOCK=0). Verified 3/3: 90.6-95.6 deg, 0 falls. The wr_stepturn/180 decel-stop path here remains the turn_solo config."
+  },
+  "doc": "docs/developer/step-turn-method.md",
+  "memory": "project_baton_policy_switching",
+  "related": ["walk"]
+}

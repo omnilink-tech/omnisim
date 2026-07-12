@@ -1,0 +1,529 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.654668392633041 -0.7394386230216 -0.15697075673892394 0.774863141020495
+  position -1.0045221731012215 1.140274437070733 1.4889604949474993
+}
+Background {
+  skyColor [ 0.15 0.20 0.30 ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  color 1.0 0.95 0.85
+  direction -0.5 -0.5 -0.3
+  intensity 2.5
+  castShadows TRUE
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+RectangleArena {
+  rotation 1 0 0 -1.5708
+  translation 0 -3.469446951953614e-18 0
+}
+DEF BALL_JOINT_ROBOT Robot {
+  translation 0.15 0 0.15
+  children [
+    DEF BODY Pose {
+      translation 0 0.05 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.8 0 0
+            transparency 0.05
+            metalness 0
+          }
+          geometry Box {
+            size 0.1 0.1 0.1
+          }
+        }
+      ]
+    }
+    BallJoint {
+      jointParameters BallJointParameters {
+        anchor 0 0.15 0
+      }
+      jointParameters2 JointParameters {
+        axis 1 0 1
+      }
+      jointParameters3 JointParameters {
+        axis 0 1 0
+      }
+      device [
+        Brake {
+        }
+        PositionSensor {
+        }
+        RotationalMotor {
+          maxVelocity 1
+        }
+      ]
+      device2 [
+        Brake {
+          name "brake 2"
+        }
+        PositionSensor {
+          name "position sensor 2"
+        }
+        RotationalMotor {
+          name "rotational motor 2"
+          maxVelocity 1
+          minPosition -1.5707963267948966
+          maxPosition 1.5707963267948966
+        }
+      ]
+      device3 [
+        PositionSensor {
+          name "position sensor 3"
+        }
+        RotationalMotor {
+          name "rotational motor 3"
+          maxVelocity 1
+        }
+      ]
+      endPoint Solid {
+        translation 0 0.15 0
+        children [
+          DEF BALL_JOINT_MARKER Solid {
+            translation 0.03 0.07 0
+            rotation -0.57735 0.57735 -0.57735 2.09440
+            children [
+              Shape {
+                appearance PBRAppearance {
+                }
+                geometry Cone {
+                  bottomRadius 0.01
+                  height 0.02
+                  subdivision 48
+                }
+              }
+            ]
+          }
+          DEF CYLINDER Pose {
+            rotation 1 0 0 -1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.20392156862745098 0.396078431372549 0.6431372549019608
+                  transparency 0.1
+                }
+                geometry Cylinder {
+                  height 0.2
+                  radius 0.02
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject USE CYLINDER
+        physics Physics {
+        }
+      }
+    }
+  ]
+  name "robot(2)"
+  boundingObject USE BODY
+  physics Physics {
+  }
+  controller "joint_controller"
+}
+DEF BALL_JOINT_ROBOT_KINEMATIC Robot {
+  translation 0.15 0 -0.15
+  children [
+    DEF BODY Pose {
+      translation 0 0.05 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.8 0 0
+            transparency 0.05
+            metalness 0
+          }
+          geometry Box {
+            size 0.1 0.1 0.1
+          }
+        }
+      ]
+    }
+    BallJoint {
+      jointParameters BallJointParameters {
+        anchor 0 0.15 0
+      }
+      jointParameters2 JointParameters {
+        axis 1 0 1
+      }
+      jointParameters3 JointParameters {
+        axis 0 1 0
+      }
+      device [
+        Brake {
+        }
+        PositionSensor {
+        }
+        RotationalMotor {
+          maxVelocity 1
+        }
+      ]
+      device2 [
+        Brake {
+          name "brake 2"
+        }
+        PositionSensor {
+          name "position sensor 2"
+        }
+        RotationalMotor {
+          name "rotational motor 2"
+          maxVelocity 1
+          minPosition -1.5707963267948966
+          maxPosition 1.5707963267948966
+        }
+      ]
+      device3 [
+        Brake {
+          name "brake 3"
+        }
+        PositionSensor {
+          name "position sensor 3"
+        }
+        RotationalMotor {
+          name "rotational motor 3"
+          maxVelocity 1
+        }
+      ]
+      endPoint Solid {
+        translation 0 0.15 0
+        children [
+          DEF BALL_JOINT_MARKER_KINEMATIC Solid {
+            translation 0.03 0.07 0
+            rotation -0.57735 0.57735 -0.57735 2.09440
+            children [
+              Shape {
+                appearance PBRAppearance {
+                }
+                geometry Cone {
+                  bottomRadius 0.01
+                  height 0.02
+                  subdivision 48
+                }
+              }
+            ]
+          }
+          DEF CYLINDER Pose {
+            rotation 1 0 0 -1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.20392156862745098 0.396078431372549 0.6431372549019608
+                  transparency 0.1
+                }
+                geometry Cylinder {
+                  height 0.2
+                  radius 0.02
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject USE CYLINDER
+      }
+    }
+  ]
+  name "robot(3)"
+  boundingObject USE BODY
+  controller "joint_controller"
+}
+DEF HINGE_JOINT_ROBOT Robot {
+  translation -0.15 0 -0.15
+  children [
+    DEF BODY Pose {
+      translation 0 0.05 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.8 0 0
+            transparency 0.05
+            metalness 0
+          }
+          geometry Box {
+            size 0.1 0.1 0.1
+          }
+        }
+      ]
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 1 0 1
+        anchor 0 0.15 0
+        suspensionAxis 0 1 0
+      }
+      device [
+        Brake {
+        }
+        PositionSensor {
+        }
+        RotationalMotor {
+          maxVelocity 1
+        }
+      ]
+      endPoint Solid {
+        translation 0 0.15 0
+        children [
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 1 0 -1
+            }
+            device [
+              Brake {
+                name "brake 2"
+              }
+              PositionSensor {
+                name "position sensor 2"
+              }
+              RotationalMotor {
+                name "rotational motor 2"
+                maxVelocity 1
+              }
+            ]
+            endPoint Solid {
+              children [
+                HingeJoint {
+                  jointParameters HingeJointParameters {
+                    axis 0 1 0
+                  }
+                  device [
+                    Brake {
+                      name "brake 3"
+                    }
+                    PositionSensor {
+                      name "position sensor 3"
+                    }
+                    RotationalMotor {
+                      name "rotational motor 3"
+                      maxVelocity 1
+                    }
+                  ]
+                  endPoint Solid {
+                    children [
+                      DEF HINGE_JOINT_MARKER Solid {
+                        translation 0.03 0.07 0
+                        rotation -0.57735 0.57735 -0.57735 2.09440
+                        children [
+                          Shape {
+                            appearance PBRAppearance {
+                            }
+                            geometry Cone {
+                              bottomRadius 0.01
+                              height 0.02
+                              subdivision 48
+                            }
+                          }
+                        ]
+                      }
+                      DEF CYLINDER Pose {
+                        rotation 1 0 0 -1.5708
+                        children [
+                          Shape {
+                            appearance PBRAppearance {
+                              baseColor 0.20392156862745098 0.396078431372549 0.6431372549019608
+                              transparency 0.1
+                            }
+                            geometry Cylinder {
+                              height 0.2
+                              radius 0.02
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                    boundingObject USE CYLINDER
+                    physics Physics {
+                    }
+                  }
+                }
+              ]
+              boundingObject Sphere {
+                radius 0.01
+              }
+              physics Physics {
+              }
+            }
+          }
+        ]
+        boundingObject DEF DUMMY_SPHERE Sphere {
+          radius 0.01
+        }
+        physics Physics {
+        }
+      }
+    }
+  ]
+  name "robot(1)"
+  boundingObject USE BODY
+  physics Physics {
+  }
+  controller "joint_controller"
+}
+DEF HINGE_JOINT_ROBOT_KINEMATIC Robot {
+  translation -0.15 0 0.15
+  children [
+    DEF BODY Pose {
+      translation 0 0.05 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.8 0 0
+            transparency 0.05
+            metalness 0
+          }
+          geometry Box {
+            size 0.1 0.1 0.1
+          }
+        }
+      ]
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 1 0 1
+        anchor 0 0.15 0
+        suspensionAxis 0 1 0
+      }
+      device [
+        Brake {
+        }
+        PositionSensor {
+        }
+        RotationalMotor {
+          maxVelocity 1
+        }
+      ]
+      endPoint Solid {
+        translation 0 0.15 0
+        children [
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 1 0 -1
+            }
+            device [
+              Brake {
+                name "brake 2"
+              }
+              PositionSensor {
+                name "position sensor 2"
+              }
+              RotationalMotor {
+                name "rotational motor 2"
+                maxVelocity 1
+              }
+            ]
+            endPoint Solid {
+              children [
+                HingeJoint {
+                  jointParameters HingeJointParameters {
+                    axis 0 1 0
+                  }
+                  device [
+                    Brake {
+                      name "brake 3"
+                    }
+                    PositionSensor {
+                      name "position sensor 3"
+                    }
+                    RotationalMotor {
+                      name "rotational motor 3"
+                      maxVelocity 1
+                    }
+                  ]
+                  endPoint Solid {
+                    children [
+                      DEF HINGE_JOINT_MARKER_KINEMATIC Solid {
+                        translation 0.03 0.07 0.0
+                        rotation -0.57735 0.57735 -0.57735 2.09440
+                        children [
+                          Shape {
+                            appearance PBRAppearance {
+                            }
+                            geometry Cone {
+                              bottomRadius 0.01
+                              height 0.02
+                              subdivision 48
+                            }
+                          }
+                        ]
+                      }
+                      DEF CYLINDER Pose {
+                        rotation 1 0 0 -1.5708
+                        children [
+                          Shape {
+                            appearance PBRAppearance {
+                              baseColor 0.20392156862745098 0.396078431372549 0.6431372549019608
+                              transparency 0.1
+                            }
+                            geometry Cylinder {
+                              height 0.2
+                              radius 0.02
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                    boundingObject USE CYLINDER
+                  }
+                }
+              ]
+              boundingObject Sphere {
+                radius 0.01
+              }
+            }
+          }
+        ]
+        boundingObject DEF DUMMY_SPHERE Sphere {
+          radius 0.01
+        }
+      }
+    }
+  ]
+  name "robot(4)"
+  boundingObject USE BODY
+  controller "joint_controller"
+}
+DEF SUPERVISOR Robot {
+  children [
+    TestSuiteEmitter {
+    }
+  ]
+  controller "ball_joint_vs_hinge_joints"
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

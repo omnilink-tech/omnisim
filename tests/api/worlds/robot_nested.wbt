@@ -1,0 +1,138 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.7178389574486761 0.6828153075731561 0.13590616951696594 0.74164289
+  position 1.361179 1.788431 2.574618
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  ambientIntensity 1
+  direction 0.1 -0.5 0.3
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+TestSuiteSupervisor {
+}
+Robot {
+  name "father"
+  children [
+    TestSuiteEmitter {
+    }
+    DEF CHILD_ROBOT Robot {
+      name "child"
+      translation 0 0.1 0
+      children [
+        Robot {
+          name "grand child"
+          translation 0 0.1 0
+          children [
+            TestSuiteEmitter {
+            }
+          ]
+          controller "robot_nested_child"
+          controllerArgs [
+            "robot_nested_three_levels"
+          ]
+        }
+        TestSuiteEmitter {
+        }
+        GPS {
+        }
+      ]
+      controller "robot_nested_child"
+      controllerArgs [
+        "robot_nested_direct_child"
+      ]
+    }
+    Group {
+      children [
+        DEF GROUP_CHILD Robot {
+          children [
+            TestSuiteEmitter {
+            }
+          ]
+          name "brother"
+          controller "robot_nested_child"
+          controllerArgs [
+            "robot_nested_group_child"
+          ]
+        }
+        HingeJoint {
+          endPoint Solid {
+            rotation 1 0 0 0
+            children [
+              DEF JOINT_ROBOT Robot {
+                name "joint sister"
+                children [
+                  TestSuiteEmitter {
+                  }
+                ]
+                controller "robot_nested_child"
+                controllerArgs [
+                  "robot_nested_joint_endpoint"
+                ]
+              }
+            ]
+          }
+        }
+        Slot {
+          endPoint Slot {
+            endPoint DEF SLOT_ROBOT Robot {
+              children [
+                TestSuiteEmitter {
+                }
+              ]
+              name "slot brother"
+              controller "robot_nested_child"
+              controllerArgs [
+                "robot_nested_slot_endpoint"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+  controller "robot_nested"
+  controllerArgs [
+    "robot_nested_parent"
+  ]
+  supervisor TRUE
+}

@@ -1,0 +1,71 @@
+#VRML_SIM R2025a utf8
+
+# R5k smoke world: a MULTI-LAYER (7) ROTATING Lidar with a cyan box that is BOTH
+# offset to the FRONT-RIGHT (-y, one-sided azimuth) AND offset UPWARD (z=0.25,
+# asymmetric elevation). This composes the two earlier verification ideas:
+#   - one-sided azimuth (like R5j) -> the exact-column placement of the box
+#     discriminates yaw-sign + widthOffset (a reversed sweep / wrong offset puts
+#     it on the wrong side), even under a full rotation.
+#   - asymmetric elevation (like R5f) -> more layers ABOVE centre see the box
+#     than BELOW; a vertical layer-flip would reverse this.
+# Together they exercise the R5k path: the rotating-window render 2D-resamples
+# height() camera rows by elevation into the height()xwidth() window the shared
+# band-copy accumulates, so both the azimuth placement and the per-layer
+# orientation must hold simultaneously.
+#
+# Geometry: box centre (1.0, -0.4, 0.25), size 0.6. Front face ~0.7 m. Azimuth
+# centre atan2(-0.4,1.0) = -0.381 rad -> right of centre. Elevation centre
+# atan2(0.25,1.0) = +0.245 rad -> above the sensor axis.
+#
+# Companion to docs/developer/engine-migration-plan.md R5 WbLidar rotating spec.
+
+WorldInfo {
+  info [
+    "R5k smoke -- wgpu multi-layer rotating Lidar (azimuth + elevation)"
+  ]
+  title "R5k wgpu multi-layer rotating Lidar smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 360
+      fieldOfView 0.6
+      verticalFieldOfView 0.8
+      numberOfLayers 7
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      type "rotating"
+      defaultFrequency 1
+      rotatingHead Solid {
+        name "lidar_head"
+      }
+    }
+    DEF UR_BOX Solid {
+      translation 1.0 -0.4 0.25
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "upper right box"
+    }
+  ]
+  controller "lidar_wgpu_ml_rotating_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

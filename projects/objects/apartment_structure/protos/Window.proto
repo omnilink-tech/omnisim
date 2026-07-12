@@ -1,0 +1,186 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/apartment_structure/protos/Window.proto
+# keywords: building/component
+# A customizable wall segment with a window punched through it: the masonry below and above the opening, a glazed pane, a sill and a four-bar frame.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/VarnishedPine.proto"
+EXTERNPROTO "omnisim://projects/objects/solids/protos/SolidBox.proto"
+
+PROTO Window [
+  field SFVec3f    translation            0 0 0
+  field SFRotation rotation               0 0 1 0
+  field SFString   name                   "window"
+  field SFVec3f    size                   0.2 0.8 2.4       # Defines the size of the window.
+  field SFColor    glassColor             0.8 0.8 0.8       # Defines the color of the window.
+  field SFFloat    glassTransparency      0.8               # Defines the transparency of the window.
+  field SFFloat    windowThickness        0.05              # Defines the thickness of the window.
+  field SFFloat    bottomWallHeight       0.7               # Defines the height of the top wall.
+  field SFFloat    windowHeight           1.4               # Defines the height of the window.
+  field SFVec3f    frameSize              0.05 0.02 0.05    # Defines the size of the window frame.
+  field SFVec2f    windowSillSize         0.1 0.05          # Defines the size of the sill below the window.
+  field SFNode     wallAppearance         Roughcast {}      # Defines the appearance of the wall.
+  field SFNode     frameAppearance        VarnishedPine {}  # Defines the appearance of the frame.
+  field SFBool     castShadows            TRUE              # Defines whether this object should cast shadows.
+]
+{
+  %<
+    // ---------------------------------------------------------------------
+    // The wall segment runs along Y, is `size.x` thick and `size.z` tall, and
+    // stands on the ground plane (z = 0 is its foot). The window opening is a
+    // band of height `windowHeight` starting at `bottomWallHeight`.
+    // ---------------------------------------------------------------------
+    let size = fields.size.value;
+    if (size.x <= 0 || size.y <= 0 || size.z <= 0) {
+      size = fields.size.defaultValue;
+      console.error('\'size\' must be strictly positive. Value reset to (' + size.x + ', ' + size.y + ', ' + size.z + ').');
+    }
+
+    let windowThickness = fields.windowThickness.value;
+    if (windowThickness <= 0.0) {
+      windowThickness = fields.windowThickness.defaultValue;
+      console.error('\'windowThickness\' must be strictly positive. Value reset to ' + windowThickness + '.');
+    }
+
+    let bottomWallHeight = fields.bottomWallHeight.value;
+    if (bottomWallHeight < 0.0) {
+      bottomWallHeight = fields.bottomWallHeight.defaultValue;
+      console.error('\'bottomWallHeight\' must be positive. Value reset to ' + bottomWallHeight + '.');
+    }
+
+    let windowHeight = fields.windowHeight.value;
+    if (windowHeight <= 0.0) {
+      windowHeight = fields.windowHeight.defaultValue;
+      console.error('\'windowHeight\' must be strictly positive. Value reset to ' + windowHeight + '.');
+    }
+
+    let frameSize = fields.frameSize.value;
+    if (frameSize.x <= 0 || frameSize.y <= 0 || frameSize.z <= 0) {
+      frameSize = fields.frameSize.defaultValue;
+      console.error('\'frameSize\' must be strictly positive. Value reset to (' + frameSize.x + ', ' + frameSize.y + ', ' + frameSize.z + ').');
+    }
+
+    let windowSillSize = fields.windowSillSize.value;
+    if (windowSillSize.x < 0.0 || windowSillSize.y < 0.0) {
+      windowSillSize = fields.windowSillSize.defaultValue;
+      console.error('\'windowSillSize\' must contain positive or zero values. Value reset to (' + windowSillSize.x + ', ' + windowSillSize.y + ').');
+    }
+
+    // The opening has to actually fit inside the wall, and the frame has to fit
+    // inside the opening. If any of that is impossible the geometry would be
+    // inside-out, so fall back to the defaults wholesale rather than emit it.
+    let broken = true;
+    if (windowHeight <= 2 * frameSize.z)
+      console.error('\'frameSize.z\' is too big in comparison to \'windowHeight\'.');
+    else if (windowHeight + bottomWallHeight > size.z)
+      console.error('\'windowHeight\' and \'bottomWallHeight\' are too big in comparison to \'size.z\'.');
+    else if (size.y <= 2 * frameSize.y)
+      console.error('\'frameSize.y\' is too big in comparison to \'size.y\'.');
+    else
+      broken = false;
+
+    if (broken) {
+      windowHeight = fields.windowHeight.defaultValue;
+      bottomWallHeight = fields.bottomWallHeight.defaultValue;
+      frameSize = fields.frameSize.defaultValue;
+      size = fields.size.defaultValue;
+    }
+
+    // ---------------------------------------------------------------------
+    // Vertical landmarks.
+    // ---------------------------------------------------------------------
+    const openingBottom = bottomWallHeight;
+    const openingTop = bottomWallHeight + windowHeight;
+    const openingMid = bottomWallHeight + 0.5 * windowHeight;
+    const topWallHeight = size.z - openingTop;
+
+    const hasSill = windowSillSize.x > 0 && windowSillSize.y > 0;
+    const frameDepth = size.x + 2 * frameSize.x;   // the frame proud of the wall on both faces
+    const frameClearY = size.y - 2 * frameSize.y;  // the span left between the two uprights
+
+    // The four frame bars: two rails spanning the width between the uprights,
+    // two uprights running the full height of the opening.
+    const bars = [
+      {name: 'bottom frame', y: 0, z: openingBottom + windowSillSize.y + 0.5 * frameSize.z, sy: frameClearY, sz: frameSize.z},
+      {name: 'top frame', y: 0, z: openingTop - 0.5 * frameSize.z, sy: frameClearY, sz: frameSize.z},
+      {name: 'right frame', y: 0.5 * (size.y - frameSize.y), z: openingMid, sy: frameSize.y, sz: windowHeight},
+      {name: 'left frame', y: -0.5 * (size.y - frameSize.y), z: openingMid, sy: frameSize.y, sz: windowHeight}
+    ];
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      %< if (bottomWallHeight > 0) { >%
+        Solid { # the masonry under the window
+          translation 0 0 %<= 0.5 * bottomWallHeight >%
+          children [
+            Shape {
+              appearance IS wallAppearance
+              geometry Box {
+                size %<= size.x >% %<= size.y >% %<= bottomWallHeight >%
+              }
+              castShadows IS castShadows
+            }
+          ]
+          name "bottom wall"
+          boundingObject Box {
+            size %<= size.x >% %<= size.y >% %<= bottomWallHeight >%
+          }
+        }
+      %< } >%
+      %< if (topWallHeight > 0) { >%
+        Solid { # the masonry over the window
+          translation 0 0 %<= size.z - 0.5 * topWallHeight >%
+          children [
+            Shape {
+              appearance IS wallAppearance
+              geometry Box {
+                size %<= size.x >% %<= size.y >% %<= topWallHeight >%
+              }
+              castShadows IS castShadows
+            }
+          ]
+          name "top wall"
+          boundingObject Box {
+            size %<= size.x >% %<= size.y >% %<= topWallHeight >%
+          }
+        }
+      %< } >%
+      SolidBox { # the pane, inset so the frame overlaps its edges
+        translation 0 0 %<= openingMid >%
+        name "glass"
+        size %<= windowThickness >% %<= frameClearY >% %<= windowHeight - 2 * frameSize.z >%
+        appearance PBRAppearance {
+          baseColor IS glassColor
+          metalness 0
+          transparency IS glassTransparency
+        }
+        castShadows IS castShadows
+      }
+      %< if (hasSill) { >%
+        SolidBox { # the sill, ledging out past both faces of the wall
+          translation 0 0 %<= openingBottom + 0.5 * windowSillSize.y >%
+          name "sill"
+          size %<= frameDepth + 2 * windowSillSize.x >% %<= size.y >% %<= windowSillSize.y >%
+          appearance IS frameAppearance
+          castShadows IS castShadows
+        }
+      %< } >%
+      %< for (let i = 0; i < bars.length; ++i) { >%
+        SolidBox {
+          translation 0 %<= bars[i].y >% %<= bars[i].z >%
+          name %<= '"' + bars[i].name + '"' >%
+          size %<= frameDepth >% %<= bars[i].sy >% %<= bars[i].sz >%
+          appearance IS frameAppearance
+          castShadows IS castShadows
+        }
+      %< } >%
+    ]
+    name IS name
+    model "window"
+  }
+}

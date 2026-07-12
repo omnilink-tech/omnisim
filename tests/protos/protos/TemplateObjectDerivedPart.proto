@@ -1,0 +1,10 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/TemplateObjectBasePart.proto"
+
+PROTO TemplateObjectDerivedPart [
+]
+{
+  TemplateObjectBasePart {
+  }
+}

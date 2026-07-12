@@ -1,0 +1,26 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/SlotNode.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+
+PROTO ProtoWithSlotExtension [
+  field SFNode slotExtension SlotNode { }
+  field SFString controller "<none>"
+]
+{
+  Robot {
+    children [
+      Solid {
+        children [
+          Slot {
+            type "slot"
+            endPoint IS slotExtension
+          }
+        ]
+      }
+      TestSuiteEmitter{
+      }
+    ]
+    controller IS controller
+  }
+}

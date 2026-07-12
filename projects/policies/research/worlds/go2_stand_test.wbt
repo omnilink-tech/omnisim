@@ -1,0 +1,60 @@
+#VRML_SIM R2025a utf8
+
+# Go2 import + stand smoke-test world. Minimal Newton arena with the Unitree
+# Go2 spawned in the standing crouch (<rest> pose in go2.urdf). Used to:
+#   1. validate the URDF imports under Newton with no errors;
+#   2. dump the deploy-matched MJCF via OMNISIM_NEWTON_SAVE_MJCF for the
+#      GPU mujoco_warp trainer.
+# Launch recipe (import + MJCF dump):
+#   OMNISIM_NEWTON_FORCE_MUJOCO=1 OMNISIM_NEWTON_SUBSTEPS=8
+#   OMNISIM_NEWTON_TARGET_KE=80 OMNISIM_NEWTON_TARGET_KD=2.0
+#   OMNISIM_URDF_USE_INERTIA=1 OMNISIM_NEWTON_GROUND_MU=2.0
+#   OMNISIM_NEWTON_SAVE_MJCF=C:\tmp\go2_newton.xml
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Go2 stand test"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 3
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 10 10
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/unitree/go2/urdf/go2.urdf"
+  translation 0 0 0.33
+  name "go2"
+  supervisor TRUE
+  controller "<none>"
+  physicsBackend "newton"
+}

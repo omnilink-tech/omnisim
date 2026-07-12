@@ -1,0 +1,48 @@
+#VRML_SIM R2025a utf8
+# WARP CONTACT-KERNEL REPRO B: free box on a static box (2026-07-10): minimal physics-only world for the grasp
+# campaign's NaN hunt -- no robots, no policies, so CPU-vs-warp A/B is clean. Run via
+# scripts in run_warp_contact_repro.sh; NaN detector = the base-divergence guard's console
+# print (OMNISIM_NEWTON_BASE_GUARD=1 in the repro runner).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+}
+Viewpoint {
+  position -3 -3 2
+  orientation 0.2 0.2 -0.95 1.6
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 8 8
+}
+DEF STATIC_CART Solid {
+  translation 0 0 0.44
+  name "static_cart"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.30 0.34 0.40 roughness 0.7 metalness 0.3 }
+      geometry DEF CART_GEO Box { size 0.5 0.4 0.86 }
+    }
+  ]
+  boundingObject USE CART_GEO
+}
+DEF FREE_BOX Solid {
+  translation 0 0 0.965
+  name "free_box"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.72 0.52 0.30 roughness 0.9 metalness 0 }
+      geometry DEF FREE_BOX_GEO Box { size 0.20 0.26 0.18 }
+    }
+  ]
+  boundingObject USE FREE_BOX_GEO
+  physics Physics { density -1 mass 1.0 }
+}

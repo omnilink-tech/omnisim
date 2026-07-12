@@ -1,0 +1,27 @@
+2026-05-02 12:53:23 START_DEMO
+[chat] using profile 'Warehouse Foreman' (id=<profile-id>) with 11 tools, engine=g1-engine
+[chat] cleared memory for 'Warehouse Foreman'
+[chat] cleared memory for 'Warehouse Picker'
+[chat] cleared memory for 'Axis'
+[chat] pre-status: 0 prior foreman claims, specialists=['Warehouse Picker', 'Axis']
+[chat] sending: 'Move the green pallet to the loading dock and have the loader acknowledge receipt.'
+
+[chat] turn 1: 3.5s, 1 tool calls
+        text: Alright, let's get that green pallet moving! First, I'm just going to quickly read the mission brief to make sure I have all the details straight.
+        -> read_mission_brief({}) -> {"world_title": "Warehouse Logistics", "brief": "Mission: move the GREEN-tagged pallet to the loading dock zone.\n\nSix pallets are arranged in a 2 x 3 grid (rows at y=+5 and y=-5).\nEach pallet wears
+[chat] turn 2: 2.6s, 1 tool calls
+        text: Okay, I've got the brief: move the green pallet to the loading dock. Before I delegate, I'll just check in with my specialists to make sure everyone is online and ready to go.
+        -> list_agents({}) -> {"status": "ok", "specialists": [{"name": "Warehouse Picker", "what_it_does": "Drives the Clearpath Husky on warehouse_logistics.wbt \u2014 continuous-space waypoint navigation, front-camera tag ident
+[chat] turn 3: 4.8s, 1 tool calls
+        text: Great, both the Warehouse Picker and Axis are online and ready! Now, Picker, I need you to find that green pallet. I'm delegating the task of locating it, confirming its color with your camera, and then pushing it to the loading dock at coo…
+        -> delegate_to_agent({"task": "Identify the GREEN pallet using your camera at successive vantage poin) -> {"success": true, "agent": "Warehouse Picker", "turns": 16, "tool_calls": 14, "final_text": "The mission is complete! I identified the green pallet at (3, 5) and successfully pushed it to the loading 
+[chat] turn 4: 4.9s, 1 tool calls
+        text: Excellent! The Warehouse Picker successfully moved the green pallet to the loading dock. Now it's Axis's turn to acknowledge receipt.
+
+Axis, please move the UR5e TCP in world coordinates to (-11.5, 0.0, 1.0) – that's just over the loading d…
+        -> delegate_to_agent({"agent": "Axis", "task": "Move the UR5e TCP in world coordinates to (-11.5, 0.0) -> {"success": true, "agent": "Axis", "turns": 4, "tool_calls": 2, "final_text": "Excellent! The UR5e's TCP is now at `[-11.499989263403828, 2.22590626891752e-05, 0.9999928636972355]`, which is precisely
+[chat] turn 5: 4.2s, 1 tool calls
+        text: Fantastic! Both the Warehouse Picker and Axis have completed their tasks successfully. The green pallet has been moved from its initial position to the loading dock, and Axis has acknowledged its receipt. I'm now completing the mission.
+        -> complete_mission({"rationale": "The green pallet was successfully moved from its starting locatio) -> {"status": "ok", "foreman_mission_complete": true, "claim": {"timestamp": 1777719708.318976, "rationale": "The green pallet was successfully moved from its starting location to the loading dock by the
+[chat] foreman claimed mission complete in turn 5; total tools: 5
+2026-05-02 13:01:49 END_DEMO

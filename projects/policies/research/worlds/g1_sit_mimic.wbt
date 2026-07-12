@@ -1,0 +1,137 @@
+#VRML_SIM R2025a utf8
+
+# SEATED ARM-MIMIC demo -- nailing the shadow -> ghost -> mimic pipeline on a
+# statically-stable task (no biped balance).
+#   - DEF G1_REAL : the real, Newton-simulated G1, pelvis PINNED (staticBase
+#     TRUE) and seated on a chair, driven by g1_seated_mimic. It position-tracks
+#     the shared seated gesture reference (projects/policies/control/gait/g1_sit_gesture).
+#   - DEF G1_GHOST: a SECOND, physics-free G1 (staticBase TRUE, no Newton)
+#     rendered as a translucent hologram by g1_seated_ghost, DISPLAYING the SAME
+#     reference. The real robot reproduces exactly what the ghost shows.
+# The ghost waves its right arm (and a slow left-arm lift); the real robot mimics.
+#
+# Launch: scripts/dev/run_g1_sit_mimic.ps1   (GUI, real-time paced).
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Unitree G1 -- seated arm-mimic (ghost + real)"
+  newtonSolver "mujoco"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.2671 0.2730 0.9244 1.6450
+  position 2.9 -2.2 1.35
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 8 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+# ----- Chair under the real robot. Seat top ~0.33 (the G1's short lower legs make
+# it sit low, feet on the floor) and a REAL collision boundingObject on the seat
+# (registered as a Newton static collider via OMNISIM_NEWTON_STATICS) so the robot
+# physically RESTS on the seat instead of passing through it. -----
+DEF CHAIR_MIMIC Solid {
+  translation 0 -0.55 0
+  name "chair_mimic"
+  boundingObject Pose {
+    translation 0 0 0.30
+    children [ Box { size 0.44 0.44 0.06 } ]
+  }
+  children [
+    Pose {
+      translation 0 0 0.30
+      children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.32 0.26 0.22 roughness 0.7 metalness 0.1 } geometry Box { size 0.44 0.44 0.06 } } ]
+    }
+    # Backrest = a real COLLIDER (child Solid with boundingObject -> Newton static
+    # collider) the robot leans against to sit upright. Matches the MJCF chair_back
+    # (robot-relative -0.14, 0, 0.66; chair is at y=-0.55 so this lands behind the back).
+    DEF CHAIR_MIMIC_BACK Solid {
+      translation -0.085 0 0.66
+      name "chair_mimic_back"
+      boundingObject Box { size 0.04 0.44 0.52 }
+      children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.32 0.26 0.22 roughness 0.7 metalness 0.1 } geometry Box { size 0.04 0.44 0.52 } } ]
+    }
+    Pose { translation  0.18  0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.20 0.16 0.13 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation  0.18 -0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.20 0.16 0.13 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation -0.18  0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.20 0.16 0.13 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation -0.18 -0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.20 0.16 0.13 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+  ]
+}
+
+# ----- Chair under the ghost (visual-only hologram, lowered to match the real one) -----
+DEF CHAIR_GHOST Solid {
+  translation 0 0.55 0
+  name "chair_ghost"
+  children [
+    Pose {
+      translation 0 0 0.30
+      children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.30 0.34 0.40 transparency 0.35 roughness 0.7 metalness 0.1 } geometry Box { size 0.44 0.44 0.06 } } ]
+    }
+    Pose {
+      translation -0.085 0 0.66
+      children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.30 0.34 0.40 transparency 0.35 roughness 0.7 metalness 0.1 } geometry Box { size 0.04 0.44 0.52 } } ]
+    }
+    Pose { translation  0.18  0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.22 0.26 0.32 transparency 0.35 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation  0.18 -0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.22 0.26 0.32 transparency 0.35 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation -0.18  0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.22 0.26 0.32 transparency 0.35 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation -0.18 -0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.22 0.26 0.32 transparency 0.35 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+  ]
+}
+
+# ----- Real robot: the MIMIC (Newton deploy physics), pelvis PINNED. -----
+# STATUS (2026-06-19): Phase 1 DONE. The robot SITS on the chair (feet on floor,
+# torso upright) and its arm tracks the ghost's wave (max joint err ~0.05 rad mean
+# / 0.08 peak; base drift ~0.0015 m).
+#   Pinning: a Newton FIXED-joint weld does NOT hold a floating-base humanoid --
+#   under the leg load the welded pelvis SINKS from 0.47 to ~0 (verified via
+#   STEPDIAG body_z; only the massless ghost weld held). So the g1_seated_mimic
+#   supervisor PINS the free-root pelvis every step (reset to spawn pose + zero
+#   velocity, the reset_body_pose path the bin/suction demos use). No staticBase
+#   here -> a normal free root the controller can pin; getPosition()/base_drift
+#   are therefore real reads, not the static-body spawn value.
+#   Legs: spawn already folded into the seated pose via OMNISIM_NEWTON_SEED_POSE
+#   (set in the launcher) so they never fall straight and JAM their feet in the
+#   floor (which left the hip stuck at -0.25 vs -1.55 and the body sprawled).
+# Uses the PRIM URDF (the full-mesh URDF cold-load-CRASHES under Newton); same 23 joints.
+DEF G1_REAL URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim_prim.urdf"
+  translation 0 -0.55 0.47
+  name "g1"
+  supervisor TRUE
+  controller "g1_seated_mimic"
+  physicsBackend "newton"
+}
+
+# ----- Ghost: kinematic, translucent, displays the same reference -----
+DEF G1_GHOST URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 0.55 0.47
+  name "g1_ghost"
+  supervisor TRUE
+  controller "g1_seated_ghost"
+  staticBase TRUE
+}

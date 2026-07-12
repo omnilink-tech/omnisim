@@ -1,0 +1,106 @@
+#VRML_SIM R2025a utf8
+
+# Husky damage arena (driving variant) — Phase 5 of the damage system.
+# See docs/developer/damage-system-plan.md.
+#
+# 16 m x 16 m arena with a driving Husky and the same box dropper. The
+# Husky runs `drive_forward`, which reads per-wheel torque scales from
+# its customData; the harness supervisor's damage tracker writes those
+# scales whenever a wheel or the chassis transitions state.
+#
+# Expected demo: Husky drives forward at modest speed, takes box hits,
+# chassis state degrades, eventually `game_over` is set in customData
+# and the controller stops all wheels. If a wheel transitions to
+# broken/damaged, that wheel slows or stops, causing the Husky to veer.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky Damage Arena - Driving Variant"
+  info [
+    "Phase 5: driving Husky in a damage-tracked arena. The supervisor"
+    "writes per-wheel torque scales and a game_over flag to the Husky's"
+    "customData; drive_forward reads them to throttle the wheels."
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 14
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+RectangleArena {
+  floorSize 16 16
+  wallHeight 0.5
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# Husky parked at the west edge facing east (+X) so it can drive the full
+# arena length before hitting the east wall. drive_forward commands a
+# modest forward velocity scaled per-wheel by the supervisor's damage
+# gating.
+DEF HUSKY URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 0 0.1
+  name "husky"
+  supervisor TRUE
+  controller "drive_forward"
+  # damage_profile selects the fragile arena tuning so the box impacts
+  # actually break parts off (the default profile is tuned for ramming
+  # combat and barely registers drops). wheel_torque/game_over are the
+  # behaviour-gate keys drive_forward reads; the supervisor rewrites them.
+  customData "{\"damage_profile\":\"husky_arena\",\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+
+# Box dropper — same schedule as the static arena, slightly larger drops
+# so a moving Husky still catches a few before driving past.
+Robot {
+  name "damage_arena_director"
+  translation 0 0 12
+  controller "damage_arena_director"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+  customData "{\"loop\": false, \"cleanup_after_ms\": 60000, \"track\": \"HUSKY\", \"boxes\": [{\"t_ms\": 2000, \"z\": 6.0, \"size\": 0.45, \"mass\": 22.0, \"color\": [0.9, 0.4, 0.2]}, {\"t_ms\": 5000, \"z\": 6.5, \"size\": 0.48, \"mass\": 30.0, \"color\": [0.2, 0.6, 0.9]}, {\"t_ms\": 8000, \"z\": 7.0, \"size\": 0.5, \"mass\": 38.0, \"color\": [0.8, 0.8, 0.2]}, {\"t_ms\": 11000, \"z\": 7.0, \"size\": 0.52, \"mass\": 46.0, \"color\": [0.5, 0.2, 0.7]}, {\"t_ms\": 14000, \"z\": 7.5, \"size\": 0.55, \"mass\": 56.0, \"color\": [0.9, 0.1, 0.5]}, {\"t_ms\": 17000, \"z\": 8.0, \"size\": 0.58, \"mass\": 68.0, \"color\": [0.3, 0.9, 0.5]}, {\"t_ms\": 20000, \"z\": 8.0, \"size\": 0.6, \"mass\": 82.0, \"color\": [0.7, 0.5, 0.3]}]}"
+}
+
+# Harness supervisor — runs damage tracker, listens for queries on :6790.
+# No inject schedule: the parts come off purely from the box impacts the
+# Husky takes as it drives (the fragile husky_arena profile on the robot
+# makes those impacts count). When a wheel breaks the supervisor zeroes
+# its torque, so the Husky veers; a broken chassis sets game_over and it
+# stops.
+Robot {
+  name "harness_supervisor"
+  translation 0 0 12.5
+  controller "harness_supervisor"
+  # --light disables the gamey per-impact particle FX (smoke puffs,
+  # sparks, debris bursts, floating markers); parts still take damage
+  # and physically detach, which reads as realistic mechanical failure.
+  controllerArgs [
+    "--light"
+  ]
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}

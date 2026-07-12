@@ -1,0 +1,58 @@
+#VRML_SIM R2025a utf8
+
+# MJWARP-CLEAN deploy world. ROOT CAUSE of the G1 deploy collapse: the flagship
+# deploy worlds carry a RectangleArena whose floor <Plane> boundingObject is
+# added via add_shape_plane onto a NON-static body. newton's SolverMuJoCo
+# conversion rejects that ("Planes can only be attached to static bodies"), the
+# whole mjwarp build FAILS, and the backend SILENTLY falls back to XPBD -- a
+# completely different (position-based) solver. The policy is trained on mjwarp
+# GPU, so running it on XPBD guarantees the FALL@~1.07s collapse, which is why
+# DR / gains / collision / torque / Newton-fine-tune ALL failed identically:
+# every one was deployed onto XPBD, never the engine it learned.
+#
+# FIX (this world): NO RectangleArena. The backend adds its own default ground
+# plane on world-open (attached to the TRUE static world, exactly like the
+# trainer's mb.add_ground_plane()) -- so mjwarp converts cleanly and the deploy
+# runs the SAME engine the policy trained on. Uses the primitive-collision URDF
+# to match the trainer's contact set. Same controller/gains as the flagship.
+#
+# Required Newton env: OMNISIM_NEWTON_STATICS=1 OMNISIM_NEWTON_SUBSTEPS=4
+# OMNISIM_URDF_USE_INERTIA=1 OMNISIM_NEWTON_FORCE_MUJOCO=1 OMNISIM_NEWTON_MJWARP=1
+# OMNISIM_NEWTON_TARGET_KE=100 OMNISIM_NEWTON_TARGET_KD=5.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 full-body walking PPO deploy (mjwarp-clean ground)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5 1.8
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim_prim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_walk_deploy"
+  physicsBackend "newton"
+}

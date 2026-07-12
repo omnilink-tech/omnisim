@@ -1,0 +1,105 @@
+#VRML_SIM R2025a utf8
+
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "omnisim://projects/objects/tables/protos/Table.proto"
+EXTERNPROTO "omnisim://projects/objects/bedroom/protos/Bed.proto"
+EXTERNPROTO "omnisim://projects/objects/bathroom/protos/Toilet.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "indoor_apartment (omniworld)"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 15.669 -16.680 14.658
+  bloomThreshold -1.0
+  ambientOcclusionRadius 0
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+  luminosity 0.95
+  castShadows FALSE
+}
+RectangleArena {
+  floorSize 16 8
+  wallHeight 0.05
+}
+
+Wall {
+  translation 8 2 0
+  rotation 0 0 1 -1.5708
+  size 0.2 12 2.4
+  name "perim_south"
+}
+
+Wall {
+  translation 8 6 0
+  rotation 0 0 1 -1.5708
+  size 0.2 12 2.4
+  name "perim_north"
+}
+
+Wall {
+  translation 2 4 0
+  rotation 0 0 1 0
+  size 0.2 4 2.4
+  name "perim_west"
+}
+
+Wall {
+  translation 14 4 0
+  rotation 0 0 1 0
+  size 0.2 4 2.4
+  name "perim_east"
+}
+
+Wall {
+  translation 7 2.75 0
+  rotation 0 0 1 0
+  size 0.2 1.5 2.4
+  name "divider_0_lo"
+}
+
+Wall {
+  translation 7 5.25 0
+  rotation 0 0 1 0
+  size 0.2 1.5 2.4
+  name "divider_0_hi"
+}
+
+Wall {
+  translation 11 2.75 0
+  rotation 0 0 1 0
+  size 0.2 1.5 2.4
+  name "divider_1_lo"
+}
+
+Wall {
+  translation 11 5.25 0
+  rotation 0 0 1 0
+  size 0.2 1.5 2.4
+  name "divider_1_hi"
+}
+
+Table {
+  translation 4.5 4 0
+  rotation 0 0 1 3.14159
+  name "Table_8"
+}
+
+Bed {
+  translation 9 4 0
+  rotation 0 0 1 0
+  name "Bed_9"
+}
+
+Toilet {
+  translation 12.5 4 0
+  rotation 0 0 1 4.71239
+  name "Toilet_10"
+}

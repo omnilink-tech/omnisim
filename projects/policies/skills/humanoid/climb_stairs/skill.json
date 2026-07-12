@@ -1,0 +1,76 @@
+{
+  "schema": 2,
+  "name": "climb_stairs",
+  "title": "Climb stairs (walk in, then ascend 5 treads)",
+  "class": "humanoid",
+  "robots": ["g1"],
+  "kind": "rl",
+  "method": "shadowing",
+  "status": "experimental",
+  "motion_class": "sequence",
+  "summary": "IN PROGRESS. The G1 walks in on flat ground, settles, then steps ONTO and up a 5-tread staircase (riser 0.07, going 0.26 = 0.35 m total), shadowing a composed walk->stand->climb sequence ghost whose root_lut rises with the treads. Train==deploy terrain is FREE (put_model batches the world stair boxes into the trainer). CURRENT WALL: propulsion -- across 6 trainer levers the policy plateaus at ~2 steps; a high-imitation run survives (0 falls) but climbs no further -- it cannot hoist its mass past step 2. Not balance/timing/height. See the campaign note.",
+
+  "ghost": {
+    "lut": "projects/policies/controllers/g1_ghost/ghost_walk_climb_lut.json",
+    "provenance": "solved",
+    "validator": "PASS",
+    "preview_world": "projects/policies/worlds/g1_climb_stairs_preview.wbt",
+    "owner_signoff": "2026-07-08",
+    "notes": "Composed by design_walk_climb_ghost.py: 2.0 m flat walk-in @0.40 m/s + stand + climb from ghost_stair_climb_lut.json (step-to gait, feet land on treads via 2-link IK, pelvis rides 0.68 m above the support foot, rising root). seq+hold_end, starts with a stand so from-top deploy doesn't cold-drop mid-motion. Pure-climb segment = ghost_stair_climb_lut.json."
+  },
+
+  "policy": {
+    "checkpoint": "projects/policies/training/runs/wr_stair_climb3.pt",
+    "arch": "lstm",
+    "hidden": 256,
+    "obs": {"family": "whole_body_seq", "ref_obs_k": 3, "ref_obs_wb": true, "dim": 153},
+    "action": {"dim": 23, "space": "whole_body", "decode": "ghost(seq_phase) + residual*GHOST_RESIDUAL"},
+    "notes": "wr_stair_climb1..3 are campaign checkpoints, none a verified champion (propulsion wall). Uncommitted in runs/."
+  },
+
+  "baton": {
+    "blend": "solo_swap",
+    "mode": "climb",
+    "nb": 1561,
+    "vx": "0",
+    "attractor": "locomotion",
+    "handover_in": "cold",
+    "notes": "Sequence motion (like turn) -> solo_swap when wired into BATON. World must carry the staircase geometry (train==deploy terrain)."
+  },
+
+  "train": {
+    "trainer": "projects.policies.training.g1_walk_recipe:g1_walk_recipe_step",
+    "launcher": "projects/policies/training/run_walk_rl.sh",
+    "recipe_env": {
+      "GHOST_SEQ": "1",
+      "SEQ_TERRAIN": "1",
+      "GHOST_LUT_JSON": "projects/policies/controllers/g1_ghost/ghost_walk_climb_lut.json",
+      "REF_OBS_WB": "1",
+      "HARNESS_KZ": "0"
+    },
+    "train_world": "projects/policies/worlds/g1_climb_stairs.wbt",
+    "status": "reconstructed",
+    "notes": "SEQ_TERRAIN trainer mod: height reward tracks the rising root z + terrain RSI; put_model batches the world stair boxes so terrain is train==deploy free. Vertical crane wire OFF (HARNESS_KZ=0) so the legs must climb. VERIFY frozen bundle; memory project_g1_stair_climb_campaign."
+  },
+
+  "deploy": {
+    "solo_swap_env": {
+      "BATON_TURN_CKPT": "projects/policies/training/runs/wr_stair_climb3.pt",
+      "BATON_TURN_LUT": "projects/policies/controllers/g1_ghost/ghost_walk_climb_lut.json",
+      "BATON_TURN_REF_WB": "1",
+      "SEQ_TERRAIN": "1",
+      "HARNESS_KZ": "0"
+    },
+    "deploy_world": "projects/policies/worlds/g1_climb_stairs_puppet.wbt",
+    "notes": "Reuses the turn solo-swap plumbing (BATON_TURN_* = the generic sequence-specialist slot). Deploy is not yet a stable demo -- see the live harness ROBOT-FIRST emit fix + KZ=0 height-sink open in the campaign note."
+  },
+
+  "verification": {
+    "date": "2026-07-08",
+    "engine": "Newton/mujoco_warp",
+    "result": "OPEN: plateaus at ~2 of 5 steps across every trainer lever (propulsion wall). Live deploy has a residual batched->live gap + a KZ=0 height-sink. Not demo-ready."
+  },
+  "doc": "docs/developer/rl-current-state.md",
+  "memory": "project_g1_stair_climb_campaign",
+  "related": ["walk", "turn_in_place"]
+}

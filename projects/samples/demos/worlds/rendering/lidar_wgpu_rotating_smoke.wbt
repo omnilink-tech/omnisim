@@ -1,0 +1,74 @@
+#VRML_SIM R2025a utf8
+
+# R5j smoke world: a single-layer ROTATING Lidar with a box on the RIGHT
+# (-y, front-right). With OMNISIM_LIDAR_WGPU=1 the rotating head renders its
+# instantaneous fov-window through the wgpu radial-range pipeline
+# (WbLidar::renderRotatingWindowViaWgpu) at the yawed sensor pose, and the
+# existing shared band-copy accumulates it into the full-resolution buffer.
+#
+# The head sweeps toward -theta (right) first (per-step yaw angle is negative),
+# so a box on the RIGHT is covered EARLY in a partial sweep -- the test steps
+# only a few times (NOT a full rotation) and asserts the box lands in the EXACT
+# global column its physical azimuth predicts, on the right of centre, and NOT
+# at the mirror column on the left. A full sweep would be convention-blind
+# (every azimuth eventually covered); the partial sweep + exact-column check is
+# what actually catches a reversed yaw or a wrong widthOffset -- the crux noted
+# in engine-migration-plan.md.
+#
+# Geometry: box centre at (1.0, -0.4, 0), size 0.6. Its centre azimuth is
+# atan2(-0.4, 1.0) = -0.3805 rad. With horizontalResolution 360 the buffer is
+# 1 deg/column and forward (theta=0) is column 180, so the box centre lands at
+# c_box = 180 - (-0.3805)*360/(2*pi) = ~202 (right of centre).
+#
+# Companion to docs/developer/engine-migration-plan.md R5 WbLidar rotating spec.
+
+WorldInfo {
+  info [
+    "R5j smoke -- wgpu rotating-head Lidar exact-column partial-sweep"
+  ]
+  title "R5j wgpu rotating Lidar smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 360
+      fieldOfView 0.4
+      verticalFieldOfView 0.1
+      numberOfLayers 1
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      type "rotating"
+      defaultFrequency 1
+      rotatingHead Solid {
+        name "lidar_head"
+      }
+    }
+    DEF RIGHT_BOX Solid {
+      translation 1.0 -0.4 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "right box"
+    }
+  ]
+  controller "lidar_wgpu_rotating_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

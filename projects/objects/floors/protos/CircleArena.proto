@@ -1,0 +1,148 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/floors/protos/CircleArena.proto
+# keywords: primitive/ground
+# A round arena: a disc of floor at z = 0 ringed by a low wall standing on its rim.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+EXTERNPROTO "omnisim://projects/objects/solids/protos/SolidPipe.proto"
+
+PROTO CircleArena [
+  field SFVec3f    translation     0 0 0
+  field SFRotation rotation        0 0 1 0
+  field SFString   name            "circle arena"
+  field SFFloat    radius          1.0                             # Defines the radius of the arena.
+  field SFString   contactMaterial "default"                       # Is `Solid.contactMaterial`.
+  field SFNode     floorAppearance Parquetry { type "chequered" }  # Defines the appearance of the floor.
+  field SFVec2f    floorTileSize   0.5 0.5                         # Defines the size of the texture used for the floor.
+  field SFFloat    wallThickness   0.01                            # Defines the thickness of the wall.
+  field SFFloat    wallHeight      0.1                             # Defines the height of the wall.
+  field SFNode     wallAppearance  BrushedAluminium {}             # Defines the appearance of the wall.
+  field SFInt32    subdivision     48                              # Defines the subdivision of the wall cylinder.
+
+  # Deprecated in R2019a
+  hiddenField MFString   floorTextureUrl "omnisim://projects/default/worlds/textures/checkered_parquetry.jpg"
+  hiddenField MFString   wallTextureUrl  "omnisim://projects/default/worlds/textures/metal.jpg"
+  # Deprecated in R2019-rev2
+  hiddenField SFVec2f    wallTileSize 0.5 0.5
+]
+{
+  # 'radius' is the radius of the WALKABLE disc, so the wall is grown outward from
+  # it: the wall's bore is exactly 'radius' and its outer skin sits at
+  # radius + wallThickness.  A robot driving to the rim therefore stops at the
+  # radius it was promised.
+  #
+  # The floor is a triangle fan of 'subdivision' segments -- the same subdivision the
+  # wall uses, so the two rims coincide exactly and no sliver of background shows
+  # through at the joint.  Its texture coordinates are laid out in metres and then
+  # divided by 'floorTileSize', so one tile of the appearance covers exactly
+  # floorTileSize metres of ground no matter how large the arena is.
+  #
+  # The wall itself is a SolidPipe: that PROTO already solves the hard part of a
+  # round wall, namely that a physics engine cannot collide against a hollow shell
+  # and needs the annulus tiled with boxes.
+  %<
+    let radius = fields.radius.value;
+    if (radius <= 0.0) {
+      radius = fields.radius.defaultValue;
+      console.error('CircleArena: \'radius\' must be strictly positive. Falling back to ' + radius + '.');
+    }
+
+    let subdivision = fields.subdivision.value;
+    if (subdivision < 3) {
+      subdivision = fields.subdivision.defaultValue;
+      console.error('CircleArena: \'subdivision\' must be at least 3. Falling back to ' + subdivision + '.');
+    }
+
+    let tileSize = fields.floorTileSize.value;
+    if (tileSize.x <= 0.0 || tileSize.y <= 0.0) {
+      tileSize = fields.floorTileSize.defaultValue;
+      console.error('CircleArena: \'floorTileSize\' must be strictly positive on both axes. Falling back to ' +
+                    tileSize.x + ' x ' + tileSize.y + '.');
+    }
+
+    let wallHeight = fields.wallHeight.value;
+    if (wallHeight < 0.0)
+      wallHeight = 0.0;
+    let wallThickness = fields.wallThickness.value;
+    if (wallThickness <= 0.0)
+      wallThickness = fields.wallThickness.defaultValue;
+
+    if (fields.floorTextureUrl.value[0] !== fields.floorTextureUrl.defaultValue[0] ||
+        fields.wallTextureUrl.value[0] !== fields.wallTextureUrl.defaultValue[0])
+      console.error('CircleArena: the \'floorTextureUrl\' and \'wallTextureUrl\' fields are deprecated and ignored; ' +
+                    'set \'floorAppearance\' and \'wallAppearance\' instead.');
+
+    const n = subdivision;
+    const step = 2.0 * Math.PI / n;
+    // the collision slab under the floor: 1 cm of substance, top face flush with z = 0
+    const slab = 0.01;
+    const hasWall = wallHeight > 0.0;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Shape {
+        appearance IS floorAppearance
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+              0 0 0
+              %< for (let i = 0; i < n; ++i) { >%
+              %<= radius * Math.cos(i * step) >% %<= radius * Math.sin(i * step) >% 0
+              %< } >%
+            ]
+          }
+          texCoord TextureCoordinate {
+            point [
+              0 0
+              %< for (let i = 0; i < n; ++i) { >%
+              %<= radius * Math.cos(i * step) / tileSize.x >% %<= radius * Math.sin(i * step) / tileSize.y >%
+              %< } >%
+            ]
+          }
+          coordIndex [
+            %< for (let i = 0; i < n; ++i) { >%
+            0 %<= 1 + i >% %<= 1 + (i + 1) % n >% -1
+            %< } >%
+          ]
+          texCoordIndex [
+            %< for (let i = 0; i < n; ++i) { >%
+            0 %<= 1 + i >% %<= 1 + (i + 1) % n >% -1
+            %< } >%
+          ]
+        }
+      }
+      %< if (hasWall) { >%
+      SolidPipe {
+        translation 0 0 %<= 0.5 * wallHeight >%
+        name "%<= fields.name.value >% wall"
+        height %<= wallHeight >%
+        radius %<= radius + wallThickness >%
+        thickness %<= wallThickness >%
+        subdivision %<= n >%
+        contactMaterial IS contactMaterial
+        appearance IS wallAppearance
+      }
+      %< } >%
+    ]
+    name IS name
+    model "circle arena"
+    boundingObject Pose {
+      translation 0 0 %<= -0.5 * slab >%
+      children [
+        Cylinder {
+          radius %<= radius >%
+          height %<= slab >%
+          subdivision %<= n >%
+        }
+      ]
+    }
+    contactMaterial IS contactMaterial
+    locked TRUE
+  }
+}

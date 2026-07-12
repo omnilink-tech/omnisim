@@ -1,0 +1,66 @@
+#VRML_SIM R2025a utf8
+
+# FULL-BODY (23-DOF, legs + arms) walking deploy world. Same arena and
+# controller as g1_walk_deploy.wbt; the g1_walk_deploy controller
+# auto-detects the arm motors and pins them at the trainer's ARM_NOMINAL
+# (--hold-arms contract: the policy stays 13-DOF, the +6.1 kg of arm mass
+# is a passive balance load it trained against).
+#
+# Policy: gpu_g1_walk16_arms_* (walk15 recipe warm-started onto the
+# full-body MJCF g1_full_kp100.mjcf.xml). Launch via
+# scripts/dev/run_g1_walk_deploy.ps1 -Arms (or the _gui variant).
+#
+# Required Newton env (set by the launch scripts): OMNISIM_NEWTON_STATICS=1
+# OMNISIM_NEWTON_SUBSTEPS=4 OMNISIM_URDF_USE_INERTIA=1
+# OMNISIM_NEWTON_FORCE_MUJOCO=1 OMNISIM_NEWTON_MJWARP=1
+# OMNISIM_NEWTON_TARGET_KE=100 OMNISIM_NEWTON_TARGET_KD=5 (MUST match the
+# trainer MJCF gains).
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 full-body walking PPO deploy (legs + arms)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5 1.8
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_walk_deploy"
+  physicsBackend "newton"
+}

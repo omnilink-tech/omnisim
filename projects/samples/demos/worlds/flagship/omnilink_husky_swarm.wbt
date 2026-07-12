@@ -1,0 +1,47 @@
+#VRML_SIM R2025a utf8
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+WorldInfo { basicTimeStep 16 }
+Viewpoint { orientation -0.5773 0.5773 0.5773 2.0944 position 0 -1 14 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 14 14 wallHeight 0.1 }
+DEF HUSKY_NE URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 3 3 0.2
+  name "husky_ne"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8765" "--name" "husky_ne" ]
+  window "omnilink_chat"
+}
+DEF HUSKY_NW URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -3 3 0.2
+  name "husky_nw"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8766" "--name" "husky_nw" ]
+  window "omnilink_chat"
+}
+DEF HUSKY_SE URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 3 -3 0.2
+  name "husky_se"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8767" "--name" "husky_se" ]
+  window "omnilink_chat"
+}
+DEF HUSKY_SW URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -3 -3 0.2
+  name "husky_sw"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8768" "--name" "husky_sw" ]
+  window "omnilink_chat"
+}

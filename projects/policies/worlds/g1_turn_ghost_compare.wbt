@@ -1,0 +1,70 @@
+#VRML_SIM R2025a utf8
+
+# TURN-GHOST COMPARE -- two kinematic G1 ghosts (no physics, staticBase) replaying the two 90-degree
+# step-turn references side by side, so the difference is visible rather than only tabulated.
+#
+#   RIGHT of camera (y = -0.9):  ghost_turn_90         -- the HAND-TUNED ghost the shipped demo uses.
+#                                The builder placed the PELVIS by a `shift * stance_foot` heuristic and
+#                                merely measured where the whole-body COM landed: 5.3 mm of lateral
+#                                margin inside a 30 mm half-foot. A 5 mm knife edge. cycle_s = 10.40 s.
+#
+#   LEFT of camera  (y = +0.9):  ghost_turn_90_solved  -- the COM-SOLVED ghost (build_step_turn_ghost.py
+#                                --solve-com --vby-budget). A Newton solve picks the pelvis so the COM
+#                                lands on the stance-foot CENTRE: 30.0 mm margin (5.7x, maximal). Because
+#                                a centred COM needs ~35% more pelvis excursion, the timing is solved too
+#                                so the peak lateral pelvis velocity stays at the 0.287 m/s the policy has
+#                                actually demonstrated -- hence the slower cycle_s = 13.04 s.
+#
+# Watch the PELVIS SWAY: the solved ghost leans further over its stance foot (that IS the extra margin)
+# and takes correspondingly longer to do it. Both are statically stable and both pass ghost_doctor;
+# verify numerically with:  python projects/policies/training/ghost_dynamics.py <lut>
+#
+# Kinematic ghosts cannot fall -- this shows the REFERENCE motion, not a robot tracking it.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "G1 turn ghost -- hand-tuned (right) vs COM-solved (left)"
+}
+Viewpoint {
+  orientation 0 1 0 0.38
+  position -4.6 0 2.7
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 8 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF G1_GHOST_HANDTUNED URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 -0.9 0.78
+  name "g1_ghost"
+  supervisor TRUE
+  controller "g1_ghost"
+  controllerArgs [ "ghost_turn_90_preview_lut.json" ]
+  staticBase TRUE
+  physicsBackend "ode"
+}
+
+DEF G1_GHOST_SOLVED URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 0.9 0.78
+  name "g1_ghost_solved"
+  supervisor TRUE
+  controller "g1_ghost"
+  controllerArgs [ "ghost_turn_90_solved_preview_lut.json" ]
+  staticBase TRUE
+  physicsBackend "ode"
+}

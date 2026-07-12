@@ -1,0 +1,28 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/SlotContainer.proto"
+
+PROTO DerivedSlotContainer [
+]
+{
+  SlotContainer {
+    slot [
+      Pose {
+        rotation 1 0 0 -1.5708
+        children [
+          Shape {
+            appearance Appearance {
+              material Material {
+                diffuseColor 0.8 0.8 0.8
+              }
+            }
+            geometry Cylinder {
+              height 0.3
+              radius 0.015
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

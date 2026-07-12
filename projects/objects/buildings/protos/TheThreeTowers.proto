@@ -1,0 +1,160 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/buildings/protos/TheThreeTowers.proto
+# keywords: building/skyscraper
+# template language: javascript
+# Three blue-glass slabs of 60 / 46 / 38 m rising from a shared podium and linked by two
+# sky bridges. The curtain wall is geometry (storey bands + corner fins), not a texture.
+# The base of the complex sits at z = 0.
+
+PROTO TheThreeTowers [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "three towers"
+]
+{
+  %<
+    const towerWidth = 12.0;                 // square slab footprint
+    const gap = 2.0;                         // gap between two slabs
+    const pitch = towerWidth + gap;          // 14 m centre-to-centre
+    const heights = [60.0, 46.0, 38.0];      // west, centre, east
+    const podiumWidth = 3 * towerWidth + 2 * gap + 2.0;  // 42 m
+    const podiumDepth = 15.0;
+    const podiumHeight = 6.0;
+    const bandStep = 3.6;                    // storey height above the podium
+    const half = towerWidth / 2.0;
+
+    // vertical corner fins, one DEF per tower (their length differs)
+    function fins(t, cx, h) {
+      const zc = (podiumHeight + h) / 2.0;
+      const len = h - podiumHeight;
+      let s = '';
+      const corners = [[half, half], [-half, half], [half, -half], [-half, -half]];
+      for (let k = 0; k < 4; ++k) {
+        const x = cx + corners[k][0];
+        const y = corners[k][1];
+        s += '      Pose { translation ' + x.toFixed(3) + ' ' + y.toFixed(3) + ' ' + zc.toFixed(3) + ' children [ ';
+        if (k === 0)
+          s += 'DEF FIN_' + t + ' Shape { appearance USE TRIM_APP geometry Box { size 0.55 0.55 ' + len.toFixed(3) + ' } }';
+        else
+          s += 'USE FIN_' + t;
+        s += ' ] }\n';
+      }
+      return s;
+    }
+
+    // one storey band per floor, shared geometry across the three towers
+    let bandDefined = false;
+    function bands(cx, h) {
+      let s = '';
+      for (let z = podiumHeight; z <= h + 0.001; z += bandStep) {
+        s += '      Pose { translation ' + cx.toFixed(3) + ' 0 ' + z.toFixed(3) + ' children [ ';
+        if (bandDefined)
+          s += 'USE STOREY_BAND';
+        else {
+          s += 'DEF STOREY_BAND Shape { appearance USE TRIM_APP geometry Box { size ' +
+               (towerWidth + 0.25).toFixed(2) + ' ' + (towerWidth + 0.25).toFixed(2) + ' 0.35 } }';
+          bandDefined = true;
+        }
+        s += ' ] }\n';
+      }
+      return s;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "three towers"
+    children [
+      # ---- shared podium ----------------------------------------------------
+      Pose {
+        translation 0 0 %<= podiumHeight / 2.0 >%
+        children [
+          Shape {
+            appearance DEF CONCRETE_APP PBRAppearance {
+              baseColor 0.48 0.49 0.50
+              roughness 0.9
+              metalness 0
+            }
+            geometry Box { size %<= podiumWidth >% %<= podiumDepth >% %<= podiumHeight >% }
+          }
+        ]
+      }
+      # podium shopfront glazing (defines the glass appearance)
+      Pose {
+        translation 0 %<= podiumDepth / 2.0 + 0.06 >% 1.9
+        children [
+          DEF PODIUM_GLASS Shape {
+            appearance DEF GLASS_APP PBRAppearance {
+              baseColor 0.13 0.24 0.36
+              roughness 0.1
+              metalness 0.9
+            }
+            geometry Box { size %<= podiumWidth - 3 >% 0.14 2.8 }
+          }
+        ]
+      }
+      Pose { translation 0 %<= -podiumDepth / 2.0 - 0.06 >% 1.9 children [ USE PODIUM_GLASS ] }
+
+      # ---- sky bridges (they also carry the shared metal trim appearance) ----
+      Pose {
+        translation %<= -pitch / 2.0 >% 0 26
+        children [
+          DEF SKY_BRIDGE Shape {
+            appearance DEF TRIM_APP PBRAppearance {
+              baseColor 0.70 0.73 0.75
+              roughness 0.4
+              metalness 0.7
+            }
+            geometry Box { size %<= gap + 0.6 >% 4 3 }
+          }
+        ]
+      }
+      Pose { translation %<= pitch / 2.0 >% 0 26 children [ USE SKY_BRIDGE ] }
+
+      # ---- the three glazed slabs -------------------------------------------
+      %< for (let t = 0; t < 3; ++t) {
+           const cx = (t - 1) * pitch;
+           const h = heights[t]; >%
+      Pose {
+        translation %<= cx >% 0 %<= h / 2.0 >%
+        children [
+          Shape {
+            appearance USE GLASS_APP
+            geometry Box { size %<= towerWidth - 0.3 >% %<= towerWidth - 0.3 >% %<= h >% }
+          }
+        ]
+      }
+      %<= bands(cx, h) >%
+      %<= fins(t, cx, h) >%
+      # roof cap
+      Pose {
+        translation %<= cx >% 0 %<= h + 0.4 >%
+        children [
+          Shape {
+            appearance USE CONCRETE_APP
+            geometry Box { size %<= towerWidth + 0.5 >% %<= towerWidth + 0.5 >% 0.8 }
+          }
+        ]
+      }
+      %< } >%
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 %<= podiumHeight / 2.0 >%
+          children [ Box { size %<= podiumWidth >% %<= podiumDepth >% %<= podiumHeight >% } ]
+        }
+        %< for (let t = 0; t < 3; ++t) { >%
+        Pose {
+          translation %<= (t - 1) * pitch >% 0 %<= heights[t] / 2.0 >%
+          children [ Box { size %<= towerWidth >% %<= towerWidth >% %<= heights[t] >% } ]
+        }
+        %< } >%
+      ]
+    }
+    locked TRUE
+  }
+}

@@ -1,0 +1,87 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/traffic/protos/SignPole.proto
+# keywords: traffic/sign
+# A bare road-sign pole: a foot plate and a tube of the requested height and radius.
+# Whatever is listed in `signBoards` is mounted at the top of the tube.
+# template language: javascript
+
+EXTERNPROTO "DirectionPanel.proto"
+
+PROTO SignPole [
+  field SFVec3f     translation   0 0 0
+  field SFRotation  rotation      0 0 1 0
+  field SFString    name          "sign pole"
+  field SFFloat     height        2.2                         # Defines the height of the sign.
+  field SFFloat     radius        0.02                        # Defines the radius of the sign.
+  field SFColor     color         0.8 0.8 0.8                 # Defines the color of the pole.
+  field MFNode      signBoards    [ DirectionPanel {} ]       # Defines the boards.
+]
+{
+  %<
+    const height = fields.height.value > 0.05 ? fields.height.value : fields.height.defaultValue;
+    const radius = fields.radius.value > 0.001 ? fields.radius.value : fields.radius.defaultValue;
+    const footHeight = 0.03;
+    const footRadius = Math.max(4.0 * radius, 0.08);
+    const tubeHeight = height - footHeight;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "sign pole"
+    children [
+      # --- foot plate -------------------------------------------------------
+      DEF POLE_FOOT Pose {
+        translation 0 0 %<= 0.5 * footHeight >%
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS color
+              roughness 0.45
+              metalness 0.85
+            }
+            geometry Cylinder {
+              radius %<= footRadius >%
+              height %<= footHeight >%
+              subdivision 20
+            }
+          }
+        ]
+      }
+      # --- tube -------------------------------------------------------------
+      DEF POLE Pose {
+        translation 0 0 %<= footHeight + 0.5 * tubeHeight >%
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS color
+              roughness 0.45
+              metalness 0.85
+            }
+            geometry Cylinder {
+              radius %<= radius >%
+              height %<= tubeHeight >%
+              subdivision 14
+            }
+          }
+        ]
+      }
+      # --- boards mounted at the top of the pole -----------------------------
+      DEF SIGN_BOARDS Pose {
+        translation 0 0 %<= height >%
+        children IS signBoards
+      }
+    ]
+    boundingObject Pose {
+      translation 0 0 %<= 0.5 * height >%
+      children [
+        Cylinder {
+          radius %<= Math.max(radius, 0.02) >%
+          height %<= height >%
+        }
+      ]
+    }
+  }
+}

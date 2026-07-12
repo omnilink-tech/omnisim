@@ -1,0 +1,16 @@
+[
+  { "world": "projects/policies/research/worlds/spot_walk_deploy.wbt", "subject": "spot", "class": "quadruped" },
+  { "world": "projects/policies/worlds/g1_walk_deploy.wbt", "subject": "g1", "class": "humanoid" },
+
+  { "world": "projects/samples/demos/worlds/chat/omnilink_husky.wbt", "subject": "husky", "class": "mobile" },
+  { "world": "projects/samples/demos/worlds/chat/omnilink_jackal.wbt", "subject": "jackal", "class": "mobile" },
+  { "world": "projects/samples/demos/worlds/chat/omnilink_rosbot.wbt", "subject": "rosbot", "class": "mobile" },
+  { "world": "projects/samples/demos/worlds/chat/omnilink_rosbot_xl.wbt", "subject": "rosbot_xl", "class": "mobile" },
+  { "world": "projects/samples/demos/worlds/chat/omnilink_spot.wbt", "subject": "spot", "class": "quadruped" },
+  { "world": "projects/samples/demos/worlds/chat/omnilink_tb3_burger.wbt", "subject": "tb3_burger", "class": "mobile", "radius": 0.7 },
+  { "world": "projects/samples/demos/worlds/chat/omnilink_tb3_waffle.wbt", "subject": "tb3_waffle", "class": "mobile", "radius": 0.7 },
+  { "world": "projects/samples/demos/worlds/chat/omnilink_tb3_waffle_pi.wbt", "subject": "tb3_waffle_pi", "class": "mobile", "radius": 0.7 },
+
+  { "world": "projects/samples/demos/worlds/showcase/husky_fleet_arena.wbt", "mode": "topdown", "center": [0, 0, 0.3], "radius": 12 },
+  { "world": "projects/samples/demos/worlds/showcase/warehouse_husky.wbt", "mode": "topdown", "center": [0, 0, 0.3], "radius": 17 }
+]

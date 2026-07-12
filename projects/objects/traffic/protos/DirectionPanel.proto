@@ -1,0 +1,234 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/traffic/protos/DirectionPanel.proto
+# keywords: traffic/sign
+# A fingerpost blade: a flat panel that runs out from the pole and comes to a point, with a dark
+# rim and an independently addressable face on each side.
+# The blade is drawn from primitives and carries NO artwork of its own. `frontTextTexture` and
+# `backTextTexture` take an image for each face -- leave them alone and each face is a plain
+# painted plate.
+# template language: javascript
+
+PROTO DirectionPanel [
+  field SFVec3f     translation          0 0 0
+  field SFRotation  rotation             0 0 1 0
+  field SFString    name                 "direction panel"
+  field SFFloat     width                1.3                           # Defines the width of the panel.
+  field SFFloat     height               0.4                           # Defines the height of the panel.
+  field SFFloat     thickness            0.04                          # Defines the thickness of the panel.
+  field MFString    frontTextTexture     "textures/no_text_front.png"  # Defines the texture to display on the front side.
+  field MFString    backTextTexture      "textures/no_text_back.png"   # Defines the texture to display on the back side.
+]
+{
+  %<
+    // =====================================================================
+    // 1. THE FIELDS
+    //
+    // The blade lies in the y-z plane and points along +y, away from the pole
+    // it is bolted to: `width` is how far out it reaches, `height` how deep it
+    // is, `thickness` how thick the plate is (x).
+    // =====================================================================
+    let width = fields.width.value;
+    if (width <= 0.0) {
+      width = fields.width.defaultValue;
+      console.error('\'width\' must be strictly positive. Value reset to ' + width + '.');
+    }
+    let height = fields.height.value;
+    if (height <= 0.0) {
+      height = fields.height.defaultValue;
+      console.error('\'height\' must be strictly positive. Value reset to ' + height + '.');
+    }
+    let thickness = fields.thickness.value;
+    if (thickness < 0.01) {
+      thickness = fields.thickness.defaultValue;
+      console.error('\'thickness\' must be strictly bigger or equal to 0.01. Value reset to ' + thickness + '.');
+    }
+
+    // =====================================================================
+    // 2. THE BLADE
+    //
+    // The outline is a pentagon: a rectangle with the far end pulled out into
+    // a point. Sat at the origin the blade would straddle the pole, so it is
+    // pushed out to start just BEHIND it (-0.1 * width) and reach 0.9 * width
+    // in front -- the same envelope its bounding box has always described.
+    // =====================================================================
+    const yNear = -0.1 * width;
+    const yTip = 0.9 * width;
+    const yShoulder = yTip - 0.35 * height;   // where the point begins
+    const hz = 0.5 * height;
+
+    const outline = [
+      [yNear, -hz], [yShoulder, -hz], [yTip, 0], [yShoulder, hz], [yNear, hz]
+    ];
+
+    // The rim is the whole pentagon at full thickness; each face is the same
+    // pentagon shrunk towards its own centroid and laid a hair proud of the
+    // rim, so the dark edge shows all the way round.
+    const inset = 0.035 * height;
+    const cy = 0.5 * (yNear + yTip);
+    const shrink = function(p) {
+      const dy = p[0] - cy;
+      const dz = p[1];
+      const d = Math.sqrt(dy * dy + dz * dz);
+      const s = d > 1e-9 ? Math.max(0, d - inset) / d : 0;
+      return [cy + s * dy, s * dz];
+    };
+    const faceOutline = outline.map(shrink);
+
+    const faceX = 0.5 * thickness + 0.001;
+
+    // The default images are placeholders, not artwork -- if the caller has not
+    // put a real sign face on the blade, none is drawn and the plate is simply
+    // painted. That is also why nothing under this PROTO's own directory is
+    // referenced.
+    const hasFront = fields.frontTextTexture.value.length > 0 &&
+                     fields.frontTextTexture.value[0] !== fields.frontTextTexture.defaultValue[0] &&
+                     fields.frontTextTexture.value[0] !== '';
+    const hasBack = fields.backTextTexture.value.length > 0 &&
+                    fields.backTextTexture.value[0] !== fields.backTextTexture.defaultValue[0] &&
+                    fields.backTextTexture.value[0] !== '';
+
+    function r6(v) {
+      return Math.round(v * 1e6) / 1e6;
+    }
+
+    // A flat plate is one quad fan from the first vertex; both faces of the rim
+    // prism and its skirt are walked the same way.
+    const nOut = outline.length;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    recognitionColors [
+      0.8 0.8 0.8
+      0 0 0
+    ]
+    children [
+      # --- the rim: the pentagon, extruded through the plate thickness --------
+      DEF PANEL_RIM Shape {
+        appearance PBRAppearance {
+          baseColor 0.06 0.06 0.07
+          metalness 0
+          roughness 0.8
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+            %< for (let s = -1; s <= 1; s += 2) { >%
+            %<   for (let i = 0; i < nOut; ++i) { >%
+              %<= r6(s * 0.5 * thickness) >% %<= r6(outline[i][0]) >% %<= r6(outline[i][1]) >%
+            %<   } >%
+            %< } >%
+            ]
+          }
+          coordIndex [
+            # the -x cap
+            %< for (let i = 1; i < nOut - 1; ++i) { >%
+            0 %<= i + 1 >% %<= i >% -1
+            %< } >%
+            # the +x cap
+            %< for (let i = 1; i < nOut - 1; ++i) { >%
+            %<= nOut >% %<= nOut + i >% %<= nOut + i + 1 >% -1
+            %< } >%
+            # and the skirt joining them
+            %< for (let i = 0; i < nOut; ++i) {
+                 const j = (i + 1) % nOut; >%
+            %<= i >% %<= j >% %<= nOut + j >% %<= nOut + i >% -1
+            %< } >%
+          ]
+        }
+      }
+      # --- the face seen from +x ---------------------------------------------
+      DEF PANEL_FACE_FRONT Shape {
+        appearance PBRAppearance {
+        %< if (hasFront) { >%
+          baseColorMap ImageTexture {
+            url IS frontTextTexture
+          }
+        %< } else { >%
+          baseColor 0.11 0.29 0.53
+        %< } >%
+          metalness 0
+          roughness 0.7
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+            %< for (let i = 0; i < nOut; ++i) { >%
+              %<= r6(faceX) >% %<= r6(faceOutline[i][0]) >% %<= r6(faceOutline[i][1]) >%
+            %< } >%
+            ]
+          }
+          texCoord TextureCoordinate {
+            point [
+            %< for (let i = 0; i < nOut; ++i) { >%
+              %<= r6((faceOutline[i][0] - yNear) / (yTip - yNear)) >% %<= r6(0.5 + faceOutline[i][1] / height) >%
+            %< } >%
+            ]
+          }
+          coordIndex [
+            %< for (let i = 1; i < nOut - 1; ++i) { >%
+            0 %<= i >% %<= i + 1 >% -1
+            %< } >%
+          ]
+          texCoordIndex [
+            %< for (let i = 1; i < nOut - 1; ++i) { >%
+            0 %<= i >% %<= i + 1 >% -1
+            %< } >%
+          ]
+        }
+      }
+      # --- and the face seen from -x, which reads the other way round ---------
+      DEF PANEL_FACE_BACK Shape {
+        appearance PBRAppearance {
+        %< if (hasBack) { >%
+          baseColorMap ImageTexture {
+            url IS backTextTexture
+          }
+        %< } else { >%
+          baseColor 0.11 0.29 0.53
+        %< } >%
+          metalness 0
+          roughness 0.7
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+            %< for (let i = 0; i < nOut; ++i) { >%
+              %<= r6(-faceX) >% %<= r6(faceOutline[i][0]) >% %<= r6(faceOutline[i][1]) >%
+            %< } >%
+            ]
+          }
+          texCoord TextureCoordinate {
+            point [
+            %< for (let i = 0; i < nOut; ++i) { >%
+              %<= r6(1.0 - (faceOutline[i][0] - yNear) / (yTip - yNear)) >% %<= r6(0.5 + faceOutline[i][1] / height) >%
+            %< } >%
+            ]
+          }
+          coordIndex [
+            %< for (let i = 1; i < nOut - 1; ++i) { >%
+            0 %<= i + 1 >% %<= i >% -1
+            %< } >%
+          ]
+          texCoordIndex [
+            %< for (let i = 1; i < nOut - 1; ++i) { >%
+            0 %<= i + 1 >% %<= i >% -1
+            %< } >%
+          ]
+        }
+      }
+    ]
+    name IS name
+    model "direction panel"
+    boundingObject Pose {
+      translation 0 %<= r6(0.5 * (yNear + yTip)) >% 0
+      children [
+        Box {
+          size %<= r6(thickness) >% %<= r6(yTip - yNear) >% %<= r6(height) >%
+        }
+      ]
+    }
+  }
+}

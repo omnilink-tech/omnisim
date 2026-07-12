@@ -1,0 +1,93 @@
+#VRML_SIM R2025a utf8
+
+# G1 stair-climb TRAIN world for the SYNTHESIZED ghost (ghost_stair_climb_synth_lut.json).
+# Copied verbatim from g1_climb_stairs.wbt@HEAD (same StairProfile: 5 steps, riser 0.03, going 0.26,
+# x_start 0.12 -- exactly the terrain the ghost was solved against; train == deploy geometry).
+# Staircase: 5 steps, riser 0.03 m, going 0.26 m, climb 0.35 m,
+# from the shared StairProfile (train == deploy geometry).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "G1 stair-climb SHOW: robot + ghost hologram side by side (3cm synth)"
+  contactProperties [
+    ContactProperties { material1 "default" material2 "default" coulombFriction [ 1.5 ] maxContactJoints 40 bounce 0.0 bounceVelocity 0.5 }
+  ]
+}
+Viewpoint {
+  orientation -0.30 0.30 0.905 1.66
+  position 1.2 -3.6 1.7
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 12 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance { baseColor 0.18 0.20 0.22 roughness 0.95 metalness 0 }
+}
+
+DEF G1_REAL URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.720
+  name "g1"
+  supervisor TRUE
+  controller "humanoid_stand_deploy"
+  physicsBackend "newton"
+}
+
+
+
+DEF G1_GHOST URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 1.1 0.680
+  name "g1_ghost"
+  supervisor TRUE
+  controller "g1_ghost"
+  controllerArgs [ "ghost_stair_climb3_synth_lut.json" ]
+  physicsBackend "ode"
+}
+
+DEF STAIR_0 Solid {
+  translation 0.25000 0 0.01500
+  children [ Shape { appearance PBRAppearance { baseColor 0.38 0.34 0.30 roughness 0.9 metalness 0 } geometry Box { size 0.26000 4.00000 0.03000 } } ]
+  name "stair_0"
+  boundingObject Box { size 0.26000 4.00000 0.03000 }
+}
+DEF STAIR_1 Solid {
+  translation 0.51000 0 0.03000
+  children [ Shape { appearance PBRAppearance { baseColor 0.38 0.34 0.30 roughness 0.9 metalness 0 } geometry Box { size 0.26000 4.00000 0.06000 } } ]
+  name "stair_1"
+  boundingObject Box { size 0.26000 4.00000 0.06000 }
+}
+DEF STAIR_2 Solid {
+  translation 0.77000 0 0.04500
+  children [ Shape { appearance PBRAppearance { baseColor 0.38 0.34 0.30 roughness 0.9 metalness 0 } geometry Box { size 0.26000 4.00000 0.09000 } } ]
+  name "stair_2"
+  boundingObject Box { size 0.26000 4.00000 0.09000 }
+}
+DEF STAIR_3 Solid {
+  translation 1.03000 0 0.06000
+  children [ Shape { appearance PBRAppearance { baseColor 0.38 0.34 0.30 roughness 0.9 metalness 0 } geometry Box { size 0.26000 4.00000 0.12000 } } ]
+  name "stair_3"
+  boundingObject Box { size 0.26000 4.00000 0.12000 }
+}
+DEF STAIR_4 Solid {
+  translation 1.29000 0 0.07500
+  children [ Shape { appearance PBRAppearance { baseColor 0.38 0.34 0.30 roughness 0.9 metalness 0 } geometry Box { size 0.26000 4.00000 0.15000 } } ]
+  name "stair_4"
+  boundingObject Box { size 0.26000 4.00000 0.15000 }
+}
+DEF STAIR_5 Solid {
+  translation 2.17000 0 0.07500
+  children [ Shape { appearance PBRAppearance { baseColor 0.38 0.34 0.30 roughness 0.9 metalness 0 } geometry Box { size 1.50000 4.00000 0.15000 } } ]
+  name "stair_5"
+  boundingObject Box { size 1.50000 4.00000 0.15000 }
+}

@@ -1,0 +1,90 @@
+name: Update SPONSORS.md
+
+# Regenerates SPONSORS.md from the GitHub Sponsors GraphQL API on a daily
+# schedule (and on demand). Sponsors are bucketed by tier and rendered into
+# four marker-comment pairs inside SPONSORS.md.
+#
+# Setup (one-time, on the public repo at github.com/omnilink-tech/omnisim):
+#   1. Create a Personal Access Token (classic) on the omnilink-tech account
+#      with scopes:  read:user, read:org
+#      https://github.com/settings/tokens/new
+#   2. Add it as a repository secret named SPONSORS_TOKEN under
+#      Settings -> Secrets and variables -> Actions -> New repository secret.
+#
+# GITHUB_TOKEN cannot read Sponsors data; the PAT is mandatory.
+
+on:
+  schedule:
+    - cron: '0 6 * * *'        # daily, 06:00 UTC
+  workflow_dispatch:            # manual run from Actions tab
+
+concurrency:
+  group: update-sponsors
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    # Only run on the public mirror; on the private origin this would just
+    # fail on a missing SPONSORS_TOKEN secret and spam the Actions tab.
+    if: github.repository == 'omnilink-tech/omnisim'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Partners ($500/mo+)
+        uses: JamesIves/github-sponsors-readme-action@v1
+        with:
+          token: ${{ secrets.SPONSORS_TOKEN }}
+          file: SPONSORS.md
+          minimum: 50000
+          marker: partners
+          # Empty-state text. Kept byte-identical to the seed committed between
+          # the `partners` markers in SPONSORS.md, so a run against an empty
+          # sponsor list rewrites the file to itself and produces no commit.
+          fallback: '<em>Be the first to sponsor OmniSim &mdash; <a href="https://github.com/sponsors/omnilink-tech">github.com/sponsors/omnilink-tech</a>.</em>'
+          template: '<a href="https://github.com/{{ login }}"><img src="{{ avatarUrl }}" width="120px" alt="@{{ login }}" /></a>&nbsp;&nbsp;'
+
+      - name: Production users ($100-$499/mo)
+        uses: JamesIves/github-sponsors-readme-action@v1
+        with:
+          token: ${{ secrets.SPONSORS_TOKEN }}
+          file: SPONSORS.md
+          minimum: 10000
+          maximum: 49999
+          marker: production
+          template: '<a href="https://github.com/{{ login }}"><img src="{{ avatarUrl }}" width="64px" alt="@{{ login }}" /></a>&nbsp;'
+
+      - name: Backers ($25-$99/mo)
+        uses: JamesIves/github-sponsors-readme-action@v1
+        with:
+          token: ${{ secrets.SPONSORS_TOKEN }}
+          file: SPONSORS.md
+          minimum: 2500
+          maximum: 9999
+          marker: backers
+          template: '<a href="https://github.com/{{ login }}"><img src="{{ avatarUrl }}" width="32px" alt="@{{ login }}" /></a>&nbsp;'
+
+      - name: Supporters ($5-$24/mo)
+        uses: JamesIves/github-sponsors-readme-action@v1
+        with:
+          token: ${{ secrets.SPONSORS_TOKEN }}
+          file: SPONSORS.md
+          minimum: 500
+          maximum: 2499
+          marker: supporters
+          template: '[@{{ login }}](https://github.com/{{ login }}) &middot; '
+
+      - name: Commit SPONSORS.md if changed
+        run: |
+          if git diff --quiet SPONSORS.md; then
+            echo "No sponsor changes."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add SPONSORS.md
+          git commit -m "chore(sponsors): refresh SPONSORS.md from GitHub Sponsors"
+          git push

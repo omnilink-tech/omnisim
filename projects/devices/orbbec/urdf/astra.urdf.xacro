@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!--
+Orbbec Astra — RGB-D camera, 640x480 @ 30 Hz, ~60 deg HFoV, depth
+range 0.6-8 m. Standard mount on TurtleBot3/Husarion-style platforms.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="astra" params="parent_link prefix:=astra *origin">
+    <link name="${prefix}_link">
+      <visual>
+        <origin xyz="0 0 0.020" rpy="0 0 0"/>
+        <geometry><box size="0.165 0.040 0.030"/></geometry>
+        <material name="${prefix}_white"><color rgba="0.92 0.92 0.92 1.0"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.020" rpy="0 0 0"/>
+        <geometry><box size="0.165 0.040 0.030"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.020" rpy="0 0 0"/>
+        <mass value="0.30"/>
+        <inertia ixx="6.5e-5" ixy="0" ixz="0" iyy="7.0e-4" iyz="0" izz="7.0e-4"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+    <gazebo reference="${prefix}_link">
+      <sensor name="${prefix}_color" type="camera">
+        <update_rate>30</update_rate>
+        <camera>
+          <horizontal_fov>1.04</horizontal_fov>
+          <image><width>640</width><height>480</height></image>
+        </camera>
+      </sensor>
+      <sensor name="${prefix}_depth" type="depth">
+        <update_rate>30</update_rate>
+        <camera>
+          <horizontal_fov>1.04</horizontal_fov>
+          <image><width>640</width><height>480</height></image>
+        </camera>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

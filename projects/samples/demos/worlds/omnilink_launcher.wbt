@@ -1,0 +1,76 @@
+#VRML_SIM R2025a utf8
+
+# OmniSim Launcher — pick a demo from the side panel and click Launch.
+#
+# Right-click the floating orb robot → "Show Robot Window" → a gallery of
+# every demo in the repo appears. Click "Launch" to open that demo's
+# world. Categories: starter, chat (arms/mobile/quadruped), flagship,
+# physics, games, kinematics, URDF showcase, generated worlds.
+#
+# To return here: relaunch from launch.bat (no args), or File → Open World
+# → projects/samples/demos/worlds/omnilink_launcher.wbt.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 32
+  title "OmniSim — Launcher"
+  info [
+    "OmniSim — demo launcher. Right-click the orb → Show Robot Window."
+    "Pick a demo from the side panel and click Launch."
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 -3.5 2.6
+  fieldOfView 0.785
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 6 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.10 0.10 0.12
+    roughness 0.65
+    metalness 0.0
+  }
+}
+
+DEF LAUNCHER Robot {
+  translation 0 0 0.5
+  name "omnisim_launcher"
+  supervisor TRUE
+  controller "omnilink_launcher"
+  window "omnilink_launcher"
+  children [
+    DEF ORB_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.97 0.90 0.40
+        emissiveColor 0.40 0.36 0.16
+        roughness 0.35
+        metalness 0.25
+      }
+      geometry Sphere {
+        radius 0.28
+        subdivision 3
+      }
+    }
+    PointLight {
+      color 0.97 0.90 0.40
+      intensity 0.6
+      location 0 0 0
+      # Quadratic attenuation (0 0 1). The field defaults to "1 0 0" (constant),
+      # which makes WbPointLight emit a parsing warning on every load -- the very
+      # first thing a new user sees in the console. Its own advice: "Only the third
+      # component of the 'attenuation' field should be greater than 0."
+      attenuation 0 0 1
+      radius 4.0
+      castShadows FALSE
+    }
+  ]
+}

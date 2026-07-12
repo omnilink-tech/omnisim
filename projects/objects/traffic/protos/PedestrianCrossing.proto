@@ -1,0 +1,102 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/traffic/protos/PedestrianCrossing.proto
+# keywords: traffic/sign
+# A zebra crossing drawn as real geometry: a thin asphalt patch plus a row of white marking slabs.
+# The bars always run along the short side of the patch (the way the traffic flows) and repeat
+# along the long side (the width of the road), so a 20 x 8 and an 8 x 20 crossing both read right.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+
+PROTO PedestrianCrossing [
+  field SFVec3f    translation          0 0 0
+  field SFRotation rotation             0 0 1 0
+  field SFString   name                 "pedestrian crossing"
+  field SFVec3f    scale                1 1 1
+  field SFVec2f    size                 20 8                   # Defines the size of the pedestrian crossing.
+  field SFInt32    textureFiltering     4                      # Defines the filtering level for the texture used for the pedestrian crossing.
+  field SFBool     enableBoundingObject TRUE                   # Defines whether the pedestrian crossing should have a bounding object.
+]
+{
+  %<
+    const scale = fields.scale.value;
+    const size = fields.size.value;
+    const sx = Math.max(0.1, Math.abs(size.x * scale.x));
+    const sy = Math.max(0.1, Math.abs(size.y * scale.y));
+    const thickness = Math.max(0.004, 0.02 * Math.abs(scale.z));
+
+    // bars run along the SHORT axis, repeat along the LONG axis
+    const barsAlongX = sx <= sy;
+    const barLength = (barsAlongX ? sx : sy) * 0.92;
+    const span = barsAlongX ? sy : sx;
+    const count = Math.max(2, Math.min(64, Math.round(span / 1.0)));
+    const pitch = span / count;
+    const barWidth = pitch * 0.55;
+    const markThickness = 0.008;
+    const barSizeX = barsAlongX ? barLength : barWidth;
+    const barSizeY = barsAlongX ? barWidth : barLength;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "pedestrian crossing"
+    children [
+      # --- the patch of road the crossing is painted on ------------------------
+      DEF CROSSING_PATCH Pose {
+        translation 0 0 %<= -0.5 * thickness >%
+        children [
+          Shape {
+            appearance Asphalt {
+              textureTransform TextureTransform {
+                scale %<= sx / 4 >% %<= sy / 4 >%
+              }
+            }
+            geometry Box {
+              size %<= sx >% %<= sy >% %<= thickness >%
+            }
+          }
+        ]
+      }
+      # --- the white bars -----------------------------------------------------
+      DEF CROSSING_MARKINGS Group {
+        children [
+        %< for (let i = 0; i < count; ++i) { >%
+        %<   const offset = -0.5 * span + pitch * (i + 0.5); >%
+          Pose {
+            translation %<= barsAlongX ? 0 : offset >% %<= barsAlongX ? offset : 0 >% %<= 0.5 * markThickness >%
+            children [
+            %< if (i === 0) { >%
+              DEF CROSSING_BAR Shape {
+                appearance PBRAppearance {
+                  baseColor 0.93 0.93 0.9
+                  roughness 0.85
+                  metalness 0
+                }
+                geometry Box {
+                  size %<= barSizeX >% %<= barSizeY >% %<= markThickness >%
+                }
+              }
+            %< } else { >%
+              USE CROSSING_BAR
+            %< } >%
+            ]
+          }
+        %< } >%
+        ]
+      }
+    ]
+  %< if (fields.enableBoundingObject.value) { >%
+    boundingObject Pose {
+      translation 0 0 %<= -0.5 * thickness >%
+      children [
+        Box {
+          size %<= sx >% %<= sy >% %<= thickness >%
+        }
+      ]
+    }
+  %< } >%
+  }
+}

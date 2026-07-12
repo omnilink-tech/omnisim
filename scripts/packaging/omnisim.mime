@@ -1,0 +1,6 @@
+# MIME types for OmniSim.
+# NOTE: the `.wbt` extension is the world file FORMAT (inherited from Webots/VRML)
+# and is deliberately NOT renamed -- only the MIME type carries the product brand.
+
+application/x-omnisim
+	ext: wbt WBT

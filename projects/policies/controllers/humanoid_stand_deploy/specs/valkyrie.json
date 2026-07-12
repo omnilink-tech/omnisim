@@ -1,0 +1,48 @@
+{
+  "name": "valkyrie",
+  "urdf": "projects/robots/nasa/valkyrie/urdf/valkyrie.urdf",
+  "spawn_z": 1.08,
+  "_solved": "Stands deterministically (pure pose, no policy): KE=2000/KD=120, ank_bias -0.02. Heavy (130 kg) => needs a stiff ankle hold to act as a rigid body on the flat foot; stable basin is bias in [-0.03,-0.01]. bias 0 tips forward, -0.04 tips back.",
+  "deploy_ke": 2000,
+  "deploy_kd": 120,
+  "ank_bias": -0.02,
+  "joint_order": [
+    "leftHipYaw", "leftHipRoll", "leftHipPitch",
+    "leftKneePitch", "leftAnklePitch", "leftAnkleRoll",
+    "rightHipYaw", "rightHipRoll", "rightHipPitch",
+    "rightKneePitch", "rightAnklePitch", "rightAnkleRoll",
+    "torsoYaw", "torsoPitch", "torsoRoll",
+    "lowerNeckPitch", "neckYaw", "upperNeckPitch",
+    "leftShoulderPitch", "leftShoulderRoll", "leftShoulderYaw",
+    "leftElbowPitch", "leftForearmYaw", "leftWristRoll", "leftWristPitch",
+    "rightShoulderPitch", "rightShoulderRoll", "rightShoulderYaw",
+    "rightElbowPitch", "rightForearmYaw", "rightWristRoll", "rightWristPitch"
+  ],
+  "nominal": {
+    "leftHipPitch": -0.35, "leftKneePitch": 0.70, "leftAnklePitch": -0.35,
+    "rightHipPitch": -0.35, "rightKneePitch": 0.70, "rightAnklePitch": -0.35
+  },
+  "ankle_pitch_joints": ["leftAnklePitch", "rightAnklePitch"],
+  "ankle_roll_joints": ["leftAnkleRoll", "rightAnkleRoll"],
+  "hip_pitch_joints": ["leftHipPitch", "rightHipPitch"],
+  "arm_hold": [
+    "torsoYaw", "torsoPitch", "torsoRoll",
+    "leftShoulderPitch", "leftShoulderRoll", "leftShoulderYaw",
+    "leftElbowPitch", "leftForearmYaw", "leftWristRoll", "leftWristPitch",
+    "rightShoulderPitch", "rightShoulderRoll", "rightShoulderYaw",
+    "rightElbowPitch", "rightForearmYaw", "rightWristRoll", "rightWristPitch"
+  ],
+  "upright": {"bz_min": 0.72, "roll_max": 0.7, "pitch_max": 0.7},
+  "settle_s": 0.2,
+  "wave": {
+    "enabled": false,
+    "ramp_s": 2.0,
+    "pose": {
+      "rightShoulderPitch": -0.30,
+      "rightShoulderRoll": 1.00,
+      "rightShoulderYaw": 0.0,
+      "rightElbowPitch": 1.40
+    },
+    "osc": {"joint": "rightElbowPitch", "amp": 0.35, "freq_hz": 0.8}
+  }
+}

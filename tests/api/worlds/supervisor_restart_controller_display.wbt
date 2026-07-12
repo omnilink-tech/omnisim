@@ -1,0 +1,218 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+
+WorldInfo {
+  title "Camera Restart Controller Test"
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation 0.8841788126877563 0.45665457075971344 0.09846029757385279 5.706682493837526
+  position -0.10939443176085184 0.42862400583618987 0.6622877553910751
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  ambientIntensity 1
+  direction -0.3 -1 0.4
+  castShadows TRUE
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+RectangleArena {
+  rotation 1 0 0 -1.5708
+}
+TestSuiteSupervisor {
+}
+Robot {
+  children [
+    TestSuiteEmitter {
+    }
+  ]
+  controller "supervisor_restart_controller_display"
+  supervisor TRUE
+}
+DEF MYBOT Robot {
+  rotation 0 1 0 3.1415926
+  children [
+    DEF EMOTICONS Display {
+      translation 0 0.13 0
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              emissiveColor 0.686275 0.686275 0.686275
+            }
+            texture ImageTexture {
+            }
+          }
+          geometry IndexedFaceSet {
+            coord Coordinate {
+              point [
+                0.04 0.04 -0.011
+                0.04 -0.04 -0.011
+                -0.04 -0.04 -0.011
+                -0.04 0.04 -0.011
+              ]
+            }
+            texCoord TextureCoordinate {
+              point [
+                0 1
+                0 0
+                1 0
+                1 1
+              ]
+            }
+            coordIndex [
+              0, 1, 2, 3
+            ]
+            texCoordIndex [
+              0, 1, 2, 3
+            ]
+          }
+        }
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.247059 0.788235 0.235294
+            }
+          }
+          geometry Box {
+            size 0.1 0.1 0.02
+          }
+        }
+      ]
+      name "emoticon_display"
+      width 14
+      height 14
+    }
+    Pose {
+      translation 0 0.0415 0
+      rotation 1 0 0 -1.57079632679
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.0820075 0.364731 0.8
+            roughness 1
+            metalness 0
+          }
+          geometry DEF BODY Cylinder {
+            height 0.08
+            radius 0.045
+          }
+        }
+      ]
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis -1 0 0
+        anchor 0 0.025 0
+      }
+      device [
+        RotationalMotor {
+          name "left wheel motor"
+          consumptionFactor 70
+        }
+        PositionSensor {
+          name "left wheel sensor"
+        }
+      ]
+      endPoint Solid {
+        translation -0.045 0.025 0
+        rotation -1 0 0 0
+        children [
+          DEF WHEEL Pose {
+            rotation 0 1 0 -1.57
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 1 0 0
+                  roughness 1
+                  metalness 0
+                }
+                geometry Cylinder {
+                  height 0.01
+                  radius 0.025
+                }
+              }
+            ]
+          }
+        ]
+        name "left wheel"
+        boundingObject USE WHEEL
+        physics DEF PHYSICS_WHEEL Physics {
+          density -1
+          mass 0.05
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis -1 0 0
+        anchor 0 0.025 0
+      }
+      device [
+        RotationalMotor {
+          name "right wheel motor"
+          consumptionFactor 70
+        }
+        PositionSensor {
+          name "right wheel sensor"
+        }
+      ]
+      endPoint Solid {
+        translation 0.045 0.025 0
+        rotation -1 0 0 0
+        children [
+          USE WHEEL
+        ]
+        boundingObject USE WHEEL
+        physics USE PHYSICS_WHEEL
+      }
+    }
+  ]
+  name "MyBot"
+  boundingObject Pose {
+    translation 0 0.0415 0
+    rotation 1 0 0 -1.57079632679
+    children [
+      USE BODY
+    ]
+  }
+  physics Physics {
+    density -1
+    mass 0.5
+  }
+  controller "display_test"
+}

@@ -1,0 +1,13 @@
+{
+  "world": "projects/robot_combat/worlds/demos/husky_combat_duel.wbt",
+  "resolution": [1920, 1080], "fov": 0.785398, "load_wait_s": 30.0,
+  "shots": [{
+    "name": "duel", "output": "combat_duel.mp4",
+    "duration_s": 10.0, "fps": 30, "codec": "h264", "crf": 16, "preset": "slow",
+    "ease": "smoothstep", "warmup_steps": 6, "playback_speed": 1.0,
+    "path_keyframes": [
+      {"t": 0.0, "position": [0, -5.5, 8.5], "target": [0, 0, 0.4]},
+      {"t": 10.0, "position": [0, -4.2, 7.2], "target": [0, 0, 0.4]}
+    ]
+  }]
+}

@@ -1,0 +1,445 @@
+#VRML_SIM R2025a utf8
+
+# Warehouse logistics demo — substrate for the Warehouse Foreman agent.
+# Same 30 x 18 m walled warehouse as warehouse_husky.wbt, but with a
+# simpler, demo-readable layout:
+#
+#   - 6 labelled pallet stacks in a 2x3 grid (rows at y = +5 and y = -5).
+#   - Each pallet wears a small cube on top in a distinctive emissive
+#     colour (red, green, blue, yellow, magenta, cyan) — readable from
+#     the husky's camera at any aisle position.
+#   - A clearly marked LOADING DOCK ZONE in the west end (x ≈ -12),
+#     painted with a yellow PBR appearance + black-and-yellow border
+#     stripes.
+#   - Husky parked at the dock entrance, facing east, ready for a
+#     "Move the green pallet to the dock" type mission.
+#
+# Mission brief lives in WorldInfo.info; the bridge surfaces it on
+# /mission and the Foreman agent's `read_mission_brief` decides what
+# colour to fetch.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/pallet/protos/WoodenPalletStack.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/pallet/protos/WoodenPallet.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Warehouse Logistics"
+  info [
+    "Mission: move the GREEN-tagged pallet to the loading dock zone."
+    ""
+    "Six pallets are arranged in a 2 x 3 grid (rows at y=+5 and y=-5)."
+    "Each pallet wears a coloured tag: RED, GREEN, BLUE, YELLOW, MAGENTA, CYAN."
+    "The loading dock zone is the yellow-painted rectangle at x≈-12 (west end)."
+    ""
+    "The Foreman agent should: (1) read this brief, (2) delegate to the Picker"
+    "Husky to identify which pallet has the GREEN tag via camera, (3) drive to"
+    "that pallet, (4) deliver to the dock."
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 50
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 32 20
+  tileSize 32 20
+  appearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# ============================================================================
+# Outer perimeter walls. 30 m x 18 m interior, walls 0.2 m thick, 3 m tall.
+# Open west wall (no west wall) so the loading dock is on an open edge.
+# ============================================================================
+Wall { name "wall_N" translation 0  9 0 size 30.2 0.2 3 }
+Wall { name "wall_S" translation 0 -9 0 size 30.2 0.2 3 }
+Wall { name "wall_E" translation 15  0 0 size 0.2 18.2 3 }
+# Truncated west wall: short stubs north + south of the dock opening.
+Wall { name "wall_W_N" translation -15  6 0 size 0.2 6.2 3 }
+Wall { name "wall_W_S" translation -15 -6 0 size 0.2 6.2 3 }
+
+# ============================================================================
+# Loading dock zone — a yellow-painted 3 x 4 m floor patch (x=-12.5 to -9.5,
+# y=-2 to +2) at the west end. Implemented as a thin Solid plate so the
+# bridge / camera can identify "loading dock" by colour. Border stripes give
+# it the construction-zone feel without dominating the warehouse.
+# ============================================================================
+DEF DOCK Solid {
+  translation -11 0 0.005
+  name "loading_dock"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.85 0.10
+        roughness 0.5
+        metalness 0.0
+        emissiveColor 0.20 0.18 0.02
+      }
+      geometry Box { size 3 4 0.01 }
+    }
+  ]
+}
+
+# Black-and-yellow striped border (4 thin Solid plates around the dock).
+Solid {
+  translation -11 2.10 0.006
+  name "dock_border_N"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 0.6 metalness 0.0 }
+      geometry Box { size 3 0.20 0.01 }
+    }
+  ]
+}
+Solid {
+  translation -11 -2.10 0.006
+  name "dock_border_S"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 0.6 metalness 0.0 }
+      geometry Box { size 3 0.20 0.01 }
+    }
+  ]
+}
+Solid {
+  translation -9.40 0 0.006
+  name "dock_border_E"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 0.6 metalness 0.0 }
+      geometry Box { size 0.20 4 0.01 }
+    }
+  ]
+}
+Solid {
+  translation -12.60 0 0.006
+  name "dock_border_W"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 0.6 metalness 0.0 }
+      geometry Box { size 0.20 4 0.01 }
+    }
+  ]
+}
+
+# ============================================================================
+# Six pallet "loads" in a 2 x 3 grid (rows at y = +5, y = -5; columns
+# x = -3, +3, +9). Each load is a single Solid combining a wooden pallet
+# visual + an emissive coloured tag cube on top, with a single Physics
+# block + bounding box around the pallet so the whole load behaves as
+# one rigid body — the husky can push it and the tag rides along.
+#
+# Earlier iterations had the tag as a separate floating Solid and the
+# pallet as a WoodenPalletStack. Pushing the pallet then left the tag
+# hanging in mid-air at the original location while the pallet slid
+# south. Composing the two into one rigid body fixes that.
+#
+# Mass tuning: husky is ~50 kg dry; 15 kg per pallet on asphalt
+# friction is light enough that a head-on shove translates it without
+# stalling, but heavy enough that incidental contact doesn't launch
+# it across the warehouse.
+# ============================================================================
+
+# --- Row N (y = +5) ---
+DEF LOAD_RED Solid {
+  translation -3 5 0
+  name "load_red"
+  children [
+    WoodenPallet { mass 0 boundingObject FALSE }
+    Pose {
+      translation 0 0 0.29
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.95 0.05 0.05
+            emissiveColor 0.50 0.02 0.02
+            roughness 0.4 metalness 0.0
+          }
+          geometry Box { size 0.30 0.30 0.30 }
+        }
+      ]
+    }
+  ]
+  boundingObject Pose {
+    translation 0 0 0.07
+    children [ Box { size 1.2 0.8 0.14 } ]
+  }
+  physics Physics { density -1 mass 15 }
+}
+
+DEF LOAD_GREEN Solid {
+  translation 3 5 0
+  name "load_green"
+  children [
+    WoodenPallet { mass 0 boundingObject FALSE }
+    Pose {
+      translation 0 0 0.29
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.05 0.85 0.10
+            emissiveColor 0.02 0.45 0.05
+            roughness 0.4 metalness 0.0
+          }
+          geometry Box { size 0.30 0.30 0.30 }
+        }
+      ]
+    }
+  ]
+  boundingObject Pose {
+    translation 0 0 0.07
+    children [ Box { size 1.2 0.8 0.14 } ]
+  }
+  physics Physics { density -1 mass 15 }
+}
+
+DEF LOAD_BLUE Solid {
+  translation 9 5 0
+  name "load_blue"
+  children [
+    WoodenPallet { mass 0 boundingObject FALSE }
+    Pose {
+      translation 0 0 0.29
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.05 0.20 0.95
+            emissiveColor 0.02 0.08 0.45
+            roughness 0.4 metalness 0.0
+          }
+          geometry Box { size 0.30 0.30 0.30 }
+        }
+      ]
+    }
+  ]
+  boundingObject Pose {
+    translation 0 0 0.07
+    children [ Box { size 1.2 0.8 0.14 } ]
+  }
+  physics Physics { density -1 mass 15 }
+}
+
+# --- Row S (y = -5) ---
+DEF LOAD_YELLOW Solid {
+  translation -3 -5 0
+  name "load_yellow"
+  children [
+    WoodenPallet { mass 0 boundingObject FALSE }
+    Pose {
+      translation 0 0 0.29
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.98 0.85 0.05
+            emissiveColor 0.50 0.45 0.02
+            roughness 0.4 metalness 0.0
+          }
+          geometry Box { size 0.30 0.30 0.30 }
+        }
+      ]
+    }
+  ]
+  boundingObject Pose {
+    translation 0 0 0.07
+    children [ Box { size 1.2 0.8 0.14 } ]
+  }
+  physics Physics { density -1 mass 15 }
+}
+
+DEF LOAD_MAGENTA Solid {
+  translation 3 -5 0
+  name "load_magenta"
+  children [
+    WoodenPallet { mass 0 boundingObject FALSE }
+    Pose {
+      translation 0 0 0.29
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.92 0.10 0.78
+            emissiveColor 0.45 0.04 0.38
+            roughness 0.4 metalness 0.0
+          }
+          geometry Box { size 0.30 0.30 0.30 }
+        }
+      ]
+    }
+  ]
+  boundingObject Pose {
+    translation 0 0 0.07
+    children [ Box { size 1.2 0.8 0.14 } ]
+  }
+  physics Physics { density -1 mass 15 }
+}
+
+DEF LOAD_CYAN Solid {
+  translation 9 -5 0
+  name "load_cyan"
+  children [
+    WoodenPallet { mass 0 boundingObject FALSE }
+    Pose {
+      translation 0 0 0.29
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.05 0.92 0.95
+            emissiveColor 0.02 0.45 0.50
+            roughness 0.4 metalness 0.0
+          }
+          geometry Box { size 0.30 0.30 0.30 }
+        }
+      ]
+    }
+  ]
+  boundingObject Pose {
+    translation 0 0 0.07
+    children [ Box { size 1.2 0.8 0.14 } ]
+  }
+  physics Physics { density -1 mass 15 }
+}
+
+# ============================================================================
+# Husky robot — parked at the loading-dock entrance, facing east (+X) toward
+# the racks. Drop height 0.1 m. Bridge is shared with the maze worlds
+# (husky_omnilink_bridge); warehouse-specific behaviour is unlocked via the
+# new drive_to_waypoint action.
+# ============================================================================
+DEF HUSKY URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -11 0 0.1
+  name "husky"
+  controller "husky_omnilink_bridge"
+  supervisor TRUE
+}
+
+# Vision sidecar — see controllers/husky_eye/. Tracks the husky's pose
+# every tick and exposes a forward-facing 320x240 Camera at port 6071.
+# The bridge proxies its /image and /scan endpoints to /camera and /scan
+# so the Picker agent's read_camera tool just hits the bridge and the
+# sidecar wiring stays an implementation detail.
+Robot {
+  name "husky_eye"
+  translation -11 0 1
+  supervisor TRUE
+  controller "husky_eye"
+  children [
+    Camera {
+      name "front_camera"
+      width 320
+      height 240
+      fieldOfView 1.4
+      rotation 0 1 0 0.35
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.6 1.0
+        emissiveColor 0.05 0.15 0.3
+        roughness 0.4
+      }
+      geometry Sphere { radius 0.05 }
+    }
+  ]
+}
+
+# ============================================================================
+# UR5e arm — the warehouse Loader. Bolted to a brushed-aluminium pedestal at
+# the west edge of the dock zone so its ~0.85 m TCP reach lands inside the
+# dock. Runs ur5e_ik_slave; the ur5e_omnilink_bridge sidecar below exposes the
+# HTTP surface (port 6060) that the Axis agent drives when the Foreman
+# delegates the loading phase.
+#
+# This URDF has no gripper, so the "loading" gesture is symbolic: the arm
+# reaches over the dock at a staging pose to acknowledge pallet receipt.
+#
+# Geometry:
+#   - PEDESTAL: 0.5 x 0.5 x 0.70 m, centred at z=0.35 so its top sits at
+#     z=0.70 (workstation height, clear sight-line over the dock).
+#   - UR5E: translation z=0.705 (5 mm gap above the pedestal top so the
+#     narrow-phase doesn't chew on a shared face), staticBase TRUE so gravity
+#     and joint-torque reaction can't drag the base around.
+# ============================================================================
+
+DEF LOADER_PEDESTAL Solid {
+  translation -12.0 0 0.35
+  name "loader_pedestal"
+  children [
+    Shape {
+      appearance BrushedAluminium {
+      }
+      geometry Box { size 0.5 0.5 0.70 }
+    }
+  ]
+  boundingObject Box { size 0.5 0.5 0.70 }
+}
+
+DEF UR5E URDFRobot {
+  url "../../../../robots/universal_robots/ur_description/urdf/ur5e.urdf"
+  translation -12.0 0 0.705
+  rotation 0 0 1 0
+  name "ur5e"
+  controller "ur5e_ik_slave"
+  staticBase TRUE
+}
+
+# UR5e bridge sidecar (the Axis agent's HTTP endpoint, port 6060). Same
+# split-Robot pattern as the husky_eye sidecar: the bridge runs as a supervisor
+# sibling of the URDFRobot, drives the arm via customData, and exposes
+# /state, /capabilities, /action.
+Robot {
+  name "ur5e_omnilink_bridge"
+  translation -12.6 -0.6 0.10
+  supervisor TRUE
+  controller "ur5e_omnilink_bridge"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.10 0.10 0.10
+        roughness 0.5
+        metalness 0.0
+      }
+      geometry Box { size 0.20 0.20 0.20 }
+    }
+  ]
+}
+
+# ============================================================================
+# Loading dock — the destination for pallets pushed by the Warehouse Picker
+# Husky, and the zone the Loader arm reaches over.
+# ============================================================================
+
+# Symbolic "truck bed" drop zone immediately south of the dock — where
+# pushed cargo stages for pickup. Wood-tone crate so it visually reads as
+# cargo staging, not random scenery.
+Solid {
+  translation -11.0 -3.6 0.40
+  name "truck_bed"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.18 0.10
+        roughness 0.7
+        metalness 0.0
+      }
+      geometry Box { size 1.40 1.60 0.20 }
+    }
+  ]
+}

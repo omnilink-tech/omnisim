@@ -1,0 +1,35 @@
+#VRML_SIM R2025a utf8
+
+# OmniLink — TurtleBot3 Waffle
+# 2-wheel diff-drive bot. Prompts: "forward 1 m", "turn left 90 degrees",
+# "back 50 cm", "spin", "stop", "reset".
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — TurtleBot3 Waffle"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 1.371 -1.459 1.533
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 6 6
+}
+
+DEF TB3_WAFFLE URDFRobot {
+  url "../../../../robots/robotis/turtlebot3_description/urdf/turtlebot3_waffle.urdf"
+  translation 0 0 0
+  name "tb3_waffle"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "tb3_waffle" "--port" "8765" ]
+  window "omnilink_chat"
+}

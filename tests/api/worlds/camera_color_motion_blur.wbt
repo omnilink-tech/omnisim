@@ -1,0 +1,101 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation 0.23474306497169567 0.971933269009662 -0.015537504300438017 5.67785
+  position -1.46871 0.251512 1.98526
+}
+Background {
+  skyColor [
+    1 1 1
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  ambientIntensity 1
+  direction 0 -1 -1
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+DirectionalLight {
+  ambientIntensity 1
+  direction 0 -1 -1
+}
+Solid {
+  translation 0 0 -0.54
+  children [
+    DEF SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1 1 0.1
+      }
+    }
+  ]
+  boundingObject USE SHAPE
+  physics Physics {
+  }
+}
+Solid {
+  translation 0 0 -0.73
+  children [
+    DEF BACKGROUND Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 1
+      }
+      geometry Box {
+        size 5 5 0.01
+      }
+    }
+  ]
+  name "background"
+}
+Robot {
+  children [
+    Camera {
+      rotation -0.577349935856137 0.577349935856137 0.5773509358560258 2.09439
+      motionBlur 256
+    }
+    TestSuiteEmitter {
+    }
+  ]
+  controller "camera_checker"
+  controllerArgs [
+    "camera_color_motion_blur"
+  ]
+}
+TestSuiteSupervisor {
+}

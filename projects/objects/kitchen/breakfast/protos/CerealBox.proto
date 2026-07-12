@@ -1,0 +1,63 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/kitchen/breakfast/protos/CerealBox.proto
+# keywords: household/kitchen
+# A graspable carton of cereal: a resizable cardboard box wrapped in the `textureUrl` artwork, with a tight bounding object and a mass-driven physics node. The origin sits under the box.
+# template language: javascript
+
+PROTO CerealBox [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "cereal box"
+  field SFVec3f    size        0.08 0.2 0.3                 # Defines the size of the box.
+  field MFString   textureUrl  "textures/cereal_box_2.jpg"  # Defines the texture used for the box.
+  field SFFloat    mass        1                            # Defines the mass of the box in kg.
+]
+{
+%<
+  const size = fields.size.value;
+  const mass = fields.mass.value;
+  const halfZ = 0.5 * size.z;
+>%
+Solid {
+  translation IS translation
+  rotation IS rotation
+  children [
+    Pose {
+      translation 0 0 %<= halfZ >%
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColorMap ImageTexture {
+              url IS textureUrl
+            }
+            roughness 0.9
+            metalness 0
+          }
+          geometry DEF CEREAL_BOX_GEOM Box {
+            size IS size
+          }
+        }
+      ]
+    }
+  ]
+  name IS name
+  model "cereal box"
+  recognitionColors [
+    0.93 0.75 0.2
+  ]
+  boundingObject Pose {
+    translation 0 0 %<= halfZ >%
+    children [
+      USE CEREAL_BOX_GEOM
+    ]
+  }
+%< if (mass > 0) { >%
+  physics Physics {
+    density -1
+    mass IS mass
+  }
+%< } >%
+}
+}

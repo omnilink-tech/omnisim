@@ -1,0 +1,43 @@
+name: Test Doc
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  schedule:
+    - cron:  '0 22 * * *'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  job-skipper:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v5.3.0
+        with:
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
+          paths: '["docs/**"]'
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+
+  test-doc:
+    needs: job-skipper
+    if: needs.job-skipper.outputs.should_skip != 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+    - name: Tests
+      run: |
+        pip install -r docs/tests/requirements.txt
+        export OMNISIM_HOME=$PWD
+        python -m unittest discover -s docs/tests

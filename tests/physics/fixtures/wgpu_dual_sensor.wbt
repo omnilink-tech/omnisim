@@ -1,0 +1,76 @@
+#VRML_SIM R2025a utf8
+
+# Test fixture for the R4 per-type frustum gating: a Camera (gated by VF_CAMERA_FRUSTUMS)
+# AND a RangeFinder (gated by VF_RANGE_FINDER_FRUSTUMS) on one Robot. Lets the self-check
+# confirm the gating PARTITIONS correctly — camera-only + range-finder-only == both-on, and
+# each alone is non-zero — rather than the old behaviour of drawing every sensor under the
+# single camera flag. Static, no controller; in fixtures/ so the test-suite glob skips it.
+
+WorldInfo {
+  basicTimeStep 16
+  FPS 30
+}
+Viewpoint {
+  orientation -0.5 -0.4 0.77 1.95
+  position 0.8 -0.8 0.6
+}
+Background {
+  skyColor [ 0.15 0.20 0.30 ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  color 1.0 0.95 0.85
+  direction -0.5 -0.5 -0.7
+  intensity 2.5
+  castShadows TRUE
+}
+DEF FLOOR Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.45 0.48
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Box {
+        size 2 2 0.05
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 2 2 0.05
+  }
+}
+DEF SENSORS Robot {
+  translation 0 0 0.2
+  controller "<none>"
+  children [
+    Camera {
+      name "cam"
+      translation 0 0.15 0
+      fieldOfView 0.9
+      width 64
+      height 48
+      near 0.05
+      maxRange 1.2
+    }
+    RangeFinder {
+      name "rf"
+      translation 0 -0.15 0
+      fieldOfView 0.9
+      width 64
+      height 48
+      minRange 0.05
+      maxRange 1.2
+    }
+  ]
+  name "sensors"
+  boundingObject Box {
+    size 0.1 0.1 0.1
+  }
+  physics Physics {
+    density -1
+    mass 1
+  }
+}

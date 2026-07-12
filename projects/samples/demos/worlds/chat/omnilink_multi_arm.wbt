@@ -1,0 +1,41 @@
+#VRML_SIM R2025a utf8
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+WorldInfo { basicTimeStep 16 }
+Viewpoint { orientation -0.5773 0.5773 0.5773 2.0944 position 2.4 -2.4 1.8 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 6 4 }
+DEF UR5E_LEFT URDFRobot {
+  url "../../../../robots/universal_robots/ur_description/urdf/ur5e.urdf"
+  translation -1.2 0 0
+  name "ur5e_left"
+  supervisor TRUE
+  staticBase TRUE
+  controller "omnilink_arm_bridge"
+  controllerArgs [ "--robot" "ur5e" "--port" "8765" "--name" "ur5e_left" ]
+  window "omnilink_chat"
+}
+DEF UR5E_CENTER URDFRobot {
+  url "../../../../robots/universal_robots/ur_description/urdf/ur5e.urdf"
+  translation 0 0 0
+  name "ur5e_center"
+  supervisor TRUE
+  staticBase TRUE
+  controller "omnilink_arm_bridge"
+  controllerArgs [ "--robot" "ur5e" "--port" "8766" "--name" "ur5e_center" ]
+  window "omnilink_chat"
+}
+DEF UR5E_RIGHT URDFRobot {
+  url "../../../../robots/universal_robots/ur_description/urdf/ur5e.urdf"
+  translation 1.2 0 0
+  name "ur5e_right"
+  supervisor TRUE
+  staticBase TRUE
+  controller "omnilink_arm_bridge"
+  controllerArgs [ "--robot" "ur5e" "--port" "8767" "--name" "ur5e_right" ]
+  window "omnilink_chat"
+}

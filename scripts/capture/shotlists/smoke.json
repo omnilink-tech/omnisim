@@ -1,0 +1,23 @@
+{
+  "world": "projects/samples/demos/worlds/misc/cylinder_stack.wbt",
+  "resolution": [640, 360],
+  "fov": 0.785398,
+  "load_wait_s": 30.0,
+  "shots": [
+    {
+      "name": "smoke",
+      "output": "smoke.mp4",
+      "duration_s": 2.0,
+      "fps": 24,
+      "codec": "h264",
+      "crf": 22,
+      "ease": "smoothstep",
+      "warmup_steps": 8,
+      "settle_steps_per_frame": 1,
+      "path_keyframes": [
+        {"t": 0.0, "position": [-2.0, -2.0, 1.5], "target": [0, 0, 0.3]},
+        {"t": 2.0, "position": [ 2.0, -2.0, 1.5], "target": [0, 0, 0.3]}
+      ]
+    }
+  ]
+}

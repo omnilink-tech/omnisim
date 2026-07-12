@@ -1,0 +1,144 @@
+name: Release
+
+# Triggers on semver tags pushed to main (e.g. v1.0.0, v1.2.3-rc1).
+# Builds OmniSim on Linux, macOS, and Windows; attaches the resulting
+# distribution artifacts to a GitHub Release for the tag.
+#
+# Manual `workflow_dispatch` is also wired up so a release can be re-run
+# against an existing tag without re-pushing it.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)build a release for, e.g. v1.0.0'
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # required to create the GitHub Release and upload assets
+
+jobs:
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Install build dependencies
+        run: sudo scripts/install/linux_optional_compilation_dependencies.sh
+      - name: Build distribution
+        run: |
+          export JAVA_HOME=/usr/lib/jvm/java-18-openjdk-amd64
+          export PATH=$JAVA_HOME/bin:$PATH
+          export LIBGL_ALWAYS_SOFTWARE=true
+          xvfb-run --auto-servernum make distrib -j4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux
+          path: |
+            distribution/*.tar.bz2
+            distribution/*.deb
+            distribution/*.zip
+          if-no-files-found: error
+
+  build-macos:
+    name: Build (macOS)
+    runs-on: macos-14
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Install build dependencies
+        run: |
+          pip install setuptools
+          npm install -g appdmg
+          brew install swig
+      - name: Build distribution
+        run: |
+          export JAVA_HOME="$(/usr/libexec/java_home -v 16)"
+          export PATH=/Library/Frameworks/Python.framework/Versions/3.11/bin:/usr/local/bin/:$PATH
+          make distrib -j4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos
+          path: distribution/*.dmg
+          if-no-files-found: error
+
+  build-windows:
+    name: Build (Windows)
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: false
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Install build dependencies
+        run: |
+          echo 'export PATH=$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH' >> ~/.bash_profile
+          export OMNISIM_HOME=$GITHUB_WORKSPACE
+          ./scripts/install/msys64_installer.sh --all
+      - name: Build distribution
+        run: |
+          export OMNISIM_HOME=$GITHUB_WORKSPACE
+          make distrib -j4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows
+          path: distribution/*.exe
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [[ -n "${{ github.event.inputs.tag }}" ]]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: List release assets
+        run: ls -lh dist/
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: OmniSim ${{ steps.tag.outputs.name }}
+          generate_release_notes: true
+          prerelease: ${{ contains(steps.tag.outputs.name, '-') }}
+          files: dist/*
+          fail_on_unmatched_files: true

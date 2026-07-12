@@ -1,0 +1,79 @@
+#VRML_SIM R2025a utf8
+
+# Phase δ (R3.7) Newton → wgpu interop demo.
+#
+# The Newton-backed Husky drives across the arena (physicsBackend "newton";
+# chassis + 4 wheels register as Newton bodies). A separate Robot carries a
+# wgpu Camera. With OMNISIM_PROBE_DELTA=1 the camera's wgpu path
+# (WbCamera::copyImageToMemoryMappedFile) snapshots the LIVE Newton body
+# translations via WbNewtonBackend::snapshotBodyTranslations and renders one
+# instance per body through the storage-buffer instanced draw
+# (WbWgpuRenderTarget::clearAndDrawInstanced) — i.e. the physics-GPU body
+# positions feed the render-GPU vertex shader. The marquee end-to-end of the
+# architectural lever.
+#
+# Verify (PowerShell, wgpu-ON + Newton-ON binary):
+#   OMNISIM_PROBE_DELTA=1 omnisim-bin.exe <this world> --minimize --batch \
+#       --no-rendering --mode=fast
+# Expect repeated log lines:
+#   [WbCamera δ] N LIVE Newton bodies → wgpu instanced storage-buffer draw ...
+#   body0=(x,...) advancing as the husky drives (-7 → +).
+#
+# On NEWTON=OFF / wgpu-OFF builds the δ hook no-ops (newton dynamic_cast null
+# or ensureWgpuTarget false) and the world is a plain husky drive.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Phase δ — Newton → wgpu interop demo"
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 -3 3.0
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 16 16
+  wallHeight 0.5
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 0 0.3
+  name "newton_husky"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+
+# wgpu Camera observer. Looks +Y (rotated +90° about Z from the default +X)
+# toward the husky's path at y=0, from y=-4.
+Robot {
+  translation 0 -4 1.5
+  rotation 0 0 1 1.5708
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 64
+      height 48
+      fieldOfView 1.2
+      near 0.05
+      far 40.0
+      renderBackend "wgpu"
+    }
+  ]
+  controller "camera_wgpu_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

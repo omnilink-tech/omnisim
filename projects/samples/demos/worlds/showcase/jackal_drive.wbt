@@ -1,0 +1,93 @@
+#VRML_SIM R2025a utf8
+
+# Jackal drive demo -- loads the Clearpath Jackal from URDF (no PROTO),
+# exercising the importer paths the Husky URDF cannot: full inertia
+# tensors with off-diagonal terms, all-mesh visuals (jackal-base.stl,
+# jackal-wheel.stl, jackal-fender.stl), and the legacy hector_gazebo
+# IMU + GPS plugins translated into Webots InertialUnit / Gyro /
+# Accelerometer / GPS devices.
+#
+# The husky_random controller runs the goal-seeker / random-walk state
+# machine -- no crater payload means it takes the random-walk branch
+# with reactive collision recovery (BACKUP -> TURN -> CRUISE). It targets
+# `<jointname>_motor` devices, which the URDF importer emits as
+# `front_left_wheel_motor` etc -- same naming the Husky demos use, so
+# the controller drops in unchanged.
+#
+# supervisor TRUE gives the controller a getSelf() handle for the
+# position-based no-progress detector; without it the random walk still
+# works but only via wheel-speed stuck detection.
+#
+# Sensor and custom-inertia import are gated behind OMNISIM_URDF_USE_SENSORS=1
+# and OMNISIM_URDF_USE_INERTIA=1 respectively. Default off because both
+# trip Webots/ODE crashes the static report didn't catch. See
+# docs/developer/urdf-import-debugging.md for the import paths this
+# world exercises and how to debug them with OMNISIM_URDF_DEBUG=1.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/WoodenBox.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Jackal URDF Drive Demo"
+  info [
+    "Single Clearpath Jackal loaded natively from URDF via URDFRobot."
+    "Verifies inertia tensor + sensor import on top of mesh visuals"
+    "and primitive collision bounding objects."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.8 ]
+      bounce 0.1
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 12
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 20 20
+  wallHeight 0.3
+  floorAppearance PBRAppearance {
+    baseColor 0.22 0.24 0.26
+    roughness 0.95
+    metalness 0
+  }
+}
+
+# A few obstacles so an operator can immediately see the wheel-motor and
+# IMU output do something meaningful.
+WoodenBox {
+  translation 3 0 0.15
+  name "obstacle front"
+  size 0.3 0.3 0.3
+}
+WoodenBox {
+  translation -3 1 0.15
+  name "obstacle rear left"
+  size 0.3 0.3 0.3
+}
+WoodenBox {
+  translation 0 -3 0.15
+  name "obstacle side"
+  size 0.3 0.3 0.3
+}
+
+URDFRobot {
+  url "../../../../robots/clearpath/jackal_description/urdf/jackal.urdf"
+  translation 0 0 0.1
+  name "jackal"
+  supervisor TRUE
+  controller "husky_random"
+}

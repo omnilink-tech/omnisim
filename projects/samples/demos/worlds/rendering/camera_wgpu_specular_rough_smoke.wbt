@@ -1,0 +1,54 @@
+#VRML_SIM R2025a utf8
+
+# T1.1 specular A/B reference: identical to camera_wgpu_specular_smoke.wbt in
+# every way EXCEPT roughness 1.0 (-> smoothness 0 -> the kSolidLitAgX specular
+# branch is skipped entirely). Used as the rough twin so the regression can
+# isolate the specular contribution: AgX-on(this) is the no-specular baseline,
+# AgX-on(the roughness-0.85 world) must be brighter at the centre.
+#
+# See engine-migration-plan.md S8.1 T1.1.
+
+WorldInfo {
+  info [
+    "T1.1 specular A/B rough reference - rough 1.0 box, no specular"
+  ]
+  title "wgpu specular rough reference"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 64
+      height 48
+      fieldOfView 0.8
+      near 0.05
+      far 10.0
+      renderBackend "wgpu"
+    }
+    DEF ROUGH_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.5 0.5 0.5
+            roughness 1.0
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "rough box"
+    }
+  ]
+  controller "camera_wgpu_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

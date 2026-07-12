@@ -1,0 +1,12 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/BoxShape.proto"
+
+PROTO SlotContainer [
+  field MFNode slot [ BoxShape{} ]
+]
+{
+  Group {
+    children IS slot
+  }
+}

@@ -1,0 +1,272 @@
+#VRML_SIM R2025a utf8
+
+# OmniLink — DJI Mavic 2 Pro (chat + Drone Surveyor flagship, merged)
+#
+# Two demos in one world:
+#
+#  1. Chat surface — right-click the drone → *Show Robot Window* → side-
+#     panel chat. Operator types "takeoff", "forward 1 m", "up 2 m",
+#     "left 1 m", "turn left 90 degrees", "goto 2 3", "hover", "land",
+#     "stop", "reset". IntentRouter dispatches one action per prompt.
+#
+#  2. Drone Surveyor flagship mission — same bridge advertises a rich
+#     tool surface (get_capabilities, scan_for_markers, read_camera,
+#     check_marker_position, takeoff, set_gimbal_pitch, goto_waypoint,
+#     complete_mission). The Drone Surveyor agent flies a perimeter
+#     loop at 12 m altitude, points the gimbal straight down, scans for
+#     coloured markers at each waypoint, counts the RED ones, and
+#     reports their world positions in complete_mission.
+#
+# Both surfaces share the same mavic_omnilink_bridge controller — the
+# /action HTTP endpoint serves the agent, the wwi-chat IntentRouter
+# serves the human. Same BridgeState, same flight loop.
+#
+# Eight coloured ground markers (3 red + 5 distractors) are scattered
+# around a warehouse-sized footprint. The agent must reason about world
+# position from image centroid + drone pose, not just "is something red
+# in front of me." Mission brief lives in WorldInfo.info; the bridge
+# surfaces it via /capabilities.mission_brief.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "OmniLink — Mavic 2 Pro (Drone Surveyor)"
+  defaultDamping Damping {
+    linear 0.5
+    angular 0.5
+  }
+  info [
+    "Mission: fly the perimeter of the warehouse at 12 m altitude with the gimbal pointed straight down."
+    "Count the RED ground markers and report their world (x, y) positions."
+    ""
+    "Eight coloured markers are scattered around the warehouse footprint."
+    "Marker colours: red, green, blue, yellow, magenta, cyan, orange, white."
+    "There are THREE red markers (the count target) — the others are distractors."
+    ""
+    "Workflow: (1) read_mission_brief, (2) takeoff to 12 m, (3) point camera down via set_gimbal_pitch,"
+    "(4) goto_waypoint each perimeter corner, (5) scan_for_markers at each, (6) aggregate red detections"
+    "(deduplicate by world position within ~1.5 m), (7) land, (8) complete_mission with rationale +"
+    "red marker count + their world (x, y) positions."
+  ]
+}
+
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 -45 35
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 60 60
+  tileSize 60 60
+  appearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# ============================================================================
+# Warehouse footprint — visible building outline the drone surveys around.
+# Centred at origin, 16 m east-west x 10 m north-south x 6 m tall. Single
+# Solid (no physics, no boundingObject — drone never touches it). The
+# distinctive flat top + corner bevels make it easy to spot in the
+# top-down view as the orienting landmark for "fly the perimeter."
+# ============================================================================
+DEF WAREHOUSE Solid {
+  translation 0 0 3
+  name "warehouse"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.78 0.76 0.72
+        roughness 0.7
+        metalness 0.0
+      }
+      geometry Box { size 16 10 6 }
+    }
+    DEF ROOF_STRIPE Pose {
+      translation 0 0 3.05
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.20 0.22 0.25
+            roughness 0.5 metalness 0.0
+          }
+          geometry Box { size 16 10 0.05 }
+        }
+      ]
+    }
+  ]
+}
+
+# ============================================================================
+# Eight coloured ground markers. Each is a flat 0.8 m x 0.8 m x 0.05 m
+# square so it presents as a clean coloured patch when viewed from above
+# at 12 m altitude (subtends ~60 px in the Mavic's 400×240 frame at that
+# vantage — comfortably above the perception classifier's 0.2 % threshold).
+# Positions form a rough ring around the warehouse perimeter; the three
+# RED markers (count target) are spread to different sides so a single-pass
+# perimeter survey actually has to look at all of them.
+#
+# emissiveColor pushes channel intensity well above the BGRA classifier
+# gates regardless of the directional-light angle of the moment.
+# ============================================================================
+
+DEF MARKER_RED_1 Solid {
+  translation -10 +6 0.025
+  name "marker_red_1"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.05 0.05
+        emissiveColor 0.55 0.02 0.02
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.80 0.80 0.05 }
+    }
+  ]
+}
+
+DEF MARKER_RED_2 Solid {
+  translation +12 -4 0.025
+  name "marker_red_2"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.05 0.05
+        emissiveColor 0.55 0.02 0.02
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.80 0.80 0.05 }
+    }
+  ]
+}
+
+DEF MARKER_RED_3 Solid {
+  translation -3 -8 0.025
+  name "marker_red_3"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.05 0.05
+        emissiveColor 0.55 0.02 0.02
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.80 0.80 0.05 }
+    }
+  ]
+}
+
+DEF MARKER_GREEN Solid {
+  translation +6 +7 0.025
+  name "marker_green"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.05 0.85 0.10
+        emissiveColor 0.02 0.50 0.05
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.80 0.80 0.05 }
+    }
+  ]
+}
+
+DEF MARKER_BLUE Solid {
+  translation -12 -4 0.025
+  name "marker_blue"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.05 0.20 0.95
+        emissiveColor 0.02 0.08 0.50
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.80 0.80 0.05 }
+    }
+  ]
+}
+
+DEF MARKER_YELLOW Solid {
+  translation +10 +5 0.025
+  name "marker_yellow"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.98 0.85 0.05
+        emissiveColor 0.50 0.45 0.02
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.80 0.80 0.05 }
+    }
+  ]
+}
+
+DEF MARKER_MAGENTA Solid {
+  translation +5 -7 0.025
+  name "marker_magenta"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.92 0.10 0.78
+        emissiveColor 0.45 0.04 0.38
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.80 0.80 0.05 }
+    }
+  ]
+}
+
+DEF MARKER_CYAN Solid {
+  translation -7 +2 0.025
+  name "marker_cyan"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.05 0.92 0.95
+        emissiveColor 0.02 0.45 0.50
+        roughness 0.4 metalness 0.0
+      }
+      geometry Box { size 0.80 0.80 0.05 }
+    }
+  ]
+}
+
+# ============================================================================
+# The Mavic 2 Pro itself. Starts on the ground south of the warehouse
+# pointing north (+Y). supervisor=TRUE so the bridge can read its own
+# pose every tick AND read DEF'd marker poses for ground-truth verification
+# (the bridge's /solid endpoint, mirroring the husky bridge's contract).
+#
+# The default Camera (400×240) lives in cameraSlot; the bridge enables
+# it on init and pitches it straight down (camera pitch = pi/2) before
+# any survey pass.
+#
+# window "omnilink_chat" registers the wwi side-panel chat UI shared
+# with every other chat demo. The bridge speaks both contracts: HTTP
+# /action for the OmniLink agent, wwi text for the human operator.
+# ============================================================================
+DEF MAVIC URDFRobot {
+  url "../../../../robots/dji/mavic/urdf/mavic_2_pro.urdf"
+  translation 0 -12 0.1
+  rotation 0 0 1 1.5708
+  name "Mavic 2 PRO"
+  controller "mavic_omnilink_bridge"
+  controllerArgs [ "--port" "6090" "--name" "mavic2pro" ]
+  window "omnilink_chat"
+  supervisor TRUE
+}

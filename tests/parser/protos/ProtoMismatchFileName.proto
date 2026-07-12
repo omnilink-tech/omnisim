@@ -1,0 +1,10 @@
+#VRML_SIM R2025a utf8
+
+PROTO ProtoMismatchFileName2 [
+  field SFVec3f translation 0 0 0
+]
+{
+  Solid {
+    translation IS translation
+  }
+}

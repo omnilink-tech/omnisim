@@ -1,0 +1,160 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/buildings/protos/StripBuilding.proto
+# keywords: building/apartment
+# template language: javascript
+# A terraced strip of shop-and-flat units generated along the +y axis until the requested
+# `length` is reached (the last unit is never cut, so the strip is slightly longer).
+# Unit width, height and render colour are drawn from a seeded pseudo-random sequence, so
+# the same `randomSeed` always yields the same strip. Shopfronts, windows and parapets are
+# primitive geometry -- no facade textures. The base of the strip sits at z = 0.
+
+PROTO StripBuilding [
+  field SFVec3f    translation           0 0 0
+  field SFRotation rotation              0 0 1 0
+  field SFString   name                  "strip building"
+  field SFFloat    length                100              # Defines the minimum length of the strip (actual length is slightly bigger because buildings are not cut).
+  field SFInt32    randomSeed            1                # Defines the seed of the random number generator. A value smaller or equal to 0 sets a random seed.
+  field SFBool     enableBoundingObject  TRUE             # Defines whether the buildings should have bounding objects.
+]
+{
+  %<
+    const minLength = Math.max(6.0, fields.length.value);
+    const depth = 12.0;               // unit depth along x
+    const hx = depth / 2.0;
+    const floorHeight = 3.2;
+
+    // Park-Miller pseudo-random sequence: deterministic for a given seed
+    let seed = fields.randomSeed.value;
+    if (seed <= 0)
+      seed = Math.floor(Math.random() * 2147483646) + 1;
+    seed = seed % 2147483647;
+    if (seed <= 0)
+      seed += 2147483646;
+    function rnd() {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    }
+
+    // render colours for the units
+    const palette = [
+      [0.84, 0.78, 0.68],
+      [0.76, 0.70, 0.64],
+      [0.68, 0.72, 0.70],
+      [0.86, 0.66, 0.52],
+      [0.72, 0.74, 0.78]
+    ];
+    const wallDefined = [false, false, false, false, false];
+
+    // lay the units out along +y
+    const units = [];
+    let cursor = 0.0;
+    while (cursor < minLength) {
+      const w = 8.0 + rnd() * 8.0;                       // 8 .. 16 m frontage
+      const storeys = 2 + Math.floor(rnd() * 3.0);       // 2 .. 4 storeys
+      units.push({
+        y: cursor + w / 2.0,
+        w: w,
+        h: 0.6 + storeys * floorHeight,                  // parapet allowance
+        storeys: storeys,
+        colour: Math.floor(rnd() * palette.length)
+      });
+      cursor += w;
+    }
+
+    let glassDefined = false;
+    let paneDefined = false;
+    let parapetDefined = false;
+
+    function wallShape(c, w, h) {
+      let s = '';
+      if (wallDefined[c])
+        s += 'USE WALL_' + c;
+      else {
+        s += 'DEF WALL_' + c + ' PBRAppearance { baseColor ' + palette[c][0] + ' ' + palette[c][1] + ' ' +
+             palette[c][2] + ' roughness 0.9 metalness 0 }';
+        wallDefined[c] = true;
+      }
+      return '          Shape {\n            appearance ' + s + '\n            geometry Box { size ' +
+             depth.toFixed(2) + ' ' + w.toFixed(2) + ' ' + h.toFixed(2) + ' }\n          }\n';
+    }
+
+    function unit(u) {
+      let s = '';
+      // mass
+      s += '      Pose {\n        translation 0 ' + u.y.toFixed(2) + ' ' + (u.h / 2.0).toFixed(2) + '\n';
+      s += '        children [\n' + wallShape(u.colour, u.w, u.h) + '        ]\n      }\n';
+      // shopfront glazing on both long faces
+      for (let side = -1; side <= 1; side += 2) {
+        s += '      Pose { translation ' + (side * (hx + 0.07)).toFixed(3) + ' ' + u.y.toFixed(2) +
+             ' 1.7 rotation 0 0 1 1.5708 children [ ';
+        if (glassDefined)
+          s += 'USE SHOPFRONT';
+        else {
+          s += 'DEF SHOPFRONT Shape { appearance DEF GLASS_APP PBRAppearance { baseColor 0.14 0.17 0.20 ' +
+               'roughness 0.2 metalness 0.6 } geometry Box { size 5.6 0.14 2.6 } }';
+          glassDefined = true;
+        }
+        s += ' ] }\n';
+      }
+      // punched windows on the upper storeys, both long faces
+      const perFloor = Math.max(2, Math.round(u.w / 3.2));
+      for (let f = 1; f < u.storeys; ++f) {
+        const z = f * floorHeight + floorHeight / 2.0 - 0.2;
+        for (let i = 0; i < perFloor; ++i) {
+          const py = u.y - u.w / 2.0 + (i + 0.5) * (u.w / perFloor);
+          for (let side = -1; side <= 1; side += 2) {
+            s += '      Pose { translation ' + (side * (hx + 0.07)).toFixed(3) + ' ' + py.toFixed(3) + ' ' +
+                 z.toFixed(3) + ' rotation 0 0 1 1.5708 children [ ';
+            if (paneDefined)
+              s += 'USE WINDOW_PANE';
+            else {
+              s += 'DEF WINDOW_PANE Shape { appearance USE GLASS_APP geometry Box { size 1.5 0.16 1.6 } }';
+              paneDefined = true;
+            }
+            s += ' ] }\n';
+          }
+        }
+      }
+      // parapet cap
+      s += '      Pose { translation 0 ' + u.y.toFixed(2) + ' ' + (u.h + 0.2).toFixed(2) + ' children [ ';
+      if (parapetDefined)
+        s += 'USE PARAPET_CAP';
+      else {
+        s += 'DEF PARAPET_CAP Shape { appearance DEF TRIM_APP PBRAppearance { baseColor 0.45 0.44 0.42 ' +
+             'roughness 0.8 metalness 0 } geometry Box { size ' + (depth + 0.5).toFixed(2) + ' 1 0.4 } }';
+        parapetDefined = true;
+      }
+      s += ' ] }\n';
+      return s;
+    }
+
+    let bodyStr = '';
+    for (let i = 0; i < units.length; ++i)
+      bodyStr += unit(units[i]);
+
+    let boundStr = '';
+    if (fields.enableBoundingObject.value) {
+      boundStr = 'boundingObject Group {\n      children [\n';
+      for (let i = 0; i < units.length; ++i) {
+        const u = units[i];
+        boundStr += '        Pose { translation 0 ' + u.y.toFixed(2) + ' ' + (u.h / 2.0).toFixed(2) +
+                    ' children [ Box { size ' + depth.toFixed(2) + ' ' + u.w.toFixed(2) + ' ' +
+                    u.h.toFixed(2) + ' } ] }\n';
+      }
+      boundStr += '      ]\n    }';
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "strip building"
+    children [
+%<= bodyStr >%
+    ]
+    %<= boundStr >%
+    locked TRUE
+  }
+}

@@ -1,0 +1,104 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# tags: hidden
+# The shell of a self-cleaning public-toilet kiosk, as a bare geometry node.
+#
+# This PROTO used to be nothing but a baked mesh, and that mesh was not ours to redistribute. It
+# has been replaced with a constructed one: a soft-cornered prism, generated here, occupying the
+# same envelope the old mesh did -- 3.1 m x 5.1 m on the ground, 5.0 m tall, about the same origin
+# -- so anything that placed the old node still gets a kiosk of the same size in the same place.
+# The kiosk that actually ships is PublicToilet.proto, which builds its own cabin from primitives
+# and does not use this node; this one is kept because it is part of the public surface.
+# template language: javascript
+
+PROTO PublicToiletMesh [
+]
+{
+  %<
+    // The envelope of the mesh this replaces, measured off it before it went.
+    const x0 = -1.95;
+    const x1 = 1.15;
+    const y0 = -3.95;
+    const y1 = 1.15;
+    const height = 5.0;
+    const cut = 0.35;   // the corner chamfer -- a kiosk of this kind has no sharp verticals
+
+    // The footprint, walked counter-clockwise seen from above, so the wall
+    // quads below come out facing outwards.
+    const plan = [
+      [x0 + cut, y0], [x1 - cut, y0], [x1, y0 + cut], [x1, y1 - cut],
+      [x1 - cut, y1], [x0 + cut, y1], [x0, y1 - cut], [x0, y0 + cut]
+    ];
+    const n = plan.length;
+
+    // Arc length round the plan, so the cladding runs round the kiosk at one
+    // scale instead of being stretched to fit each wall.
+    const edge = [];
+    let perimeter = 0;
+    for (let i = 0; i < n; ++i) {
+      const p = plan[i];
+      const q = plan[(i + 1) % n];
+      edge.push(perimeter);
+      perimeter += Math.sqrt((q[0] - p[0]) * (q[0] - p[0]) + (q[1] - p[1]) * (q[1] - p[1]));
+    }
+    edge.push(perimeter);
+
+    const spanX = x1 - x0;
+    const spanY = y1 - y0;
+
+    function r6(v) {
+      return Math.round(v * 1e6) / 1e6;
+    }
+  >%
+  IndexedFaceSet {
+    coord Coordinate {
+      point [
+      # the ring at the foot, then the same ring at the roof
+      %< for (let s = 0; s <= 1; ++s) {
+           for (let i = 0; i < n; ++i) { >%
+        %<= r6(plan[i][0]) >% %<= r6(plan[i][1]) >% %<= r6(s * height) >%
+      %<   }
+         } >%
+      ]
+    }
+    texCoord TextureCoordinate {
+      point [
+      # four corners per wall, laid out along the perimeter ...
+      %< for (let i = 0; i < n; ++i) {
+           const u0 = edge[i] / perimeter;
+           const u1 = edge[i + 1] / perimeter;
+           const v = (edge[i + 1] - edge[i]) > 0 ? height / (edge[i + 1] - edge[i]) : 1; >%
+        %<= r6(u0) >% 0
+        %<= r6(u1) >% 0
+        %<= r6(u1) >% %<= r6(Math.min(4, v)) >%
+        %<= r6(u0) >% %<= r6(Math.min(4, v)) >%
+      %< } >%
+      # ... then the roof, projected straight down onto the plan
+      %< for (let i = 0; i < n; ++i) { >%
+        %<= r6((plan[i][0] - x0) / spanX) >% %<= r6((plan[i][1] - y0) / spanY) >%
+      %< } >%
+      ]
+    }
+    coordIndex [
+      # the walls
+      %< for (let i = 0; i < n; ++i) {
+           const j = (i + 1) % n; >%
+      %<= i >% %<= j >% %<= n + j >% %<= n + i >% -1
+      %< } >%
+      # and the roof slab, closed as a fan off the first corner
+      %< for (let i = 1; i < n - 1; ++i) { >%
+      %<= n >% %<= n + i >% %<= n + i + 1 >% -1
+      %< } >%
+    ]
+    texCoordIndex [
+      %< for (let i = 0; i < n; ++i) { >%
+      %<= 4 * i >% %<= 4 * i + 1 >% %<= 4 * i + 2 >% %<= 4 * i + 3 >% -1
+      %< } >%
+      %< for (let i = 1; i < n - 1; ++i) { >%
+      %<= 4 * n >% %<= 4 * n + i >% %<= 4 * n + i + 1 >% -1
+      %< } >%
+    ]
+    creaseAngle 0.3
+  }
+}

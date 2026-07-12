@@ -1,0 +1,236 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/stairs/protos/StraightStairs.proto
+# keywords: building/component
+# A straight flight of stairs: 'nSteps' treads carried by two side stringers, with an optional handrail on each side.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/VarnishedPine.proto"
+EXTERNPROTO "StraightStairsRail.proto"
+EXTERNPROTO "omnisim://projects/objects/geometries/protos/TexturedParallelepiped.proto"
+
+PROTO StraightStairs [
+  field SFVec3f    translation        0 0 0
+  field SFRotation rotation           0 0 1 0
+  field SFString   name               "straight stairs"
+  field SFVec3f    stepSize           0.4 1.27 0.03                                                      # Defines the size of one step.
+  field SFFloat    stepRise           0.15                                                               # Defines the height difference between two consecutives steps.
+  field SFInt32    nSteps             5                                                                  # Defines the number of steps.
+  field SFFloat    stringerWidth      0.02                                                               # Defines the width of the stringers.
+  field SFNode     stepAppearance     VarnishedPine { textureTransform TextureTransform { scale 4 4 } }  # Defines the appearance of the steps.
+  field SFNode     stringerAppearance VarnishedPine { textureTransform TextureTransform { scale 4 4 } }  # Defines the appearance of the stringers.
+  field MFNode     leftRail           StraightStairsRail {}                                              # Defines the left rail.
+  field MFNode     rightRail          StraightStairsRail {}                                              # Defines the right rail.
+  field SFBool     startingStairs     TRUE                                                               # Defines whether the bottom part of the stairs should be flat.
+  field SFString   contactMaterial    "default"                                                          # Is `Solid.contactMaterial`.
+]
+{
+  # The flight climbs along +x from an origin at the foot of the first step, so a
+  # world can drop it at ground level with `translation x y 0` and it will meet the
+  # floor.  Step i (0-based) is a board of 'stepSize' whose TOP face is the walking
+  # surface at z = (i + 1) * stepRise and whose tread runs from x = i * stepSize.x to
+  # x = (i + 1) * stepSize.x -- so the flight is nSteps * stepSize.x long and
+  # nSteps * stepRise tall, and the last tread is the top landing.
+  #
+  # The two stringers are prisms swept along y, one on each side of the treads.  Their
+  # profile is drawn in the (x, z) plane and depends on 'startingStairs':
+  #
+  #   TRUE  -> a right triangle (0,0) (run,0) (run,rise): the flight starts on the
+  #            ground, so the underside is closed off flat against it.
+  #   FALSE -> a parallelogram of constant depth hanging under the nosing line: the
+  #            flight starts part way up (on a landing, or on another flight), so
+  #            there is nothing under it to close against and a beam is all it is.
+  #
+  # The prism is emitted as an IndexedFaceSet rather than a Box because the triangular
+  # case is not a box; both cases go through the same generator.
+  #
+  # The rails are whatever nodes the world put in 'leftRail' / 'rightRail'; they are
+  # simply carried out to the two stringers.  A default StraightStairsRail is authored
+  # in exactly this frame (origin at the foot, climbing +x), which is why its default
+  # run 2.0 / rise 0.75 lines up with this PROTO's default 5 x 0.4 / 5 x 0.15 flight.
+  %<
+    let stepSize = fields.stepSize.value;
+    if (stepSize.x <= 0.0 || stepSize.y <= 0.0 || stepSize.z <= 0.0) {
+      stepSize = fields.stepSize.defaultValue;
+      console.error('StraightStairs: \'stepSize\' must be strictly positive on every axis. Falling back to ' +
+                    stepSize.x + ' x ' + stepSize.y + ' x ' + stepSize.z + '.');
+    }
+
+    let stepRise = fields.stepRise.value;
+    if (stepRise <= 0.0) {
+      stepRise = fields.stepRise.defaultValue;
+      console.error('StraightStairs: \'stepRise\' must be strictly positive. Falling back to ' + stepRise + '.');
+    }
+    if (stepRise < stepSize.z)
+      console.error('StraightStairs: \'stepRise\' is smaller than the thickness of a step, so consecutive steps overlap.');
+
+    let nSteps = fields.nSteps.value;
+    if (nSteps < 1) {
+      nSteps = fields.nSteps.defaultValue;
+      console.error('StraightStairs: \'nSteps\' must be at least 1. Falling back to ' + nSteps + '.');
+    }
+
+    let stringerWidth = fields.stringerWidth.value;
+    if (stringerWidth <= 0.0) {
+      stringerWidth = fields.stringerWidth.defaultValue;
+      console.error('StraightStairs: \'stringerWidth\' must be strictly positive. Falling back to ' + stringerWidth + '.');
+    }
+
+    const run = nSteps * stepSize.x;
+    const rise = nSteps * stepRise;
+    // the stringers sit just outside the treads, and the rails sit on the stringers
+    const sideY = 0.5 * stepSize.y + 0.5 * stringerWidth;
+
+    // stringer profile, in the (x, z) plane, wound counter-clockwise
+    let profile;
+    if (fields.startingStairs.value)
+      profile = [{x: 0.0, z: 0.0}, {x: run, z: 0.0}, {x: run, z: rise}];
+    else {
+      const depth = stepRise + stepSize.z;
+      profile = [{x: 0.0, z: -depth}, {x: run, z: rise - depth}, {x: run, z: rise}, {x: 0.0, z: 0.0}];
+    }
+    const np = profile.length;
+
+    // Prism vertices: every profile point twice, once on each side of the sweep.
+    // A -> the -y face, B -> the +y face.
+    const prismPoints = [];
+    for (let i = 0; i < np; ++i) {
+      prismPoints.push({x: profile[i].x, y: -0.5 * stringerWidth, z: profile[i].z});
+      prismPoints.push({x: profile[i].x, y: 0.5 * stringerWidth, z: profile[i].z});
+    }
+
+    // Faces.  With the profile counter-clockwise in (x, z), the loop taken in order
+    // on the A side already points its normal at -y, so the A cap keeps that order
+    // and the B cap reverses it.  Each side quad is [A(i), B(i), B(i+1), A(i+1)],
+    // which puts its normal on the outside of the profile edge.
+    const prismFaces = [];
+    const prismTexFaces = [];
+    let capA = [];
+    let capB = [];
+    let capTexA = [];
+    let capTexB = [];
+    for (let i = 0; i < np; ++i) {
+      capA.push(2 * i);
+      capB.push(2 * (np - 1 - i) + 1);
+      capTexA.push(i);
+      capTexB.push(np - 1 - i);
+    }
+    prismFaces.push(capA.join(' ') + ' -1');
+    prismFaces.push(capB.join(' ') + ' -1');
+    prismTexFaces.push(capTexA.join(' ') + ' -1');
+    prismTexFaces.push(capTexB.join(' ') + ' -1');
+
+    // perimeter arc length, used as the u coordinate of the side faces so that the
+    // texture wraps around the profile at a constant scale instead of being stretched
+    // over whichever edge happens to be longest
+    const arc = [0.0];
+    for (let i = 0; i < np; ++i) {
+      const a = profile[i];
+      const b = profile[(i + 1) % np];
+      arc.push(arc[i] + Math.sqrt((b.x - a.x) * (b.x - a.x) + (b.z - a.z) * (b.z - a.z)));
+    }
+    for (let i = 0; i < np; ++i) {
+      const j = (i + 1) % np;
+      prismFaces.push((2 * i) + ' ' + (2 * i + 1) + ' ' + (2 * j + 1) + ' ' + (2 * j) + ' -1');
+      prismTexFaces.push((np + 2 * i) + ' ' + (np + 2 * i + 1) + ' ' +
+                         (np + 2 * (i + 1) + 1) + ' ' + (np + 2 * (i + 1)) + ' -1');
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      %< for (let i = 0; i < nSteps; ++i) { >%
+      Pose {
+        translation %<= (i + 0.5) * stepSize.x >% 0 %<= (i + 1) * stepRise - 0.5 * stepSize.z >%
+        children [
+          Shape {
+            appearance IS stepAppearance
+            %< if (i === 0) { >%
+            geometry DEF STEP_BOARD TexturedParallelepiped {
+              size %<= stepSize.x >% %<= stepSize.y >% %<= stepSize.z >%
+              angles 0 1.5707963267948966 0
+              mapping "metric"
+            }
+            %< } else { >%
+            geometry USE STEP_BOARD
+            %< } >%
+          }
+        ]
+      }
+      %< } >%
+      %< for (let s = -1; s <= 1; s = s + 2) { >%
+      Pose {
+        translation 0 %<= s * sideY >% 0
+        children [
+          Shape {
+            appearance IS stringerAppearance
+            %< if (s === -1) { >%
+            geometry DEF STRINGER IndexedFaceSet {
+              coord Coordinate {
+                point [
+                  %< for (let i = 0; i < prismPoints.length; ++i) { >%
+                  %<= prismPoints[i].x >% %<= prismPoints[i].y >% %<= prismPoints[i].z >%
+                  %< } >%
+                ]
+              }
+              texCoord TextureCoordinate {
+                point [
+                  %< for (let i = 0; i < np; ++i) { >%
+                  %<= profile[i].x >% %<= profile[i].z >%
+                  %< }
+                     for (let i = 0; i <= np; ++i) { >%
+                  %<= arc[i] >% 0
+                  %<= arc[i] >% %<= stringerWidth >%
+                  %< } >%
+                ]
+              }
+              coordIndex [
+                %< for (let i = 0; i < prismFaces.length; ++i) { >%
+                %<= prismFaces[i] >%
+                %< } >%
+              ]
+              texCoordIndex [
+                %< for (let i = 0; i < prismTexFaces.length; ++i) { >%
+                %<= prismTexFaces[i] >%
+                %< } >%
+              ]
+              creaseAngle 0.5
+            }
+            %< } else { >%
+            geometry USE STRINGER
+            %< } >%
+          }
+        ]
+      }
+      %< } >%
+      Pose {
+        translation 0 %<= sideY >% 0
+        children IS leftRail
+      }
+      Pose {
+        translation 0 %<= -sideY >% 0
+        children IS rightRail
+      }
+    ]
+    name IS name
+    model "straight stairs"
+    boundingObject Group {
+      children [
+        %< for (let i = 0; i < nSteps; ++i) { >%
+        Pose {
+          translation %<= (i + 0.5) * stepSize.x >% 0 %<= (i + 1) * stepRise - 0.5 * stepSize.z >%
+          children [
+            Box {
+              size %<= stepSize.x >% %<= stepSize.y >% %<= stepSize.z >%
+            }
+          ]
+        }
+        %< } >%
+      ]
+    }
+    contactMaterial IS contactMaterial
+    locked TRUE
+  }
+}

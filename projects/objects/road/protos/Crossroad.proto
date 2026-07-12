@@ -1,0 +1,155 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/road/protos/Crossroad.proto
+# keywords: traffic/road
+# The road surface of an intersection: the `shape` polygon is triangulated as a fan around its
+# own centroid, so any convex outline works. `id` / `connectedRoadIDs` / `speedLimit` are carried
+# for the SUMO exporter only.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+
+PROTO Crossroad [
+  field SFVec3f    translation      0 0 0
+  field SFRotation rotation         0 0 1 0
+  field SFString   name             "crossroad"             # Defines the the crossroad name.
+  field SFString   id               ""                      # Optionally defines a unique ID. A unique ID is required to use the SUMO exporter.
+  field SFFloat    speedLimit       -1.0                    # Optionally defines the speed limit. The recommended unit is meter per seconds.
+  field MFVec3f    shape            [ 0 0 0, 0 1 0, 1 0 0 ] # Defines the shape of the crossroad.
+  field MFString   connectedRoadIDs []                      # Optionally defines a list of the identifiers of the connected Road. This is required to use the SUMO exporter.
+  field SFBool     boundingObject   FALSE                   # Defines whether the road should have a bounding object.
+  field SFBool     bottom           FALSE                   # Defines whether the road bottom should be displayed (useful in case of bridge).
+  field SFNode     appearance       Asphalt { }             # Defines the appearance of the road.
+  field SFBool     locked           TRUE                    # Is `Solid.locked`.
+  field SFBool     castShadows      FALSE                   # Defines whether the road should cast shadows.
+  field SFString   contactMaterial  "default"               # Is `Solid.contactMaterial`.
+]
+{
+  %<
+    const shape = fields.shape.value;
+    const n = shape.length;
+    const valid = n >= 3;
+
+    let cx = 0.0, cy = 0.0, cz = 0.0;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (let i = 0; i < n; ++i) {
+      cx += shape[i].x; cy += shape[i].y; cz += shape[i].z;
+      minX = Math.min(minX, shape[i].x); maxX = Math.max(maxX, shape[i].x);
+      minY = Math.min(minY, shape[i].y); maxY = Math.max(maxY, shape[i].y);
+    }
+    if (n > 0) { cx /= n; cy /= n; cz /= n; }
+
+    // shoelace: decide the winding so the top face always points up (+z)
+    let twiceArea = 0.0;
+    for (let i = 0; i < n; ++i) {
+      const a = shape[i];
+      const b = shape[(i + 1) % n];
+      twiceArea += a.x * b.y - b.x * a.y;
+    }
+    const ccw = twiceArea >= 0.0;
+
+    const TILE = 8.0;   // metres of road per texture tile
+
+    if (!valid)
+      console.error('Crossroad: the "shape" field needs at least 3 points; nothing was generated.');
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "crossroad"
+    locked IS locked
+    contactMaterial IS contactMaterial
+    children [
+    %< if (valid) { >%
+      DEF CROSSROAD_SURFACE Shape {
+        appearance IS appearance
+        castShadows IS castShadows
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+              %<= cx >% %<= cy >% %<= cz >%
+            %< for (let i = 0; i < n; ++i) { >%
+              %<= shape[i].x >% %<= shape[i].y >% %<= shape[i].z >%
+            %< } >%
+            ]
+          }
+          texCoord TextureCoordinate {
+            point [
+              %<= cx / TILE >% %<= cy / TILE >%
+            %< for (let i = 0; i < n; ++i) { >%
+              %<= shape[i].x / TILE >% %<= shape[i].y / TILE >%
+            %< } >%
+            ]
+          }
+          coordIndex [
+          %< for (let i = 0; i < n; ++i) { >%
+          %<   const a = 1 + i; >%
+          %<   const b = 1 + ((i + 1) % n); >%
+            %<= ccw ? '0 ' + a + ' ' + b : '0 ' + b + ' ' + a >% -1
+          %< } >%
+          ]
+          texCoordIndex [
+          %< for (let i = 0; i < n; ++i) { >%
+          %<   const a = 1 + i; >%
+          %<   const b = 1 + ((i + 1) % n); >%
+            %<= ccw ? '0 ' + a + ' ' + b : '0 ' + b + ' ' + a >% -1
+          %< } >%
+          ]
+          creaseAngle 0.5
+        }
+      }
+    %< } >%
+    %< if (valid && fields.bottom.value) { >%
+      DEF CROSSROAD_BOTTOM Shape {
+        appearance IS appearance
+        castShadows IS castShadows
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+              %<= cx >% %<= cy >% %<= cz - 0.02 >%
+            %< for (let i = 0; i < n; ++i) { >%
+              %<= shape[i].x >% %<= shape[i].y >% %<= shape[i].z - 0.02 >%
+            %< } >%
+            ]
+          }
+          texCoord TextureCoordinate {
+            point [
+              %<= cx / TILE >% %<= cy / TILE >%
+            %< for (let i = 0; i < n; ++i) { >%
+              %<= shape[i].x / TILE >% %<= shape[i].y / TILE >%
+            %< } >%
+            ]
+          }
+          coordIndex [
+          %< for (let i = 0; i < n; ++i) { >%
+          %<   const a = 1 + i; >%
+          %<   const b = 1 + ((i + 1) % n); >%
+            %<= ccw ? '0 ' + b + ' ' + a : '0 ' + a + ' ' + b >% -1
+          %< } >%
+          ]
+          texCoordIndex [
+          %< for (let i = 0; i < n; ++i) { >%
+          %<   const a = 1 + i; >%
+          %<   const b = 1 + ((i + 1) % n); >%
+            %<= ccw ? '0 ' + b + ' ' + a : '0 ' + a + ' ' + b >% -1
+          %< } >%
+          ]
+          creaseAngle 0.5
+        }
+      }
+    %< } >%
+    ]
+  %< if (valid && fields.boundingObject.value) { >%
+    boundingObject Pose {
+      translation %<= 0.5 * (minX + maxX) >% %<= 0.5 * (minY + maxY) >% %<= cz - 0.05 >%
+      children [
+        Box {
+          size %<= Math.max(0.01, maxX - minX) >% %<= Math.max(0.01, maxY - minY) >% 0.1
+        }
+      ]
+    }
+  %< } >%
+  }
+}

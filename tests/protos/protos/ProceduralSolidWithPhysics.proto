@@ -1,0 +1,20 @@
+#VRML_SIM R2025a utf8
+# template language: javascript
+
+PROTO ProceduralSolidWithPhysics [
+  field SFFloat size 1.0
+]
+{
+  Solid {
+    children [
+      Shape {
+        geometry DEF GEOM Sphere {
+          radius %<= fields.size.value >%
+        }
+      }
+    ]
+    boundingObject USE GEOM
+    physics Physics {
+    }
+  }
+}

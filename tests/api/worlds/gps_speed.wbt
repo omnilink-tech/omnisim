@@ -1,0 +1,65 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+  lineScale 1
+}
+Viewpoint {
+  orientation -0.7678425458096223 0.5709692557933016 0.2905373190890311 2.0832334239078962
+  position -0.4509517197753034 0.6273448022859422 1.093468539797758
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+DEF ROBOT Robot {
+  children [
+    SliderJoint {
+      jointParameters JointParameters {
+        axis 1 0 0
+      }
+      endPoint Solid {
+        children [
+          Shape {
+            geometry Box {
+              size 0.1 0.1 0.1
+            }
+          }
+          GPS {
+            name "gps_without_physics"
+          }
+        ]
+        name "solid_without_physic"
+        linearVelocity -5 0 0
+      }
+    }
+    SliderJoint {
+      endPoint Solid {
+        children [
+          Shape {
+            geometry Box {
+              size 0.1 0.1 0.1
+            }
+          }
+          GPS {
+            name "gps_with_physics"
+          }
+        ]
+        name "solid_with_physic"
+        physics Physics {
+        }
+        linearVelocity 0 0 -5
+      }
+    }
+    TestSuiteEmitter {
+    }
+  ]
+  controller "gps_speed"
+}
+TestSuiteSupervisor {
+}

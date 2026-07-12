@@ -1,0 +1,273 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/animals/protos/Dog.proto
+# keywords: animal/pet
+# A static dog, assembled from primitive shapes: a barrel body on four legs, a snouted head with perky ears and a raised tail (about 0.8 m long, 0.6 m at the ears).
+# The `color` field modulates the coat albedo.
+# template language: javascript
+
+PROTO Dog [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFFloat    scale       1      # Defines the global scaling factor.
+  field SFString   name        "dog"
+  field SFColor    color        1 1 1  # Defines the color of the dog.
+]
+{
+  %<
+    let s = fields.scale.value;
+    if (s <= 0) {
+      s = fields.scale.defaultValue;
+      console.error("'scale' must be strictly positive, value reset to " + s + ".");
+    }
+    const co = fields.color.value;
+    // Every dimension below is expressed in metres and driven through the scale factor.
+    function d(v) { return (v * s).toFixed(5); }
+    function v3(x, y, z) { return d(x) + " " + d(y) + " " + d(z); }
+    // The coat albedo, modulated by the user colour.
+    function mix(r, g, b) {
+      return (co.r * r).toFixed(4) + " " + (co.g * g).toFixed(4) + " " + (co.b * b).toFixed(4);
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "dog"
+    children [
+      DEF DOG_BODY Group {
+        children [
+          Pose {
+            translation %<= v3(0, 0, 0.40) >%
+            children [
+              DEF DOG_TORSO Shape {
+                appearance DEF DOG_COAT PBRAppearance {
+                  baseColor %<= mix(0.62, 0.44, 0.27) >%
+                  roughness 0.95
+                  metalness 0
+                }
+                geometry Box {
+                  size %<= v3(0.46, 0.20, 0.22) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.20, 0, 0.41) >%
+            children [
+              DEF DOG_CHEST Shape {
+                appearance USE DOG_COAT
+                geometry Sphere {
+                  radius %<= d(0.115) >%
+                  subdivision 3
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.20, 0, 0.41) >%
+            children [
+              USE DOG_CHEST
+            ]
+          }
+        ]
+      }
+      DEF DOG_LEGS Group {
+        children [
+          Pose {
+            translation %<= v3(0.19, 0.085, 0.15) >%
+            children [
+              DEF DOG_LEG Shape {
+                appearance USE DOG_COAT
+                geometry Cylinder {
+                  height %<= d(0.30) >%
+                  radius %<= d(0.030) >%
+                  subdivision 12
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.19, -0.085, 0.15) >%
+            children [
+              USE DOG_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.19, 0.085, 0.15) >%
+            children [
+              USE DOG_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.19, -0.085, 0.15) >%
+            children [
+              USE DOG_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(0.19, 0.085, 0.025) >%
+            children [
+              DEF DOG_PAW Shape {
+                appearance DEF DOG_DARK PBRAppearance {
+                  baseColor %<= mix(0.30, 0.21, 0.13) >%
+                  roughness 0.9
+                  metalness 0
+                }
+                geometry Cylinder {
+                  height %<= d(0.05) >%
+                  radius %<= d(0.038) >%
+                  subdivision 12
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.19, -0.085, 0.025) >%
+            children [
+              USE DOG_PAW
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.19, 0.085, 0.025) >%
+            children [
+              USE DOG_PAW
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.19, -0.085, 0.025) >%
+            children [
+              USE DOG_PAW
+            ]
+          }
+        ]
+      }
+      DEF DOG_HEAD Group {
+        children [
+          Pose {
+            translation %<= v3(0.25, 0, 0.46) >%
+            rotation 0 1 0 0.6
+            children [
+              Pose {
+                children [
+                  Shape {
+                    appearance USE DOG_COAT
+                    geometry Cylinder {
+                      height %<= d(0.16) >%
+                      radius %<= d(0.055) >%
+                      subdivision 12
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.32, 0, 0.51) >%
+            children [
+              Shape {
+                appearance USE DOG_COAT
+                geometry Box {
+                  size %<= v3(0.15, 0.13, 0.13) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.42, 0, 0.49) >%
+            children [
+              Shape {
+                appearance USE DOG_DARK
+                geometry Box {
+                  size %<= v3(0.10, 0.085, 0.07) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.47, 0, 0.50) >%
+            children [
+              DEF DOG_NOSE Shape {
+                appearance DEF DOG_BLACK PBRAppearance {
+                  baseColor %<= mix(0.07, 0.07, 0.07) >%
+                  roughness 0.4
+                  metalness 0
+                }
+                geometry Sphere {
+                  radius %<= d(0.022) >%
+                  subdivision 2
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.375, 0.045, 0.545) >%
+            children [
+              DEF DOG_EYE Shape {
+                appearance USE DOG_BLACK
+                geometry Sphere {
+                  radius %<= d(0.012) >%
+                  subdivision 2
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.375, -0.045, 0.545) >%
+            children [
+              USE DOG_EYE
+            ]
+          }
+          Pose {
+            translation %<= v3(0.29, 0.055, 0.575) >%
+            rotation 1 0 0 -0.22
+            children [
+              DEF DOG_EAR Shape {
+                appearance USE DOG_DARK
+                geometry Cone {
+                  bottomRadius %<= d(0.030) >%
+                  height %<= d(0.075) >%
+                  subdivision 10
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.29, -0.055, 0.575) >%
+            rotation 1 0 0 0.22
+            children [
+              USE DOG_EAR
+            ]
+          }
+        ]
+      }
+      Pose {
+        translation %<= v3(-0.255, 0, 0.555) >%
+        rotation 0 1 0 -0.55
+        children [
+          Pose {
+            children [
+              Shape {
+                appearance USE DOG_COAT
+                geometry Cylinder {
+                  height %<= d(0.22) >%
+                  radius %<= d(0.020) >%
+                  subdivision 10
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation %<= v3(0, 0, 0.40) >%
+      children [
+        Box {
+          size %<= v3(0.50, 0.22, 0.24) >%
+        }
+      ]
+    }
+  }
+}

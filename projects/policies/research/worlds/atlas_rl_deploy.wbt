@@ -1,0 +1,88 @@
+#VRML_SIM R2025a utf8
+
+# Atlas RL deploy world.
+#
+# Drives the Atlas Boston Dynamics URDF with a trained PPO policy via
+# the generic `rl_deploy` controller. The controller picks up its
+# policy.onnx + robot_spec.json sidecar from OMNISIM_POLICY_ONNX (or
+# falls back to the canonical Atlas policy under
+# projects/policies/research/inference/policies/atlas_<run>/).
+#
+# Run:
+#   OMNISIM_POLICY_ONNX=projects/policies/research/inference/policies/atlas_main/policy.onnx \
+#     msys64/mingw64/bin/omnisim-bin.exe projects/policies/worlds/atlas_rl_deploy.wbt
+#
+# Velocity command via env vars (legged_locomotion recipe):
+#   OMNISIM_VX (default 0.5 m/s forward), OMNISIM_VY, OMNISIM_WZ
+#
+# Physics: Newton (migrated from ODE 2026-06-11). For a verified Atlas
+# stand under Newton use atlas_stand_deploy.wbt (analytic balance PD +
+# the gpu_atlas_stand_robust policy); this world keeps the generic
+# rl_deploy controller path alive for Atlas. Launch with the Atlas Newton
+# knobs (OMNISIM_NEWTON_TARGET_KE=250 / KD=60 / GROUND_MU=2.0 /
+# SEED_POSE=1 / FORCE_MUJOCO=1 / OMNISIM_URDF_USE_INERTIA=1).
+#
+# STATUS 2026-06-11: loads + runs headless (15k+ steps, no explosion), but
+# the shipped atlas_stand_v2_720k checkpoint (ODE-era) does NOT stand here —
+# Atlas settles to the floor. Verified Newton standing = atlas_stand_deploy.wbt.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Atlas RL deploy"
+  info [
+    "Atlas humanoid. Drives a trained PPO policy loaded from ONNX."
+    "Velocity command: OMNISIM_VX (default 0.5) m/s forward."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.2 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/boston_dynamics/atlas/urdf/atlas_convex_hull.urdf"
+  # Pelvis_z = 0.88 m: 5 cm above the settled standing height under the
+  # nominal squat pose, so spawn lands cleanly rather than free-falling.
+  translation 0 0 0.88
+  name "atlas"
+  supervisor TRUE
+  controller "rl_deploy"
+  # Pass the Atlas policy + spec via CLI; env vars (OMNISIM_POLICY_ONNX)
+  # are not reliably propagated through Webots to controller subprocesses.
+  # Paths are relative to the controller's cwd, which Webots sets to the
+  # controller directory (projects/policies/controllers/rl_deploy/).
+  # Default: the trained atlas_stand_v2 checkpoint. After bigger training
+  # runs land, swap this to ../../inference/policies/atlas_<run>/{...}.
+  # The zero-action fallback is at ../../inference/policies/atlas_zero/.
+  controllerArgs [ "--policy" "../../inference/policies/atlas_stand_v2_720k/policy.onnx" "--spec" "../../inference/policies/atlas_stand_v2_720k/robot_spec.json" ]
+  physicsBackend "newton"
+}

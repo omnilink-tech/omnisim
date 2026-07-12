@@ -1,0 +1,125 @@
+#VRML_SIM R2025a utf8
+
+# Husky damage arena — Phase 0 of the physics-based damage system.
+# See docs/developer/damage-system-plan.md.
+#
+# Single Husky parked at the origin of a 10 m x 10 m walled arena. A
+# damage_arena_director supervisor drops boxes onto/around the robot from
+# configurable positions and heights to exercise contact response. Phase 0
+# is the scene only — no damage tracking yet; that lands in later phases
+# when harness_supervisor grows a ContactPoller.
+#
+# The Husky has no controller (controller "<none>") so it sits still and
+# the box-drop pattern is reproducible across screenshots. Later phases
+# can swap in a driving controller once damage tracking is verified to
+# work against a stationary target.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky Damage Arena"
+  info [
+    "Phase 0: box-drop scene for the damage system. A damage_arena_director"
+    "supervisor spawns boxes from above; the Husky takes the impacts. Edit"
+    "the director's customData to script a different drop schedule."
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 18
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+# Key light from the SE.
+# Fill light to keep shaded sides readable.
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+RectangleArena {
+  floorSize 10 10
+  wallHeight 0.5
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# ============================================================================
+# Husky robot, parked at the arena center. Drop height 0.1 m matches the
+# realistic-spawn convention used elsewhere in this repo. supervisor TRUE is
+# kept so later phases can read pose without re-saving the world.
+# controller "<none>" keeps the husky stationary for reproducible drops.
+# ============================================================================
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 0 0.1
+  name "husky"
+  supervisor TRUE
+  controller "<none>"
+  # Use the fragile "husky_arena" damage profile so falling weights
+  # actually break parts off (the stock "husky" profile is tuned for
+  # ramming combat and barely registers drops on a parked robot).
+  customData "{\"damage_profile\": \"husky_arena\"}"
+}
+
+# ============================================================================
+# Damage arena director — supervisor robot that spawns boxes per a schedule.
+# It owns no visible geometry (zero-size Group) and lives above the arena so
+# any unexpected collision is far from the Husky. customData carries the JSON
+# drop schedule; if empty, the controller falls back to a default cadence.
+#
+# Schedule format:
+#   { "boxes": [{"t_ms": <int>, "pos": [x,y,z], "size": s, "mass": m,
+#                "color": [r,g,b]}, ...],
+#     "loop": <bool>, "loop_period_ms": <int> }
+# Any field except t_ms is optional; omitted fields use the controller's
+# defaults. If "loop" is true, the schedule repeats every loop_period_ms.
+# ============================================================================
+Robot {
+  name "damage_arena_director"
+  translation 0 0 12
+  controller "damage_arena_director"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+  customData "{\"loop\": true, \"loop_period_ms\": 13000, \"cleanup_after_ms\": 9000, \"boxes\": [{\"t_ms\": 1500, \"pos\": [0.0, 0.0, 6.0], \"size\": 0.5, \"mass\": 70.0, \"color\": [0.9, 0.4, 0.2]}, {\"t_ms\": 3500, \"pos\": [0.26, 0.28, 7.0], \"size\": 0.45, \"mass\": 90.0, \"color\": [0.2, 0.6, 0.9]}, {\"t_ms\": 5500, \"pos\": [0.26, -0.28, 7.0], \"size\": 0.45, \"mass\": 90.0, \"color\": [0.8, 0.8, 0.2]}, {\"t_ms\": 7500, \"pos\": [-0.26, 0.28, 8.0], \"size\": 0.5, \"mass\": 110.0, \"color\": [0.5, 0.2, 0.7]}, {\"t_ms\": 9500, \"pos\": [-0.26, -0.28, 8.0], \"size\": 0.5, \"mass\": 110.0, \"color\": [0.9, 0.1, 0.5]}, {\"t_ms\": 11500, \"pos\": [0.0, 0.0, 9.0], \"size\": 0.6, \"mass\": 150.0, \"color\": [0.3, 0.9, 0.5]}]}"
+}
+
+# ============================================================================
+# Harness supervisor — Phase 1 of the damage system. Polls per-part contacts
+# on the Husky each step and logs impact events to stderr (visible in the
+# OmniSim console). Also listens on 127.0.0.1:6790 for the standard harness
+# wire protocol; the connection is optional, so leaving it unconnected does
+# no harm in standalone-launch demos.
+# ============================================================================
+Robot {
+  name "harness_supervisor"
+  translation 0 0 12.5
+  controller "harness_supervisor"
+  # --light runs the damage tracker in lite-FX mode: parts still take HP
+  # damage, transition state, and physically DETACH when broken, but the
+  # per-impact "rash" spawns (markers, decals, dents, smoke, debris,
+  # mesh re-emit) are skipped. Under this heavy weight barrage that spawn
+  # flood otherwise overwhelms and crashes the simulator; skipping it
+  # keeps the "parts fall off" payoff while staying stable.
+  controllerArgs [
+    "--light"
+  ]
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}

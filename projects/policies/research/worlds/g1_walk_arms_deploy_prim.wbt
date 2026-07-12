@@ -1,0 +1,66 @@
+#VRML_SIM R2025a utf8
+
+# PRIMITIVE-COLLISION deploy world -- identical to g1_walk_arms_deploy.wbt
+# EXCEPT it loads g1_23dof_omnisim_prim.urdf (every <collision> MESH stripped,
+# the two primitive foot boxes kept). This makes the DEPLOY collision set match
+# what the GPU trainer learned on (build_g1_native_prim: foot-box-only contact,
+# no STL leg/torso colliders). The full-mesh deploy collision -- 21 STL
+# colliders incl. an STL on each foot ALONGSIDE the box -- is the policy/DR/
+# gain/cold-start-INDEPENDENT cause of the FALL@~1.07s collapse: the policy
+# trained on box-only foot contact topples on full-mesh contact + self-collision
+# at the inverted-pendulum stability edge. Same arena/controller/gains as the
+# full-mesh world; ONLY the collision geometry changes.
+#
+# Required Newton env (set by the launch scripts): OMNISIM_NEWTON_STATICS=1
+# OMNISIM_NEWTON_SUBSTEPS=4 OMNISIM_URDF_USE_INERTIA=1
+# OMNISIM_NEWTON_FORCE_MUJOCO=1 OMNISIM_NEWTON_MJWARP=1
+# OMNISIM_NEWTON_TARGET_KE=100 OMNISIM_NEWTON_TARGET_KD=5.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 full-body walking PPO deploy (legs + arms, PRIMITIVE collision)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5 1.8
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim_prim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_walk_deploy"
+  physicsBackend "newton"
+}

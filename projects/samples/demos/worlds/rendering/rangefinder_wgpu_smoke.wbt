@@ -1,0 +1,60 @@
+#VRML_SIM R2025a utf8
+
+# R5c smoke world: a RangeFinder DEVICE node facing the same cyan box as
+# camera_wgpu_scene_smoke. With OMNISIM_RANGEFINDER_WGPU=1 the RangeFinder
+# renders its depth image through the wgpu R32Float pipeline
+# (WbWgpuRenderTarget::clearAndDrawSceneDepthF32) instead of WREN, writing
+# metric depth straight into the device's float buffer.
+#
+# Geometry mirrors camera_wgpu_scene_smoke: the box centre is at x=1.0 with
+# size 0.6, so its front face sits 0.7 m from the sensor at the origin — the
+# centre depth pixel should read ~0.70 m.
+#
+# Companion to docs/developer/engine-migration-plan.md §14.3 R5c.
+
+WorldInfo {
+  info [
+    "R5c smoke — wgpu RangeFinder device node renders metric depth"
+  ]
+  title "R5c wgpu RangeFinder smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+# Robot at origin; its RangeFinder looks along +X by default. The cyan box is
+# a child Solid at (+1, 0, 0) so it dominates the depth-image centre.
+Robot {
+  translation 0 0 0
+  children [
+    RangeFinder {
+      name "rf_wgpu"
+      width 64
+      height 48
+      fieldOfView 0.8
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "rangefinder_wgpu_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

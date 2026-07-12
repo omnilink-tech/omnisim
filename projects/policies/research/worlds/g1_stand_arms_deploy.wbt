@@ -1,0 +1,63 @@
+#VRML_SIM R2025a utf8
+
+# Deploy world for the G1 standing PPO policy on the FULL 23-DOF body
+# (legs + arms), NOT the legs-only subset used by g1_stand_deploy.wbt.
+#
+# Experiment: the standing policy is 13-DOF (legs + waist). Here it
+# drives those 13 joints unchanged while the 10 arm joints are held at
+# a relaxed nominal pose by the controller. The arms add ~3 kg of mass
+# above the waist that the policy never trained against — this world
+# tests whether the leg policy is robust to that CoM shift.
+#
+# The full 23-DOF URDF now registers fine under Newton (the arm-chain
+# registration hang that forced the legs-only variant was fixed by the
+# later Newton body-registration work). Controller: g1_stand_arms_deploy.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 standing PPO deploy (full body + arms)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 5
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_stand_arms_deploy"
+  physicsBackend "newton"
+}

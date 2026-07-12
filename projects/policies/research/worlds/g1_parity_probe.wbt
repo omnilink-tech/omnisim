@@ -1,0 +1,78 @@
+#VRML_SIM R2025a utf8
+
+# DETERMINISTIC OPEN-LOOP PHYSICS PROBE -- DEPLOY world (welded-base lane).
+#
+# Runs the g1_parity_probe controller (NO RL, NO policy): it applies the
+# single-sourced SPEC.probe_targets(k) to the 13 leg joints each control step and
+# dumps a per-tick trace (joint angles + base pose). The trainer harness
+# (projects/policies/research/training/g1_parity_probe.py) applies the SAME scripted targets in
+# the trainer's own newton model + the EXACT deploy solver; g1_parity_compare.py
+# diffs the two. This is the FIRST trainer<->deploy parity check that steps the
+# REAL omnisim-bin binary (C++ Newton add_link build from THIS scene graph), not
+# the g1_deploy_runtime.py Python extract.
+#
+# staticBase TRUE WELDS the pelvis so the inverted-pendulum chaos (which makes a
+# byte-identical model diverge ~0.5 m / 100 ticks for a FREE base) cannot confound
+# a real physics gap -- this is the chaos-free numerical-equality lane. The joint
+# trajectory is then the parity signal. (A free-base sibling world covers the
+# realistic lane.)
+#
+# Legs-only URDF (g1_legs_omnisim.urdf) == the trainer build_g1_native_prim model.
+# Launch via scripts/dev/run_g1_parity_probe.ps1 (sets SPEC.newton_env() +
+# OMNISIM_NEWTON_USE_LINK_COM=1 + OMNISIM_REQUIRE_NEWTON=1).
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "G1 deterministic parity probe (welded base)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 5
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+# translation z=1.20 LIFTS the welded base so the squat feet clear the arena
+# floor -> NO ground contact in this lane. That isolates the pure ARTICULATION
+# parity (gravity + joint position-PD + inter-link coupling) and removes the one
+# known contact asymmetry (the trainer does not apply contact_ke/kd; the deploy
+# does), so the first numerical-equality result is unambiguous. A contact lane
+# (feet on the floor at z=0.78) is a separate run.
+URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_legs_omnisim.urdf"
+  translation 0 0 1.20
+  name "g1"
+  supervisor TRUE
+  controller "g1_parity_probe"
+  physicsBackend "newton"
+  staticBase TRUE
+}

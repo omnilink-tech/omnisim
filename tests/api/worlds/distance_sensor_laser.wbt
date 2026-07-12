@@ -1,0 +1,92 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation 0.9955744364676343 0.017410407632859136 -0.09234944048671836 5.7496
+  position -0.156961 0.689912 1.21631
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  ambientIntensity 1
+  direction 0 1 0
+  intensity 0
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+Robot {
+  children [
+    DistanceSensor {
+      name "ds0"
+      type "laser"
+      aperture 0.01
+    }
+    DistanceSensor {
+      rotation 0 1 0 1.5708
+      name "ds1"
+      type "laser"
+      aperture 0.01
+    }
+    Camera {
+      rotation -1 0 0 1.57079
+      fieldOfView 0.01
+      width 1
+      height 1
+    }
+    TestSuiteEmitter {
+    }
+  ]
+  controller "distance_sensor_laser"
+}
+Solid {
+  translation 0.05 0 0
+  rotation 0 0 1 1.5708
+  children [
+    DEF PLANE Pose {
+      rotation 1 0 0 -1.57079632679
+      children [
+        Shape {
+          geometry Plane {
+          }
+        }
+      ]
+    }
+  ]
+  boundingObject USE PLANE
+}
+TestSuiteSupervisor {
+}

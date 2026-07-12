@@ -1,0 +1,73 @@
+#VRML_SIM R2025a utf8
+
+# A/B COMPARE -- two translucent ghosts replaying the robot's ACTUAL sim-achieved
+# sit->stand->sit, side by side, so we pick the achievable stand:
+#   LEFT  (y<0): STRAIGHT-LEG variant (v9)  -- straight knees, ~33deg forward bow
+#   RIGHT (y>0): UPRIGHT-TORSO variant (v10) -- moderate knee, torso more vertical
+# Each ghost reads its own achieved CSV via customData. No physics robot.
+#
+# Launch: scripts/dev/run_g1_sitstand_compare.ps1
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "G1 sit-stand -- achievable stand A/B (LEFT straight-leg | RIGHT upright)"
+}
+Viewpoint {
+  orientation -0.30 0.30 0.905 1.66
+  position 3.6 0.0 1.5
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 8 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance { baseColor 0.18 0.20 0.22 roughness 0.95 metalness 0 }
+}
+
+# ----- LEFT chair (straight-leg variant) -----
+DEF CHAIR_L Solid {
+  translation 0 -0.7 0
+  name "chair_l"
+  children [
+    Pose { translation 0 0 0.30 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.30 0.34 0.40 transparency 0.4 roughness 0.7 } geometry Box { size 0.44 0.44 0.06 } } ] }
+    Pose { translation -0.085 0 0.66 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.30 0.34 0.40 transparency 0.4 roughness 0.7 } geometry Box { size 0.04 0.44 0.52 } } ] }
+  ]
+}
+# ----- RIGHT chair (upright variant) -----
+DEF CHAIR_R Solid {
+  translation 0 0.7 0
+  name "chair_r"
+  children [
+    Pose { translation 0 0 0.30 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.30 0.40 0.34 transparency 0.4 roughness 0.7 } geometry Box { size 0.44 0.44 0.06 } } ] }
+    Pose { translation -0.085 0 0.66 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.30 0.40 0.34 transparency 0.4 roughness 0.7 } geometry Box { size 0.04 0.44 0.52 } } ] }
+  ]
+}
+
+# ----- LEFT ghost: STRAIGHT-LEG (v9) -- blue tint -----
+DEF G1_GHOST_L URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 -0.7 0.57
+  name "g1_ghost_straight"
+  customData "_scratch/achieved_v9_straight.csv"
+  supervisor TRUE
+  controller "g1_sitstand_ghost"
+  staticBase TRUE
+}
+# ----- RIGHT ghost: UPRIGHT-TORSO (v10) -- green tint -----
+DEF G1_GHOST_R URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 0.7 0.57
+  name "g1_ghost_upright"
+  customData "_scratch/achieved_v10_upright.csv"
+  supervisor TRUE
+  controller "g1_sitstand_ghost"
+  staticBase TRUE
+}

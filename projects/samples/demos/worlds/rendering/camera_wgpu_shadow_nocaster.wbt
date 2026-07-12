@@ -1,0 +1,58 @@
+#VRML_SIM R2025a utf8
+
+# T1.2 CSM sub-step 3d — CONTROL world for camera_wgpu_shadow_cast.wbt.
+#
+# Byte-for-byte identical to camera_wgpu_shadow_cast.wbt (same floor, same camera,
+# same WbCamera fixed straight-down diagnostic light) EXCEPT the caster Solid is
+# removed. This is the control that isolates whether the strength-gated floor
+# darkening seen in the cast world (row5 cols5-6: 140 -> 77 at strength 0.6) is
+# CAUSED by the caster:
+#   - cast world (with caster):    row5 cols5-6 darken 140 -> 77 at strength 0.6.
+#   - this control (no caster):    if the same cells stay 140 at strength 0.6,
+#     the caster is the cause -> a true cross-object cast shadow on the floor.
+#
+# Run: OMNISIM_CAMERA_SHADOW=2 + OMNISIM_CAMERA_SHADOW_GRID=1, frame 2.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+
+WorldInfo {
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 1 0 0 -0.46
+  position 1 -3 2
+}
+TexturedBackground {
+}
+Solid {
+  translation 1 0 -0.1
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 0.55 0.55
+        metalness 0
+        roughness 0.8
+      }
+      geometry Box {
+        size 4 4 0.2
+      }
+    }
+  ]
+  name "floor_receiver"
+}
+Robot {
+  translation 1 -3 2
+  rotation 0 0.4472 0.8944 1.5708
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 80
+      height 60
+      fieldOfView 0.9
+      near 0.05
+      far 20.0
+      renderBackend "wgpu"
+    }
+  ]
+  controller "camera_wgpu_smoke"
+}

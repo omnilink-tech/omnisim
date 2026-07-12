@@ -1,0 +1,56 @@
+#VRML_SIM R2025a utf8
+
+# Deterministic pure-pose stand deploy for the NASA Valkyrie humanoid.
+# Same recipe as the proven G1 stand: stiff Newton position hold of a
+# statically-stable squat NOMINAL, no RL policy. Controller is the generic
+# humanoid_stand_deploy, driven by specs/valkyrie.json. Valkyrie is heavy
+# (~130 kg) so the launch script may raise OMNISIM_NEWTON_TARGET_KE.
+#
+# Required Newton env set by scripts/dev/run_humanoid_stand_deploy.ps1.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "NASA Valkyrie deterministic stand"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 5
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/nasa/valkyrie/urdf/valkyrie.urdf"
+  translation 0 0 1.08
+  name "valkyrie"
+  supervisor TRUE
+  controller "humanoid_stand_deploy"
+  physicsBackend "newton"
+}

@@ -1,0 +1,53 @@
+#VRML_SIM R2025a utf8
+
+# Husarion Rosbot baseline showcase, loaded from URDF via URDFRobot.
+# Mirrors the role of the old PROTO-based rosbot.wbt, minus the apartment
+# scene + PROTO-bound `rosbot` obstacle-avoidance controller (which
+# looked up PROTO-specific device names like front_left_motor that have
+# no URDF equivalent in the upstream Husarion description).
+#
+# URDF was rendered from husarion/rosbot_ros (jazzy branch) xacro with
+# an empty components_config so the chassis ships standalone — sensor
+# bring-up belongs in a later pass when devices/ gains URDF-compatible
+# attachment.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husarion Rosbot (URDF)"
+  info [
+    "Husarion Rosbot imported from URDF (rosbot_ros jazzy xacro, rendered)."
+    "Four-wheel skid steer. No controller attached."
+  ]
+}
+
+Viewpoint {
+  orientation -0.22 0.35 0.91 1.4
+  position 0.8 -1.4 1.1
+  exposure 1.4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 4 4
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.23
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../rosbot_description/urdf/rosbot.urdf"
+  translation 0 0 0.05
+  name "rosbot"
+  supervisor TRUE
+  controller "<none>"
+}

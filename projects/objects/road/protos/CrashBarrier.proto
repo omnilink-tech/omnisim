@@ -1,0 +1,167 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/road/protos/CrashBarrier.proto
+# keywords: traffic/road
+# A guardrail: H-section posts driven along a 3D path, carrying a corrugated W-beam rail on one side of them.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/Fence.proto"
+EXTERNPROTO "omnisim://projects/objects/geometries/protos/Extrusion.proto"
+
+PROTO CrashBarrier [
+  field SFVec3f      translation             0 0 0
+  field SFRotation   rotation                0 0 1 0
+  field SFString     name                    "crash barrier"
+  field SFFloat      poleGap                 2                                     # Defines the gap between two consecutive poles.
+  field SFNode       poleAppearance          PBRAppearance { roughness 0.7 }       # Defines the appearance of the poles.
+  field MFVec3f      path                    [0 0 0, 5 0 0]                        # Defines the 3D path of the crash barrier.
+  field SFBool       barrierOnRightSide      TRUE                                  # Defines the side of the barrier.
+  field SFInt32      subdivision             -1                                    # Defines the degree of interpolation using B-Splines (if the value is lower than 0, the interpolation is disabled).
+  field SFBool       enableBoundingObject    FALSE                                 # Defines whether the crash barrier should have a bounding object.
+]
+{
+  %<
+    // =====================================================================
+    // 1. WHAT A CRASH BARRIER IS, HERE
+    //
+    // Structurally it is a Fence: posts spaced along a path, with ONE
+    // horizontal bar tying them together. What makes it a guardrail rather
+    // than a garden fence is the SHAPE of that bar -- a W-beam, the pressed
+    // steel section whose two corrugations are what stop a car riding over or
+    // under the rail -- and the fact that the rail hangs off ONE side of the
+    // posts rather than running through them.
+    //
+    // So everything below is really the derivation of one 2D polygon: the
+    // cross-section of the rail, in the plane normal to the path.
+    // =====================================================================
+    const height = 0.8;         // top of the posts, above the path
+    const poleRadius = 0.06;    // half-width of the H-section post
+
+    // A single-bar Fence hangs its bar at 0.9 * height, and the cross-section
+    // below is stamped RELATIVE to that line. The rail is therefore written
+    // about v = 0 and pushed down, so its top edge lands just under the post
+    // tops and its bottom edge about knee height -- where a guardrail belongs.
+    const railTop = 0.06;
+    const railBottom = -0.34;   // -> a 0.40 m deep rail
+    const railDepth = railTop - railBottom;
+
+    // How far the rail stands off the post centre-line, and how far it bulges.
+    const standOff = 0.01 + poleRadius;
+    const corrugation = 0.05;
+
+    // `barrierOnRightSide` is stated in the barrier's OWN frame: it is the side
+    // of the spine the rail hangs on, walking the path forwards. A road that
+    // wants the rail facing its tarmac has to work out which side of the
+    // barrier's spine that is -- see the note in Road.proto.
+    const side = fields.barrierOnRightSide.value ? -1 : 1;
+
+    // =====================================================================
+    // 2. THE W-BEAM SECTION
+    //
+    // Read as (fraction of the rail's depth, how far it bulges in units of
+    // `corrugation`): a lip, a crest, a waist where the rail is bolted to the
+    // post, a second crest, a lip. The rail is closed off by a flat back plane
+    // sitting against the post, so the polygon is simple -- it never crosses
+    // itself, which is exactly what an extrusion along a curved, banked spine
+    // cannot survive.
+    // =====================================================================
+    const beam = [
+      [0.00, 0.3], [0.08, 1.9], [0.20, 2.1], [0.32, 1.9], [0.44, 0.7],
+      [0.56, 0.7], [0.68, 1.9], [0.80, 2.1], [0.92, 1.9], [1.00, 0.3]
+    ];
+
+    let section = [];
+    for (let i = 0; i < beam.length; ++i)  // up the corrugated front face
+      section.push([side * (standOff + corrugation * beam[i][1]), railBottom + railDepth * beam[i][0]]);
+    section.push([side * standOff, railTop]);      // and back down the flat rear face
+    section.push([side * standOff, railBottom]);
+    section.push(section[0]);                      // close the loop
+
+    // The bounding object, when asked for, is the rail's envelope -- a plain
+    // slab -- swept along the path as given. Deliberately NOT the corrugation:
+    // a car should be stopped by the rail, and no cheaper collider than a box
+    // section is needed to do that.
+    const hull = [
+      [side * standOff, railBottom],
+      [side * standOff, railTop],
+      [side * (standOff + 2 * corrugation), railTop],
+      [side * (standOff + 2 * corrugation), railBottom],
+      [side * standOff, railBottom]
+    ];
+
+    // A path is a run, not a point: one way-point describes nothing to sweep
+    // along, and the extrusion below would be degenerate.
+    let path = fields.path.value;
+    if (path.length < 2) {
+      path = fields.path.defaultValue;
+      console.error('\'path\' must have at least two components. Value reset to default.');
+    }
+    let length = 0;
+    for (let i = 1; i < path.length; ++i) {
+      const dx = path[i].x - path[i - 1].x;
+      const dy = path[i].y - path[i - 1].y;
+      const dz = path[i].z - path[i - 1].z;
+      length += Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    function r6(v) {
+      return Math.round(v * 1e6) / 1e6;
+    }
+  >%
+  Fence {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "crash barrier"
+    recognitionColors [ 0.65 0.65 0.65 ]
+    height %<= height >%
+    poleGap IS poleGap
+    poleRadius %<= poleRadius >%
+    poleShape "H"
+    poleAppearance IS poleAppearance
+    path IS path
+    subdivision IS subdivision
+    horizontalBarsNumber 1
+    creaseAngle 0.9
+    # Galvanised steel: nearly white, barely rough, fully metallic. The scale
+    # follows the run of the barrier so the grain does not stretch on a long one.
+    horizontalBarAppearance PBRAppearance {
+      baseColor 0.74 0.75 0.76
+      roughness 0.35
+      metalness 1
+      textureTransform TextureTransform {
+        scale %<= r6(0.5 * length) >% 2
+      }
+    }
+    horizontalBarShape [
+    %< for (let i = 0; i < section.length; ++i) { >%
+      %<= r6(section[i][0]) >% %<= r6(section[i][1]) >%
+    %< } >%
+    ]
+    %< if (fields.enableBoundingObject.value) { >%
+    boundingObject Pose {
+      translation 0 0 %<= r6(0.9 * height) >%
+      children [
+        Extrusion {
+          spine [
+          %< for (let i = 0; i < path.length; ++i) { >%
+            %<= r6(path[i].x) >% %<= r6(path[i].y) >% %<= r6(path[i].z) >%
+          %< } >%
+          ]
+          # NOT `IS subdivision`: Fence -- the base PROTO here -- already has a
+          # parameter of that name, and the engine only lets the two share it
+          # when the link is direct (`subdivision IS subdivision`, as above).
+          # Inside a sub-node it has to be stamped as a value instead.
+          splineSubdivision %<= fields.subdivision.value >%
+          crossSection [
+          %< for (let i = 0; i < hull.length; ++i) { >%
+            %<= r6(hull[i][0]) >% %<= r6(hull[i][1]) >%
+          %< } >%
+          ]
+        }
+      ]
+    }
+    %< } >%
+  }
+}

@@ -1,0 +1,415 @@
+#VRML_SIM R2025a utf8
+
+# City (mixed urban street block, clear-midday edition) — companion
+# environment to environments/forest.wbt and environments/desert_ruins.wbt.
+# Same OmniSim recipe (procedural sky + OmniSimSun + draggable SUN_MARKER)
+# and the same level of hand-built detail, but tuned for a bright daytime
+# downtown street rather than a forest clearing or desert plaza.
+#
+# This file is an *environment* — no mobile/agent robots (just one passive,
+# controller-less Robot node that hosts the intersection's traffic-light
+# fixtures). Demos that want a husky / spot / rosbot driving the street
+# should compose on top of it (copy this file + add their robots), which is
+# exactly why the road carries real sidewalks and a flat asphalt surface a
+# ground robot can drive.
+#
+# Composition strategy
+# --------------------
+#   - Layout: a 12 m, 2-lane avenue running East–West along the X axis
+#     (y = 0), crossed at the origin by a 9 m side street running North–
+#     South. The side street is split into two arms that stop at the
+#     avenue's sidewalk edge (y = ±10) so the two roads never overlap —
+#     no z-fighting asphalt at the intersection.
+#   - Light: high near-white midday sun from the SE quadrant so the
+#     building faces toward the hero camera (their SE faces) are lit and
+#     shadows are short — the "busy clear afternoon" reading. The runtime
+#     sun_marker controller overrides the sun direction every step from
+#     SUN_MARKER's pose, so the sun is draggable in the viewport.
+#   - Buildings line both sides of the avenue, set back to y ≈ ±24 so a
+#     22 m footprint (CommercialBuilding) clears the 10 m sidewalk edge.
+#     A mix — Hotel / BigGlassTower / CommercialBuilding / Residential /
+#     BigGlassTower — for variety. The side-street arms and the far
+#     skyline carry residential towers that fade into haze for depth, and
+#     four "vista closer" buildings cap both ends of the avenue.
+#   - A pocket park (lawn + stone fountain + oaks + benches) fills the NW
+#     plot to break up the concrete and sell the "mixed" character.
+#   - Sidewalks carry the city read at eye level: street lights, benches,
+#     a bus stop, fire hydrants, bins, a news stand, mailbox, phone booth,
+#     parking meters, street trees, an intersection with four traffic
+#     lights + zebra crossings, and a small cone-tapered work zone.
+#   - Atmosphere: light neutral-blue exponential haze (visibility ~260 m)
+#     so the back rows of towers read as silhouettes — cheap atmospheric
+#     perspective for a forward renderer with no real volumetrics.
+#   - Heights: ground concrete sits at z = -0.05; roads at z = 0 (asphalt
+#     5 cm above ground, ground hidden beneath); sidewalks are the road's
+#     own raised 0.15 m borders, so sidewalk furniture is placed at
+#     z = 0.15; park items sit on the lawn at z = -0.04.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughConcrete.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Grass.proto"
+EXTERNPROTO "omnisim://projects/objects/road/protos/Road.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/CommercialBuilding.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/BigGlassTower.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/BigGlassTower.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/Hotel.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/ResidentialBuilding.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/OldResidentialBuilding.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/LargeResidentialTower.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/ResidentialTower.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/TheThreeTowers.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/StripBuilding.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/SmallResidentialBuilding.proto"
+EXTERNPROTO "omnisim://projects/objects/buildings/protos/HollowBuilding.proto"
+EXTERNPROTO "omnisim://projects/objects/traffic/protos/TrafficLight.proto"
+EXTERNPROTO "omnisim://projects/objects/traffic/protos/TrafficLightStandardLampGeometry.proto"
+EXTERNPROTO "omnisim://projects/objects/traffic/protos/PedestrianCrossing.proto"
+EXTERNPROTO "omnisim://projects/objects/traffic/protos/StreetLight.proto"
+EXTERNPROTO "omnisim://projects/objects/traffic/protos/TrafficCone.proto"
+EXTERNPROTO "omnisim://projects/objects/traffic/protos/ParkingMeter.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/Bench.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/SimpleBench.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/BusStop.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/FireHydrant.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/TrashBin.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/PublicBin.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/NewsStand.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/Mailbox.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/PhoneBooth.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/StoneFountain.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Oak.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Tree.proto"
+EXTERNPROTO "omnisim://projects/samples/demos/protos/Car.proto"
+EXTERNPROTO "omnisim://projects/samples/demos/protos/DumpTruck.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "City"
+  info [
+    "Mixed urban street block — a 2-lane avenue crossed by a side street,"
+    "lined with mixed buildings, street furniture, traffic lights and a"
+    "pocket park, under a clear midday sun. Robot-free environment; drop a"
+    "ground robot onto the avenue to drive it."
+  ]
+}
+
+# Steep "drone over the city" view (62 m, above the 49 m rooftops) from
+# the SE looking down NW into the intersection: the avenue with its parked
+# fleet, the cars stopped at the light, the crossings and traffic lights
+# all read between the building rows. A steep down-angle is the only pose
+# that sees the street life — every lower SE pose is blocked by the tall
+# corner towers. ~50° FOV. Look-at toward (-4 6 1), upright regime.
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 235.030 -250.193 219.866
+  fieldOfView 0.85
+  near 0.1
+  ambientOcclusionRadius 2
+  bloomThreshold 5
+}
+
+# Bright clear-midday sky — luminous neutral blue. skyColor is the
+# fallback; the procedural atmosphericSky drives the real gradient.
+OmniSimSky {
+  skyColor [ 0.38 0.50 0.66 ]
+  luminosity 1.15
+}
+
+# High near-white sun from the SE. Direction points NW + down (light
+# travels from the SE source toward the scene), so SE-facing building
+# walls — the ones the hero camera sees — are lit and shadows are short.
+# The runtime sun_marker controller overrides this direction every step
+# from SUN_MARKER's pose.
+DEF SUN OmniSimSun {
+  color 1.0 0.97 0.92
+  direction -0.32 0.22 -0.92
+  intensity 4.3
+  ambientIntensity 0
+}
+
+# Sun marker high in the SE quadrant (consistent with the sun direction
+# above). Drag it in the viewport to move the sun.
+DEF SUN_MARKER OmniSimSunMarker {
+  translation 26 -18 74
+  radius 1.0
+  baseColor 1.0 0.95 0.85
+  emissiveColor 1.0 0.90 0.70
+  emissiveIntensity 120
+}
+
+# Cool sky-fill from the opposite (NW) quadrant so shadowed wall sides and
+# the undersides of the trees don't read pure black. No shadows.
+DirectionalLight {
+  direction 0.30 -0.20 -0.55
+  color 0.55 0.65 0.82
+  intensity 0.7
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+# Light neutral-blue haze — exponential, tuned so the avenue's vista
+# closers stay crisp but the far skyline towers fade to silhouette.
+Fog {
+  color 0.66 0.72 0.80
+  fogType "EXPONENTIAL"
+  visibilityRange 260
+}
+
+# ============================================================================
+# Ground — 320 m concrete plain at z = -0.05 (roads/sidewalks/park sit on
+# top). tileSize keeps the concrete texture at a believable ~6 m repeat.
+# ============================================================================
+DEF GROUND Floor {
+  translation 0 0 -0.05
+  name "city_ground"
+  size 320 320
+  tileSize 6 6
+  appearance RoughConcrete {
+  }
+}
+
+# ============================================================================
+# Roads — main avenue (E–W) + two side-street arms (N & S). The arms stop
+# at the avenue's sidewalk edge (y = ±10) so no asphalt overlaps.
+# ============================================================================
+DEF MAIN_AVENUE Road {
+  translation 0 0 0
+  name "main_avenue"
+  width 12
+  numberOfLanes 2
+  numberOfForwardLanes 1
+  roadBorderWidth [ 4 ]
+  wayPoints [ -72 0 0, 72 0 0 ]
+}
+DEF SIDE_STREET_N Road {
+  translation 0 0 0
+  name "side_street_north"
+  width 9
+  numberOfLanes 2
+  roadBorderWidth [ 3.5 ]
+  wayPoints [ 0 10 0, 0 58 0 ]
+}
+DEF SIDE_STREET_S Road {
+  translation 0 0 0
+  name "side_street_south"
+  width 9
+  numberOfLanes 2
+  roadBorderWidth [ 3.5 ]
+  wayPoints [ 0 -58 0, 0 -10 0 ]
+}
+
+# Zebra crossings on the four intersection approaches. The two avenue
+# crossings are rotated 90° so their 12 m span lies across the avenue;
+# the side-street crossings span the 9 m side street directly.
+PedestrianCrossing {
+  translation 8 0 0.02
+  rotation 0 0 1 1.5708
+  name "crossing_avenue_east"
+  size 12 4
+  enableBoundingObject FALSE
+}
+PedestrianCrossing {
+  translation -8 0 0.02
+  rotation 0 0 1 1.5708
+  name "crossing_avenue_west"
+  size 12 4
+  enableBoundingObject FALSE
+}
+PedestrianCrossing {
+  translation 0 12 0.02
+  name "crossing_side_north"
+  size 9 4
+  enableBoundingObject FALSE
+}
+PedestrianCrossing {
+  translation 0 -12 0.02
+  name "crossing_side_south"
+  size 9 4
+  enableBoundingObject FALSE
+}
+
+# Four traffic lights at the intersection corners, each turned to face the
+# approaching traffic. Wrapped in a passive Robot container (controller
+# "<none>", no physics) so the lamps' LED devices can instantiate — a bare
+# TrafficLight outside a Robot drops its LED nodes. No controller runs, so
+# the lights don't cycle; this is a static environment fixture.
+DEF INTERSECTION_LIGHTS Robot {
+  name "intersection_traffic_lights"
+  controller "<none>"
+  supervisor FALSE
+  children [
+    TrafficLight { translation  7.5  9 0 rotation 0 0 1 -2.3562 name "traffic_light_NE" lamp_geometry TrafficLightStandardLampGeometry { } }
+    TrafficLight { translation -7.5  9 0 rotation 0 0 1 -0.7854 name "traffic_light_NW" lamp_geometry TrafficLightStandardLampGeometry { } }
+    TrafficLight { translation  7.5 -9 0 rotation 0 0 1  2.3562 name "traffic_light_SE" lamp_geometry TrafficLightStandardLampGeometry { } }
+    TrafficLight { translation -7.5 -9 0 rotation 0 0 1  0.7854 name "traffic_light_SW" lamp_geometry TrafficLightStandardLampGeometry { } }
+  ]
+}
+
+# ============================================================================
+# Buildings — avenue frontage (set back to y ≈ ±24). Rotated to face the
+# street. Seated at z = -0.05 so their bases meet the ground plane.
+# ============================================================================
+# North side (y +, faces south toward the avenue)
+Hotel              { translation -14 24 -0.05 rotation 0 0 1 3.1416 name "hotel_north" }
+BigGlassTower      { translation  16 28 -0.05 rotation 0 0 1 3.1416 name "glass_tower_north" }
+CommercialBuilding { translation  50 24 -0.05 rotation 0 0 1 3.1416 name "commercial_north" }
+
+# South side (y -, faces north toward the avenue)
+ResidentialBuilding    { translation -48 -24 -0.05 rotation 0 0 1 0 name "residential_south" }
+OldResidentialBuilding { translation -16 -24 -0.05 rotation 0 0 1 0 name "old_residential_south" }
+BigGlassTower          { translation  16 -26 -0.05 rotation 0 0 1 0 name "glass_tower_south" }
+CommercialBuilding     { translation  50 -25 -0.05 rotation 0 0 1 0 name "commercial_south" }
+
+# Side-street arms (set back from the side street, x ≈ ±22, y 44/46)
+SmallResidentialBuilding { translation -22  44 -0.05 rotation 0 0 1  1.5708 name "resi_small_NW" }
+ResidentialBuilding      { translation  22  46 -0.05 rotation 0 0 1 -1.5708 name "residential_NE" }
+StripBuilding            { translation -22 -44 -0.05 rotation 0 0 1  1.5708 name "strip_SW" }
+HollowBuilding           { translation  22 -46 -0.05 rotation 0 0 1 -1.5708 name "hollow_SE" }
+
+# ----------------------------------------------------------------------------
+# Skyline — residential towers in the far belt (y ±70..90). They sit in
+# the haze and read as silhouettes, giving the scene depth past the block.
+# ----------------------------------------------------------------------------
+LargeResidentialTower { translation -34  78 -0.05 rotation 0 0 1 0 name "skyline_NW" }
+TheThreeTowers        { translation   8  86 -0.05 rotation 0 0 1 0 name "skyline_N" }
+ResidentialTower      { translation  48  76 -0.05 rotation 0 0 1 0 name "skyline_NE" }
+BigGlassTower         { translation -52 -80 -0.05 rotation 0 0 1 0 name "skyline_SW" }
+BigGlassTower          { translation   4 -84 -0.05 rotation 0 0 1 0 name "skyline_S" }
+LargeResidentialTower { translation  46 -82 -0.05 rotation 0 0 1 0 name "skyline_SE" }
+
+# Vista closers — cap both ends of the avenue so the street doesn't run
+# off into empty ground.
+HollowBuilding      { translation -86   8 -0.05 rotation 0 0 1 -1.5708 name "vista_west_1" }
+ResidentialBuilding { translation -86 -14 -0.05 rotation 0 0 1  1.5708 name "vista_west_2" }
+ResidentialTower    { translation  88   8 -0.05 rotation 0 0 1  0      name "vista_east_1" }
+CommercialBuilding  { translation  88 -16 -0.05 rotation 0 0 1  0      name "vista_east_2" }
+
+# ============================================================================
+# Pocket park — NW plot (centred at -42 24), lawn just above the ground
+# concrete with a stone fountain, oaks, benches and a couple of flowering
+# trees. Park items sit on the lawn at z = -0.04.
+# ============================================================================
+DEF PARK_LAWN Floor {
+  translation -42 24 -0.04
+  name "park_lawn"
+  size 26 22
+  tileSize 4 4
+  appearance Grass {
+  }
+}
+StoneFountain { translation -42 24 -0.04 name "park_fountain" }
+Oak { translation -52 31 -0.04 rotation 0 0 1 0.4 name "park_oak_1" }
+Oak { translation -32 31 -0.04 rotation 0 0 1 1.7 name "park_oak_2" }
+Oak { translation -52 17 -0.04 rotation 0 0 1 2.3 name "park_oak_3" }
+Oak { translation -32 17 -0.04 rotation 0 0 1 0.9 name "park_oak_4" }
+Tree { translation -47 28 -0.04 scale 1.1 1.1 5 name "park_tree_1" }
+Tree { translation -37 20 -0.04 scale 1.0 1.0 4.5 name "park_tree_2" }
+SimpleBench { translation -42 20 -0.04 rotation 0 0 1 0      name "park_bench_1" }
+SimpleBench { translation -42 28 -0.04 rotation 0 0 1 3.1416 name "park_bench_2" }
+SimpleBench { translation -46 24 -0.04 rotation 0 0 1 1.5708 name "park_bench_3" }
+SimpleBench { translation -38 24 -0.04 rotation 0 0 1 -1.5708 name "park_bench_4" }
+PublicBin { translation -47 20 -0.04 name "park_bin_1" }
+
+# ============================================================================
+# North avenue sidewalk furniture (y ≈ 8..9.3, on the 0.15 m sidewalk).
+# Benches face the road (backrest to the north). Lights/trees at the curb.
+# ============================================================================
+StreetLight { translation -50 9.3 0.15 rotation 0 0 1 0 name "street_light_N1" on FALSE }
+StreetLight { translation -30 9.3 0.15 rotation 0 0 1 0 name "street_light_N2" on FALSE }
+StreetLight { translation  30 9.3 0.15 rotation 0 0 1 0 name "street_light_N3" on FALSE }
+StreetLight { translation  52 9.3 0.15 rotation 0 0 1 0 name "street_light_N4" on FALSE }
+BusStop   { translation -38 9.2 0.15 rotation 0 0 1 3.1416 name "bus_stop_north" }
+Bench     { translation -24 8 0.15 rotation 0 0 1 3.1416 woodColor 0.45 0.30 0.18 name "bench_N1" }
+TrashBin  { translation -21 8.6 0.15 name "trash_N1" }
+NewsStand { translation 13 9 0.15 rotation 0 0 1 3.1416 name "news_stand_north" }
+Bench     { translation 24 8 0.15 rotation 0 0 1 3.1416 woodColor 0.45 0.30 0.18 name "bench_N2" }
+PublicBin { translation 27 8.6 0.15 name "public_bin_N1" }
+FireHydrant { translation 44 9.4 0.15 name "hydrant_N1" }
+Oak { translation -44 9.4 0.15 rotation 0 0 1 0.6 name "street_oak_N1" }
+Oak { translation -12 9.4 0.15 rotation 0 0 1 1.9 name "street_oak_N2" }
+Oak { translation  40 9.4 0.15 rotation 0 0 1 1.1 name "street_oak_N3" }
+
+# ============================================================================
+# South avenue sidewalk furniture (y ≈ -8..-9.3). Benches face the road
+# (backrest to the south). A parking-meter row lines the south curb.
+# ============================================================================
+StreetLight { translation -50 -9.3 0.15 rotation 0 0 1 3.1416 name "street_light_S1" on FALSE }
+StreetLight { translation -30 -9.3 0.15 rotation 0 0 1 3.1416 name "street_light_S2" on FALSE }
+StreetLight { translation  30 -9.3 0.15 rotation 0 0 1 3.1416 name "street_light_S3" on FALSE }
+StreetLight { translation  52 -9.3 0.15 rotation 0 0 1 3.1416 name "street_light_S4" on FALSE }
+Mailbox    { translation -42 -9.2 0.15 rotation 0 0 1 1.5708 name "mailbox_south" }
+PhoneBooth { translation -38 -9.2 0.15 rotation 0 0 1 1.5708 name "phone_booth_south" }
+Bench      { translation -24 -8 0.15 rotation 0 0 1 0 woodColor 0.40 0.27 0.16 name "bench_S1" }
+TrashBin   { translation -21 -8.6 0.15 name "trash_S1" }
+FireHydrant { translation 8 -9.4 0.15 name "hydrant_S1" }
+Bench      { translation 40 -8 0.15 rotation 0 0 1 0 woodColor 0.40 0.27 0.16 name "bench_S2" }
+PublicBin  { translation 43 -8.6 0.15 name "public_bin_S1" }
+ParkingMeter { translation -18 -6.3 0.15 rotation 0 0 1 1.5708 name "parking_meter_S1" }
+ParkingMeter { translation -14 -6.3 0.15 rotation 0 0 1 1.5708 name "parking_meter_S2" }
+ParkingMeter { translation  14 -6.3 0.15 rotation 0 0 1 1.5708 name "parking_meter_S3" }
+ParkingMeter { translation  18 -6.3 0.15 rotation 0 0 1 1.5708 name "parking_meter_S4" }
+Oak { translation -44 -9.4 0.15 rotation 0 0 1 2.1 name "street_oak_S1" }
+Oak { translation -12 -9.4 0.15 rotation 0 0 1 0.5 name "street_oak_S2" }
+Oak { translation  46 -9.4 0.15 rotation 0 0 1 1.4 name "street_oak_S3" }
+
+# ============================================================================
+# Side-street arm furniture (lighter touch) — lights, a tree per arm, a
+# bench. Sidewalks of the arms run along x = ±8 (raised 0.15 m).
+# ============================================================================
+StreetLight { translation  8.3  30 0.15 rotation 0 0 1 -1.5708 name "street_light_arm_N1" on FALSE }
+StreetLight { translation -8.3  30 0.15 rotation 0 0 1  1.5708 name "street_light_arm_N2" on FALSE }
+StreetLight { translation  8.3 -30 0.15 rotation 0 0 1 -1.5708 name "street_light_arm_S1" on FALSE }
+StreetLight { translation -8.3 -30 0.15 rotation 0 0 1  1.5708 name "street_light_arm_S2" on FALSE }
+Oak { translation -8.3 20 0.15 rotation 0 0 1 0.8 name "arm_oak_NW" }
+Oak { translation  8.3 38 0.15 rotation 0 0 1 1.6 name "arm_oak_NE" }
+Oak { translation -8.3 -20 0.15 rotation 0 0 1 2.2 name "arm_oak_SW" }
+Oak { translation  8.3 -38 0.15 rotation 0 0 1 0.3 name "arm_oak_SE" }
+Bench { translation 8.2 22 0.15 rotation 0 0 1 -1.5708 woodColor 0.45 0.30 0.18 name "bench_arm_NE" }
+Bench { translation -8.2 -24 0.15 rotation 0 0 1 1.5708 woodColor 0.45 0.30 0.18 name "bench_arm_SW" }
+
+# ============================================================================
+# Work zone — a cone taper closing the curb lane on the east avenue, the
+# kind of small detail that says "real street in use".
+# ============================================================================
+TrafficCone { translation 30 3.0 0 name "cone_1" }
+TrafficCone { translation 33 2.4 0 name "cone_2" }
+TrafficCone { translation 36 1.8 0 name "cone_3" }
+TrafficCone { translation 39 1.2 0 name "cone_4" }
+TrafficCone { translation 42 1.2 0 name "cone_5" }
+# The dump truck parked just past the cones is what the lane closure is for.
+DumpTruck { translation 46 3.2 0 rotation 0 0 1 3.1416 name "works_dumptruck" bodyColor 0.90 0.55 0.05 }
+
+# ============================================================================
+# Vehicles — a parked fleet down both curbs of the avenue, a few cars
+# stopped at the red light, and a couple parked on the side-street arms.
+# Cars sit on the road (z=0); forward is +X, so rotation picks heading.
+# Static decoration (no physics).
+# ============================================================================
+# --- North curb (parked, facing west) ---
+Car { translation -58 4.6 0 rotation 0 0 1 3.1416 name "car_N1" color 0.85 0.85 0.86 }
+Car { translation -46 4.6 0 rotation 0 0 1 3.1416 name "car_N2" color 0.12 0.20 0.42 }
+Car { translation -30 4.6 0 rotation 0 0 1 3.1416 name "car_N3" color 0.62 0.64 0.66 }
+Car { translation  58 4.6 0 rotation 0 0 1 3.1416 name "car_N4" color 0.05 0.05 0.06 }
+
+# --- South curb (parked, facing east) ---
+Car { translation -56 -4.6 0 rotation 0 0 1 0 name "car_S1" color 0.60 0.07 0.07 }
+Car { translation -44 -4.6 0 rotation 0 0 1 0 name "car_S2" color 0.62 0.64 0.66 }
+Car { translation -30 -4.6 0 rotation 0 0 1 0 name "car_S3" color 0.08 0.22 0.12 }
+Car { translation  30 -4.6 0 rotation 0 0 1 0 name "car_S4" color 0.85 0.85 0.86 }
+Car { translation  44 -4.6 0 rotation 0 0 1 0 name "car_S5" color 0.72 0.60 0.30 }
+Car { translation  58 -4.6 0 rotation 0 0 1 0 name "car_S6" color 0.05 0.05 0.06 }
+
+# --- Stopped at the light: eastbound queue (south lane) + westbound (north lane) ---
+Car { translation -13 -2.6 0 rotation 0 0 1 0 name "car_EB1" color 0.10 0.18 0.45 }
+Car { translation -20 -2.6 0 rotation 0 0 1 0 name "car_EB2" color 0.55 0.06 0.06 }
+Car { translation  13  2.6 0 rotation 0 0 1 3.1416 name "car_WB1" color 0.05 0.05 0.06 }
+Car { translation  20  2.6 0 rotation 0 0 1 3.1416 name "car_WB2" color 0.85 0.85 0.86 }
+
+# --- Side-street arms (parked along the curb) ---
+Car { translation  3.1  32 0 rotation 0 0 1  1.5708 name "car_arm_N1" color 0.62 0.64 0.66 }
+Car { translation -3.1  44 0 rotation 0 0 1  1.5708 name "car_arm_N2" color 0.60 0.07 0.07 }
+Car { translation  3.1 -44 0 rotation 0 0 1 -1.5708 name "car_arm_S1" color 0.10 0.18 0.45 }
+Car { translation -3.1 -32 0 rotation 0 0 1 -1.5708 name "car_arm_S2" color 0.85 0.85 0.86 }

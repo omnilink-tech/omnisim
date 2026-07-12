@@ -1,0 +1,53 @@
+#VRML_SIM R2025a utf8
+
+# Valkyrie WALK-DEPLOY: the PHYSICS Valkyrie (Newton) tracking its kinematic
+# walking shadow with a stiff position-PD (humanoid_walk_deploy,
+# HUMANOID_WALK_ROBOT=valkyrie). NO RL yet -- measures the sim-to-deploy gap.
+# Run: run_humanoid_walk_deploy.ps1 -Robot valkyrie
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "NASA Valkyrie -- walk-deploy (shadow tracking under Newton)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5.5 2.2
+  follow "valkyrie"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 60 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/nasa/valkyrie/urdf/valkyrie.urdf"
+  translation 0 0 1.08
+  name "valkyrie"
+  supervisor TRUE
+  controller "humanoid_walk_deploy"
+  physicsBackend "newton"
+}

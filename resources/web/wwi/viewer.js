@@ -1,0 +1,1106 @@
+/* eslint no-extend-native: ["error", { "exceptions": ["String"] }] */
+/* global setup */
+/* global showdown */
+
+'use strict';
+
+import { getGETQueryValue, getGETQueriesMatchingRegularExpression } from './request_methods.js';
+import { setupModalWindow, renderGraphs, highlightCode, updateModalEvents } from './proto_viewer.js';
+
+let handle;
+
+if (typeof String.prototype.startsWith !== 'function') {
+  String.prototype.startsWith = function(prefix) {
+    return this.slice(0, prefix.length) === prefix;
+  };
+}
+
+if (typeof String.prototype.endsWith !== 'function') {
+  String.prototype.endsWith = function(suffix) {
+    return this.indexOf(suffix, this.length - suffix.length) !== -1;
+  };
+}
+
+const localSetup = (typeof setup === 'undefined') ? {} : setup;
+const isCyberboticsUrl = location.href.indexOf('cyberbotics.com/doc') !== -1;
+
+function setupCyberboticsUrl(url) {
+  localSetup.book = 'guide';
+  localSetup.page = 'index';
+  localSetup.anchor = '';
+  if (!localSetup.tabs)
+    localSetup.tabs = {};
+
+  let m = url.match(new RegExp('/([^/]+)/([^/\\?#]+)([^/]*)$'));
+  if (m) {
+    localSetup.book = m[1];
+    localSetup.page = m[2];
+    const args = m[3];
+
+    m = url.match(/version=([^&#]*)/);
+    if (m) {
+      const version = m[1];
+      const n = version.indexOf(':');
+      if (n === -1)
+        localSetup.branch = version;
+      else
+        localSetup.branch = version.substr(n + 1);
+    }
+
+    // Extract tab options
+    const tabRegex = /[?&](tab-[^=]+)=([^&#]+)/g;
+    while ((m = tabRegex.exec(url)) !== null)
+      localSetup.tabs[m[1]] = m[2];
+
+    m = args.match(/#([^&#]*)/);
+    if (m)
+      localSetup.anchor = m[1];
+    else
+      localSetup.anchor = '';
+  }
+}
+
+function setupDefaultUrl(url) {
+  let m;
+
+  m = url.match(/page=([^&#]*)/);
+  if (m)
+    localSetup.page = m[1].replace(/.md$/, '');
+  else
+    localSetup.page = 'index';
+
+  m = url.match(/book=([^&#]*)/);
+  if (m)
+    localSetup.book = m[1];
+  else if (!localSetup.book)
+    localSetup.book = 'guide';
+
+  // Extract tab options
+  if (!localSetup.tabs)
+    localSetup.tabs = {};
+  const tabRegex = /[?&](tab-[^=]+)=([^&#]+)/g;
+  while ((m = tabRegex.exec(url)) !== null)
+    localSetup.tabs[m[1]] = m[2];
+
+  m = url.match(/#([^&#]*)/);
+  if (m)
+    localSetup.anchor = m[1];
+  else
+    localSetup.anchor = '';
+}
+
+function setupUrl(url) {
+  if (isCyberboticsUrl)
+    setupCyberboticsUrl(url);
+  else
+    setupDefaultUrl(url);
+
+  let tabsQuery = '';
+  for (let option in localSetup.tabs) {
+    if (!localSetup.tabs[option])
+      continue;
+    if (tabsQuery)
+      tabsQuery += ',';
+    tabsQuery += option + '=' + localSetup.tabs[option];
+  }
+  tabsQuery = '[' + tabsQuery + ']';
+  console.log('book=' + localSetup.book + ' page=' + localSetup.page + ' branch=' + localSetup.branch +
+    ' tabs=' + tabsQuery + ' anchor=' + localSetup.anchor);
+}
+
+function computeTargetPath() {
+  let branch = 'released';
+  let targetPath = '';
+  if (localSetup.branch)
+    branch = localSetup.branch;
+  if (localSetup.url.startsWith('http'))
+    targetPath = localSetup.url + branch + '/docs/';
+
+  targetPath += localSetup.book + '/';
+
+  return targetPath;
+}
+
+function redirectUrls(node) {
+  // redirect a's href
+  const as = node.querySelectorAll('a');
+  for (let i = 0; i < as.length; i++) {
+    const a = as[i];
+    const href = a.getAttribute('href');
+    if (!href)
+      continue;
+    else if (href.startsWith('#'))
+      addDynamicAnchorEvent(a); // on firefox, the second click on the anchor is not dealt cleanly
+    else if (href.startsWith('http')) // open external links in a new window
+      a.setAttribute('target', '_blank');
+    else if (href.endsWith('.md') || href.indexOf('.md#') > -1) {
+      let match, newPage, anchor;
+      if (href.startsWith('../')) { // Cross-book hyperlink case.
+        match = /^..\/([\w-]+)\/([\w-]+).md(#[\w-]+)?$/.exec(href);
+        if (match && match.length >= 3) {
+          const book = match[1];
+          newPage = match[2];
+          anchor = match[3];
+          if (anchor)
+            anchor = anchor.substring(1); // remove the '#' character
+          a.setAttribute('href', forgeUrl(book, newPage, localSetup.tabs, anchor));
+        }
+      } else { // Cross-page hyperlink case.
+        addDynamicLoadEvent(a);
+        match = /^([\w-]+).md(#[\w-]+)?$/.exec(href);
+        if (match && match.length >= 2) {
+          newPage = match[1];
+          anchor = match[2];
+          if (anchor)
+            anchor = anchor.substring(1); // remove the '#' character
+          a.setAttribute('href', forgeUrl(localSetup.book, newPage, localSetup.tabs, anchor));
+        }
+      }
+    }
+  }
+}
+
+function collapseMovies(node) {
+  if (location.href.startsWith('file:')) { // if it's the offline documentation embedded in Webots (possibly without network):
+    const iframes = node.querySelectorAll('iframe');
+    for (let i = 0; i < iframes.length; i++) { // foreach iframe:
+      const iframe = iframes[i];
+      let src = iframe.getAttribute('src');
+      if (src && src.indexOf('youtube')) { // if the iframe is a youtube frame:
+        // then, replace the iframe by a text and an hyperlink to the youtube page.
+        // e.g. https://www.youtube.com/embed/vFwNwT8dZTU?rel=0 to https://www.youtube.com/watch?v=vFwNwT8dZTU
+        src = src.replace(/embed\/(.*)\?rel=0/, 'watch?v=$1');
+        let p = document.createElement('p');
+        p.innerHTML = '<a href="' + src + '">Click here to see the youtube movie.</a>';
+        iframe.parentNode.replaceChild(p, iframe);
+      }
+    }
+  }
+}
+
+function forgeUrl(book, page, tabs, anchor) {
+  let tabOption;
+  let isFirstArgument;
+  const tabsWithUrl = ['tab-language', 'tab-os'];
+  const anchorString = (anchor && anchor.length > 0) ? ('#' + anchor) : '';
+  let url = location.href;
+  if (isCyberboticsUrl) {
+    const i = location.href.indexOf('cyberbotics.com/doc');
+    url = location.href.substr(0, i) + 'cyberbotics.com/doc/' + book + '/' + page;
+    if (localSetup.branch !== '' && localSetup.repository && localSetup.repository !== 'cyberbotics')
+      url += '?version=' + localSetup.repository + ':' + localSetup.branch;
+    else if (localSetup.branch !== '')
+      url += '?version=' + localSetup.branch;
+    isFirstArgument = localSetup.branch === '';
+    for (tabOption in tabs) {
+      if (!tabs[tabOption] || !tabsWithUrl.includes(tabOption))
+        continue;
+      url += (isFirstArgument ? '?' : '&') + tabOption + '=' + tabs[tabOption];
+      isFirstArgument = false;
+    }
+    url += anchorString;
+  } else {
+    isFirstArgument = (url.indexOf('?') < 0);
+
+    // Remove anchor from url
+    url = url.split('#')[0];
+
+    // Add or replace the book argument.
+    if (url.indexOf('book=') > -1)
+      url = url.replace(/book=([^&]+)?/, 'book=' + book);
+    else
+      url += (isFirstArgument ? '?' : '&') + 'book=' + book;
+
+    // Add or replace the page argument.
+    if (url.indexOf('page=') > -1)
+      url = url.replace(/page=([\w-]+)?/, 'page=' + page);
+    else
+      url += '&page=' + page;
+
+    // Add or replace the tab argument.
+    for (tabOption in tabs) {
+      if (tabsWithUrl.includes(tabOption)) {
+        let tabName = tabs[tabOption] ? tabs[tabOption] : '';
+        if (url.indexOf(tabOption + '=') > -1)
+          url = url.replace(new RegExp(tabOption + '=([^&]+)(#[\\w-]+)?'), tabOption + '=' + tabName);
+        else if (tabName)
+          url += '&' + tabOption + '=' + tabName;
+      }
+    }
+
+    url += anchorString;
+  }
+  return url;
+}
+
+function addDynamicAnchorEvent(el) {
+  if (el.classList.contains('dynamicAnchor'))
+    return;
+  el.addEventListener('click',
+    function(event) {
+      if (event.ctrlKey)
+        return;
+      let node = event.target;
+      while (node && !node.hasAttribute('href'))
+        node = node.getParent();
+      if (node) {
+        localSetup.anchor = extractAnchor(node.getAttribute('href'));
+        applyAnchor();
+        event.preventDefault();
+      }
+    },
+    false
+  );
+  el.classList.add('dynamicAnchor');
+}
+
+function addDynamicLoadEvent(el) {
+  if (el.classList.contains('dynamicLoad'))
+    return;
+  el.addEventListener('click',
+    function(event) {
+      if (event.ctrlKey)
+        return;
+      aClick(event.target);
+      event.preventDefault();
+    },
+    false
+  );
+  el.classList.add('dynamicLoad');
+}
+
+function aClick(el) {
+  setupUrl(el.getAttribute('href'));
+  getMDFile();
+  updateBrowserUrl();
+  updateContributionBannerUrl();
+}
+
+function redirectImages(node) {
+  // redirect img's src
+  const imgs = node.querySelectorAll('img');
+  const targetPath = computeTargetPath();
+  for (let i = 0; i < imgs.length; i++) {
+    const img = imgs[i];
+    const src = img.getAttribute('src');
+    const match = /^images\/(.*)$/.exec(src);
+    if (match && match.length === 2)
+      img.setAttribute('src', targetPath + 'images/' + match[1]);
+  }
+}
+
+function applyAnchor() {
+  const firstAnchor = document.querySelector("[name='" + localSetup.anchor + "']");
+  if (firstAnchor) {
+    firstAnchor.scrollIntoView(true);
+    if (document.querySelector('.contribution-banner'))
+      window.scrollBy(0, -38); // GitHub banner.
+    if (isCyberboticsUrl)
+      window.scrollBy(0, -44); // Cyberbotics header.
+  } else
+    window.scrollTo(0, 0);
+}
+
+function applyToTitleDiv() {
+  const titleContentElement = document.querySelector('#title-content');
+  if (titleContentElement) {
+    let newTitle;
+    if (localSetup.book === 'guide')
+      newTitle = 'Webots User Guide';
+    else if (localSetup.book === 'reference')
+      newTitle = 'Webots Reference Manual';
+    else if (localSetup.book === 'blog')
+      newTitle = 'Webots Blog';
+    else if (localSetup.book === 'discord')
+      newTitle = 'Webots Discord Archives';
+    else if (localSetup.book === 'automobile')
+      newTitle = 'Webots for automobiles';
+    else
+      newTitle = '';
+    if (newTitle.length > 0) {
+      newTitle += " <div class='release-tag'>" + getWebotsVersion() + '</div>';
+      titleContentElement.innerHTML = newTitle;
+    }
+  }
+}
+
+function addContributionBanner() {
+  // if we're on the website we need to move the banner down by the height of the navbar
+  const displacement = isCyberboticsUrl ? '44px' : '0px';
+
+  // append contribution sticker to primary doc element
+  document.querySelector('#center').innerHTML += '<div style="top:' + displacement + '" class="contribution-banner">' +
+    'Found an error?' +
+    '<a target="_blank" class="contribution-banner-url" href="https://github.com/omnilink-tech/omnisim/tree/main/docs"> ' +
+    'Contribute on GitHub!' +
+    '<span class=github-logo />' +
+    '</a>' +
+    '<p id="contribution-close">X</p>' +
+    '</div>';
+  updateContributionBannerUrl();
+
+  const contributionBanner = document.querySelector('.contribution-banner');
+
+  document.querySelector('#contribution-close').onclick = function() {
+    contributionBanner.parentNode.removeChild(contributionBanner);
+  };
+}
+
+function updateContributionBannerUrl() {
+  const contributionBanner = document.querySelector('.contribution-banner-url');
+  if (contributionBanner) {
+    // "Found an error? Contribute on GitHub!" must open OmniSim's copy of the page,
+    // not upstream's -- most of these pages no longer exist upstream, and the ones
+    // that do are not the pages the reader is looking at.
+    contributionBanner.href = 'https://github.com/omnilink-tech/omnisim/edit/main/docs/' + localSetup.book + '/' +
+      localSetup.page + '.md';
+  }
+}
+
+function addNavigationToBlogIfNeeded() {
+  if (!document.querySelector('#next-previous-section') && localSetup.book === 'blog') {
+    let menu = document.querySelector('#menu');
+    let lis = menu.querySelectorAll('li');
+    let currentPageIndex = -1;
+    for (let i = 0; i < lis.length; ++i) {
+      if (lis[i].className === 'selected') {
+        currentPageIndex = i;
+        break;
+      }
+    }
+
+    if (currentPageIndex === -1)
+      return;
+
+    // console.log(currentPageIndex, lis.length);
+    // console.log(lis);
+    let div = document.createElement('div');
+    div.setAttribute('id', 'next-previous-section');
+    // previous post
+    if (currentPageIndex > 0) {
+      let previous = lis[currentPageIndex - 1];
+      let a = previous.firstChild.cloneNode();
+      a.innerHTML += '<< Previous Post: ' + previous.textContent;
+      a.setAttribute('class', 'post-selector left');
+      div.appendChild(a);
+    }
+
+    if (currentPageIndex < lis.length - 1) {
+      let next = lis[currentPageIndex + 1];
+      let a = next.firstChild.cloneNode();
+      a.innerHTML += 'Next Post: ' + next.textContent + ' >>';
+      a.setAttribute('class', 'post-selector right');
+      div.appendChild(a);
+    }
+
+    document.querySelector('#publish-data').parentNode.insertBefore(div, document.querySelector('#publish-data').nextSibling);
+  }
+}
+
+function setupBlogFunctionalitiesIfNeeded() {
+  if (localSetup.book === 'blog') {
+    // hide index, this doesn't make sense for a blog post
+    let index = document.querySelector('#index');
+    let indexTitle = document.querySelector('#indexTitle');
+
+    if (index !== null)
+      index.style.display = 'none';
+
+    if (indexTitle !== null)
+      indexTitle.style.display = 'none';
+
+    // hide the release tag, this is also nonsensical here
+    document.querySelector('.release-tag').style.display = 'none';
+
+    document.title = document.title.replace('documentation', 'Blog');
+  }
+}
+
+function createIndex(view) {
+  // Note: the previous index is cleaned up when the parent title is destroyed.
+
+  // Get all the view headings.
+  const headings = [].slice.call(view.querySelectorAll('h1, h2, h3, h4'));
+
+  // Do not create too small indexes.
+  const content = document.querySelector('#content');
+  if ((content.offsetHeight < 2 * window.innerHeight || headings.length < 4) &&
+    (localSetup.book !== 'discord' || headings.length < 2))
+    return;
+
+  let level = parseInt(headings[0].tagName[1]) + 1; // current heading level.
+
+  // Create an empty index, and insert it before the second heading.
+  const indexTitle = document.createElement('h' + level);
+  indexTitle.textContent = 'Index';
+  indexTitle.setAttribute('id', 'indexTitle');
+  headings[0].parentNode.insertBefore(indexTitle, headings[1]);
+  let ul = document.createElement('ul');
+  ul.setAttribute('id', 'index');
+  headings[0].parentNode.insertBefore(ul, headings[1]);
+
+  headings.forEach(function(heading, i) {
+    if (i === 0) // Skip the first heading.
+      return;
+
+    // Update current level and ul.
+    const newLevel = parseInt(heading.tagName[1]);
+    while (newLevel > level) {
+      const newUl = document.createElement('ul');
+      ul.appendChild(newUl);
+      ul = newUl;
+      level += 1;
+    }
+    while (newLevel < level) {
+      ul = ul.parentNode;
+      level -= 1;
+    }
+
+    // Add the <li> tag.
+    const anchor = heading.getAttribute('name');
+    const a = document.createElement('a');
+    a.setAttribute('href', '#' + anchor);
+    a.textContent = heading.textContent;
+    const li = document.createElement('li');
+    li.appendChild(a);
+    ul.appendChild(li);
+  });
+}
+
+function getWebotsVersion() {
+  if (localSetup.branch)
+    return localSetup.branch;
+  // Get the Webots version from the showdown wbVariables extension
+  const version = '{{ webots.version.full }}';
+  const converter = new showdown.Converter({ extensions: ['wbVariables'] });
+  const html = converter.makeHtml(version);
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
+function applyToPageTitle(mdContent) {
+  let hashtagIndex = mdContent.indexOf('#');
+  if (hashtagIndex >= 0) {
+    while (hashtagIndex + 1 < mdContent.length && mdContent[hashtagIndex + 1] === '#')
+      hashtagIndex += 1;
+    const hashtagCarriageReturn = mdContent.indexOf('\n', hashtagIndex);
+    if (hashtagCarriageReturn >= 0) {
+      const title = mdContent.substring(hashtagIndex + 1, hashtagCarriageReturn).trim();
+      document.title = 'Webots documentation: ' + title;
+    }
+  }
+}
+
+function populateViewDiv(mdContent) {
+  setupUrl(document.location.href);
+
+  const view = document.querySelector('#view');
+  while (view.firstChild)
+    view.removeChild(view.firstChild);
+
+  // console.log('Raw MD content:\n\n');
+  // console.log(mdContent);
+
+  applyToPageTitle(mdContent);
+
+  // markdown to html
+  window.mermaidGraphCounter = 0;
+  window.mermaidGraphs = {};
+  const converter = new showdown.Converter({
+    tables: 'True',
+    extensions: [
+      'wbTabComponent', 'wbSpoiler', 'wbChart', 'wbVariables', 'wbAPI', 'wbFigure', 'wbAnchors',
+      'wbIllustratedSection', 'youtube'
+    ]
+  });
+  const html = converter.makeHtml(mdContent);
+
+  // console.log('HTML content: \n\n')
+  // console.log(html);
+
+  view.innerHTML = html;
+
+  renderGraphs();
+  redirectImages(view);
+  updateModalEvents(view);
+  redirectUrls(view);
+  collapseMovies(view);
+
+  applyAnchorIcons(view);
+  highlightCode(view);
+
+  updateSelection();
+  createIndex(view);
+
+  setupBlogFunctionalitiesIfNeeded();
+  addNavigationToBlogIfNeeded();
+
+  const images = view.querySelectorAll('img');
+  if (images.length > 0) {
+    // apply the anchor only when the images are loaded,
+    // otherwise, the anchor can be overestimated.
+    const lastImage = images[images.length - 1];
+    lastImage.onload = () => applyAnchor();
+  } else
+    applyAnchor();
+  applyTabs();
+}
+
+// replace the browser URL after a dynamic load
+function updateBrowserUrl() {
+  const url = forgeUrl(localSetup.book, localSetup.page, localSetup.tabs, localSetup.anchor);
+  if (history.pushState) {
+    try {
+      history.pushState({ state: 'new' }, null, url);
+    } catch (err) {
+    }
+  }
+  // Do NOT rewrite the canonical link. Upstream pointed it at 'cyberbotics.com/doc/...',
+  // which told search engines that OmniSim's documentation is a duplicate of Cyberbotics'
+  // -- attributing our pages to upstream. OmniSim does not (yet) host its docs under a
+  // dedicated domain, and no canonical is strictly better than a wrong one, so we leave
+  // whatever the hosting page declares untouched.
+}
+
+// Make in order that the back button is working correctly
+window.onpopstate = function(event) {
+  setupUrl(document.location.href);
+  getMDFile();
+};
+
+// Open a tab component tab
+function openTabFromEvent(evt, option, name) {
+  // update links
+  const a = document.querySelectorAll('a');
+  for (let i = 0; i < a.length; i++) {
+    const href = a[i].getAttribute('href');
+    if (!href)
+      continue;
+    if (localSetup.tabs[option]) {
+      if (href.includes(option + '=' + localSetup.tabs[option]))
+        a[i].setAttribute('href', href.replace(option + '=' + localSetup.tabs[option], option + '=' + name.toLowerCase()));
+      else if (!href.startsWith('#'))
+        a[i].setAttribute('href', href + (href.indexOf('?') > -1 ? '&' : '?') + option + '=' + name.toLowerCase());
+    }
+  }
+  // open tab
+  localSetup.tabs[option] = name.toLowerCase();
+  updateBrowserUrl();
+  openTab(evt.target.parentNode, localSetup.tabs[option]);
+}
+
+// Open a tab component tab
+function openTab(tabcomponent, name) {
+  const tabID = tabcomponent.getAttribute('tabid');
+
+  let tabcontent = tabcomponent.parentNode.querySelectorAll('.tab-content[tabid="' + tabID + '"][name="' + name + '"]')[0];
+  if (typeof tabcontent === 'undefined')
+    return false;
+
+  const tabcontents = tabcomponent.parentNode.querySelectorAll('.tab-content[tabid="' + tabID + '"]');
+  for (let i = 0; i < tabcontents.length; i++)
+    tabcontents[i].style.display = 'none';
+
+  const tablinks = tabcomponent.querySelectorAll('.tab-links');
+  for (let j = 0; j < tablinks.length; j++)
+    tablinks[j].classList.remove('active');
+
+  tabcontent = tabcomponent.parentNode.querySelectorAll('.tab-content[tabid="' + tabID + '"][name="' + name + '"]')[0];
+  tabcontent.style.display = 'block';
+
+  const tablink = tabcomponent.querySelectorAll('.tab-links[name="' + name + '"]')[0];
+  tablink.classList.add('active');
+  return true;
+}
+
+function applyTabs() {
+  const tabLinks = document.getElementsByClassName('tab-links');
+  for (let i = 0; i < tabLinks.length; i++) {
+    let element = tabLinks[i];
+    element.onclick = _ => openTabFromEvent(_, 'tab-' + element.title, element.innerHTML);
+  }
+
+  const tabComponents = document.querySelectorAll('.tab-component');
+  for (let k = 0; k < tabComponents.length; k++) {
+    for (let tabName in localSetup.tabs) {
+      if (openTab(tabComponents[k], localSetup.tabs[tabName]))
+        break;
+    }
+  }
+}
+
+function applyAnchorIcons(view) {
+  let elements = [];
+  const tags = ['figcaption', 'h1', 'h2', 'h3', 'h4', 'h5'];
+  for (let i = 0; i < tags.length; i++) {
+    const array = Array.prototype.slice.call(view.querySelectorAll(tags[i]));
+    elements = elements.concat(array);
+  }
+  for (let i = 0; i < elements.length; i++) {
+    const el = elements[i];
+    let name = null;
+    if (el.parentNode && el.tagName.toLowerCase() === 'figcaption' && el.parentNode.tagName.toLowerCase() === 'figure')
+      name = el.parentNode.getAttribute('name');
+    else
+      name = el.getAttribute('name');
+    if (name) {
+      el.classList.add('anchor-header');
+      const span = document.createElement('span');
+      span.classList.add('anchor-link-image');
+      const a = document.createElement('a');
+      a.setAttribute('href', '#' + name);
+      a.classList.add('anchor-link');
+      a.appendChild(span);
+      el.insertBefore(a, el.firstChild);
+    }
+  }
+}
+
+function receiveMenuContent(menuContent) {
+  // console.log('Menu content:\n\n');
+  // console.log(menuContent);
+
+  let menu = null;
+
+  const converter = new showdown.Converter();
+  const html = converter.makeHtml(menuContent);
+  const div = document.createElement('div');
+  div.innerHTML = html;
+
+  for (let i = 0; i < div.childNodes.length; i++) {
+    const child = div.childNodes[i];
+    if (child && child.tagName && child.tagName.length > 0 && child.tagName.toLowerCase() === 'ul') {
+      menu = child;
+      break;
+    }
+  }
+
+  if (!menu) {
+    console.error('Cannot extract Menu.');
+    return;
+  }
+
+  populateMenu(menu);
+  redirectUrls(menu);
+  updateSelection();
+  addNavigationToBlogIfNeeded();
+}
+
+function updateMenuScrollbar() {
+  const e = document.documentElement;
+  const t = document.documentElement.scrollTop || document.body.scrollTop;
+  const p = e.scrollHeight - t - e.clientHeight;
+  const footerHeight = 192;
+  if (p < footerHeight)
+    document.querySelector('#left').style.height = (e.clientHeight - footerHeight + p) + 'px';
+  else
+    document.querySelector('#left').style.height = '100%';
+}
+
+function updateSelection() {
+  const selected = changeMenuSelection();
+  populateNavigation(selected);
+  if (isCyberboticsUrl)
+    updateMenuScrollbar();
+}
+
+function changeMenuSelection() {
+  const menu = document.querySelector('#menu');
+  const selecteds = [].slice.call(menu.querySelectorAll('.selected'));
+  let selected;
+  for (let i = 0; i < selecteds.length; i++) {
+    selected = selecteds[i];
+    selected.classList.remove('selected');
+  }
+  const as = menu.querySelectorAll('a');
+  for (let i = 0; i < as.length; i++) {
+    const a = as[i];
+    let href = a.getAttribute('href');
+    let selection;
+    if (!isCyberboticsUrl) {
+      const pageIndex = href.indexOf('page=' + localSetup.page);
+      // Notes:
+      // - the string length test is done to avoid wrong positive cases
+      //   where a page is a prefix of another.
+      // - 5 matches with the 'page=' string length.
+      if (pageIndex > -1 && (5 + pageIndex + localSetup.page.length) === href.length)
+        selection = true;
+      else
+        selection = false;
+    } else {
+      let n = href.indexOf('?');
+      if (n > -1)
+        href = href.substring(0, n);
+      n = href.indexOf('#');
+      if (n > -1)
+        href = href.substring(0, n);
+      if (href.endsWith('/doc/' + localSetup.book + '/' + localSetup.page))
+        selection = true;
+      else
+        selection = false;
+    }
+    if (selection) {
+      selected = a.parentNode;
+      selected.classList.add('selected');
+      if (selected.parentNode.parentNode.tagName.toLowerCase() === 'li') {
+        selected.parentNode.parentNode.classList.add('selected');
+        const firstChild = selected.parentNode.parentNode.firstChild;
+        if (firstChild.tagName.toLowerCase() === 'a')
+          showAccodionItem(firstChild);
+      } else
+        showAccodionItem(a);
+      return selected;
+    }
+  }
+}
+
+function populateNavigation(selected) {
+  const next = document.querySelector('#next');
+  const previous = document.querySelector('#previous');
+  const up = document.querySelector('#up');
+  const toc = document.querySelector('#toc');
+  let as;
+
+  toc.setAttribute('href', forgeUrl(localSetup.book, 'menu'));
+  addDynamicLoadEvent(toc);
+
+  if (!selected) {
+    next.classList.add('disabled');
+    previous.classList.add('disabled');
+    up.classList.add('disabled');
+    return;
+  }
+
+  if (next) {
+    let nextElement = null;
+
+    let nextLiSibling = selected.nextSibling;
+    while (nextLiSibling) {
+      if (nextLiSibling.tagName && nextLiSibling.tagName.toLowerCase() === 'li')
+        break;
+      nextLiSibling = nextLiSibling.nextSibling;
+    }
+    if (nextLiSibling) {
+      as = nextLiSibling.querySelectorAll('a');
+      if (as.length > 0)
+        nextElement = as[0];
+    }
+
+    if (nextElement) {
+      next.classList.remove('disabled');
+      next.setAttribute('href', nextElement.getAttribute('href'));
+      addDynamicLoadEvent(next);
+    } else
+      next.classList.add('disabled');
+  }
+
+  if (previous) {
+    let previousElement = null;
+
+    let previousLiSibling = selected.previousSibling;
+    while (previousLiSibling) {
+      if (previousLiSibling.tagName && previousLiSibling.tagName.toLowerCase() === 'li')
+        break;
+      previousLiSibling = previousLiSibling.previousSibling;
+    }
+    if (previousLiSibling) {
+      as = previousLiSibling.querySelectorAll('a');
+      if (as.length > 0)
+        previousElement = as[0];
+    }
+
+    if (previousElement) {
+      previous.classList.remove('disabled');
+      previous.setAttribute('href', previousElement.getAttribute('href'));
+      addDynamicLoadEvent(previous);
+    } else
+      previous.classList.add('disabled');
+  }
+
+  if (up) {
+    let upElement = null;
+    let parentLi = null;
+    if (selected.parentNode.parentNode.tagName.toLowerCase() === 'li')
+      parentLi = selected.parentNode.parentNode;
+    if (parentLi) {
+      as = parentLi.querySelectorAll('a');
+      if (as.length > 0)
+        upElement = as[0];
+    }
+
+    if (upElement) {
+      up.classList.remove('disabled');
+      up.setAttribute('href', upElement.getAttribute('href'));
+      addDynamicLoadEvent(up);
+    } else {
+      up.setAttribute('href', forgeUrl(localSetup.book, 'index'));
+      addDynamicLoadEvent(up);
+      up.classList.remove('disabled');
+    }
+  }
+}
+
+function populateMenu(menu) {
+  // make in order that the <li> tags above the <a> are also clickable
+  const lis = menu.querySelectorAll('li');
+  for (let i = 0; i < lis.length; i++) {
+    const li = lis[i];
+    li.addEventListener('click',
+      function(event) {
+        const as = event.target.querySelectorAll('a');
+        if (as.length > 0)
+          aClick(as[0]);
+      }
+    );
+  }
+
+  const menuDiv = document.querySelector('#menu');
+  menuDiv.appendChild(menu);
+
+  menu.setAttribute('id', 'accordion');
+  let list = document.querySelectorAll('#accordion > li > a');
+  list.forEach(item => {
+    item.onclick = () => showAccodionItem(item);
+  });
+}
+
+function showAccodionItem(item) {
+  if (!item.className.includes('active')) {
+    document.querySelectorAll('#accordion li ul').forEach(ul => {
+      if (item.nextElementSibling !== ul)
+        slideUp(ul);
+    });
+
+    slideToggle(item.nextElementSibling);
+    document.querySelectorAll('#accordion li a').forEach(item => {
+      item.classList.remove('active');
+    });
+    item.className += ' active';
+  }
+}
+
+// Taken from https://dev.to/bmsvieira/vanilla-js-slidedown-up-4dkn
+function slideUp(item) {
+  if (!item)
+    return;
+
+  item.style.transitionProperty = 'height, margin, padding';
+  item.style.transitionDuration = 500 + 'ms';
+  item.style.boxSizing = 'border-box';
+  item.style.height = item.offsetHeight + 'px';
+  item.offsetHeight; // Do not remove, the transition is not correctly executed otherwise
+  item.style.overflow = 'hidden';
+  item.style.height = 0;
+  item.style.paddingTop = 0;
+  item.style.paddingBottom = 0;
+  item.style.marginTop = 0;
+  item.style.marginBottom = 0;
+  window.setTimeout(() => {
+    item.style.display = 'none';
+    item.style.removeProperty('height');
+    item.style.removeProperty('padding-top');
+    item.style.removeProperty('padding-bottom');
+    item.style.removeProperty('margin-top');
+    item.style.removeProperty('margin-bottom');
+    item.style.removeProperty('overflow');
+    item.style.removeProperty('transition-duration');
+    item.style.removeProperty('transition-property');
+  }, 500);
+}
+
+function slideToggle(item) {
+  if (!item)
+    return;
+
+  item.style.removeProperty('display');
+  let display = window.getComputedStyle(item).display;
+  if (display === 'none') display = 'block';
+  item.style.display = display;
+  let height = item.offsetHeight;
+  item.style.overflow = 'hidden';
+  item.style.height = 0;
+  item.style.paddingTop = 0;
+  item.style.paddingBottom = 0;
+  item.style.marginTop = 0;
+  item.style.marginBottom = 0;
+  item.offsetHeight; // Do not remove, the transition is not correctly executed otherwise
+  item.style.boxSizing = 'border-box';
+  item.style.transitionProperty = 'height, margin, padding';
+  item.style.transitionDuration = 500 + 'ms';
+  item.style.height = height + 'px';
+  item.style.removeProperty('padding-top');
+  item.style.removeProperty('padding-bottom');
+  item.style.removeProperty('margin-top');
+  item.style.removeProperty('margin-bottom');
+  window.setTimeout(() => {
+    item.style.removeProperty('height');
+    item.style.removeProperty('overflow');
+    item.style.removeProperty('transition-duration');
+    item.style.removeProperty('transition-property');
+  }, 500);
+}
+
+function getMDFile() {
+  const target = computeTargetPath() + localSetup.page + '.md';
+  console.log('Get MD file: ' + target);
+  fetch(target)
+    .then(response => response.text())
+    .then(content => populateViewDiv(content))
+    .catch(error => {
+      console.error('Error: ' + error);
+      const mainPage = 'index';
+      // get the main page instead
+      if (localSetup.page !== mainPage) {
+        localSetup.page = mainPage;
+        getMDFile();
+      }
+    });
+}
+
+function getMenuFile() {
+  const target = computeTargetPath() + 'menu.md';
+  console.log('Get menu file: ' + target);
+  fetch(target)
+    .then(response => response.text())
+    .then(content => receiveMenuContent(content))
+    .catch(error => console.error('Error: ' + error));
+}
+
+function extractAnchor(url) {
+  const match = /#([\w-]+)/.exec(url);
+  if (match && match.length === 2)
+    return match[1];
+  return '';
+}
+
+// width: in pixels
+function setHandleWidth(width) {
+  handle.left.style.width = width + 'px';
+  handle.menu.style.width = width + 'px';
+  handle.handle.style.left = width + 'px';
+  handle.center.style.left = width + 'px';
+  handle.center.style.width = 'calc(100% - ' + width + 'px)';
+}
+
+function initializeHandle() {
+  // inspired from: http://stackoverflow.com/questions/17855401/how-do-i-make-a-div-width-draggable
+  handle = {}; // structure where all the handle info is stored
+
+  handle.left = document.getElementById('left');
+  handle.menu = document.getElementById('menu');
+  handle.center = document.getElementById('center');
+  handle.handle = document.getElementById('handle');
+  handle.container = document.getElementById('webots-doc');
+
+  // dimension bounds of the handle in pixels
+  handle.min = 0;
+  handle.minThreshold = 90; // under this threshold, the handle is totally hidden
+  handle.initialWidth = Math.max(handle.minThreshold, parseFloat(getComputedStyle(handle.left, null).width.replace('px', '')));
+  handle.max = Math.max(250, handle.initialWidth);
+
+  handle.isResizing = false;
+  handle.lastDownX = 0;
+
+  if (isCyberboticsUrl) {
+    handle.left.classList.add('cyberbotics');
+    handle.handle.classList.add('cyberbotics');
+    handle.center.classList.add('cyberbotics');
+  } else {
+    handle.left.classList.add('default');
+    handle.handle.classList.add('default');
+    handle.center.classList.add('default');
+  }
+
+  setHandleWidth(handle.initialWidth);
+
+  handle.handle.onmousedown = _ => onSelectHandle(_);
+  handle.handle.ontouchstart = _ => onSelectHandle(_);
+  handle.handle.ondblclick = () => toggleHandle();
+
+  document.onmousemove = _ => resizeHandle(_);
+  document.ontouchmove = _ => resizeHandle(_);
+  document.onmouseup = () => releaseHandle();
+  document.ontouchend = () => releaseHandle();
+}
+
+function onSelectHandle(e) {
+  if (e.type === 'touchstart')
+    e = e.originalEvent.touches[0];
+  handle.isResizing = true;
+  handle.lastDownX = e.clientX;
+  handle.container.style.userSelect = 'none';
+}
+
+function toggleHandle() {
+  if (handle.left.style.width.startsWith('0'))
+    setHandleWidth(handle.initialWidth);
+  else
+    setHandleWidth(0);
+}
+
+function resizeHandle(e) {
+  if (e.type === 'touchmove')
+    e = e.originalEvent.touches[0];
+  if (!handle.isResizing)
+    return;
+  const mousePosition = e.clientX - (handle.container.getBoundingClientRect().left + document.body.scrollLeft); // in pixels
+  if (mousePosition < handle.minThreshold / 2) {
+    setHandleWidth(0);
+    return;
+  } else if (mousePosition < handle.minThreshold)
+    return;
+  if (mousePosition < handle.min || mousePosition > handle.max)
+    return;
+  setHandleWidth(mousePosition);
+}
+
+function releaseHandle() {
+  handle.isResizing = false;
+  handle.container.style.userSelect = 'auto';
+}
+
+window.onscroll = function() {
+  if (!isCyberboticsUrl)
+    return;
+  updateMenuScrollbar();
+};
+
+window.mermaidAPI.initialize({ startOnLoad: false });
+initializeHandle();
+
+if (!isCyberboticsUrl) {
+  if (!localSetup.url)
+    localSetup.url = getGETQueryValue('url', 'https://raw.githubusercontent.com/omnilink-tech/omnisim/');
+  if (!localSetup.book)
+    localSetup.book = getGETQueryValue('book', 'guide');
+  if (!localSetup.page)
+    localSetup.page = getGETQueryValue('page', 'index');
+  if (!localSetup.anchor)
+    localSetup.anchor = window.location.hash.substring(1);
+  if (!localSetup.branch)
+    localSetup.branch = getGETQueryValue('branch', 'released');
+  if (!localSetup.tabs)
+    localSetup.tabs = getGETQueriesMatchingRegularExpression('^tab-\\w+$', 'g');
+  // backward compatibility <= R2019b revision 1
+  if (!localSetup.tabs['tab-language']) {
+    if (localSetup.tab) {
+      localSetup.tabs['tab-language'] = localSetup.tab;
+      delete localSetup.tab;
+    } else
+      localSetup.tabs['tab-language'] = getGETQueryValue('tab', '').toLowerCase();
+  }
+}
+
+// prevent FOUC for blog
+if (localSetup.book === 'blog') {
+  let center = document.querySelector('#center');
+  center.setAttribute('class', 'blog');
+  setHandleWidth(0);
+}
+
+addContributionBanner();
+setupModalWindow('#webots-doc');
+applyToTitleDiv();
+getMDFile();
+getMenuFile();

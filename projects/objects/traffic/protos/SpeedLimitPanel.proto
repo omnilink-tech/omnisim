@@ -1,0 +1,181 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/traffic/protos/SpeedLimitPanel.proto
+# keywords: traffic/sign
+# A sign plate with cut corners, standing on a shallow rolled edge, with a bracket to clamp it to a pole.
+# The plate is built from primitives and carries NO artwork of its own: give `signImage` an image of
+# your own and it is mapped across the face; leave it alone and the face is finished as a blank plate
+# inside a raised border.
+# template language: javascript
+
+PROTO SpeedLimitPanel [
+  field SFVec3f     translation        0 0 0
+  field SFRotation  rotation           0 0 1 0
+  field SFString    name               "speed limit panel"
+  field MFString    signImage          "textures/signs/us/speed_limit_45.jpg"  # Defines the texture used for the sign.
+  field SFColor     color              0.8 0.8 0.8                             # Defines the color of the panel.
+  field MFColor     recognitionColors  [ 1 1 1, 0.8 0.8 0.8 ]                  # Is `Solid.recognitionColors`.
+]
+{
+  %<
+    // =====================================================================
+    // THE PLATE
+    //
+    // The panel stands in the y-z plane and looks along +x; the pole is behind
+    // it. Its envelope is the one it has always had -- about 0.50 m across,
+    // 0.63 m tall, 0.06 m deep -- because that is what SignPole, and every
+    // world that mounts one, is dimensioned around.
+    //
+    // The face is DRAWN, not photographed. The default `signImage` names a
+    // regulatory sign face; none is shipped here, so leaving the field alone
+    // gets a blank plate inside a raised border, and a caller who brings their
+    // own face gets it mapped edge to edge.
+    // =====================================================================
+    const w = 0.50;             // y
+    const h = 0.63;             // z
+    const depth = 0.06;         // x -- the shell the plate stands on
+    const bezel = 0.035;        // how far the face stands in from the edge
+    const cut = 0.045;          // the corner cut
+
+    const custom = fields.signImage.value.length > 0 &&
+                   fields.signImage.value[0] !== fields.signImage.defaultValue[0] &&
+                   fields.signImage.value[0] !== '';
+
+    // The outline: a rectangle with its four corners cut off. Eight vertices
+    // carry a sign at this size just as well as forty would.
+    const hy = 0.5 * w;
+    const hz = 0.5 * h;
+    const outline = [
+      [-hy + cut, -hz], [hy - cut, -hz], [hy, -hz + cut], [hy, hz - cut],
+      [hy - cut, hz], [-hy + cut, hz], [-hy, hz - cut], [-hy, -hz + cut]
+    ];
+    const n = outline.length;
+    const faceX = 0.5 * depth;
+    const faceW = w - 2 * bezel;
+    const faceH = h - 2 * bezel;
+    const barW = 0.02;          // the border bars, when the face is blank
+
+    function r6(v) {
+      return Math.round(v * 1e6) / 1e6;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    recognitionColors IS recognitionColors
+    children [
+      # --- the shell: the outline, extruded through the depth of the panel ----
+      DEF PANEL_BODY Shape {
+        appearance PBRAppearance {
+          baseColor IS color
+          roughness 0.6
+          metalness 0.2
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+            %< for (let s = -1; s <= 1; s += 2) { >%
+            %<   for (let i = 0; i < n; ++i) { >%
+              %<= r6(s * 0.5 * depth) >% %<= r6(outline[i][0]) >% %<= r6(outline[i][1]) >%
+            %<   } >%
+            %< } >%
+            ]
+          }
+          coordIndex [
+            # the back of the panel, seen from -x
+            %< for (let i = 1; i < n - 1; ++i) { >%
+            0 %<= i + 1 >% %<= i >% -1
+            %< } >%
+            # the front of the panel, seen from +x
+            %< for (let i = 1; i < n - 1; ++i) { >%
+            %<= n >% %<= n + i >% %<= n + i + 1 >% -1
+            %< } >%
+            # and the edge running round between them
+            %< for (let i = 0; i < n; ++i) {
+                 const j = (i + 1) % n; >%
+            %<= i >% %<= j >% %<= n + j >% %<= n + i >% -1
+            %< } >%
+          ]
+          creaseAngle 0.8
+        }
+      }
+      # --- the face, laid a hair proud of the front of the shell --------------
+      DEF PANEL_FACE Pose {
+        translation %<= r6(faceX + 0.002) >% 0 0
+        rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931953
+        children [
+          Shape {
+            appearance PBRAppearance {
+            %< if (custom) { >%
+              baseColorMap ImageTexture {
+                url IS signImage
+              }
+            %< } else { >%
+              baseColor 0.93 0.93 0.91
+            %< } >%
+              roughness 0.6
+              metalness 0
+            }
+            geometry Plane {
+              size %<= r6(faceW) >% %<= r6(faceH) >%
+            }
+          }
+        ]
+      }
+    %< if (!custom) { >%
+      # --- the border. Four bars standing on the blank face, which is what
+      #     turns a white rectangle back into something that reads as a sign.
+      %< for (let s = -1; s <= 1; s += 2) { >%
+      Pose {
+        translation %<= r6(faceX + 0.005) >% 0 %<= r6(s * 0.5 * (faceH - barW)) >%
+        children [
+          DEF PANEL_BORDER_H Shape {
+            appearance DEF PANEL_BORDER_COLOR PBRAppearance {
+              baseColor 0.72 0.06 0.08
+              roughness 0.55
+              metalness 0
+            }
+            geometry Box {
+              size 0.006 %<= r6(faceW) >% %<= r6(barW) >%
+            }
+          }
+        ]
+      }
+      Pose {
+        translation %<= r6(faceX + 0.005) >% %<= r6(s * 0.5 * (faceW - barW)) >% 0
+        children [
+          DEF PANEL_BORDER_V Shape {
+            appearance USE PANEL_BORDER_COLOR
+            geometry Box {
+              size 0.006 %<= r6(barW) >% %<= r6(faceH - 2 * barW) >%
+            }
+          }
+        ]
+      }
+      %< } >%
+    %< } >%
+      # --- the bracket that clamps the panel to a pole ------------------------
+      DEF PANEL_BRACKET Pose {
+        translation %<= r6(-0.5 * depth - 0.015) >% 0 0
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.35 0.36 0.38
+              roughness 0.5
+              metalness 0.7
+            }
+            geometry Box {
+              size 0.03 0.06 0.16
+            }
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "speed limit panel"
+    boundingObject Box {
+      size %<= r6(depth) >% %<= r6(w) >% %<= r6(h) >%
+    }
+  }
+}

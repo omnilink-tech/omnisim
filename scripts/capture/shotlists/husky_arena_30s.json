@@ -1,0 +1,31 @@
+{
+  "world": "projects/samples/demos/worlds/showcase/husky_fleet_arena.wbt",
+  "resolution": [1920, 1080],
+  "fov": 0.785398,
+  "load_wait_s": 30.0,
+  "shots": [
+    {
+      "name": "orbit_30s",
+      "output": "husky_arena_30s.mp4",
+      "duration_s": 30.0,
+      "fps": 30,
+      "codec": "h264",
+      "crf": 16,
+      "preset": "slow",
+      "ease": "linear",
+      "warmup_steps": 120,
+      "playback_speed": 1.0,
+      "path_keyframes": [
+        {"t": 0.0,  "position": [17, 0, 7],    "target": [0, 0, 0.5]},
+        {"t": 3.75, "position": [12, 12, 7],   "target": [0, 0, 0.5]},
+        {"t": 7.5,  "position": [0, 17, 7],    "target": [0, 0, 0.5]},
+        {"t": 11.25,"position": [-12, 12, 7],  "target": [0, 0, 0.5]},
+        {"t": 15.0, "position": [-17, 0, 7],   "target": [0, 0, 0.5]},
+        {"t": 18.75,"position": [-12, -12, 7], "target": [0, 0, 0.5]},
+        {"t": 22.5, "position": [0, -17, 7],   "target": [0, 0, 0.5]},
+        {"t": 26.25,"position": [12, -12, 7],  "target": [0, 0, 0.5]},
+        {"t": 30.0, "position": [17, 0, 7],    "target": [0, 0, 0.5]}
+      ]
+    }
+  ]
+}

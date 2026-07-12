@@ -1,0 +1,197 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/buildings/protos/Hotel.proto
+# keywords: building/hotel
+# template language: javascript
+# A twelve-storey hotel: glazed lobby with a porte-cochere on the +y side, a punched-window
+# grid with continuous balcony slabs on the long facades, a cornice, a parapet and a roof sign.
+# Windows and balconies are geometry, not a facade texture. The base sits at z = 0.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+
+PROTO Hotel [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "hotel"
+]
+{
+  %<
+    const width = 22.0;      // along x
+    const depth = 16.0;      // along y
+    const lobbyHeight = 5.0;
+    const floors = 12;
+    const floorHeight = 3.0;
+    const height = lobbyHeight + floors * floorHeight;   // 41 m
+    const hx = width / 2.0;
+    const hy = depth / 2.0;
+
+    let paneDefined = false;
+    function pane(x, y, z, yaw) {
+      let s = '      Pose { translation ' + x.toFixed(3) + ' ' + y.toFixed(3) + ' ' + z.toFixed(3);
+      s += ' rotation 0 0 1 ' + yaw.toFixed(4) + ' children [ ';
+      if (paneDefined)
+        s += 'USE WINDOW_PANE';
+      else {
+        s += 'DEF WINDOW_PANE Shape { appearance USE GLASS_APP geometry Box { size 2.2 0.14 1.7 } }';
+        paneDefined = true;
+      }
+      return s + ' ] }\n';
+    }
+
+    function row(count, from, to, fixed, z, yaw, alongX) {
+      let s = '';
+      const step = (to - from) / (count - 1);
+      for (let i = 0; i < count; ++i) {
+        const p = from + i * step;
+        s += alongX ? pane(p, fixed, z, yaw) : pane(fixed, p, z, yaw);
+      }
+      return s;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "hotel"
+    children [
+      # ---- glazed lobby -----------------------------------------------------
+      Pose {
+        translation 0 0 %<= lobbyHeight / 2.0 >%
+        children [
+          Shape {
+            appearance DEF GLASS_APP PBRAppearance {
+              baseColor 0.13 0.18 0.22
+              roughness 0.14
+              metalness 0.85
+            }
+            geometry Box { size %<= width - 1.0 >% %<= depth - 1.0 >% %<= lobbyHeight >% }
+          }
+        ]
+      }
+      # ---- guest-room tower -------------------------------------------------
+      Pose {
+        translation 0 0 %<= lobbyHeight + (height - lobbyHeight) / 2.0 >%
+        children [
+          Shape {
+            appearance DEF WALL_APP Roughcast {
+              colorOverride 0.88 0.86 0.80
+              textureTransform TextureTransform { scale 10 14 }
+            }
+            geometry Box { size %<= width >% %<= depth >% %<= height - lobbyHeight >% }
+          }
+        ]
+      }
+
+      # ---- windows + balcony slabs -----------------------------------------
+      %< for (let f = 0; f < floors; ++f) {
+           const z = lobbyHeight + (f + 0.5) * floorHeight; >%
+      %<= row(6, -hx + 2.6, hx - 2.6, hy + 0.07, z, 0, true) >%
+      %<= row(6, -hx + 2.6, hx - 2.6, -hy - 0.07, z, 0, true) >%
+      %<= row(4, -hy + 2.6, hy - 2.6, hx + 0.07, z, 1.5708, false) >%
+      %<= row(4, -hy + 2.6, hy - 2.6, -hx - 0.07, z, 1.5708, false) >%
+      # continuous balcony slab + railing on the two long facades
+      Pose {
+        translation 0 %<= hy + 0.6 >% %<= lobbyHeight + f * floorHeight + 0.1 >%
+        children [
+          %< if (f === 0) { >%
+          DEF BALCONY_SLAB Shape {
+            appearance DEF TRIM_APP PBRAppearance {
+              baseColor 0.72 0.72 0.70
+              roughness 0.55
+              metalness 0.3
+            }
+            geometry Box { size %<= width - 1.5 >% 1.4 0.2 }
+          }
+          %< } else { >%
+          USE BALCONY_SLAB
+          %< } >%
+        ]
+      }
+      Pose { translation 0 %<= -hy - 0.6 >% %<= lobbyHeight + f * floorHeight + 0.1 >% children [ USE BALCONY_SLAB ] }
+      Pose {
+        translation 0 %<= hy + 1.25 >% %<= lobbyHeight + f * floorHeight + 0.65 >%
+        children [
+          %< if (f === 0) { >%
+          DEF BALCONY_RAIL Shape {
+            appearance USE GLASS_APP
+            geometry Box { size %<= width - 1.5 >% 0.08 1.0 }
+          }
+          %< } else { >%
+          USE BALCONY_RAIL
+          %< } >%
+        ]
+      }
+      Pose { translation 0 %<= -hy - 1.25 >% %<= lobbyHeight + f * floorHeight + 0.65 >% children [ USE BALCONY_RAIL ] }
+      %< } >%
+
+      # ---- porte-cochere on the +y side -------------------------------------
+      Pose {
+        translation 0 %<= hy + 3.0 >% 4.4
+        children [
+          Shape {
+            appearance USE TRIM_APP
+            geometry Box { size 12 6.5 0.4 }
+          }
+        ]
+      }
+      %< for (let k = 0; k < 2; ++k) {
+           const px = k === 0 ? -5.2 : 5.2; >%
+      Pose {
+        translation %<= px >% %<= hy + 5.6 >% 2.1
+        children [
+          %< if (k === 0) { >%
+          DEF CANOPY_COLUMN Shape {
+            appearance USE TRIM_APP
+            geometry Cylinder { radius 0.22 height 4.2 subdivision 10 }
+          }
+          %< } else { >%
+          USE CANOPY_COLUMN
+          %< } >%
+        ]
+      }
+      %< } >%
+
+      # ---- cornice, parapet and roof sign -----------------------------------
+      Pose {
+        translation 0 0 %<= lobbyHeight + 0.25 >%
+        children [
+          Shape {
+            appearance USE TRIM_APP
+            geometry Box { size %<= width + 0.8 >% %<= depth + 0.8 >% 0.5 }
+          }
+        ]
+      }
+      Pose {
+        translation 0 0 %<= height + 0.4 >%
+        children [
+          Shape {
+            appearance USE TRIM_APP
+            geometry Box { size %<= width + 0.8 >% %<= depth + 0.8 >% 0.8 }
+          }
+        ]
+      }
+      Pose {
+        translation 0 %<= hy - 1.5 >% %<= height + 2.8 >%
+        children [
+          Shape {
+            appearance DEF SIGN_APP PBRAppearance {
+              baseColor 0.75 0.15 0.12
+              roughness 0.45
+              metalness 0.1
+              emissiveColor 0.25 0.03 0.02
+            }
+            geometry Box { size 12 0.4 3.2 }
+          }
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation 0 0 %<= height / 2.0 >%
+      children [
+        Box { size %<= width >% %<= depth >% %<= height >% }
+      ]
+    }
+    locked TRUE
+  }
+}

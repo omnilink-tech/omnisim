@@ -1,0 +1,59 @@
+#VRML_SIM R2025a utf8
+
+# R3.4-step-4 smoke world: a single colored Box facing the wgpu
+# Camera. The scene walk in WbCamera should produce ≥1 draw call
+# and the readback should show that the box's PBRAppearance
+# baseColor (pure-cyan = (0, 1, 1)) covers the screen center
+# (because the box is positioned directly in front of the camera
+# and dominates the frame).
+#
+# Companion to docs/developer/engine-migration-plan.md §14.3
+# R3.4-step-4.
+
+WorldInfo {
+  info [
+    "R3.4-step-4 smoke — wgpu scene-walk renders a colored box"
+  ]
+  title "R3.4-step-4 wgpu scene smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+# Robot at origin; its Camera looks along +X by default. The cyan
+# box is a child Solid of the Robot at (+1, 0, 0) so it dominates
+# the screen center.
+Robot {
+  translation 0 0 0
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 64
+      height 48
+      fieldOfView 0.8
+      near 0.05
+      far 10.0
+      renderBackend "wgpu"
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "camera_wgpu_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

@@ -1,0 +1,17 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/manual_tests/protos/SolidSlot.proto"
+
+PROTO NestedProtoMissingEndingCurlyBracket [
+]
+{
+  SolidSlot {
+    slot [
+      Shape {
+        geometry DEF BOX Box {
+          size 0.1 0.1 0.1
+        }
+      }
+    ]
+  }
+# error here: ending bracket is missing

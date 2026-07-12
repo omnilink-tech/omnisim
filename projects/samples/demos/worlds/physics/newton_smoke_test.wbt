@@ -1,0 +1,168 @@
+#VRML_SIM R2025a utf8
+
+# Newton physics-backend smoke test -- P2 of cuda-newton-physics-plan.md.
+#
+# A single Solid (the dropped sphere) declares `physicsBackend "newton"`,
+# which routes through WbPhysicsBackendRegistry::resolve(Newton). On any
+# build/host where the Newton runtime is unavailable -- OMNISIM_WITH_NEWTON=OFF,
+# missing warp/newton-physics wheels, no NVIDIA GPU -- the registry silently
+# falls back to WbOdeBackend and the sphere drops on ODE. The world still
+# loads; the sphere still falls; the demo still runs. That fall-through IS
+# the test: the load-bearing safety net of the plan's compatibility contract.
+#
+# When the runtime IS available (P2+ on a CUDA box with the wheels installed),
+# the dispatcher will route this Solid's per-step physics to the Newton
+# backend instead. P2 ships only the routing + fall-back; the actual GPU
+# integration lives in P3+.
+#
+# The floor and walls deliberately omit `physicsBackend`, so they stay on
+# ODE -- exercising the per-Solid (not per-world) opt-in design. The
+# cross-backend bridge between the Newton sphere and the ODE floor is
+# the load-bearing contact path that P3+ extends; for this smoke test
+# the fall-back layer hides the bridge entirely.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Newton Backend Smoke Test"
+  info [
+    "P2 of cuda-newton-physics-plan.md. A single sphere with"
+    "physicsBackend \"newton\" falls under gravity. On boxes without"
+    "the Newton runtime, the dispatcher silently falls back to ODE"
+    "and the sphere drops normally -- the runtime fall-back IS the"
+    "behaviour under test."
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 -3 2.5
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# Floor stays on ODE (no physicsBackend field; defaults to "ode"). This
+# exercises the per-Solid opt-in: only the dropped sphere is routed to
+# Newton; the floor is owned by ODE for contact resolution. P3+'s cross-
+# backend bridge is what makes this work properly when Newton is live;
+# until then, the Newton-side body falls back to ODE and we get a
+# pure-ODE simulation that's indistinguishable from any other RectangleArena
+# + sphere world.
+RectangleArena {
+  floorSize 6 6
+  wallHeight 0.2
+  floorAppearance Asphalt {
+    colorOverride 0.40 0.42 0.45
+  }
+}
+
+# P3.7 + P3.8.b: a 2-body chain on Newton -- chassis Robot + wheel,
+# connected via a revolute hinge driven by a RotationalMotor. The
+# controller (newton_motor_test) commands a constant 5 rad/s velocity
+# target; with the Newton runtime bringing up SolverXPBD's joint
+# actuator, the wheel should visibly rotate in body_q's quaternion
+# component while the assembly falls and lands.
+DEF newton_assembly Robot {
+  translation 0 0 1.5
+  name "newton_assembly"
+  controller "newton_motor_test"
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.65 0.95
+        roughness 0.55
+        metalness 0.10
+      }
+      geometry Box {
+        size 0.40 0.20 0.10
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.20 0 0
+      }
+      device [
+        RotationalMotor {
+          name "wheel_motor"
+          maxVelocity 100
+          maxTorque 50
+        }
+      ]
+      endPoint DEF newton_wheel Solid {
+        translation 0.20 0 0
+        name "newton_wheel"
+        # P3.10: physicsBackend deliberately omitted -- the wheel
+        # should inherit "newton" from the outer newton_assembly Robot
+        # via WbSolid::effectivePhysicsBackendName(). This is the
+        # mechanism that lets a single field on a URDFRobot wrapper
+        # opt the entire articulated tree into Newton without having
+        # to set physicsBackend on each generated Solid.
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.95 0.65 0.30
+              roughness 0.55
+              metalness 0.10
+            }
+            geometry Sphere {
+              radius 0.08
+              subdivision 2
+            }
+          }
+        ]
+        boundingObject Sphere {
+          radius 0.08
+        }
+        physics Physics {
+          density -1
+          mass 0.10
+        }
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.40 0.20 0.10
+  }
+  physics Physics {
+    density -1
+    mass 0.50
+  }
+}
+
+# The single-body fall regression. physicsBackend "newton" is the opt-in.
+# Positioned 1.5 m off to the side from the chassis-wheel assembly so its
+# sphere collision shape doesn't overlap the chassis box at world-load --
+# Newton's contact solver kicks overlapping bodies apart with very large
+# forces that look like an "explosion". Keep at -1.5 in y to be clear.
+DEF newton_sphere Solid {
+  translation 0 -1.5 1.5
+  name "newton_sphere"
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.85 0.30
+        roughness 0.55
+        metalness 0.10
+      }
+      geometry Sphere {
+        radius 0.12
+        subdivision 2
+      }
+    }
+  ]
+  boundingObject Sphere {
+    radius 0.12
+  }
+  physics Physics {
+    density -1
+    mass 0.25
+  }
+}

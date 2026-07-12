@@ -1,0 +1,159 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/factory/containers/protos/PlasticCrate.proto
+# keywords: industrial/container
+# A stackable plastic crate: a solid floor and four latticed walls (a rail top and bottom with ribs between), sitting on its base at z = 0.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/MattePaint.proto"
+
+PROTO PlasticCrate [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "plastic crate"
+  field SFVec3f    size        0.6 0.6 0.6
+  field SFColor    color       0.9 0.2 0.2
+  field SFFloat    mass        0
+]
+{
+  %<
+    let size = fields.size.value;
+    if (size.x <= 0 || size.y <= 0 || size.z <= 0) {
+      size = fields.size.defaultValue;
+      console.error('\'size\' must be strictly positive on every axis. Value reset to (' + size.x + ', ' + size.y + ', ' + size.z + ').');
+    }
+
+    // Wall stock, as a fraction of the crate. Keeping it proportional means a
+    // small crate stays a crate instead of turning into a thick-walled tub.
+    const STOCK = 0.035;
+    const t = {x: STOCK * size.x, y: STOCK * size.y, z: STOCK * size.z};
+
+    // The crate rests on its base: z = 0 is the underside of the floor, the
+    // floor is `t.z` thick, and the walls run from there up to `size.z`.
+    const wallBase = t.z;
+    const wallHeight = size.z - t.z;
+    const RIBS = 5;
+
+    // Vertical breakdown of a wall: a bottom rail, a top rail (the stacking rim,
+    // so it is beefier), and the ribbed open section between them.
+    const bottomRail = 0.18 * wallHeight;
+    const topRail = 0.16 * wallHeight;
+    const ribSpan = wallHeight - bottomRail - topRail;
+    const RIM_FACTOR = 1.6;
+
+    // Build the four walls. The two walls normal to X run the full depth of the
+    // crate (so they own the corners); the two normal to Y are cut back between
+    // them. This is exactly how the collision shell below is split, so drawn and
+    // collided geometry agree.
+    const walls = [];
+    const addWall = function(normal, sign) {
+      const span = normal === 'x' ? 'y' : 'x';
+      const length = normal === 'x' ? size.y : size.x - 2 * t.x;
+      const centre = sign * 0.5 * (size[normal] - t[normal]);
+
+      const parts = [];
+      const slab = function(thickness, along, height, z, offset) {
+        const s = {x: 0, y: 0, z: height};
+        s[normal] = thickness;
+        s[span] = along;
+        const p = {x: 0, y: 0, z: z};
+        p[normal] = centre;
+        p[span] = offset;
+        return {size: s, pos: p};
+      };
+
+      parts.push(slab(t[normal], length, bottomRail, wallBase + 0.5 * bottomRail, 0));
+      parts.push(slab(RIM_FACTOR * t[normal], length, topRail, size.z - 0.5 * topRail, 0));
+
+      // Ribs: half stock, half air.
+      const pitch = length / RIBS;
+      const ribWidth = 0.5 * pitch;
+      for (let i = 0; i < RIBS; ++i)
+        parts.push(slab(t[normal], ribWidth, ribSpan, wallBase + bottomRail + 0.5 * ribSpan, -0.5 * length + (i + 0.5) * pitch));
+
+      for (let i = 0; i < parts.length; ++i)
+        walls.push(parts[i]);
+    };
+    addWall('x',  1);
+    addWall('x', -1);
+    addWall('y',  1);
+    addWall('y', -1);
+
+    // The collision shell: a solid floor and four solid walls. The crate is
+    // hollow so it can actually be loaded, and the lattice is not collided
+    // rib-by-rib (that would be a needlessly expensive way to say "wall").
+    const shell = [
+      {size: {x: size.x, y: size.y, z: t.z},
+       pos:  {x: 0, y: 0, z: 0.5 * t.z}},
+      {size: {x: size.x - 2 * t.x, y: t.y, z: wallHeight},
+       pos:  {x: 0, y: 0.5 * (size.y - t.y), z: wallBase + 0.5 * wallHeight}},
+      {size: {x: size.x - 2 * t.x, y: t.y, z: wallHeight},
+       pos:  {x: 0, y: -0.5 * (size.y - t.y), z: wallBase + 0.5 * wallHeight}},
+      {size: {x: t.x, y: size.y, z: wallHeight},
+       pos:  {x: 0.5 * (size.x - t.x), y: 0, z: wallBase + 0.5 * wallHeight}},
+      {size: {x: t.x, y: size.y, z: wallHeight},
+       pos:  {x: -0.5 * (size.x - t.x), y: 0, z: wallBase + 0.5 * wallHeight}}
+    ];
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "plastic crate"
+    children [
+      DEF CRATE Group {
+        children [
+          Pose { # floor
+            translation 0 0 %<= 0.5 * t.z >%
+            children [
+              Shape {
+                appearance MattePaint {
+                  baseColor IS color
+                }
+                geometry Box {
+                  size %<= size.x >% %<= size.y >% %<= t.z >%
+                }
+              }
+            ]
+          }
+          %< for (let i = 0; i < walls.length; ++i) { >%
+          Pose {
+            translation %<= walls[i].pos.x >% %<= walls[i].pos.y >% %<= walls[i].pos.z >%
+            children [
+              Shape {
+                appearance MattePaint {
+                  baseColor IS color
+                }
+                geometry Box {
+                  size %<= walls[i].size.x >% %<= walls[i].size.y >% %<= walls[i].size.z >%
+                }
+              }
+            ]
+          }
+          %< } >%
+        ]
+      }
+    ]
+    boundingObject Group {
+      children [
+        %< for (let i = 0; i < shell.length; ++i) { >%
+        Pose {
+          translation %<= shell[i].pos.x >% %<= shell[i].pos.y >% %<= shell[i].pos.z >%
+          children [
+            Box {
+              size %<= shell[i].size.x >% %<= shell[i].size.y >% %<= shell[i].size.z >%
+            }
+          ]
+        }
+        %< } >%
+      ]
+    }
+    %< if (fields.mass.value > 0) { >%
+    physics Physics {
+      density -1
+      mass %<= fields.mass.value >%
+    }
+    %< } >%
+  }
+}

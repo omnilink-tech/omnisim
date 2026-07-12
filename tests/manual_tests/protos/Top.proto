@@ -1,0 +1,25 @@
+#VRML_SIM R2025a utf8
+# template language: javascript
+
+EXTERNPROTO "omnisim://tests/manual_tests/protos/Parameter.proto"
+EXTERNPROTO "omnisim://tests/manual_tests/protos/DerivedNode.proto"
+
+PROTO Top [
+  field SFNode my_parameter Parameter {}
+]
+{
+  DerivedNode {
+    extensionSlot [
+      Slot {
+        type "parameter"
+        endPoint IS my_parameter
+      }
+      %< if (fields.my_parameter.value) { >%
+        Shape {
+          geometry Box {
+          }
+        }
+      %< } >%
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+# OmniLink chat-demo bridge dependencies.
+#
+# Install once at repo setup time:
+#     pip install -r projects/samples/demos/controllers/_omnilink_relay/requirements.txt
+#
+# The bridges fail loud at startup if omnilink is missing (with a friendly
+# install instruction) and a background thread checks PyPI for newer
+# versions on first run — set OMNILINK_VERSION_CHECK=0 to silence that.
+
+# OmniLink Python client — the chat relay calls OmniLinkClient.chat().
+# Pin the floor at the version that introduced the engine= kwarg + the
+# error-shape we map onto our internal {"ok": False, "error": ...}
+# contract. 0.6.1 is also the floor used by agents/production/.
+omnilink>=0.6.1
+
+# AVG / corporate-MITM TLS fix. truststore.inject_into_ssl() hands
+# Python's ssl module the OS trust store so HTTPS to omnilink-agents.com
+# works on machines where local antivirus rewrites certificates.
+truststore>=0.9
+
+# Bridge HTTP server and the optional PyPI version-check probe.
+requests>=2.31

@@ -1,0 +1,4 @@
+# SQLite index is rebuilt on first save_local_memory call. The markdown
+# notes are the source of truth — commit those, regenerate the index.
+_index.sqlite
+*.sqlite-journal

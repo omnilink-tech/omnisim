@@ -1,0 +1,345 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/animals/protos/Deer.proto
+# keywords: animal/wild
+# A static deer, assembled from primitive shapes: a slender body on four thin legs, an arched neck, branching antlers and a pale scut (about 1.6 m long, 1.3 m at the head).
+# The `color` field modulates the coat albedo.
+# template language: javascript
+
+PROTO Deer [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFFloat    scale       1      # Defines the global scaling factor.
+  field SFString   name        "deer"
+  field SFColor    color        1 1 1  # Defines the color of the deer.
+]
+{
+  %<
+    let s = fields.scale.value;
+    if (s <= 0) {
+      s = fields.scale.defaultValue;
+      console.error("'scale' must be strictly positive, value reset to " + s + ".");
+    }
+    const co = fields.color.value;
+    // Every dimension below is expressed in metres and driven through the scale factor.
+    function d(v) { return (v * s).toFixed(5); }
+    function v3(x, y, z) { return d(x) + " " + d(y) + " " + d(z); }
+    // The coat albedo, modulated by the user colour.
+    function mix(r, g, b) {
+      return (co.r * r).toFixed(4) + " " + (co.g * g).toFixed(4) + " " + (co.b * b).toFixed(4);
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "deer"
+    children [
+      DEF DEER_BODY Group {
+        children [
+          Pose {
+            translation %<= v3(0, 0, 0.88) >%
+            children [
+              Shape {
+                appearance DEF DEER_COAT PBRAppearance {
+                  baseColor %<= mix(0.55, 0.38, 0.24) >%
+                  roughness 0.95
+                  metalness 0
+                }
+                geometry Box {
+                  size %<= v3(0.96, 0.32, 0.36) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.50, 0, 0.90) >%
+            children [
+              DEF DEER_END Shape {
+                appearance USE DEER_COAT
+                geometry Sphere {
+                  radius %<= d(0.19) >%
+                  subdivision 3
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.46, 0, 0.88) >%
+            children [
+              USE DEER_END
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.54, 0, 1.00) >%
+            children [
+              Shape {
+                appearance DEF DEER_PALE PBRAppearance {
+                  baseColor %<= mix(0.90, 0.87, 0.80) >%
+                  roughness 0.95
+                  metalness 0
+                }
+                geometry Sphere {
+                  radius %<= d(0.055) >%
+                  subdivision 2
+                }
+              }
+            ]
+          }
+        ]
+      }
+      DEF DEER_LEGS Group {
+        children [
+          Pose {
+            translation %<= v3(0.40, 0.13, 0.35) >%
+            children [
+              DEF DEER_LEG Shape {
+                appearance USE DEER_COAT
+                geometry Cylinder {
+                  height %<= d(0.70) >%
+                  radius %<= d(0.032) >%
+                  subdivision 12
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.40, -0.13, 0.35) >%
+            children [
+              USE DEER_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.42, 0.13, 0.35) >%
+            children [
+              USE DEER_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.42, -0.13, 0.35) >%
+            children [
+              USE DEER_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(0.40, 0.13, 0.03) >%
+            children [
+              DEF DEER_HOOF Shape {
+                appearance DEF DEER_DARK PBRAppearance {
+                  baseColor %<= mix(0.12, 0.09, 0.07) >%
+                  roughness 0.6
+                  metalness 0
+                }
+                geometry Cylinder {
+                  height %<= d(0.06) >%
+                  radius %<= d(0.040) >%
+                  subdivision 10
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.40, -0.13, 0.03) >%
+            children [
+              USE DEER_HOOF
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.42, 0.13, 0.03) >%
+            children [
+              USE DEER_HOOF
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.42, -0.13, 0.03) >%
+            children [
+              USE DEER_HOOF
+            ]
+          }
+        ]
+      }
+      DEF DEER_HEAD Group {
+        children [
+          Pose {
+            translation %<= v3(0.54, 0, 1.02) >%
+            rotation 0 1 0 0.45
+            children [
+              Pose {
+                children [
+                  Shape {
+                    appearance USE DEER_COAT
+                    geometry Cylinder {
+                      height %<= d(0.36) >%
+                      radius %<= d(0.075) >%
+                      subdivision 12
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.68, 0, 1.20) >%
+            rotation 0 1 0 0.6
+            children [
+              Shape {
+                appearance USE DEER_COAT
+                geometry Box {
+                  size %<= v3(0.26, 0.11, 0.13) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.80, 0, 1.12) >%
+            children [
+              Shape {
+                appearance USE DEER_DARK
+                geometry Sphere {
+                  radius %<= d(0.028) >%
+                  subdivision 2
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.66, 0.055, 1.25) >%
+            children [
+              DEF DEER_EYE Shape {
+                appearance USE DEER_DARK
+                geometry Sphere {
+                  radius %<= d(0.015) >%
+                  subdivision 2
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.66, -0.055, 1.25) >%
+            children [
+              USE DEER_EYE
+            ]
+          }
+          Pose {
+            translation %<= v3(0.61, 0.085, 1.28) >%
+            rotation 1 0 0 -0.57
+            children [
+              DEF DEER_EAR Shape {
+                appearance USE DEER_COAT
+                geometry Cone {
+                  bottomRadius %<= d(0.035) >%
+                  height %<= d(0.12) >%
+                  subdivision 10
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.61, -0.085, 1.28) >%
+            rotation 1 0 0 0.57
+            children [
+              USE DEER_EAR
+            ]
+          }
+        ]
+      }
+      DEF DEER_ANTLERS Group {
+        children [
+          Pose {
+            translation %<= v3(0.575, 0.075, 1.34) >%
+            rotation 0 1 0 -0.30
+            children [
+              Pose {
+                children [
+                  DEF DEER_BEAM Shape {
+                    appearance DEF DEER_ANTLER_MAT PBRAppearance {
+                      baseColor 0.42 0.33 0.22
+                      roughness 0.7
+                      metalness 0
+                    }
+                    geometry Cylinder {
+                      height %<= d(0.22) >%
+                      radius %<= d(0.014) >%
+                      subdivision 8
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.575, -0.075, 1.34) >%
+            rotation 0 1 0 -0.30
+            children [
+              Pose {
+                children [
+                  USE DEER_BEAM
+                ]
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.575, 0.100, 1.28) >%
+            rotation 0 1 0 0.90
+            children [
+              Pose {
+                children [
+                  DEF DEER_TINE Shape {
+                    appearance USE DEER_ANTLER_MAT
+                    geometry Cylinder {
+                      height %<= d(0.12) >%
+                      radius %<= d(0.010) >%
+                      subdivision 8
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.575, -0.100, 1.28) >%
+            rotation 0 1 0 0.90
+            children [
+              Pose {
+                children [
+                  USE DEER_TINE
+                ]
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.505, 0.075, 1.44) >%
+            rotation 0 1 0 0.55
+            children [
+              Pose {
+                children [
+                  USE DEER_TINE
+                ]
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.505, -0.075, 1.44) >%
+            rotation 0 1 0 0.55
+            children [
+              Pose {
+                children [
+                  USE DEER_TINE
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation %<= v3(0, 0, 0.88) >%
+      children [
+        Box {
+          size %<= v3(1.10, 0.36, 0.40) >%
+        }
+      ]
+    }
+  }
+}

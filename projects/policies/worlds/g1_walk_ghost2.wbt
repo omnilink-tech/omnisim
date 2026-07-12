@@ -1,0 +1,66 @@
+#VRML_SIM R2025a utf8
+
+# G1 23-DOF walk on the ORIGINAL foot (g1_23dof_omnisim.urdf, foot box 0.17x0.06),
+# NOT the enlarged "bigfoot" (0.26x0.09). Used to test whether the in-engine RL walk
+# recipe (g1_walk_recipe.py) transfers from the bigfoot to the original G1 morphology.
+# Identical to g1_walk_bigfoot.wbt except the URDF url.
+# + DEF G1_GHOST: the SAME G1 model with physics stripped (g1_23dof_ghost.urdf, staticBase),
+# driven kinematically by the historical g1_ghost controller (hologram tint + transparency),
+# phase-locked beside the real robot: the visible gap between them IS the balance work.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 ORIGINAL-foot walk (RL recipe transfer test)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5 1.8
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF G1_REAL URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "humanoid_stand_deploy"
+  physicsBackend "newton"
+}
+
+DEF G1_GHOST URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 1.1 0.78
+  name "g1_ghost"
+  supervisor TRUE
+  controller "g1_ghost"
+  staticBase TRUE
+  physicsBackend "ode"
+}

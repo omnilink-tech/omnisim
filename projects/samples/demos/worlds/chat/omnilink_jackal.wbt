@@ -1,0 +1,35 @@
+#VRML_SIM R2025a utf8
+
+# OmniLink — Clearpath Jackal
+# Small 4-wheel skid-steer. Same prompts as Husky.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — Jackal"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 2.350 -2.502 2.549
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 10 10
+  wallHeight 0.1
+}
+
+DEF JACKAL URDFRobot {
+  url "../../../../robots/clearpath/jackal_description/urdf/jackal.urdf"
+  translation 0 0 0.1
+  name "jackal"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "jackal" "--port" "8765" ]
+  window "omnilink_chat"
+}

@@ -1,0 +1,221 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/buildings/protos/BigGlassTower.proto
+# keywords: building/skyscraper
+# template language: javascript
+# An 80 m curtain-wall office tower: concrete podium, glazed shaft whose mullion grid is
+# modelled as geometry (no facade textures), a parapet crown and a roof mast.
+# The entrance side faces +y and the base of the tower sits at z = 0.
+
+PROTO BigGlassTower [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "big glass tower"
+]
+{
+  %<
+    const podiumWidth = 24.0;                  // square podium footprint
+    const podiumHeight = 6.0;
+    const towerWidth = 20.0;                   // square shaft footprint
+    const towerHeight = 74.0;                  // shaft height above the podium
+    const floors = 20;
+    const floorHeight = towerHeight / floors;  // 3.7 m storeys
+    const bays = 8;                            // mullion bays per facade
+    const bayWidth = towerWidth / bays;
+    const half = towerWidth / 2.0;
+    const shaftZ = podiumHeight + towerHeight / 2.0;
+    const top = podiumHeight + towerHeight;    // 80 m
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "big glass tower"
+    children [
+      # ---- podium ----------------------------------------------------------
+      Pose {
+        translation 0 0 %<= podiumHeight / 2.0 >%
+        children [
+          Shape {
+            appearance DEF CONCRETE_APP PBRAppearance {
+              baseColor 0.52 0.52 0.50
+              roughness 0.9
+              metalness 0
+            }
+            geometry Box { size %<= podiumWidth >% %<= podiumWidth >% %<= podiumHeight >% }
+          }
+        ]
+      }
+      # ground-floor glazed skirt, slightly proud of the podium wall
+      Pose {
+        translation 0 0 2.0
+        children [
+          Shape {
+            appearance DEF GLASS_APP PBRAppearance {
+              baseColor 0.12 0.19 0.24
+              roughness 0.12
+              metalness 0.9
+            }
+            geometry Box { size %<= podiumWidth + 0.12 >% %<= podiumWidth + 0.12 >% 3.4 }
+          }
+        ]
+      }
+      # entrance canopy on the +y side
+      Pose {
+        translation 0 %<= podiumWidth / 2.0 + 1.4 >% 4.2
+        children [
+          Shape {
+            appearance DEF TRIM_APP PBRAppearance {
+              baseColor 0.62 0.65 0.67
+              roughness 0.45
+              metalness 0.6
+            }
+            geometry Box { size 9 3.2 0.35 }
+          }
+        ]
+      }
+      Pose {
+        translation -3.6 %<= podiumWidth / 2.0 + 2.6 >% 2.0
+        children [
+          DEF CANOPY_POST Shape {
+            appearance USE TRIM_APP
+            geometry Cylinder { radius 0.12 height 4 subdivision 8 }
+          }
+        ]
+      }
+      Pose {
+        translation 3.6 %<= podiumWidth / 2.0 + 2.6 >% 2.0
+        children [ USE CANOPY_POST ]
+      }
+
+      # ---- glazed shaft ----------------------------------------------------
+      Pose {
+        translation 0 0 %<= shaftZ >%
+        children [
+          Shape {
+            appearance USE GLASS_APP
+            geometry Box { size %<= towerWidth - 0.4 >% %<= towerWidth - 0.4 >% %<= towerHeight >% }
+          }
+        ]
+      }
+
+      # ---- spandrel band at every storey ------------------------------------
+      %< for (let i = 0; i <= floors; ++i) { >%
+      Pose {
+        translation 0 0 %<= podiumHeight + i * floorHeight >%
+        children [
+          %< if (i === 0) { >%
+          DEF FLOOR_BAND Shape {
+            appearance USE TRIM_APP
+            geometry Box { size %<= towerWidth + 0.2 >% %<= towerWidth + 0.2 >% 0.45 }
+          }
+          %< } else { >%
+          USE FLOOR_BAND
+          %< } >%
+        ]
+      }
+      %< } >%
+
+      # ---- vertical mullions on the four facades ---------------------------
+      %< for (let j = 1; j < bays; ++j) {
+           const offset = -half + j * bayWidth; >%
+      Pose {
+        translation %<= offset >% %<= half >% %<= shaftZ >%
+        children [
+          %< if (j === 1) { >%
+          DEF MULLION_NS Shape {
+            appearance USE TRIM_APP
+            geometry Box { size 0.18 0.3 %<= towerHeight >% }
+          }
+          %< } else { >%
+          USE MULLION_NS
+          %< } >%
+        ]
+      }
+      Pose { translation %<= offset >% %<= -half >% %<= shaftZ >% children [ USE MULLION_NS ] }
+      Pose {
+        translation %<= half >% %<= offset >% %<= shaftZ >%
+        children [
+          %< if (j === 1) { >%
+          DEF MULLION_EW Shape {
+            appearance USE TRIM_APP
+            geometry Box { size 0.3 0.18 %<= towerHeight >% }
+          }
+          %< } else { >%
+          USE MULLION_EW
+          %< } >%
+        ]
+      }
+      Pose { translation %<= -half >% %<= offset >% %<= shaftZ >% children [ USE MULLION_EW ] }
+      %< } >%
+
+      # ---- corner columns ---------------------------------------------------
+      Pose {
+        translation %<= half >% %<= half >% %<= shaftZ >%
+        children [
+          DEF CORNER_COLUMN Shape {
+            appearance USE TRIM_APP
+            geometry Box { size 0.7 0.7 %<= towerHeight >% }
+          }
+        ]
+      }
+      Pose { translation %<= -half >% %<= half >% %<= shaftZ >% children [ USE CORNER_COLUMN ] }
+      Pose { translation %<= half >% %<= -half >% %<= shaftZ >% children [ USE CORNER_COLUMN ] }
+      Pose { translation %<= -half >% %<= -half >% %<= shaftZ >% children [ USE CORNER_COLUMN ] }
+
+      # ---- parapet crown, roof plant and mast -------------------------------
+      Pose {
+        translation 0 %<= half + 0.2 >% %<= top + 0.8 >%
+        children [
+          DEF PARAPET_NS Shape {
+            appearance USE TRIM_APP
+            geometry Box { size %<= towerWidth + 0.8 >% 0.4 1.6 }
+          }
+        ]
+      }
+      Pose { translation 0 %<= -half - 0.2 >% %<= top + 0.8 >% children [ USE PARAPET_NS ] }
+      Pose {
+        translation %<= half + 0.2 >% 0 %<= top + 0.8 >%
+        children [
+          DEF PARAPET_EW Shape {
+            appearance USE TRIM_APP
+            geometry Box { size 0.4 %<= towerWidth + 0.8 >% 1.6 }
+          }
+        ]
+      }
+      Pose { translation %<= -half - 0.2 >% 0 %<= top + 0.8 >% children [ USE PARAPET_EW ] }
+      Pose {
+        translation 0 0 %<= top + 1.2 >%
+        children [
+          Shape {
+            appearance USE CONCRETE_APP
+            geometry Box { size 7 5 2.4 }
+          }
+        ]
+      }
+      Pose {
+        translation 0 0 %<= top + 6.4 >%
+        children [
+          Shape {
+            appearance USE TRIM_APP
+            geometry Cylinder { radius 0.16 height 8 subdivision 8 }
+          }
+        ]
+      }
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 %<= podiumHeight / 2.0 >%
+          children [ Box { size %<= podiumWidth >% %<= podiumWidth >% %<= podiumHeight >% } ]
+        }
+        Pose {
+          translation 0 0 %<= shaftZ >%
+          children [ Box { size %<= towerWidth >% %<= towerWidth >% %<= towerHeight >% } ]
+        }
+      ]
+    }
+    locked TRUE
+  }
+}

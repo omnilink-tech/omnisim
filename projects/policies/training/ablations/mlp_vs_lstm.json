@@ -1,0 +1,23 @@
+{
+  "_comment": "The controlled ablation that proved MEMORY is the durability lever (2026-07-01). One variable changes: POLICY_ARCH mlp vs lstm, identical recipe. Scored by deploy_eval@lat6. Result: LSTM asymptote 1.001 (surv=1.0/fall=0.0, reproduced clean @horizon1500 @lat6&lat8) vs MLP 0.336. Run: python ablation.py run ablations/mlp_vs_lstm.json",
+  "iters_budget": 2000,
+  "wall_budget_s": 1000,
+  "target": 0.85,
+  "eval_every": 100,
+  "baseline": {
+    "OMNISIM_NEWTON_SUBSTEPS": "4",
+    "PPO_NENV": "2048", "PPO_NSTEPS": "32", "PPO_EPOCHS": "4", "PPO_MINIB": "8",
+    "PPO_LR": "1.5e-4", "PPO_GRAPH": "1", "PPO_ENT": "0.006",
+    "PPO_LOGSTD_MAX": "-0.3", "PPO_LOGSTD_MIN": "-1.5", "PPO_HID": "128", "CKPT_EVERY": "500",
+    "AMP_MOTION": "squat", "AMP_AMP": "0.22", "AMP_FREQ": "0.8", "FREE_ACT_SCALE": "0.4",
+    "AMP_LAT_MAX": "8", "AMP_CTRL_LAT": "6", "EVAL_H": "700", "EVAL_IC": "0.02",
+    "W_STYLE": "3.0", "W_ALIVE": "0.5", "W_UP": "5", "W_ARATE": "1.5", "FALL_PEN": "8",
+    "W_HEIGHT": "12", "Z_TGT": "0.60", "RES_ACT_PEN": "0.02",
+    "DISC_HID": "256", "DISC_LR": "5e-5", "DISC_GP": "2.0", "DISC_EPOCHS": "1",
+    "OBS_NOISE": "0.015", "IC_RAND_JOINT": "0.03", "IC_RAND_VEL": "0.06"
+  },
+  "variations": [
+    {"tag": "mlp",  "override": {"POLICY_ARCH": "mlp"}},
+    {"tag": "lstm", "override": {"POLICY_ARCH": "lstm"}}
+  ]
+}

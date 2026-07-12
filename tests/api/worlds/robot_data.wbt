@@ -1,0 +1,40 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation 0.9201516338443356 0.3902998446880996 0.03141658749840674 5.65888
+  position -0.325516 0.729488 1.13904
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+PointLight {
+  ambientIntensity 1
+  intensity 0
+}
+Robot {
+  children [
+    TestSuiteEmitter {
+    }
+  ]
+  controller "robot_data_supervisor"
+  supervisor TRUE
+}
+DEF ROBOT Robot {
+  name "data"
+  children [
+    TestSuiteEmitter {
+    }
+  ]
+  controller "robot_data"
+}
+TestSuiteSupervisor {
+}

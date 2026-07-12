@@ -1,0 +1,864 @@
+#VRML_SIM R2025a utf8
+
+# ORC Queen Defense — protect-the-queen team match.
+#
+# Each team has three robots:
+#   * 1 QUEEN — random-walking non-combatant (queen_walker controller).
+#     Identical chassis on both sides; only the chassis colour differs
+#     (deep blue vs deep red). She wanders the arena and never attacks.
+#   * 2 PROTECTORS — standard ORC BattleBot fighters. Both protectors
+#     target the OTHER team's queen as their --opponent, so the only
+#     way to win is to drive your protectors past the enemy
+#     protectors and ram their queen until she's immobilized.
+#
+# Match end:
+#   * Damage director runs in "queens" mode: when a queen is
+#     immobilized (chassis HP gone, ≥3 wheels lost, or OOTA), her team
+#     loses immediately regardless of how many protectors are still up.
+#   * Both queens down in the same step → draw.
+#   * Timer (300 s) tiebreak: team with more surviving roster.
+#
+# Roster (all four protectors target the enemy queen):
+#
+#   BLUE TEAM (west spawn)
+#     blue_queen   queen_walker     —
+#     blue_alpha   wedge tank       control     vs red_queen
+#     blue_bravo   vertical disc    aggressor   vs red_queen
+#
+#   RED TEAM (east spawn)
+#     red_queen    queen_walker     —
+#     red_alpha    horizontal bar   aggressor   vs blue_queen
+#     red_bravo    pneumatic flip   opportunist vs blue_queen
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/solids/protos/SolidBox.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 4
+  title "ORC Queen Defense — protect your queen"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.9 ]
+      bounce 0.05
+      bounceVelocity 0.5
+    }
+  ]
+  # Newton combat config. MuJoCo solver REQUIRED -- the default XPBD solver structurally
+  # cannot drive a multi-wheel rover (lateral left/right wheel pairs lock; proven in pure
+  # Python via scripts/dev/wheel_model_diff.py). MuJoCo + ODE drive them; MuJoCo also gives
+  # the robust frictional contact combat ramming needs.
+  newtonSolver "mujoco"
+  # Give each bot's chassis Box a real collider so ramming registers chassis contacts
+  # (without it a Robot wrapper gets a 1 mm placeholder and bots phase through each other):
+  newtonRobotColliders TRUE
+  # 4 sub-steps keep high closing-speed ram impacts from diverging XPBD to NaN:
+  newtonSubsteps 4
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 25
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+# ===========================================================================
+# Arena — 20 m square. Light cover so queens can occasionally break line
+# of sight while still wandering freely. Director OOTAs anyone whose
+# |x|>10 or |y|>10.
+# ===========================================================================
+Floor {
+  size 20 20
+  tileSize 1.0 1.0
+  appearance PBRAppearance {
+    baseColor 0.22 0.22 0.24
+    metalness 0
+    roughness 1
+  }
+}
+
+# Centre obstacle — split the arena and force movement around it.
+SolidBox {
+  translation 0 0 0.6
+  name "cover_center"
+  size 1.6 1.6 1.2
+  appearance PBRAppearance {
+    baseColor 0.50 0.50 0.52
+    metalness 0
+    roughness 1
+  }
+}
+
+# Four mid-range cover blocks at NE / NW / SE / SW.
+SolidBox {
+  translation 3.5 3.5 0.4
+  name "cover_ne"
+  size 1.2 0.5 0.8
+  appearance PBRAppearance { baseColor 0.50 0.50 0.52 metalness 0 roughness 1 }
+}
+SolidBox {
+  translation -3.5 3.5 0.4
+  name "cover_nw"
+  size 0.5 1.2 0.8
+  appearance PBRAppearance { baseColor 0.50 0.50 0.52 metalness 0 roughness 1 }
+}
+SolidBox {
+  translation 3.5 -3.5 0.4
+  name "cover_se"
+  size 0.5 1.2 0.8
+  appearance PBRAppearance { baseColor 0.50 0.50 0.52 metalness 0 roughness 1 }
+}
+SolidBox {
+  translation -3.5 -3.5 0.4
+  name "cover_sw"
+  size 1.2 0.5 0.8
+  appearance PBRAppearance { baseColor 0.50 0.50 0.52 metalness 0 roughness 1 }
+}
+
+# ===========================================================================
+# BLUE QUEEN — random walker. Spawns west-centre, behind her protectors.
+# Identical chassis to RED_QUEEN apart from colour; same controller, same
+# wheel layout, same mass. customData declares arena_size so the queen
+# walker engages its soft fence and doesn't drive OOTA.
+# ===========================================================================
+DEF BLUE_QUEEN Robot {
+  translation -8.0 0.0 0.28
+  rotation 0 0 1 0
+  name "blue_queen"
+  controller "queen_walker"
+  supervisor TRUE
+  physicsBackend "newton"
+  customData "{\"arena_size\": 20.0}"
+  children [
+    # Chassis — deep blue, larger than fighters.
+    Shape {
+      appearance PBRAppearance { baseColor 0.05 0.15 0.55 metalness 0 roughness 1 }
+      geometry Box { size 0.78 0.56 0.20 }
+    }
+    # White accent stripes.
+    Transform {
+      translation 0 0.285 0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.95 0.95 0.98 metalness 0 roughness 1 }
+        geometry Box { size 0.72 0.01 0.06 }
+      } ]
+    }
+    Transform {
+      translation 0 -0.285 0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.95 0.95 0.98 metalness 0 roughness 1 }
+        geometry Box { size 0.72 0.01 0.06 }
+      } ]
+    }
+    # Crown — five gold spikes across the top.
+    Transform {
+      translation 0.0 0.0 0.16
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.92 0.72 0.10 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.42 0.10 0.06 }
+      } ]
+    }
+    Transform {
+      translation -0.16 0 0.24
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.92 0.72 0.10 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.04 0.08 0.10 }
+      } ]
+    }
+    Transform {
+      translation -0.08 0 0.26
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.92 0.72 0.10 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.04 0.08 0.14 }
+      } ]
+    }
+    Transform {
+      translation 0 0 0.30
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.95 0.78 0.15 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.05 0.09 0.18 }
+      } ]
+    }
+    Transform {
+      translation 0.08 0 0.26
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.92 0.72 0.10 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.04 0.08 0.14 }
+      } ]
+    }
+    Transform {
+      translation 0.16 0 0.24
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.92 0.72 0.10 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.04 0.08 0.10 }
+      } ]
+    }
+    # 4 wheels — same naming + DEFs the damage director expects.
+    DEF BLUE_QUEEN_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.28 0.30 -0.07 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 18 maxTorque 28 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_QUEEN_FL_WHEEL Solid {
+        translation 0.28 0.30 -0.07
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.11 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.11 }
+        physics Physics { density -1 mass 2.5 }
+      }
+    }
+    DEF BLUE_QUEEN_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.28 -0.30 -0.07 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 18 maxTorque 28 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_QUEEN_FR_WHEEL Solid {
+        translation 0.28 -0.30 -0.07
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.11 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.11 }
+        physics Physics { density -1 mass 2.5 }
+      }
+    }
+    DEF BLUE_QUEEN_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.28 0.30 -0.07 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 18 maxTorque 28 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_QUEEN_RL_WHEEL Solid {
+        translation -0.28 0.30 -0.07
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.11 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.11 }
+        physics Physics { density -1 mass 2.5 }
+      }
+    }
+    DEF BLUE_QUEEN_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.28 -0.30 -0.07 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 18 maxTorque 28 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_QUEEN_RR_WHEEL Solid {
+        translation -0.28 -0.30 -0.07
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.11 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.11 }
+        physics Physics { density -1 mass 2.5 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.78 0.56 0.20 }
+  physics Physics { density -1 mass 38.0 }
+}
+
+# ===========================================================================
+# RED QUEEN — random walker. Spawns east-centre, behind her protectors.
+# Same chassis as BLUE_QUEEN; only baseColor differs.
+# ===========================================================================
+DEF RED_QUEEN Robot {
+  translation 8.0 0.0 0.28
+  rotation 0 0 1 3.14159265
+  name "red_queen"
+  controller "queen_walker"
+  supervisor TRUE
+  physicsBackend "newton"
+  customData "{\"arena_size\": 20.0}"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.55 0.05 0.05 metalness 0 roughness 1 }
+      geometry Box { size 0.78 0.56 0.20 }
+    }
+    Transform {
+      translation 0 0.285 0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.95 0.95 0.98 metalness 0 roughness 1 }
+        geometry Box { size 0.72 0.01 0.06 }
+      } ]
+    }
+    Transform {
+      translation 0 -0.285 0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.95 0.95 0.98 metalness 0 roughness 1 }
+        geometry Box { size 0.72 0.01 0.06 }
+      } ]
+    }
+    Transform {
+      translation 0.0 0.0 0.16
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.92 0.72 0.10 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.42 0.10 0.06 }
+      } ]
+    }
+    Transform {
+      translation -0.16 0 0.24
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.92 0.72 0.10 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.04 0.08 0.10 }
+      } ]
+    }
+    Transform {
+      translation -0.08 0 0.26
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.92 0.72 0.10 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.04 0.08 0.14 }
+      } ]
+    }
+    Transform {
+      translation 0 0 0.30
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.95 0.78 0.15 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.05 0.09 0.18 }
+      } ]
+    }
+    Transform {
+      translation 0.08 0 0.26
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.92 0.72 0.10 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.04 0.08 0.14 }
+      } ]
+    }
+    Transform {
+      translation 0.16 0 0.24
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.92 0.72 0.10 metalness 0.6 roughness 0.3 }
+        geometry Box { size 0.04 0.08 0.10 }
+      } ]
+    }
+    DEF RED_QUEEN_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.28 0.30 -0.07 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 18 maxTorque 28 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_QUEEN_FL_WHEEL Solid {
+        translation 0.28 0.30 -0.07
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.11 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.11 }
+        physics Physics { density -1 mass 2.5 }
+      }
+    }
+    DEF RED_QUEEN_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.28 -0.30 -0.07 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 18 maxTorque 28 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_QUEEN_FR_WHEEL Solid {
+        translation 0.28 -0.30 -0.07
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.11 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.11 }
+        physics Physics { density -1 mass 2.5 }
+      }
+    }
+    DEF RED_QUEEN_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.28 0.30 -0.07 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 18 maxTorque 28 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_QUEEN_RL_WHEEL Solid {
+        translation -0.28 0.30 -0.07
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.11 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.11 }
+        physics Physics { density -1 mass 2.5 }
+      }
+    }
+    DEF RED_QUEEN_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.28 -0.30 -0.07 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 18 maxTorque 28 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_QUEEN_RR_WHEEL Solid {
+        translation -0.28 -0.30 -0.07
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.11 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.11 }
+        physics Physics { density -1 mass 2.5 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.78 0.56 0.20 }
+  physics Physics { density -1 mass 38.0 }
+}
+
+# ===========================================================================
+# BLUE ALPHA — wedge tank, protector. Targets the RED queen.
+# ===========================================================================
+DEF BLUE_ALPHA Robot {
+  translation -5.0 -2.0 0.25
+  rotation 0 0 1 0
+  name "blue_alpha"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "red_queen" "--strategy" "control" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.10 0.20 0.55 metalness 0 roughness 1 }
+      geometry Box { size 0.70 0.50 0.16 }
+    }
+    Transform {
+      translation 0 0.255 0.02
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.50 0.65 0.95 metalness 0 roughness 1 }
+        geometry Box { size 0.65 0.01 0.04 }
+      } ]
+    }
+    Transform {
+      translation 0 -0.255 0.02
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.50 0.65 0.95 metalness 0 roughness 1 }
+        geometry Box { size 0.65 0.01 0.04 }
+      } ]
+    }
+    DEF BLUE_ALPHA_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.25 0.27 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_ALPHA_FL_WHEEL Solid {
+        translation 0.25 0.27 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BLUE_ALPHA_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.25 -0.27 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_ALPHA_FR_WHEEL Solid {
+        translation 0.25 -0.27 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BLUE_ALPHA_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.25 0.27 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_ALPHA_RL_WHEEL Solid {
+        translation -0.25 0.27 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BLUE_ALPHA_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.25 -0.27 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_ALPHA_RR_WHEEL Solid {
+        translation -0.25 -0.27 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BLUE_ALPHA_WEAPON Solid {
+      translation 0.30 0 -0.06
+      name "weapon_wedge"
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.85 0.85 0.88 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.45 0.04 }
+      } ]
+      boundingObject Box { size 0.20 0.45 0.04 }
+      physics Physics { density -1 mass 1.5 }
+    }
+  ]
+  boundingObject Box { size 0.70 0.50 0.16 }
+  physics Physics { density -1 mass 25.0 }
+}
+
+# ===========================================================================
+# BLUE BRAVO — vertical disc spinner, protector. Targets the RED queen.
+# ===========================================================================
+DEF BLUE_BRAVO Robot {
+  translation -5.0 2.0 0.25
+  rotation 0 0 1 0
+  name "blue_bravo"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "red_queen" "--strategy" "aggressor" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.05 0.30 0.75 metalness 0 roughness 1 }
+      geometry Box { size 0.60 0.40 0.16 }
+    }
+    DEF BLUE_BRAVO_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 0.22 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 30 maxTorque 22 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_BRAVO_FL_WHEEL Solid {
+        translation 0.22 0.22 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_BRAVO_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 -0.22 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 30 maxTorque 22 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_BRAVO_FR_WHEEL Solid {
+        translation 0.22 -0.22 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_BRAVO_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 0.22 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 30 maxTorque 22 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_BRAVO_RL_WHEEL Solid {
+        translation -0.22 0.22 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_BRAVO_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 -0.22 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 30 maxTorque 22 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_BRAVO_RR_WHEEL Solid {
+        translation -0.22 -0.22 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_BRAVO_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.34 0 0.0 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 100 maxTorque 50 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF BLUE_BRAVO_WEAPON Solid {
+        translation 0.34 0 0.0
+        rotation 1 0 0 1.5708
+        name "weapon_disc"
+        children [
+          Shape { appearance PBRAppearance { baseColor 0.95 0.30 0.05 metalness 0 roughness 1 } geometry Cylinder { height 0.03 radius 0.16 } }
+          Solid { translation 0.15 0 0 name "tooth_a" children [ Shape { appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 } geometry Box { size 0.04 0.03 0.04 } } ] }
+          Solid { translation -0.15 0 0 name "tooth_b" children [ Shape { appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 } geometry Box { size 0.04 0.03 0.04 } } ] }
+        ]
+        boundingObject Cylinder { height 0.03 radius 0.16 }
+        physics Physics { density -1 mass 5.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.60 0.40 0.16 }
+  physics Physics { density -1 mass 30.0 }
+}
+
+# ===========================================================================
+# RED ALPHA — horizontal bar spinner, protector. Targets the BLUE queen.
+# ===========================================================================
+DEF RED_ALPHA Robot {
+  translation 5.0 -2.0 0.25
+  rotation 0 0 1 3.14159265
+  name "red_alpha"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "blue_queen" "--strategy" "aggressor" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.55 0.05 0.05 metalness 0 roughness 1 }
+      geometry Box { size 0.75 0.45 0.13 }
+    }
+    DEF RED_ALPHA_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.30 0.25 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_ALPHA_FL_WHEEL Solid {
+        translation 0.30 0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF RED_ALPHA_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.30 -0.25 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_ALPHA_FR_WHEEL Solid {
+        translation 0.30 -0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF RED_ALPHA_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.30 0.25 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_ALPHA_RL_WHEEL Solid {
+        translation -0.30 0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF RED_ALPHA_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.30 -0.25 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_ALPHA_RR_WHEEL Solid {
+        translation -0.30 -0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF RED_ALPHA_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 0 1 anchor 0 0 0.12 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 65 maxTorque 200 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF RED_ALPHA_WEAPON Solid {
+        translation 0 0 0.12
+        name "weapon_bar"
+        children [
+          Shape { appearance PBRAppearance { baseColor 0.78 0.78 0.80 metalness 0 roughness 1 } geometry Box { size 1.00 0.05 0.04 } }
+          Transform { translation 0.45 0 0 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 } geometry Box { size 0.08 0.07 0.06 } } ] }
+          Transform { translation -0.45 0 0 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 } geometry Box { size 0.08 0.07 0.06 } } ] }
+        ]
+        boundingObject Box { size 1.00 0.05 0.04 }
+        physics Physics { density -1 mass 22.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.75 0.45 0.13 }
+  physics Physics { density -1 mass 35.0 }
+}
+
+# ===========================================================================
+# RED BRAVO — pneumatic flipper, protector. Targets the BLUE queen.
+# ===========================================================================
+DEF RED_BRAVO Robot {
+  translation 5.0 2.0 0.25
+  rotation 0 0 1 3.14159265
+  name "red_bravo"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "blue_queen" "--strategy" "opportunist" "--weapon-mode" "pulse" "--pulse-range" "1.2" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.45 0.15 0.05 metalness 0 roughness 1 }
+      geometry Box { size 0.65 0.42 0.16 }
+    }
+    DEF RED_BRAVO_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.24 0.24 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_BRAVO_FL_WHEEL Solid {
+        translation 0.24 0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_BRAVO_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.24 -0.24 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_BRAVO_FR_WHEEL Solid {
+        translation 0.24 -0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_BRAVO_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.24 0.24 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_BRAVO_RL_WHEEL Solid {
+        translation -0.24 0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_BRAVO_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.24 -0.24 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_BRAVO_RR_WHEEL Solid {
+        translation -0.24 -0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_BRAVO_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.28 0 -0.06
+        minStop -0.1
+        maxStop 1.4
+      }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 35 maxTorque 600 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF RED_BRAVO_WEAPON Solid {
+        translation 0.28 0 -0.06
+        name "weapon_flipper_arm"
+        children [
+          Transform {
+            translation 0.18 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.95 0.65 0.10 metalness 0 roughness 1 }
+              geometry Box { size 0.36 0.36 0.04 }
+            } ]
+          }
+        ]
+        boundingObject Transform {
+          translation 0.18 0 0
+          children [ Box { size 0.36 0.36 0.04 } ]
+        }
+        physics Physics { density -1 mass 5.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.65 0.42 0.16 }
+  physics Physics { density -1 mass 28.0 }
+}
+
+# ===========================================================================
+# Damage + match director — queens mode. Team whose queen survives wins.
+# ===========================================================================
+DEF DIRECTOR Robot {
+  name "damage_director"
+  translation 0 0 9
+  controller "battlebot_damage_director"
+  customData "{\"fighters\": [\"blue_queen\", \"blue_alpha\", \"blue_bravo\", \"red_queen\", \"red_alpha\", \"red_bravo\"], \"teams\": {\"blue\": [\"blue_queen\", \"blue_alpha\", \"blue_bravo\"], \"red\": [\"red_queen\", \"red_alpha\", \"red_bravo\"]}, \"queens\": {\"blue\": \"blue_queen\", \"red\": \"red_queen\"}, \"arena_size\": 20.0, \"fail_wheels\": 3, \"contact_gate_m\": 1.4, \"timer_s\": 300.0, \"output\": \"_scratch/orc_queen_defense.json\", \"hp\": {\"chassis\": 120.0, \"wheel\": 10.0, \"weapon\": 25.0}, \"impulse_threshold_J\": {\"chassis\": 6.0, \"wheel\": 0.4, \"weapon\": 3.0}}"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}

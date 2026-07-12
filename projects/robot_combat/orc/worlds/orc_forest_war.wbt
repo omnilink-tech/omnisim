@@ -1,0 +1,686 @@
+#VRML_SIM R2025a utf8
+
+# ORC Forest War — 3v3 combat across a 40 m forest battlefield.
+#
+# Open mixed-conifer biome borrowed from the cinematic forest env
+# (environments/forest.wbt) but tuned for combat: bigger central
+# clearing, perimeter tree patches as cover, longer match timer
+# (6 minutes). All five BattleBot weapon archetypes are represented
+# across the six fighters.
+#
+# Roster (paired by --opponent flag, but free-targeting in practice):
+#
+#   BLUE team (spawn west)
+#     blue_wedge    wedge tank             control      vs  red_bar
+#     blue_disc     vertical disc spinner  aggressor    vs  red_flipper
+#     blue_hammer   overhead hammer arm    opportunist  vs  red_horizontal
+#
+#   RED team (spawn east)
+#     red_bar         horizontal bar spinner (Tombstone-class)
+#     red_flipper     pneumatic front flipper (--weapon-mode pulse)
+#     red_horizontal  top-mounted horizontal disc
+#
+# Win condition: last bot still moving wins. Match cap 360 s.
+# Director also calls OOTA on any bot whose |x|>20 or |y|>20.
+
+# The forest environment is composed in via the OmniSim `#include`
+# preprocessor — see docs/guide/world-include-directive.md. We splice
+# in the full cinematic forest (hero trees, rocks, ferns, mushrooms,
+# path, dappled lighting, fog) from the standard environment world,
+# then layer the 6 ORC bots and the damage director on top.
+#
+# v1 limitation: the EXTERNPROTO declarations the included file needs
+# have to be lifted up here too because the PROTO manager scans this
+# file BEFORE the tokenizer expands the include. Mirror the exact
+# EXTERNPROTO list from environments/forest.wbt verbatim.
+EXTERNPROTO "omnisim://projects/objects/floors/protos/UnevenTerrain.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Grass.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Soil.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/DryMud.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughOak.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughPine.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Plaster.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Oak.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Pine.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/BigSassafras.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Sassafras.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Cypress.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/SimpleTree.proto"
+EXTERNPROTO "omnisim://projects/objects/rocks/protos/Rock.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+# Splice in the cinematic forest env. Its WorldInfo and Viewpoint are
+# stripped by the preprocessor's singleton filter so they don't
+# collide with the ones declared just below.
+#include "omnisim://projects/samples/demos/worlds/environments/forest.wbt"
+
+WorldInfo {
+  basicTimeStep 4
+  title "ORC Forest War — 3v3 Open Combat"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.9 ]
+      bounce 0.05
+      bounceVelocity 0.5
+    }
+  ]
+  # Newton combat config. MuJoCo solver REQUIRED -- the default XPBD solver structurally
+  # cannot drive a multi-wheel rover (lateral left/right wheel pairs lock; proven in pure
+  # Python via scripts/dev/wheel_model_diff.py). MuJoCo + ODE drive them; MuJoCo also gives
+  # the robust frictional contact combat ramming needs.
+  newtonSolver "mujoco"
+  # Give each bot's chassis Box a real collider so ramming registers chassis contacts
+  # (without it a Robot wrapper gets a 1 mm placeholder and bots phase through each other):
+  newtonRobotColliders TRUE
+  # 4 sub-steps keep high closing-speed ram impacts from diverging XPBD to NaN:
+  newtonSubsteps 4
+}
+
+# Combat-cinematic viewpoint: oblique overhead from south-east at
+# ~32 m altitude so the whole battlefield is visible. Overrides the
+# forest env's eye-level viewpoint (stripped by the include splicer).
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 32
+}
+
+# ===========================================================================
+# BLUE WEDGE — defensive tank. Spawns west-south.
+# ===========================================================================
+DEF BLUE_WEDGE Robot {
+  translation -12.0 -4.0 0.25
+  rotation 0 0 1 0
+  name "blue_wedge"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "red_bar" "--strategy" "control" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.10 0.25 0.65 metalness 0 roughness 1 }
+      geometry Box { size 0.70 0.50 0.16 }
+    }
+    DEF BLUE_WEDGE_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.25 0.27 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_WEDGE_FL_WHEEL Solid {
+        translation 0.25 0.27 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BLUE_WEDGE_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.25 -0.27 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_WEDGE_FR_WHEEL Solid {
+        translation 0.25 -0.27 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BLUE_WEDGE_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.25 0.27 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_WEDGE_RL_WHEEL Solid {
+        translation -0.25 0.27 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BLUE_WEDGE_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.25 -0.27 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_WEDGE_RR_WHEEL Solid {
+        translation -0.25 -0.27 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BLUE_WEDGE_WEAPON Solid {
+      translation 0.30 0 -0.06
+      name "weapon_wedge"
+      children [ Shape { appearance PBRAppearance { baseColor 0.85 0.85 0.88 metalness 0 roughness 1 } geometry Box { size 0.20 0.45 0.04 } } ]
+      boundingObject Box { size 0.20 0.45 0.04 }
+      physics Physics { density -1 mass 1.5 }
+    }
+  ]
+  boundingObject Box { size 0.70 0.50 0.16 }
+  physics Physics { density -1 mass 25.0 }
+}
+
+# ===========================================================================
+# BLUE DISC — vertical disc spinner. Spawns west-center.
+# ===========================================================================
+DEF BLUE_DISC Robot {
+  translation -12.0 0.0 0.25
+  rotation 0 0 1 0
+  name "blue_disc"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "red_flipper" "--strategy" "aggressor" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.05 0.30 0.75 metalness 0 roughness 1 }
+      geometry Box { size 0.60 0.40 0.16 }
+    }
+    DEF BLUE_DISC_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 0.22 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 30 maxTorque 22 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_DISC_FL_WHEEL Solid {
+        translation 0.22 0.22 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_DISC_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 -0.22 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 30 maxTorque 22 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_DISC_FR_WHEEL Solid {
+        translation 0.22 -0.22 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_DISC_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 0.22 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 30 maxTorque 22 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_DISC_RL_WHEEL Solid {
+        translation -0.22 0.22 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_DISC_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 -0.22 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 30 maxTorque 22 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_DISC_RR_WHEEL Solid {
+        translation -0.22 -0.22 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_DISC_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.34 0 0.0 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 100 maxTorque 50 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF BLUE_DISC_WEAPON Solid {
+        translation 0.34 0 0.0
+        rotation 1 0 0 1.5708
+        name "weapon_disc"
+        children [
+          Shape { appearance PBRAppearance { baseColor 0.95 0.30 0.05 metalness 0 roughness 1 } geometry Cylinder { height 0.03 radius 0.16 } }
+          Solid { translation 0.15 0 0 name "tooth_a" children [ Shape { appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 } geometry Box { size 0.04 0.03 0.04 } } ] }
+          Solid { translation -0.15 0 0 name "tooth_b" children [ Shape { appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 } geometry Box { size 0.04 0.03 0.04 } } ] }
+        ]
+        boundingObject Cylinder { height 0.03 radius 0.16 }
+        physics Physics { density -1 mass 5.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.60 0.40 0.16 }
+  physics Physics { density -1 mass 30.0 }
+}
+
+# ===========================================================================
+# BLUE HAMMER — overhead hammer arm, pulse mode. Spawns west-north.
+# ===========================================================================
+DEF BLUE_HAMMER Robot {
+  translation -12.0 4.0 0.25
+  rotation 0 0 1 0
+  name "blue_hammer"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "red_horizontal" "--strategy" "opportunist" "--weapon-mode" "pulse" "--pulse-range" "1.3" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.30 0.50 0.95 metalness 0 roughness 1 }
+      geometry Box { size 0.65 0.42 0.16 }
+    }
+    DEF BLUE_HAMMER_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.24 0.24 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_HAMMER_FL_WHEEL Solid {
+        translation 0.24 0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_HAMMER_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.24 -0.24 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_HAMMER_FR_WHEEL Solid {
+        translation 0.24 -0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_HAMMER_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.24 0.24 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_HAMMER_RL_WHEEL Solid {
+        translation -0.24 0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF BLUE_HAMMER_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.24 -0.24 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF BLUE_HAMMER_RR_WHEEL Solid {
+        translation -0.24 -0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    # Overhead hammer arm — anchored above the chassis, swings down forward.
+    DEF BLUE_HAMMER_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0 0 0.12 minStop -1.6 maxStop 0.2 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 25 maxTorque 500 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF BLUE_HAMMER_WEAPON Solid {
+        translation 0 0 0.12
+        name "weapon_hammer_arm"
+        children [
+          Shape { appearance PBRAppearance { baseColor 0.40 0.40 0.42 metalness 0 roughness 1 } geometry Box { size 0.50 0.05 0.05 } }
+          Solid { translation 0.22 0 0 name "hammer_head" children [ Shape { appearance PBRAppearance { baseColor 0.18 0.18 0.20 metalness 0 roughness 1 } geometry Box { size 0.10 0.10 0.10 } } ] }
+        ]
+        boundingObject Box { size 0.50 0.05 0.05 }
+        physics Physics { density -1 mass 4.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.65 0.42 0.16 }
+  physics Physics { density -1 mass 28.0 }
+}
+
+# ===========================================================================
+# RED BAR — Tombstone-style horizontal bar. Spawns east-north.
+# ===========================================================================
+DEF RED_BAR Robot {
+  translation 12.0 4.0 0.25
+  rotation 0 0 1 3.14159265
+  name "red_bar"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "blue_wedge" "--strategy" "aggressor" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.55 0.05 0.05 metalness 0 roughness 1 }
+      geometry Box { size 0.75 0.45 0.13 }
+    }
+    DEF RED_BAR_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.30 0.25 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_BAR_FL_WHEEL Solid {
+        translation 0.30 0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF RED_BAR_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.30 -0.25 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_BAR_FR_WHEEL Solid {
+        translation 0.30 -0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF RED_BAR_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.30 0.25 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_BAR_RL_WHEEL Solid {
+        translation -0.30 0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF RED_BAR_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.30 -0.25 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_BAR_RR_WHEEL Solid {
+        translation -0.30 -0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.06 radius 0.10 } } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF RED_BAR_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 0 1 anchor 0 0 0.12 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 65 maxTorque 200 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF RED_BAR_WEAPON Solid {
+        translation 0 0 0.12
+        name "weapon_bar"
+        children [
+          Shape { appearance PBRAppearance { baseColor 0.78 0.78 0.80 metalness 0 roughness 1 } geometry Box { size 1.00 0.05 0.04 } }
+          Transform { translation 0.45 0 0 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 } geometry Box { size 0.08 0.07 0.06 } } ] }
+          Transform { translation -0.45 0 0 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 } geometry Box { size 0.08 0.07 0.06 } } ] }
+        ]
+        boundingObject Box { size 1.00 0.05 0.04 }
+        physics Physics { density -1 mass 22.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.75 0.45 0.13 }
+  physics Physics { density -1 mass 35.0 }
+}
+
+# ===========================================================================
+# RED FLIPPER — pneumatic front flipper. Spawns east-center.
+# ===========================================================================
+DEF RED_FLIPPER Robot {
+  translation 12.0 0.0 0.25
+  rotation 0 0 1 3.14159265
+  name "red_flipper"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "blue_disc" "--strategy" "opportunist" "--weapon-mode" "pulse" "--pulse-range" "1.2" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.45 0.15 0.05 metalness 0 roughness 1 }
+      geometry Box { size 0.65 0.42 0.16 }
+    }
+    DEF RED_FLIPPER_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.24 0.24 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_FLIPPER_FL_WHEEL Solid {
+        translation 0.24 0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_FLIPPER_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.24 -0.24 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_FLIPPER_FR_WHEEL Solid {
+        translation 0.24 -0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_FLIPPER_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.24 0.24 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_FLIPPER_RL_WHEEL Solid {
+        translation -0.24 0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_FLIPPER_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.24 -0.24 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 28 maxTorque 25 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_FLIPPER_RR_WHEEL Solid {
+        translation -0.24 -0.24 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_FLIPPER_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.28 0 -0.06 minStop -0.1 maxStop 1.4 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 35 maxTorque 600 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF RED_FLIPPER_WEAPON Solid {
+        translation 0.28 0 -0.06
+        name "weapon_flipper_arm"
+        children [ Transform { translation 0.18 0 0 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.65 0.10 metalness 0 roughness 1 } geometry Box { size 0.36 0.36 0.04 } } ] } ]
+        boundingObject Transform { translation 0.18 0 0 children [ Box { size 0.36 0.36 0.04 } ] }
+        physics Physics { density -1 mass 5.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.65 0.42 0.16 }
+  physics Physics { density -1 mass 28.0 }
+}
+
+# ===========================================================================
+# RED HORIZONTAL — top-mounted horizontal disc spinner. Spawns east-south.
+# ===========================================================================
+DEF RED_HORIZONTAL Robot {
+  translation 12.0 -4.0 0.25
+  rotation 0 0 1 3.14159265
+  name "red_horizontal"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "blue_hammer" "--strategy" "aggressor" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.65 0.20 0.10 metalness 0 roughness 1 }
+      geometry Box { size 0.62 0.45 0.13 }
+    }
+    DEF RED_HORIZONTAL_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 0.25 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 30 maxTorque 25 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_HORIZONTAL_FL_WHEEL Solid {
+        translation 0.22 0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_HORIZONTAL_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.22 -0.25 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 30 maxTorque 25 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_HORIZONTAL_FR_WHEEL Solid {
+        translation 0.22 -0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_HORIZONTAL_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 0.25 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 30 maxTorque 25 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF RED_HORIZONTAL_RL_WHEEL Solid {
+        translation -0.22 0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    DEF RED_HORIZONTAL_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.22 -0.25 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 30 maxTorque 25 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF RED_HORIZONTAL_RR_WHEEL Solid {
+        translation -0.22 -0.25 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape { appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 } geometry Cylinder { height 0.05 radius 0.09 } } ]
+        boundingObject Cylinder { height 0.05 radius 0.09 }
+        physics Physics { density -1 mass 1.5 }
+      }
+    }
+    # Top-mounted horizontal disc — cuts a wide circle around the chassis.
+    DEF RED_HORIZONTAL_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 0 1 anchor 0 0 0.12 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 90 maxTorque 80 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF RED_HORIZONTAL_WEAPON Solid {
+        translation 0 0 0.12
+        name "weapon_disc"
+        children [
+          Shape { appearance PBRAppearance { baseColor 0.85 0.85 0.88 metalness 0 roughness 1 } geometry Cylinder { height 0.03 radius 0.32 } }
+          Solid { translation 0.30 0 0 name "tooth_a" children [ Shape { appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 } geometry Box { size 0.05 0.05 0.04 } } ] }
+          Solid { translation -0.30 0 0 name "tooth_b" children [ Shape { appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 } geometry Box { size 0.05 0.05 0.04 } } ] }
+        ]
+        boundingObject Cylinder { height 0.03 radius 0.32 }
+        physics Physics { density -1 mass 7.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.62 0.45 0.13 }
+  physics Physics { density -1 mass 32.0 }
+}
+
+# ===========================================================================
+# Damage + match director — 6-fighter free-for-all on the forest field.
+# Arena half-extent 20 m (40 m square footprint). 360 s timer.
+# ===========================================================================
+DEF DIRECTOR Robot {
+  name "damage_director"
+  translation 0 0 14
+  controller "battlebot_damage_director"
+  customData "{\"fighters\": [\"blue_wedge\", \"blue_disc\", \"blue_hammer\", \"red_bar\", \"red_flipper\", \"red_horizontal\"], \"arena_size\": 40.0, \"fail_wheels\": 3, \"contact_gate_m\": 1.4, \"timer_s\": 360.0, \"output\": \"_scratch/orc_forest_war.json\", \"hp\": {\"chassis\": 120.0, \"wheel\": 10.0, \"weapon\": 25.0}, \"impulse_threshold_J\": {\"chassis\": 6.0, \"wheel\": 0.4, \"weapon\": 3.0}}"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}

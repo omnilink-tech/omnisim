@@ -1,0 +1,46 @@
+#VRML_SIM R2025a utf8
+
+# SHADOW demo. A SINGLE kinematic, physics-free NASA Valkyrie (staticBase TRUE)
+# plays the PURE human-gait MODEL (valkyrie_human_gait) and SELF-WALKS forward
+# (humanoid_shadow_ghost controller, HUMANOID_GHOST_ROBOT=valkyrie). No RL, no
+# physics -- this is "the shadow" itself, in 3D: the natural walk the RL policy
+# will be trained to track. It cannot fall (no physics); watch whether the
+# motion looks natural + stable (feet flat, CoM over feet, LIPM weight shift).
+# Launch: scripts/dev/run_humanoid_shadow_demo.ps1 -Robot valkyrie
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "NASA Valkyrie -- the shadow walking (kinematic gait model)"
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5.5 2.2
+  follow "valkyrie"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 60 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF VALKYRIE_SHADOW URDFRobot {
+  url "../../../robots/nasa/valkyrie/urdf/valkyrie_ghost.urdf"
+  translation 0 0 1.13
+  name "valkyrie"
+  supervisor TRUE
+  controller "humanoid_shadow_ghost"
+  staticBase TRUE
+}

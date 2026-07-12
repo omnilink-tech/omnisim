@@ -1,0 +1,65 @@
+#VRML_SIM R2025a utf8
+
+# Spot GET-UP + GHOST demo. DEF SPOT_REAL gets up from belly-flat under the RL
+# policy (spot_getup_mimic, teleport start), beside DEF SPOT_GHOST -- a translucent
+# physics-free Spot (spot_ghost.urdf) that REPLAYS the ideal MPPI get-up reference
+# (spot_getup_ghost). The gap between them is the tracking error.
+# Launch: scripts/dev/run_spot_getup_ghost_demo.ps1
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Spot get-up + ghost"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.32 0.14 0.937 2.28
+  position 2.7 -2.6 1.7
+  follow "spot"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 8 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF SPOT_REAL URDFRobot {
+  url "../../../robots/boston_dynamics/spot/urdf/spot.urdf"
+  translation 0 0 0.14
+  name "spot"
+  supervisor TRUE
+  controller "spot_getup_mimic"
+  physicsBackend "newton"
+}
+
+DEF SPOT_GHOST URDFRobot {
+  url "../../../robots/boston_dynamics/spot/urdf/spot_ghost.urdf"
+  translation 0 1.4 0.12
+  name "spot_ghost"
+  supervisor TRUE
+  controller "spot_getup_ghost"
+  staticBase TRUE
+}

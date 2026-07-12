@@ -1,0 +1,180 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/solids/protos/SolidRoundedBox.proto
+# keywords: primitive/geometry
+# A Solid box whose edges and corners are rounded off, built by filling the flat core with slabs and capping every core edge with a rounded strut.
+# template language: javascript
+
+PROTO SolidRoundedBox [
+  field SFVec3f    translation           0 0 1
+  field SFRotation rotation              0 0 1 0
+  field SFString   name                  "rounded box"
+  field SFVec3f    size                  2 2 2                                                                                                          # Defines the size of the box.
+  field SFFloat    borderRadius          0.5                                                                                                            # Defines the radius of the box borders.
+  field SFInt32    subdivision           24                                                                                                             # Defines the number of polygons used to represent the box and so its resolution.
+  field SFString   contactMaterial       "default"                                                                                                      # Is `Solid.contactMaterial`.
+  field SFNode     appearance            PBRAppearance { baseColorMap ImageTexture { url [ "omnisim://projects/default/worlds/textures/tagged_wall.jpg" ] } metalness 0 roughness 0.5 }   # Defines the appearance of the box.
+  field SFNode     physics               NULL                                                                                                           # Is `Solid.physics`.
+  field SFBool     enableBoundingObject  TRUE                                                                                                           # Defines whether the solid should have a bounding object.
+]
+{
+  %<
+    // ---------------------------------------------------------------------
+    // Bring the parameters into a range we can actually build.
+    // ---------------------------------------------------------------------
+    let size = fields.size.value;
+    if (size.x <= 0 || size.y <= 0 || size.z <= 0) {
+      size = fields.size.defaultValue;
+      console.error('\'size\' must be strictly positive on every axis. Value reset to (' + size.x + ', ' + size.y + ', ' + size.z + ').');
+    }
+
+    let radius = fields.borderRadius.value;
+    if (radius <= 0) {
+      radius = fields.borderRadius.defaultValue;
+      console.error('\'borderRadius\' must be strictly positive. Value reset to ' + radius + '.');
+    }
+    const maxRadius = 0.5 * Math.min(size.x, size.y, size.z);
+    if (radius > maxRadius) {
+      radius = maxRadius;
+      console.error('\'borderRadius\' cannot exceed half of the smallest \'size\' component. Value clamped to ' + radius + '.');
+    }
+
+    let facets = fields.subdivision.value;
+    if (facets < 8) {
+      console.error('\'subdivision\' must be greater or equal to 8. Using 8 instead.');
+      facets = 8;
+    }
+    if (facets > 200)
+      console.log('High value for \'subdivision\'. This can slow down the simulation');
+
+    // ---------------------------------------------------------------------
+    // Peel a shell of thickness `radius` off the box. What is left is the
+    // "flat core": the sub-box whose surface, offset outwards by `radius` in
+    // every direction, is exactly the rounded box we want.
+    //   * the core's volume is filled with axis-aligned slabs,
+    //   * each of the core's 12 edges is swept by a strut of radius `radius`,
+    //   * the core's 8 vertices are swept by spheres.
+    // Picking capsules (a cylinder with hemispherical caps) for the struts of
+    // one axis makes those caps land exactly on the 8 vertices, so the corners
+    // come for free and no explicit corner sphere is needed.
+    // ---------------------------------------------------------------------
+    const core = {x: size.x - 2 * radius, y: size.y - 2 * radius, z: size.z - 2 * radius};
+    const half = {x: 0.5 * core.x, y: 0.5 * core.y, z: 0.5 * core.z};
+
+    // Which axis carries the capsules? Any axis with a non-degenerate core edge.
+    let capsuleAxis = null;
+    if (core.x > 0)
+      capsuleAxis = 'x';
+    else if (core.y > 0)
+      capsuleAxis = 'y';
+    else if (core.z > 0)
+      capsuleAxis = 'z';
+
+    // The core collapsed to a single point: the rounded box IS a sphere.
+    const isSphere = capsuleAxis === null;
+
+    // Slabs filling the core plus the two shell caps normal to the slab's own
+    // thin axis. Three of them, each stretched to the full `size` on the one
+    // axis the other two do not cover.
+    const slabs = [];
+    if (!isSphere) {
+      if (core.x > 0 && core.y > 0)
+        slabs.push({x: core.x, y: core.y, z: size.z});
+      if (core.y > 0 && core.z > 0)
+        slabs.push({x: size.x, y: core.y, z: core.z});
+      if (core.z > 0 && core.x > 0)
+        slabs.push({x: core.x, y: size.y, z: core.z});
+    }
+
+    // Rotations taking a primitive's local +Z axis onto +X and onto +Y.
+    const ALONG_X = '0 1 0 1.5707963';
+    const ALONG_Y = '1 0 0 -1.5707963';
+    const ALONG_Z = '0 0 1 0';
+
+    // The 12 core edges, four per axis, deduplicated (a degenerate core axis
+    // makes its two offsets coincide, so the four struts collapse into two).
+    const struts = [];
+    const pushStruts = function(axis, length, rot, offsetsA, offsetsB, keyA, keyB) {
+      const seen = {};
+      for (let a = 0; a < offsetsA.length; ++a) {
+        for (let b = 0; b < offsetsB.length; ++b) {
+          const p = {x: 0, y: 0, z: 0};
+          p[keyA] = offsetsA[a];
+          p[keyB] = offsetsB[b];
+          const key = p.x + '/' + p.y + '/' + p.z;
+          if (seen[key])
+            continue;
+          seen[key] = true;
+          struts.push({p: p, height: length, rotation: rot, capsule: axis === capsuleAxis});
+        }
+      }
+    };
+    if (core.x > 0)
+      pushStruts('x', core.x, ALONG_X, [half.y, -half.y], [half.z, -half.z], 'y', 'z');
+    if (core.y > 0)
+      pushStruts('y', core.y, ALONG_Y, [half.x, -half.x], [half.z, -half.z], 'x', 'z');
+    if (core.z > 0)
+      pushStruts('z', core.z, ALONG_Z, [half.x, -half.x], [half.y, -half.y], 'x', 'y');
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      DEF SOLID_ROUNDED_BOX_GROUP Group {
+        children [
+          %< if (isSphere) { >%
+            # the border radius consumed the whole box
+            Shape {
+              appearance IS appearance
+              geometry Sphere {
+                radius %<= radius >%
+                subdivision %<= facets >%
+                ico FALSE
+              }
+            }
+          %< } >%
+          %< for (let i = 0; i < slabs.length; ++i) { >%
+            Shape {
+              appearance IS appearance
+              geometry Box {
+                size %<= slabs[i].x >% %<= slabs[i].y >% %<= slabs[i].z >%
+              }
+            }
+          %< } >%
+          %< for (let i = 0; i < struts.length; ++i) { >%
+            Pose {
+              translation %<= struts[i].p.x >% %<= struts[i].p.y >% %<= struts[i].p.z >%
+              rotation %<= struts[i].rotation >%
+              children [
+                Shape {
+                  appearance IS appearance
+                  %< if (struts[i].capsule) { >%
+                  geometry Capsule {
+                    height %<= struts[i].height >%
+                    radius %<= radius >%
+                    subdivision %<= facets >%
+                  }
+                  %< } else { >%
+                  geometry Cylinder {
+                    height %<= struts[i].height >%
+                    radius %<= radius >%
+                    subdivision %<= facets >%
+                  }
+                  %< } >%
+                }
+              ]
+            }
+          %< } >%
+        ]
+      }
+    ]
+    name IS name
+    model "rounded box"
+    contactMaterial IS contactMaterial
+    %< if (fields.enableBoundingObject.value) { >%
+    boundingObject USE SOLID_ROUNDED_BOX_GROUP
+    %< } >%
+    physics IS physics
+  }
+}

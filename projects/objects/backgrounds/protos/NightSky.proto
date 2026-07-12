@@ -1,0 +1,23 @@
+#VRML_SIM R2025a utf8
+# tags: no3dView
+# keywords: primitive/background
+# OmniSim default background: a dark starfield cubemap with a faint nebula.
+# Drop-in replacement for TexturedBackground - just instantiate NightSky in
+# any world. Pair with one or more lights (the cubemap is dark, so the scene
+# needs explicit illumination). NightSkyLighting provides a sensible default.
+
+PROTO NightSky [
+  field SFFloat luminosity 1.0   # Is `Background.luminosity`. Bumps starfield brightness.
+]
+{
+  Background {
+    luminosity IS luminosity
+    skyColor [ 0.012 0.020 0.047 ]
+    backUrl   [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_back.jpg" ]
+    bottomUrl [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_bottom.jpg" ]
+    frontUrl  [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_front.jpg" ]
+    leftUrl   [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_left.jpg" ]
+    rightUrl  [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_right.jpg" ]
+    topUrl    [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_top.jpg" ]
+  }
+}

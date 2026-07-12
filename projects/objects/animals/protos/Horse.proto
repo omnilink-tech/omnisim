@@ -1,0 +1,290 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/animals/protos/Horse.proto
+# keywords: animal/farm
+# A static horse, assembled from primitive shapes: a deep barrel on four long legs, an arched neck with a crested mane, a long head and a hanging tail (about 2.3 m long, 1.7 m at the ears).
+# The `colorBody` field modulates the coat albedo, `colorHair` the mane and tail.
+# template language: javascript
+
+PROTO Horse [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFFloat    scale       1      # Defines the global scaling factor.
+  field SFString   name        "horse"
+  field SFColor    colorBody   1 1 1  # Defines the color of the body of the horse.
+  field SFColor    colorHair   1 1 1  # Defines the color of the hair of the horse.
+]
+{
+  %<
+    let s = fields.scale.value;
+    if (s <= 0) {
+      s = fields.scale.defaultValue;
+      console.error("'scale' must be strictly positive, value reset to " + s + ".");
+    }
+    const cb = fields.colorBody.value;
+    const ch = fields.colorHair.value;
+    // Every dimension below is expressed in metres and driven through the scale factor.
+    function d(v) { return (v * s).toFixed(5); }
+    function v3(x, y, z) { return d(x) + " " + d(y) + " " + d(z); }
+    // Coat and hair albedos, modulated by the user colours.
+    function body(r, g, b) {
+      return (cb.r * r).toFixed(4) + " " + (cb.g * g).toFixed(4) + " " + (cb.b * b).toFixed(4);
+    }
+    function hair(r, g, b) {
+      return (ch.r * r).toFixed(4) + " " + (ch.g * g).toFixed(4) + " " + (ch.b * b).toFixed(4);
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "horse"
+    children [
+      DEF HORSE_BODY Group {
+        children [
+          Pose {
+            translation %<= v3(0, 0, 1.12) >%
+            children [
+              Shape {
+                appearance DEF HORSE_COAT PBRAppearance {
+                  baseColor %<= body(0.42, 0.26, 0.15) >%
+                  roughness 0.85
+                  metalness 0
+                }
+                geometry Box {
+                  size %<= v3(1.44, 0.50, 0.58) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.72, 0, 1.14) >%
+            children [
+              DEF HORSE_END Shape {
+                appearance USE HORSE_COAT
+                geometry Sphere {
+                  radius %<= d(0.29) >%
+                  subdivision 3
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.70, 0, 1.10) >%
+            children [
+              USE HORSE_END
+            ]
+          }
+        ]
+      }
+      DEF HORSE_LEGS Group {
+        children [
+          Pose {
+            translation %<= v3(0.60, 0.19, 0.425) >%
+            children [
+              DEF HORSE_LEG Shape {
+                appearance USE HORSE_COAT
+                geometry Cylinder {
+                  height %<= d(0.85) >%
+                  radius %<= d(0.055) >%
+                  subdivision 14
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.60, -0.19, 0.425) >%
+            children [
+              USE HORSE_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.62, 0.19, 0.425) >%
+            children [
+              USE HORSE_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.62, -0.19, 0.425) >%
+            children [
+              USE HORSE_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(0.60, 0.19, 0.04) >%
+            children [
+              DEF HORSE_HOOF Shape {
+                appearance DEF HORSE_DARK PBRAppearance {
+                  baseColor %<= body(0.11, 0.09, 0.08) >%
+                  roughness 0.55
+                  metalness 0
+                }
+                geometry Cylinder {
+                  height %<= d(0.08) >%
+                  radius %<= d(0.070) >%
+                  subdivision 12
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.60, -0.19, 0.04) >%
+            children [
+              USE HORSE_HOOF
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.62, 0.19, 0.04) >%
+            children [
+              USE HORSE_HOOF
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.62, -0.19, 0.04) >%
+            children [
+              USE HORSE_HOOF
+            ]
+          }
+        ]
+      }
+      DEF HORSE_NECK Pose {
+        translation %<= v3(0.74, 0, 1.36) >%
+        rotation 0 1 0 0.5
+        children [
+          Pose {
+            children [
+              Shape {
+                appearance USE HORSE_COAT
+                geometry Cylinder {
+                  height %<= d(0.52) >%
+                  radius %<= d(0.125) >%
+                  subdivision 14
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.145, 0, 0) >%
+            children [
+              Shape {
+                appearance DEF HORSE_HAIR PBRAppearance {
+                  baseColor %<= hair(0.16, 0.11, 0.07) >%
+                  roughness 0.95
+                  metalness 0
+                }
+                geometry Box {
+                  size %<= v3(0.06, 0.05, 0.54) >%
+                }
+              }
+            ]
+          }
+        ]
+      }
+      DEF HORSE_HEAD Group {
+        children [
+          Pose {
+            translation %<= v3(0.99, 0, 1.53) >%
+            rotation 0 1 0 0.8
+            children [
+              Shape {
+                appearance USE HORSE_COAT
+                geometry Box {
+                  size %<= v3(0.40, 0.15, 0.22) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(1.18, 0, 1.33) >%
+            rotation 0 1 0 0.8
+            children [
+              Shape {
+                appearance USE HORSE_DARK
+                geometry Box {
+                  size %<= v3(0.12, 0.13, 0.15) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(1.00, 0.075, 1.58) >%
+            children [
+              DEF HORSE_EYE Shape {
+                appearance USE HORSE_DARK
+                geometry Sphere {
+                  radius %<= d(0.022) >%
+                  subdivision 2
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(1.00, -0.075, 1.58) >%
+            children [
+              USE HORSE_EYE
+            ]
+          }
+          Pose {
+            translation %<= v3(0.86, 0.055, 1.70) >%
+            rotation 1 0 0 -0.27
+            children [
+              DEF HORSE_EAR Shape {
+                appearance USE HORSE_COAT
+                geometry Cone {
+                  bottomRadius %<= d(0.030) >%
+                  height %<= d(0.10) >%
+                  subdivision 10
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.86, -0.055, 1.70) >%
+            rotation 1 0 0 0.27
+            children [
+              USE HORSE_EAR
+            ]
+          }
+          Pose {
+            translation %<= v3(0.90, 0, 1.66) >%
+            children [
+              Shape {
+                appearance USE HORSE_HAIR
+                geometry Box {
+                  size %<= v3(0.10, 0.08, 0.09) >%
+                }
+              }
+            ]
+          }
+        ]
+      }
+      DEF HORSE_TAIL Pose {
+        translation %<= v3(-0.86, 0, 1.10) >%
+        rotation 0 1 0 -0.35
+        children [
+          Pose {
+            children [
+              Shape {
+                appearance USE HORSE_HAIR
+                geometry Cylinder {
+                  height %<= d(0.55) >%
+                  radius %<= d(0.060) >%
+                  subdivision 10
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation %<= v3(0, 0, 1.12) >%
+      children [
+        Box {
+          size %<= v3(1.70, 0.54, 0.62) >%
+        }
+      ]
+    }
+  }
+}

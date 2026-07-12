@@ -1,0 +1,105 @@
+#VRML_SIM R2025a utf8
+
+# TurtleBot3 trio demo -- loads all three TB3 variants (burger, waffle,
+# waffle_pi) natively from URDF via URDFRobot. Proves the importer
+# generalizes across robots from a different vendor than Clearpath:
+#
+# - TB3 URDFs ship with literal ${namespace} xacro placeholders that
+#   weren't pre-rendered. The importer auto-strips them with a warning.
+# - All three variants share the same wheel-joint names so a single
+#   2-wheel controller (tb3_random) drives all three.
+# - Waffle's URDF references SketchUp-authored meshes/sensors/r200.dae;
+#   four of its submeshes have no normals (line-only geometry that
+#   Assimp's aiProcess_GenSmoothNormals skips). WbMesh now null-checks
+#   mesh->mNormals and skips offending submeshes with a warning rather
+#   than dereferencing null and crashing.
+#
+# Sensor and inertia gates stay OFF (default). The URDFs report no
+# <gazebo><sensor> blocks anyway -- TB3 uses ROS plugins for sensors
+# which were never inlined into the .urdf form. supervisor TRUE is
+# set on each robot so tb3_random can emit a position trace to
+# C:\\tmp\\husky_trace\\<name>.log for distance verification.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/WoodenBox.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "TurtleBot3 Trio (URDF Import)"
+  info [
+    "Three TurtleBot3 variants -- burger, waffle, waffle_pi --"
+    "loaded natively from URDF and driven by tb3_random."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.9 ]
+      bounce 0.1
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 6
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 8 8
+  wallHeight 0.1
+  floorAppearance PBRAppearance {
+    baseColor 0.30 0.32 0.35
+    roughness 0.95
+    metalness 0
+  }
+}
+
+# Small obstacles so the random walk's reactive recovery has something
+# to bounce off of.
+WoodenBox {
+  translation 1.0 1.2 0.1
+  name "box A"
+  size 0.2 0.2 0.2
+}
+WoodenBox {
+  translation -1.4 0.4 0.1
+  name "box B"
+  size 0.2 0.2 0.2
+}
+WoodenBox {
+  translation 0.0 -1.5 0.1
+  name "box C"
+  size 0.2 0.2 0.2
+}
+
+# Three TB3 variants spaced along a diagonal. Same controller, different URDFs.
+URDFRobot {
+  url "../../../../robots/robotis/turtlebot3_description/urdf/turtlebot3_burger.urdf"
+  translation -1.5 -1.5 0
+  name "tb3_burger"
+  supervisor TRUE
+  controller "tb3_random"
+}
+
+URDFRobot {
+  url "../../../../robots/robotis/turtlebot3_description/urdf/turtlebot3_waffle.urdf"
+  translation 0 0 0
+  name "tb3_waffle"
+  supervisor TRUE
+  controller "tb3_random"
+}
+
+URDFRobot {
+  url "../../../../robots/robotis/turtlebot3_description/urdf/turtlebot3_waffle_pi.urdf"
+  translation 1.5 1.5 0
+  name "tb3_waffle_pi"
+  supervisor TRUE
+  controller "tb3_random"
+}

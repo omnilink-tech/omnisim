@@ -1,0 +1,359 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# tags: nonDeterministic
+# keywords: exterior/tree
+# A procedural forest: trees are either read from position files (`treesFiles`) or scattered at
+# `density` trees per square metre inside the polygon given by `shape`. Every tree is built from
+# primitives (a tapered trunk plus a rounded, conical or splayed crown, picked from its species)
+# and instanced with DEF/USE, so a few hundred trees stay cheap. An optional textured ground
+# sheet is laid over the polygon.
+# Tree types are:
+#  - 'oak tree'
+#  - 'crab apple tree'
+#  - 'cherry tree'
+#  - 'birch tree'
+#  - 'palm tree'
+#  - 'spruce'
+#  - 'white pine'
+#  - 'hackberry tree'
+#  - 'hazel tree'
+#
+# The 'random' type mixes the species over the whole forest.
+# template language: javascript
+
+PROTO Forest [
+  field SFVec3f    translation          0 0 0
+  field SFRotation rotation             0 0 1 0
+  field MFString   treesFiles           []                        # Can be used to define the paths to several files in which are defined the positions of the trees (one tree per line, using the format 'X, Y, Z'). The path to these files must be defined with respect to the world file.
+  field MFVec2f    shape                [-20 -10, 20 -10, 0 25]   # Alternatively, the position of each trees can be defined using the shape field. This field defines the shape of the forest, in that case the position of the trees is randomly generated from this shape.
+  field SFFloat    density              0.2                       # If the forest is defined using the `shape` field, this field defines the density of three to be generated (in trees per meter square).
+  field SFString{"random", "oak tree", "crab apple tree", "cherry tree", "birch tree", "palm tree", "spruce", "white pine", "hackberry tree", "hazel tree"}
+                   type                 "random"                  # Defines the type of threes, in case of `random` type, the forest will be mixed.
+  field SFInt32    randomSeed           0                         # Defines the seed of the random number generator. A value of 0 sets the seed to the node id and a value smaller than 0 sets a time based random seed.
+  field MFString   groundTexture        "textures/dry_leaf.jpg"   # Defines the texture of the forest ground. If this field is empty the forest ground is not displayed.
+  field SFBool     withSnow             FALSE                     # Defines whether the texture used should have snow on top.
+  field SFFloat    maxHeight            6                         # Defines the maximum height of the trees.
+  field SFFloat    minHeight            2                         # Defines the minimum height of the trees.
+  field SFFloat    maxRadius            3                         # Defines the maximum radius of the trees.
+  field SFFloat    minRadius            1                         # Defines the minimum radius of the trees.
+]
+{
+%<
+  import * as wbrandom from 'wbrandom.js';
+
+  // ------------------------------------------------------------------ species
+  // Each entry says how a tree of that species is built inside a UNIT cell
+  // (crown radius 1, total height 1); the per-tree Transform then stretches the
+  // cell to the drawn radius and height.
+  //   crown        'round' (ellipsoid canopy) | 'cone' (conifer) | 'fan' (palm)
+  //   trunkPart    fraction of the total height taken by the bare trunk
+  //   trunkColor   bark colour
+  //   crownColor   foliage / blossom colour
+  //   slenderness  trunk radius as a fraction of the crown radius
+  const species = {
+    'oak tree':        {crown: 'round', trunkPart: 0.40, trunkColor: [0.31, 0.24, 0.17], crownColor: [0.20, 0.36, 0.12], slenderness: 0.075},
+    'crab apple tree': {crown: 'round', trunkPart: 0.38, trunkColor: [0.34, 0.25, 0.19], crownColor: [0.85, 0.49, 0.57], slenderness: 0.055},
+    'cherry tree':     {crown: 'round', trunkPart: 0.42, trunkColor: [0.33, 0.24, 0.20], crownColor: [0.90, 0.70, 0.76], slenderness: 0.055},
+    'birch tree':      {crown: 'round', trunkPart: 0.50, trunkColor: [0.82, 0.80, 0.75], crownColor: [0.42, 0.56, 0.20], slenderness: 0.040},
+    'palm tree':       {crown: 'fan',   trunkPart: 0.78, trunkColor: [0.45, 0.37, 0.26], crownColor: [0.22, 0.45, 0.16], slenderness: 0.045},
+    'spruce':          {crown: 'cone',  trunkPart: 0.12, trunkColor: [0.30, 0.22, 0.16], crownColor: [0.11, 0.28, 0.14], slenderness: 0.060},
+    'white pine':      {crown: 'cone',  trunkPart: 0.18, trunkColor: [0.34, 0.26, 0.20], crownColor: [0.19, 0.38, 0.27], slenderness: 0.055},
+    'hackberry tree':  {crown: 'round', trunkPart: 0.44, trunkColor: [0.35, 0.30, 0.24], crownColor: [0.25, 0.42, 0.15], slenderness: 0.060},
+    'hazel tree':      {crown: 'round', trunkPart: 0.24, trunkColor: [0.36, 0.28, 0.20], crownColor: [0.38, 0.50, 0.16], slenderness: 0.045}
+  };
+  const keys = Object.keys(species);
+
+  // Snow does not repaint a tree, it settles on it: wash the foliage most of the
+  // way towards white and leave the bark alone.
+  const paint = function(rgb, towardsWhite) {
+    if (!towardsWhite)
+      return rgb;
+    return [rgb[0] + (0.93 - rgb[0]) * 0.78, rgb[1] + (0.94 - rgb[1]) * 0.78, rgb[2] + (0.95 - rgb[2]) * 0.78];
+  };
+
+  // --------------------------------------------------------------------- seed
+  let seed = fields.randomSeed.value;
+  if (seed === 0)
+    seed = parseInt(context.id);
+  else if (seed < 0)
+    seed = Date.now() % 16777216;
+  if (isNaN(seed))
+    seed = 1;
+  wbrandom.seed(seed);
+
+  // ------------------------------------------------------------------ options
+  let type = fields.type.value;
+  if (type !== 'random' && !species.hasOwnProperty(type)) {
+    let candidates = '';
+    for (let i = 0; i < keys.length; ++i)
+      candidates += '\'' + keys[i] + '\', ';
+    candidates += 'or \'random\'';
+    console.error('\'type\' must be a value in the list: ' + candidates + '. Value reset to \'random\'.');
+    type = 'random';
+  }
+  const snow = fields.withSnow.value;
+
+  let minHeight = fields.minHeight.value;
+  let maxHeight = fields.maxHeight.value;
+  if (minHeight <= 0) {
+    minHeight = fields.minHeight.defaultValue;
+    console.error('\'minHeight\' must be strictly positive. Value reset to ' + minHeight + '.');
+  }
+  if (maxHeight < minHeight) {
+    maxHeight = minHeight;
+    console.error('\'maxHeight\' must be bigger or equal to \'minHeight\'. Value reset to ' + maxHeight + '.');
+  }
+
+  let minRadius = fields.minRadius.value;
+  let maxRadius = fields.maxRadius.value;
+  if (minRadius <= 0) {
+    minRadius = fields.minRadius.defaultValue;
+    console.error('\'minRadius\' must be strictly positive. Value reset to ' + minRadius + '.');
+  }
+  if (maxRadius < minRadius) {
+    maxRadius = minRadius;
+    console.error('\'maxRadius\' must be bigger or equal to \'minRadius\'. Value reset to ' + maxRadius + '.');
+  }
+
+  // ------------------------------------------------------------- the polygon
+  const shape = fields.shape.value;
+  let poly = [];
+  for (let i = 0; i < shape.length; ++i)
+    poly.push([shape[i].x, shape[i].y]);
+
+  let signedArea = 0;
+  for (let i = 0; i < poly.length; ++i) {
+    const j = (i + 1) % poly.length;
+    signedArea += poly[i][0] * poly[j][1] - poly[j][0] * poly[i][1];
+  }
+  signedArea *= 0.5;
+  if (signedArea < 0) {
+    poly.reverse();             // keep the ground sheet wound counter-clockwise
+    signedArea = -signedArea;
+  }
+
+  // classic ray-casting point-in-polygon test
+  const inPolygon = function(x, y, p) {
+    let inside = false;
+    let j = p.length - 1;
+    for (let i = 0; i < p.length; ++i) {
+      const yi = p[i][1];
+      const yj = p[j][1];
+      const crosses = (yi < y) !== (yj < y);
+      if (crosses && yi !== yj) {
+        const xCut = p[i][0] + (p[j][0] - p[i][0]) * (y - yi) / (yj - yi);
+        if (x < xCut)
+          inside = !inside;
+      }
+      j = i;
+    }
+    return inside;
+  };
+
+  // ------------------------------------------------------------- tree positions
+  const positions = [];
+  const treesFiles = fields.treesFiles.value;
+  if (treesFiles.length !== 0) {
+    // explicit positions, one 'X, Y, Z' per line, relative to the world file
+    const world = context.world;
+    const dir = world.substring(0, world.lastIndexOf('/') + 1);
+    for (let i = 0; i < treesFiles.length; ++i) {
+      const path = dir + treesFiles[i];
+      if (!wbfile.fileExists(path)) {
+        console.error('Forest: tree position file not found: \'' + path + '\'.');
+        continue;
+      }
+      const lines = wbfile.readTextFile(path).split('\n');
+      for (let l = 0; l < lines.length; ++l) {
+        const cells = lines[l].split(',');
+        if (cells.length < 2)
+          continue;
+        const x = parseFloat(cells[0]);
+        const y = parseFloat(cells[1]);
+        let z = cells.length > 2 ? parseFloat(cells[2]) : 0;
+        if (isNaN(z))
+          z = 0;
+        if (!isNaN(x) && !isNaN(y))
+          positions.push([x, y, z]);
+      }
+    }
+  } else if (poly.length > 2) {
+    // random scatter inside the polygon, by rejection sampling of its bounding box
+    let n = Math.round(signedArea * fields.density.value);
+    if (n < 0)
+      n = 0;
+    if (n > 2000)
+      n = 2000;               // a forest must stay affordable to render
+    let minX = poly[0][0];
+    let maxX = poly[0][0];
+    let minY = poly[0][1];
+    let maxY = poly[0][1];
+    for (let i = 1; i < poly.length; ++i) {
+      minX = Math.min(minX, poly[i][0]);
+      maxX = Math.max(maxX, poly[i][0]);
+      minY = Math.min(minY, poly[i][1]);
+      maxY = Math.max(maxY, poly[i][1]);
+    }
+    let tries = 0;
+    const budget = 200 * n + 1000;
+    while (positions.length < n && tries < budget) {
+      ++tries;
+      const x = wbrandom.real(minX, maxX);
+      const y = wbrandom.real(minY, maxY);
+      if (inPolygon(x, y, poly))
+        positions.push([x, y, 0]);
+    }
+  }
+
+  // ---------------------------------------------------------------- the trees
+  const trees = [];
+  for (let i = 0; i < positions.length; ++i) {
+    const t = (type === 'random') ? keys[wbrandom.integer(keys.length) - 1] : type;
+    trees.push({
+      p: positions[i],
+      t: t,
+      h: wbrandom.real(minHeight, maxHeight),
+      r: wbrandom.real(minRadius, maxRadius),
+      yaw: wbrandom.real(0, 6.283185)
+    });
+  }
+
+  const defined = {};
+  const groundTexture = fields.groundTexture.value;
+  const drawGround = groundTexture.length !== 0 && poly.length > 2;
+>%
+Pose {
+  translation IS translation
+  rotation IS rotation
+  children [
+%< if (drawGround) {
+     // triangle fan from the centroid: the ground sheet, tiled every 4 m
+     let cx = 0;
+     let cy = 0;
+     for (let i = 0; i < poly.length; ++i) {
+       cx += poly[i][0];
+       cy += poly[i][1];
+     }
+     cx /= poly.length;
+     cy /= poly.length;
+>%
+    Shape {
+      appearance PBRAppearance {
+        baseColorMap ImageTexture {
+          url IS groundTexture
+        }
+        roughness 1
+        metalness 0
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            %<= cx >% %<= cy >% 0.01
+%<   for (let i = 0; i < poly.length; ++i) { >%
+            %<= poly[i][0] >% %<= poly[i][1] >% 0.01
+%<   } >%
+          ]
+        }
+        texCoord TextureCoordinate {
+          point [
+            %<= 0.25 * cx >% %<= 0.25 * cy >%
+%<   for (let i = 0; i < poly.length; ++i) { >%
+            %<= 0.25 * poly[i][0] >% %<= 0.25 * poly[i][1] >%
+%<   } >%
+          ]
+        }
+        coordIndex [
+%<   for (let i = 0; i < poly.length; ++i) { >%
+            0 %<= 1 + i >% %<= 1 + (i + 1) % poly.length >% -1
+%<   } >%
+        ]
+        texCoordIndex [
+%<   for (let i = 0; i < poly.length; ++i) { >%
+            0 %<= 1 + i >% %<= 1 + (i + 1) % poly.length >% -1
+%<   } >%
+        ]
+      }
+    }
+%< } >%
+%< for (let k = 0; k < trees.length; ++k) {
+     const tree = trees[k];
+     const sp = species[tree.t];
+     const def = 'FOREST_' + tree.t.split(' ').join('_').toUpperCase();
+     const first = defined[tree.t] !== true;
+     defined[tree.t] = true;
+
+     // unit-cell layout: crown radius 1, total height 1
+     const trunkHeight = sp.trunkPart;
+     const trunkRadius = sp.slenderness;
+     const crownBase = trunkHeight * (sp.crown === 'fan' ? 0.97 : 0.72);
+     const crownHeight = Math.max(0.05, 1 - crownBase);
+     const crownCenter = crownBase + 0.5 * crownHeight;
+     const crownFlatten = sp.crown === 'fan' ? 0.30 : 1.0;
+     const crownScaleZ = sp.crown === 'cone' ? 1 : 0.5 * crownHeight * crownFlatten;
+     const bark = sp.trunkColor;
+     const foliage = paint(sp.crownColor, snow);
+>%
+    Transform {
+      translation %<= tree.p[0] >% %<= tree.p[1] >% %<= tree.p[2] >%
+      rotation 0 0 1 %<= tree.yaw >%
+      scale %<= tree.r >% %<= tree.r >% %<= tree.h >%
+      children [
+%<   if (first) { >%
+        DEF %<= def >% Group {
+          children [
+            Pose {
+              translation 0 0 %<= 0.5 * trunkHeight >%
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor %<= bark[0] >% %<= bark[1] >% %<= bark[2] >%
+                    roughness 1
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    height %<= trunkHeight >%
+                    radius %<= trunkRadius >%
+                    subdivision 8
+                    top FALSE
+                  }
+                }
+              ]
+            }
+            Transform {
+              translation 0 0 %<= crownCenter >%
+              scale 1 1 %<= crownScaleZ >%
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor %<= foliage[0] >% %<= foliage[1] >% %<= foliage[2] >%
+                    roughness 1
+                    metalness 0
+                  }
+%<     if (sp.crown === 'cone') { >%
+                  geometry Cone {
+                    bottomRadius 1
+                    height %<= crownHeight >%
+                    subdivision 8
+                  }
+%<     } else { >%
+                  geometry Sphere {
+                    radius 1
+                    subdivision 8
+                    ico FALSE
+                  }
+%<     } >%
+                }
+              ]
+            }
+          ]
+        }
+%<   } else { >%
+        USE %<= def >%
+%<   } >%
+      ]
+    }
+%< } >%
+  ]
+}
+}

@@ -1,0 +1,174 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/floors/protos/RectangleArena.proto
+# keywords: primitive/ground
+# A rectangular test arena: a tiled Floor fenced in by four solid walls.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+EXTERNPROTO "Floor.proto"
+
+PROTO RectangleArena [
+  field SFVec3f    translation     0 0 0
+  field SFRotation rotation        0 0 1 0
+  field SFString   name            "rectangle arena"
+  field SFString   contactMaterial "default"                       # Is `Solid.contactMaterial`.
+  field SFVec2f    floorSize       1 1                             # Defines the size of the floor.
+  field SFVec2f    floorTileSize   0.5 0.5                         # Defines the size of the texture used for the floor.
+  field SFNode     floorAppearance Parquetry { type "chequered" }  # Defines the appearance of the floor.
+  field SFFloat    wallThickness   0.01                            # Defines the thickness of the walls.
+  field SFFloat    wallHeight      0.1                             # Defines the height of the walls.
+  field SFNode     wallAppearance  BrushedAluminium {}             # Defines the appearance of the wall.
+
+  # Deprecated in R2019a
+  hiddenField MFString   floorTextureUrl "omnisim://projects/default/worlds/textures/checkered_parquetry.jpg"
+  hiddenField MFString   wallTextureUrl  "omnisim://projects/default/worlds/textures/metal.jpg"
+  # Deprecated in R2019a-rev2
+  hiddenField SFColor    wallColor 0.8 0.8 0.8
+  hiddenField SFVec2f    wallTileSize 0.5 0.5
+]
+{
+  # Layout: the Floor spans `floorSize` centred on the origin, and four walls sit
+  # OUTSIDE that footprint (each offset by half a wall thickness) so the usable
+  # floor area is exactly `floorSize` -- a robot driving to the floor edge meets a
+  # wall face, not a wall centre-line. The east/west walls span the floor depth;
+  # the north/south walls are widened by 2 * wallThickness so the four walls meet
+  # at the corners with no gaps.
+  %<
+    let floorSize = fields.floorSize.value;
+    if (floorSize.x <= 0.0 || floorSize.y <= 0.0) {
+      floorSize = fields.floorSize.defaultValue;
+      console.error('RectangleArena: \'floorSize\' must be strictly positive on both axes. Falling back to ' +
+                    floorSize.x + ' x ' + floorSize.y + '.');
+    }
+
+    let wallThickness = fields.wallThickness.value;
+    if (wallThickness <= 0.0) {
+      wallThickness = fields.wallThickness.defaultValue;
+      console.error('RectangleArena: \'wallThickness\' must be strictly positive. Falling back to ' + wallThickness + '.');
+    }
+
+    let wallHeight = fields.wallHeight.value;
+    if (wallHeight <= 0.0) {
+      wallHeight = fields.wallHeight.defaultValue;
+      console.error('RectangleArena: \'wallHeight\' must be strictly positive. Falling back to ' + wallHeight + '.');
+    }
+
+    // Fields kept only so that pre-R2019a worlds still parse. They no longer drive
+    // anything: appearance is now expressed with appearance nodes, not raw URLs.
+    if (fields.floorTextureUrl.value[0] !== fields.floorTextureUrl.defaultValue[0])
+      console.error('RectangleArena: \'floorTextureUrl\' is deprecated and ignored; set \'floorAppearance\' instead.');
+    if (fields.wallTextureUrl.value[0] !== fields.wallTextureUrl.defaultValue[0])
+      console.error('RectangleArena: \'wallTextureUrl\' is deprecated and ignored; set \'wallAppearance\' instead.');
+    const wc = fields.wallColor;
+    if (wc.value.r !== wc.defaultValue.r || wc.value.g !== wc.defaultValue.g || wc.value.b !== wc.defaultValue.b)
+      console.error('RectangleArena: \'wallColor\' is deprecated and ignored; set \'wallAppearance\' instead.');
+    const wts = fields.wallTileSize;
+    if (wts.value.x !== wts.defaultValue.x || wts.value.y !== wts.defaultValue.y)
+      console.error('RectangleArena: \'wallTileSize\' is deprecated and ignored; set \'wallAppearance\' instead.');
+
+    // A cuboid surface mesh with aspect-preserving texture coordinates.
+    //
+    // The engine's built-in Box geometry is a UNIT cube that gets scaled by the
+    // node transform, so its 0..1 per-face UVs are stretched with it -- a long
+    // thin wall would smear one texture tile along its whole length. Emitting the
+    // six faces explicitly lets each face carry UVs proportional to its true
+    // metric extents, normalised so the box's longest edge spans exactly one
+    // tile. The texture is then never distorted, only repeated.
+    //
+    // Each face is listed counter-clockwise as seen from OUTSIDE the box, which
+    // is what makes the generated face normals point outwards. Faces do not share
+    // vertices because each one needs its own texture coordinates.
+    function boxMesh(sx, sy, sz) {
+      const a = sx * 0.5, b = sy * 0.5, c = sz * 0.5;
+      const longest = Math.max(sx, Math.max(sy, sz));
+      const u = {x: sx / longest, y: sy / longest, z: sz / longest};
+      const faces = [
+        // +x face: u runs along y, v runs along z
+        [[a, -b, -c, 0, 0], [a, b, -c, u.y, 0], [a, b, c, u.y, u.z], [a, -b, c, 0, u.z]],
+        // -x face
+        [[-a, b, -c, 0, 0], [-a, -b, -c, u.y, 0], [-a, -b, c, u.y, u.z], [-a, b, c, 0, u.z]],
+        // +y face: u runs along x, v runs along z
+        [[a, b, -c, 0, 0], [-a, b, -c, u.x, 0], [-a, b, c, u.x, u.z], [a, b, c, 0, u.z]],
+        // -y face
+        [[-a, -b, -c, 0, 0], [a, -b, -c, u.x, 0], [a, -b, c, u.x, u.z], [-a, -b, c, 0, u.z]],
+        // +z face (top): u runs along x, v runs along y
+        [[-a, -b, c, 0, 0], [a, -b, c, u.x, 0], [a, b, c, u.x, u.y], [-a, b, c, 0, u.y]],
+        // -z face (bottom): u runs along y, v runs along x
+        [[-a, -b, -c, 0, 0], [-a, b, -c, u.y, 0], [a, b, -c, u.y, u.x], [a, -b, -c, 0, u.x]]
+      ];
+      let pts = [], uvs = [], idx = [];
+      for (let f = 0; f < faces.length; ++f) {
+        for (let v = 0; v < 4; ++v) {
+          const p = faces[f][v];
+          pts.push(p[0] + ' ' + p[1] + ' ' + p[2]);
+          uvs.push(p[3] + ' ' + p[4]);
+        }
+        const o = f * 4;
+        idx.push(o + ' ' + (o + 1) + ' ' + (o + 2) + ' ' + (o + 3) + ' -1');
+      }
+      return {points: pts.join(', '), texCoords: uvs.join(', '), indices: idx.join(' ')};
+    }
+
+    const hx = floorSize.x * 0.5;
+    const hy = floorSize.y * 0.5;
+    // East/west walls run the full floor depth; north/south walls overlap them at
+    // the corners, so they are widened by one wall thickness at each end.
+    const sideWall = boxMesh(wallThickness, floorSize.y, wallHeight);
+    const endWall = boxMesh(floorSize.x + 2 * wallThickness, wallThickness, wallHeight);
+    const xOff = hx + wallThickness * 0.5;
+    const yOff = hy + wallThickness * 0.5;
+    const zOff = wallHeight * 0.5;
+
+    const walls = [
+      {name: 'wall',   t: xOff + ' 0 ' + zOff,      mesh: sideWall, size: wallThickness + ' ' + floorSize.y + ' ' + wallHeight},
+      {name: 'wall#2', t: (-xOff) + ' 0 ' + zOff,   mesh: sideWall, size: wallThickness + ' ' + floorSize.y + ' ' + wallHeight},
+      {name: 'wall#3', t: '0 ' + yOff + ' ' + zOff, mesh: endWall,  size: (floorSize.x + 2 * wallThickness) + ' ' + wallThickness + ' ' + wallHeight},
+      {name: 'wall#4', t: '0 ' + (-yOff) + ' ' + zOff, mesh: endWall, size: (floorSize.x + 2 * wallThickness) + ' ' + wallThickness + ' ' + wallHeight}
+    ];
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Floor {
+        size %<= floorSize.x >% %<= floorSize.y >%
+        tileSize IS floorTileSize
+        appearance IS floorAppearance
+        contactMaterial IS contactMaterial
+      }
+      %< for (let i = 0; i < walls.length; ++i) { const w = walls[i]; >%
+        Solid {
+          translation %<= w.t >%
+          children [
+            Shape {
+              appearance IS wallAppearance
+              geometry IndexedFaceSet {
+                coord Coordinate {
+                  point [ %<= w.mesh.points >% ]
+                }
+                texCoord TextureCoordinate {
+                  point [ %<= w.mesh.texCoords >% ]
+                }
+                coordIndex    [ %<= w.mesh.indices >% ]
+                texCoordIndex [ %<= w.mesh.indices >% ]
+              }
+            }
+          ]
+          name %<= '"' + w.name + '"' >%
+          model "wall"
+          # The collider is a plain Box: physics only needs the extents, and a
+          # primitive box is far cheaper to test against than the render mesh.
+          boundingObject Box {
+            size %<= w.size >%
+          }
+          contactMaterial IS contactMaterial
+        }
+      %< } >%
+    ]
+    name IS name
+    model "rectangle arena"
+  }
+}

@@ -1,0 +1,63 @@
+#VRML_SIM R2025a utf8
+
+# Spot RL training world.
+#
+# Flat arena, single Spot, controller "spot_rl_agent" (listens on TCP port
+# passed via controllerArgs --port). Designed for headless --mode=fast use
+# inside SpotEnv (projects/policies/research/envs/spot_env.py).
+#
+# Physics: ODE. Same conservative ODE settings as the production Spot
+# world. Default-stiff URDF motors are too soft for clean walking under
+# 32 kg body weight, but for RL we want realistic actuator dynamics --
+# the policy must learn around real motor limits.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Spot RL training (Newton)"
+  info [
+    "Spot quadruped, RL training environment."
+    "Controller spot_rl_agent exchanges obs/action with the SpotEnv via TCP."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/boston_dynamics/spot/urdf/spot.urdf"
+  translation 0 0 0.70
+  name "spot"
+  supervisor TRUE
+  controller "spot_rl_deploy"
+  physicsBackend "newton"
+}

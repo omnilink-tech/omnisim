@@ -1,0 +1,13 @@
+{
+  "name": "drone_surveyor",
+  "display_name": "Drone Surveyor",
+  "omnilink_agent_name": "Drone Surveyor",
+  "world": "projects/samples/demos/worlds/chat/omnilink_mavic.wbt",
+  "bridge_port": 6090,
+  "agent_script": "agents/production/drone_surveyor/drone_surveyor_agent.py",
+  "agent_port": 51524,
+  "agent_port_env": "DRONE_AGENT_PORT",
+  "bridge_url_env": "MAVIC_BRIDGE_URL",
+  "description": "DJI Mavic 2 Pro flying perimeter surveys, counting coloured ground markers.",
+  "tags": ["drone", "mavic", "vision", "first-party"]
+}

@@ -1,0 +1,19 @@
+#VRML_SIM R2025a utf8
+# template language: javascript
+
+EXTERNPROTO "omnisim://tests/protos/protos/TemplateNested.proto"
+
+PROTO TemplateMain [
+  field SFBool mainParameter TRUE
+]
+{
+  Group {
+    children [
+      %< if (!fields.mainParameter.value) { >%
+        TemplateNested {
+          nestedParameter IS mainParameter
+        }
+      %< } >%
+    ]
+  }
+}

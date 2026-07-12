@@ -1,0 +1,47 @@
+#VRML_SIM R2025a utf8
+
+# Atlas standing sanity world — Newton physics, atlas_stand controller
+# holds NOMINAL_POSE under per-joint PID. Used to verify Atlas can hold
+# its squat pose under the same Newton settings that work for Spot
+# (TARGET_KE=250, KD=60, ground_mu=2.0, etc.) before we build any
+# walking stack on top.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Atlas standing (Newton)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+}
+
+URDFRobot {
+  url "../../robots/boston_dynamics/atlas/urdf/atlas_convex_hull.urdf"
+  translation 0 0 0.88
+  name "atlas"
+  supervisor TRUE
+  controller "atlas_stand"
+  physicsBackend "newton"
+}

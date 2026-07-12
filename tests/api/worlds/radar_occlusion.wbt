@@ -1,0 +1,129 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.770022939569372 0.6041019525906847 0.2052449838925795 0.921879
+  position 2.79333 5.3775 3.17801
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  ambientIntensity 1
+  direction 0.1 -0.5 0.3
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+DEF FRONT_TARGET Solid {
+  translation 0.00141908 2.42029e-14 -0.887852
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.756863 0.207843 0.207843
+        }
+      }
+      geometry Sphere {
+        radius 0.307454
+      }
+    }
+  ]
+  boundingObject Sphere {
+    radius 0.307454
+  }
+  radarCrossSection 3
+}
+DEF OCCLUDED_TARGET1 Solid {
+  translation -1.04952 2.06501e-14 -4.14052
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.756863 0.207843 0.207843
+        }
+      }
+      geometry Sphere {
+        radius 0.1
+      }
+    }
+  ]
+  name "solid(1)"
+  boundingObject Sphere {
+    radius 0.1
+  }
+  radarCrossSection 1
+}
+DEF OCCLUDED_TARGET2 Solid {
+  translation 0.79048 2.06501e-14 -4.14052
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.756863 0.207843 0.207843
+        }
+      }
+      geometry Sphere {
+        radius 0.1
+      }
+    }
+  ]
+  name "solid(2)"
+  boundingObject Sphere {
+    radius 0.1
+  }
+  radarCrossSection 1
+}
+Robot {
+  children [
+    DEF RADAR_WITH_OCCLUSION Radar {
+      rotation -0.577349935856137 0.577349935856137 0.5773509358560258 2.09439
+      name "radar_with_occlusion"
+      maxRange 5
+      occlusion TRUE
+    }
+    DEF RADAR_WITHOUT_OCCLUSION Radar {
+      rotation -0.577349935856137 0.577349935856137 0.5773509358560258 2.09439
+      name "radar_without_occlusion"
+      maxRange 5
+    }
+    TestSuiteEmitter {
+    }
+  ]
+  controller "radar_occlusion"
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

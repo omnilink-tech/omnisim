@@ -1,0 +1,172 @@
+// Copyright 1996-2024 Cyberbotics Ltd.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Modifications copyright 2026 OmniLink, licensed under the Apache License, Version 2.0.
+
+#include "WbLanguageTools.hpp"
+#include "WbLog.hpp"
+#include "WbPreferences.hpp"
+#include "WbStandardPaths.hpp"
+#include "WbSysInfo.hpp"
+
+#include <QtCore/QDir>
+#include <QtCore/QFileInfo>
+#include <QtCore/QProcess>
+#include <QtCore/QStringList>
+#include <QtCore/QTextStream>
+
+#include <cstdlib>
+
+#ifdef _WIN32
+static const QChar PATHS_SEPARATOR(';');
+#else
+static const QChar PATHS_SEPARATOR(':');
+#endif
+
+void WbLanguageTools::prependToPath(const QString &dir, QString &path) {
+  if (path.isEmpty())
+    path = dir;
+  else
+    path = dir + PATHS_SEPARATOR + path;
+}
+
+QString WbLanguageTools::pythonCommand(QString &shortVersion, const QString &command, QProcessEnvironment &env) {
+  QString pythonCommand = command;
+  if (pythonCommand.isEmpty())
+#ifdef _WIN32
+    pythonCommand = "python";
+  if (!command.endsWith(".exe", Qt::CaseInsensitive))
+    pythonCommand += ".exe";
+#else
+    pythonCommand = "python3";
+#endif
+
+  const QString advice =
+#ifdef __APPLE__
+    QObject::tr("To fix the problem, you should set the full path of your python command in "
+                "OmniSim->preferences->python command.\n");
+#else
+    QObject::tr("OmniSim requires Python version 3.7 or newer in your current PATH.\n"
+                "To fix the problem, you should:\n"
+                "1. Check the Python command set in the OmniSim preferences.\n"
+                "2. Check the COMMAND set in the [python] section of the runtime.ini file of your controller program if any.\n"
+                "3. Install a recent Python 64 bit version and ensure your PATH environment variable points to it.\n");
+#endif
+
+#ifdef __APPLE__
+  if (std::getenv("PWD"))
+    shortVersion = checkIfPythonCommandExist(pythonCommand, env, true);
+  else if (pythonCommand == "python" || pythonCommand == "python3") {
+    for (int minorVersion = 11; minorVersion >= 7; minorVersion--) {
+      const QString versionString = QString::number(minorVersion);
+      const QString fullVersionString = "3." + versionString;
+      pythonCommand = findWorkingPythonPath(fullVersionString, env, false);
+      if (pythonCommand != "!") {
+        shortVersion = QString("3") + versionString;
+        break;
+      }
+    }
+  } else if (pythonCommand.startsWith("python3.")) {
+    pythonCommand = findWorkingPythonPath(pythonCommand.mid(6), env, true);
+    shortVersion = QString("3") + pythonCommand[8];
+    if (pythonCommand.length() > 9 && pythonCommand[9] != '.')
+      shortVersion += pythonCommand[9];
+  } else
+    shortVersion = checkIfPythonCommandExist(pythonCommand, env, true);
+  if (shortVersion.isEmpty())
+    pythonCommand = "!";
+
+  if (pythonCommand == "!")
+    WbLog::warning(QObject::tr("Python was not found.\n") + advice);
+#else  // __linux__ and _WIN32
+  shortVersion = checkIfPythonCommandExist(pythonCommand, env, true);
+  if (shortVersion.isEmpty()) {
+    pythonCommand = "!";
+    WbLog::warning(QObject::tr("Python was not found.\n") + advice);
+  } else {  // Python exists
+
+#ifdef _WIN32  // 64-bit check
+    QProcess process;
+    process.setProcessEnvironment(env);
+    process.start(pythonCommand, QStringList() << "-u"
+                                               << "-c"
+                                               << "import sys;print(sys.maxsize > 2**32)");
+    process.waitForFinished();
+    bool processSucceeded = process.error() == QProcess::UnknownError;
+    const QString output = process.readAll();
+    if (!processSucceeded || !output.startsWith("True")) {
+      WbLog::warning(QObject::tr("\"%1\" 64 bit was not found, but the 32 bit version was found.\n").arg(pythonCommand) +
+                     advice);
+      pythonCommand = "!";
+      shortVersion = QString();
+    }
+#endif         // _WIN32
+  }
+
+#endif  // __APPLE__
+
+  return pythonCommand;
+}
+
+const QString WbLanguageTools::checkIfPythonCommandExist(const QString &pythonCommand, QProcessEnvironment &env, bool log) {
+  QString shortVersion;
+  QProcess process;
+  process.setProcessEnvironment(env);
+  process.start(pythonCommand, QStringList() << "-c"
+                                             << "import sys;print(sys.version);");
+  process.waitForFinished();
+  bool processSucceeded = process.error() == QProcess::UnknownError;
+  const QString output = process.readAll();
+  // "3.8.10 (tags/v3.8.10:3d8993a, May  3 2021, 11:48:03) [MSC v.1928 64 bit (AMD64)]" or the like
+  const QStringList version = output.split(" ");
+  const QStringList version_numbers(version[0].split("."));
+  const int minor_version = version_numbers.size() >= 2 ? version_numbers[1].toInt() : 0;
+  if (!processSucceeded || !version[0].startsWith("3.") || minor_version < 7) {
+    if (log)
+      WbLog::warning(QObject::tr("\"%1\" was not found.\n").arg(pythonCommand));
+    shortVersion = QString();
+  } else {
+    shortVersion = version_numbers[0] + version_numbers[1];
+  }
+  return shortVersion;
+}
+
+#ifdef __APPLE__
+QString WbLanguageTools::findWorkingPythonPath(const QString &pythonVersion, QProcessEnvironment &env, bool log) {
+  QString shortVersion;
+
+  // look for python from python.org
+  QString pythonCommandString =
+    "/Library/Frameworks/Python.framework/Versions/" + pythonVersion + "/bin/python" + pythonVersion;
+  shortVersion = checkIfPythonCommandExist(pythonCommandString, env, false);
+  if (shortVersion.isEmpty()) {
+    // look first possible path for python from homebrew
+    pythonCommandString = "/usr/local/opt/python@" + pythonVersion + " /bin/python" + pythonVersion;
+    shortVersion = checkIfPythonCommandExist(pythonCommandString, env, false);
+    if (shortVersion.isEmpty()) {
+      // look a second possible path for python from homebrew
+      pythonCommandString = "/usr/local/bin/python" + pythonVersion;
+      shortVersion = checkIfPythonCommandExist(pythonCommandString, env, log);
+      if (shortVersion.isEmpty())
+        pythonCommandString = "!";
+    }
+  }
+
+  return pythonCommandString;
+}
+#endif
+
+const QStringList WbLanguageTools::pythonArguments() {
+  return QStringList("-u");
+}

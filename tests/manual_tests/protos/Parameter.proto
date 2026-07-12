@@ -1,0 +1,21 @@
+#VRML_SIM R2025a utf8
+# template language: javascript
+
+PROTO Parameter [
+  field SFBool my_custom_parameter FALSE
+]
+{
+  Slot {
+    type "parameter"
+    endPoint Group {
+      children [
+        %< if (fields.my_custom_parameter.value) { >%
+          Shape {
+            geometry Box {
+            }
+          }
+        %< } >%
+      ]
+    }
+  }
+}

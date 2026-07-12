@@ -1,0 +1,27 @@
+[
+  {
+    "name": "startup-empty",
+    "world": "resources/projects/worlds/empty.wbt",
+    "category": "startup"
+  },
+  {
+    "name": "rendering-normals",
+    "world": "tests/rendering/worlds/normals.wbt",
+    "category": "sensor-heavy-frame"
+  },
+  {
+    "name": "physics-contact-points",
+    "world": "tests/physics/worlds/contact_points.wbt",
+    "category": "steady-state-physics-step"
+  },
+  {
+    "name": "newton-4v4-husky-head-on",
+    "world": "projects/robot_combat/worlds/tests/newton_husky_head_on.wbt",
+    "category": "contact-heavy-physics-step"
+  },
+  {
+    "name": "proto-deterministic",
+    "world": "tests/protos/worlds/template_deterministic.wbt",
+    "category": "world-load"
+  }
+]

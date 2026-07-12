@@ -1,0 +1,76 @@
+#VRML_SIM R2025a utf8
+
+# Spot WALK deploy world -- the G1 walk-deploy recipe ported to Spot.
+# Controller: spot_walk_deploy (foot-space trot model spot_trot_gait.py +
+# ONNX residual from gpu_mjwarp_spot_walk_trainer.py, 48-dim obs incl
+# the wz command channel; deploy heading hold writes wz_cmd).
+#
+# *** STATUS 2026-06-12: SPOT WALKS STRAIGHT HERE. Policy
+# gpu_spot_walk_main (= gpu_spot_walk2_c6): +119.3 m in 298 s, ZERO
+# falls, y=+0.11 m / yaw +2.5 deg total -- dead straight at ~0.4 m/s.
+# The BARE trot model alone never falls (285 s verified) but drifts
+# -0.03 m/s backward (kd-conveyor); the residual converts that into
+# clean +0.4 m/s tracking. Launch: scripts/dev/run_spot_walk_deploy.ps1 ***
+#
+# Launch recipe (scripts/dev/run_spot_walk_deploy.ps1):
+#   OMNISIM_NEWTON_TARGET_KE=500 KD=60   <-> trainer MJCF kp/kv (MATCHED)
+#   OMNISIM_NEWTON_SUBSTEPS=8 FORCE_MUJOCO=1 MJWARP=1 SEED_POSE=1
+#   GROUND_MU=2.0 OMNISIM_URDF_USE_INERTIA=1
+# Spawn 0.58 = gait body_height 0.55 + settle gap.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Spot walk deploy"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 2.742 -2.919 3.595
+  follow "spot"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 60 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+Solid { translation 3 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m3" }
+Solid { translation 6 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0.6 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m6" }
+Solid { translation 9 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m9" }
+Solid { translation 12 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m12" }
+Solid { translation 15 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 0.6 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m15" }
+Solid { translation 18 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.5 0 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m18" }
+Solid { translation 21 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m21" }
+
+URDFRobot {
+  url "../../../robots/boston_dynamics/spot/urdf/spot.urdf"
+  translation 0 0 0.58
+  name "spot"
+  supervisor TRUE
+  controller "spot_walk_deploy"
+  physicsBackend "newton"
+}

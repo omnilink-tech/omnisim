@@ -1,0 +1,58 @@
+#VRML_SIM R2025a utf8
+
+# Spot residual-RL training world. Same arena as spot_rl.wbt; only
+# the controller differs (spot_residual_agent wraps the model walker
+# and adds a 12-dim foot-offset residual from the policy).
+#
+# Physics: Newton (migrated from ODE 2026-06-11). Train via
+# projects/policies/research/training/train_residual_newton.py, which exports the
+# required OMNISIM_NEWTON_* knobs before launching this world.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Spot residual-RL training"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 4
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 60 12
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/boston_dynamics/spot/urdf/spot.urdf"
+  translation 0 0 0.70
+  name "spot"
+  supervisor TRUE
+  controller "spot_residual_agent"
+  controllerArgs [ "--port" "7100" ]
+  physicsBackend "newton"
+}

@@ -1,0 +1,82 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/trees/protos/Tree.proto
+# keywords: exterior/tree
+# A cheap billboard tree: two crossed alpha-cut quads carrying the tree texture, stretched to the requested radius and height by the `scale` field.
+
+PROTO Tree [
+  field SFVec3f    translation          0 0 0
+  field SFRotation rotation             0 0 1 0
+  field SFString   name                 "tree"                       # Defines the name of the tree.
+  field SFVec3f    scale                1 1 4                        # The first and middle components of the scale define the radius of the tree and the last one defines it's height.
+  field MFString   texture              "textures/cherry_tree.png"   # Defines the texture used for the tree.
+  field SFNode     boundingObject       NULL                         # Is `Solid.boundingObject`.
+  field SFBool     locked               TRUE                         # Is `Solid.locked`.
+  field SFBool     isPickable           TRUE
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      # the billboard is authored in a unit cell: radius 1 in x/y, height 1 in z,
+      # so `scale` reads directly as (radius, radius, height).
+      Transform {
+        scale IS scale
+        children [
+          DEF TREE_BILLBOARD Shape {
+            appearance PBRAppearance {
+              baseColorMap ImageTexture {
+                url IS texture
+                repeatS FALSE
+                repeatT FALSE
+              }
+              roughness 1
+              metalness 0
+            }
+            geometry IndexedFaceSet {
+              coord Coordinate {
+                point [
+                  -1 0 0
+                  1 0 0
+                  1 0 1
+                  -1 0 1
+                ]
+              }
+              texCoord TextureCoordinate {
+                point [
+                  0 0
+                  1 0
+                  1 1
+                  0 1
+                ]
+              }
+              coordIndex [
+                0 1 2 3 -1
+              ]
+              texCoordIndex [
+                0 1 2 3 -1
+              ]
+            }
+            isPickable IS isPickable
+          }
+          # the second quad, crossed at 90 degrees, gives the tree volume from any angle
+          Pose {
+            rotation 0 0 1 1.5708
+            children [
+              USE TREE_BILLBOARD
+            ]
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "tree"
+    recognitionColors [
+      0.1 0.4 0
+    ]
+    boundingObject IS boundingObject
+    locked IS locked
+  }
+}

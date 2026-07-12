@@ -1,0 +1,402 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/geometries/protos/Extrusion.proto
+# keywords: primitive/geometry
+# A swept-surface geometry: the 2D 'crossSection' polygon is carried along the 3D 'spine' path,
+# scaled and rotated at each spine point, and the swept hull is emitted as an IndexedFaceSet.
+# template language: javascript
+
+PROTO Extrusion [
+  field MFVec2f    crossSection              [1 1, 1 -1, -1 -1, -1 1, 1 1]   # Defines the 2D cross-section of the extrusion.
+  field MFVec3f    spine                     [0 0 0, 0 0 1]                  # Defines the 3D extrusion path.
+  field MFVec2f    scale                     [1.0 1.0]                       # Defines the scale at each point of the spine.
+  field MFRotation orientation               [0 0 1 0]                       # Defines the orientation of the cross-section at each point of the spine.
+  field SFBool     beginCap                  TRUE                            # Defines whether the extrusion should have a cap at the begining.
+  field SFBool     endCap                    TRUE                            # Defines whether the extrusion should have a cap at the end.
+  field SFBool     ccw                       TRUE                            # Is `IndexedFaceSet.ccw`.
+  field SFBool     convex                    TRUE                            # Is `IndexedFaceSet.convex`.
+  field SFFloat    creaseAngle               0.0                             # Is `IndexedFaceSet.creaseAngle`.
+  field SFInt32    splineSubdivision         4                               # If bigger than 1, defines the B-Spline subdivion of the extrusion along it's path.
+]
+{
+  # HOW THE SWEEP IS BUILT
+  #
+  #  1. The spine is cleaned (consecutive duplicates dropped) and, when
+  #     'splineSubdivision' > 1, refined into a uniform cubic B-spline.  The
+  #     control polygon is clamped (triple end multiplicity) so the smooth curve
+  #     still starts and ends exactly on the first and last spine point; a spine
+  #     whose last point repeats its first is treated as closed and wraps instead.
+  #  2. Every point of the refined path gets a right-handed frame (X, Y, T) whose
+  #     T is the path tangent.  The frames are parallel-transported from one point
+  #     to the next (rotate the previous frame by the minimal rotation that maps
+  #     the previous tangent onto the current one) rather than rebuilt from a fixed
+  #     up-vector, which is what keeps a spiralling spine from twisting or flipping.
+  #  3. The cross-section is stamped into each frame: local (x, y) map to (X, Y),
+  #     after being multiplied by 'scale' and rotated by 'orientation'.  Those two
+  #     arrays are sampled along the path in normalised parameter space, so they
+  #     work whether they hold one entry, one entry per spine point, or -- once the
+  #     spine has been B-spline refined -- fewer entries than there are points.
+  #  4. Faces: one quad per (cross-section edge x spine segment), wound so the
+  #     normals point away from the spine, plus the two caps when the cross-section
+  #     is a closed polygon.  Texture coordinates run u along the spine and
+  #     v around the cross-section perimeter.
+  %<
+    const EPS = 1e-9;
+
+    // ---- small vector helpers (kept local: no template module dependency) ----
+    function v3(x, y, z) { return {x: x, y: y, z: z}; }
+    function addv(a, b) { return v3(a.x + b.x, a.y + b.y, a.z + b.z); }
+    function subv(a, b) { return v3(a.x - b.x, a.y - b.y, a.z - b.z); }
+    function mulv(a, s) { return v3(a.x * s, a.y * s, a.z * s); }
+    function dotv(a, b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+    function crossv(a, b) {
+      return v3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+    }
+    function lenv(a) { return Math.sqrt(dotv(a, a)); }
+    function unitv(a) {
+      const l = lenv(a);
+      return l > EPS ? mulv(a, 1.0 / l) : v3(0, 0, 1);
+    }
+
+    // ---- inputs, each guarded against a degenerate value ----
+    let crossSection = fields.crossSection.value;
+    if (crossSection.length < 2) {
+      crossSection = fields.crossSection.defaultValue;
+      console.error('Extrusion: \'crossSection\' needs at least 2 points. Falling back to the default square.');
+    }
+
+    let rawSpine = fields.spine.value;
+    if (rawSpine.length < 2) {
+      rawSpine = fields.spine.defaultValue;
+      console.error('Extrusion: \'spine\' needs at least 2 points. Falling back to the default segment.');
+    }
+
+    let scale = fields.scale.value;
+    if (scale.length < 1) {
+      scale = fields.scale.defaultValue;
+      console.error('Extrusion: \'scale\' needs at least one entry. Falling back to 1 1.');
+    }
+    for (let i = 0; i < scale.length; ++i) {
+      if (scale[i].x === 0.0 || scale[i].y === 0.0)
+        console.error('Extrusion: a zero \'scale\' entry collapses the cross-section to a line or a point.');
+    }
+
+    let orientation = fields.orientation.value;
+    if (orientation.length < 1)
+      orientation = fields.orientation.defaultValue;
+
+    const splineSubdivision = fields.splineSubdivision.value;
+
+    // ---- cross-section: drop the repeated closing point, force CCW winding ----
+    // A polygon listed clockwise would turn every face normal inward, so the sign
+    // of the shoelace area is measured once and the loop reversed if needed.  That
+    // way the winding rules below hold for any authored cross-section.
+    let cs = [];
+    for (let i = 0; i < crossSection.length; ++i)
+      cs.push({x: crossSection[i].x, y: crossSection[i].y});
+    let closedSection = false;
+    const dx = cs[0].x - cs[cs.length - 1].x;
+    const dy = cs[0].y - cs[cs.length - 1].y;
+    if (cs.length > 2 && Math.sqrt(dx * dx + dy * dy) <= EPS) {
+      closedSection = true;
+      cs.pop();
+    }
+    let area2 = 0.0;
+    for (let i = 0; i < cs.length; ++i) {
+      const a = cs[i];
+      const b = cs[(i + 1) % cs.length];
+      area2 += a.x * b.y - b.x * a.y;
+    }
+    if (area2 < 0.0)
+      cs.reverse();
+    const k = cs.length;
+    const hasCaps = closedSection && k >= 3;
+
+    // ---- spine: drop consecutive duplicates, detect a closed loop ----
+    let sp = [];
+    for (let i = 0; i < rawSpine.length; ++i) {
+      const p = v3(rawSpine[i].x, rawSpine[i].y, rawSpine[i].z);
+      if (sp.length === 0 || lenv(subv(p, sp[sp.length - 1])) > EPS)
+        sp.push(p);
+    }
+    let closedSpine = false;
+    if (sp.length > 3 && lenv(subv(sp[0], sp[sp.length - 1])) <= EPS) {
+      closedSpine = true;
+      sp.pop();
+    }
+    if (sp.length < 2) {
+      sp = [v3(0, 0, 0), v3(0, 0, 1)];
+      closedSpine = false;
+      console.error('Extrusion: \'spine\' collapses to a single point. Falling back to the default segment.');
+    }
+    const m = sp.length;
+
+    // ---- uniform cubic B-spline refinement of the spine ----
+    // Basis (Cox-de Boor, uniform knots) for the four control points around a
+    // segment.  With the ends tripled the curve is clamped, i.e. it interpolates
+    // the first and last control point instead of merely being pulled toward them.
+    function bsplinePoint(c0, c1, c2, c3, t) {
+      const t2 = t * t;
+      const t3 = t2 * t;
+      const b0 = (-t3 + 3.0 * t2 - 3.0 * t + 1.0) / 6.0;
+      const b1 = (3.0 * t3 - 6.0 * t2 + 4.0) / 6.0;
+      const b2 = (-3.0 * t3 + 3.0 * t2 + 3.0 * t + 1.0) / 6.0;
+      const b3 = t3 / 6.0;
+      return v3(b0 * c0.x + b1 * c1.x + b2 * c2.x + b3 * c3.x,
+                b0 * c0.y + b1 * c1.y + b2 * c2.y + b3 * c3.y,
+                b0 * c0.z + b1 * c1.z + b2 * c2.z + b3 * c3.z);
+    }
+
+    let path = [];
+    if (splineSubdivision > 1) {
+      const sub = splineSubdivision;
+      if (closedSpine) {
+        // periodic: segment s spans the stretch of curve between control point s
+        // and control point s + 1, so the loop stays aligned with the authored spine
+        for (let s = 0; s < m; ++s) {
+          for (let q = 0; q < sub; ++q) {
+            path.push(bsplinePoint(sp[(s - 1 + m) % m], sp[s], sp[(s + 1) % m], sp[(s + 2) % m], q / sub));
+          }
+        }
+        path.push(path[0]);
+      } else {
+        const ctrl = [sp[0], sp[0]];
+        for (let i = 0; i < m; ++i)
+          ctrl.push(sp[i]);
+        ctrl.push(sp[m - 1]);
+        ctrl.push(sp[m - 1]);
+        const segments = ctrl.length - 3;
+        for (let s = 0; s < segments; ++s) {
+          for (let q = 0; q < sub; ++q)
+            path.push(bsplinePoint(ctrl[s], ctrl[s + 1], ctrl[s + 2], ctrl[s + 3], q / sub));
+        }
+        path.push(sp[m - 1]);
+      }
+    } else {
+      for (let i = 0; i < m; ++i)
+        path.push(sp[i]);
+      if (closedSpine)
+        path.push(sp[0]);
+    }
+    const n = path.length;
+
+    // ---- per-point tangents ----
+    // Central differences, wrapping when the spine is closed.  A B-spline clamped
+    // at its ends bunches its first samples together, so a difference that comes
+    // out numerically zero is widened until it is not.
+    const tangent = [];
+    for (let j = 0; j < n; ++j) {
+      let lo = j > 0 ? j - 1 : (closedSpine ? n - 2 : 0);
+      let hi = j < n - 1 ? j + 1 : (closedSpine ? 1 : n - 1);
+      let t = subv(path[hi], path[lo]);
+      let step = 1;
+      while (lenv(t) <= EPS && step < n) {
+        ++step;
+        lo = Math.max(0, j - step);
+        hi = Math.min(n - 1, j + step);
+        t = subv(path[hi], path[lo]);
+      }
+      tangent.push(unitv(t));
+    }
+
+    // ---- parallel-transported frames ----
+    function rotateAxisAngle(v, axis, angle) {
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+      return addv(addv(mulv(v, c), mulv(crossv(axis, v), s)),
+                  mulv(axis, dotv(axis, v) * (1.0 - c)));
+    }
+    const frameX = [];
+    const frameY = [];
+    const seed = Math.abs(tangent[0].z) < 0.9 ? v3(0, 0, 1) : v3(1, 0, 0);
+    frameX.push(unitv(crossv(seed, tangent[0])));
+    frameY.push(crossv(tangent[0], frameX[0]));
+    for (let j = 1; j < n; ++j) {
+      const t0 = tangent[j - 1];
+      const t1 = tangent[j];
+      const axis = crossv(t0, t1);
+      const sn = lenv(axis);
+      let x = frameX[j - 1];
+      if (sn > 1e-12)
+        x = rotateAxisAngle(x, mulv(axis, 1.0 / sn), Math.atan2(sn, dotv(t0, t1)));
+      // re-orthogonalise: numerical drift over hundreds of points is otherwise
+      // enough to tilt the cross-section out of the plane normal to the tangent
+      x = unitv(subv(x, mulv(t1, dotv(x, t1))));
+      frameX.push(x);
+      frameY.push(crossv(t1, x));
+    }
+
+    // ---- scale / orientation sampled in normalised path parameter space ----
+    // g runs 0 -> 1 along the emitted path.  With one entry per spine point and no
+    // B-spline refinement this reproduces the plain "entry i belongs to spine point
+    // i" rule exactly; otherwise it spreads the entries evenly and interpolates.
+    function sampleScale(g) {
+      if (scale.length === 1)
+        return {x: scale[0].x, y: scale[0].y};
+      const f = g * (scale.length - 1);
+      const i0 = Math.min(scale.length - 2, Math.max(0, Math.floor(f)));
+      const u = f - i0;
+      return {x: scale[i0].x + (scale[i0 + 1].x - scale[i0].x) * u,
+              y: scale[i0].y + (scale[i0 + 1].y - scale[i0].y) * u};
+    }
+    function quatOf(r) {
+      const ax = unitv(v3(r.x, r.y, r.z));
+      const h = 0.5 * r.a;
+      const s = Math.sin(h);
+      return {w: Math.cos(h), x: ax.x * s, y: ax.y * s, z: ax.z * s};
+    }
+    function slerp(q0, q1, u) {
+      let d = q0.w * q1.w + q0.x * q1.x + q0.y * q1.y + q0.z * q1.z;
+      let b = {w: q1.w, x: q1.x, y: q1.y, z: q1.z};
+      if (d < 0.0) {   // take the short way round
+        d = -d;
+        b = {w: -b.w, x: -b.x, y: -b.y, z: -b.z};
+      }
+      let w0 = 1.0 - u;
+      let w1 = u;
+      if (d < 0.9995) {
+        const theta = Math.acos(Math.min(1.0, d));
+        const st = Math.sin(theta);
+        w0 = Math.sin((1.0 - u) * theta) / st;
+        w1 = Math.sin(u * theta) / st;
+      }
+      const q = {w: w0 * q0.w + w1 * b.w, x: w0 * q0.x + w1 * b.x,
+                 y: w0 * q0.y + w1 * b.y, z: w0 * q0.z + w1 * b.z};
+      const l = Math.sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+      return l > EPS ? {w: q.w / l, x: q.x / l, y: q.y / l, z: q.z / l} : {w: 1, x: 0, y: 0, z: 0};
+    }
+    const quats = [];
+    for (let i = 0; i < orientation.length; ++i)
+      quats.push(quatOf(orientation[i]));
+    function sampleQuat(g) {
+      if (quats.length === 1)
+        return quats[0];
+      const f = g * (quats.length - 1);
+      const i0 = Math.min(quats.length - 2, Math.max(0, Math.floor(f)));
+      return slerp(quats[i0], quats[i0 + 1], f - i0);
+    }
+    function rotateByQuat(q, v) {
+      const qv = v3(q.x, q.y, q.z);
+      const c = addv(crossv(qv, v), mulv(v, q.w));
+      return addv(v, mulv(crossv(qv, c), 2.0));
+    }
+
+    // ---- vertices ----
+    const coords = [];
+    for (let j = 0; j < n; ++j) {
+      const g = n > 1 ? j / (n - 1) : 0.0;
+      const sc = sampleScale(g);
+      const q = sampleQuat(g);
+      for (let i = 0; i < k; ++i) {
+        const local = rotateByQuat(q, v3(cs[i].x * sc.x, cs[i].y * sc.y, 0.0));
+        coords.push(addv(path[j],
+                         addv(addv(mulv(frameX[j], local.x), mulv(frameY[j], local.y)),
+                              mulv(tangent[j], local.z))));
+      }
+    }
+
+    // ---- faces ----
+    // Side quad for cross-section edge i between rings j and j+1:
+    //   [ (j,i), (j,i+1), (j+1,i+1), (j+1,i) ]
+    // With a CCW cross-section in the (X, Y) plane and T = X x Y this winds the
+    // normal outward.  The end cap keeps that CCW order (normal +T) and the begin
+    // cap reverses it (normal -T).
+    const faces = [];
+    const texFaces = [];
+    const edges = closedSection ? k : k - 1;
+    for (let j = 0; j < n - 1; ++j) {
+      for (let i = 0; i < edges; ++i) {
+        const i2 = (i + 1) % k;
+        faces.push((j * k + i) + ' ' + (j * k + i2) + ' ' +
+                   ((j + 1) * k + i2) + ' ' + ((j + 1) * k + i) + ' -1');
+        texFaces.push((j * (k + 1) + i) + ' ' + (j * (k + 1) + i + 1) + ' ' +
+                      ((j + 1) * (k + 1) + i + 1) + ' ' + ((j + 1) * (k + 1) + i) + ' -1');
+      }
+    }
+    const capBase = n * (k + 1);
+    if (hasCaps && fields.beginCap.value) {
+      let f = [];
+      let t = [];
+      for (let i = k - 1; i >= 0; --i) {
+        f.push(i);
+        t.push(capBase + i);
+      }
+      faces.push(f.join(' ') + ' -1');
+      texFaces.push(t.join(' ') + ' -1');
+    }
+    if (hasCaps && fields.endCap.value) {
+      let f = [];
+      let t = [];
+      for (let i = 0; i < k; ++i) {
+        f.push((n - 1) * k + i);
+        t.push(capBase + i);
+      }
+      faces.push(f.join(' ') + ' -1');
+      texFaces.push(t.join(' ') + ' -1');
+    }
+
+    // ---- texture coordinates ----
+    // u follows the spine (so a long extrusion repeats its texture along its
+    // length), v follows the cross-section perimeter.  The grid carries one extra
+    // column so the seam of a closed cross-section gets v = 1 instead of wrapping
+    // back to v = 0 and mirroring the last strip of texture.
+    const perim = [0.0];
+    for (let i = 0; i < k; ++i) {
+      const a = cs[i];
+      const b = cs[(i + 1) % k];
+      const ex = b.x - a.x;
+      const ey = b.y - a.y;
+      perim.push(perim[i] + Math.sqrt(ex * ex + ey * ey));
+    }
+    // an open cross-section never walks its closing edge, so its perimeter stops
+    // at the last authored point
+    const perimEnd = closedSection ? perim[k] : perim[k - 1];
+    const perimTotal = perimEnd > EPS ? perimEnd : 1.0;
+    let minX = cs[0].x, maxX = cs[0].x, minY = cs[0].y, maxY = cs[0].y;
+    for (let i = 1; i < k; ++i) {
+      minX = Math.min(minX, cs[i].x);
+      maxX = Math.max(maxX, cs[i].x);
+      minY = Math.min(minY, cs[i].y);
+      maxY = Math.max(maxY, cs[i].y);
+    }
+    const spanX = maxX - minX > EPS ? maxX - minX : 1.0;
+    const spanY = maxY - minY > EPS ? maxY - minY : 1.0;
+  >%
+
+  IndexedFaceSet {
+    coord Coordinate {
+      point [
+        %< for (let i = 0; i < coords.length; ++i) { >%
+        %<= coords[i].x >% %<= coords[i].y >% %<= coords[i].z >%
+        %< } >%
+      ]
+    }
+    texCoord TextureCoordinate {
+      point [
+        %< for (let j = 0; j < n; ++j) {
+             const u = n > 1 ? j / (n - 1) : 0.0;
+             for (let i = 0; i <= k; ++i) { >%
+        %<= u >% %<= perim[i] / perimTotal >%
+        %<   }
+           }
+           for (let i = 0; i < k; ++i) { >%
+        %<= (cs[i].x - minX) / spanX >% %<= (cs[i].y - minY) / spanY >%
+        %< } >%
+      ]
+    }
+    coordIndex [
+      %< for (let i = 0; i < faces.length; ++i) { >%
+      %<= faces[i] >%
+      %< } >%
+    ]
+    texCoordIndex [
+      %< for (let i = 0; i < texFaces.length; ++i) { >%
+      %<= texFaces[i] >%
+      %< } >%
+    ]
+    ccw IS ccw
+    convex IS convex
+    creaseAngle IS creaseAngle
+  }
+}

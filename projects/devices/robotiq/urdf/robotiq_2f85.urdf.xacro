@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<!--
+Robotiq 2F-85 — 2-finger parallel gripper. 85 mm max opening, 5 kg
+grasp force. Modelled as a single prismatic joint that drives both
+finger pads symmetrically (real device uses a 5-bar linkage; the
+joint-level abstraction is sufficient for grasp planning).
+
+Joints emitted:
+  ${prefix}_joint    fixed     attaches to parent
+  ${prefix}_finger   prismatic 0 .. 0.0425 m per pad (total opening 0.085)
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="robotiq_2f85" params="parent_link prefix:=robotiq_2f85 *origin">
+    <link name="${prefix}_base_link">
+      <visual>
+        <origin xyz="0 0 0.030" rpy="0 0 0"/>
+        <geometry><box size="0.060 0.080 0.060"/></geometry>
+        <material name="${prefix}_dark"><color rgba="0.16 0.16 0.16 1.0"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.030" rpy="0 0 0"/>
+        <geometry><box size="0.060 0.080 0.060"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.030" rpy="0 0 0"/>
+        <mass value="0.925"/>
+        <inertia ixx="6.6e-4" ixy="0" ixz="0" iyy="4.8e-4" iyz="0" izz="6.6e-4"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_base_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+    <link name="${prefix}_left_finger_link">
+      <visual>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry><box size="0.020 0.014 0.050"/></geometry>
+        <material name="${prefix}_dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry><box size="0.020 0.014 0.050"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <mass value="0.040"/>
+        <inertia ixx="9.3e-6" ixy="0" ixz="0" iyy="9.5e-6" iyz="0" izz="2.7e-6"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_finger" type="prismatic">
+      <parent link="${prefix}_base_link"/>
+      <child link="${prefix}_left_finger_link"/>
+      <origin xyz="0 0.020 0.060" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="0" upper="0.0425" effort="50" velocity="0.15"/>
+    </joint>
+    <link name="${prefix}_right_finger_link">
+      <visual>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry><box size="0.020 0.014 0.050"/></geometry>
+        <material name="${prefix}_dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry><box size="0.020 0.014 0.050"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <mass value="0.040"/>
+        <inertia ixx="9.3e-6" ixy="0" ixz="0" iyy="9.5e-6" iyz="0" izz="2.7e-6"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_finger_mirror" type="prismatic">
+      <parent link="${prefix}_base_link"/>
+      <child link="${prefix}_right_finger_link"/>
+      <origin xyz="0 -0.020 0.060" rpy="0 0 0"/>
+      <axis xyz="0 -1 0"/>
+      <limit lower="0" upper="0.0425" effort="50" velocity="0.15"/>
+      <mimic joint="${prefix}_finger" multiplier="1" offset="0"/>
+    </joint>
+  </xacro:macro>
+</robot>

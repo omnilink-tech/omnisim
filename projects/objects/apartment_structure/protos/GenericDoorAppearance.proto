@@ -1,0 +1,23 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# keywords: building/component, appearance/wood
+# The finish of a painted interior door leaf: a matte, non-metallic paint with a faint brushed
+# tooth to it, tinted by `colorOverride`.
+
+PROTO GenericDoorAppearance [
+  field SFColor colorOverride  1 1 1   # Defines the color to be multiplied with the texture color.
+]
+{
+  # No image is used here. The old finish leaned on a photographed wood panel; this one is
+  # generated, so `colorOverride` is the only thing that decides the colour of the leaf (its
+  # default, white, is a plain painted door). The roughness is high enough that the leaf never
+  # picks up a specular sheet across its whole face -- which is what makes a large flat door
+  # read as painted timber rather than as plastic.
+  PBRAppearance {
+    baseColor IS colorOverride
+    metalness 0
+    roughness 0.55
+    IBLStrength 0.9
+  }
+}

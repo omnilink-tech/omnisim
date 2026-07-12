@@ -1,0 +1,180 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/street_furniture/protos/Bench.proto
+# keywords: exterior/street furniture
+# A park bench: pine boards bolted to a steel frame, 2.23 m long, with a reclined backrest.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/OldSteel.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughPine.proto"
+
+PROTO Bench [
+  field SFVec3f    translation          0 0 0
+  field SFRotation rotation             0 0 1 0
+  field SFString   name                 "bench"
+  field SFColor    metalColor           1 1 1                             # Defines the color of the metalic part.
+  field SFColor    woodColor            0.5 0.5 0.5                       # Defines the color of the wooden part.
+  field MFColor    recognitionColors    [0.25 0.17 0.12, 0.17 0.17 0.17]  # Is `Solid.recognitionColors`.
+]
+{
+  %<
+    // ---------------------------------------------------------------------
+    // A fixed 2.23 m bench, lying along Y. The frame is steel, the boards are
+    // pine, and the backrest is a sub-assembly reclined about the seat's rear
+    // edge so that its posts and its boards lean together.
+    // ---------------------------------------------------------------------
+    const length = 2.23;                   // along Y
+    const seatHeight = 0.45;
+    const legSection = 0.06;
+    const legX = [-0.22, 0.40];            // front and rear leg lines
+    const frameY = 0.5 * length - 0.093;   // the two end frames, inset from the tips
+
+    const recline = -0.06;                 // rad, the backrest leans away from the sitter
+    const backX = -0.20;                   // where the backrest is hinged onto the seat
+    const backHeight = 0.70;
+
+    // Seat boards: five, each running the full length of the bench.
+    const boardWidth = 0.105;
+    const boardThickness = 0.045;
+    const boards = [-0.21, -0.06, 0.09, 0.24, 0.39];
+
+    // Backrest boards, in the reclined frame (z measured up from the seat).
+    const backBoards = [0.20, 0.42, 0.62];
+    const backBoardHeight = 0.16;
+    const backBoardThickness = 0.045;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    recognitionColors IS recognitionColors
+    children [
+      DEF METAL_FRAME Group {
+        children [
+          %< for (let s = -1; s <= 1; s += 2) { >%
+            %< for (let i = 0; i < legX.length; ++i) { >%
+            Pose { # leg
+              translation %<= legX[i] >% %<= s * frameY >% %<= 0.5 * seatHeight >%
+              children [
+                Shape {
+                  appearance OldSteel {
+                    colorOverride IS metalColor
+                    textureTransform TextureTransform {
+                      scale 4 4
+                    }
+                  }
+                  geometry Box {
+                    size %<= legSection >% %<= legSection >% %<= seatHeight >%
+                  }
+                }
+              ]
+            }
+            %< } >%
+            Pose { # the rail tying one pair of legs together, just under the seat
+              translation %<= 0.5 * (legX[0] + legX[1]) >% %<= s * frameY >% %<= seatHeight - 0.04 >%
+              children [
+                Shape {
+                  appearance OldSteel {
+                    colorOverride IS metalColor
+                    textureTransform TextureTransform {
+                      scale 4 4
+                    }
+                  }
+                  geometry Box {
+                    size %<= legX[1] - legX[0] + legSection >% %<= legSection >% 0.05
+                  }
+                }
+              ]
+            }
+          %< } >%
+        ]
+      }
+      DEF SEAT_BOARDS Group {
+        children [
+          %< for (let i = 0; i < boards.length; ++i) { >%
+          Pose {
+            translation %<= boards[i] >% 0 %<= seatHeight + 0.5 * boardThickness >%
+            children [
+              Shape {
+                appearance RoughPine {
+                  colorOverride IS woodColor
+                  textureTransform TextureTransform {
+                    scale 4 4
+                  }
+                }
+                geometry Box {
+                  size %<= boardWidth >% %<= length >% %<= boardThickness >%
+                }
+              }
+            ]
+          }
+          %< } >%
+        ]
+      }
+      DEF BACKREST Pose { # reclined sub-assembly: steel posts + pine boards
+        translation %<= backX >% 0 %<= seatHeight >%
+        rotation 0 1 0 %<= recline >%
+        children [
+          %< for (let s = -1; s <= 1; s += 2) { >%
+          Pose { # post
+            translation 0 %<= s * frameY >% %<= 0.5 * backHeight >%
+            children [
+              Shape {
+                appearance OldSteel {
+                  colorOverride IS metalColor
+                  textureTransform TextureTransform {
+                    scale 4 4
+                  }
+                }
+                geometry Box {
+                  size %<= legSection >% %<= legSection >% %<= backHeight >%
+                }
+              }
+            ]
+          }
+          %< } >%
+          %< for (let i = 0; i < backBoards.length; ++i) { >%
+          Pose { # board
+            translation 0 0 %<= backBoards[i] >%
+            children [
+              Shape {
+                appearance RoughPine {
+                  colorOverride IS woodColor
+                  textureTransform TextureTransform {
+                    scale 4 4
+                  }
+                }
+                geometry Box {
+                  size %<= backBoardThickness >% %<= length >% %<= backBoardHeight >%
+                }
+              }
+            ]
+          }
+          %< } >%
+        ]
+      }
+    ]
+    name IS name
+    model "bench"
+    boundingObject Group {
+      children [
+        Pose { # everything from the ground up to the seat
+          translation 0.09 0 0.27
+          children [
+            Box {
+              size 0.75 2.23 0.54
+            }
+          ]
+        }
+        Pose { # the backrest slab
+          translation -0.2 0 0.85
+          children [
+            Box {
+              size 0.17 2.23 0.63
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,59 @@
+#VRML_SIM R2025a utf8
+
+# B2 GET-UP deploy world -- shadowing pipeline end-to-end on a CONTACT-HANDOFF
+# motion. B2 SPAWNS LOW (z=0.30) and the b2_getup_mimic controller commands the
+# splayed lying pose so it settles BELLY-FLAT on the floor, then SHADOWS the
+# MPPI-generated, verifier-certified get-up ghost (shadowing/ghosts/spot_getup_ghost.npz)
+# up to a stand -- RL-stabilised (feedforward sags; the get-up needs the policy).
+# Launch: scripts/dev/run_spot_getup_deploy.ps1
+# Engine env: OMNISIM_NEWTON_TARGET_KE=1400 KD=35 SUBSTEPS=8 FORCE_MUJOCO=1 MJWARP=1
+#             SEED_POSE=1 GROUND_MU=2.0 URDF_USE_INERTIA=1  (matches the ghost dynamics).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "B2 get-up deploy (shadowing)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.30 0.13 0.945 2.30
+  position 2.4 -2.2 1.6
+  follow "b2"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 8 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF B2_REAL URDFRobot {
+  url "../../../robots/unitree/b2/urdf/b2.urdf"
+  translation 0 0 0.6
+  name "b2"
+  supervisor TRUE
+  controller "b2_getup_mimic"
+  physicsBackend "newton"
+}

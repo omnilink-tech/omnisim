@@ -1,0 +1,25 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/ProtoNestedMultipleInstances.proto"
+
+PROTO NestedParameterTransformNode [
+  field SFVec3f translation 0 0 0
+]
+{
+  Pose {
+    translation IS translation
+    children [
+      ProtoNestedMultipleInstances {
+        slot [
+          ProtoNestedMultipleInstances {
+            slot [
+              DEF TEST_PROTO Pose {
+                translation 1 0 1
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

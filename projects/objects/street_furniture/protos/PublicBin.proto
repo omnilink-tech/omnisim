@@ -1,0 +1,125 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/street_furniture/protos/PublicBin.proto
+# keywords: exterior/street furniture
+# An open park litter bin: a ground plate, a short stem and a colourable open-top basket.
+
+PROTO PublicBin [
+  field SFVec3f    translation          0 0 0
+  field SFRotation rotation             0 0 1 0
+  field SFString   name                 "public bin"
+  field SFColor    color                0.27 0.27 0.27    # Defines the color of the bin.
+  field MFColor    recognitionColors    [0.27 0.27 0.27]  # Is `Solid.recognitionColors`.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "public bin"
+    recognitionColors IS recognitionColors
+    children [
+      # --- ground plate -----------------------------------------------------
+      DEF FOOT Pose {
+        translation 0 0 0.015
+        children [
+          Shape {
+            appearance DEF BIN_STEEL PBRAppearance {
+              baseColor 0.2 0.2 0.21
+              roughness 0.6
+              metalness 0.8
+            }
+            geometry Cylinder {
+              radius 0.16
+              height 0.03
+              subdivision 20
+            }
+          }
+        ]
+      }
+      # --- stem -------------------------------------------------------------
+      DEF STEM Pose {
+        translation 0 0 0.27
+        children [
+          Shape {
+            appearance USE BIN_STEEL
+            geometry Cylinder {
+              radius 0.05
+              height 0.48
+              subdivision 12
+            }
+          }
+        ]
+      }
+      # --- basket -----------------------------------------------------------
+      DEF BASKET Pose {
+        translation 0 0 0.78
+        children [
+          Shape {
+            appearance DEF BIN_PAINT PBRAppearance {
+              baseColor IS color
+              roughness 0.45
+              metalness 0.4
+            }
+            geometry Cylinder {
+              radius 0.2
+              height 0.54
+              subdivision 24
+              top FALSE
+            }
+          }
+        ]
+      }
+      DEF BASKET_FLOOR Pose {
+        translation 0 0 0.55
+        children [
+          Shape {
+            appearance USE BIN_STEEL
+            geometry Cylinder {
+              radius 0.185
+              height 0.03
+              subdivision 20
+            }
+          }
+        ]
+      }
+      # --- rim --------------------------------------------------------------
+      DEF RIM Pose {
+        translation 0 0 1.055
+        children [
+          Shape {
+            appearance USE BIN_STEEL
+            geometry Cylinder {
+              radius 0.215
+              height 0.05
+              subdivision 24
+            }
+          }
+        ]
+      }
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 0.78
+          children [
+            Cylinder {
+              radius 0.21
+              height 0.56
+            }
+          ]
+        }
+        Pose {
+          translation 0 0 0.25
+          children [
+            Cylinder {
+              radius 0.07
+              height 0.5
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

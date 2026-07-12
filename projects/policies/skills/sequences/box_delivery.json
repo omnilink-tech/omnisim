@@ -1,0 +1,58 @@
+{
+  "schema": 2,
+  "name": "box_delivery",
+  "title": "Box delivery: realistic pick -> carry -> place -> real 90 deg corner -> walk away",
+  "class": "humanoid",
+  "robot": "g1",
+  "status": "verified",
+  "summary": "Realistic pick-and-place with a REAL corner: the G1 walks to cart A and stops with the box at its hands, takes it (two-phase proximity-gated lift -- no levitation), carries it down the south corridor to cart B, sets it down (two-phase place, real contact settle), walks on past the cart, takes a real ~90 deg footwork corner (TURN-LOOP, wtz=0) and walks away north, ending in a stand. THE HEADING BAND (measured, 10 runs): the turner's ghost spans exactly 0->90 deg absolute heading; every corner sweeping past ~95 deg fell/spun, so the there-and-back shuttle needs a heading-randomized turner retrain (named next step). Three deploy frame fixes are armed here: turn-frame FY brake, HARNESS_ATT_HEADING (body-frame attitude spring), TURN_OBS_RELATIVE (entry-relative rate obs).",
+  "profile": "g1_shadow_deploy",
+  "world": "projects/policies/worlds/g1_walk_puppet.wbt",
+  "primary": "walk",
+  "skills": [
+    "carry_box",
+    "stand_rl",
+    "turn_in_place"
+  ],
+  "arbiter": {
+    "kind": "course",
+    "value": "walkto,4.1,-1.35;stand,3;carryto,5.3,-2.1;carryto,8.85,-1.85;stand,6;walkto,11.0,-1.9;stand,3;turn,40;stand,3;walkto,10.7,1.9;stand,0"
+  },
+  "_turn_note": "seq.env overrides the turn_in_place defaults exactly as walk_turn_walk does: the 90-deg turner (wr_turn90 + ghost_turn_90) under TURN-LOOP with TURN_HOLD_LOCK=0; TURN_DECEL_DEG unset (loop mode plans passes, no decel). TURN_LOOP_MAX=6 is headroom only; every course turn targets the global TURN_TO_DEG=90.",
+  "env": {
+    "BATON_MORPH_TICKS": "30",
+    "BATON_MODE_FILE": "$MODEF",
+    "BATON_STAND_PIVOT": "0",
+    "BATON_TURN_CKPT": "projects/policies/training/runs/wr_turn90.pt",
+    "BATON_TURN_LUT": "projects/policies/controllers/g1_ghost/ghost_turn_90_lut.json",
+    "BATON_TURN_SETTLE_TICKS": "180",
+    "BATON_TURN_EXIT_TICKS": "150",
+    "TURN_TO_DEG": "90",
+    "TURN_LOOP": "1",
+    "TURN_HOLD_LOCK": "0",
+    "TURN_DECEL_DEG": "",
+    "HEADING_TARGET": "",
+    "GHOST_FOLLOW": "1",
+    "HARNESS_FY_HEADING": "1",
+    "TURN_LOOP_MAX": "6",
+    "TURN_LOOP_ABORT_DEG": "35",
+    "TURN_OBS_RELATIVE": "1",
+    "HARNESS_ATT_HEADING": "1",
+    "HAND_TRACK": "1"
+  },
+  "init_mode_file": true,
+  "props": [
+    "real 1.5 kg ODE box (DEF CARRY_BOX)",
+    "DELIVERY_CART / DELIVERY_CART_B",
+    "harness_rig moves the box off BATON_MODE_FILE (side log _scratch/foot_redesign/boxrig.log)"
+  ],
+  "duration_default": 170,
+  "gui_default": "gui",
+  "verified": {
+    "date": "2026-07-10",
+    "engine": "Newton/mujoco_warp",
+    "result": "3/3 headless (plus 2 environment FFI flakes excluded): box picked with a vertical two-phase lift from 0.35 m (hands at the box), carried 4.6 m south corridor, placed + settled at cart B's exact rest point (9.00, -1.40, 0.960) every run; corner 105-106 deg (TURN-LOOP pass 1); exit leg arrives (10.7, 1.9); ends standing; min z 0.659+, 0 falls"
+  },
+  "reproduces": "projects/policies/demos/run_box_delivery.sh",
+  "memory": "project_baton_policy_switching"
+}

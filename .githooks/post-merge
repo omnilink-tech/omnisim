@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Auto-purge orphan project dirs after every git pull / merge.
+# See scripts/dev/clean_orphans.py for the safety logic.
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+python "$ROOT/scripts/dev/clean_orphans.py"

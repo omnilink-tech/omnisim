@@ -1,0 +1,80 @@
+#VRML_SIM R2025a utf8
+
+# Screenshot variant of spot_walk_deploy.wbt: identical Spot + gpu_spot_walk_main
+# policy, plus a DEF CAMBOT camera-bot (controller walk_shot) that
+# chase-photographs the walking robot via Camera.saveImage. Launch with
+# rendering ON (--minimize) and the walk Newton env (ke=500/kd=60, see
+# run_spot_walk_deploy.ps1). PNGs -> _scratch/spot_walk_shots/.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Spot walking -- screenshot"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.40 0.42 0.81 1.90
+  position -4 -5 3
+  follow "spot"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+TexturedBackground { }
+TexturedBackgroundLight { }
+DEF SUN OmniSimSun {
+  direction -0.6 0.4 -0.5
+  intensity 2.6
+  ambientIntensity 0.45
+}
+RectangleArena {
+  floorSize 60 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+Solid { translation 3 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m3" }
+Solid { translation 6 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0.6 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m6" }
+Solid { translation 9 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m9" }
+Solid { translation 12 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m12" }
+
+DEF SPOT URDFRobot {
+  url "../../../robots/boston_dynamics/spot/urdf/spot.urdf"
+  translation 0 0 0.58
+  name "spot"
+  supervisor TRUE
+  controller "spot_walk_deploy"
+  physicsBackend "newton"
+}
+
+DEF CAMBOT Robot {
+  translation 2.4 -1.8 0.95
+  children [
+    Camera {
+      name "cam"
+      width 1280
+      height 800
+      fieldOfView 0.9
+    }
+  ]
+  name "cambot"
+  controller "walk_shot"
+  supervisor TRUE
+}

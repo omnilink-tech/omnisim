@@ -1,0 +1,274 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/street_furniture/protos/BusStop.proto
+# keywords: exterior/street furniture
+# A bus-stop shelter built from primitives: four posts, a roof slab, a glazed rear panel, an
+# end light-box carrying an advertising poster on each face, and an optional bench.
+# template language: javascript
+
+PROTO BusStop [
+  field SFVec3f     translation                 0 0 0
+  field SFRotation  rotation                    0 0 1 0
+  field SFFloat     scale                       1
+  field SFString    name                        "bus stop"
+  field SFBool      bench                       TRUE                                                                  # Defines whether the bust stop should include a bench.
+  field SFNode      appearance                  PBRAppearance { baseColor 0.3 0.45 0.33  metalness 0 roughness 0.5 }  # Defines the appearance of the bench.
+  field MFString    internalAdvertisingTexture  "textures/advertising.jpg"                                   # Defines the texture used for the internal advertising.
+  field MFString    externalAdvertisingTexture  "textures/advertising.jpg"                                   # Defines the texture used for the external advertising.
+  field SFBool      advertisingLightOn          TRUE                                                                  # Defines whether the advertising should have an emissive color.
+]
+{
+  %<
+    const scale = Math.abs(fields.scale.value) > 1e-6 ? Math.abs(fields.scale.value) : 1.0;
+    const lit = fields.advertisingLightOn.value;
+    const bench = fields.bench.value;
+
+    function s(v) {
+      return Math.round(v * scale * 1e6) / 1e6;
+    }
+
+    const depth = 1.5;        // x -- kerb to back panel
+    const length = 4.0;       // y -- along the kerb
+    const postH = 2.4;        // z -- underside of the roof
+    const postR = 0.05;
+    const adW = 1.2;          // advertising poster width  (x)
+    const adH = 1.7;          // advertising poster height (z)
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "bus stop"
+    children [
+      # --- posts --------------------------------------------------------------
+      DEF POST_FL Pose {
+        translation %<= s(0.5 * depth - postR) >% %<= s(0.5 * length - postR) >% %<= s(0.5 * postH) >%
+        children [
+          DEF SHELTER_POST Shape {
+            appearance DEF SHELTER_FRAME PBRAppearance {
+              baseColor 0.24 0.26 0.27
+              roughness 0.4
+              metalness 0.85
+            }
+            geometry Cylinder {
+              radius %<= s(postR) >%
+              height %<= s(postH) >%
+              subdivision 12
+            }
+          }
+        ]
+      }
+      DEF POST_FR Pose {
+        translation %<= s(0.5 * depth - postR) >% %<= s(-0.5 * length + postR) >% %<= s(0.5 * postH) >%
+        children [
+          USE SHELTER_POST
+        ]
+      }
+      DEF POST_BL Pose {
+        translation %<= s(-0.5 * depth + postR) >% %<= s(0.5 * length - postR) >% %<= s(0.5 * postH) >%
+        children [
+          USE SHELTER_POST
+        ]
+      }
+      DEF POST_BR Pose {
+        translation %<= s(-0.5 * depth + postR) >% %<= s(-0.5 * length + postR) >% %<= s(0.5 * postH) >%
+        children [
+          USE SHELTER_POST
+        ]
+      }
+      # --- roof ---------------------------------------------------------------
+      DEF ROOF Pose {
+        translation 0 0 %<= s(postH + 0.05) >%
+        children [
+          Shape {
+            appearance USE SHELTER_FRAME
+            geometry Box {
+              size %<= s(depth + 0.24) >% %<= s(length + 0.24) >% %<= s(0.1) >%
+            }
+          }
+        ]
+      }
+      DEF ROOF_FASCIA Pose {
+        translation %<= s(0.5 * depth + 0.12) >% 0 %<= s(postH - 0.03) >%
+        children [
+          Shape {
+            appearance USE SHELTER_FRAME
+            geometry Box {
+              size %<= s(0.04) >% %<= s(length + 0.24) >% %<= s(0.14) >%
+            }
+          }
+        ]
+      }
+      # --- glazed rear panel --------------------------------------------------
+      DEF REAR_GLASS Pose {
+        translation %<= s(-0.5 * depth + 0.05) >% 0 %<= s(0.5 * postH + 0.15) >%
+        children [
+          Shape {
+            appearance DEF SHELTER_GLASS PBRAppearance {
+              baseColor 0.62 0.72 0.7
+              transparency 0.65
+              roughness 0.08
+              metalness 0
+            }
+            geometry Box {
+              size %<= s(0.03) >% %<= s(length - 0.2) >% %<= s(postH - 0.4) >%
+            }
+          }
+        ]
+      }
+      # --- end light-box with an advertising poster on each face ---------------
+      DEF AD_BOX Pose {
+        translation 0 %<= s(0.5 * length - 0.06) >% %<= s(0.5 * postH + 0.05) >%
+        children [
+          Shape {
+            appearance USE SHELTER_FRAME
+            geometry Box {
+              size %<= s(adW + 0.16) >% %<= s(0.12) >% %<= s(adH + 0.16) >%
+            }
+          }
+        ]
+      }
+      # the poster seen from inside the shelter (its Plane normal points to -y)
+      DEF AD_INTERNAL Pose {
+        translation 0 %<= s(0.5 * length - 0.13) >% %<= s(0.5 * postH + 0.05) >%
+        rotation 1 0 0 1.5708
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColorMap ImageTexture {
+                url IS internalAdvertisingTexture
+              }
+            %< if (lit) { >%
+              emissiveColor 1 1 1
+              emissiveColorMap ImageTexture {
+                url IS internalAdvertisingTexture
+              }
+              emissiveIntensity 0.8
+            %< } >%
+              roughness 0.35
+              metalness 0
+            }
+            geometry Plane {
+              size %<= s(adW) >% %<= s(adH) >%
+            }
+          }
+        ]
+      }
+      # the poster seen from the pavement (its Plane normal points to +y)
+      DEF AD_EXTERNAL Pose {
+        translation 0 %<= s(0.5 * length + 0.01) >% %<= s(0.5 * postH + 0.05) >%
+        rotation 1 0 0 -1.5708
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColorMap ImageTexture {
+                url IS externalAdvertisingTexture
+              }
+            %< if (lit) { >%
+              emissiveColor 1 1 1
+              emissiveColorMap ImageTexture {
+                url IS externalAdvertisingTexture
+              }
+              emissiveIntensity 0.8
+            %< } >%
+              roughness 0.35
+              metalness 0
+            }
+            geometry Plane {
+              size %<= s(adW) >% %<= s(adH) >%
+            }
+          }
+        ]
+      }
+    %< if (bench) { >%
+      # --- bench --------------------------------------------------------------
+      DEF BENCH_SEAT Pose {
+        translation %<= s(-0.32) >% %<= s(-0.35) >% %<= s(0.46) >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Box {
+              size %<= s(0.42) >% %<= s(2.4) >% %<= s(0.06) >%
+            }
+          }
+        ]
+      }
+      DEF BENCH_BACK Pose {
+        translation %<= s(-0.52) >% %<= s(-0.35) >% %<= s(0.72) >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Box {
+              size %<= s(0.05) >% %<= s(2.4) >% %<= s(0.3) >%
+            }
+          }
+        ]
+      }
+      DEF BENCH_LEG_L Pose {
+        translation %<= s(-0.32) >% %<= s(0.75) >% %<= s(0.21) >%
+        children [
+          DEF BENCH_LEG Shape {
+            appearance USE SHELTER_FRAME
+            geometry Box {
+              size %<= s(0.34) >% %<= s(0.05) >% %<= s(0.43) >%
+            }
+          }
+        ]
+      }
+      DEF BENCH_LEG_R Pose {
+        translation %<= s(-0.32) >% %<= s(-1.45) >% %<= s(0.21) >%
+        children [
+          USE BENCH_LEG
+        ]
+      }
+    %< } >%
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation %<= s(-0.5 * depth + 0.05) >% 0 %<= s(0.5 * postH + 0.15) >%
+          children [
+            Box {
+              size %<= s(0.06) >% %<= s(length) >% %<= s(postH - 0.4) >%
+            }
+          ]
+        }
+        Pose {
+          translation 0 %<= s(0.5 * length - 0.06) >% %<= s(0.5 * postH + 0.05) >%
+          children [
+            Box {
+              size %<= s(adW + 0.16) >% %<= s(0.12) >% %<= s(adH + 0.16) >%
+            }
+          ]
+        }
+        Pose {
+          translation %<= s(0.5 * depth - postR) >% %<= s(-0.5 * length + postR) >% %<= s(0.5 * postH) >%
+          children [
+            Cylinder {
+              radius %<= s(postR) >%
+              height %<= s(postH) >%
+            }
+          ]
+        }
+        Pose {
+          translation %<= s(0.5 * depth - postR) >% %<= s(0.5 * length - postR) >% %<= s(0.5 * postH) >%
+          children [
+            Cylinder {
+              radius %<= s(postR) >%
+              height %<= s(postH) >%
+            }
+          ]
+        }
+        Pose {
+          translation 0 0 %<= s(postH + 0.05) >%
+          children [
+            Box {
+              size %<= s(depth + 0.24) >% %<= s(length + 0.24) >% %<= s(0.1) >%
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

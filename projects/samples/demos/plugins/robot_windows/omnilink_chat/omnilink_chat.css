@@ -1,0 +1,202 @@
+/* OmniLink robot window — side menu that hosts the prompt console.
+ * Palette: black / cream / mimosa per OmniLink brand. */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0b0b0c;
+  color: #f3eddc;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+#omnilink-side-menu {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 10px;
+  padding: 12px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+#ol-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1d1d20;
+}
+
+#ol-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ol-orb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fbe283 0%, #d6a72d 55%, #6e4e0d 100%);
+  box-shadow: 0 0 6px rgba(251, 226, 131, 0.5);
+}
+.ol-brand-text {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+#ol-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #b8b1a0;
+}
+.ol-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #555;
+}
+.ol-dot--idle      { background: #b8b1a0; }
+.ol-dot--connected { background: #6dd178; box-shadow: 0 0 4px #6dd178; }
+.ol-dot--thinking  { background: #fbe283; box-shadow: 0 0 4px #fbe283;
+                     animation: ol-pulse 1.0s ease-in-out infinite; }
+.ol-dot--acting    { background: #ff9e3d; box-shadow: 0 0 4px #ff9e3d;
+                     animation: ol-pulse 0.6s ease-in-out infinite; }
+.ol-dot--error     { background: #e8534b; box-shadow: 0 0 4px #e8534b; }
+
+@keyframes ol-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+/* ── Robot card ─────────────────────────────────────────────────────── */
+#ol-robot-card {
+  background: #121214;
+  border: 1px solid #1d1d20;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+.ol-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+}
+.ol-label { color: #8a8472; text-transform: uppercase; letter-spacing: 0.06em; }
+.ol-value { color: #f3eddc; font-family: "SF Mono", Menlo, Consolas, monospace; }
+
+/* ── Chat scrollback ────────────────────────────────────────────────── */
+#ol-chat {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #08080a;
+  border: 1px solid #1d1d20;
+  border-radius: 8px;
+  overflow: hidden;
+}
+#ol-log {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#ol-empty-hint {
+  padding: 10px;
+  border-top: 1px solid #1d1d20;
+  color: #8a8472;
+  font-size: 11px;
+}
+#ol-empty-hint ul { margin: 4px 0 0 0; padding-left: 16px; }
+#ol-empty-hint li { margin-bottom: 2px; cursor: pointer; }
+#ol-empty-hint li:hover { color: #fbe283; }
+
+.ol-msg {
+  padding: 6px 9px;
+  border-radius: 6px;
+  line-height: 1.35;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+.ol-msg--user      { background: #2a2417; color: #fbe283; align-self: flex-end; max-width: 92%; }
+.ol-msg--agent     { background: #161618; color: #f3eddc; align-self: flex-start; max-width: 92%; }
+.ol-msg--tool      { background: #0f1212; color: #8eb6ff; align-self: flex-start; max-width: 92%; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; }
+.ol-msg--tool-ok   { color: #6dd178; }
+.ol-msg--tool-err  { color: #ff8a82; }
+.ol-msg--system    { color: #8a8472; align-self: center; font-style: italic; font-size: 11px; }
+.ol-msg--usage     { color: #8a8472; align-self: center; font-size: 10px; font-family: "SF Mono", Menlo, Consolas, monospace; border: 1px dashed #1d1d20; padding: 4px 8px; max-width: 95%; }
+.ol-msg--error     { background: #2c1414; color: #ff8a82; align-self: stretch; }
+
+/* ── Composer ──────────────────────────────────────────────────────── */
+#ol-composer {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 8px;
+}
+#ol-input {
+  resize: none;
+  width: 100%;
+  background: #08080a;
+  color: #f3eddc;
+  border: 1px solid #1d1d20;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+#ol-input:focus { border-color: #fbe283; }
+
+#ol-composer-actions {
+  display: flex;
+  gap: 8px;
+}
+.ol-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #1d1d20;
+  background: #121214;
+  color: #f3eddc;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ol-btn:hover { background: #1a1a1c; }
+.ol-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ol-btn--primary {
+  background: #fbe283;
+  color: #0b0b0c;
+  border-color: #d6a72d;
+  font-weight: 600;
+}
+.ol-btn--primary:hover { background: #ffe890; }
+.ol-btn--stop {
+  flex: 0 0 70px;
+  background: #2c1414;
+  border-color: #5e2422;
+  color: #ff8a82;
+}
+.ol-btn--stop:hover { background: #3a1a18; }
+.ol-btn--mic {
+  flex: 0 0 70px;
+  background: #161618;
+  border-color: #1d1d20;
+  color: #f3eddc;
+}
+.ol-btn--mic:hover { background: #1f1f22; }
+.ol-btn--mic.is-recording {
+  background: #5e2422;
+  color: #ffe890;
+  border-color: #ff8a82;
+  animation: ol-pulse 0.9s ease-in-out infinite;
+}

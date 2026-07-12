@@ -1,0 +1,61 @@
+{
+  "schema": 2,
+  "name": "spot_walk",
+  "title": "Spot walk (residual PPO on a model-based trot; velocity-conditioned)",
+  "class": "quadruped",
+  "robots": ["spot"],
+  "kind": "rl",
+  "method": "shadowing",
+  "status": "verified",
+  "motion_class": "cyclic",
+  "summary": "Boston Dynamics Spot walks straight and durably (+119 m / 298 s) via residual PPO on a model-based trot, with a velocity-conditioned variant for walk/stop cycles and a terrain-curriculum variant that clears 18 cm rubble. The OmniSim-native RL pipeline's first robot. Same quadruped .npz ghost lineage as go2_walk.",
+
+  "ghost": {
+    "lut": "",
+    "format": "generated",
+    "provenance": "retargeted",
+    "validator": "n/a (quadruped lineage)",
+    "preview_world": "projects/policies/research/worlds/spot_walk_ghost_demo.wbt",
+    "notes": "The spot walk ghost is a foot-sphere-on-calf trot retarget. Other spot ghosts (getup/hill/jump/crouch) are stored .npz under research/shadowing/ghosts/."
+  },
+
+  "policy": {
+    "checkpoint": "projects/policies/research/inference/policies/gpu_spot_walk_main/policy.pt",
+    "arch": "residual-ppo",
+    "obs": {"family": "quad_spot"},
+    "action": {"dim": 12, "space": "legs", "decode": "trot + residual"},
+    "alt_checkpoints": {
+      "vc": "projects/policies/research/inference/policies/gpu_spot_walk_vc_main/policy.pt (velocity-conditioned walk/stop)",
+      "rough": "projects/policies/research/inference/policies/gpu_spot_rough_main/policy.pt (18cm rubble terrain curriculum)"
+    }
+  },
+
+  "baton": {
+    "blend": "cyclic",
+    "mode": "walk",
+    "attractor": "locomotion",
+    "notes": "Cross-robot cataloguing; not blended with the g1 family."
+  },
+
+  "train": {
+    "trainer": "projects/policies/research/training/gpu_mjwarp_spot_walk_trainer.py",
+    "status": "external",
+    "notes": "OmniSim-native residual PPO on a model-based gait. See docs/developer/spot-residual-rl.md."
+  },
+
+  "deploy": {
+    "run": "world",
+    "world": "projects/policies/research/worlds/spot_walk_deploy.wbt",
+    "controller": "projects/policies/research/controllers/spot_walk_deploy/spot_walk_deploy.py",
+    "notes": "Controller + policy baked into the world; `skill_lib.py run spot_walk` launches it."
+  },
+
+  "verification": {
+    "date": "2026-06-28",
+    "engine": "Newton/mujoco_warp",
+    "result": "Spot walks +119 m / 298 s straight, 0 falls; terrain variant clears 18 cm rubble (memory project_spot_walk_g1_recipe / project_quad_terrain_training_works)."
+  },
+  "doc": "docs/developer/spot-residual-rl.md",
+  "memory": "project_spot_walk_vc",
+  "related": ["go2_walk"]
+}

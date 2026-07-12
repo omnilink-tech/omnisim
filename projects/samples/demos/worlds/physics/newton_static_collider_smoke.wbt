@@ -1,0 +1,70 @@
+#VRML_SIM R2025a utf8
+
+# P8.2 statics-on-Newton smoke test.
+#
+# A mass=0 STATIC Newton box (no Physics node, just a boundingObject)
+# and a dynamic Newton box dropped onto it from above. With
+# OMNISIM_NEWTON_STATICS=1 the static box registers as a Newton static
+# body (separate "statics" articulation) and the faller should come to
+# rest ON it at z ~ 0.6 (static-box top 0.5 + faller half-height 0.1).
+#
+# Without the env var (default), the static box stays ODE-side and the
+# faller falls through to the Newton ground plane at z ~ 0.1 -- the
+# negative control that proves the static collider is what catches it.
+#
+# Verify headlessly via OMNISIM_NEWTON_STEPDIAG (dumps per-body z):
+#   OMNISIM_NEWTON_STATICS=1 OMNISIM_NEWTON_STEPDIAG=<path> \
+#     omnisim-bin.exe <thisworld> --minimize --batch --no-rendering --mode=fast
+
+WorldInfo {
+  basicTimeStep 16
+  title "P8.2 Newton static collider smoke"
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 -3 2
+}
+Background {
+  skyColor [ 0.4 0.45 0.5 ]
+}
+DEF STATIC_BOX Solid {
+  translation 0 0 0.25
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.57 0.6
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1 1 0.5
+      }
+    }
+  ]
+  boundingObject Box {
+    size 1 1 0.5
+  }
+}
+DEF FALLER Solid {
+  translation 0 0 1.2
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.9 0.2 0.2
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.2 0.2 0.2
+  }
+  physics Physics {
+    mass 1
+  }
+}

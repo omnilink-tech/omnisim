@@ -1,0 +1,230 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/apartment_structure/protos/Door.proto
+# keywords: building/component
+# A doorway cut through a wall: a lintel wall above the opening, a three-sided lining, and a leaf hung off it on a hinge, carrying a handle.
+# template language: javascript
+
+EXTERNPROTO "GenericDoorAppearance.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/VarnishedPine.proto"
+EXTERNPROTO "DoorLever.proto"
+EXTERNPROTO "omnisim://projects/objects/solids/protos/SolidBox.proto"
+EXTERNPROTO "omnisim://projects/objects/geometries/protos/TexturedBox.proto"
+
+PROTO Door [
+  field SFVec3f    translation            0 0 0
+  field SFRotation rotation               0 0 1 0
+  field SFString   name                   "door"
+  field SFVec3f    size                   0.2 1 2.4                 # Defines the width, height and thickness of the door wall frame.
+  field SFBool     canBeOpen              TRUE                      # Defines whether the door is connected to the frame throught a hinge-joint.
+  field SFFloat    position               0                         # Defines the position (aperture) of the door.
+  field SFBool     jointAtLeft            TRUE                      # Defines on which side the door is connected to the frame.
+  field SFBool     selfClosing            FALSE                     # Defines whether the door as a spring effect that makes it closing on itself.
+  field SFFloat    doorThickness          0.05                      # Defines the thickness of the door.
+  field SFFloat    frameHeight            2.0                       # Defines the height of the door frame. It should be must be less than or equal to `size.y`.
+  field SFVec3f    frameSize              0.05 0.05 0.05            # Defines the size of the door frame.
+  field SFFloat    mainMaterialDensity    200                       # Defines the density of the door.
+  field SFNode     doorAppearance         GenericDoorAppearance {}  # Defines the door's appearance.
+  field SFNode     wallAppearance         Roughcast {}              # Defines the wall's appearance.
+  field SFNode     frameAppearance        VarnishedPine {}          # Defines the frame's appearance.
+  field SFNode     doorHandle             DoorLever {}              # Defines an optional door handle.
+  field MFNode     doorSlot               []                        # Extends the door with new nodes.
+  field SFBool     castShadows            TRUE                      # Defines whether this object should cast shadows.
+]
+{
+  %<
+    // =====================================================================
+    // 1. THE FIELDS AND THE FRAME OF REFERENCE
+    //
+    // The Door OCCUPIES a slice of wall, and its own origin sits at the foot of
+    // that slice, on the wall's centre line: `size` is the slice itself --
+    // (x) how deep the wall is, (y) how wide the opening is, (z) how tall the
+    // wall is. The door leaf hangs on the +x face of that slice, and swings out
+    // towards +x. `frameHeight` is where the head of the opening is; whatever
+    // wall is left above it is filled in.
+    // =====================================================================
+    let size = fields.size.value;
+    if (size.x <= 0 || size.y <= 0 || size.z <= 0) {
+      size = fields.size.defaultValue;
+      console.error('\'size\' must be strictly positive. Value reset to (' + size.x + ', ' + size.y + ', ' + size.z + ').');
+    }
+
+    let doorThickness = fields.doorThickness.value;
+    if (doorThickness <= 0.0) {
+      doorThickness = fields.doorThickness.defaultValue;
+      console.error('\'doorThickness\' must be strictly positive. Value reset to ' + doorThickness + '.');
+    }
+
+    let frameHeight = fields.frameHeight.value;
+    if (frameHeight <= 0.0) {
+      frameHeight = fields.frameHeight.defaultValue;
+      console.error('\'frameHeight\' must be strictly positive. Value reset to ' + frameHeight + '.');
+    } else if (frameHeight > size.z) {
+      // A head higher than the wall would leave the lining floating in mid-air.
+      frameHeight = size.z;
+      console.error('\'frameHeight\' must be less than or equal to \'size.z\'. Value reset to ' + frameHeight + '.');
+    }
+
+    let frameSize = fields.frameSize.value;
+    if (frameSize.x <= 0 || frameSize.y <= 0 || frameSize.z <= 0) {
+      frameSize = fields.frameSize.defaultValue;
+      console.error('\'frameSize\' must be strictly positive. Value reset to (' + frameSize.x + ', ' + frameSize.y + ', ' + frameSize.z + ').');
+    }
+
+    // The leaf and the handle have to agree about which jamb they hang off, and
+    // a dynamic handle cannot hang off a static leaf. Both are caller errors
+    // that show up as physics nonsense rather than as a load failure, so they
+    // are called out here instead.
+    const handle = fields.doorHandle.value;
+    if (handle !== undefined && handle !== null) {
+      if (handle.fields.jointAtLeft !== undefined && fields.jointAtLeft.value !== handle.fields.jointAtLeft.value)
+        console.error('\'jointAtLeft\' field value of Door and doorHandle nodes does not match.');
+      if (handle.fields.hasStaticParent !== undefined && handle.fields.hasStaticParent.value === fields.canBeOpen.value)
+        console.error('\'doorHandle.hasStaticParent\' value is incorrect, the parent Door object is static.');
+    }
+
+    // =====================================================================
+    // 2. THE DERIVED GEOMETRY
+    //
+    // `hinge` is +1 or -1: the jamb the leaf is hung on. Everything that has to
+    // mirror with the hanging -- the hinge anchor, the swing limits, the side
+    // the handle ends up on -- is that one sign.
+    // =====================================================================
+    const hinge = fields.jointAtLeft.value ? -1 : 1;
+
+    const lintel = size.z - frameHeight;          // wall left above the opening
+    const jambDepth = size.x + 2 * frameSize.x;   // lining stands proud of both wall faces
+    const leafX = 0.5 * size.x + frameSize.x + 0.5 * doorThickness;  // leaf's mid-plane
+    const leafY = size.y - frameSize.y;           // leaf spans the opening between the jambs
+    const leafZ = frameHeight - 0.5 * frameSize.z;
+    const openable = fields.canBeOpen.value;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      %< if (lintel > 0) { >%
+      # --- the wall above the head of the opening ---------------------------
+      Solid {
+        translation 0 0 %<= size.z - 0.5 * lintel >%
+        children [
+          Shape {
+            appearance IS wallAppearance
+            geometry Box {
+              size %<= size.x >% %<= size.y >% %<= lintel >%
+            }
+            castShadows IS castShadows
+          }
+        ]
+        name "mobile part"
+        boundingObject Box {
+          size %<= size.x >% %<= size.y >% %<= lintel >%
+        }
+      }
+      %< } >%
+      # --- the lining: head, then one jamb on each side ----------------------
+      SolidBox { # top frame
+        translation 0 0 %<= frameHeight - 0.5 * frameSize.z >%
+        name "top frame"
+        size %<= jambDepth >% %<= size.y - 2 * frameSize.y >% %<= frameSize.z >%
+        appearance IS frameAppearance
+        castShadows IS castShadows
+      }
+      SolidBox { # left frame
+        translation 0 %<= -0.5 * (size.y - frameSize.y) >% %<= 0.5 * frameHeight >%
+        name "left frame"
+        size %<= jambDepth >% %<= frameSize.y >% %<= frameHeight >%
+        appearance IS frameAppearance
+        castShadows IS castShadows
+      }
+      SolidBox { # right frame
+        translation 0 %<= 0.5 * (size.y - frameSize.y) >% %<= 0.5 * frameHeight >%
+        name "right frame"
+        size %<= jambDepth >% %<= frameSize.y >% %<= frameHeight >%
+        appearance IS frameAppearance
+        castShadows IS castShadows
+      }
+      %< if (openable) { >%
+      # --- the hinge -----------------------------------------------------------
+      #
+      # The axis stands in the corner between the leaf and the jamb it is hung
+      # on, so the leaf sweeps AWAY from the wall (+x) and cannot swing back
+      # through it: the stop on the wall side is held a hair off zero rather
+      # than at zero, because a joint that starts exactly on its own stop
+      # chatters.
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          position IS position
+          anchor %<= 0.5 * size.x + frameSize.x >% %<= hinge * 0.5 * (size.y - frameSize.y) >% %<= 0.5 * frameHeight >%
+          axis 0 0 1
+          %< if (hinge > 0) { >%
+          minStop -0.01
+          maxStop 1.57
+          %< } else { >%
+          minStop -1.57
+          maxStop 0.01
+          %< } >%
+          %< if (fields.selfClosing.value) { >%
+          springConstant 5
+          %< } >%
+          dampingConstant 10
+        }
+        endPoint
+      %< } >%
+        # --- the leaf ---------------------------------------------------------
+        #
+        # Nudged 1 mm off the lining so that a shut door is not permanently in
+        # contact with its own frame.
+        Solid {
+          translation 0.001 0 0
+          children [
+            Pose { # leaf
+              translation %<= leafX >% 0 %<= 0.5 * frameHeight >%
+              children [
+                Shape {
+                  appearance IS doorAppearance
+                  geometry TexturedBox { # a TexturedBox, so the finish is not mirrored across the two faces
+                    size %<= doorThickness >% %<= leafY >% %<= leafZ >%
+                  }
+                  castShadows IS castShadows
+                }
+              ]
+            }
+            Pose { # handle, on the swinging edge -- the jamb opposite the hinge
+              translation %<= leafX >% %<= -hinge * 0.4 * size.y >% %<= 0.5 * frameHeight >%
+              children [
+                Slot {
+                  type "door handle"
+                  endPoint IS doorHandle
+                }
+              ]
+            }
+            Pose { # anything else the caller bolts to the leaf
+              translation %<= leafX >% 0 %<= 0.5 * frameHeight >%
+              children IS doorSlot
+            }
+          ]
+          boundingObject Pose {
+            translation %<= leafX >% 0 %<= 0.5 * frameHeight >%
+            children [
+              Box {
+                size %<= doorThickness >% %<= leafY >% %<= leafZ >%
+              }
+            ]
+          }
+          %< if (openable) { >%
+          physics Physics {
+            density IS mainMaterialDensity
+          }
+          %< } >%
+        }
+      %< if (openable) { >%
+      }
+      %< } >%
+    ]
+    name IS name
+    model "door"
+  }
+}

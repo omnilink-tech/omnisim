@@ -1,0 +1,69 @@
+#VRML_SIM R2025a utf8
+# license: Apache-2.0
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim
+# keywords: construction/vehicle/excavator/digger
+# Excavator — a detailed procedural tracked excavator: twin crawler
+# tracks with sprockets, slewing upper house with counterweight, glazed
+# cab, and an articulated boom + dipper arm + toothed bucket driven by
+# hydraulic rams. Static decoration (no physics).
+
+PROTO Excavator [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "excavator"
+  field SFColor    bodyColor   0.90 0.62 0.06
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "excavator"
+    children [
+      # ── crawler tracks ──
+      DEF EX_TRACK Pose { translation 0 1.0 0 children [
+        Pose { translation 0 0 0.5 children [ Shape { appearance DEF EX_DARK PBRAppearance { baseColor 0.12 0.12 0.14 roughness 0.85 metalness 0.3 } geometry Box { size 3.8 0.6 0.6 } } ] }
+        Pose { translation 1.75 0 0.5 rotation 1 0 0 1.5708 children [ Shape { appearance USE EX_DARK geometry Cylinder { radius 0.45 height 0.62 } } ] }
+        Pose { translation -1.75 0 0.5 rotation 1 0 0 1.5708 children [ Shape { appearance USE EX_DARK geometry Cylinder { radius 0.45 height 0.62 } } ] }
+      ] }
+      Pose { translation 0 -1.0 0 children [
+        Pose { translation 0 0 0.5 children [ Shape { appearance USE EX_DARK geometry Box { size 3.8 0.6 0.6 } } ] }
+        Pose { translation 1.75 0 0.5 rotation 1 0 0 1.5708 children [ Shape { appearance USE EX_DARK geometry Cylinder { radius 0.45 height 0.62 } } ] }
+        Pose { translation -1.75 0 0.5 rotation 1 0 0 1.5708 children [ Shape { appearance USE EX_DARK geometry Cylinder { radius 0.45 height 0.62 } } ] }
+      ] }
+      # car-body bridging the tracks + slew ring
+      Pose { translation 0 0 0.95 children [ Shape { appearance USE EX_DARK geometry Box { size 2.6 1.7 0.45 } } ] }
+      Pose { translation 0 0 1.2 children [ Shape { appearance USE EX_DARK geometry Cylinder { radius 0.85 height 0.18 } } ] }
+
+      # ── upper house (slews) ──
+      Pose { translation -0.25 0 1.7 children [ Shape { appearance DEF EX_BODY PBRAppearance { baseColor IS bodyColor roughness 0.45 metalness 0.4 } geometry Box { size 2.9 2.0 0.95 } } ] }
+      Pose { translation -0.25 0 2.25 children [ Shape { appearance USE EX_BODY geometry Box { size 2.4 1.9 0.3 } } ] }   # engine deck
+      # counterweight (rear)
+      Pose { translation -1.75 0 1.45 children [ Shape { appearance USE EX_DARK geometry Box { size 0.7 2.0 1.25 } } ] }
+      # cab + glazing (front-left)
+      Pose { translation 0.7 0.55 2.05 children [ Shape { appearance USE EX_BODY geometry Box { size 1.1 0.9 1.2 } } ] }
+      Pose { translation 1.27 0.55 2.15 children [ Shape { appearance DEF EX_GLASS PBRAppearance { baseColor 0.07 0.1 0.14 roughness 0.15 metalness 0.5 } geometry Box { size 0.06 0.78 0.95 } } ] }
+      Pose { translation 0.7 1.01 2.15 children [ Shape { appearance USE EX_GLASS geometry Box { size 0.9 0.06 0.9 } } ] }
+      # exhaust + handrail
+      Pose { translation -0.9 0.7 2.55 children [ Shape { appearance USE EX_DARK geometry Cylinder { radius 0.06 height 0.5 } } ] }
+
+      # ── boom (up-forward), with hydraulic ram ──
+      Pose { translation 2.51 0 2.52 rotation 0 1 0 -0.61 children [ Shape { appearance USE EX_BODY geometry Box { size 3.2 0.36 0.4 } } ] }
+      Pose { translation 1.5 0 1.78 rotation 0 1 0 -0.46 children [ Shape { appearance DEF EX_RAM PBRAppearance { baseColor 0.55 0.56 0.6 roughness 0.3 metalness 0.85 } geometry Cylinder { radius 0.1 height 2.0 } } ] }   # boom ram
+      # boom pivot pin
+      Pose { translation 1.2 0 1.6 rotation 1 0 0 1.5708 children [ Shape { appearance USE EX_DARK geometry Cylinder { radius 0.16 height 0.5 } } ] }
+
+      # ── dipper arm (down-forward), with ram ──
+      Pose { translation 4.42 0 2.40 rotation 0 1 0 1.047 children [ Shape { appearance USE EX_BODY geometry Box { size 2.4 0.3 0.32 } } ] }
+      Pose { translation 3.4 0 3.0 rotation 0 1 0 0.4 children [ Shape { appearance USE EX_RAM geometry Cylinder { radius 0.09 height 1.7 } } ] }   # arm ram
+
+      # ── bucket (toothed) ──
+      Pose { translation 4.95 0 1.25 children [ Shape { appearance USE EX_DARK geometry Box { size 0.16 1.0 0.7 } } ] }          # back plate
+      Pose { translation 5.25 0 0.95 rotation 0 1 0 0.5 children [ Shape { appearance USE EX_DARK geometry Box { size 0.7 1.0 0.16 } } ] }  # bottom
+      Pose { translation 5.55 0.35 0.78 children [ Shape { appearance USE EX_DARK geometry Box { size 0.18 0.08 0.22 } } ] }      # tooth
+      Pose { translation 5.55 0.0 0.78 children [ Shape { appearance USE EX_DARK geometry Box { size 0.18 0.08 0.22 } } ] }
+      Pose { translation 5.55 -0.35 0.78 children [ Shape { appearance USE EX_DARK geometry Box { size 0.18 0.08 0.22 } } ] }
+    ]
+  }
+}

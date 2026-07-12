@@ -1,0 +1,24 @@
+{
+  "world": "projects/samples/demos/worlds/showcase/husky_fleet_arena.wbt",
+  "resolution": [3840, 2160],
+  "fov": 0.785398,
+  "load_wait_s": 120.0,
+  "shots": [
+    {
+      "name": "husky_fleet_topdown_4k",
+      "output": "husky_fleet_topdown_4k.mp4",
+      "duration_s": 30.0,
+      "fps": 30,
+      "codec": "h264",
+      "crf": 8,
+      "preset": "veryslow",
+      "ease": "linear",
+      "warmup_steps": 80,
+      "playback_speed": 0.5,
+      "path_keyframes": [
+        {"t":  0.0, "position": [0, 0, 45], "target": [0, 0, 0]},
+        {"t": 30.0, "position": [0, 0, 45], "target": [0, 0, 0]}
+      ]
+    }
+  ]
+}

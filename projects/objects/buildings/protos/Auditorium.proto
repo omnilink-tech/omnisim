@@ -1,0 +1,209 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/buildings/protos/Auditorium.proto
+# keywords: building/public
+# template language: javascript
+# A round concert-hall / auditorium: stone plinth, glazed drum with radial mullion fins,
+# a cornice ring, a shallow metal dome and a columned entrance porch on the +y side.
+# Everything is primitive geometry -- no facade textures. The base sits at z = 0.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+
+PROTO Auditorium [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "auditorium"
+]
+{
+  %<
+    const radius = 18.0;          // drum radius
+    const plinthHeight = 1.2;
+    const drumHeight = 12.0;      // drum height above the plinth
+    const roofZ = plinthHeight + drumHeight;   // 13.2 m -- cornice level
+    const glassBottom = 2.4;
+    const glassTop = 8.6;
+    const glassMid = (glassBottom + glassTop) / 2.0;
+    const glassHeight = glassTop - glassBottom;
+    const fins = 48;              // radial mullions
+    const domeRadius = 14.0;
+    const domeCentre = 6.8;       // so the cap rises ~7.6 m above the cornice
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "auditorium"
+    children [
+      # ---- plinth -----------------------------------------------------------
+      Pose {
+        translation 0 0 %<= plinthHeight / 2.0 >%
+        children [
+          Shape {
+            appearance DEF STONE_APP PBRAppearance {
+              baseColor 0.60 0.59 0.56
+              roughness 0.95
+              metalness 0
+            }
+            geometry Cylinder { radius %<= radius + 1.2 >% height %<= plinthHeight >% subdivision 48 }
+          }
+        ]
+      }
+
+      # ---- drum -------------------------------------------------------------
+      Pose {
+        translation 0 0 %<= plinthHeight + drumHeight / 2.0 >%
+        children [
+          Shape {
+            appearance DEF WALL_APP Roughcast {
+              colorOverride 0.78 0.78 0.76
+              textureTransform TextureTransform { scale 16 4 }
+            }
+            geometry Cylinder { radius %<= radius >% height %<= drumHeight >% subdivision 48 }
+          }
+        ]
+      }
+
+      # ---- glazed ring ------------------------------------------------------
+      Pose {
+        translation 0 0 %<= glassMid >%
+        children [
+          Shape {
+            appearance DEF GLASS_APP PBRAppearance {
+              baseColor 0.16 0.20 0.23
+              roughness 0.15
+              metalness 0.85
+            }
+            geometry Cylinder { radius %<= radius + 0.12 >% height %<= glassHeight >% subdivision 48 top FALSE bottom FALSE }
+          }
+        ]
+      }
+
+      # ---- radial mullion fins ----------------------------------------------
+      %< for (let i = 0; i < fins; ++i) {
+           const a = 2 * Math.PI * i / fins;
+           const fx = (radius + 0.16) * Math.cos(a);
+           const fy = (radius + 0.16) * Math.sin(a); >%
+      Pose {
+        translation %<= fx.toFixed(3) >% %<= fy.toFixed(3) >% %<= glassMid >%
+        rotation 0 0 1 %<= (a - Math.PI / 2).toFixed(4) >%
+        children [
+          %< if (i === 0) { >%
+          DEF MULLION Shape {
+            appearance DEF TRIM_APP PBRAppearance {
+              baseColor 0.66 0.68 0.70
+              roughness 0.4
+              metalness 0.7
+            }
+            geometry Box { size 0.22 0.35 %<= glassHeight >% }
+          }
+          %< } else { >%
+          USE MULLION
+          %< } >%
+        ]
+      }
+      %< } >%
+
+      # ---- cornice ----------------------------------------------------------
+      Pose {
+        translation 0 0 %<= roofZ + 0.4 >%
+        children [
+          Shape {
+            appearance USE STONE_APP
+            geometry Cylinder { radius %<= radius + 1.0 >% height 0.9 subdivision 48 }
+          }
+        ]
+      }
+
+      # ---- dome (a sphere cap emerging from the roof) ------------------------
+      Pose {
+        translation 0 0 %<= domeCentre >%
+        children [
+          Shape {
+            appearance DEF DOME_APP PBRAppearance {
+              baseColor 0.35 0.45 0.44
+              roughness 0.35
+              metalness 0.85
+            }
+            geometry Sphere { radius %<= domeRadius >% subdivision 3 }
+          }
+        ]
+      }
+      # lantern on the apex
+      Pose {
+        translation 0 0 %<= domeCentre + domeRadius + 0.8 >%
+        children [
+          Shape {
+            appearance USE TRIM_APP
+            geometry Cylinder { radius 1.4 height 2.2 subdivision 16 }
+          }
+        ]
+      }
+      Pose {
+        translation 0 0 %<= domeCentre + domeRadius + 2.4 >%
+        children [
+          Shape {
+            appearance USE DOME_APP
+            geometry Sphere { radius 1.0 subdivision 2 }
+          }
+        ]
+      }
+
+      # ---- entrance porch on the +y side ------------------------------------
+      Pose {
+        translation 0 %<= radius + 1.6 >% 7.0
+        children [
+          Shape {
+            appearance USE STONE_APP
+            geometry Box { size 14 4.5 0.7 }
+          }
+        ]
+      }
+      %< for (let k = 0; k < 4; ++k) {
+           const px = -4.5 + k * 3.0; >%
+      Pose {
+        translation %<= px >% %<= radius + 3.2 >% 3.3
+        children [
+          %< if (k === 0) { >%
+          DEF PORCH_COLUMN Shape {
+            appearance USE STONE_APP
+            geometry Cylinder { radius 0.45 height 6.6 subdivision 12 }
+          }
+          %< } else { >%
+          USE PORCH_COLUMN
+          %< } >%
+        ]
+      }
+      %< } >%
+      # entrance steps
+      %< for (let s = 0; s < 3; ++s) { >%
+      Pose {
+        translation 0 %<= radius + 1.6 + s * 0.9 >% %<= 1.0 - s * 0.33 >%
+        children [
+          Shape {
+            appearance USE STONE_APP
+            geometry Box { size %<= 15 + s >% 1.0 %<= 0.34 >% }
+          }
+        ]
+      }
+      %< } >%
+      # doors
+      Pose {
+        translation 0 %<= radius - 0.05 >% 2.6
+        children [
+          Shape {
+            appearance USE GLASS_APP
+            geometry Box { size 8 0.6 4.4 }
+          }
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation 0 0 %<= roofZ / 2.0 >%
+      children [
+        Cylinder { radius %<= radius + 1.2 >% height %<= roofZ >% subdivision 24 }
+      ]
+    }
+    locked TRUE
+  }
+}

@@ -1,0 +1,62 @@
+#VRML_SIM R2025a utf8
+
+# R5e smoke world: a single-layer, non-rotating Lidar facing the same cyan box
+# as camera_wgpu_scene_smoke. With OMNISIM_LIDAR_WGPU=1 the Lidar renders its
+# range scan through the wgpu radial-range pipeline
+# (WbWgpuRenderTarget::clearAndDrawSceneRangeF32) and angular-resamples it into
+# the uniform-angle layout updatePointCloud expects, instead of WREN.
+#
+# Geometry mirrors the camera/RangeFinder smoke worlds: the box centre is at
+# x=1.0 with size 0.6, so its front face is 0.7 m from the sensor. With
+# fieldOfView 0.8 rad (half-angle 0.4) every ray hits the front face
+# (0.4 < atan(0.3/0.7)=0.405), so the closed-form range per azimuth is
+# range[theta] = 0.70 / cos(theta) -- center 0.70 m, edges ~0.760 m.
+#
+# Companion to docs/developer/engine-migration-plan.md R5 WbLidar spec.
+
+WorldInfo {
+  info [
+    "R5e smoke -- wgpu single-layer Lidar renders metric range"
+  ]
+  title "R5e wgpu Lidar smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 64
+      fieldOfView 0.8
+      verticalFieldOfView 0.1
+      numberOfLayers 1
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      type "fixed"
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "lidar_wgpu_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

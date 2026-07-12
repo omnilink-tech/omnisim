@@ -1,0 +1,268 @@
+#VRML_SIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/geometries/protos/TexturedParallelepiped.proto
+# keywords: primitive/geometry
+# A parallelepiped mesh generated from three half-edge vectors, with a choice of texture mapping and per-face visibility.
+# The solid is the set of points k*ex + j*ey + i*ez for k, j, i in [-1, 1], where the three half-edges follow from `size` and `angles`:
+# - `angles.x`: angle in y direction between the front and back faces of the prism
+# - `angles.y`: angle between the base and the side edges of the parallelogram face
+# - `angles.z`: angle in z direction between the front and back faces of the prism
+# Available texture mappings:
+# - `cube` mapping: the six faces are cut out of a cross-shaped 4 x 3 cube map (see projects/samples/geometries/worlds/textures/cube_mapping.jpg)
+# - `compact` cube mapping: the same six faces, cut out of a tightly packed 3 x 2 cube map
+# - `flat` mapping: the whole image is projected on the front face
+# - `metric` mapping: the image keeps its aspect ratio and is laid over the faces at a single scale, so it is never stretched to fit
+# - `default` mapping: the whole image is repeated on every face
+# - `none`: no texture coordinates are emitted
+# If a boolean field (front, back, left, right, top, bottom) is FALSE, then the corresponding face is not drawn.
+# A demo of these mappings is available in projects/samples/geometries/worlds/textured_boxes.wbt.
+# template language: javascript
+
+PROTO TexturedParallelepiped [
+  field SFVec3f  size    0.1 0.1 0.1     # Defines the size of the parallelepiped.
+  field SFVec3f  angles  0.0 0.7854 0.0  # Defines the angles of the parallelepiped.
+  field SFString{"cube", "compact", "flat", "metric", "default", "none"}
+                 mapping "flat"          # Defines the texture mapping.
+  field SFBool   front   TRUE            # Defines whether the front face should be included.
+  field SFBool   back    TRUE            # Defines whether the back face should be included.
+  field SFBool   left    TRUE            # Defines whether the left face should be included.
+  field SFBool   right   TRUE            # Defines whether the right face should be included.
+  field SFBool   top     TRUE            # Defines whether the top face should be included.
+  field SFBool   bottom  TRUE            # Defines whether the bottom face should be included.
+]
+{
+  %<
+    // =====================================================================
+    // 1. THE FIELDS
+    //
+    // A parallelepiped with no faces at all is not a mesh, so if the caller
+    // switched every face off, the front one is switched back on.
+    // =====================================================================
+    let faceOn = {
+      front: fields.front.value,
+      back: fields.back.value,
+      left: fields.left.value,
+      right: fields.right.value,
+      top: fields.top.value,
+      bottom: fields.bottom.value
+    };
+    if (!(faceOn.front || faceOn.back || faceOn.left || faceOn.right || faceOn.top || faceOn.bottom)) {
+      console.error('cannot create an object without any faces: \'front\' reset to default value.');
+      faceOn.front = fields.front.defaultValue;
+    }
+
+    let size = fields.size.value;
+    if (size.x <= 0 || size.y <= 0 || size.z <= 0) {
+      console.error('\'size\' must contain positive values. Using default values instead.');
+      size = fields.size.defaultValue;
+    }
+    const half = {x: 0.5 * size.x, y: 0.5 * size.y, z: 0.5 * size.z};
+
+    // The three angles are only meaningful modulo pi, and two of them are
+    // measured off the prism axis, so they are folded into the range the
+    // geometry is actually defined on before they are used.
+    const halfPi = 0.5 * Math.PI;
+    const eps = 0.001;
+    const fold = function(a, lo, hi) {
+      while (a > hi)
+        a -= Math.PI;
+      while (a < lo)
+        a += Math.PI;
+      return a;
+    };
+    let angles = {
+      x: fold(fields.angles.value.x, -halfPi, halfPi),
+      y: fold(fields.angles.value.y, 0, Math.PI),
+      z: fold(fields.angles.value.z, -halfPi, halfPi)
+    };
+    // angles.y == 0 collapses the parallelogram face onto a line, and a shear of
+    // exactly +/- pi/2 sends the prism axis to infinity -- neither is a solid.
+    if (angles.y < eps || angles.y > Math.PI - eps) {
+      console.error('\'angles.y\' cannot be 0. Value reset to ' + fields.angles.defaultValue + '.');
+      angles = fields.angles.defaultValue;
+    } else if (Math.abs(angles.x) > halfPi - eps || Math.abs(angles.z) > halfPi - eps) {
+      console.error('\'angles.x\' and \'angles.z\' cannot be PI/2 or -PI/2. Using default value instead.');
+      angles = fields.angles.defaultValue;
+    }
+
+    // =====================================================================
+    // 2. THE THREE HALF-EDGES
+    //
+    // Everything below is derived from these. `ea` runs along the prism axis
+    // (sheared out of x by angles.x in y and by angles.z in z); `eb` is the
+    // straight y edge; `ec` is the slanted edge of the parallelogram face,
+    // leaning out of z towards y by angles.y. A corner of the solid is
+    // k*ea + j*ec + i*eb with each of i, j, k either -1 or +1.
+    // =====================================================================
+    const ea = {
+      x: half.x * Math.cos(angles.x) * Math.cos(angles.z),
+      y: -half.x * Math.sin(angles.x) * Math.cos(angles.z),
+      z: half.x * Math.sin(angles.z)
+    };
+    const eb = {x: 0, y: half.y, z: 0};
+    const ec = {x: 0, y: half.z * Math.cos(angles.y), z: half.z * Math.sin(angles.y)};
+
+    const add = function(u, v) { return {x: u.x + v.x, y: u.y + v.y, z: u.z + v.z}; };
+    const mul = function(u, s) { return {x: s * u.x, y: s * u.y, z: s * u.z}; };
+    const dot = function(u, v) { return u.x * v.x + u.y * v.y + u.z * v.z; };
+    const cross = function(u, v) {
+      return {x: u.y * v.z - u.z * v.y, y: u.z * v.x - u.x * v.z, z: u.x * v.y - u.y * v.x};
+    };
+    const norm = function(u) { return Math.sqrt(dot(u, u)); };
+    const unit = function(u) {
+      const n = norm(u);
+      return n > 1e-12 ? mul(u, 1 / n) : {x: 0, y: 0, z: 0};
+    };
+
+    // =====================================================================
+    // 3. THE FACES
+    //
+    // Each face is emitted with its own four vertices rather than sharing the
+    // eight corners of the solid. That costs 24 points instead of 8, but it
+    // buys two things worth far more: every face carries its own texture
+    // coordinates (so the mappings below are just six independent 2D layouts,
+    // with no index gymnastics to keep them apart), and the mesh stays flat
+    // shaded across the edges without needing a creaseAngle.
+    //
+    // A face is named by the half-edge it faces along, and is spanned by the
+    // other two, ORDERED so that a x b points out of the solid. Its four
+    // corners are then walked (-a,-b), (+a,-b), (+a,+b), (-a,+b), which is
+    // counter-clockwise seen from outside -- the winding the renderer wants.
+    // =====================================================================
+    const faces = [
+      {name: 'front',  n: ea,           a: eb, b: ec},   // +x
+      {name: 'back',   n: mul(ea, -1),  a: ec, b: eb},   // -x
+      {name: 'left',   n: eb,           a: ec, b: ea},   // +y
+      {name: 'right',  n: mul(eb, -1),  a: ea, b: ec},   // -y
+      {name: 'top',    n: ec,           a: ea, b: eb},   // +z
+      {name: 'bottom', n: mul(ec, -1),  a: eb, b: ea}    // -z
+    ];
+    const cornerSigns = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    const drawn = faces.filter(function(f) { return faceOn[f.name]; });
+
+    const cornersOf = function(f) {
+      return cornerSigns.map(function(s) {
+        return add(f.n, add(mul(f.a, s[0]), mul(f.b, s[1])));
+      });
+    };
+
+    // =====================================================================
+    // 4. THE TEXTURE MAPPINGS
+    //
+    // `cube` and `compact` cut the six faces out of one image, so each face is
+    // a rectangular CELL of a grid: the cross layout puts the four side faces
+    // in a band with the top above the front and the bottom below it, and the
+    // compact layout folds the same six cells into a 3 x 2 block. `default`
+    // gives every face the whole image.
+    //
+    // `flat` PROJECTS the image, so it belongs to the front face (and the back,
+    // which sees the same picture from behind). The four faces edge-on to that
+    // projection have no picture to show: they are given a cell one ten-thousandth
+    // wide, running along the edge of the image the face abuts. Each of them
+    // therefore takes the flat colour of the border of the image -- which is what
+    // an image projected on one face looks like from the side.
+    //
+    // A cell is walked with the SAME four corners as the face, but not always
+    // starting at the same one: `spin` is how far round the cell the face's
+    // first corner sits. It is what makes the six cells of a cube map agree at
+    // their shared edges instead of each being rotated at random.
+    // =====================================================================
+    const mapping = fields.mapping.value;
+
+    // Which corner of its cell each face starts at. One table for every grid
+    // mapping: it is a property of how the six faces are wound, not of the
+    // image they are cut from.
+    const spinOf = {front: 0, back: 1, left: 1, right: 0, top: 3, bottom: 0};
+
+    const cellOf = {  // face -> [column, row]
+      cube:    {right: [0, 1], front: [1, 1], left: [2, 1], back: [3, 1], top: [1, 2], bottom: [1, 0]},
+      compact: {right: [0, 0], front: [1, 0], left: [2, 0], back: [2, 1], top: [1, 1], bottom: [0, 1]}
+    };
+    const grid = {cube: {cols: 4, rows: 3}, compact: {cols: 3, rows: 2}};
+
+    const sliver = 0.0001;
+    const flatBox = {  // which edge of the image each face-on-edge samples
+      front:  [0, 0, 1, 1],
+      back:   [0, 0, 1, 1],
+      left:   [1 - sliver, 0, 1, 1],
+      right:  [0, 0, sliver, 1],
+      top:    [0, 1 - sliver, 1, 1],
+      bottom: [0, 0, 1, sliver]
+    };
+
+    // For `metric` the face is MEASURED, not fitted: its corners are projected
+    // onto an orthonormal frame of its own plane, anchored at the corner the
+    // face is walked from, and divided by the longest edge of the whole solid.
+    // One length unit of the model is then always one length unit of the image,
+    // on every face and whatever the shear -- so a sheared face gets sheared
+    // texture coordinates rather than a squashed picture, and a long face gets
+    // more of the image rather than a stretched copy of all of it.
+    const maxEdge = Math.max(2 * norm(ea), Math.max(2 * norm(eb), 2 * norm(ec)));
+
+    const uvOf = function(f) {
+      if (mapping === 'metric') {
+        const uAxis = unit(f.a);
+        const vAxis = unit(cross(unit(f.n), uAxis));
+        const pts = cornersOf(f);
+        const o = pts[0];   // the (-a, -b) corner: where the image starts
+        return pts.map(function(p) {
+          const d = {x: p.x - o.x, y: p.y - o.y, z: p.z - o.z};
+          return [dot(d, uAxis) / maxEdge, dot(d, vAxis) / maxEdge];
+        });
+      }
+
+      let box;  // [u0, v0, u1, v1]
+      const spin = spinOf[f.name];
+      if (mapping === 'cube' || mapping === 'compact') {
+        const g = grid[mapping];
+        const c = cellOf[mapping][f.name];
+        box = [c[0] / g.cols, c[1] / g.rows, (c[0] + 1) / g.cols, (c[1] + 1) / g.rows];
+      } else if (mapping === 'flat') {
+        box = flatBox[f.name];
+      } else {
+        box = [0, 0, 1, 1];   // 'default': the whole image, on every face
+      }
+
+      const cell = [[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]]];
+      return [0, 1, 2, 3].map(function(k) { return cell[(k + spin) % 4]; });
+    };
+
+    const f6 = function(v) { return Math.round(v * 1e6) / 1e6; };
+  >%
+
+  IndexedFaceSet {
+    coord Coordinate {
+      point [
+      %< for (let f = 0; f < drawn.length; ++f) {
+           const pts = cornersOf(drawn[f]);
+           for (let c = 0; c < 4; ++c) { >%
+        %<= f6(pts[c].x) >% %<= f6(pts[c].y) >% %<= f6(pts[c].z) >%
+      %<   }
+         } >%
+      ]
+    }
+    coordIndex [
+    %< for (let f = 0; f < drawn.length; ++f) { >%
+      %<= 4 * f >% %<= 4 * f + 1 >% %<= 4 * f + 2 >% %<= 4 * f + 3 >% -1 # %<= drawn[f].name >%
+    %< } >%
+    ]
+    %< if (mapping !== 'none') { >%
+    texCoord TextureCoordinate {
+      point [
+      %< for (let f = 0; f < drawn.length; ++f) {
+           const uv = uvOf(drawn[f]);
+           for (let c = 0; c < 4; ++c) { >%
+        %<= f6(uv[c][0]) >% %<= f6(uv[c][1]) >%
+      %<   }
+         } >%
+      ]
+    }
+    texCoordIndex [
+    %< for (let f = 0; f < drawn.length; ++f) { >%
+      %<= 4 * f >% %<= 4 * f + 1 >% %<= 4 * f + 2 >% %<= 4 * f + 3 >% -1 # %<= drawn[f].name >%
+    %< } >%
+    ]
+    %< } >%
+  }
+}

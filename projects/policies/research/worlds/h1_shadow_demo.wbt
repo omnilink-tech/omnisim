@@ -1,0 +1,46 @@
+#VRML_SIM R2025a utf8
+
+# SHADOW demo. A SINGLE kinematic, physics-free Unitree H1 (staticBase TRUE)
+# plays the PURE human-gait MODEL (h1_human_gait) and SELF-WALKS forward across
+# the floor (humanoid_shadow_ghost controller, HUMANOID_GHOST_ROBOT=h1). No RL,
+# no physics -- this is "the shadow" itself, in 3D: the natural walk the RL
+# policy will be trained to track. It cannot fall (no physics); watch whether
+# the motion looks natural + stable (feet flat, CoM over feet, tall stance).
+# Launch: scripts/dev/run_humanoid_shadow_demo.ps1 -Robot h1
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Unitree H1 -- the shadow walking (kinematic gait model)"
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5 2.0
+  follow "h1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 60 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF H1_SHADOW URDFRobot {
+  url "../../../robots/unitree/h1/urdf/h1_ghost.urdf"
+  translation 0 0 1.00
+  name "h1"
+  supervisor TRUE
+  controller "humanoid_shadow_ghost"
+  staticBase TRUE
+}

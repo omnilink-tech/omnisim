@@ -1,0 +1,63 @@
+#VRML_SIM R2025a utf8
+
+# NASA Valkyrie stand with CUBES THROWN FROM THE SIDES (push-recovery demo).
+# 8 cubes ringed around; humanoid_stand_deploy (HSTAND_THROW=1) launches each on an arc.
+# Heavier robot (130 kg) -> heavier cubes (1.2 kg) so the hits register. Valkyrie's
+# very stiff stand HOLDS them passively -- no lean needed (the lean only hurts a
+# stable stand). Run: run_humanoid_stand_deploy.ps1 -Robot valkyrie -Throw [-Gui]
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "NASA Valkyrie stand -- cubes thrown from the sides"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 5
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 10
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF CUBE0 Solid { translation 2.00 0.00 0.09 physicsBackend "newton" children [ DEF C0S Shape { appearance PBRAppearance { baseColor 0.90 0.45 0.10 roughness 0.6 metalness 0 } geometry Box { size 0.16 0.16 0.16 } } ] name "cube0" boundingObject USE C0S physics Physics { density -1 mass 1.2 } }
+DEF CUBE1 Solid { translation 1.41 1.41 0.09 physicsBackend "newton" children [ DEF C1S Shape { appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 0.6 metalness 0 } geometry Box { size 0.16 0.16 0.16 } } ] name "cube1" boundingObject USE C1S physics Physics { density -1 mass 1.2 } }
+DEF CUBE2 Solid { translation 0.00 2.00 0.09 physicsBackend "newton" children [ DEF C2S Shape { appearance PBRAppearance { baseColor 0.90 0.45 0.10 roughness 0.6 metalness 0 } geometry Box { size 0.16 0.16 0.16 } } ] name "cube2" boundingObject USE C2S physics Physics { density -1 mass 1.2 } }
+DEF CUBE3 Solid { translation -1.41 1.41 0.09 physicsBackend "newton" children [ DEF C3S Shape { appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 0.6 metalness 0 } geometry Box { size 0.16 0.16 0.16 } } ] name "cube3" boundingObject USE C3S physics Physics { density -1 mass 1.2 } }
+DEF CUBE4 Solid { translation -2.00 0.00 0.09 physicsBackend "newton" children [ DEF C4S Shape { appearance PBRAppearance { baseColor 0.90 0.45 0.10 roughness 0.6 metalness 0 } geometry Box { size 0.16 0.16 0.16 } } ] name "cube4" boundingObject USE C4S physics Physics { density -1 mass 1.2 } }
+DEF CUBE5 Solid { translation -1.41 -1.41 0.09 physicsBackend "newton" children [ DEF C5S Shape { appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 0.6 metalness 0 } geometry Box { size 0.16 0.16 0.16 } } ] name "cube5" boundingObject USE C5S physics Physics { density -1 mass 1.2 } }
+DEF CUBE6 Solid { translation 0.00 -2.00 0.09 physicsBackend "newton" children [ DEF C6S Shape { appearance PBRAppearance { baseColor 0.90 0.45 0.10 roughness 0.6 metalness 0 } geometry Box { size 0.16 0.16 0.16 } } ] name "cube6" boundingObject USE C6S physics Physics { density -1 mass 1.2 } }
+DEF CUBE7 Solid { translation 1.41 -1.41 0.09 physicsBackend "newton" children [ DEF C7S Shape { appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 0.6 metalness 0 } geometry Box { size 0.16 0.16 0.16 } } ] name "cube7" boundingObject USE C7S physics Physics { density -1 mass 1.2 } }
+
+URDFRobot {
+  url "../../robots/nasa/valkyrie/urdf/valkyrie.urdf"
+  translation 0 0 1.08
+  name "valkyrie"
+  supervisor TRUE
+  controller "humanoid_stand_deploy"
+  physicsBackend "newton"
+}
