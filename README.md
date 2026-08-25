@@ -13,12 +13,13 @@ and a [ROS 2 sidecar](packages/omnisim-ros2/) speaking the `simulation_interface
 [**Join the public beta**](BETA.md) · [Latest release](https://github.com/omnilink-tech/omnisim/releases/latest) ·
 [Demos](DEMOS.md) · [Agent entry point](AGENTS.md) · [Protocol](PROTOCOL.md)
 
-[![OmniArm 6 carries and places a block using contact friction in OmniSim](docs/media/videos/omniarm6_real_pick.gif)](docs/media/videos/omniarm6_real_pick.mp4)
+[![OmniArm 6 uses depth perception to pick unknown objects in OmniSim](docs/media/videos/omniarm6_universal_pick.gif)](docs/media/videos/omniarm6_universal_pick.mp4)
 
-*The current wgpu/Newton build running the OmniArm 6 real-contact demo. The
-controller never writes the block pose and the bridge's kinematic attachment
-path is structurally disabled; contact friction carries the block. [Play the
-MP4](docs/media/videos/omniarm6_real_pick.mp4).*
+*The OmniArm 6 Universal Pick demo uses a top-down depth camera to choose grasp
+points on arbitrary, previously unmodelled shapes and move them from the bin to
+the tote. Normal picks use no object registry, classifier or authored pick
+anchors; the controller documents its limited recovery and suction-bookkeeping
+paths. [Play the MP4](docs/media/videos/omniarm6_universal_pick.mp4).*
 
 > **Public beta:** we are looking for the first ten external developers willing
 > to spend 20 minutes installing OmniSim, running one demo, and reporting the

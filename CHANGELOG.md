@@ -31,6 +31,23 @@ Nothing yet.
 
 ---
 
+## [v8.1.6] — 2026-08-25
+
+### Capture and presentation
+
+- Replaced the README hero media with a reproducible 1080p Universal Pick
+  capture showing OmniArm 6 moving arbitrary depth-observed shapes from its
+  source bin into the output tote.
+- Fixed target-based capture paths to preserve OmniSim's Z-up camera frame and
+  keep the horizon level. The old shortest-arc look-at aimed at the right point
+  but left camera roll unconstrained, which visibly tilted the previous hero
+  video.
+- Added regression coverage that checks both the marketing camera pose and the
+  canonical `omniworld.viewpoint.look_at` implementation.
+- No engine or physics behaviour changed from v8.1.5.
+
+---
+
 ## [v8.1.5] — 2026-08-25
 
 ### Release engineering

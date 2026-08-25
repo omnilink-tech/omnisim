@@ -195,3 +195,54 @@ def test_look_at_zero_distance():
 def test_look_at_along_x():
     aa = look_at_orientation([0, 0, 0], [5, 0, 0])
     assert math.isclose(aa[3], 0.0, abs_tol=1e-6)
+
+
+def _rotate(orientation, vector):
+    ax, ay, az, angle = orientation
+    vx, vy, vz = vector
+    cosine = math.cos(angle)
+    sine = math.sin(angle)
+    dot = ax * vx + ay * vy + az * vz
+    cross = (ay * vz - az * vy, az * vx - ax * vz, ax * vy - ay * vx)
+    return [
+        vx * cosine + cross[0] * sine + ax * dot * (1.0 - cosine),
+        vy * cosine + cross[1] * sine + ay * dot * (1.0 - cosine),
+        vz * cosine + cross[2] * sine + az * dot * (1.0 - cosine),
+    ]
+
+
+def test_look_at_keeps_marketing_shot_horizon_level():
+    position = [2.20, -1.95, 1.36]
+    target = [0.20, -0.18, 0.38]
+    orientation = look_at_orientation(position, target)
+    forward = _rotate(orientation, [1.0, 0.0, 0.0])
+    camera_up = _rotate(orientation, [0.0, 0.0, 1.0])
+
+    direction = [target[i] - position[i] for i in range(3)]
+    direction_norm = math.sqrt(sum(component * component for component in direction))
+    direction = [component / direction_norm for component in direction]
+    assert forward == pytest.approx(direction, abs=1e-9)
+
+    projection = direction[2]
+    ideal_up = [
+        -projection * direction[0],
+        -projection * direction[1],
+        1.0 - projection * direction[2],
+    ]
+    ideal_norm = math.sqrt(sum(component * component for component in ideal_up))
+    ideal_up = [component / ideal_norm for component in ideal_up]
+    assert camera_up == pytest.approx(ideal_up, abs=1e-9)
+
+
+def test_look_at_matches_omniworld_reference():
+    sys.path.insert(0, str(REPO_ROOT / "src" / "python"))
+    from omniworld.viewpoint import look_at
+
+    for position, target in [
+        ([2.20, -1.95, 1.36], [0.20, -0.18, 0.38]),
+        ([5, 5, 5], [0, 0, 0]),
+        ([0, 0, 10], [0, 0, 0]),
+    ]:
+        assert look_at_orientation(position, target) == pytest.approx(
+            list(look_at(position, target)), abs=1e-12
+        )

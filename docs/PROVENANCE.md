@@ -91,7 +91,7 @@ own simulator, benchmarks and analysis scripts.
 |---:|---|---|---|
 | 13 | `docs/developer/shadowing_paper/figs/` | Shadowing-method paper figures: architecture, generality, learnability, throughput plots, and G1/Go2/OmniQuad/B2 stills rendered in OmniSim | `e1f23c40f`, `b3038e3ae` |
 | 9 | `docs/media/screenshots/` | OmniSim screenshots of the Husky maze and warehouse demo worlds | `47234849f` |
-| 4 | `docs/media/videos/` | `cuda_showcase.{gif,mp4}` and `omniarm6_real_pick.{gif,mp4}` — captures rendered by OmniSim from worlds and controllers in this repository | `4228ce0b0`, public-beta launch |
+| 6 | `docs/media/videos/` | `cuda_showcase.{gif,mp4}`, `omniarm6_real_pick.{gif,mp4}` and `omniarm6_universal_pick.{gif,mp4}` — captures rendered by OmniSim from worlds and controllers in this repository; the Universal Pick master is reproducible from `scripts/capture/shotlists/marketing_omniarm6_universal_pick.json` | `4228ce0b0`, public-beta launch and OmniLink README refresh |
 | 2 | `docs/paper/figs/` | `fig_learnability.png`, `fig_scatter.png` | `22998d566` |
 | 2 | `docs/guide/images/samples/` | `omnisim_box.png`, `omnisim_box.thumbnail.jpg` — an OmniSim render of this repo's own sample box world, sitting among the inherited sample stills | `28a0cd99b` |
 | 1 | `docs/developer/baton_paper/figs/` | `fig_arch.png` | `7356cd9d9` |

@@ -103,23 +103,80 @@ def get_ease(name: str | None) -> Callable[[float], float]:
 # ---------------------------------------------------------------------------
 
 
-def look_at_orientation(position: Vec3, target: Vec3) -> AxisAngle:
+def look_at_orientation(
+    position: Vec3,
+    target: Vec3,
+    up: tuple[float, float, float] = (0.0, 0.0, 1.0),
+) -> AxisAngle:
+    """Aim the capture camera at ``target`` while keeping its horizon level.
+
+    OmniSim's camera frame is +X forward, +Y left, +Z up.  A shortest-arc
+    rotation from +X aims at the subject, but leaves roll unconstrained; that
+    produced visibly tilted marketing captures.  Build the full camera basis
+    from an explicit world-up vector instead.  Keep this numerically identical
+    to ``omniworld.viewpoint.look_at`` and the harness copy.
+    """
     px, py, pz = position
     tx, ty, tz = target
-    dx, dy, dz = tx - px, ty - py, tz - pz
-    n = math.sqrt(dx * dx + dy * dy + dz * dz)
+    fx, fy, fz = tx - px, ty - py, tz - pz
+    n = math.sqrt(fx * fx + fy * fy + fz * fz)
     if n < 1e-9:
         return [0.0, 0.0, 1.0, 0.0]
-    dx, dy, dz = dx / n, dy / n, dz / n
-    cos_angle = max(-1.0, min(1.0, dx))
-    angle = math.acos(cos_angle)
-    if angle < 1e-6:
+    fx, fy, fz = fx / n, fy / n, fz / n
+
+    ux, uy, uz = up
+    un = math.sqrt(ux * ux + uy * uy + uz * uz)
+    if un < 1e-12:
+        ux, uy, uz = 0.0, 0.0, 1.0
+        un = 1.0
+    ux, uy, uz = ux / un, uy / un, uz / un
+    if 1.0 - abs(fx * ux + fy * uy + fz * uz) < 1e-6:
+        ux, uy, uz = 0.0, 1.0, 0.0
+        if 1.0 - abs(fx * ux + fy * uy + fz * uz) < 1e-6:
+            ux, uy, uz = 1.0, 0.0, 0.0
+
+    dot = fx * ux + fy * uy + fz * uz
+    ux, uy, uz = ux - dot * fx, uy - dot * fy, uz - dot * fz
+    un = math.sqrt(ux * ux + uy * uy + uz * uz)
+    if un < 1e-12:
         return [0.0, 0.0, 1.0, 0.0]
-    ax, ay, az = 0.0, -dz, dy
-    am = math.sqrt(ax * ax + ay * ay + az * az)
-    if am < 1e-9:
-        return [0.0, 0.0, 1.0, math.pi]
-    return [ax / am, ay / am, az / am, angle]
+    ux, uy, uz = ux / un, uy / un, uz / un
+    yx = uy * fz - uz * fy
+    yy = uz * fx - ux * fz
+    yz = ux * fy - uy * fx
+
+    rotation = [
+        [fx, yx, ux],
+        [fy, yy, uy],
+        [fz, yz, uz],
+    ]
+    trace = rotation[0][0] + rotation[1][1] + rotation[2][2]
+    angle = math.acos(max(-1.0, min(1.0, (trace - 1.0) / 2.0)))
+    if angle < 1e-9:
+        return [0.0, 0.0, 1.0, 0.0]
+
+    scale = 2.0 * math.sin(angle)
+    if abs(scale) < 1e-9:
+        diagonal = (rotation[0][0], rotation[1][1], rotation[2][2])
+        index = diagonal.index(max(diagonal))
+        axis = [0.0, 0.0, 0.0]
+        axis[index] = math.sqrt(max(0.0, (rotation[index][index] + 1.0) / 2.0))
+        for j in range(3):
+            if j != index:
+                axis[j] = (
+                    (rotation[index][j] + rotation[j][index]) / (4.0 * axis[index])
+                    if axis[index] > 1e-9
+                    else 0.0
+                )
+        axis_norm = math.sqrt(sum(component * component for component in axis)) or 1.0
+        return [component / axis_norm for component in axis] + [angle]
+
+    return [
+        (rotation[2][1] - rotation[1][2]) / scale,
+        (rotation[0][2] - rotation[2][0]) / scale,
+        (rotation[1][0] - rotation[0][1]) / scale,
+        angle,
+    ]
 
 
 # ---------------------------------------------------------------------------
