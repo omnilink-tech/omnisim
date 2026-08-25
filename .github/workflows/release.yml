@@ -51,8 +51,10 @@ jobs:
       - name: Build OmniSim and bundle Newton
         run: |
           export OMNISIM_HOME="$GITHUB_WORKSPACE"
-          export PATH="$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH"
-          export PYTHON_HOME="$(cygpath -u "$(python.exe -c 'import sys; print(sys.prefix)')")"
+          export HOST_PYTHON_HOME="$(cygpath -u "$pythonLocation")"
+          export PATH="$HOST_PYTHON_HOME:$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH"
+          export PYTHON_HOME="$HOST_PYTHON_HOME"
+          test -f "$PYTHON_HOME/include/Python.h"
           ./scripts/install/msys64_installer.sh --all
           # Stage the runtime exactly once below so the binary-level check is
           # part of the same operation that creates the files we package.
@@ -67,8 +69,10 @@ jobs:
           INNO_SETUP_HOME: /c/Program Files (x86)/Inno Setup 6
         run: |
           export OMNISIM_HOME="$GITHUB_WORKSPACE"
-          export PATH="$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH"
-          export PYTHON_HOME="$(cygpath -u "$(python.exe -c 'import sys; print(sys.prefix)')")"
+          export HOST_PYTHON_HOME="$(cygpath -u "$pythonLocation")"
+          export PATH="$HOST_PYTHON_HOME:$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH"
+          export PYTHON_HOME="$HOST_PYTHON_HOME"
+          test -f "$PYTHON_HOME/include/Python.h"
           make distrib -j4
 
       - name: List release asset

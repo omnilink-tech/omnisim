@@ -11,13 +11,12 @@ the [Attribution](README.md#attribution) section of the README for the
 relationship to upstream. Entries here cover OmniLink's contributions on
 top of that foundation.
 
-> ⚠️ **v8.0.0 is the only release published in this repository.** Sections for
-> earlier versions are kept below as the development record — they say what
-> changed and when — but those releases are **not obtainable here**: no tag, no
-> release page, no downloadable archive. Do not read an older section as a
-> description of something you can check out. If you need to know how the
-> project got to a particular behaviour, the history below is the answer; if you
-> need running code, v8.0.0 is the only answer.
+> ⚠️ **Only the v8.x public-beta releases are published in this repository.**
+> Sections for earlier versions are kept below as the development record — they
+> say what changed and when — but those releases are **not obtainable here**: no
+> tag, no release page, no downloadable archive. Do not read an older section as
+> a description of something you can check out. Use the newest v8.x release for
+> running code.
 >
 > The one class of tag that is NOT a release, and is still present, is
 > `deps-windows-v1` / `deps-linux-v1` / `deps-mac-v1` — those carry the build's
@@ -29,6 +28,20 @@ top of that foundation.
 ## [Unreleased]
 
 Nothing yet.
+
+---
+
+## [v8.1.1] — 2026-08-25
+
+### Release engineering
+
+- Fixed the Windows release runner's MSYS environment so the Python installed
+  by `actions/setup-python` remains on `PATH` and its `Python.h` is available to
+  the Newton backend build. The workflow now fails immediately if that header is
+  absent, before spending time compiling the engine.
+- No simulator behaviour changed from v8.1.0. The v8.1.0 source tag remains as
+  the immutable record of its failed packaging run; use v8.1.1 for the verified
+  installer and public beta.
 
 ---
 
