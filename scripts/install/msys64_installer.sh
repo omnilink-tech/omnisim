@@ -16,6 +16,7 @@ declare -a BASE_PACKAGES=(
   "mingw-w64-x86_64-qt6-base"         # OmniSim
   "mingw-w64-x86_64-qt6-declarative"  # OmniSim
   "mingw-w64-x86_64-qt6-tools"        # OmniSim (provides moc; lrelease/lupdate unused since i18n removed)
+  "mingw-w64-x86_64-qt6-translations" # Packaged Qt runtime translations
   "mingw-w64-x86_64-qt6-websockets"   # OmniSim
   "mingw-w64-x86_64-libzip"           # OmniSim
   "mingw-w64-x86_64-woff2"            # OmniSim

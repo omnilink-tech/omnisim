@@ -31,6 +31,22 @@ Nothing yet.
 
 ---
 
+## [v8.1.5] — 2026-08-25
+
+### Release engineering
+
+- Made the Qt translation package an unconditional Windows build dependency.
+  Fresh GitHub runners now contain every `qt_*.qm`, `qtbase_*.qm`,
+  `qtdeclarative_*.qm`, and `qtwebsockets_*.qm` file declared by the installer
+  manifest instead of relying on an upgrade-only helper to add them.
+- Added a regression test that keeps the translation package in the base MSYS2
+  dependency set.
+- No simulator behaviour changed from v8.1.4. The v8.1.4 engine and Newton
+  runtime built successfully, but Inno Setup correctly rejected the incomplete
+  translation payload; use v8.1.5 for the public beta package.
+
+---
+
 ## [v8.1.4] — 2026-08-25
 
 ### Release engineering
@@ -43,8 +59,9 @@ Nothing yet.
   canonical-over-legacy preference.
 - No simulator behaviour changed from v8.1.3. The v8.1.3 packaging run passed
   mixed-encoding URL rewriting and Newton bundle verification, then stopped
-  because it manufactured a missing perspective path; use v8.1.4 for the public
-  beta package.
+  because it manufactured a missing perspective path. The v8.1.4 run passed
+  that stage but did not publish an artifact because the fresh runner lacked
+  the Qt translation package; use v8.1.5 for the public beta package.
 
 ---
 
