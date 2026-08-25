@@ -31,6 +31,22 @@ Nothing yet.
 
 ---
 
+## [v8.1.3] — 2026-08-25
+
+### Release engineering
+
+- Fixed Windows installer assembly for mixed-encoding world, PROTO, controller,
+  and robot-window sources. The packaging URL rewriter now replaces its ASCII
+  URLs as raw bytes, preserving every unrelated byte instead of depending on
+  the runner's legacy CP-1252 default encoding.
+- Added a regression test covering UTF-8 text, a byte that CP-1252 cannot
+  decode, and CRLF preservation in the same source file.
+- No simulator behaviour changed from v8.1.2. The v8.1.2 engine and Newton
+  runtime built and verified successfully, but installer assembly stopped at
+  the encoding error; use v8.1.3 for the public beta package.
+
+---
+
 ## [v8.1.2] — 2026-08-25
 
 ### Release engineering

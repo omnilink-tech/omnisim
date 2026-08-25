@@ -41,14 +41,26 @@ def replace_url(file, tag, github, only_extern_proto=False, revert=False):
         url = 'https://raw.githubusercontent.com/omnilink-tech/omnisim/'
     else:
         url = 'https://cdn.jsdelivr.net/gh/omnilink-tech/omnisim@'
-    with open(file, 'r') as fd:
+    # URLs and tags are ASCII, while the source corpus includes both UTF-8 text
+    # and legacy benchmark worlds with arbitrary non-ASCII bytes.  Work on raw
+    # bytes so the release is independent of the host's default codec and every
+    # byte outside the URL remains unchanged.
+    with open(file, 'rb') as fd:
         content = fd.read()
     if revert:
         # revert any tag
-        content = re.sub(pre_condition + url + '[^/]+/', 'omnisim://', content)
+        content = re.sub(
+            (pre_condition + url + '[^/]+/').encode('ascii'),
+            b'omnisim://',
+            content,
+        )
     else:
-        content = re.sub(pre_condition + 'omnisim://', url + tag + '/', content)
-    with open(file, 'w', newline='\n') as fd:
+        content = re.sub(
+            (pre_condition + 'omnisim://').encode('ascii'),
+            (url + tag + '/').encode('ascii'),
+            content,
+        )
+    with open(file, 'wb') as fd:
         fd.write(content)
 
 
