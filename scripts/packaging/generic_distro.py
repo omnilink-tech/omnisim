@@ -46,15 +46,15 @@ def perspective_file_for_world(dirname, basename):
     derived from the stem: a re.sub on the extension both misses '.omniworld' and
     (unescaped '.') matched one character too many.
 
-    When neither extension exists the `.omniperspective` path is returned, so the
-    caller reports the missing file under the name it should have been saved as
-    rather than under the legacy name nothing writes any more.
+    A saved perspective is optional: worlds without one open with the engine's
+    default view. Return ``None`` when neither extension exists so packaging does
+    not manufacture a mandatory file that the source tree never contained.
     """
     stem_path = os.path.join(dirname, '.' + os.path.splitext(basename)[0])
     for extension in PERSPECTIVE_READ_EXTENSIONS:
         if os.path.isfile(stem_path + extension):
             return stem_path + extension
-    return stem_path + PERSPECTIVE_WRITE_EXTENSION
+    return None
 
 
 def is_superseded_perspective_file(path):
@@ -231,11 +231,11 @@ class OmniSimPackage(ABC):
             # and still READS the legacy `.wbproj`, so a packaged world would
             # silently lose its saved viewpoint if only the legacy name were copied.
             world_project_file = perspective_file_for_world(dirname, basename)
-            if os.path.isfile(world_project_file):
+            if world_project_file:
                 # Windows sets the attribute on the source file, which fails loudly on a
-                # missing one; let copy_file() report the absence with its own message.
+                # missing one, so only call it for the file resolved above.
                 self.set_file_attribute(world_project_file, 'hidden')
-            self.package_files.append(os.path.relpath(world_project_file, self.omnisim_home))
+                self.package_files.append(os.path.relpath(world_project_file, self.omnisim_home))
 
     def add_files_from_string(self, line):
         # add this file or folder to self.package_files and self.package_folders

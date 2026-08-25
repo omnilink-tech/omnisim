@@ -31,6 +31,23 @@ Nothing yet.
 
 ---
 
+## [v8.1.4] — 2026-08-25
+
+### Release engineering
+
+- Fixed distribution assembly for worlds that intentionally have no saved GUI
+  perspective. Such worlds now ship on their own and open with OmniSim's
+  default view; an existing `.omniperspective` or legacy `.wbproj` remains
+  bundled, with the canonical format preferred.
+- Added regression coverage for both an absent optional perspective and the
+  canonical-over-legacy preference.
+- No simulator behaviour changed from v8.1.3. The v8.1.3 packaging run passed
+  mixed-encoding URL rewriting and Newton bundle verification, then stopped
+  because it manufactured a missing perspective path; use v8.1.4 for the public
+  beta package.
+
+---
+
 ## [v8.1.3] — 2026-08-25
 
 ### Release engineering
