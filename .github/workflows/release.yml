@@ -54,8 +54,19 @@ jobs:
           export HOST_PYTHON_HOME="$(cygpath -u "$pythonLocation")"
           export PATH="$HOST_PYTHON_HOME:$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH"
           export PYTHON_HOME="$HOST_PYTHON_HOME"
+          export PYTHON_LIB="-lpython$(python.exe -c 'import sys; print("%d%d" % sys.version_info[:2])')"
           test -f "$PYTHON_HOME/include/Python.h"
-          ./scripts/install/msys64_installer.sh --all
+          test -f "$PYTHON_HOME/libs/${PYTHON_LIB#-l}.lib"
+          for attempt in 1 2 3; do
+            if ./scripts/install/msys64_installer.sh --all; then
+              break
+            fi
+            if [[ "$attempt" -eq 3 ]]; then
+              exit 1
+            fi
+            echo "MSYS dependency download failed (attempt $attempt/3); retrying..."
+            sleep $((attempt * 15))
+          done
           # Stage the runtime exactly once below so the binary-level check is
           # part of the same operation that creates the files we package.
           make release -j4 BUNDLE_NEWTON=0
@@ -72,7 +83,9 @@ jobs:
           export HOST_PYTHON_HOME="$(cygpath -u "$pythonLocation")"
           export PATH="$HOST_PYTHON_HOME:$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH"
           export PYTHON_HOME="$HOST_PYTHON_HOME"
+          export PYTHON_LIB="-lpython$(python.exe -c 'import sys; print("%d%d" % sys.version_info[:2])')"
           test -f "$PYTHON_HOME/include/Python.h"
+          test -f "$PYTHON_HOME/libs/${PYTHON_LIB#-l}.lib"
           make distrib -j4
 
       - name: List release asset

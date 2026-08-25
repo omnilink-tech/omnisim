@@ -31,6 +31,21 @@ Nothing yet.
 
 ---
 
+## [v8.1.2] — 2026-08-25
+
+### Release engineering
+
+- Fixed Windows linking against the `actions/setup-python` layout. Its install
+  directory ends in `x64`, so deriving the import library from the directory
+  name incorrectly produced `-lx64`; the workflow now derives `-lpython312`
+  from the running interpreter and verifies the matching `.lib` before build.
+- Added bounded retries around MSYS dependency installation so one slow mirror
+  does not invalidate an otherwise reproducible release build.
+- No simulator behaviour changed from v8.1.1. Use v8.1.2 for the verified
+  installer and public beta.
+
+---
+
 ## [v8.1.1] — 2026-08-25
 
 ### Release engineering
