@@ -1,0 +1,140 @@
+#OMNISIM R2025a utf8
+# license: Apache-2.0
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim
+# keywords: construction/building/concrete frame
+# ConstructionFrameBuilding — a procedurally generated reinforced-concrete
+# frame high-rise under construction: a column grid, floor slabs + edge
+# beams, a central core shaft, mesh facade wrap on the lower floors,
+# exposed starter bars on the topped-out columns, and a perimeter scaffold
+# band on the front face. Static decoration (no physics).
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/FormedConcrete.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughConcrete.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/CorrodedMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/GalvanizedMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/OldPlywood.proto"
+
+PROTO ConstructionFrameBuilding [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "construction frame building"
+  field SFInt32    floors       10      # Number of structural floors.
+  field SFFloat    floorHeight  3.3     # Storey height (m).
+  field SFInt32    baysX        4       # Column bays along X.
+  field SFInt32    baysY        3       # Column bays along Y.
+  field SFFloat    bay          4.2     # Bay spacing (m).
+  field SFInt32    wrapFloors   6       # Lower floors clad in mesh wrap.
+  field SFColor    wrapColor    0.18 0.42 0.60
+]
+{
+  %<
+    const fl = Math.max(2, fields.floors.value);
+    const fh = fields.floorHeight.value;
+    const bx = Math.max(1, fields.baysX.value);
+    const by = Math.max(1, fields.baysY.value);
+    const bay = fields.bay.value;
+    const wrapFloors = Math.min(fl - 2, Math.max(0, fields.wrapFloors.value));
+    const wc = fields.wrapColor.value;
+    const W = bx * bay, D = by * bay, totalH = fl * fh;
+
+    const matDefs = {
+      CONC:  'FormedConcrete { textureTransform TextureTransform { scale 0.5 0.7 } }',
+      CORE:  'RoughConcrete { colorOverride 0.9 0.9 0.9 textureTransform TextureTransform { scale 0.5 0.5 } }',
+      REBAR: 'CorrodedMetal { textureTransform TextureTransform { scale 0.4 0.4 } }',
+      WRAP:  'PBRAppearance { baseColor ' + wc.r + ' ' + wc.g + ' ' + wc.b + ' roughness 0.97 metalness 0 }',
+      SCAF:  'GalvanizedMetal { textureTransform TextureTransform { scale 0.4 0.4 } }',
+      BOARD: 'OldPlywood { textureTransform TextureTransform { scale 0.6 0.6 } }',
+      SHORE: 'PBRAppearance { baseColor 0.88 0.42 0.1 roughness 0.55 metalness 0.35 }'
+    };
+    const members = [];
+    function add(x, y, z, sx, sy, sz, mat) {
+      members.push({ x: x, y: y, z: z, sx: sx, sy: sy, sz: sz, mat: mat });
+    }
+
+    // Columns (full height) on the grid.
+    for (let i = 0; i <= bx; i++)
+      for (let j = 0; j <= by; j++) {
+        const x = -W / 2 + i * bay, y = -D / 2 + j * bay;
+        add(x, y, totalH / 2, 0.45, 0.45, totalH, 'CONC');
+        // exposed starter bars on top
+        add(x, y, totalH + 0.45, 0.06, 0.06, 0.9, 'REBAR');
+      }
+
+    // Floor slabs + perimeter edge beams.
+    for (let f = 1; f <= fl; f++) {
+      const z = f * fh;
+      add(0, 0, z, W + 0.6, D + 0.6, 0.26, 'CONC');
+      add(0, -D / 2, z - 0.2, W + 0.6, 0.36, 0.5, 'CONC');
+      add(0,  D / 2, z - 0.2, W + 0.6, 0.36, 0.5, 'CONC');
+      add(-W / 2, 0, z - 0.2, 0.36, D + 0.6, 0.5, 'CONC');
+      add( W / 2, 0, z - 0.2, 0.36, D + 0.6, 0.5, 'CONC');
+    }
+
+    // Central core shaft (lift / stairs), offset toward +X.
+    add(bay * 0.5, 0, totalH / 2, bay * 1.3, bay * 1.2, totalH, 'CORE');
+
+    // Mesh facade wrap on the lower floors (all four sides).
+    for (let f = 0; f < wrapFloors; f++) {
+      const zc = f * fh + fh / 2, h = fh * 0.98;
+      add(0, -D / 2 - 0.08, zc, W, 0.05, h, 'WRAP');
+      add(0,  D / 2 + 0.08, zc, W, 0.05, h, 'WRAP');
+      add(-W / 2 - 0.08, 0, zc, 0.05, D, h, 'WRAP');
+      add( W / 2 + 0.08, 0, zc, 0.05, D, h, 'WRAP');
+    }
+
+    // Perimeter scaffold band on the front face (y = -D/2).
+    const sY = -D / 2 - 0.9, sH = wrapFloors * fh;
+    const np = Math.round(W / 2.0);
+    for (let p = 0; p <= np; p++) {
+      const x = -W / 2 + p * (W / np);
+      add(x, sY, sH / 2, 0.06, 0.06, sH, 'SCAF');         // standard (front)
+      add(x, sY + 0.6, sH / 2, 0.06, 0.06, sH, 'SCAF');   // standard (inner)
+    }
+    for (let f = 0; f <= wrapFloors; f++) {
+      const z = f * fh;
+      add(0, sY, z, W, 0.05, 0.05, 'SCAF');               // ledger (front)
+      add(0, sY + 0.6, z, W, 0.05, 0.05, 'SCAF');         // ledger (inner)
+      if (f < wrapFloors)
+        add(0, sY + 0.3, z + fh - 0.1, W, 0.7, 0.04, 'BOARD'); // working boards
+    }
+
+    // ── Active top-floor works: shoring props under the top slab, a rebar
+    //    mat being laid on top, and formwork panels on two edges. ──
+    const topZ = fl * fh, subZ = (fl - 1) * fh;
+    for (let i = 0; i < bx; i++)
+      for (let j = 0; j < by; j++)
+        add(-W / 2 + i * bay + bay / 2, -D / 2 + j * bay + bay / 2,
+            (subZ + topZ) / 2, 0.08, 0.08, fh, 'SHORE');
+    for (let i = 0; i <= bx * 2; i++)
+      add(-W / 2 + i * (bay / 2), 0, topZ + 0.17, 0.03, D, 0.03, 'REBAR');
+    for (let j = 0; j <= by * 2; j++)
+      add(0, -D / 2 + j * (bay / 2), topZ + 0.2, W, 0.03, 0.03, 'REBAR');
+    add(0, -D / 2, topZ + 0.6, W, 0.06, 1.0, 'BOARD');
+    add(-W / 2, 0, topZ + 0.6, 0.06, D, 1.0, 'BOARD');
+
+    const seen = {};
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "construction frame building"
+    children [
+      %< for (let i = 0; i < members.length; i++) {
+           const m = members[i];
+           let appStr;
+           if (!seen[m.mat]) { seen[m.mat] = true; appStr = 'DEF ' + m.mat + ' ' + matDefs[m.mat]; }
+           else appStr = 'USE ' + m.mat;
+      >%
+      Pose {
+        translation %<= m.x >% %<= m.y >% %<= m.z >%
+        children [
+          Shape { appearance %<= appStr >% geometry Box { size %<= m.sx >% %<= m.sy >% %<= m.sz >% } }
+        ]
+      }
+      %< } >%
+    ]
+  }
+}

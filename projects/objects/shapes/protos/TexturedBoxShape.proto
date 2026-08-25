@@ -1,0 +1,112 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/shapes/protos/TexturedBoxShape.proto
+# keywords: primitive/geometry
+# A box Shape that splits its six faces between a textured pass and a flat-colour pass, so each face can be individually opted in or out of the texture.
+# The per-face booleans (`frontFace`, `leftFace`, ...) select which faces receive `textureUrl`; the faces left out are painted with the uniform `faceColor` instead.
+# The texture is laid out by the `textureMapping` field:
+# - `cube` mapping: the six faces are unwrapped onto a cube cross.
+# - `compact` cube mapping: the same, packed tightly.
+# - `flat` mapping: the texture is projected onto the front face.
+# - `metric` mapping: like `default`, but the texture keeps its aspect ratio instead of being stretched to each face.
+# - `default` mapping: the whole texture on every face.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/objects/geometries/protos/TexturedBox.proto"
+
+PROTO TexturedBoxShape [
+  field SFVec3f  size             0.1 0.1 0.1                    # Defines the size of the box.
+  field MFString textureUrl       "omnisim://projects/default/worlds/textures/old_brick_wall.jpg"  # Defines the texture used for the box.
+  field SFInt32  textureFiltering 4                              # Defines the filtering level for the texture used for the box.
+  field SFNode   textureTransform NULL                           # Defines the texture transform for the texture used for the box.
+  field SFString{"cube", "compact", "flat", "metric", "default", "none"}
+                 textureMapping   "flat"                         # Defines the texture mapping.
+  field SFColor  faceColor        0.8 0.8 0.8                    # Defines the color of the faces of the box.
+  field SFBool   frontFace        TRUE                           # Defines whether the front face is included.
+  field SFBool   backFace         TRUE                           # Defines whether the back face is included.
+  field SFBool   leftFace         TRUE                           # Defines whether the left face is included.
+  field SFBool   rightFace        TRUE                           # Defines whether the right face is included.
+  field SFBool   topFace          TRUE                           # Defines whether the top face is included.
+  field SFBool   bottomFace       TRUE                           # Defines whether the bottom face is included.
+]
+{
+  %<
+    let size = fields.size.value;
+    if (size.x <= 0 || size.y <= 0 || size.z <= 0) {
+      size = fields.size.defaultValue;
+      console.error('\'size\' should be strictly positive. Value reset to (' + size.x + ', ' + size.y + ', ' + size.z + ').');
+    }
+
+    // Every face is either textured or flat-coloured; the two passes are exact
+    // complements of one another, so a face is never drawn twice and never
+    // left out. Emit a pass only when it owns at least one face.
+    const textured = {
+      front:  fields.frontFace.value,
+      back:   fields.backFace.value,
+      left:   fields.leftFace.value,
+      right:  fields.rightFace.value,
+      top:    fields.topFace.value,
+      bottom: fields.bottomFace.value
+    };
+
+    const flat = {};
+    let texturedFaces = 0;
+    let flatFaces = 0;
+    for (const face in textured) {
+      flat[face] = !textured[face];
+      if (textured[face])
+        ++texturedFaces;
+      else
+        ++flatFaces;
+    }
+
+    const vrml = function(b) { return b ? 'TRUE' : 'FALSE'; };
+  >%
+  Group {
+    children [
+      %< if (texturedFaces > 0) { >%
+      Shape { # the faces wearing the texture
+        appearance PBRAppearance {
+          metalness 0
+          roughness 1
+          baseColorMap ImageTexture {
+            url IS textureUrl
+            filtering IS textureFiltering
+          }
+          textureTransform IS textureTransform
+        }
+        geometry TexturedBox {
+          size IS size
+          mapping IS textureMapping
+          front  %<= vrml(textured.front) >%
+          back   %<= vrml(textured.back) >%
+          left   %<= vrml(textured.left) >%
+          right  %<= vrml(textured.right) >%
+          top    %<= vrml(textured.top) >%
+          bottom %<= vrml(textured.bottom) >%
+        }
+      }
+      %< } >%
+      %< if (flatFaces > 0) { >%
+      Shape { # the faces left out of the texture, painted flat
+        appearance PBRAppearance {
+          baseColor IS faceColor
+          metalness 0
+          roughness 1
+        }
+        geometry TexturedBox {
+          size IS size
+          mapping "none"
+          front  %<= vrml(flat.front) >%
+          back   %<= vrml(flat.back) >%
+          left   %<= vrml(flat.left) >%
+          right  %<= vrml(flat.right) >%
+          top    %<= vrml(flat.top) >%
+          bottom %<= vrml(flat.bottom) >%
+        }
+      }
+      %< } >%
+    ]
+  }
+}

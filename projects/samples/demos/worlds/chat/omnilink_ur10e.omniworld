@@ -1,0 +1,39 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — UR10e
+# UR10e (large UR e-series arm) controlled by an OmniLink agent.
+# Prompts: "home", "wave hello", "joint N to V", "stop".
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — UR10e"
+  info [
+    "UR10e driven by an OmniLink agent through a chat-style side menu."
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 1.959 -2.085 2.282
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 6 6
+}
+
+DEF UR10E URDFRobot {
+  url "../../../../robots/universal_robots/ur_description/urdf/ur10e.urdf"
+  translation 0 0 0
+  name "ur10e"
+  supervisor TRUE
+  staticBase TRUE
+  controller "omnilink_arm_bridge"
+  controllerArgs [ "--robot" "ur10e" "--port" "8765" ]
+  window "omnilink_chat"
+}

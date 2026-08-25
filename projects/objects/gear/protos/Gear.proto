@@ -1,0 +1,174 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/gear/protos/Gear.proto
+# keywords: industrial/ironmongery
+# A parametric spur gear: a disc-shaped body with a bore, carrying `teeth` teeth laid out around
+# the pitch circle. The gear spins about its local x axis; the origin is at the centre of the disc.
+# template language: javascript
+
+PROTO Gear [
+  field SFVec3f         translation            0 0 0.045
+  field SFRotation      rotation               0 0 1 0
+  field SFNode          appearance             PBRAppearance{baseColor 0.533333, 0.541176, 0.521569, roughness 0.5}
+  field SFString        name                   "gear"     # Defines the solid's name.
+  field SFInt32         teeth                  8          # Defines number of teeth, [8, inf).
+  field SFFloat         width                  0.01       # Defines gear thickness, (0, inf).
+  field SFFloat         innerRadius            0.01       # Defines the radius of the center hole.
+  field SFFloat         pitchRadius            0.04       # Defines the radius at center of the teeth.
+  field SFFloat         toothDepth             0.01       # Defines depth of tooth.
+  field SFFloat         density                0.001      # Defines the density of the gear. If zero, physics is disabled.
+  field SFBool          bodyBoundingObject     TRUE       # Enables gear body collision area (cylinder).
+  field SFBool          teethBoundingObject    FALSE      # Enables a boundingObject on each tooth.
+]
+{
+  %<
+    let teeth = fields.teeth.value;
+    if (teeth < 8) {
+      teeth = fields.teeth.defaultValue;
+      console.error('\'teeth\' must be greater than or equal to 8. Value reset to ' + teeth + '.');
+    }
+
+    let width = fields.width.value;
+    if (width <= 0.0) {
+      width = fields.width.defaultValue;
+      console.error('\'width\' must be strictly positive. Value reset to ' + width + '.');
+    }
+
+    let pitchRadius = fields.pitchRadius.value;
+    if (pitchRadius <= 0.0) {
+      pitchRadius = fields.pitchRadius.defaultValue;
+      console.error('\'pitchRadius\' must be strictly positive. Value reset to ' + pitchRadius + '.');
+    }
+
+    let toothDepth = fields.toothDepth.value;
+    if (toothDepth <= 0.0 || toothDepth >= 2.0 * pitchRadius) {
+      toothDepth = Math.min(fields.toothDepth.defaultValue, 0.5 * pitchRadius);
+      console.error('\'toothDepth\' must be positive and smaller than the gear diameter. Value reset to ' +
+                    toothDepth + '.');
+    }
+
+    let innerRadius = fields.innerRadius.value;
+    const rootRadius = pitchRadius - 0.5 * toothDepth;   // radius of the gear body
+    const tipRadius = pitchRadius + 0.5 * toothDepth;    // radius over the teeth
+    if (innerRadius < 0.0 || innerRadius >= rootRadius) {
+      innerRadius = 0.4 * rootRadius;
+      console.error('\'innerRadius\' must be smaller than the gear body radius. Value reset to ' +
+                    innerRadius + '.');
+    }
+
+    // a tooth is a radial box: ~45% of the circular pitch wide, overlapping the body by 0.4 * toothDepth
+    const toothThickness = 0.9 * Math.PI * pitchRadius / teeth;
+    const toothLength = 1.4 * toothDepth;
+    const toothCenter = tipRadius - 0.5 * toothLength;
+
+    const density = fields.density.value;
+    const bodyBO = fields.bodyBoundingObject.value;
+    const teethBO = fields.teethBoundingObject.value;
+    const hasBoundingObject = bodyBO || teethBO;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "gear"
+    children [
+      # ---- gear body: a disc whose axis is the local x axis ----
+      Pose {
+        rotation 0 1 0 1.5708
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Cylinder {
+              radius %<= rootRadius >%
+              height %<= width >%
+              subdivision %<= Math.max(24, Math.min(96, 3 * teeth)) >%
+            }
+          }
+        ]
+      }
+      # ---- the bore ----
+      Pose {
+        rotation 0 1 0 1.5708
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.08 0.08 0.09
+              roughness 0.9
+              metalness 0.6
+            }
+            geometry Cylinder {
+              radius %<= innerRadius >%
+              height %<= 1.02 * width >%
+              subdivision 16
+            }
+          }
+        ]
+      }
+      # ---- teeth, evenly spaced around the pitch circle ----
+      %< for (let i = 0; i < teeth; ++i) {
+           const angle = 2.0 * Math.PI * i / teeth;
+      >%
+      Pose {
+        rotation 1 0 0 %<= angle >%
+        children [
+          Pose {
+            translation 0 %<= toothCenter >% 0
+            children [
+              %< if (i === 0) { >%
+              DEF GEAR_TOOTH Shape {
+                appearance IS appearance
+                geometry Box {
+                  size %<= width >% %<= toothLength >% %<= toothThickness >%
+                }
+              }
+              %< } else { >%
+              USE GEAR_TOOTH
+              %< } >%
+            ]
+          }
+        ]
+      }
+      %< } >%
+    ]
+    %< if (hasBoundingObject) { >%
+    boundingObject Group {
+      children [
+        %< if (bodyBO) { >%
+        Pose {
+          rotation 0 1 0 1.5708
+          children [
+            Cylinder {
+              radius %<= rootRadius >%
+              height %<= width >%
+              subdivision 16
+            }
+          ]
+        }
+        %< } >%
+        %< if (teethBO) {
+             // a boundingObject Pose cannot nest another Pose: place each tooth with a single Pose
+             for (let i = 0; i < teeth; ++i) {
+               const angle = 2.0 * Math.PI * i / teeth;
+        >%
+        Pose {
+          translation 0 %<= toothCenter * Math.cos(angle) >% %<= toothCenter * Math.sin(angle) >%
+          rotation 1 0 0 %<= angle >%
+          children [
+            Box {
+              size %<= width >% %<= toothLength >% %<= toothThickness >%
+            }
+          ]
+        }
+        %<   }
+           } >%
+      ]
+    }
+    %< } >%
+    %< if (density > 0.0 && hasBoundingObject) { >%
+    physics Physics {
+      density %<= density >%
+    }
+    %< } >%
+  }
+}

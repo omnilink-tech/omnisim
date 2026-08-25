@@ -1,0 +1,58 @@
+#OMNISIM R2025a utf8
+
+# Closed-loop POLICY parity probe -- DEPLOY world. Runs a trained G1 stand ONNX
+# (g1_policy_probe controller, NO scripted motion) closed-loop in the real binary
+# and dumps a per-tick trace, to diff against the SAME policy run in the trainer
+# (gpu_mjwarp_g1_stand_trainer --eval --dump-trace). End-to-end train==deploy
+# validation. Free base on the ground (a real stand). Legs-only G1 URDF (prim
+# feet box) == the trainer's MJCF legs model. Launch via run_g1_policy_probe.ps1.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "G1 closed-loop policy parity probe (welded)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.294 -4.571 5.967
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_legs_omnisim.urdf"
+  translation 0 0 1.20
+  name "g1"
+  supervisor TRUE
+  controller "g1_policy_probe"
+  physicsBackend "newton"
+  staticBase TRUE
+}

@@ -1,0 +1,192 @@
+{
+  "task": "C1_parse_error_fix",
+  "outcome": "PASS",
+  "progress": 4,
+  "progress_name": "graded_pass",
+  "assertions": {
+    "C1.1": {
+      "ok": true,
+      "what": "the world loads and the run is clean",
+      "measured": {
+        "exit code": 0,
+        "ERROR: lines": 0,
+        "driver reached a clean quit": true,
+        "timed out": false
+      },
+      "threshold": {
+        "exit code": 0,
+        "ERROR: lines": 0
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "error stream + exit code: the captured stdout+stderr of the webots process (launched --stdout --stderr) plus its exit code. WARNING: upstream Webots writes NO log file -- there is no post-hoc equivalent of $OMNISIM_LOG_PATH, so whatever was not captured at launch does not exist"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "clean load",
+          "how_to_fail": "a parse failure, an error-class line (a skipped node logs one even when the rest of the world loads), a non-zero exit, a timeout, or a driver that never reached its target simulated time",
+          "witness": "the adapter captured the exit code AND the simulator's own error stream",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "C1.2": {
+      "ok": true,
+      "what": "the intended scene survived the fix",
+      "measured": {
+        "bodies present at t=0": [
+          "floor",
+          "pallet_a",
+          "pallet_b",
+          "probe_bot"
+        ],
+        "intended bodies missing": [],
+        "bodies beyond the intended roster": [],
+        "intended roster": [
+          "floor",
+          "pallet_a",
+          "pallet_b",
+          "probe_bot"
+        ]
+      },
+      "threshold": {
+        "intended bodies missing": 0
+      },
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "intended inventory",
+          "how_to_fail": "a fix that deletes or renames part of the scene instead of repairing it -- the loaded inventory then misses an intended body (an amputated subtree, or a wholesale replacement world)",
+          "witness": "a frozen t=0 inventory naming the bodies actually present in the loaded scene",
+          "witness_present": true,
+          "detail": "the grader-owned Supervisor recorder's t=0 scan. The recorder is synchronization TRUE, so the world is genuinely frozen while it walks the scene -- but upstream exposes no bounds API, so each world-space AABB is one the recorder computed itself from the body's boundingObject geometry and pose"
+        }
+      ]
+    },
+    "C1.3": {
+      "ok": true,
+      "what": "it steps, and every pose stays finite",
+      "measured": {
+        "recorded window (s)": 4.992,
+        "samples": 313,
+        "tracked bodies": 1,
+        "all poses finite": true,
+        "max |coordinate| (m)": 0.5
+      },
+      "threshold": {
+        "recorded window (s)": ">= 4.0",
+        "|coordinate| (m)": "<= 1000",
+        "all poses finite": true
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "finite stepping",
+          "how_to_fail": "a NaN/inf pose, a body escaping past 1000 m, or a run that ended before the graded window",
+          "witness": ">= 2 pose samples and a recorded window length",
+          "witness_present": true,
+          "detail": "recorded 4.992 s"
+        }
+      ]
+    }
+  },
+  "n_pass": 3,
+  "n_total": 3,
+  "failed_assertion": null,
+  "failed_assertions": [],
+  "self_verified": true,
+  "attribution": {
+    "backend": "ode",
+    "solver": "ode",
+    "degraded": false,
+    "engine_invariant": true,
+    "webots_version": "R2025a",
+    "coordinate_system": "ENU",
+    "ode_physics_plugin": null,
+    "basic_time_step_ms": 16.0,
+    "source": "upstream Webots R2025a ships ODE as its ONLY physics engine -- a documented structural invariant of that simulator rather than a per-run reading, because it exposes no engine-selection field and writes no backend-verdict file to read. Its own R2025a WorldInfo reference documents the ODE solver constants directly (basicTimeStep, ERP, and the ERP/CFM-bearing contactProperties) and documents WorldInfo.physics as the path to an ODE *physics plugin*: https://cyberbotics.com/doc/reference/worldinfo and https://cyberbotics.com/doc/reference/physics-plugin. Install and invocation for this arm: docs/developer/webots-control-baseline.md."
+  },
+  "measurements": {
+    "webots_run": {
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\webots",
+      "world": "/tmp/agentbench_webots/parse_error_6a0220cb/project/worlds/parse_error.wbt",
+      "files": {
+        "trajectory": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\webots\\trajectory.json",
+        "roster": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\webots\\roster.json",
+        "contacts": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\webots\\contacts.json",
+        "completion": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\webots\\completion.json",
+        "process": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\webots\\process.json",
+        "console": "['O:\\\\omnisim\\\\tests\\\\benchmarks\\\\agentbench\\\\preregister\\\\runs\\\\webots\\\\C1_parse_error_fix.shell\\\\webots\\\\stdout.log', 'O:\\\\omnisim\\\\tests\\\\benchmarks\\\\agentbench\\\\preregister\\\\runs\\\\webots\\\\C1_parse_error_fix.shell\\\\webots\\\\stderr.log']",
+        "perf": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\webots\\perf.txt"
+      },
+      "missing": {},
+      "parse_errors": {},
+      "trajectory": {
+        "n_bodies": 1,
+        "n_samples": 313,
+        "dt_s": 0.016
+      },
+      "roster_bodies": 4,
+      "contacts": {
+        "supported": true,
+        "steps": 0,
+        "total_observed": 0,
+        "distinct_named": 0,
+        "error": null
+      },
+      "completion": {
+        "complete": true,
+        "quit_called": true,
+        "recorded_s": 4.992,
+        "steps": 312,
+        "dt_s": 0.016,
+        "world": "/tmp/agentbench_webots/parse_error_6a0220cb/project/worlds/parse_error.wbt",
+        "coordinate_system": "ENU"
+      },
+      "process": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 2.387,
+        "attempts_used": 1,
+        "perf_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\webots\\perf.txt",
+        "webots_version": "R2025a",
+        "command": "WEBOTS_HOME=/opt/upstream-webots/R2025a timeout 420 xvfb-run -a /opt/upstream-webots/R2025a/webots --batch --mode=fast --no-rendering --minimize --stdout --stderr --log-performance=\"/tmp/agentbench_webots/parse_error_6a0220cb/out/perf.txt\",312 --port=1504 \"/tmp/agentbench_webots/parse_error_6a0220cb/project/worlds/parse_error.wbt\"",
+        "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\scratch\\parse_error.wbt"
+      },
+      "console_chars": 289,
+      "perf_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\webots\\perf.txt",
+      "perf_bytes": 948,
+      "dirs_tried": []
+    }
+  },
+  "artifacts": {
+    "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\scratch\\parse_error.wbt"
+  },
+  "notes": [
+    "upstream Webots exposes no HTTP/JSON authoring surface, no scene-tree query, no hot reload and no structured load diagnostics (webots-control-baseline.md sec. 6), so there is no live-session pass on this arm. 'the artifact loaded' is evidenced instead by the in-world recorder having enumerated the scene at all.",
+    "upstream Webots has no --duration and no auto-exit: a headless run terminates only when an in-world Supervisor calls simulationQuit(), or when something kills it. 'the run exited cleanly' therefore rests on the recorder's own quit record, not on a wall-clock timeout.",
+    "no world-space AABB on any body: upstream's Supervisor API has no bounds query, so the recorder must compute each AABB from the body's boundingObject geometry and pose. Without them the geometric half of the interpenetration assertion has no evidence either way.",
+    "trajectory rows could not be aligned to the roster by name (1 trajectory bodies, 4 roster bodies); the bundle's body_ids are the recorder's trajectory names and a per-body index is NOT valid across the two inventories."
+  ],
+  "basis": {
+    "core-physical": [
+      "C1.3"
+    ],
+    "core-structural": [
+      "C1.2"
+    ],
+    "mixed": [
+      "C1.1"
+    ]
+  },
+  "vacuous_assertions": {}
+}

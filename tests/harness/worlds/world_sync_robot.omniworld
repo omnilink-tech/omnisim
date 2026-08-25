@@ -1,0 +1,43 @@
+#OMNISIM R2025a utf8
+
+WorldInfo {
+  basicTimeStep 8
+  newtonStatics TRUE
+}
+Viewpoint {
+  position 2 -3 2
+}
+DEF SYNC_FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "sync floor"
+  boundingObject Box {
+    size 4 4 0.1
+  }
+}
+DEF SYNC_ROBOT Robot {
+  translation 0 0 1.2
+  rotation 0 0 1 0
+  children [
+    Shape {
+      geometry Box {
+        size 0.4 0.3 0.2
+      }
+    }
+  ]
+  name "world sync robot"
+  controller "<none>"
+  boundingObject Box {
+    size 0.4 0.3 0.2
+  }
+  physics Physics {
+    density -1
+    mass 2
+  }
+}

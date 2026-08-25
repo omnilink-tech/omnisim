@@ -1,0 +1,108 @@
+#VRML_SIM R2025a utf8
+
+# AgentBench C1 parse_error_fix -- initial state (deliberately broken).
+#
+# Symptom: this world will not load.
+#
+# NOTHING ELSE IS DOCUMENTED HERE ON PURPOSE. C2's header used to name its
+# root cause and thereby handed the agent the answer (fixed in 4e5cbdc4);
+# this task was authored after that lesson. The answer lives only in the
+# grader, which the agent under test may not read.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "AgentBench C1 - this world will not load"
+  # Pinned to ODE so the run is backend-attributable without an env var
+  # (SPEC A1.10's ODE branch). Do not change the pin: the task is to fix the
+  # world on this backend, not to swap solvers until the symptom hides.
+  defaultPhysicsBackend "newton"
+}
+Viewpoint {
+  orientation -0.35740674 0.35740674 0.86285621 1.7177716
+  position 7.000 -7.000 4.500
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+DEF FLOOR Solid {
+  translation 0 0 0
+  name "floor"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.47 0.50
+        roughness 0.95
+        metalness 0
+      }
+      geometry Box {
+        size 20 20 0.1
+      }
+    }
+  ]
+  boundingObject Box {
+    size 20 20 0.1
+  }
+}
+
+DEF PROBE_BOT Robot {
+  translation 0 0 0.5
+  name "probe_bot"
+  controller "<none>"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.55 0.15
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box {
+        size 0.4 0.4 0.4
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.4 0.4 0.4
+  }
+  physics Physics {
+    density -1
+    mass 5
+  }
+}
+
+DEF PALLET_A Solid {
+  translation 2.5 1.5 0.11
+  name "pallet_a"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.40 0.22
+        roughness 0.85
+        metalness 0
+      }
+      geometry Box {
+        size 1.2 0.8 0.12
+      }
+    }
+  ]
+
+DEF PALLET_B Soild {
+  translation -2.5 1.5 0.11
+  name "pallet_b"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.45 0.60
+        roughness 0.85
+        metalness 0
+      }
+      geometry Box {
+        size 0.8 1.2 0.12
+      }
+    }
+  ]
+}

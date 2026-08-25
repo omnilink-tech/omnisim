@@ -1,0 +1,118 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# tags: hidden
+# The frame of a bus-stop shelter: four posts, a roof, a glazed back and end, and the light-box for a poster.
+#
+# The structure, the poster box and the end glazing used to be baked meshes, and those meshes were
+# not ours to redistribute. They have been rebuilt from primitives here, keeping the envelope the
+# old ones had (8.9 x 5.3 on plan, 5.2 tall, in the same y-up frame the roof and the rear glass
+# were already written in) so anything that placed this node still gets a shelter of the same size
+# in the same place.
+# The shelter that actually ships is BusStop.proto, which builds itself from primitives and does
+# not use this node; this one is kept because it is part of the public surface.
+
+PROTO BusStopMesh [
+  field SFNode appearance PBRAppearance { baseColor 0.3 0.45 0.33 metalness 0 roughness 0.6 }
+]
+{
+  # NOTE the frame: y is UP here, x runs along the kerb and z across it. That is not the
+  # convention the rest of the library uses -- it is the one the meshes this replaces were
+  # modelled in, and it is kept so the replacement drops straight into their place.
+  Group {
+    children [
+      # --- the four posts -----------------------------------------------------
+      Pose {
+        translation -4.3 -0.1 -1.5
+        children [
+          DEF SHELTER_POST Shape {
+            appearance IS appearance
+            geometry Box {
+              size 0.16 5.0 0.16
+            }
+          }
+        ]
+      }
+      Pose {
+        translation 4.3 -0.1 -1.5
+        children [
+          USE SHELTER_POST
+        ]
+      }
+      Pose {
+        translation -4.3 -0.1 1.4
+        children [
+          USE SHELTER_POST
+        ]
+      }
+      Pose {
+        translation 4.3 -0.1 1.4
+        children [
+          USE SHELTER_POST
+        ]
+      }
+      # --- the roof, and the soffit hung just under it -------------------------
+      DEF ROOF Pose {
+        translation 0 2.55 -0.17
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Box {
+              size 8.9 0.16 5.3
+            }
+          }
+        ]
+      }
+      DEF INNER_ROOF Pose {
+        translation 0 2.43 0
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Box {
+              size 7.8 0.05 2.9
+            }
+          }
+        ]
+      }
+      # --- the light-box on the +x end, which is what a poster is hung in ------
+      DEF ADVERTISING_PANEL Pose {
+        translation 3.89 0.31 0.02
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Box {
+              size 0.38 4.17 2.82
+            }
+          }
+        ]
+      }
+      # --- the glazing: the back wall ... --------------------------------------
+      DEF REAR_GLASS Pose {
+        translation 0 0.02 -1.68
+        children [
+          Shape {
+            appearance DEF GLASS_APPEARANCE PBRAppearance {
+              transparency 0.8
+              metalness 0.5
+            }
+            geometry Box {
+              size 7.6 4.1 0.02
+            }
+          }
+        ]
+      }
+      # --- ... and the screen on the -x end ------------------------------------
+      DEF SIDE_GLASS Pose {
+        translation -3.99 0.04 -0.78
+        children [
+          Shape {
+            appearance USE GLASS_APPEARANCE
+            geometry Box {
+              size 0.02 4.08 1.18
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

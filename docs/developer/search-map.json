@@ -1,0 +1,58 @@
+{
+  "source_of_truth": [
+    "src/omnisim",
+    "src/controller",
+    "include/controller",
+    "tests",
+    "resources"
+  ],
+  "reference_or_low_priority": [
+    "docs/developer/archive",
+    "src/glm/doc",
+    "src/stb/tests"
+  ],
+  "vendored_or_do_not_edit_by_default": [
+    "src/glm",
+    "src/stb"
+  ],
+  "entrypoints": {
+    "startup": [
+      "src/omnisim/gui/main.cpp",
+      "src/omnisim/gui/OmGuiApplication.cpp"
+    ],
+    "simulation_runtime": [
+      "src/omnisim/engine/OmSimulationWorld.cpp",
+      "src/omnisim/control/OmControlledWorld.cpp",
+      "src/omnisim/control/OmController.cpp"
+    ],
+    "world_loading": [
+      "src/omnisim/nodes/utils/OmWorld.cpp",
+      "src/omnisim/vrml/OmNodeReader.cpp",
+      "src/omnisim/vrml/OmTokenizer.cpp",
+      "src/omnisim/vrml/OmParser.cpp"
+    ],
+    "rendering": [
+      "src/omnisim/render",
+      "src/omnisim/nodes/OmWgpuSceneRenderer.cpp",
+      "src/omnisim/gui/OmView3D.cpp"
+    ],
+    "controller_api": [
+      "src/controller/c",
+      "src/controller/cpp",
+      "src/controller/launcher/omnisim_controller.c",
+      "include/controller"
+    ],
+    "agent_facing_validation_harness": [
+      "scripts/harness/omnisim_harness.py",
+      "scripts/harness/diagnostic_codes.py",
+      "scripts/harness/README.md",
+      "projects/default/controllers/harness_supervisor/harness_supervisor.py",
+      "tests/harness/test_diagnostics.py",
+      "tests/harness/test_helpers.py",
+      "AGENTS.md"
+    ]
+  },
+  "agent_workflows": {
+    "iterate_on_a_world": "Long-running HTTP harness on 127.0.0.1:6789. POST /world/load, POST /world/screenshot, GET /world/render_stats, POST /scene/look_at, GET /scene/tree, POST /sim/step. See AGENTS.md section 5 and scripts/harness/README.md."
+  }
+}

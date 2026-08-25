@@ -1,0 +1,13 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/BoxShape.proto"
+
+PROTO DerivedColoredBoxShape [
+  field SFVec3f boxSize 0.5 0.5 0.5
+]
+{
+  BoxShape {
+    size IS boxSize
+    color 1.0 0.0 0.0
+  }
+}

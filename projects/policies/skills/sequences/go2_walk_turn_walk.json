@@ -1,0 +1,47 @@
+{
+ "schema": 2,
+ "name": "go2_walk_turn_walk",
+ "title": "Go2: walk -> turn-in-place -> walk (VERIFIED 2026-07-17, free-standing)",
+ "class": "quadruped",
+ "robot": "go2",
+ "status": "verified",
+ "summary": "The first free-standing quadruped BATON sequence with a turn leg: walk:10 -> turn:5 (~169 deg in place at the lut's achieved 0.5895 rad/s) -> walk:10 on the reversed heading. Verified 3/3 headless runs, zero falls, deterministic, both policies' 'ONNX loaded:' asserted; no harness (quads carry none). The turn leg is the go2_turn champion certified the same day (99.2% never_fell); the walk and stand legs are the verified go2_walk_stand_walk stack. See the `verification` field for the exam record.",
+ "profile": "go2_baton_deploy",
+ "world": "projects/policies/research/worlds/go2_baton_deploy.omniworld",
+ "deploy": {
+  "kind": "world",
+  "launcher": "scripts/dev/run_go2_baton_deploy.sh",
+  "notes": "A `world` deploy: ONNX controller in its own process, env EXPORTED by skill_lib. BATON_SPECIALISTS assembles from the skills list as 'turn|<onnx>|<turn lut>|0;stand||<stand lut>|0' -- the controller's own setdefault is overridden. go2_stand is listed even though the schedule never enters 'stand' because the controller FATALs without GO2_STAND_LUT; it also gives the demo a parking mode for free if the schedule is extended."
+ },
+ "primary": "go2_shadow_walk",
+ "skills": [
+  "go2_turn",
+  "go2_stand"
+ ],
+ "arbiter": {
+  "kind": "schedule",
+  "value": "walk:10,turn:5,walk:10"
+ },
+ "env": {
+  "GO2_GHOST_LUT": "projects/policies/ghosts/go2/go2_shadow_ghost_lut.json",
+  "GO2_STAND_LUT": "projects/policies/ghosts/go2/go2_stand_ghost_lut.json",
+  "GO2_TURN_LUT": "projects/policies/ghosts/go2/go2_turn_ghost_lut.json",
+  "GO2_POLICY_ONNX": "projects/policies/research/inference/policies/gpu_go2_shadow_main/policy.onnx"
+ },
+ "duration_default": 30,
+ "gui_default": "headless",
+ "handover_feasibility": {
+  "walk_to_turn": "Both legs are cyclic locomotion attractors on the SAME clock (nb=64, freq=1.8, shape parity asserted by the luts' shared joints order), so resolve_handover derives WARM -- and warm/cold is moot anyway: both policies are feedforward ONNX MLPs with no hidden state. The binding constraint is the SUPPORT GATE, unchanged from the verified demo: the turn gait shares duty=0.6 phase structure with the walk, so the four-foot-support windows the host computes from the gait model fall at the same phases for both legs. The switch waits for max swing weight <= GO2_SUPPORT_TOL exactly as walk->stand did after the t=12.83 s flip taught us why.",
+  "turn_to_walk": "Symmetric to the above. One turn-specific check the exam MUST make: heading after the turn leg is arbitrary by design, so leg-2 progress must be scored along the ACHIEVED heading (the G1's walk_turn_walk keep-heading lesson), not along +x -- a straight leg 2 at 169 deg looks like NEGATIVE x progress to a naive |x| ruler.",
+  "morph": "BATON_MORPH_TICKS=30 crossfades glut/ref/ffdq element-wise between the walk and turn luts at the same phase; mid-morph the blend is a partial-rate turn, which is itself a legal differential-stride gait (the sweep is linear in wz to first order). The wz obs value must crossfade with the SAME u (deploy hook 2) or the policy sees a command that disagrees with its reference."
+ },
+ "expected": "leg 1: ~3.5-4 m at +x (0.38-0.43 m/s after ramp). turn:5 at wz_meas 0.5895 rad/s ~= 169 deg IF the residual tracks the ghost's rate; the solo exam measures the actual per-leg yaw gain first (the G1 turner's measured live gain was ~0.67 -- plan the schedule from the MEASURED gain, not the ghost's). leg 2: straight on the achieved heading, 0 falls, 2 switches.",
+ "doc": "docs/developer/policy-switching.md",
+ "verification": {
+  "date": "2026-07-17",
+  "engine": "Newton/mujoco_warp",
+  "support": "free-standing quadruped; no harness",
+  "result": "3/3 headless runs, zero falls, deterministic: walk +4.2 m, turn in place ~169 deg over 5 s with position pinned, then walk 10.9-13.1 m on the reversed heading. Both policies asserted loaded via two ONNX loaded lines.",
+  "requirements": "The launcher must honour caller BATON_SPECIALISTS/BATON_SCHEDULE and use controller-readable absolute checkpoint paths on Windows."
+ }
+}

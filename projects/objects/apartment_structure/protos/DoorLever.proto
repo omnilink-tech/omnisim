@@ -1,0 +1,189 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/apartment_structure/protos/DoorLever.proto
+# keywords: building/component
+# A lever door handle: a rose plate sunk through the leaf, a spindle running right through it, and a lever arm on each face.
+# Plug it into the `doorHandle` field of a Door.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+
+PROTO DoorLever [
+  field SFVec3f    translation      0 0 0
+  field SFRotation rotation         0 0 1 0
+  field SFString   name             "door lever"
+  field SFBool     canTurn          FALSE                # Defines whether the lever is connected to the door using a hinge-joint.
+  field SFBool     jointAtLeft      TRUE                 # Defines on which side is the lever.
+  field SFFloat    doorThickness    0.05                 # Defines the thickness of the door.
+  field SFFloat    handleThickness  0.0125               # Defines the thickness of the handle.
+  field SFFloat    handleLength     0.12                 # Defines the length of the handle.
+  field SFFloat    distanceFromDoor 0.065                # Defines the distance between the handle and the door.
+  field SFNode     appearance       BrushedAluminium {}  # Defines the appearance of the lever.
+  field SFFloat    mass             0.7                  # Defines the mass of the lever.
+  field SFBool     hasStaticParent  FALSE                # Defines whether the parent door has physics or not.
+  field SFBool     castShadows      TRUE                 # Defines whether this object should cast shadows.
+]
+{
+  %<
+    // =====================================================================
+    // 1. THE FIELDS
+    //
+    // The handle sits at the ORIGIN of its own frame, which the Door places in
+    // the middle of the leaf: x runs through the door, y along it, z up. Every
+    // dimension below is measured from the mid-plane of the leaf, and the four
+    // length fields all have to be strictly positive or the assembly turns
+    // inside out.
+    // =====================================================================
+    const positive = function(field, label) {
+      if (field.value > 0)
+        return field.value;
+      console.error('\'' + label + '\' must be strictly positive. Value reset to ' + field.defaultValue + '.');
+      return field.defaultValue;
+    };
+    const doorThickness = positive(fields.doorThickness, 'doorThickness');
+    const rodRadius = positive(fields.handleThickness, 'handleThickness');
+    const leverLength = positive(fields.handleLength, 'handleLength');
+    const standOff = positive(fields.distanceFromDoor, 'distanceFromDoor');
+
+    // A lever on a left-hung door has to reach back towards the middle of the
+    // leaf, which is the other way round from a right-hung one. That, and which
+    // way the lever swings down, is all `jointAtLeft` changes.
+    const reach = fields.jointAtLeft.value ? -1 : 1;
+
+    // The spindle crosses the leaf and stands off by `distanceFromDoor` on BOTH
+    // faces; a lever hangs off each of its two ends, pointing along the leaf.
+    const spindle = doorThickness + 2 * standOff;
+    const faceX = 0.5 * spindle;               // where each lever meets the spindle
+    const leverY = reach * 0.5 * leverLength;  // how far along the leaf the arm reaches
+    const roseRadius = 3 * rodRadius;
+    const roseDepth = doorThickness + 0.025;   // proud of the leaf on both faces
+    const turning = fields.canTurn.value;
+  >%
+  Slot {
+    type "door handle"
+    endPoint Solid {
+      translation IS translation
+      rotation IS rotation
+      children [
+        # --- the rose: a short disc lying through the leaf. It is what the
+        #     handle is held by, so it is also the collider when nothing turns.
+        DEF HANDLE_ROSE Pose {
+          rotation 0 1 0 1.5708
+          children [
+            Shape {
+              appearance IS appearance
+              geometry Cylinder {
+                radius %<= roseRadius >%
+                height %<= roseDepth >%
+                subdivision 20
+              }
+              castShadows IS castShadows
+            }
+          ]
+        }
+      %< if (turning) { >%
+        # The lever turns about the spindle. The stops let it drop about 35
+        # degrees and no further, the spring lifts it back to horizontal when it
+        # is let go, and the friction keeps it from ringing on the stop.
+        DEF LEVER HingeJoint {
+          jointParameters HingeJointParameters {
+            position 0.02
+            axis %<= -reach >% 0 0
+            minStop -0.03
+            maxStop 0.6109
+            springConstant 10
+            dampingConstant 0.5
+            staticFriction 0.05
+          }
+          endPoint Solid {
+            children [
+      %< } >%
+              # --- the spindle, crossing the leaf ---------------------------
+              DEF HANDLE_SPINDLE Pose {
+                rotation 0 1 0 1.5708
+                children [
+                  Shape {
+                    appearance IS appearance
+                    geometry Capsule {
+                      radius %<= rodRadius >%
+                      height %<= spindle >%
+                      subdivision 12
+                    }
+                    castShadows IS castShadows
+                  }
+                ]
+              }
+              # --- the lever arm on the near face ---------------------------
+              DEF HANDLE_LEVER_FRONT Pose {
+                translation %<= faceX >% %<= leverY >% 0
+                rotation 1 0 0 1.5708
+                children [
+                  DEF HANDLE_LEVER Shape {
+                    appearance IS appearance
+                    geometry Capsule {
+                      radius %<= rodRadius >%
+                      height %<= leverLength >%
+                      subdivision 12
+                    }
+                    castShadows IS castShadows
+                  }
+                ]
+              }
+              # --- and the matching one on the far face ---------------------
+              DEF HANDLE_LEVER_BACK Pose {
+                translation %<= -faceX >% %<= leverY >% 0
+                rotation 1 0 0 1.5708
+                children [
+                  USE HANDLE_LEVER
+                ]
+              }
+      %< if (turning) { >%
+            ]
+            # Only the turning part is a body in its own right, so only it gets
+            # a collider and a mass. The rose stays with the leaf.
+            boundingObject Group {
+              children [
+                USE HANDLE_SPINDLE
+                USE HANDLE_LEVER_FRONT
+                USE HANDLE_LEVER_BACK
+              ]
+            }
+            physics Physics {
+              density -1
+              mass IS mass
+            }
+          }
+        }
+      ]
+        # `hasStaticParent` says the Door this is plugged into carries no
+        # Physics. A dynamic child hanging off a static parent is not something
+        # the solver can integrate, so in that case the handle stays static too.
+        %< if (!fields.hasStaticParent.value) { >%
+        boundingObject USE HANDLE_ROSE
+        physics Physics {
+        }
+        %< } >%
+      %< } else { >%
+      ]
+      # Nothing turns, so the whole handle is one rigid piece.
+      boundingObject Group {
+        children [
+          USE HANDLE_ROSE
+          USE HANDLE_SPINDLE
+          USE HANDLE_LEVER_FRONT
+          USE HANDLE_LEVER_BACK
+        ]
+      }
+        %< if (!fields.hasStaticParent.value) { >%
+      physics Physics {
+        density -1
+        mass IS mass
+      }
+        %< } >%
+      %< } >%
+      name IS name
+      model "door lever"
+    }
+  }
+}

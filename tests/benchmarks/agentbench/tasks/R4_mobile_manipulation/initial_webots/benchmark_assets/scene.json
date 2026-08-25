@@ -1,0 +1,50 @@
+{
+  "_comment": [
+    "FROZEN scene specification for AgentBench R4_mobile_manipulation.",
+    "Every dimension the grader measures is here and nowhere else: the grader",
+    "READS this file (graders/r4_core.scene_spec) rather than carrying a second",
+    "copy, so the numbers the agent builds against and the numbers it is scored",
+    "against cannot drift apart.",
+    "Frame: metres, world frame, z is the axis gravity acts along (ENU).",
+    "The 'name' fields exist so a recorder can be asked for a per-step track of",
+    "the payload by name on every arm. The grader itself finds all three bodies",
+    "by GEOMETRY and never by name -- the names are an instrument convenience,",
+    "not the identity rule."
+  ],
+  "arena": {
+    "size_xy": [10.0, 10.0],
+    "half_extent": 5.0,
+    "wall_height": 0.5
+  },
+  "start": {
+    "position_xy": [-4.0, -4.0],
+    "yaw_deg": 0.0
+  },
+  "table": {
+    "name": "table",
+    "position": [3.0, 3.0, 0.3],
+    "size": [0.8, 0.8, 0.6],
+    "top_z": 0.6,
+    "aabb_min": [2.6, 2.6, 0.0],
+    "aabb_max": [3.4, 3.4, 0.6],
+    "static": true
+  },
+  "payload": {
+    "name": "payload",
+    "size": 0.05,
+    "mass_kg": 0.05,
+    "position": [3.0, 3.0, 0.625],
+    "rest_z_on_table": 0.625,
+    "rest_z_on_pad": 0.125,
+    "dynamic": true
+  },
+  "pad": {
+    "name": "pad",
+    "position": [-3.0, 3.5, 0.05],
+    "size": [0.6, 0.6, 0.1],
+    "top_z": 0.1,
+    "aabb_min": [-3.3, 3.2, 0.0],
+    "aabb_max": [-2.7, 3.8, 0.1],
+    "static": true
+  }
+}

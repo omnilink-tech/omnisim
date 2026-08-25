@@ -1,0 +1,164 @@
+#OMNISIM R2025a utf8
+# license: Apache-2.0
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim
+# keywords: construction/crane/tower crane
+# TowerCrane — a procedurally generated lattice tower crane. Builds a
+# braced square mast, a triangular working jib, a counter-jib with
+# counterweight, an A-frame cat-head with pendant tie-bars, and a
+# trolley + hoist hook. Static decoration (no physics) apart from an
+# optional bounding box on the mast foot.
+# template language: javascript
+
+PROTO TowerCrane [
+  field SFVec3f    translation        0 0 0
+  field SFRotation rotation           0 0 1 0
+  field SFString   name               "tower crane"
+  field SFFloat    mastHeight         22       # Height of the lattice mast (m).
+  field SFFloat    mastWidth          1.8      # Square mast cross-section (m).
+  field SFFloat    jibLength          22       # Working-jib reach (m, +X).
+  field SFFloat    counterJibLength   8        # Counter-jib length (m, -X).
+  field SFFloat    hookHeight         3        # Hook-block height above ground (m).
+  field SFColor    craneColor         0.94 0.75 0.12
+  field SFBool     enableBoundingObject TRUE
+]
+{
+  %<
+    const W = Math.max(0.6, fields.mastWidth.value);
+    const a = W / 2;
+    const Hmast = Math.max(6, fields.mastHeight.value);
+    const jibLength = Math.max(4, fields.jibLength.value);
+    const cjL = Math.max(2, fields.counterJibLength.value);
+    const hookZ = fields.hookHeight.value;
+    const col = fields.craneColor.value;
+
+    // Appearance definitions (DEF on first use, USE thereafter).
+    const matDefs = {
+      CY:     'PBRAppearance { baseColor ' + col.r + ' ' + col.g + ' ' + col.b + ' roughness 0.55 metalness 0.25 }',
+      CSTEEL: 'PBRAppearance { baseColor 0.12 0.12 0.13 roughness 0.5 metalness 0.6 }',
+      CCONC:  'PBRAppearance { baseColor 0.55 0.55 0.57 roughness 1 metalness 0 }',
+      CCAB:   'PBRAppearance { baseColor 0.12 0.45 0.78 roughness 0.35 metalness 0.25 }'
+    };
+
+    const members = [];
+    function add(x, y, z, sx, sy, sz, mat, ax, ay, az, ang) {
+      members.push({ x: x, y: y, z: z, sx: sx, sy: sy, sz: sz, mat: mat,
+                     ax: ax || 0, ay: ay || 0, az: az || 1, ang: ang || 0 });
+    }
+
+    // ── Concrete foot ──
+    add(0, 0, 0.3, W + 1.4, W + 1.4, 0.6, 'CCONC');
+
+    // ── Mast: 4 chords + horizontal lacing + diagonal bracing ──
+    const chord = 0.16, lace = 0.08, diag = 0.07;
+    const ph = 1.8;
+    const N = Math.max(4, Math.round(Hmast / ph));
+    const dz = Hmast / N;
+    const corners = [[-a, -a], [a, -a], [a, a], [-a, a]];
+    for (let c = 0; c < 4; c++)
+      add(corners[c][0], corners[c][1], Hmast / 2, chord, chord, Hmast, 'CY');
+    for (let k = 0; k <= N; k++) {
+      const z = k * dz;
+      add(0, -a, z, W, lace, lace, 'CY');
+      add(0,  a, z, W, lace, lace, 'CY');
+      add(-a, 0, z, lace, W, lace, 'CY');
+      add( a, 0, z, lace, W, lace, 'CY');
+    }
+    const Ld = Math.hypot(W, dz);
+    const angD = Math.atan2(W, dz);
+    for (let k = 0; k < N; k++) {
+      const zc = k * dz + dz / 2;
+      const s = (k % 2 === 0) ? 1 : -1;
+      add( a, 0, zc, diag, diag, Ld, 'CY', 1, 0, 0,  s * angD);  // +x face
+      add(-a, 0, zc, diag, diag, Ld, 'CY', 1, 0, 0, -s * angD);  // -x face
+      add(0,  a, zc, diag, diag, Ld, 'CY', 0, 1, 0, -s * angD);  // +y face
+      add(0, -a, zc, diag, diag, Ld, 'CY', 0, 1, 0,  s * angD);  // -y face
+    }
+
+    // ── Slewing platform + operator cab ──
+    const slewZ = Hmast + 0.35;
+    add(0, 0, slewZ, W + 0.8, W + 0.8, 0.5, 'CY');
+    const jz = slewZ + 0.9;          // jib bottom-chord height
+    const jH = 1.1;                   // jib truss height
+    const jW = 0.9;                   // jib truss half-width *2
+    add(a + 0.7, 0, slewZ + 1.1, 1.1, 1.2, 1.3, 'CCAB');
+
+    // ── Triangular working jib (+X): 1 top chord, 2 bottom chords ──
+    const jc = 0.13, jp = 2.0;
+    const NJ = Math.max(2, Math.round(jibLength / jp));
+    add(jibLength / 2, 0, jz + jH, jc, jc, jibLength, 'CY');     // top chord
+    add(jibLength / 2, -jW / 2, jz, jc, jc, jibLength, 'CY');    // bottom L
+    add(jibLength / 2,  jW / 2, jz, jc, jc, jibLength, 'CY');    // bottom R
+    const Lst = Math.hypot(jW / 2, jH);
+    const angSt = Math.atan2(jW / 2, jH);
+    for (let s = 0; s <= NJ; s++) {
+      const x = s * (jibLength / NJ);
+      add(x, 0, jz, jc, jW, jc, 'CY');                            // bottom cross
+      add(x, -jW / 4, jz + jH / 2, jc, jc, Lst, 'CY', 1, 0, 0,  angSt); // web to L
+      add(x,  jW / 4, jz + jH / 2, jc, jc, Lst, 'CY', 1, 0, 0, -angSt); // web to R
+    }
+
+    // ── Counter-jib (-X) + concrete counterweight ──
+    add(-cjL / 2, 0, jz + jH, jc, jc, cjL, 'CY');
+    add(-cjL / 2, -jW / 2, jz, jc, jc, cjL, 'CY');
+    add(-cjL / 2,  jW / 2, jz, jc, jc, cjL, 'CY');
+    const NC = Math.max(2, Math.round(cjL / jp));
+    for (let s = 0; s <= NC; s++) {
+      const x = -s * (cjL / NC);
+      add(x, 0, jz, jc, jW, jc, 'CY');
+    }
+    add(-cjL + 0.6, 0, jz - 0.1, 1.6, jW + 0.8, 1.7, 'CCONC');
+
+    // ── Cat-head (A-frame apex) + pendant tie-bars ──
+    const apexH = 4.5;
+    const apexZ = jz + jH + apexH;
+    add(0, 0, jz + jH + apexH / 2, 0.22, 0.22, apexH, 'CY');
+    function tie(xT, zT) {
+      const dx = xT - 0, dzz = zT - apexZ;
+      const L = Math.hypot(dx, dzz);
+      add(xT / 2, 0, (apexZ + zT) / 2, L, 0.07, 0.07, 'CSTEEL', 0, 1, 0, -Math.atan2(dzz, dx));
+    }
+    tie(jibLength * 0.5, jz + jH);
+    tie(jibLength * 0.92, jz + jH);
+    tie(-cjL + 0.6, jz + jH);
+
+    // ── Trolley + hoist cable + hook block ──
+    const xt = jibLength * 0.62;
+    add(xt, 0, jz - 0.18, 0.7, jW + 0.2, 0.3, 'CSTEEL');
+    const cableTop = jz - 0.33;
+    add(xt, 0, (cableTop + hookZ) / 2, 0.06, 0.06, cableTop - hookZ, 'CSTEEL');
+    add(xt, 0, hookZ, 0.32, 0.32, 0.5, 'CY');
+
+    const seen = {};
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "tower crane"
+    children [
+      %< for (let i = 0; i < members.length; i++) {
+           const m = members[i];
+           let appStr;
+           if (!seen[m.mat]) { seen[m.mat] = true; appStr = 'DEF ' + m.mat + ' ' + matDefs[m.mat]; }
+           else appStr = 'USE ' + m.mat;
+      >%
+      Pose {
+        translation %<= m.x >% %<= m.y >% %<= m.z >%
+        %< if (Math.abs(m.ang) > 1e-9) { >%
+        rotation %<= m.ax >% %<= m.ay >% %<= m.az >% %<= m.ang >%
+        %< } >%
+        children [
+          Shape { appearance %<= appStr >% geometry Box { size %<= m.sx >% %<= m.sy >% %<= m.sz >% } }
+        ]
+      }
+      %< } >%
+    ]
+    %< if (fields.enableBoundingObject.value) { >%
+    boundingObject Pose {
+      translation 0 0 %<= Hmast / 2 >%
+      children [ Box { size %<= W + 0.2 >% %<= W + 0.2 >% %<= Hmast >% } ]
+    }
+    %< } >%
+  }
+}

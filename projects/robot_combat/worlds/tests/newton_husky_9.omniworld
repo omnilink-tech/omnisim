@@ -1,0 +1,38 @@
+#OMNISIM R2025a utf8
+
+# Newton hang-bisect: 9 huskies (one more than the known-good 4v4 size).
+# Tests whether the 9th URDFRobot triggers the hang seen at 10v10.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Newton 9 husky hang bisect"
+}
+Viewpoint {
+  orientation 0.000000 1.000000 0.000000 1.570796
+  position 0.000 0.000 71.533
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 40 40
+  wallHeight 0.5
+  floorAppearance Asphalt { colorOverride 0.55 0.57 0.60 }
+}
+
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -10 -8 0.3 name "h0" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -10 -4 0.3 name "h1" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -10  0 0.3 name "h2" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -10  4 0.3 name "h3" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation -10  8 0.3 name "h4" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation  10 -8 0.3 rotation 0 0 1 3.14159 name "h5" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation  10 -4 0.3 rotation 0 0 1 3.14159 name "h6" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation  10  0 0.3 rotation 0 0 1 3.14159 name "h7" controller "drive_forward" physicsBackend "newton" }
+URDFRobot { url "../../../robots/clearpath/husky_description/urdf/husky.urdf" translation  10  4 0.3 rotation 0 0 1 3.14159 name "h8" controller "drive_forward" physicsBackend "newton" }

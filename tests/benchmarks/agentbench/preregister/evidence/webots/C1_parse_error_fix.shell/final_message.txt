@@ -1,0 +1,1 @@
+Fixed. The world had two defects: pallet_a's Solid block was never closed (missing brace), and pallet_b was declared with the undefined node type 'Soild' instead of Solid. Both repaired in place; the verification run above loads the full scene - floor, probe_bot, pallet_a, pallet_b - with no parse errors.

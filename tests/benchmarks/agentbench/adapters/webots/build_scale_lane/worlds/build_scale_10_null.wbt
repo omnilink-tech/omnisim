@@ -1,0 +1,30 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
+
+WorldInfo { title "AgenticSimBench BuildScale 10 Webots null" basicTimeStep 16 }
+Viewpoint { position 0 0 32 }
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  name "floor"
+  children [ DEF FLOOR_SHAPE Shape { geometry Box { size 60 30 0.1 } } ]
+  boundingObject USE FLOOR_SHAPE
+}
+DEF CONTACT_WITNESS Solid {
+  translation 20 0 0.1
+  name "contact witness"
+  children [ DEF WITNESS_SHAPE Shape { geometry Box { size 0.2 0.2 0.2 } } ]
+  boundingObject USE WITNESS_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+
+Pioneer3at { translation -10 -9 0.11 name "scale_000" controller "build_scale_idle" }
+Pioneer3at { translation -10 -7 0.11 name "scale_001" controller "build_scale_idle" }
+Pioneer3at { translation -10 -5 0.11 name "scale_002" controller "build_scale_idle" }
+Pioneer3at { translation -10 -3 0.11 name "scale_003" controller "build_scale_idle" }
+Pioneer3at { translation -10 -1 0.11 name "scale_004" controller "build_scale_idle" }
+Pioneer3at { translation -10 1 0.11 name "scale_005" controller "build_scale_idle" }
+Pioneer3at { translation -10 3 0.11 name "scale_006" controller "build_scale_idle" }
+Pioneer3at { translation -10 5 0.11 name "scale_007" controller "build_scale_idle" }
+Pioneer3at { translation -10 7 0.11 name "scale_008" controller "build_scale_idle" }
+Pioneer3at { translation -10 9 0.11 name "scale_009" controller "build_scale_idle" }

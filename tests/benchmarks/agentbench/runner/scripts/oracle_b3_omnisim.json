@@ -1,0 +1,33 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "oracle_b3_omnisim",
+  "description": "B3 measure_and_report oracle (omnisim): read the scene description, compute the centre-to-centre distance from the authored translations, answer which robot is taller. The grader re-measures the loaded scene itself.",
+  "minimality": [
+    "Static scene; the authored translations decide both questions (planar offset (6.4, 2.2) plus the 0.4 m plinth -> 6.78 m, within the grader's 0.30 m tolerance of the measured value on both arms; 'taller' is decided by the plinth). One read + the committed answer is minimal on every surface.",
+    "Alternatives (all costlier): OmniSim shell+tools harness path = 3+ calls (start, load, read bounds); Webots bridge = 5+ calls (start, 2x get_from_def, 2x get_position, quit) and still yields no AABB top for 'taller'."
+  ],
+  "turns": [
+    {
+      "text": "Static scene, authored translations in the file. Reading it.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "read_file",
+          "arguments": {
+            "path": "two_huskies.wbt"
+          }
+        }
+      ]
+    },
+    {
+      "text": "The two Huskies are 6.78 m apart centre to centre (planar offset (6.4, 2.2) plus 0.4 m of height). The taller one is husky_plinth, which stands on the 0.4 m plinth.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 160
+      }
+    }
+  ]
+}

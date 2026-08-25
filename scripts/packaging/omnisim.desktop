@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=OmniSim
+Comment=OmniSim — robot simulator for agentic AI by OmniLink
+Exec=omnisim
+Icon=/usr/local/omnisim/resources/icons/core/omnisim.png
+Terminal=false
+Type=Application
+Categories=Development;Science;Robotics;
+MimeType=application/x-omnisim;
+X-AppInstall-Package=omnisim

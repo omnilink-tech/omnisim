@@ -1,0 +1,107 @@
+# Phase 0 — the graded verdicts that validate the A1 grader
+
+These files are the **evidence base** for AgentBench's headline Phase-0 result.
+They are committed on purpose, unlike the rest of `results/`, which is
+gitignored transient run output: without them the claim "the grader
+discriminates" lives only in a commit message, and cannot be checked from a
+fresh clone.
+
+A grader that only ever sees good runs proves nothing. What makes A1 trustworthy
+is not that a correct solution passes — it is that each deliberately-broken
+control fails **on the specific assertions it should fail on**, which was
+declared before the runs.
+
+## The original four controls (`<agent>.verdict.json`)
+
+| condition | what it does | outcome | failed |
+|---|---|---|---|
+| `oracle` | ten Huskies, controllers driving a seeded random walk | **PASS 10/10** | — |
+| `null`   | does nothing at all | FAIL 0/10 | every assertion |
+| `wrong`  | ten Huskies spawned, **no controllers** | FAIL 6/10 | A1.4, A1.5, A1.6, A1.8 |
+| `parade` | ten Huskies driving in formation | FAIL 9/10 | **A1.8 alone** |
+
+`parade` is the sharp one. It is a *good-looking* run — ten robots, all moving,
+well separated — and it fails only the randomness assertion, at R = 1.0, the
+exact theoretical maximum for identical headings.
+
+## The targeted red-evidence fixtures (`A1_husky_swarm_10.<agent>.verdict.json`)
+
+Added for plan §5.5's red-evidence rule: *a `null` red validates nothing*, so
+the six assertions whose only red came from `null` (A1.1, A1.2, A1.3, A1.7,
+A1.9, A1.10) each got a fixture built to violate exactly that assertion while
+satisfying the rest as far as the assertion's structure allows
+(`agents/a1_fixtures_extra.py`). Every row below is measured grader output.
+
+| fixture | what it breaks | outcome | failed (measured) |
+|---|---|---|---|
+| `nine` | nine Huskies instead of ten (A1.1's count clause) | FAIL 3/10 | A1.1 + the structural cascade A1.2/A1.4/A1.5/A1.6/A1.7/A1.8 — those assertions all gate on n == 10, so no nine-robot world can red A1.1 alone |
+| `impostor` | ten moving robot-class bodies, but one is a renamed copy of the URDF — only nine `husky.urdf` declarations (A1.1's corroboration clause) | FAIL 9/10 | **A1.1 alone** (scene count 10, declared 9) |
+| `dupname` | two of the ten named `husky_0` | FAIL 6/10 | **A1.2** (9 distinct names / 10 ids) + A1.5/A1.6/A1.8 — real engine collateral: OmniSim keys the controller IPC pipe by robot name, so both controllers *start* (A1.4 stays green at 10 starts) but the twin never pairs and never moves (0.0 m) |
+| `overlap` | husky_1 spawned 0.25 m from husky_0 — chassis volumes interpenetrating at t=0 | FAIL 9/10 | **A1.3 alone** — min AABB clearance −0.396 m *and* **519 robot-robot contacts in the first 10 steps**, named by the repaired contact pairing (`03e988c5`); witness: 608 contacts observed, 531 naming two distinct bodies |
+| `meteor` | husky_0 spawned 5.6 m up, still falling when the recorded window opens | FAIL 9/10 | **A1.7 alone** (max \|dz\| = 0.615 m > 0.30; it lands, survives, and drives ≥ 11.7 m like the rest) |
+| `errlog` | husky_0's controller provokes exactly one non-fatal ERROR-class log line (a refused supervisor PROTO import), then random-walks normally | FAIL 9/10 | **A1.9 alone** (1 ERROR: line; exit 0, recorder complete, world finalized) |
+
+`overlap` is the one §5.5 was written about: A1.3's contact half was provably
+vacuous for weeks (every contact pair keyed `(id, id)`), and this is the first
+time the **repaired** pairing has been observed catching two interpenetrating
+robots end-to-end.
+
+`dupname`'s three collateral reds were **not** predicted (prediction: A1.2
+alone — kept in `a1_fixtures_extra.PREDICTED_FAILURES`); the registry carries
+the measured set with the mechanism in a comment. The collateral is a real
+engine behaviour the fixture surfaced, worth knowing on its own: duplicate
+robot names silently kill one robot's control with only a misleading
+"ABI/protocol mismatch" pipe diagnostic.
+
+## A1.10 — deliberately still UNVALIDATED end-to-end
+
+`A1_husky_swarm_10.core_unattributed.verdict.json` is real grader output
+(`a1_core.grade` on a synthetic bundle with the attribution stripped —
+regenerable via `a1_fixtures_extra.core_unattributed_verdict()`), and it is
+red on A1.10 with outcome INVALID. But it is **not** an end-to-end run on a
+wrong artifact, and the coverage table refuses to count it: on a
+Newton-bundled engine the `.newton.json` sidecar is written at world finalize,
+so every gradeable run arrives attributed, and the only ways to force ODE (the
+world pin, the env knobs) either *are* an attribution or are stripped from the
+child env by the launcher on purpose. Driving A1.10 red end-to-end requires an
+engine **build** without the Newton runtime and no pin (`BUNDLE_NEWTON=0`) —
+a machine property, not something a scripted artifact can encode.
+
+## The coverage table
+
+[`COVERAGE.md`](COVERAGE.md) + `coverage.json` — one row per assertion across
+**all** graders, generated by `../coverage_table.py` (regenerate after adding
+a fixture or committing a verdict; `--check` verifies freshness, and
+`test_coverage_table.py` enforces it). Current headline: **25/32 assertions
+validated** — A1.1–A1.9, all four B1 assertions, B2.2/B2.3/B2.4/B2.6, all
+three C1 assertions, B3.2/B3.4 (the confident-wrong-answer fixture), and
+C2.3/C2.4/C2.5 (the freeze-cheat fixture), each from committed live-engine
+fixture verdicts in this directory. Still UNVALIDATED: A1.10 (structural,
+core-unit evidence only); B2.1 and B2.5, whose only red is the `null` agent
+(pre-declared by `b2_fixtures.UNVALIDATED_BY_TARGETED_FIXTURE` — a targeted
+fixture for "camera moved" / "claim commits a number" would have to do the
+task right and lie only structurally, which the existing four negatives do
+not cover); B3.1 and B3.3, whose only red is `null` (the `wrong` fixture
+states a number and names a robot on purpose — its lie is in the *values*,
+which is B3.2/B3.4's territory); C2.2, whose only red is `null` (the
+freeze-cheat's whole point is that the robot "stays up", so C2.2 passes);
+and C2.1, which has no red at all — every committed C2 run, including the
+unfixed `null` world, runs clean (the fall is silent; that silence is the
+task's premise). Rows appear automatically as verdicts land — declared
+`expect_failures` are targeting, not evidence.
+
+Regenerate the run verdicts with the runner's scripted conditions, e.g.
+`python run_agentbench.py --tasks A1 --agent nine,impostor,dupname,overlap,meteor,errlog`;
+results land under `results/<timestamp>/` and the graded `verdict.json` files
+are copied here under `<task>.<agent>.verdict.json`.
+
+The three original conditions that ran an engine, and all six new fixtures,
+carry a backend `attribution` read from the engine's `.newton.json` sidecar
+(`newton`, `degraded: false`), so the physics that produced each verdict is
+named rather than assumed. `null` runs no engine, so its attribution is empty —
+absent evidence reported as absent.
+
+> ⚠️ These are **graded outputs**, not raw recordings. They let you check what
+> the grader concluded and on which assertions; they do not let you re-grade
+> from scratch. The full per-run recordings (CSV samples, engine logs, sidecars)
+> stay untracked because they are tens of megabytes per campaign.

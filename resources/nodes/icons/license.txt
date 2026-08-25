@@ -1,0 +1,58 @@
+OmniSim scene-tree node icons.
+
+Contents
+--------
+84 PNG files, one per node type (Accelerometer.png ... Zoom.png), all 128x128
+RGBA. They are shaded renders of the node they name -- 1,000 to 5,200 unique
+colours per file -- not flat glyph artwork.
+
+Where they are used
+-------------------
+The engine registers this directory as Qt's `icons:` search path
+(src/omnisim/gui/OmGuiApplication.cpp:96), which the scene-tree view and the
+Add-Node dialog resolve node-type icons through. They are also referenced by
+absolute raw.githubusercontent.com URL from the web viewer's field model
+(resources/web/wwi/protoVisualizer/FieldModel.js).
+
+License
+-------
+Apache License, Version 2.0 -- Copyright 1996-2024 Cyberbotics Ltd.
+https://www.apache.org/licenses/LICENSE-2.0
+
+Evidence for that election
+--------------------------
+1. All 84 entered this repository in the initial Webots import, commit
+   0db6a18a74ba16fa2c10f744423405d153b87c7a ("Initial commit: OmniSim robotics
+   simulator", 2026-04-11). `git log -- resources/nodes/icons/` lists that
+   commit and no other: not one file has been added, changed or removed since.
+2. Upstream is https://github.com/cyberbotics/webots, released under the Apache
+   License, Version 2.0. See the "Derivation" section of the repository-root
+   NOTICE.
+3. NO third-party notice was attached to this directory upstream. That is
+   positive evidence, not merely an absence: upstream *did* attach a separate
+   notice to the one icon set that needed it -- `resources/icons/{core,dark,
+   light}/license.txt` each carried "Source (slightly modified): icons8.com /
+   Creative Commons Attribution-NoDerivs 3.0 Unported" -- and applied it to
+   those three directories only. Reading the import commit's tree, the only
+   licence files anywhere under resources/ were those three plus the font and
+   liluat and wren licences. Upstream distinguished its licensed-in artwork
+   from its own, and did not put this directory in the licensed-in group.
+4. The artwork is consistent with in-house production: they are renders of
+   OmniSim/Webots node types, which only the simulator can produce.
+
+Limits of that evidence
+-----------------------
+No individual file carries a copyright notice (a PNG has nowhere natural to put
+one, and these carry no tEXt/iTXt/zTXt chunks at all). This repository's history
+is a squashed import, so git cannot corroborate anything earlier than the import
+commit. The election therefore rests on the upstream repository's blanket
+Apache-2.0 grant plus the scoping evidence in point 3, not on a per-file notice.
+
+Stale entries (housekeeping, not a licensing issue)
+---------------------------------------------------
+Fluid.png, ImmersionProperties.png and DifferentialWheels.png name node types
+that no longer exist in this engine (Fluid and ImmersionProperties were removed
+with the ODE backend in bdc02139). They are harmless -- an icon with no node is
+never looked up -- but they can be deleted whenever someone is in here.
+
+See docs/developer/asset-provenance.md for the tree-wide media ledger.

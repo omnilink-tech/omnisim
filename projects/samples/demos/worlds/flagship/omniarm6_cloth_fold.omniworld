@@ -1,0 +1,167 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — OmniArm 6 folds a hanging cloth in half (deformable, friction grip)
+#
+# WHAT THIS IS. A cloth hangs from a rail like a towel. An OmniArm 6 with a Robotiq
+# 2F-85 reaches under the free bottom hem, pinches it, and carries it up to the
+# rail -- folding the cloth in half. The cloth is 91 particles on newton's
+# SolverVBD; the arm is on SolverMuJoCo; the two are coupled by
+# SolverCoupledProxy over ONE Model. Nothing writes a particle pose: the only
+# thing that moves the fabric is contact between two 20 x 14 x 50 mm pads and
+# the cloth.
+#
+# ⚠ WHY A RAIL AND NOT A TABLE, WHICH IS THE OBVIOUS WAY TO STAGE THIS.
+# A folding demo "should" be a cloth lying on a table with a hem hanging over
+# the edge for the gripper to catch. That was built first and MEASURED, and it
+# does not hold still:
+#   overhang 42%, unpinned   -> slides off in 400 ms (near edge y 0.160->0.299)
+#   overhang 25%, unpinned   -> same, ends on the floor  (y 0.294..0.543)
+#   overhang 25%, cloth mu 10 -> better, still pours over (y 0.052..0.311)
+#   overhang 25%, far edge PINNED -> the pin holds, but fabric keeps feeding
+#       over the edge in a stick-slip swing until the flap reaches the floor
+#       (flap tip z 0.107 -> 0.007 over 600 steps)
+#   same, but stiffer cloth (triKe 5e3) -> worse: the sheet snaps back and
+#       collapses into a heap on the clamp (whole sheet inside y -0.03..0.06)
+# Fabric resting on a surface with a free overhang is an unstable configuration
+# for this solver, and no friction value fixed it -- the world's declared
+# friction does now reach the cloth (that was a real bug, fixed) and mu=6 still
+# creeps. A HANGING cloth has none of that: it is pinned, it never rests on
+# anything, and its hem sits in free space where a gripper can actually get
+# both pads around it. It is also the one cloth configuration already proven
+# stable in this engine (newton_cloth_drape.omniworld).
+#
+# ⚠ THE SOLVER LINE IS LOAD-BEARING. `newtonSolver "mujoco+vbd"` is the ONLY
+# value under which the runtime builds a SolverVBD. Under plain "mujoco" this
+# file still LOADS and the cloth still RENDERS at its authored rest pose -- it
+# simply never moves. A frozen sheet means the solver line, not broken physics.
+#
+# Verify:
+#   python -m omnisim run-headless projects/samples/demos/worlds/flagship/omniarm6_cloth_fold.omniworld --duration 60
+#   FOLD_CONTROL_NOGRIP=1 ...   negative control: same motion, jaws never close
+#   FOLD_PROBE=1 ...            settle only, so the hem's rest pose can be read
+# Cloth is invisible to controllers (no supervisor accessor), so measure it with
+#   OMNISIM_CLOTH_TELEMETRY=<path> OMNISIM_CLOTH_TELEMETRY_FULL=1
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "OmniLink — OmniArm 6 folds a hanging cloth"
+  newtonSolver "mujoco+vbd"
+  newtonStatics TRUE
+  newtonCompoundColliders TRUE
+  # ⚠ THIS NOW REACHES THE CLOTH TOO. Until this world was built, particle
+  # contacts ran at a hardcoded mu=1.0 no matter what the world declared --
+  # a declared-but-unread field of exactly the kind this tree has been bitten
+  # by before. The runtime now defaults cloth friction to this value.
+  newtonGroundMu 6
+  # Ke/Kd left at the engine defaults deliberately: friction-grasp.md re-derived
+  # the old 8000/200 recipe against measurement and REFUTED it on the one scene
+  # with a controlled comparison. They are a ratio, not a stiffness -- raising
+  # Ke alone under-damps contact rather than firming it.
+  newtonCone "elliptic"
+  newtonImpratio 100
+  newtonCondim 4
+  newtonIterations 150
+  newtonLsIterations 50
+}
+Viewpoint { orientation -0.34 0.16 0.927 2.40 position 1.18 -0.86 0.80 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 4 4 }
+
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_2f85_grip.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_cloth_fold"
+}
+
+# The rail the cloth hangs from, and its two posts. VISUAL ONLY -- no
+# boundingObject anywhere in this rig, following the standing rule for
+# kinematic-only props. The cloth is PINNED to the rail's line analytically, so
+# a collider here would only give the solver fabric-on-a-cylinder contact to
+# fight for no visual gain, and dense props are exactly what snags grippers.
+DEF RAIL Solid {
+  translation 0.40 0.15 0.550
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.57 0.60
+        roughness 0.35
+        metalness 0.9
+      }
+      geometry Cylinder {
+        height 0.44
+        radius 0.010
+      }
+    }
+  ]
+  rotation 0 1 0 1.5708
+  name "rail"
+}
+DEF RAIL_POST_L Solid {
+  translation 0.18 0.15 0.275
+  children [
+    DEF POST_SH Shape {
+      appearance PBRAppearance {
+        baseColor 0.22 0.23 0.26
+        roughness 0.5
+        metalness 0.7
+      }
+      geometry Box {
+        size 0.03 0.03 0.55
+      }
+    }
+  ]
+  name "rail_post_l"
+}
+DEF RAIL_POST_R Solid {
+  translation 0.62 0.15 0.275
+  children [
+    USE POST_SH
+  ]
+  name "rail_post_r"
+}
+
+# The cloth. 0.12 m wide x 0.24 m long, 7 x 13 = 91 particles at 20 mm spacing,
+# hanging vertically from the rail.
+#
+# ⚠ THE ROTATION IS WHAT MAKES IT HANG. A Cloth patch is authored FLAT in its
+# own local XY plane; `rotation 1 0 0 -1.5708` turns it a quarter turn about
+# world X so local +Y maps to world -Z. Consequences, both easy to get wrong:
+#   * `translation` is the patch's local (0,0) CORNER, which after the rotation
+#     is its TOP-left -- so the cloth occupies x 0.40..0.52 and hangs from
+#     z 0.625 down to 0.385.
+#   * the pin fields are named in the patch's LOCAL axes, so the edge to pin is
+#     the local -Y one -- `fixBottom` -- even though it is physically the TOP.
+#     fixTop here would pin the free hem and nothing would fold.
+#
+# triKe 1e3 (not the 1e5 default) with triKd at 0.1*triKe: measured, the
+# default stiffness over a sub-gram particle makes the sheet implode -- what
+# matters is stiffness against particle mass, and 1e5/6e-4 is two orders past
+# the stable band. edgeKe 2.0 gives it a little body so it hangs like fabric
+# rather than a chain.
+DEF SHEET Cloth {
+  translation 0.34 0.15 0.550
+  rotation 1 0 0 -1.5708
+  dimX 6
+  dimY 12
+  cellX 0.02
+  cellY 0.02
+  mass 0.001
+  edgeKe 2.0
+  particleRadius 0.01
+  fixLeft FALSE
+  fixRight FALSE
+  fixBottom TRUE
+  fixTop FALSE
+  diffuseColor 0.30 0.45 0.80
+}

@@ -1,0 +1,550 @@
+#OMNISIM R2025a utf8
+
+# FOLDING A T-SHIRT WITH A FLOATING GRIPPER -- TWO SOLVERS, ONE WORLD.
+#
+# This is the demo the deformable work has been building toward, and the reason
+# it is interesting is not the fold: it is that the fold requires MuJoCo and VBD
+# to run SIMULTANEOUSLY and feel each other.
+#
+#   newtonSolver "mujoco+vbd"
+#     the `mjc` entry owns ALL rigid bodies and ALL joints  (the gantry, the
+#     table, the jaws)
+#     the `vbd` entry owns ALL particles                    (the shirt)
+#     a Proxy mapping couples them, so the gripper feels the fabric WITHOUT
+#     MuJoCo ever knowing that particles exist.
+#
+# Both solvers must declare their FULL sets -- an unowned body or an unowned
+# particle is not an error, it is an invisible dead patch -- which is why the
+# world declares one solver string rather than per-node backends.
+#
+# ⚠ WHAT IS HARD HERE, so nobody mistakes a partial result for a broken one:
+# folding a garment properly is a research problem, not a demo. ONE clean fold --
+# pinch a sleeve edge, lift, carry it across the body, set it down -- is the
+# deliverable. A full folding routine is not.
+#
+# ⚠ THE SELF-CONTACT TENSION, real and NOT resolved -- this demo runs it OFF.
+# A fold STACKS fabric on fabric, so with self-contact off the carried sleeve
+# sinks through the body and the fold is a ghost. But WorldInfo.wrl records the
+# opposite requirement for the other half of the demo: GRASPING needs it OFF,
+# measured at 24x on tracking error, because fabric gathered between the pads
+# pushes ITSELF out of the jaws. The two halves of "pick up a shirt and fold it"
+# want opposite values of one field, and this world currently runs the grasp
+# value (OMNISIM_CLOTH_SELF_CONTACT=0) because without a grip there is nothing
+# to fold. The field below says 1; the environment overrides it.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  # !! THE COUPLED PAIR, AND IT NOW HOLDS -- but it needs the environment below.
+  #
+  # ROOT CAUSE, for anyone who finds this world exploding again. OmniSim gives a
+  # weld-pinned STATIC body a nominal mass of 1.0 kg. Under the coupled solver
+  # the FIXED joint that pins it lives in the `mjc` entry and is DISABLED in the
+  # `vbd` view, so inside the VBD solve the table was a FREE 1 kg body carrying a
+  # 0.2 kg shirt through 56,362 penalty springs. It launched the garment off the
+  # table and the solve went to NaN, every time. On whole-world "vbd" the same
+  # nominal mass exists but the pinning joint is live in the same solver, which
+  # is the entire difference between the two paths.
+  #
+  # It is compounded by an OPEN UPSTREAM BUG, newton-physics/newton#3795
+  # (2026-08-04, unfixed): the VBD proxy wrench harvest ignores the per-body
+  # soft-contact buffer cap, so the cloth is pushed by at most N contacts while
+  # the rigid body is pushed back by ALL of them -- silent momentum injection.
+  # Our cap was 2048 against 56,362 records needed (V+F+E of the mesh), and the
+  # engine's own newton_solver.log had been printing that overflow all along.
+  #
+  # ⚠ THIS WORLD DOES NOT SIMULATE CORRECTLY FROM THE FILE ALONE. There are no
+  # WorldInfo fields for the proxy knobs, so the fix lives in the environment and
+  # the world cannot state its own physics:
+  #
+  #   OMNISIM_CLOTH_PROXY_MASS_SCALE=10000     <- the load-bearing one
+  #   OMNISIM_CLOTH_RIGID_PARTICLE_BUFFER=65536
+  #   OMNISIM_CLOTH_SOFT_KE=150000             }  from newton's own
+  #   OMNISIM_CLOTH_SOFT_KD=0.0001             }  example_proxy_joint_gripper.py
+  #   OMNISIM_CLOTH_VBD_ITERATIONS=5
+  #   OMNISIM_CLOTH_SELF_CONTACT=1             <- ON. See below; the 24x is dead.
+  #   OMNISIM_CLOTH_SELF_CONTACT_RADIUS=0.003
+  #   OMNISIM_CLOTH_SELF_CONTACT_MARGIN=0.0045
+  #   OMNISIM_CLOTH_FULL_SURFACE_CONTACT=0     <- 8x, and free (see below)
+  #   OMNISIM_CLOTH_ATTACH_CMD=<path>.jsonl    <- THE CARRY MECHANISM (below)
+  #
+  # !! THE CARRY IS A PARTICLE ATTACH, NOT A FRICTION PINCH. The campaign that
+  # closed this world's "keeping the pinch through the LIFT" question ran 12
+  # laptop configurations and 8 cloud seeds with valid negative controls, and
+  # its best run -- a genuine 5.5 mm pinch -- still shed the fabric during
+  # lift. The mechanism is structural: VBD contact friction is velocity-
+  # regularised (friction_epsilon), so under a constant tangential load W the
+  # contact CREEPS at u* ~ W*eps_u/(2*mu*N) -- nonzero for every mu (upstream
+  # newton-physics/newton#3943; effort limits: #3944). So the fold's carry is
+  # the same mechanism a mocap pin uses: OMNISIM_CLOTH_ATTACH_CMD names a
+  # command file the controller (which inherits the engine env) appends
+  # {"op":"attach","body":6,"point":[x,y,z],"radius":r} / {"op":"detach"}
+  # lines to; the runtime pins the selected particles to the pad body and
+  # acks the MEASURED selection count in <path>.ack. The friction pinch is
+  # kept -- it shapes the fabric and the negative control exercises it -- but
+  # the attach is what survives the traverse. Pinned by
+  # tests/test_newton_cloth_attach.py; controller side: FOLD_ATTACH[_BODY/
+  # _RADIUS/_MAX] in vbd_tshirt_fold.py.
+  #
+  # !! SELF-CONTACT IS ON, AND THE OLD "GRASPING NEEDS IT OFF (24x)" IS NOT A LAW
+  # OF PHYSICS -- it was a GAP-ARITHMETIC BUG, now understood exactly. newton's
+  # self-contact pushes two fabric surfaces apart until they sit
+  # particle_self_contact_radius apart (a surface distance; the barrier is
+  # evaluate_self_contact_force_norm in newton's particle_vbd_kernels.py). So a
+  # two-layer pinch physically needs face-to-face >= 2*particleRadius + r_sc
+  # before compression even starts. The old grasp worlds commanded 6.2 mm onto a
+  # stack that needs 13.8 -- the fabric could only comply by EJECTING ITSELF,
+  # and that ejection is the whole 24x. The fold controller now derives its gap
+  # with the self-contact term (FOLD_SELF_CONTACT_RADIUS), and with it ON this
+  # world both LOOKS right (no self-intersecting ghost -- the top view stops
+  # being a black patchwork of the underside showing through) and holds a
+  # measured 22 mm pinch at close. Cost at this resolution: 12.0 -> 21.8 ms/step
+  # (1.8x), nothing like the 17x it costs at 37k particles.
+  #
+  # ⚠ WHAT IS STILL OPEN: keeping the pinch through the LIFT. Three failure
+  # modes, all measured on this world, all with the aware gap:
+  #   mu 1 (default)  clean 22 mm pinch at close, extruded during lift
+  #   mu 2            jaws PRIED OPEN at close (131 mm excess): SOFT_MU is
+  #                   GLOBAL, so sticky pads also mean a sticky TABLE, and
+  #                   gathering fabric across a sticky table pries the jaws
+  #   mu 1000         newton's own cloth-lift value: instant NaN here
+  # The missing capability is PER-SHAPE particle friction (sticky pads, normal
+  # table). That is an engine feature, not a tuning value.
+  #
+  # !! COST, MEASURED ON THIS WORLD (60 timed steps after a 20-step warm-up):
+  #
+  #   full-surface ON, iterations 10   187.98 ms/step   <- what it used to cost
+  #   full-surface OFF                  23.62           8.0x
+  #   + iterations 5                    14.88          12.6x
+  #   + substeps 2                      12.00          15.7x
+  #   ...whole-world "vbd", no coupling 11.86          15.9x
+  #   ...+ CLOTH_CPU_MJ=1              106.70           7.2x SLOWER -- a trap
+  #
+  # Three things those rows say. Edge/face contact records are the ENTIRE cost:
+  # one record per vertex, per edge AND per triangle, ~6x the vertex count, each
+  # a penalty spring evaluated every substep of every iteration. Turning them off
+  # changed the grasp signature by exactly zero here, because the pads are wide
+  # against this mesh's 19.6 mm spacing -- re-check that if the pads ever get
+  # thinner than the vertex spacing, which is the tunnelling case the flag exists
+  # for. The COUPLING is cheap: 12.00 coupled vs 11.86 uncoupled is 1.2%, so
+  # running two solvers is not what makes this world expensive. And
+  # OMNISIM_NEWTON_CLOTH_CPU_MJ=1, which the engine's own log offers, is 7x
+  # WORSE -- GPU utilisation drops to 37% as the per-substep host copies make it
+  # CPU-bound.
+  #
+  # ⚠ NONE OF THIS MAKES THE MACHINE COOL, and that is a separate fact. Real time
+  # needs <= 8 ms/step; this is 12.00, so the engine never idles and pins the GPU
+  # for as long as it runs. A cheaper step just means more steps per second at
+  # the same 100% utilisation. For watching rather than measuring: settle, then
+  # PAUSE.
+  #
+  # Forgetting them does not fail loudly; it explodes, which is at least honest.
+  # Promoting these to WorldInfo fields is the obvious follow-up.
+  #
+  # ⚠ SCOPE. SolverCoupledProxy is ONE MONTH OLD and upstream-labelled
+  # experimental, with "proxy stability is tuning-sensitive" as its FIRST
+  # documented limitation. No upstream example grasps a garment above 900
+  # particles; newton's own garment demo uses ONE-WAY coupling and runs in
+  # centimetres "for better numerical behavior of the VBD solver". Treat this
+  # world as a controlled experiment, not a stable platform.
+  # !! SINGLE-SWEEP "vbd" AGAIN -- and this time from measurement, not retreat.
+  # The coupled pair works (it holds the cloth, the gantry drives, nothing NaNs)
+  # but under a PINCH it oscillates: worst gantry tracking error measured
+  # 880 mm on the coupled path (the on-screen "gripper glitch"; under-relaxation
+  # 0.7 -> 324 mm, doc recipe 0.5/iter4 -> 525 mm, substeps 4 -> no better)
+  # against 27 mm -- thirty-three times better -- with everything in ONE
+  # SolverVBD sweep. WorldInfo.wrl predicts exactly this: across a proxy the
+  # cloth only ever sees a jaw synced from the PREVIOUS rigid solve, and a
+  # pinch resolved against a one-step-stale pad is a feedback loop. The price
+  # (documented there): no mj_model, so raycast devices, welds, TouchSensor and
+  # contact readback are gone, and Motor.maxForce is decorative. This demo uses
+  # none of them, and joint POSITION readback works since the eval_ik fix.
+  newtonSolver "vbd"
+  # !! 2, MEASURED. Substeps are the second-biggest cost lever here and the one
+  # with a hard floor: 4 -> 14.88 ms/step, 2 -> 12.00, 1 -> 6.07 and REAL TIME
+  # (rtf 1.32) -- but 1 is UNSTABLE. It survived a 60-step benchmark and then
+  # went NaN partway through the full run, ending at cz -2690 m. A perf probe
+  # cannot certify stability; 2 is verified over the whole schedule (213/213
+  # finite telemetry rows, garment at rest z 0.7571).
+  newtonSubsteps 2
+  newtonStatics TRUE
+  # A pinch on fabric is a friction grasp, and the default friction will not hold
+  # one. This is the field that sets contact friction -- WorldInfo.contactProperties
+  # / coulombFriction was the ODE-path declaration and is NOT read.
+  newtonGroundMu -1
+  # !! NO newtonCone/newtonImpratio HERE, and that is a measured decision that
+  # CONTRADICTS docs/guide/friction-grasp.md -- because that guide is about
+  # grasping a RIGID part, and this world's contact is mostly soft.
+  # Measured on this world, drop-to-table, everything else equal:
+  #   newtonImpratio 10  -> shirt launched to z = 14.3 m off the table
+  #   newtonImpratio 1   -> launched to 1.9 m, still fell through
+  # Boosting the friction constraint to normal-constraint stiffness is exactly
+  # what a 9,468-particle soft body cannot absorb. If a future grasp needs more
+  # friction, raise newtonGroundMu, not the cone/impratio.
+  newtonClothSelfContact 1
+}
+
+Viewpoint {
+  # Three-quarter view from the near-left, low enough to read the fold as a
+  # change in silhouette rather than as a flat pattern from above.
+  position 1.05 -1.15 1.42
+  orientation 0.055 0.183 0.981 2.132
+}
+
+OmniSimSky {
+  luminosity 3.0
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+
+DEF FLOOR Solid {
+  translation 0 0 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.40 0.39 0.37
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 8 8 0.02
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 8 8 0.02
+  }
+}
+
+# TABLE. Top face at z = 0.75 exactly -- the controller's descend target and the
+# shirt's rest height are both built on that number, so if you move it, move them.
+DEF TABLE Solid {
+  translation 0 0 0.725
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.46 0.34 0.22
+        roughness 0.65
+        metalness 0
+      }
+      geometry Box {
+        size 1.4 1.0 0.05
+      }
+    }
+  ]
+  name "table"
+  boundingObject Box {
+    size 1.4 1.0 0.05
+  }
+}
+
+# THE SHIRT.
+#
+# ⚠ ORIENTATION IS BAKED INTO THE MESH, NOT DECLARED HERE, and getting this
+# wrong is silent. The garment is authored STANDING UP (local x sleeve-to-sleeve,
+# local y front-to-back through the tube, local z hem-to-shoulder), so it has to
+# be rotated -90 deg about X to lie flat. tshirt_lo_flat.obj carries that
+# rotation already; the node declares none.
+#
+# The trap, paid for once: swapping the mesh for a coarser one WITHOUT swapping
+# to its flat variant leaves a shirt standing upright, which collapses into a
+# heap on contact. It still settles, still reports finite telemetry and still
+# PASSes -- but the settled fabric ends up 300 mm from where the controller
+# reaches, so the jaws close on air and every "grip" number is servo settling.
+# If the grasp reads identical across wildly different cloth parameters, check
+# the settled bbox against the grab point BEFORE tuning anything else.
+
+DEF TSHIRT Cloth {
+  # ⚠ THE -0.3217 IS NOT COSMETIC CENTRING. tshirt_md.obj's local z runs
+  # 0 -> 0.6434, NOT +/-0.3217: the mesh origin is at the HEM, not the middle.
+  # The rotation carries that offset straight through, so an untranslated shirt
+  # lies entirely in +Y -- 143 mm of it overhanging a table that ends at y=0.50,
+  # and, worse, the whole garment sitting where a symmetric grab point finds
+  # zero vertices. Measured: a 70x100 mm pad footprint at (-0.28, 0.00) contains
+  # NO fabric, so the demo and its own negative control would have been the same
+  # experiment.
+  #
+  # z 0.90 rather than 0.86 for a second measured reason: at 0.86 the garment's
+  # lowest vertices start at 0.7234, i.e. 27 mm INSIDE a table top at 0.75. With
+  # self-contact ON that is the worst possible initial condition. 0.90 clears it.
+  translation 0 -0.3217 0.90
+  url [
+    "meshes/tshirt_lo_flat.obj"
+  ]
+  density 0.3
+  # Half the 9.37 mm mean edge. particleRadius is a collision THICKNESS: at or
+  # above the vertex spacing every particle's sphere swallows its neighbours and
+  # the sheet stiffens into cardboard.
+  particleRadius 0.0046
+  fixTop FALSE
+  # !! NO STIFFNESS OVERRIDES -- ENGINE-DERIVED DEFAULTS, MEASURED.
+  # Newton's own coupled-solver example uses tri_ke 1e5 / tri_kd 1e-2*tri_ke /
+  # edge_ke 0.01 / particle_radius 0.01, and copying those numbers onto the
+  # COUPLED path did not rescue it -- still NaN. They are tuned for a
+  # 30x30 GRID that is PINNED at two edges and never touches anything, and they
+  # do not transfer to a 9,468-vertex mesh RESTING on a table.
+  # What measurably settles this garment is the engine's derived defaults with
+  # particleRadius at half the 9.37 mm mean edge: rest at centroid z 0.7551,
+  # min z 0.7470 against a table top at 0.750, stable for 300+ steps.
+  diffuseColor 0.30 0.45 0.85
+  appearance PBRAppearance {
+    baseColor 0.24 0.37 0.72
+    baseColorMap ImageTexture {
+      url [
+        "textures/woven_cotton_basecolor.png"
+      ]
+    }
+    normalMap ImageTexture {
+      url [
+        "textures/woven_cotton_normal.png"
+      ]
+    }
+    roughnessMap ImageTexture {
+      url [
+        "textures/woven_cotton_roughness.png"
+      ]
+    }
+    occlusionMap ImageTexture {
+      url [
+        "textures/woven_cotton_occlusion.png"
+      ]
+    }
+    metalness 0
+    normalMapFactor 0.5
+    IBLStrength 1.5
+    sheen 0.55
+    sheenColor 0.85 0.87 0.92
+    sheenRoughness 0.32
+    diffuseWrap 0.35
+    transmissionColor 0.16 0.20 0.30
+    transmissionPower 10
+    transmissionThickness 0.45
+    specularAntiAliasing 0.18
+    textureTransform TextureTransform {
+      scale 14 14
+    }
+  }
+}
+
+# THE FLOATING GRIPPER.
+#
+# "Floating" is three prismatic joints, not magic: a Robot pinned in space whose
+# X/Y/Z sliders position a carriage, carrying two opposed jaw sliders. It is the
+# same shape as the sponge world's gantry and it exists because a real arm would
+# add IK and reach failures to a demo that is about CLOTH.
+#
+# ⚠ The jaws are POSITION_VELOCITY servos. `setForce` does NOT put a Newton joint
+# into force mode -- the PD servo stays live and anchored at the last setPosition
+# -- so a grip is made by commanding a position with a known INTERFERENCE inside
+# the fabric's particle shell, not by asking for a squeeze force.
+DEF GANTRY Robot {
+  translation 0 0 1.35
+  children [
+    DEF GX SliderJoint {
+      jointParameters JointParameters {
+        axis 1 0 0
+      }
+      device [
+        LinearMotor {
+          name "gantry_x"
+          maxForce 5000
+          maxVelocity 5
+          minPosition -0.60
+          maxPosition 0.60
+        }
+        PositionSensor {
+          name "gantry_x_sensor"
+        }
+      ]
+      endPoint DEF BASE_X Solid {
+        children [
+          DEF GY SliderJoint {
+            jointParameters JointParameters {
+              axis 0 1 0
+            }
+            device [
+              LinearMotor {
+                name "gantry_y"
+                maxForce 5000
+                maxVelocity 5
+                minPosition -0.45
+                maxPosition 0.45
+              }
+              PositionSensor {
+                name "gantry_y_sensor"
+              }
+            ]
+            endPoint DEF BASE_Y Solid {
+              children [
+                DEF GZ SliderJoint {
+                  jointParameters JointParameters {
+                    axis 0 0 1
+                  }
+                  device [
+                    LinearMotor {
+                      name "gantry_z"
+                      maxForce 5000
+                      maxVelocity 5
+                      minPosition -0.62
+                      maxPosition 0.05
+                    }
+                    PositionSensor {
+                      name "gantry_z_sensor"
+                    }
+                  ]
+                  endPoint DEF CARRIAGE Solid {
+                    children [
+                      DEF JL SliderJoint {
+                        jointParameters JointParameters {
+                          axis 0 1 0
+                        }
+                        device [
+                          LinearMotor {
+                            name "jaw_left"
+                            # !! 300, not 2000. These are POSITION_VELOCITY servos
+                            # with targetKe = effortLimit * 10, so maxForce 2000
+                            # gives kp = 20 kN/m and a 3 mm bite into fabric is
+                            # ~60 N -- that does not grip cloth, it EXTRUDES it.
+                            # Measured with the old value: grip excess peaked at
+                            # 13.15 mm then decayed to 0.00 before the lift even
+                            # finished. 300 gives kp = 3 kN/m, ~9 N over the same
+                            # bite: a pinch, not a press.
+                            maxForce 300
+                            maxVelocity 5
+                            minPosition -0.20
+                            maxPosition 0.06
+                          }
+                          PositionSensor {
+                            name "jaw_left_sensor"
+                          }
+                        ]
+                        endPoint DEF LEFT_PAD Solid {
+                          translation 0 -0.05 0
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.70 0.72 0.76
+                                roughness 0.35
+                                metalness 0.2
+                              }
+                              geometry Box {
+                                size 0.07 0.01 0.03
+                              }
+                            }
+                          ]
+                          name "left_pad"
+                          boundingObject Box {
+                            size 0.07 0.01 0.03
+                          }
+                          physics Physics {
+                            density -1
+                            mass 0.02
+                          }
+                        }
+                      }
+                      DEF JR SliderJoint {
+                        jointParameters JointParameters {
+                          axis 0 -1 0
+                        }
+                        device [
+                          LinearMotor {
+                            name "jaw_right"
+                            # Mirror of jaw_left -- see the note there.
+                            maxForce 300
+                            maxVelocity 5
+                            minPosition -0.20
+                            maxPosition 0.06
+                          }
+                          PositionSensor {
+                            name "jaw_right_sensor"
+                          }
+                        ]
+                        endPoint DEF RIGHT_PAD Solid {
+                          translation 0 0.05 0
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.70 0.72 0.76
+                                roughness 0.35
+                                metalness 0.2
+                              }
+                              geometry Box {
+                                size 0.07 0.01 0.03
+                              }
+                            }
+                          ]
+                          name "right_pad"
+                          boundingObject Box {
+                            size 0.07 0.01 0.03
+                          }
+                          physics Physics {
+                            density -1
+                            mass 0.02
+                          }
+                        }
+                      }
+                      Shape {
+                        appearance PBRAppearance {
+                          baseColor 0.55 0.57 0.60
+                          roughness 0.4
+                          metalness 0.3
+                        }
+                        geometry Box {
+                          size 0.05 0.14 0.02
+                        }
+                      }
+                    ]
+                    name "carriage"
+                    # ⚠ EXPLICIT COLLIDER, NOT OPTIONAL. A Solid with `physics`
+                    # and no `boundingObject` does not get "no collision" here --
+                    # the engine substitutes a SPHERE OF RADIUS 0.12 and warns.
+                    # The carriage descends to the table, so that invisible 24 cm
+                    # ball would barge into the shirt and the table top before the
+                    # jaws ever reached the fabric, and the demo would fail in a
+                    # way that looks like a cloth bug.
+                    boundingObject Box {
+                      size 0.05 0.14 0.02
+                    }
+                    physics Physics {
+                      density -1
+                      mass 0.4
+                    }
+                  }
+                }
+              ]
+              name "base_y"
+              # Same sphere-fallback trap as the carriage. These two links are
+              # structural and never leave z ~ 1.35, well clear of the table, but
+              # a 0.12 m default sphere on each is still a lie about the scene.
+              boundingObject Box {
+                size 0.04 0.04 0.04
+              }
+              physics Physics {
+                density -1
+                mass 0.6
+              }
+            }
+          }
+        ]
+        name "base_x"
+        boundingObject Box {
+          size 0.04 0.04 0.04
+        }
+        physics Physics {
+          density -1
+          mass 0.8
+        }
+      }
+    }
+  ]
+  name "gantry"
+  controller "vbd_tshirt_fold"
+}

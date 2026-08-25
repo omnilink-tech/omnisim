@@ -1,0 +1,119 @@
+#OMNISIM R2025a utf8
+
+# OmniTug 500 - showroom display in front of a designed wall.
+#
+# The OMNITUG500 is a low 4-wheeled rover, built from primitive solids in
+# ../urdf/omnitug500.urdf. It sits on a display dais on the floor, in its true
+# orientation (wheels down), with the designed wall as a backdrop. Static
+# display - no controller, no physics.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniTug 500 - Showroom"
+  info [
+    "OmniTug 500 rover (URDF converted from STEP CAD) on a display dais in"
+    "front of a designed wall. Static display - no controller, no physics."
+  ]
+}
+
+Viewpoint {
+  orientation 0.13 0.16 0.98 2.05
+  position 3.0 -3.4 1.5
+  exposure 0.95
+}
+
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# --- Showroom key light: front-top spot, casts a grounding shadow ----------
+SpotLight {
+  attenuation 0 0 1
+  intensity 7
+  location 1.5 -3.0 3.2
+  direction -0.4 1.6 -1.5
+  cutOffAngle 0.8
+  beamWidth 0.6
+  color 1 0.98 0.95
+  castShadows TRUE
+}
+
+# --- Floor -----------------------------------------------------------------
+DEF FLOOR Solid {
+  translation 0 0 -0.02
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.22 0.23 0.25
+        roughness 0.85
+        metalness 0
+      }
+      geometry Box {
+        size 18 18 0.04
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 18 18 0.04
+  }
+}
+
+# --- Back wall (backdrop) --------------------------------------------------
+DEF WALL Solid {
+  translation 0 1.4 2.0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.82 0.80 0.77
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 16 0.26 4.6
+      }
+    }
+  ]
+  name "wall"
+}
+
+# --- Display dais ----------------------------------------------------------
+DEF DAIS Solid {
+  translation 0 0 0.04
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.10 0.11 0.13
+        roughness 0.5
+        metalness 0.2
+      }
+      geometry Box {
+        size 2.2 1.7 0.08
+      }
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.05 0.08
+        roughness 0.4
+        emissiveColor 0.25 0.0 0.0
+      }
+      geometry Box {
+        size 2.32 1.82 0.03
+      }
+    }
+  ]
+  name "dais"
+}
+
+# --- The OMNITUG500 rover, on the dais, true orientation (wheels down) ----------
+DEF OMNITUG500 URDFRobot {
+  url "../urdf/omnitug500.urdf"
+  translation 0 0 0.08
+  rotation 0 0 1 2.30
+  name "OMNITUG500"
+  controller "<none>"
+}

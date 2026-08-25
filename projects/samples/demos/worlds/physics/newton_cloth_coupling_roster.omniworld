@@ -1,0 +1,177 @@
+#VRML_SIM R2025a utf8
+
+# WHICH RIGID BODIES CAN THE CLOTH SEE? A differential test for
+# Solid.newtonClothCoupling.
+#
+# THE FIELD. On the coupled cloth path (newtonSolver "mujoco+vbd") the fabric
+# lives on a SolverVBD that sees the rigid world through a SolverCoupledProxy
+# roster. Until that roster became authorable it was always EVERY body in the
+# scene -- every table, wall and arm link broadphased against the sheet, every
+# step. newton supports narrowing it natively (its own Franka cable demo lists
+# just the hand and fingers) and clears COLLIDE_SHAPES|COLLIDE_PARTICLES on
+# every shape whose body is off the roster.
+#
+# THE TEST. One sheet, dropped flat onto TWO identical boxes. The left box
+# declares newtonClothCoupling 1; the right box declares nothing. Because at
+# least one Solid declares 1, the world is in ALLOWLIST mode -- so the right box
+# is not on the roster and the fabric cannot see it.
+#
+#   EXPECTED, and this is the whole point: the sheet's LEFT half lands on the
+#   left box (particles rest at z ~ 0.5) while its RIGHT half passes STRAIGHT
+#   THROUGH the right box and falls to the floor (z ~ 0.0). Two identical boxes,
+#   two different outcomes, one field.
+#
+#   CONTROL: OMNISIM_CLOTH_COUPLED_BODIES=all overrides every declaration and
+#   restores the full roster. Both halves must then rest at z ~ 0.5. Without
+#   that arm the test cannot distinguish "the field worked" from "the right box
+#   was never solid in the first place".
+#
+# ⚠ THE FLOOR HAS TO BE ON THE ROSTER TOO, and this is the trap the field will
+# spring on everyone at least once. An authored floor is an ordinary rigid body,
+# not world geometry. Leave it off an allowlist and the sheet falls through the
+# floor as readily as through the box -- silently, because nothing is wrong from
+# the solver's point of view. Only newton's body -1 (the implicit z=0 ground
+# plane) survives narrowing.
+#
+# MEASURE IT with the engine's cloth telemetry -- particles are not scene nodes,
+# so there is no supervisor accessor:
+#   OMNISIM_CLOTH_TELEMETRY=<path.jsonl> OMNISIM_CLOTH_TELEMETRY_FULL=1
+# then split the particle cloud at x = 0 and compare the two halves' min z.
+# The engine also logs the resolved roster at load, twice: once from OmSolid
+# naming each Solid and its body index, and once from the runtime naming the
+# final index list. Read both -- they are what make an index list resolvable
+# back to nodes.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  # The COUPLED path -- the only one with a proxy roster to narrow. Under
+  # newtonSolver "vbd" one solver owns everything by construction and
+  # newtonClothCoupling is inert.
+  newtonSolver "mujoco+vbd"
+  newtonSubsteps 4
+  newtonStatics TRUE
+  newtonGroundMu 1
+}
+Viewpoint {
+  position 2.973 -3.165 3.231
+  orientation -0.278945 0.120681 0.952694 2.359689
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+# ON the roster. An authored floor is a body like any other -- omit it and the
+# sheet goes through it.
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.33 0.34 0.38
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 4 4 0.1
+  }
+  newtonClothCoupling 1
+}
+# ON the roster: the sheet must land on this one. Top face at z = 0.5.
+DEF BOX_SEEN Solid {
+  translation -0.35 0 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.25 0.6 0.3
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.3 0.5 0.5
+      }
+    }
+  ]
+  name "box_seen"
+  boundingObject Box {
+    size 0.3 0.5 0.5
+  }
+  newtonClothCoupling 1
+}
+# OFF the roster -- by omission, not by a -1. Geometrically identical to
+# BOX_SEEN and at the same height; the ONLY difference between them is that the
+# other one names itself. The sheet must pass through this one.
+DEF BOX_HIDDEN Solid {
+  translation 0.35 0 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.7 0.3 0.3
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.3 0.5 0.5
+      }
+    }
+  ]
+  name "box_hidden"
+  boundingObject Box {
+    size 0.3 0.5 0.5
+  }
+}
+# TWO separate sheets, one per box, rather than one sheet straddling both.
+# ⚠ The straddling version was tried first and it is a BAD instrument: a 1.0 m
+# sheet over a 0.3 m box has most of its mass overhanging, so the falling half
+# simply drags the resting half off and BOTH ends up on the floor. That looks
+# exactly like "the field does nothing" and is really "the sheet slid off".
+# Two independent 0.28 m sheets, each entirely within its own box's footprint,
+# removes the coupling between the two halves so each one answers only the
+# question being asked of it.
+#
+# Both are unpinned on every edge, identical in every parameter, and dropped
+# from the same height. The ONLY asymmetry in this world is which box named
+# itself on the roster.
+DEF SHEET_SEEN Cloth {
+  translation -0.49 -0.14 0.8
+  dimX 7
+  dimY 7
+  cellX 0.04
+  cellY 0.04
+  mass 0.0005
+  particleRadius 0.01
+  triKe 1000
+  triKa 1000
+  triKd 1
+  edgeKe 0.001
+  fixTop FALSE
+  diffuseColor 0.35 0.85 0.4
+}
+DEF SHEET_HIDDEN Cloth {
+  translation 0.21 -0.14 0.8
+  dimX 7
+  dimY 7
+  cellX 0.04
+  cellY 0.04
+  mass 0.0005
+  particleRadius 0.01
+  triKe 1000
+  triKa 1000
+  triKd 1
+  edgeKe 0.001
+  fixTop FALSE
+  diffuseColor 0.9 0.75 0.2
+}

@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "name": "omnisim-policy-capability-matrix",
+  "required_morphologies": ["humanoid", "quadruped"],
+  "dimensions": ["task", "morphology", "support-regime", "method", "durability", "transition-quality"],
+  "cases": [
+    {
+      "name": "g1_shadow_walk_durability",
+      "target": {"kind": "skill", "name": "g1_walk"},
+      "morphology": "humanoid",
+      "method": "shadowing",
+      "status": "candidate",
+      "support": "G1 lambda=0.9 weight-bearing balance harness; not free-standing",
+      "measurements": ["never-fell-rate", "wbmatch", "distance", "speed"]
+    },
+    {
+      "name": "g1_turn_naturalness",
+      "target": {"kind": "skill", "name": "g1_turn_in_place"},
+      "morphology": "humanoid",
+      "method": "shadowing",
+      "status": "candidate",
+      "support": "G1 lambda=0.9 weight-bearing balance harness; not free-standing",
+      "measurements": ["heading-error", "foot-slip", "yaw-smoothness", "transition-settle-time"]
+    },
+    {
+      "name": "g1_box_delivery_e2e",
+      "target": {"kind": "sequence", "name": "box_delivery"},
+      "morphology": "humanoid",
+      "method": "shadowing+baton",
+      "status": "verified",
+      "support": "G1 lambda=0.9 weight-bearing balance harness; not free-standing",
+      "measurements": ["task-completion", "fall-count", "physical-pick", "physical-place", "table-clearance"],
+      "evidence": "projects/policies/benchmarks/results/g1_box_delivery_e2e_2026-07-19.json"
+    },
+    {
+      "name": "h1_walk_rehost_durability",
+      "target": {"kind": "skill", "name": "h1_walk"},
+      "morphology": "humanoid",
+      "method": "unitree-rehost",
+      "status": "candidate",
+      "support": "manifest-declared deploy regime; benchmark must record exact support before verification",
+      "measurements": ["never-fell-rate", "distance", "speed"]
+    },
+    {
+      "name": "go2_shadow_walk_durability",
+      "target": {"kind": "skill", "name": "go2_shadow_walk"},
+      "morphology": "quadruped",
+      "method": "shadowing",
+      "status": "candidate",
+      "support": "free-standing quadruped; no harness",
+      "measurements": ["never-fell-rate", "gmatch", "distance", "speed"]
+    },
+    {
+      "name": "go2_turn_transition",
+      "target": {"kind": "sequence", "name": "go2_walk_turn_walk"},
+      "morphology": "quadruped",
+      "method": "shadowing+baton",
+      "status": "candidate",
+      "support": "free-standing quadruped; no harness",
+      "measurements": ["heading-error", "turn-displacement", "roll", "post-turn-distance"]
+    },
+    {
+      "name": "omniquad_walk_durability",
+      "target": {"kind": "skill", "name": "omniquad_walk"},
+      "morphology": "quadruped",
+      "method": "residual-rl",
+      "status": "candidate",
+      "support": "free-standing quadruped; no harness",
+      "measurements": ["never-fell-rate", "distance", "speed"]
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "id": "R1_lidar_nav",
+  "tier": "robotics",
+  "flagship": false,
+  "prompt_file": "prompt.txt",
+  "grader": "agentbench.graders.r1",
+  "par_s": 600,
+  "timeout_s": 1800,
+  "repeats_default": 1,
+  "stresses": "sensor-driven closed-loop navigation: build a robot with a planar LiDAR, consume it during execution, and reach a goal whose straight-line path is physically blocked",
+  "initial_state": "empty project plus a FROZEN benchmark_assets/obstacles.json; the agent authors the world, the robot and the controller",
+  "initial_files": [
+    "benchmark_assets/obstacles.json"
+  ],
+  "deliverable": "the authored world (graded standalone, cold)",
+  "phases": {
+    "harness": {
+      "enabled": false
+    },
+    "standalone": {
+      "settle_s": 0.0,
+      "duration_s": 60.0,
+      "contact_steps": -1,
+      "note": "the whole navigation run is recorded; the trajectory IS the evidence. The solids list is now a CONVENIENCE, not the bounds channel: since 2026-08-09 both recorders run a NAME-FREE t=0 scene scan (t0_scene on OmniSim, scene_bodies on upstream Webots) that offers every non-robot body with world-space bounds, and graders/r1.py asks for it via scene_inventory=True. The list is kept so a world that DOES use the published names also gets per-step tracks for those bodies.",
+      "solids": [
+        "OBSTACLE_1",
+        "OBSTACLE_2",
+        "OBSTACLE_3",
+        "OBSTACLE_4",
+        "OBSTACLE_5"
+      ],
+      "contact_steps_note": "-1 = scan contacts for the WHOLE run. It was 0, which samples NOTHING, and R1.5 refuses to credit an unmeasured channel -- so at 0 even the honest oracle failed R1.5 (measured on the webots arm: 5/6 at 0, 6/6 at -1). A zero window makes collision-freedom unknowable, and 'we could not check' must never read as 'nothing was hit'. Cost measured on that arm: 14.0 s -> 17.1 s per graded run."
+    }
+  },
+  "constants": {
+    "START_XY": [
+      -4.0,
+      -4.0
+    ],
+    "GOAL_XY": [
+      4.0,
+      4.0
+    ],
+    "GOAL_TOL_M": 0.3,
+    "ARENA_SIZE_M": 10.0,
+    "ARENA_HALF_M": 5.0,
+    "N_OBSTACLES": 5,
+    "OBSTACLE_POSE_TOL_M": 0.05,
+    "STRAIGHT_LINE_M": 11.3137,
+    "MAX_STEP_DISPLACEMENT_M": 0.25,
+    "LIDAR_MIN_FOV_DEG": 180.0,
+    "LIDAR_MIN_SAMPLES": 180,
+    "LIDAR_MIN_RANGE_M": 5.0,
+    "MIN_ROBOT_JOINTS": 2,
+    "MIN_MOTION_FOR_CREDIT_M": 0.5,
+    "PLACEMENT_ARENA_INNER_M": 4.9,
+    "PLACEMENT_MIN_GAP_M": 0.1,
+    "PLACEMENT_ENDPOINT_CLEAR_M": 0.6,
+    "PLACEMENT_ROUTE_INFLATE_M": 0.7,
+    "PLACEMENT_ROUTE_CELL_M": 0.1,
+    "PLACEMENT_MIN_BLOCK_M": 0.3,
+    "PLACEMENT_MAX_ATTEMPTS": 4000,
+    "PATH_FLOOR_GRID_FACTOR": 0.9239,
+    "PATH_FLOOR_SLACK_M": 0.25,
+    "THROUGH_TOL_M": 0.05,
+    "DRIVE_OVER_TOL_M": 0.05,
+    "PERTURBATION_MAX_M": 0.6
+  },
+  "budget": {
+    "rule": "timeout_s = min(3 x par_s, TASK_HARD_CEILING_S)",
+    "hard_ceiling_s": 2700,
+    "truncated_by_ceiling": false,
+    "ratio_to_par": 3.0,
+    "runs_per_cell": 1,
+    "variance_measured": false,
+    "note": "the full 3x-par rule applies under the 2700 s (45 min) ceiling. ONE run per (task, arm): a single observation is an OUTCOME, never a rate -- pass@1 and a confidence interval are undefined at n = 1 (SPEC 3.5)."
+  },
+  "sensing_proof": "R1.5 + R1.6 together ARE the sensing evidence, and they are behavioural rather than an API counter. The straight START->GOAL line is blocked by at least PLACEMENT_MIN_BLOCK_M of obstacle -- an ACCEPTANCE CRITERION of the graded layout, re-derived by the grader from the measured scene rather than trusted -- so a robot that does not perceive cannot reach the goal without colliding. A read count would have been simulator-specific and gameable; 'it got there, around the obstacles, without touching anything and without passing through anything' is neither.",
+  "why_this_is_standard_robotics": "Sensor-driven obstacle avoidance to a goal is the canonical mobile-robot exercise -- it is the first non-trivial thing taught with any simulator and every comparator in the primary leaderboard documents a LiDAR and a differential-drive robot. A simulator that cannot express it is making a statement about itself.",
+  "anti_hardcode": {
+    "the_hole": "MEASURED, 510 graded MuJoCo runs (adapters/mujoco/BRINGUP.md sec. 3.5): obstacles.json publishes exact positions, so a controller can plan a fixed path and cast ZERO sensor beams. Such a memoriser PASSES 6/6 on the published layout -- demonstrated, not hypothesised, by adapters/mujoco/mujoco_lane/r1_hardcode.py.",
+    "authoritative_mechanism": "GRADE-TIME PLACEMENT (graders/r1_core.sample_layout). The obstacle COUNT and SIZES are the published contract; the POSITIONS are drawn at grade time from the benchmark seed under the legality constraints below, and grade() scores the world against THAT layout. Pure and deterministic: one seed, one layout, on any machine.",
+    "published_to_the_agent": "benchmark_assets/obstacles.json still ships the five names, the five SIZES and a set of positions, and it is unchanged by this work -- deliberately. The count and the sizes are the contract and are honoured by every drawn layout (asserted: r1_core.obstacle_sizes(sampled) == r1_core.obstacle_sizes()). The positions in it are the REFERENCE layout the agent authors against, not the layout it is graded on. They were left in place for two reasons: the injection step does not exist yet, so removing them would leave the agent with nothing to build and R1.3 undecidable for everyone; and they are what makes adapters/mujoco/mujoco_lane/r1_hardcode.py a real memoriser to measure against. When injection lands, the honest wording for the prompt is 'the positions in this file are an example; the graded layout is drawn per run', and this key is where that decision is recorded.",
+    "legality_constraints": [
+      "every obstacle footprint lies inside PLACEMENT_ARENA_INNER_M (no box buried in a wall)",
+      "obstacles are at least PLACEMENT_MIN_GAP_M apart, surface to surface",
+      "every obstacle is at least PLACEMENT_ENDPOINT_CLEAR_M clear of BOTH the start and the goal",
+      "a collision-free route exists for a robot inflated by PLACEMENT_ROUTE_INFLATE_M = 0.7 m (flood fill on a PLACEMENT_ROUTE_CELL_M grid) -- a 1.4 m corridor for a ~0.6 m-wide robot. It is the one constraint tuned against evidence rather than derived: at 0.35 m (bare robot radius plus a hair) a legal layout could leave only a 5 cm margin, and the sensing oracle grazed a box on 1 of 6 such layouts. Raising it to 0.7 m took the oracle to 120/120 and cost 2.5 points of catch rate. A layout must be comfortably solvable, not marginally solvable, or the filter is failing honest navigators as well as memorising ones",
+      "the straight START->GOAL line is still blocked over at least PLACEMENT_MIN_BLOCK_M of its length -- the sensing proof, as an acceptance criterion rather than a hope"
+    ],
+    "no_fallback": "an illegal draw is RE-SAMPLED, never repaired and never swapped for the published layout. Exhausting PLACEMENT_MAX_ATTEMPTS raises LayoutError. The superseded perturbation's fallback returned the PUBLISHED layout -- the memoriser's best case -- and its rate climbed with the displacement, which is a large part of why it could not be tuned into working.",
+    "measured_catch_rate": "MEASURED on the MuJoCo arm, machine 9722d23d12a3, 2026-08-09: 120 sampled layouts (seeds 1-120), one graded run of each driver on each layout = 240 graded runs. r1_hardcode.py -- the memoriser, zero beams, path planned from the published positions -- is CAUGHT on 95/120 = 79.2%; r1_oracle.py -- a real mj_ray sensing navigator that reads no layout -- PASSES 6/6 on 120/120 = 100.0% of the SAME layouts, with zero contacts and zero pass-throughs, arriving within 0.099 m of the goal on paths of 11.39-19.56 m. So the filter costs the honest agent nothing measurable at n=120. Escape probability for the memoriser is (1-0.792)^K: 20.8% at K=1, 4.3% at K=2, 0.9% at K=3 -- two runs of this beat eight of the perturbation. Layout health, 500 seeds: 500/500 legal by construction, mean 6.7 draws per layout, worst 37, 0.08 s per layout.",
+    "measured_defect_A_closure": "On the same 240 runs the memoriser physically struck an obstacle (raw adapter contact pairs, floor excluded) in 95 runs and R1.5 counted a collision in 95 of them -- 95/95. Before the fix the comparable measurement was 20 strikes counted 0 times.",
+    "measured_defect_B_closure": "On the same 120 oracle runs, 15 (12.5%) arrived collision-free on paths of 11.39-11.50 m, i.e. UNDER the retired MIN_PATH_LENGTH_M = 11.5, and would have failed R1.6 for taking a legitimately shorter legal route. All 120 clear the derived floor.",
+    "superseded_mechanism": "The seeded perturbation (r1_core.seeded_offsets / perturbed_spec, PERTURBATION_MAX_M) is SUPERSEDED and is NOT called by grade(). It is kept only so adapters/mujoco/r1_perturbation_sweep.py still reproduces the evidence that retired it: catch rate 15% at 0.6 m and 56% at 1.8 m against r1_hardcode, but against an OPTIMAL fixed path (the widest corridor, 0.575 m of margin beyond the robot radius) it saturates at ~51% near 3.0 m and then DECLINES -- a random displacement is as likely to move a box off the path as onto it -- while past 1.8 m the layouts themselves become fatally illegal (2% at 2.2 m, 11% at 2.6 m, 25% at 3.0 m). The honest navigator was never the constraint: across 240 oracle runs at every level it recorded ZERO obstacle contacts.",
+    "injection_step": "BUILT 2026-08-10, common/r1_placement.py, driven from cc_lane/run_cc_cell.run_cell step 6a -- after the agent's session has ended, after the port/process/repo-junction sweeps, and after the deliverable has been COPIED out of the workspace into <cell>/artifact/. It draws the layout from the cell's seed, finds the obstacles in the COLLECTED deliverable BY GEOMETRY (r1_core.match_spec_obstacles over bodies read out of the artifact's text, plus a footprint-only second pass for an agent that placed its boxes elsewhere; a name is never consulted), rewrites the one field that moves each of them (.wbt translation / MJCF pos, x and y only, as a delta so a body whose geometry is offset from its origin or whose parent is rotated still lands on the drawn centre), re-scans the rewritten text and re-matches it against the drawn layout at the grader's own tolerance, and writes the r1_graded_layout.json sidecar. The agent cannot reach any of it: it does not exist until the session is over, it is written only into the results tree, the seed never enters the child environment (cc_lane SCRUB_PREFIXES drops every AGENTBENCH_* name), and the whole benchmark tree is excluded from the staged workspace (stage_workspaces.OMNISIM_EXCLUDE_PREFIXES). The seed comes from the campaign (--campaign-id/<task>/r<repeat>, or --layout-seed, or $AGENTBENCH_R1_LAYOUT_SEED), carries no simulator so every arm's r<n> is scored on the SAME layout, and is recorded on the row (agent_artifacts.layout_seed + agent_artifacts.r1_placement) so the exact five poses are re-derivable with r1_core.sample_layout(seed). NO FALLBACK: a deliverable whose obstacles cannot be found or whose rewrite does not verify BLOCKS the cell (no row, blocker names the reason) rather than being graded on the published layout.",
+    "measured_catch_rate_wired": "MEASURED THROUGH THE WIRED PATH on the MuJoCo arm, machine 9722d23d12a3, 2026-08-10: 40 drawn layouts (seeds wired/campaign/1..40), each driver run once per layout through common/r1_placement.place_and_declare + cc_lane.run_cc_cell.grade_mujoco + graders/r1 resolving the sidecar for itself = 80 graded runs. r1_oracle.py -- the mj_ray sensing navigator that reads no layout -- PASSES 6/6 on 40/40 = 100.0%. r1_hardcode.py -- the memoriser, zero beams, path planned from the published positions -- is CAUGHT on 36/40 = 90.0% (first failing assertion: R1.4 x32, R1.5 x4). All 80 rows report r1_graded_layout.placed = true with the sidecar as the source, i.e. every one was scored against the DECLARED layout. Escape probability for the memoriser is (1-0.90)^K: 10% at K=1, 1% at K=2. Not directly comparable with measured_catch_rate above (different seed set, n=40 vs 120, and the layout reaches the grader through the sidecar rather than as an argument); both are reported rather than pooled. Reproduce: adapters/mujoco/test_r1_placement_end_to_end.py.",
+    "what_is_still_unbuilt": "The per-(task, arm) ORACLE/NULL GATE on omnisim and webots (SPEC 7.1) -- neither arm has yet been shown that R1 can be both passed and failed on it, which is why the numbers stay unpublishable. On the OmniSim arm that is blocked by an ENGINE defect, not by this task: a motor target set after Newton world-finalize has no effect (repro: adapters/omnisim/omnisim_lane/controllers/r1_drive_probe/), so no closed-loop navigator can be run there at all. Consequence for placement: on the OmniSim arm it is verified STATICALLY ONLY -- the world text is rewritten, the rewritten text re-measures as the drawn layout, the sidecar is written and graders/r1 resolves it -- and NOT end-to-end with a driving robot. The MuJoCo arm is where the end-to-end evidence comes from; the webots arm is wired identically (same .wbt code path as omnisim) and has not been measured end to end either."
+  },
+  "prompt_requires_named_obstacles": true,
+  "status": "NOT READY FOR A PUBLISHED NUMBER; R1 MAY BE RUN EXPLORATORILY BUT ITS NUMBERS MAY NOT BE PUBLISHED. Closed by this change: defect A (grade() scored the PUBLISHED layout, so R1.5 could not count a collision with a moved obstacle -- it now scores the GRADED layout and builds its hit set from measured geometry rather than from a name match; measured 95/95 strikes counted, against 20 strikes counted 0 times before), defect B (MIN_PATH_LENGTH_M = 11.5 was a constant about one layout that failed honest navigators on any other -- R1.6's floor is now derived from the graded layout as a lower bound on the shortest legal route, and 'it drove AROUND' is asserted directly as 'no recorded sample lies inside an obstacle'; 12.5% of honest oracle runs would have failed the old floor), and the anti-hardcode mechanism itself (grade-time placement: 79.2% catch of the memoriser at a 100% oracle pass rate over 240 graded runs, against a perturbation that saturates at ~51% against an optimal fixed path and cannot be tuned higher). CLOSED 2026-08-10: the INJECTION step (see anti_hardcode.injection_step) -- every arm's cell now draws the layout from the campaign seed, places it into the collected deliverable by geometry, declares it in the r1_graded_layout.json sidecar the grader resolves, and BLOCKS rather than falling back to the published layout; measured through that path, the sensing oracle passes 40/40 and the memoriser is caught 36/40 (anti_hardcode.measured_catch_rate_wired). OUTSTANDING, and it is what keeps the numbers unpublishable: no oracle/null gate on omnisim or webots for THIS task -- the gate is per (task, arm), and on the OmniSim arm it is blocked by an engine defect (a motor target set after Newton world-finalize has no effect), so placement on that arm is verified statically only and no closed-loop navigator can be run there at all.",
+  "instrument_limit": "CLOSED 2026-08-09. R1.3 matches obstacles by GEOMETRY (an agent may name them anything -- one real run called them 'crate A'..'crate E', another 'obstacle_1'..'obstacle_6'), and the recorders' only bounds channel used to be the NAME-KEYED --solids= list, so a world using its own names produced no candidates at all and R1.3 was UNDECIDABLE on both of our arms while it passed on the MuJoCo arm. Both recorders now run a name-free t=0 scene scan (every non-robot Solid outside a Robot subtree, with world-space bounds, capped and with truncation reported), so R1.3 is decisive whatever the agent calls its boxes. ONE residual asymmetry, published rather than approximated: on upstream Webots the AABB is computed from the body's own geometry and a Mesh { url ... } hull cannot be resolved by a controller running under upstream's python3, so such a body arrives with bounds ABSENT and the reason attached -- never with a guessed box. OmniSim's geometry.bounds_for_subtree reads mesh files off disk and has no such gap. R1.5 inherits it: a body with no bounds cannot be judged drive-over-or-obstacle, so it is NOT counted as a hit and is named on the verdict instead of being silently either way.",
+  "fixed_defects": {
+    "A_wiring_would_blind_R1_5": "FIXED. Was: grade() matched obstacles against obstacle_spec() -- the PUBLISHED layout at 0.05 m tolerance -- and R1.5 decided 'was this a hit' from the names of the MATCHED obstacles, so moving the obstacles emptied the hit set and a robot-obstacle contact could not be counted (measured at 1.8 m over 30 seeds: the memoriser physically struck an obstacle in 20 runs and R1.5 reported 0 collisions in every one). Now: grade() takes the GRADED layout and matches against it, and r1_core.hittable_bodies builds the hit set from three channels -- matched graded obstacles, anything whose name says wall, and every other non-robot body with bounds that the robot could not have DRIVEN OVER (top above the robot's underside, not spanning both start and goal). A contact is therefore countable even on a run where nothing matched. Pinned by adapters/mujoco/test_r1_discriminates_mujoco.py::test_a_moved_obstacle_that_is_STRUCK_is_now_counted_as_a_hit, which replaced the test that pinned the broken behaviour.",
+    "B_R1_6_floor_punishes_honest_agents": "FIXED. Was: MIN_PATH_LENGTH_M = 11.5, derived from 'the straight line is 11.31 m and is blocked' -- a fact about the PUBLISHED layout only -- and five oracle runs that arrived within 0.10 m of the goal, collision-free, on 11.31-11.49 m paths FAILED R1.6 for taking a legitimately shorter legal route. Now: r1_core.min_path_length(layout) computes the point-robot shortest route over the layout being scored (8-connected Dijkstra on a PLACEMENT_ROUTE_CELL_M grid), multiplies by PATH_FLOOR_GRID_FACTOR to turn the grid metric into a lower bound, and subtracts PATH_FLOOR_SLACK_M and GOAL_TOL_M. No collision-free arrival can fall under it, on any layout. The constant MIN_PATH_LENGTH_M no longer exists. The discriminating power the fixed floor was carrying moved to an assertion that states it directly: R1.6 fails a run any of whose recorded samples lies THROUGH_TOL_M inside a matched obstacle."
+  }
+}

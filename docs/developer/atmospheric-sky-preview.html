@@ -1,0 +1,468 @@
+<!--
+  OmniSim procedural atmospheric sky — standalone WebGL2 preview.
+
+  This file exists so you can see what the in-OmniSim procedural sky
+  will look like before the shader math is integrated into WREN.
+
+  The GLSL below is a single-ray analytic implementation of
+  Rayleigh + Mie + ozone scattering with a Cornette-Shanks Mie phase
+  function and an analytic sun disc.  It is the same math sky_apply.frag
+  will use to texture the skybox cube faces, just inlined here against
+  a fullscreen quad so it runs in any browser.
+
+  Limitations vs full Hillaire 2020 (the eventual in-OmniSim target):
+    * No multi-scattering term — sky stays a little too dark at the
+      horizon at sunset / sunrise.  Difference is most visible on
+      Earth twilight; on Mars the dust-Mie dominates so the gap is
+      smaller.
+    * No precomputed LUTs — every fragment ray-marches the full
+      atmosphere on the GPU.  Fine at 1080p in a browser; in OmniSim
+      the LUT version will be ~10x cheaper per frame.
+
+  Sources:
+    * Hillaire 2020, _A Scalable and Production Ready Sky and
+      Atmosphere Rendering Technique._
+    * Bruneton & Neyret 2008 (Rayleigh coefficients for Earth).
+    * Mars params: working seeds based on Curiosity / Perseverance
+      colour-calibrated panoramas — expect tuning.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OmniSim procedural sky — preview</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #000; color: #ccc;
+               font-family: ui-monospace, "Cascadia Code", Consolas, monospace; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+  #hud { position: fixed; top: 12px; left: 12px; padding: 10px 14px;
+         background: rgba(0,0,0,0.55); border: 1px solid #333; border-radius: 6px;
+         font-size: 12px; line-height: 1.55; backdrop-filter: blur(6px);
+         user-select: none; pointer-events: auto; min-width: 220px; }
+  #hud h1 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #fff;
+            text-transform: uppercase; letter-spacing: 0.05em; }
+  #hud .row { display: flex; justify-content: space-between; gap: 16px; }
+  #hud label { color: #888; }
+  #hud .v { color: #fff; }
+  #hud .seg { display: inline-flex; gap: 2px; margin-top: 4px; }
+  #hud .seg button { background: #1a1a1a; color: #888; border: 1px solid #333;
+                     padding: 4px 10px; font: inherit; font-size: 11px; cursor: pointer; }
+  #hud .seg button.on { background: #fff; color: #000; border-color: #fff; }
+  #hud .hint { color: #555; font-size: 11px; margin-top: 6px; }
+  #hud input[type=range] { width: 110px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <h1>OmniSim sky preview</h1>
+  <div class="seg" id="preset">
+    <button data-preset="earth" class="on">Earth</button>
+    <button data-preset="mars">Mars</button>
+  </div>
+  <div class="row" style="margin-top: 8px;">
+    <label>sun elev</label>
+    <span class="v" id="sunElevV">15&deg;</span>
+  </div>
+  <input type="range" id="sunElev" min="-10" max="89" step="0.5" value="15">
+  <div class="row" style="margin-top: 4px;">
+    <label>sun azim</label>
+    <span class="v" id="sunAzimV">0&deg;</span>
+  </div>
+  <input type="range" id="sunAzim" min="-180" max="180" step="1" value="0">
+  <div class="row" style="margin-top: 4px;">
+    <label>exposure</label>
+    <span class="v" id="exposureV">1.0</span>
+  </div>
+  <input type="range" id="exposure" min="0.1" max="6" step="0.05" value="1.0">
+  <div class="hint">drag canvas: look around &middot; wheel: exposure</div>
+</div>
+<script>
+"use strict";
+
+const VERT = `#version 300 es
+in vec2 vPos;
+out vec2 vUv;
+void main() {
+  vUv = vPos;
+  gl_Position = vec4(vPos, 0.0, 1.0);
+}
+`;
+
+// The fragment shader is the same single-ray analytic scattering we
+// will port to sky_apply.frag once the WREN LUT path is wired.  Keep
+// the structure aligned so the port is a search-and-replace of the
+// uniform names plus a swap of inline density() for an LUT fetch.
+const FRAG = `#version 300 es
+precision highp float;
+
+in  vec2 vUv;
+out vec4 outColor;
+
+// View matrix derived from look azimuth + elevation (mouse drag).
+uniform mat3  uView;
+uniform float uAspect;
+uniform float uExposure;
+
+// Atmosphere parameters.  Units: km for radii / heights, per-metre
+// for scattering coefficients (Hillaire 2020 §2 canonical units).
+uniform float uBottomRadiusKm;
+uniform float uTopRadiusKm;
+uniform vec3  uRayleighScattering;   // (1/m)
+uniform float uRayleighScaleHeightKm;
+uniform vec3  uMieScattering;        // (1/m)
+uniform vec3  uMieAbsorption;        // (1/m)
+uniform float uMieScaleHeightKm;
+uniform float uMiePhaseG;
+uniform vec3  uAbsorptionExtinction; // ozone / CO2-blue (1/m)
+uniform float uGroundAlbedo;
+
+uniform vec3  uSunDirection;
+uniform vec3  uSunIlluminance;       // pre-tonemap sun radiance.
+uniform float uSunDiscCosRadius;
+
+// Coefficients are in 1/m but our ray-march is in km.  Multiply by
+// 1000 once at extinction-time so the inner loop stays clean.
+const float METRES_PER_KM = 1000.0;
+
+float clamp01(float x) { return clamp(x, 0.0, 1.0); }
+
+// Sphere intersection.  Returns the FAR positive root, or -1 if no
+// intersection.  Used to find the atmosphere-exit distance and the
+// planet-surface hit distance from a ray (origin, dir).
+float raySphereExit(vec3 origin, vec3 dir, float radius) {
+  float b = dot(origin, dir);
+  float c = dot(origin, origin) - radius * radius;
+  float d = b * b - c;
+  if (d < 0.0) return -1.0;
+  return -b + sqrt(d);
+}
+float raySphereEnter(vec3 origin, vec3 dir, float radius) {
+  float b = dot(origin, dir);
+  float c = dot(origin, origin) - radius * radius;
+  float d = b * b - c;
+  if (d < 0.0) return -1.0;
+  float t = -b - sqrt(d);
+  return (t < 0.0) ? -1.0 : t;
+}
+
+// Rayleigh phase function — wavelength-independent.
+float phaseRayleigh(float cosTheta) {
+  return 3.0 / (16.0 * 3.14159265) * (1.0 + cosTheta * cosTheta);
+}
+// Cornette-Shanks Mie phase function — strong forward scattering.
+float phaseMie(float cosTheta, float g) {
+  float g2 = g * g;
+  float num = (1.0 - g2) * (1.0 + cosTheta * cosTheta);
+  float denom = (2.0 + g2) * pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5);
+  return 3.0 / (8.0 * 3.14159265) * num / denom;
+}
+
+// Per-channel optical depth from a point along a direction until the
+// atmosphere top (or planet surface).  Sampled with 8 steps — enough
+// for the inner integral.
+vec3 opticalDepth(vec3 origin, vec3 dir) {
+  float tExit = raySphereExit(origin, dir, uTopRadiusKm);
+  if (tExit < 0.0) return vec3(0.0);
+  // If the ray hits the ground first, mark it: the sun is blocked.
+  float tGround = raySphereEnter(origin, dir, uBottomRadiusKm);
+  if (tGround > 0.0) return vec3(1e10);
+  const int STEPS = 8;
+  float dt = tExit / float(STEPS);
+  vec3 sum = vec3(0.0);
+  for (int i = 0; i < STEPS; ++i) {
+    vec3 p = origin + dir * (dt * (float(i) + 0.5));
+    float h = max(0.0, length(p) - uBottomRadiusKm);
+    float rayleighDensity = exp(-h / uRayleighScaleHeightKm);
+    float mieDensity      = exp(-h / uMieScaleHeightKm);
+    // Ozone (Earth) / CO2-blue (Mars) approximated as a fixed-altitude
+    // layer the same way Hillaire does — peaks around 25 km for Earth,
+    // 0 km for Mars.  For the analytic preview we just mix it in with
+    // the Rayleigh density; the LUT version will use the canonical
+    // tent function.
+    vec3 extinction =
+        uRayleighScattering * rayleighDensity
+      + (uMieScattering + uMieAbsorption) * mieDensity
+      + uAbsorptionExtinction * rayleighDensity;
+    sum += extinction * dt * METRES_PER_KM;
+  }
+  return sum;
+}
+
+// Main ray-march along the view direction.  Outputs per-channel
+// scattered luminance toward the camera.
+vec3 sampleSky(vec3 origin, vec3 viewDir) {
+  float tExit = raySphereExit(origin, viewDir, uTopRadiusKm);
+  if (tExit <= 0.0) return vec3(0.0);
+  // If the view hits the planet first, end the march there so we get
+  // a "ground darkens at horizon" effect for free.
+  float tGround = raySphereEnter(origin, viewDir, uBottomRadiusKm);
+  float tEnd = (tGround > 0.0) ? min(tExit, tGround) : tExit;
+
+  const int STEPS = 32;
+  float dt = tEnd / float(STEPS);
+  vec3 rayleighSum = vec3(0.0);
+  vec3 mieSum      = vec3(0.0);
+  vec3 transmittance = vec3(1.0);
+
+  float cosSunView = dot(viewDir, uSunDirection);
+  float pR = phaseRayleigh(cosSunView);
+  float pM = phaseMie(cosSunView, uMiePhaseG);
+
+  for (int i = 0; i < STEPS; ++i) {
+    vec3 p = origin + viewDir * (dt * (float(i) + 0.5));
+    float h = max(0.0, length(p) - uBottomRadiusKm);
+    float rayleighDensity = exp(-h / uRayleighScaleHeightKm);
+    float mieDensity      = exp(-h / uMieScaleHeightKm);
+
+    // Per-channel extinction at this sample point.
+    vec3 extinction =
+        uRayleighScattering * rayleighDensity
+      + (uMieScattering + uMieAbsorption) * mieDensity
+      + uAbsorptionExtinction * rayleighDensity;
+    vec3 segmentTransmittance = exp(-extinction * dt * METRES_PER_KM);
+
+    // Transmittance from this sample to the sun — single-scattering.
+    vec3 sunOD = opticalDepth(p, uSunDirection);
+    vec3 sunTransmittance = exp(-sunOD);
+
+    // In-scattering contribution: density * phase * sun-transmittance *
+    // view-transmittance, integrated over dt.
+    vec3 dRayleigh = uRayleighScattering * rayleighDensity * pR;
+    vec3 dMie      = uMieScattering      * mieDensity      * pM;
+    vec3 inscatter = (dRayleigh + dMie) * sunTransmittance * dt * METRES_PER_KM;
+
+    rayleighSum += transmittance * inscatter;
+    transmittance *= segmentTransmittance;
+  }
+
+  vec3 colour = rayleighSum * uSunIlluminance;
+
+  // Sun disc — only when the view ray is unobstructed by the ground.
+  if (tGround < 0.0 && cosSunView > uSunDiscCosRadius) {
+    colour += transmittance * uSunIlluminance;
+  }
+
+  return colour;
+}
+
+// Cheap AgX-ish filmic curve.  AgX itself is a 3D LUT; this is the
+// Hable-style approximation we will replace once T1.1 lands real AgX.
+vec3 filmic(vec3 x) {
+  x *= 0.6;
+  x = (x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14);
+  return x;
+}
+
+void main() {
+  // texUv in [-1, 1] across the canvas.  Build view direction from
+  // an aspect-corrected pinhole projection.
+  vec2 uv = vUv;
+  uv.x *= uAspect;
+  vec3 viewDir = normalize(uView * normalize(vec3(uv, -1.5)));
+
+  // Origin: 100 m above the ground.  Earth/Mars share the convention
+  // that altitude 0 is the bottom-of-atmosphere sphere.
+  vec3 origin = vec3(0.0, uBottomRadiusKm + 0.1, 0.0);
+
+  vec3 sky = sampleSky(origin, viewDir);
+  sky *= uExposure;
+  vec3 tone = filmic(sky);
+  // sRGB encode.
+  outColor = vec4(pow(tone, vec3(1.0 / 2.2)), 1.0);
+}
+`;
+
+const canvas = document.getElementById("c");
+const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
+if (!gl) {
+  document.body.innerHTML = '<p style="color:#fff;font-family:sans-serif;padding:20px;">WebGL2 not available in this browser.</p>';
+  throw new Error("WebGL2 required");
+}
+
+// Compile / link.
+function compile(type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(sh));
+    throw new Error("compile failed");
+  }
+  return sh;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
+gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+  console.error(gl.getProgramInfoLog(prog));
+  throw new Error("link failed");
+}
+gl.useProgram(prog);
+
+// Fullscreen triangle (cheaper than a quad; standard trick).
+const vao = gl.createVertexArray();
+gl.bindVertexArray(vao);
+const vbo = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, "vPos");
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+// Uniform handles.
+const U = {
+  view:                gl.getUniformLocation(prog, "uView"),
+  aspect:              gl.getUniformLocation(prog, "uAspect"),
+  exposure:            gl.getUniformLocation(prog, "uExposure"),
+  bottomRadiusKm:      gl.getUniformLocation(prog, "uBottomRadiusKm"),
+  topRadiusKm:         gl.getUniformLocation(prog, "uTopRadiusKm"),
+  rayleighScattering:  gl.getUniformLocation(prog, "uRayleighScattering"),
+  rayleighScaleHeight: gl.getUniformLocation(prog, "uRayleighScaleHeightKm"),
+  mieScattering:       gl.getUniformLocation(prog, "uMieScattering"),
+  mieAbsorption:       gl.getUniformLocation(prog, "uMieAbsorption"),
+  mieScaleHeight:      gl.getUniformLocation(prog, "uMieScaleHeightKm"),
+  miePhaseG:           gl.getUniformLocation(prog, "uMiePhaseG"),
+  absorptionExtinction:gl.getUniformLocation(prog, "uAbsorptionExtinction"),
+  groundAlbedo:        gl.getUniformLocation(prog, "uGroundAlbedo"),
+  sunDirection:        gl.getUniformLocation(prog, "uSunDirection"),
+  sunIlluminance:      gl.getUniformLocation(prog, "uSunIlluminance"),
+  sunDiscCosRadius:    gl.getUniformLocation(prog, "uSunDiscCosRadius"),
+};
+
+// Atmosphere presets — kept in sync with
+// src/omnisim/wren/WbWrenAtmosphericSky.cpp::AtmosphereParameters.
+const PRESETS = {
+  earth: {
+    bottomRadiusKm: 6360.0, topRadiusKm: 6460.0,
+    rayleighScattering: [5.802e-6, 13.558e-6, 33.1e-6],
+    rayleighScaleHeightKm: 8.0,
+    mieScattering: [3.996e-6, 3.996e-6, 3.996e-6],
+    mieAbsorption: [4.4e-6, 4.4e-6, 4.4e-6],
+    mieScaleHeightKm: 1.2,
+    miePhaseG: 0.8,
+    absorptionExtinction: [0.65e-6, 1.881e-6, 0.085e-6],
+    groundAlbedo: 0.3,
+    sunIlluminance: [22.0, 22.0, 22.0],
+    sunDiscCosRadius: 0.99995,
+  },
+  mars: {
+    bottomRadiusKm: 3389.5, topRadiusKm: 3489.5,
+    rayleighScattering: [1.9918e-6, 1.357e-6, 0.575e-6],
+    rayleighScaleHeightKm: 11.1,
+    mieScattering: [2.0e-5, 1.7e-5, 1.4e-5],
+    mieAbsorption: [1.0e-5, 1.2e-5, 1.5e-5],
+    mieScaleHeightKm: 11.0,
+    miePhaseG: 0.76,
+    absorptionExtinction: [0.15e-6, 0.3e-6, 0.85e-6],
+    groundAlbedo: 0.15,
+    sunIlluminance: [10.0, 8.5, 7.0],  // dimmer + warmer at Mars distance.
+    sunDiscCosRadius: 0.99993,         // slightly larger disc (sun appears ~2/3 size).
+  },
+};
+
+const state = {
+  preset: "earth",
+  sunElevDeg: 15,
+  sunAzimDeg: 0,
+  exposure: 1.0,
+  lookYaw: 0,
+  lookPitch: 0.1,
+};
+
+function setPreset(name) {
+  state.preset = name;
+  const p = PRESETS[name];
+  gl.uniform1f(U.bottomRadiusKm, p.bottomRadiusKm);
+  gl.uniform1f(U.topRadiusKm,    p.topRadiusKm);
+  gl.uniform3fv(U.rayleighScattering, p.rayleighScattering);
+  gl.uniform1f(U.rayleighScaleHeight, p.rayleighScaleHeightKm);
+  gl.uniform3fv(U.mieScattering, p.mieScattering);
+  gl.uniform3fv(U.mieAbsorption, p.mieAbsorption);
+  gl.uniform1f(U.mieScaleHeight, p.mieScaleHeightKm);
+  gl.uniform1f(U.miePhaseG, p.miePhaseG);
+  gl.uniform3fv(U.absorptionExtinction, p.absorptionExtinction);
+  gl.uniform1f(U.groundAlbedo, p.groundAlbedo);
+  gl.uniform3fv(U.sunIlluminance, p.sunIlluminance);
+  gl.uniform1f(U.sunDiscCosRadius, p.sunDiscCosRadius);
+  for (const b of document.querySelectorAll("#preset button"))
+    b.classList.toggle("on", b.dataset.preset === name);
+}
+
+function updateSun() {
+  const e = state.sunElevDeg * Math.PI / 180;
+  const a = state.sunAzimDeg * Math.PI / 180;
+  // World y is up.
+  const dir = [Math.cos(e) * Math.sin(a), Math.sin(e), -Math.cos(e) * Math.cos(a)];
+  gl.uniform3fv(U.sunDirection, dir);
+  document.getElementById("sunElevV").textContent = state.sunElevDeg.toFixed(1) + "°";
+  document.getElementById("sunAzimV").textContent = state.sunAzimDeg.toFixed(0) + "°";
+}
+function updateExposure() {
+  gl.uniform1f(U.exposure, state.exposure);
+  document.getElementById("exposureV").textContent = state.exposure.toFixed(2);
+}
+function updateView() {
+  // 3x3 yaw + pitch matrix, column-major for WebGL.
+  const cy = Math.cos(state.lookYaw), sy = Math.sin(state.lookYaw);
+  const cp = Math.cos(state.lookPitch), sp = Math.sin(state.lookPitch);
+  // Rx(pitch) * Ry(yaw)
+  const m = new Float32Array([
+    cy,       0,     -sy,
+    sy * sp,  cp,    cy * sp,
+    sy * cp, -sp,    cy * cp,
+  ]);
+  gl.uniformMatrix3fv(U.view, false, m);
+}
+function updateAspect() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(window.innerWidth * dpr);
+  canvas.height = Math.floor(window.innerHeight * dpr);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.uniform1f(U.aspect, canvas.width / canvas.height);
+}
+
+window.addEventListener("resize", () => { updateAspect(); draw(); });
+document.getElementById("sunElev").addEventListener("input", (e) => {
+  state.sunElevDeg = parseFloat(e.target.value); updateSun(); draw();
+});
+document.getElementById("sunAzim").addEventListener("input", (e) => {
+  state.sunAzimDeg = parseFloat(e.target.value); updateSun(); draw();
+});
+document.getElementById("exposure").addEventListener("input", (e) => {
+  state.exposure = parseFloat(e.target.value); updateExposure(); draw();
+});
+for (const b of document.querySelectorAll("#preset button")) {
+  b.addEventListener("click", () => { setPreset(b.dataset.preset); draw(); });
+}
+canvas.addEventListener("wheel", (e) => {
+  state.exposure = Math.max(0.1, Math.min(6, state.exposure * (e.deltaY > 0 ? 0.9 : 1.1)));
+  document.getElementById("exposure").value = state.exposure;
+  updateExposure(); draw();
+  e.preventDefault();
+});
+let dragging = false, dragX = 0, dragY = 0;
+canvas.addEventListener("pointerdown", (e) => { dragging = true; dragX = e.clientX; dragY = e.clientY; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener("pointerup",   (e) => { dragging = false; canvas.releasePointerCapture(e.pointerId); });
+canvas.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  state.lookYaw   += (e.clientX - dragX) * 0.004;
+  state.lookPitch  = Math.max(-1.5, Math.min(1.5, state.lookPitch - (e.clientY - dragY) * 0.004));
+  dragX = e.clientX; dragY = e.clientY;
+  updateView(); draw();
+});
+
+function draw() {
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+updateAspect();
+setPreset("earth");
+updateSun();
+updateExposure();
+updateView();
+draw();
+</script>
+</body>
+</html>

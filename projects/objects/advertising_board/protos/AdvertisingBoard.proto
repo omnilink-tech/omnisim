@@ -1,0 +1,326 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/advertising_board/protos/AdvertisingBoard.proto
+# keywords: exterior/street furniture
+# A double-sided display board: a rectangular frame with a poster recessed into each face, optionally back-lit, standing on up to four poles.
+# The poles can be `cylinder`, `box`, or an `H-shape` mast set behind the board. No artwork is
+# shipped with the board -- the two faces show whatever `frontTexture` and `backTexture` are given.
+# template language: javascript
+
+PROTO AdvertisingBoard [
+  field SFVec3f     translation       0 0 0
+  field SFRotation  rotation          0 0 1 0
+  field SFString    name              "advertising board"                   # Defines the name of the advertising board.
+  field MFString    frontTexture      "omnisim://projects/default/worlds/textures/omnisim_billboard.png"       # Defines the front display texture.
+  field MFString    backTexture       "omnisim://projects/default/worlds/textures/omnisim_billboard.png"       # Defines the back display texture.
+  field MFColor     recognitionColors [ 1 1 1, 0.75 0 0 ]                   # Is `Solid.recognitionColors`.
+  field SFBool      displayBackLight  FALSE                                 # Defines wether the displays are backlit or not.
+  field SFFloat     displayWidth      4                                     # Defines the width of the displays.
+  field SFFloat     displayHeight     3                                     # Defines the height of the displays.
+  field SFFloat     frameThickness    0.6                                   # Defines the thickness of the frame.
+  field SFColor     frameColor        0.886275 0.886275 0.886275            # Defines the color of the outer frame of the board.
+  field SFColor     poleColor         0.886275 0.886275 0.886275            # Defines the color of the pole if present.
+  field SFInt32     poleNumber        0                                     # Defines the number of poles. Their position is defined by the number of poles. There can be up to 4 equally spaced poles per board.
+  field SFString{"cylinder", "box", "H-shape"}
+                    poleType          "cylinder"                            # Defines the shape and behavious of the pole(s). `box` and `cylinder` pole types are placed at the center of the board and `H-shape` is placed behind. In the case of `H-shape`, backTexture is null and a base is not defined.
+  field SFFloat     poleHeight        5                                     # Defines the height of the pole.
+  field SFFloat     poleThickness     0.4                                   # Defines the thickness of the pole (radius of the cylinder for `cylinder`).
+  field SFFloat     baseRatio         3.2                                   # Defines the size of the base for `box` and `cylinder` poles. This field is based on a ratio of `poleThickness`.
+]
+{
+  %<
+    // =====================================================================
+    // 1. THE FIELDS
+    //
+    // The board hangs in the y-z plane and is read from +x (the front) and -x
+    // (the back). `displayWidth` and `displayHeight` are the POSTER, not the
+    // board: the frame is added around them.
+    // =====================================================================
+    const clamp = function(field, low, label) {
+      if (field.value >= low && (low > 0 || field.value > 0))
+        return field.value;
+      console.error('\'' + label + '\' should be >= ' + low + '. Value reset to ' + field.defaultValue + '.');
+      return field.defaultValue;
+    };
+    const displayWidth = clamp(fields.displayWidth, 1e-6, 'displayWidth');
+    const displayHeight = clamp(fields.displayHeight, 1e-6, 'displayHeight');
+    const frameThickness = clamp(fields.frameThickness, 0.1, 'frameThickness');
+    const poleHeight = clamp(fields.poleHeight, 1e-6, 'poleHeight');
+    const baseRatio = clamp(fields.baseRatio, 0.1, 'baseRatio');
+
+    let poleNumber = fields.poleNumber.value;
+    if (poleNumber < 0 || poleNumber > 4) {
+      poleNumber = fields.poleNumber.defaultValue;
+      console.error('\'poleNumber\' should be between 0 and 4. Value reset to ' + poleNumber + '.');
+    }
+    const poleType = fields.poleType.value;
+
+    // A pole thicker than the frame it hides inside would burst out of the
+    // board's front and back faces, so it is capped by the frame.
+    const recess = 0.06;   // how far each poster is sunk into the frame
+    let poleThickness = fields.poleThickness.value;
+    if (poleThickness < 0.1) {
+      poleThickness = fields.poleThickness.defaultValue;
+      console.error('\'poleThickness\' should be >= 0.1. Value reset to ' + poleThickness + '.');
+    } else if (poleNumber !== 0 && poleThickness > frameThickness - recess) {
+      poleThickness = fields.poleThickness.defaultValue;
+      console.error('\'poleThickness\' should be smaller than the frame. Value reset to ' + poleThickness + '.');
+    }
+    const halfPole = 0.5 * poleThickness;
+    const quarterPole = 0.25 * poleThickness;
+
+    // =====================================================================
+    // 2. THE POSTERS
+    //
+    // A face with no texture is not drawn at all, and its side of the frame
+    // is then flush rather than recessed. An H-shape mast stands BEHIND the
+    // board and blanks the back face, which is what makes it a billboard
+    // rather than a two-sided sign.
+    // =====================================================================
+    const hasFront = fields.frontTexture.value.length > 0;
+    const hasBack = fields.backTexture.value.length > 0 && poleType !== 'H-shape';
+    const frontInset = hasFront ? recess : 0;
+    const backInset = hasBack ? recess : 0;
+    const lit = fields.displayBackLight.value;
+
+    // Where the poles stand along the board. One in the middle, two at the
+    // quarters, three at the thirds, four pulled in from the ends -- always
+    // symmetric about the centre of the board.
+    const spacing = [
+      [0],
+      [-0.25 * displayWidth, 0.25 * displayWidth],
+      [-displayWidth / 3, 0, displayWidth / 3],
+      [-0.5 * displayWidth + poleThickness, -displayWidth / 7, displayWidth / 7, 0.5 * displayWidth - poleThickness]
+    ];
+
+    // With no pole the board simply sits on the ground; with a pole it is lifted
+    // to sit near the top of it.
+    const boardZ = poleNumber === 0 ? 0.5 * displayHeight + 0.1
+                                    : poleHeight - 0.6 * displayHeight - 0.2;
+    // The H-shape mast is pushed back so it hides behind the board.
+    const poleX = poleType === 'H-shape' ? -0.82 * frameThickness : 0;
+
+    const rail = 0.1;   // width of the frame members around the poster
+
+    function r6(v) {
+      return Math.round(v * 1e6) / 1e6;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    recognitionColors IS recognitionColors
+    children [
+      DEF BOARD Solid {
+        translation 0 0 %<= r6(boardZ) >%
+        name "board"
+        children [
+          # --- the frame: two uprights and two rails around the poster --------
+          DEF LEFT_SIDE Pose {
+            translation 0 %<= r6(-0.5 * (displayWidth + rail)) >% 0
+            children [
+              DEF FRAME_UPRIGHT Shape {
+                appearance DEF FRAME_COLOR PBRAppearance {
+                  baseColor IS frameColor
+                  metalness 0
+                  roughness 0.6
+                }
+                geometry Box {
+                  size %<= r6(frameThickness) >% %<= r6(rail) >% %<= r6(displayHeight + 2 * rail) >%
+                }
+              }
+            ]
+          }
+          DEF RIGHT_SIDE Pose {
+            translation 0 %<= r6(0.5 * (displayWidth + rail)) >% 0
+            children [
+              USE FRAME_UPRIGHT
+            ]
+          }
+          DEF TOP_SIDE Pose {
+            translation 0 0 %<= r6(0.5 * (displayHeight + rail)) >%
+            children [
+              DEF FRAME_RAIL Shape {
+                appearance USE FRAME_COLOR
+                geometry Box {
+                  size %<= r6(frameThickness) >% %<= r6(displayWidth) >% %<= r6(rail) >%
+                }
+              }
+            ]
+          }
+          DEF BOTTOM_SIDE Pose {
+            translation 0 0 %<= r6(-0.5 * (displayHeight + rail)) >%
+            children [
+              USE FRAME_RAIL
+            ]
+          }
+          # --- the backing panel the posters are pasted onto ------------------
+          DEF BACKING Shape {
+            appearance USE FRAME_COLOR
+            geometry Box {
+              size %<= r6(Math.max(0.02, frameThickness - frontInset - backInset)) >% %<= r6(displayWidth) >% %<= r6(displayHeight) >%
+            }
+          }
+        %< if (hasFront) { >%
+          # --- the poster on the +x face --------------------------------------
+          DEF FRONT_SIDE Pose {
+            translation %<= r6(0.5 * frameThickness - frontInset + 0.005) >% 0 0
+            rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931953
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 1 1 1
+                  baseColorMap ImageTexture {
+                    url IS frontTexture
+                  }
+                %< if (lit) { >%
+                  emissiveColor 1 1 1
+                  emissiveColorMap ImageTexture {
+                    url IS frontTexture
+                  }
+                  emissiveIntensity 5
+                %< } >%
+                  metalness 0
+                  roughness 0.6
+                }
+                geometry DEF POSTER Plane {
+                  size %<= r6(displayWidth) >% %<= r6(displayHeight) >%
+                }
+              }
+            ]
+          }
+        %< } >%
+        %< if (hasBack) { >%
+          # --- and the poster on the -x face, which faces the other way --------
+          DEF BACK_SIDE Pose {
+            translation %<= r6(-0.5 * frameThickness + backInset - 0.005) >% 0 0
+            rotation 0.5773502691896258 -0.5773502691896258 -0.5773502691896258 2.0943951023931953
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 1 1 1
+                  baseColorMap ImageTexture {
+                    url IS backTexture
+                  }
+                %< if (lit) { >%
+                  emissiveColor 1 1 1
+                  emissiveColorMap ImageTexture {
+                    url IS backTexture
+                  }
+                  emissiveIntensity 5
+                %< } >%
+                  metalness 0
+                  roughness 0.6
+                }
+                geometry USE POSTER
+              }
+            ]
+          }
+        %< } >%
+        ]
+        boundingObject Box {
+          size %<= r6(frameThickness) >% %<= r6(displayWidth + 2 * rail) >% %<= r6(displayHeight + 2 * rail) >%
+        }
+      }
+      # =====================================================================
+      # 3. THE POLES
+      #
+      # An H-shape is a rolled I-beam mast: it is drawn as a twelve-sided
+      # cross-section swept up the mast, and it gets no ground base, because a
+      # mast of that kind is set in the ground rather than bolted to a plate.
+      # =====================================================================
+      %< for (let i = 0; i < poleNumber; ++i) {
+           const y = spacing[poleNumber - 1][i]; >%
+      DEF %<= 'POLE_' + i >% Solid {
+        translation %<= r6(poleX) >% %<= r6(y) >% %<= r6(0.5 * poleHeight) >%
+        name "pole %<= i >%"
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS poleColor
+              roughness 0.6
+              metalness 0
+            }
+          %< if (poleType === 'cylinder') { >%
+            geometry Cylinder {
+              height %<= r6(poleHeight) >%
+              radius %<= r6(halfPole) >%
+              subdivision 20
+            }
+          %< } else if (poleType === 'box') { >%
+            geometry Box {
+              size %<= r6(poleThickness) >% %<= r6(poleThickness) >% %<= r6(poleHeight) >%
+            }
+          %< } else { >%
+            # An I-beam: two flanges joined by a web, swept the height of the mast.
+            geometry IndexedFaceSet {
+              coord Coordinate {
+                point [
+              %< const web = [
+                   [-halfPole, halfPole], [halfPole, halfPole], [halfPole, quarterPole],
+                   [quarterPole, quarterPole], [quarterPole, -quarterPole], [halfPole, -quarterPole],
+                   [halfPole, -halfPole], [-halfPole, -halfPole], [-halfPole, -quarterPole],
+                   [-quarterPole, -quarterPole], [-quarterPole, quarterPole], [-halfPole, quarterPole]
+                 ];
+                 for (let s = -1; s <= 1; s += 2) {
+                   for (let k = 0; k < web.length; ++k) { >%
+                  %<= r6(web[k][0]) >% %<= r6(web[k][1]) >% %<= r6(s * 0.5 * poleHeight) >%
+              %<   }
+                 } >%
+                ]
+              }
+              coordIndex [
+              %< const nw = web.length;
+                 for (let k = 1; k < nw - 1; ++k) { >%
+                0 %<= k + 1 >% %<= k >% -1
+              %< }
+                 for (let k = 1; k < nw - 1; ++k) { >%
+                %<= nw >% %<= nw + k >% %<= nw + k + 1 >% -1
+              %< }
+                 for (let k = 0; k < nw; ++k) {
+                   const j = (k + 1) % nw; >%
+                %<= k >% %<= j >% %<= nw + j >% %<= nw + k >% -1
+              %< } >%
+              ]
+              creaseAngle 0.5
+            }
+          %< } >%
+          }
+        ]
+        boundingObject Box {
+          size %<= r6(poleThickness) >% %<= r6(poleThickness) >% %<= r6(poleHeight) >%
+        }
+      }
+      %< if (poleType !== 'H-shape' && baseRatio > 1) { >%
+      # --- the plate the pole is bolted down through -------------------------
+      DEF %<= 'POLE_BASE_' + i >% Pose {
+        translation 0 %<= r6(y) >% 0.01
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS poleColor
+              metalness 0
+              roughness 0.6
+            }
+          %< if (poleType === 'cylinder') { >%
+            geometry Cylinder {
+              height 0.02
+              radius %<= r6(baseRatio * halfPole) >%
+              subdivision 16
+            }
+          %< } else { >%
+            geometry Box {
+              size %<= r6(baseRatio * poleThickness) >% %<= r6(baseRatio * poleThickness) >% 0.02
+            }
+          %< } >%
+          }
+        ]
+      }
+      %< } >%
+      %< } >%
+    ]
+    name IS name
+    model "advertising board"
+  }
+}

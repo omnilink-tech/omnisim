@@ -1,0 +1,423 @@
+{
+ "control_drop": false,
+ "carried": true,
+ "pinched": false,
+ "palm_wedge": false,
+ "contacts": [
+  {
+   "tag": "squeezed",
+   "n": 9,
+   "left": 2,
+   "right": 2,
+   "palm": 0,
+   "other": 5,
+   "pad_on_face": 4,
+   "left_on_face": 2,
+   "right_on_face": 2,
+   "pad_face_y": [
+    -0.02298078349355083,
+    0.027858997590042976
+   ],
+   "block_y": 0.0022638440132141113,
+   "finger_links": {
+    "robotiq_2f85_left_finger_link": [
+     0.45211851596832275,
+     -0.029447162523865693,
+     0.2699374258518219
+    ],
+    "robotiq_2f85_right_finger_link": [
+     0.45315927267074585,
+     0.034535348415374756,
+     0.2698163390159607
+    ]
+   },
+   "q": [
+    0.02534417062997818,
+    0.02400691621005535
+   ],
+   "tcp": [
+    0.4573504422466599,
+    0.008831245448485606,
+    0.25404045805223074
+   ],
+   "offcentre_mm": 0.175,
+   "max_depth_mm": 19.377,
+   "pad_depth_mm": 0.858,
+   "palm_depth_mm": 0.0,
+   "points": [
+    {
+     "link": "link5",
+     "face": "z+",
+     "world_y": 0.0008152259459976643,
+     "local": [
+      -0.00057,
+      -0.00252,
+      0.03531
+     ],
+     "depth": 0.0193770688768726
+    },
+    {
+     "link": "robotiq_2f85_left_finger_link",
+     "face": "y-",
+     "world_y": -0.02288825537071005,
+     "local": [
+      -0.01048,
+      -0.02457,
+      -0.02054
+     ],
+     "depth": 0.0008584665258635801
+    },
+    {
+     "link": "robotiq_2f85_left_finger_link",
+     "face": "y-",
+     "world_y": -0.02307331161639161,
+     "local": [
+      0.00952,
+      -0.02471,
+      -0.02049
+     ],
+     "depth": 0.0005880211151982508
+    },
+    {
+     "link": "robotiq_2f85_right_finger_link",
+     "face": "y+",
+     "world_y": 0.027766469467202196,
+     "local": [
+      0.01004,
+      0.02461,
+      0.03084
+     ],
+     "depth": 0.000780943045436053
+    },
+    {
+     "link": "robotiq_2f85_right_finger_link",
+     "face": "y+",
+     "world_y": 0.027951525712883753,
+     "local": [
+      -0.00996,
+      0.02474,
+      0.03078
+     ],
+     "depth": 0.0005104976347707237
+    },
+    {
+     "link": "world",
+     "face": "x-y+",
+     "world_y": 0.025959208488391554,
+     "local": [
+      -0.02464,
+      0.02488,
+      -0.04105
+     ],
+     "depth": 0.007943894725589935
+    },
+    {
+     "link": "world",
+     "face": "x+y+",
+     "world_y": 0.025830504036118123,
+     "local": [
+      0.02515,
+      0.02495,
+      -0.04333
+     ],
+     "depth": 0.0033539623954472776
+    },
+    {
+     "link": "world",
+     "face": "x-y-",
+     "world_y": -0.024017869759884243,
+     "local": [
+      -0.0247,
+      -0.0251,
+      -0.04179
+     ],
+     "depth": 0.006453705111259813
+    },
+    {
+     "link": "world",
+     "face": "x+y-",
+     "world_y": -0.024146574212157674,
+     "local": [
+      0.02509,
+      -0.02503,
+      -0.04407
+     ],
+     "depth": 0.0018637727811171552
+    }
+   ]
+  },
+  {
+   "tag": "lifted",
+   "n": 8,
+   "left": 4,
+   "right": 3,
+   "palm": 0,
+   "other": 1,
+   "pad_on_face": 7,
+   "left_on_face": 4,
+   "right_on_face": 3,
+   "pad_face_y": [
+    -0.022370231465094443,
+    0.027212495834102863
+   ],
+   "block_y": 0.002291145035997033,
+   "finger_links": {
+    "robotiq_2f85_left_finger_link": [
+     0.45331758260726934,
+     -0.02912352047860623,
+     0.48115974664688094
+    ],
+    "robotiq_2f85_right_finger_link": [
+     0.4542965888977051,
+     0.033911947160959244,
+     0.4810653626918792
+    ]
+   },
+   "q": [
+    0.024503590539097786,
+    0.02389954961836338
+   ],
+   "tcp": [
+    0.45097941471562675,
+    0.00826832631501065,
+    0.464805033358619
+   ],
+   "offcentre_mm": 0.13,
+   "max_depth_mm": 2.593,
+   "pad_depth_mm": 0.668,
+   "palm_depth_mm": 0.0,
+   "points": [
+    {
+     "link": "link5",
+     "face": "z+",
+     "world_y": 0.0022586848252827687,
+     "local": [
+      -0.00214,
+      -0.00028,
+      0.0437
+     ],
+     "depth": 0.0025926112460576134
+    },
+    {
+     "link": "robotiq_2f85_left_finger_link",
+     "face": "y-z+",
+     "world_y": -0.022168780256676426,
+     "local": [
+      -0.01066,
+      -0.0248,
+      0.045
+     ],
+     "depth": 0.00039810462686560227
+    },
+    {
+     "link": "robotiq_2f85_left_finger_link",
+     "face": "y-z+",
+     "world_y": -0.022425988993650198,
+     "local": [
+      0.00934,
+      -0.02486,
+      0.045
+     ],
+     "depth": 0.00028867909631260385
+    },
+    {
+     "link": "robotiq_2f85_left_finger_link",
+     "face": "y-",
+     "world_y": -0.02231497343215747,
+     "local": [
+      -0.00986,
+      -0.02469,
+      -0.00335
+     ],
+     "depth": 0.0006193853914434734
+    },
+    {
+     "link": "robotiq_2f85_left_finger_link",
+     "face": "y-",
+     "world_y": -0.02257118317789368,
+     "local": [
+      0.01013,
+      -0.02475,
+      -0.00302
+     ],
+     "depth": 0.0005084477687963902
+    },
+    {
+     "link": "robotiq_2f85_right_finger_link",
+     "face": "y+z+",
+     "world_y": 0.02734673082968503,
+     "local": [
+      -0.01039,
+      0.02472,
+      0.045
+     ],
+     "depth": 0.0005589715926166607
+    },
+    {
+     "link": "robotiq_2f85_right_finger_link",
+     "face": "y+z+",
+     "world_y": 0.02708952186662286,
+     "local": [
+      0.00961,
+      0.02467,
+      0.045
+     ],
+     "depth": 0.0006683959772971127
+    },
+    {
+     "link": "robotiq_2f85_right_finger_link",
+     "face": "y+",
+     "world_y": 0.027201234806000698,
+     "local": [
+      -0.00959,
+      0.02483,
+      -0.00312
+     ],
+     "depth": 0.0003387476676489401
+    }
+   ]
+  },
+  {
+   "tag": "carried",
+   "n": 4,
+   "left": 1,
+   "right": 2,
+   "palm": 0,
+   "other": 1,
+   "pad_on_face": 2,
+   "left_on_face": 0,
+   "right_on_face": 2,
+   "pad_face_y": [
+    null,
+    -0.39846267959271403
+   ],
+   "block_y": -0.42244264483451843,
+   "finger_links": {
+    "robotiq_2f85_left_finger_link": [
+     0.235848069190979,
+     -0.4650160074234008,
+     0.479107528924942
+    ],
+    "robotiq_2f85_right_finger_link": [
+     0.23683300614356995,
+     -0.3930997550487518,
+     0.4822904467582702
+    ]
+   },
+   "q": [
+    0.03188999742269516,
+    0.02546338364481926
+   ],
+   "tcp": [
+    0.24023029353571776,
+    -0.4203984238886839,
+    0.46493019040066375
+   ],
+   "offcentre_mm": null,
+   "max_depth_mm": 1.559,
+   "pad_depth_mm": 0.845,
+   "palm_depth_mm": 0.0,
+   "points": [
+    {
+     "link": "link5",
+     "face": "z+",
+     "world_y": -0.4232179581313239,
+     "local": [
+      0.00827,
+      0.00904,
+      0.0447
+     ],
+     "depth": 0.0005963349882205926
+    },
+    {
+     "link": "robotiq_2f85_left_finger_link",
+     "face": "z+",
+     "world_y": -0.45816425447663917,
+     "local": [
+      0.02422,
+      -0.02273,
+      0.04497
+     ],
+     "depth": 0.0015585040995992868
+    },
+    {
+     "link": "robotiq_2f85_right_finger_link",
+     "face": "y+z+",
+     "world_y": -0.39949436777343067,
+     "local": [
+      -0.01072,
+      0.02458,
+      0.045
+     ],
+     "depth": 0.0008446097418758241
+    },
+    {
+     "link": "robotiq_2f85_right_finger_link",
+     "face": "y+",
+     "world_y": -0.3974309914119974,
+     "local": [
+      -0.00869,
+      0.02461,
+      -0.00194
+     ],
+     "depth": 0.000771289710311844
+    }
+   ]
+  }
+ ],
+ "drift_m": 0.020546413488650467,
+ "placed": true,
+ "ok": false,
+ "final": [
+  0.2151441127061844,
+  -0.41813966631889343,
+  0.24491333961486816
+ ],
+ "hold_mechanism": "friction",
+ "interference_m": 0.01,
+ "grip_n_per_pad": 5.0,
+ "log": [
+  "[pick] start block_z=0.2449 fingers=(0.04249998927116394, 0.042500000447034836) control_drop=False ybias=0.0000",
+  "[pick] approach err=0.0005",
+  "[pick] descend  err=0.0088",
+  "[pick] at block: lateral=7.4mm vertical=-13.8mm",
+  "[pick] aim: pad axis is +4.9,-5.2 mm off the block (FK tool point says +7.3,+0.6 mm)",
+  "[pick] aim: pad axis is +3.1,-2.4 mm off the block (FK tool point says +7.3,+0.6 mm)",
+  "[pick] aim: pad axis is +1.5,-0.6 mm off the block (FK tool point says +7.3,+0.6 mm)",
+  "[pick] preclose -> 0.0260 (target 0.0260)",
+  "[pick] squeezed 10 mm interference -> fingers=(0.02534417062997818, 0.02400691621005535) (~5.00 N/pad)",
+  "[pick] pads after squeeze: L_face=+0.0253 R_face=-0.0240 | block_y=-0.0066 faces=[-0.0316,+0.0184] bite_L=-6.9mm bite_R=+7.6mm",
+  "[contact] squeezed n=9 L=2(2 on-face) R=2(2 on-face) palm=0 other=5 pad_depth=0.86mm palm_depth=0.00mm offcentre=+0.17mm",
+  "[contact]   link5                              face=z+ local=[-0.00057, -0.00252, 0.03531] depth=19.3771mm",
+  "[contact]   robotiq_2f85_left_finger_link      face=y- local=[-0.01048, -0.02457, -0.02054] depth=0.8585mm",
+  "[contact]   robotiq_2f85_left_finger_link      face=y- local=[0.00952, -0.02471, -0.02049] depth=0.5880mm",
+  "[contact]   robotiq_2f85_right_finger_link     face=y+ local=[0.01004, 0.02461, 0.03084] depth=0.7809mm",
+  "[contact]   robotiq_2f85_right_finger_link     face=y+ local=[-0.00996, 0.02474, 0.03078] depth=0.5105mm",
+  "[contact]   world                              face=x-y+ local=[-0.02464, 0.02488, -0.04105] depth=7.9439mm",
+  "[contact]   world                              face=x+y+ local=[0.02515, 0.02495, -0.04333] depth=3.3540mm",
+  "[contact]   world                              face=x-y- local=[-0.0247, -0.0251, -0.04179] depth=6.4537mm",
+  "[contact]   world                              face=x+y- local=[0.02509, -0.02503, -0.04407] depth=1.8638mm",
+  "[pick] lift     err=0.0004",
+  "[pick] lifted  block_z=0.4343  L_face=+0.0245 R_face=-0.0239 | block_y=-0.0060 faces=[-0.0310,+0.0190] bite_L=-5.5mm bite_R=+7.1mm",
+  "[contact] lifted n=8 L=4(4 on-face) R=3(3 on-face) palm=0 other=1 pad_depth=0.67mm palm_depth=0.00mm offcentre=+0.13mm",
+  "[contact]   link5                              face=z+ local=[-0.00214, -0.00028, 0.0437] depth=2.5926mm",
+  "[contact]   robotiq_2f85_left_finger_link      face=y-z+ local=[-0.01066, -0.0248, 0.045] depth=0.3981mm",
+  "[contact]   robotiq_2f85_left_finger_link      face=y-z+ local=[0.00934, -0.02486, 0.045] depth=0.2887mm",
+  "[contact]   robotiq_2f85_left_finger_link      face=y- local=[-0.00986, -0.02469, -0.00335] depth=0.6194mm",
+  "[contact]   robotiq_2f85_left_finger_link      face=y- local=[0.01013, -0.02475, -0.00302] depth=0.5084mm",
+  "[contact]   robotiq_2f85_right_finger_link     face=y+z+ local=[-0.01039, 0.02472, 0.045] depth=0.5590mm",
+  "[contact]   robotiq_2f85_right_finger_link     face=y+z+ local=[0.00961, 0.02467, 0.045] depth=0.6684mm",
+  "[contact]   robotiq_2f85_right_finger_link     face=y+ local=[-0.00959, 0.02483, -0.00312] depth=0.3387mm",
+  "[pick] carry    err=0.0004",
+  "[pick] carried block_z=0.4330  L_face=+0.0319 R_face=-0.0255 | block_y=-0.0020 faces=[-0.0270,+0.0230] bite_L=-8.9mm bite_R=+1.6mm",
+  "[contact] carried n=4 L=1(0 on-face) R=2(2 on-face) palm=0 other=1 pad_depth=0.84mm palm_depth=0.00mm offcentre=n/a",
+  "[contact]   link5                              face=z+ local=[0.00827, 0.00904, 0.0447] depth=0.5963mm",
+  "[contact]   robotiq_2f85_left_finger_link      face=z+ local=[0.02422, -0.02273, 0.04497] depth=1.5585mm",
+  "[contact]   robotiq_2f85_right_finger_link     face=y+z+ local=[-0.01072, 0.02458, 0.045] depth=0.8446mm",
+  "[contact]   robotiq_2f85_right_finger_link     face=y+ local=[-0.00869, 0.02461, -0.00194] depth=0.7713mm",
+  "[contact] VERDICT pinched=False palm_wedge=False max_pad_penetration=0.86mm",
+  "[pick] lower    err=0.0105",
+  "[pick] retreat  err=0.0004",
+  "[pick] RESULT carried=True pinched=False palm_wedge=False drift=0.0205m placed=True final=(0.215,-0.418,0.245) -> FAIL"
+ ]
+}

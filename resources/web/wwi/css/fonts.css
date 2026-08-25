@@ -1,0 +1,139 @@
+/*
+ * Fonts served to the OmniSim web viewer.
+ *
+ * OmniSim ships only libre fonts: Liberation (SIL OFL 1.1) and DejaVu (Bitstream Vera / DejaVu
+ * license). The Microsoft core fonts Webots used to bundle are proprietary and cannot be
+ * redistributed under Apache-2.0, so they were removed.
+ *
+ * Two groups of rules below:
+ *   1. the fonts actually shipped, under their real family names. The simulator sends the resolved
+ *      TTF filename with every label (see the #setLabel handler in omnisim.js), so these are the
+ *      family names the viewer asks for.
+ *   2. legacy-name aliases, so Webots-era content -- and this viewer's own chrome, whose
+ *      stylesheets still name Arial/Tahoma/Verdana -- renders the same on every platform instead
+ *      of falling back to whatever the OS happens to have installed.
+ *
+ * Liberation is metric-compatible with its Microsoft counterpart (identical advance widths):
+ *   Liberation Sans <-> Arial, Liberation Serif <-> Times New Roman, Liberation Mono <-> Courier New.
+ * The DejaVu mappings are style substitutions, not metric matches.
+ * Comic Sans MS and Impact have no libre substitute and are no longer available.
+ */
+
+/* --- shipped fonts ------------------------------------------------------- */
+
+@font-face {
+  font-family: "LiberationSans-Regular";
+  src: url("../fonts/LiberationSans-Regular.woff2");
+}
+
+@font-face {
+  font-family: "LiberationSans-Bold";
+  src: url("../fonts/LiberationSans-Bold.woff2");
+}
+
+@font-face {
+  font-family: "LiberationSans-Italic";
+  src: url("../fonts/LiberationSans-Italic.woff2");
+}
+
+@font-face {
+  font-family: "LiberationSerif-Regular";
+  src: url("../fonts/LiberationSerif-Regular.woff2");
+}
+
+@font-face {
+  font-family: "LiberationMono-Regular";
+  src: url("../fonts/LiberationMono-Regular.woff2");
+}
+
+@font-face {
+  font-family: "DejaVuSans";
+  src: url("../fonts/DejaVuSans.woff2");
+}
+
+@font-face {
+  font-family: "DejaVuSansMono";
+  src: url("../fonts/DejaVuSansMono.woff2");
+}
+
+@font-face {
+  font-family: "DejaVuSerif";
+  src: url("../fonts/DejaVuSerif.woff2");
+}
+
+@font-face {
+  font-family: "Raleway-Light";
+  src: url("../fonts/Raleway-Light.woff2");
+}
+
+/* Code2000 / Code2001 / Code2002 were served here until 2026-07-26 and have
+ * been removed for the same reason as the Microsoft core fonts named in the
+ * header: no licence text has ever accompanied them and their terms are
+ * unverified (NOTICE said so explicitly), so redistributing them under
+ * Apache-2.0 was not something this project could support. They were the
+ * glyph-fallback chain for characters missing from the chosen font; that role
+ * now belongs to DejaVu, which ships above with its licence beside it
+ * (resources/fonts/LICENSE-DejaVu.txt). See resources/fonts/fallback_fonts.txt,
+ * which the simulator reads to build the same chain for rendered labels. */
+
+/* --- legacy font-name aliases (see header) -------------------------------- */
+
+@font-face {
+  font-family: "Arial";
+  src: url("../fonts/LiberationSans-Regular.woff2");
+}
+
+@font-face {
+  font-family: "Ariali";
+  src: url("../fonts/LiberationSans-Italic.woff2");
+}
+
+@font-face {
+  font-family: "Arial Black";
+  src: url("../fonts/LiberationSans-Bold.woff2");
+}
+
+@font-face {
+  font-family: "Times New Roman";
+  src: url("../fonts/LiberationSerif-Regular.woff2");
+}
+
+@font-face {
+  font-family: "Courier New";
+  src: url("../fonts/LiberationMono-Regular.woff2");
+}
+
+@font-face {
+  font-family: "Lucida Console";
+  src: url("../fonts/DejaVuSansMono.woff2");
+}
+
+@font-face {
+  font-family: "Lucida Sans Unicode";
+  src: url("../fonts/DejaVuSans.woff2");
+}
+
+@font-face {
+  font-family: "Tahoma";
+  src: url("../fonts/DejaVuSans.woff2");
+}
+
+@font-face {
+  font-family: "Verdana";
+  src: url("../fonts/DejaVuSans.woff2");
+}
+
+@font-face {
+  font-family: "Trebuchet MS";
+  src: url("../fonts/LiberationSans-Regular.woff2");
+}
+
+@font-face {
+  font-family: "Georgia";
+  src: url("../fonts/DejaVuSerif.woff2");
+}
+
+@font-face {
+  font-family: "Palatino Linotype";
+  src: url("../fonts/DejaVuSerif.woff2");
+}

@@ -1,0 +1,141 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/factory/pallet/protos/WoodenPallet.proto
+# keywords: industrial/other
+# A configurable EUR-style wooden pallet: a top deck of `lathNumber` laths, three stringers and
+# three bottom deckboards. The origin is at the centre of its footprint, on the floor.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughPine.proto"
+
+PROTO WoodenPallet [
+  field SFVec3f    translation    0 0 0
+  field SFRotation rotation       0 0 1 0
+  field SFString   name           "wooden pallet"
+  field SFVec3f    size           1.2 0.8 0.14     # Defines the size of the pallet.
+  field SFInt32    lathNumber     6                # Defines the number of lath of the pallet.
+  field SFFloat    lathWidth      0.08             # Defines the width of one lath.
+  field SFFloat    mass           0                # Defines the mass of the pallet in kg. A value smaller or equal to 0 remove the physics of the pallet.
+  field SFBool     boundingObject TRUE             # Defines whether the bounding object should be enabled.
+  field SFBool     locked         FALSE            # Is `Solid.locked`.
+]
+{
+  %<
+    let size = fields.size.value;
+    if (size.x <= 0.0 || size.y <= 0.0 || size.z <= 0.0) {
+      size = fields.size.defaultValue;
+      console.error('\'size\' must contain strictly positive values. Value reset to (' +
+                    size.x + ', ' + size.y + ', ' + size.z + ').');
+    }
+
+    let lathNumber = fields.lathNumber.value;
+    if (lathNumber < 2) {
+      lathNumber = fields.lathNumber.defaultValue;
+      console.error('\'lathNumber\' must be greater than or equal to 2. Value reset to ' + lathNumber + '.');
+    }
+
+    let lathWidth = fields.lathWidth.value;
+    if (lathWidth <= 0.0 || lathWidth * lathNumber > size.x) {
+      lathWidth = Math.min(fields.lathWidth.defaultValue, size.x / lathNumber);
+      console.error('\'lathWidth\' must be positive and the laths must fit along the pallet. ' +
+                    'Value reset to ' + lathWidth + '.');
+    }
+
+    const deckThickness = 0.16 * size.z;                       // top and bottom boards
+    const blockHeight = size.z - 2.0 * deckThickness;          // stringers in between
+    const topZ = size.z - 0.5 * deckThickness;
+    const bottomZ = 0.5 * deckThickness;
+    const blockZ = deckThickness + 0.5 * blockHeight;
+
+    // top laths: evenly spread, first and last flush with the pallet edges
+    const span = size.x - lathWidth;
+    const pitch = span / (lathNumber - 1);
+
+    // stringers run along x, under each long edge and down the middle
+    const stringerY = 0.5 * (size.y - lathWidth);
+
+    // three bottom deckboards: both ends and the middle
+    const bottomX = 0.5 * (size.x - lathWidth);
+
+    const mass = fields.mass.value;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "wooden pallet"
+    children [
+      # ---- top deck ----
+      %< for (let i = 0; i < lathNumber; ++i) {
+           const lx = -0.5 * span + i * pitch;
+      >%
+      Pose {
+        translation %<= lx >% 0 %<= topZ >%
+        children [
+          %< if (i === 0) { >%
+          DEF WP_LATH Shape {
+            appearance DEF WP_PINE RoughPine {
+              colorOverride 0.85 0.72 0.55
+            }
+            geometry Box {
+              size %<= lathWidth >% %<= size.y >% %<= deckThickness >%
+            }
+          }
+          %< } else { >%
+          USE WP_LATH
+          %< } >%
+        ]
+      }
+      %< } >%
+      # ---- three stringers ----
+      %< for (let i = 0; i < 3; ++i) {
+           const sy = (i - 1) * stringerY;
+      >%
+      Pose {
+        translation 0 %<= sy >% %<= blockZ >%
+        children [
+          %< if (i === 0) { >%
+          DEF WP_STRINGER Shape {
+            appearance USE WP_PINE
+            geometry Box {
+              size %<= size.x >% %<= lathWidth >% %<= blockHeight >%
+            }
+          }
+          %< } else { >%
+          USE WP_STRINGER
+          %< } >%
+        ]
+      }
+      %< } >%
+      # ---- three bottom deckboards ----
+      %< for (let i = 0; i < 3; ++i) {
+           const bx = (i - 1) * bottomX;
+      >%
+      Pose {
+        translation %<= bx >% 0 %<= bottomZ >%
+        children [
+          USE WP_LATH
+        ]
+      }
+      %< } >%
+    ]
+    %< if (fields.boundingObject.value) { >%
+    boundingObject Pose {
+      translation 0 0 %<= 0.5 * size.z >%
+      children [
+        Box {
+          size %<= size.x >% %<= size.y >% %<= size.z >%
+        }
+      ]
+    }
+    %< } >%
+    %< if (mass > 0.0 && fields.boundingObject.value) { >%
+    physics Physics {
+      density -1
+      mass IS mass
+    }
+    %< } >%
+    locked IS locked
+  }
+}

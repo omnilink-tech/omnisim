@@ -1,0 +1,67 @@
+# The PBRAppearance node specifies the visual properties of geometry using a
+# physically based shading model and several textures to define material
+# properties.
+#
+# The last block of fields is the fabric / cloth extension. Every one of them is
+# inert at its default, so a PBRAppearance that does not mention them shades
+# exactly as it did before the extension existed:
+#
+#   sheen                  intensity of the Charlie sheen lobe (Estevez & Kulla
+#                          2017, ratified as glTF KHR_materials_sheen). 0 = off.
+#                          This is the switch that turns cloth shading on -- GGX
+#                          assumes mirror-like microfacets and structurally
+#                          cannot produce fabric's grazing-angle rim at ANY
+#                          roughness, which is why high roughness reads as clay
+#                          rather than as cloth.
+#   sheenColor             tint of that lobe. Left black it is derived as
+#                          sqrt(baseColor), which keeps the rim of a dyed fabric
+#                          the same hue as the fabric (Filament's convention).
+#   sheenRoughness         perceptual roughness of the sheen lobe, independent of
+#                          the base `roughness`.
+#   transmissionColor      thin-sheet transmission (backlit glow) tint. Black
+#                          disables it. The transmitted lobe is deliberately NOT
+#                          multiplied by N.L -- it arrives from behind.
+#   transmissionPower      forward-scattering exponent, higher = tighter halo.
+#   transmissionThickness  0 for a paper-thin sheet, 1 for an opaque one.
+#   diffuseWrap            energy-conserving wrapped diffuse, 0 = plain Lambert,
+#                          0.5 = Filament's cloth value. Removes the hard
+#                          terminator a thin fabric never has.
+#   specularAntiAliasing   variance of the derivative-based geometric specular
+#                          antialiasing filter. 0 = off, 0.15 = the
+#                          Filament-recommended value. Worth turning on for any
+#                          DEFORMING wrinkled surface, where specular aliasing
+#                          manifests as crawling fireflies rather than static
+#                          sparkle. It also filters the sheen roughness.
+#   doubleSided            reverse the shading frame on back faces, which glTF
+#                          2.0 makes a MUST for double-sided materials. Only
+#                          observable where back faces actually rasterise, i.e.
+#                          on geometry rendered with face culling off.
+
+PBRAppearance {
+  w3dField SFColor  baseColor             1 1 1
+  field    SFNode   baseColorMap          NULL
+  w3dField SFFloat  transparency          0
+  w3dField SFFloat  roughness             0
+  field    SFNode   roughnessMap          NULL
+  w3dField SFFloat  metalness             1
+  field    SFNode   metalnessMap          NULL
+  w3dField SFFloat  IBLStrength           1
+  field    SFNode   normalMap             NULL
+  w3dField SFFloat  normalMapFactor       1
+  field    SFNode   occlusionMap          NULL
+  w3dField SFFloat  occlusionMapStrength  1
+  w3dField SFColor  emissiveColor         0 0 0
+  field    SFNode   emissiveColorMap      NULL
+  w3dField SFFloat  emissiveIntensity     1
+  field    SFNode   textureTransform      NULL
+  field    SFFloat  sheen                 0
+  field    SFColor  sheenColor            0 0 0
+  field    SFFloat  sheenRoughness        0.3
+  field    SFColor  transmissionColor     0 0 0
+  field    SFFloat  transmissionPower     12
+  field    SFFloat  transmissionThickness 0.5
+  field    SFFloat  diffuseWrap           0
+  field    SFFloat  specularAntiAliasing  0
+  field    SFBool   doubleSided           FALSE
+  field    SFString name                  "PBRAppearance"
+}

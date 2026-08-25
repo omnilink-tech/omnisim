@@ -1,0 +1,218 @@
+{
+  "schema": "agenticsimbench/build-scale-gates/v1",
+  "suite": "agenticsimbench/v1",
+  "comparators": [
+    "omnisim",
+    "isaac",
+    "gazebo",
+    "webots",
+    "genesis"
+  ],
+  "levels": [
+    10,
+    25,
+    50,
+    100,
+    250
+  ],
+  "summary": {
+    "cells_total": 25,
+    "cells_ready": 8,
+    "cells_blocked": 17,
+    "scored_model_rows": 0,
+    "full_gate": "BLOCKED"
+  },
+  "rows": [
+    {
+      "sim": "omnisim",
+      "level": 10,
+      "state": "READY",
+      "detail": "live oracle PASS and null FAIL",
+      "evidence": [
+        "preregister/v1/build_scale_gate_records/omnisim_10_2026-08-13.json"
+      ]
+    },
+    {
+      "sim": "omnisim",
+      "level": 25,
+      "state": "READY",
+      "detail": "live oracle PASS and null FAIL",
+      "evidence": [
+        "preregister/v1/build_scale_gate_records/omnisim_25_2026-08-13.json"
+      ]
+    },
+    {
+      "sim": "omnisim",
+      "level": 50,
+      "state": "READY",
+      "detail": "live oracle PASS and null FAIL",
+      "evidence": [
+        "preregister/v1/build_scale_gate_records/omnisim_50_2026-08-13.json"
+      ]
+    },
+    {
+      "sim": "omnisim",
+      "level": 100,
+      "state": "READY",
+      "detail": "live oracle PASS and null FAIL",
+      "evidence": [
+        "preregister/v1/build_scale_gate_records/omnisim_100_2026-08-13.json"
+      ]
+    },
+    {
+      "sim": "omnisim",
+      "level": 250,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "isaac",
+      "level": 10,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "isaac",
+      "level": 25,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "isaac",
+      "level": 50,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "isaac",
+      "level": 100,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "isaac",
+      "level": 250,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "gazebo",
+      "level": 10,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "gazebo",
+      "level": 25,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "gazebo",
+      "level": 50,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "gazebo",
+      "level": 100,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "gazebo",
+      "level": 250,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "webots",
+      "level": 10,
+      "state": "READY",
+      "detail": "live oracle PASS and null FAIL",
+      "evidence": [
+        "preregister/v1/build_scale_gate_records/webots_10_2026-08-13.json"
+      ]
+    },
+    {
+      "sim": "webots",
+      "level": 25,
+      "state": "READY",
+      "detail": "live oracle PASS and null FAIL",
+      "evidence": [
+        "preregister/v1/build_scale_gate_records/webots_25_2026-08-13.json"
+      ]
+    },
+    {
+      "sim": "webots",
+      "level": 50,
+      "state": "READY",
+      "detail": "live oracle PASS and null FAIL",
+      "evidence": [
+        "preregister/v1/build_scale_gate_records/webots_50_2026-08-13.json"
+      ]
+    },
+    {
+      "sim": "webots",
+      "level": 100,
+      "state": "READY",
+      "detail": "live oracle PASS and null FAIL",
+      "evidence": [
+        "preregister/v1/build_scale_gate_records/webots_100_2026-08-13.json"
+      ]
+    },
+    {
+      "sim": "webots",
+      "level": 250,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "genesis",
+      "level": 10,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "genesis",
+      "level": 25,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "genesis",
+      "level": 50,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "genesis",
+      "level": 100,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    },
+    {
+      "sim": "genesis",
+      "level": 250,
+      "state": "BLOCKED",
+      "detail": "no hash-bound live gate record",
+      "evidence": []
+    }
+  ]
+}

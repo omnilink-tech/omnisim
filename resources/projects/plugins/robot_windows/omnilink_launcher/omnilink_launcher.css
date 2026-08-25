@@ -1,0 +1,344 @@
+/* OmniSim Launcher — side-panel demo gallery.
+ *
+ * Palette per the OmniLink brand: black background, cream text, mimosa
+ * accent. The launcher robot side-window docks to the right of the 3D
+ * view by default; this CSS sizes for ~360 px wide. */
+
+:root {
+  --bg:           #0b0c0f;
+  --bg-elev:     #14161b;
+  --bg-card:     #1a1d24;
+  --bg-card-hi:  #232732;
+  --border:      #2b2f3a;
+  --text:        #f4ecd8;
+  --text-dim:    #b8b2a0;
+  --text-faint:  #6f6b5c;
+  --mimosa:      #f5d249;
+  --mimosa-soft: #c7a838;
+  --success:     #a3d977;
+  --error:       #f17b6c;
+  --radius:      8px;
+  --radius-sm:   5px;
+  --pad:         12px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+               Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+#launcher {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg);
+}
+
+/* ── Header ──────────────────────────────────────────────────────── */
+#lr-header {
+  padding: 14px var(--pad) 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+}
+#lr-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.lr-orb {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--mimosa), var(--mimosa-soft) 70%, #6a5a1d);
+  box-shadow: 0 0 8px rgba(245, 210, 73, 0.35);
+  transform: translateY(1px);
+}
+.lr-brand-text {
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+.lr-brand-sub {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+#lr-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.lr-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #555;
+  transition: background 0.2s;
+}
+.lr-dot--idle      { background: #555; }
+.lr-dot--connected { background: var(--success); box-shadow: 0 0 5px rgba(163, 217, 119, 0.5); }
+.lr-dot--loading   { background: var(--mimosa); box-shadow: 0 0 5px rgba(245, 210, 73, 0.5); animation: lr-pulse 1.4s ease-in-out infinite; }
+.lr-dot--error     { background: var(--error); box-shadow: 0 0 5px rgba(241, 123, 108, 0.5); }
+@keyframes lr-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+/* ── Search ──────────────────────────────────────────────────────── */
+#lr-search-row {
+  padding: 10px var(--pad) 6px;
+  flex-shrink: 0;
+}
+#lr-search {
+  width: 100%;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12px;
+  background: var(--bg-elev);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.15s;
+}
+#lr-search:focus { border-color: var(--mimosa-soft); }
+#lr-search::placeholder { color: var(--text-faint); }
+
+/* ── Tabs ───────────────────────────────────────────────────────── */
+#lr-tabs {
+  padding: 6px var(--pad) 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.lr-tab {
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+.lr-tab:hover {
+  background: var(--bg-card-hi);
+  color: var(--text);
+}
+.lr-tab.is-active {
+  background: var(--mimosa);
+  color: #2a230a;
+  border-color: var(--mimosa);
+}
+.lr-tab .lr-tab-count {
+  margin-left: 5px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* ── Gallery ────────────────────────────────────────────────────── */
+#lr-gallery {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px var(--pad);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#lr-gallery::-webkit-scrollbar       { width: 8px; }
+#lr-gallery::-webkit-scrollbar-track { background: transparent; }
+#lr-gallery::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+#lr-gallery::-webkit-scrollbar-thumb:hover { background: #3a3e4a; }
+
+.lr-cat {
+  margin-bottom: 4px;
+}
+.lr-cat-head {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 8px 2px 6px;
+}
+.lr-cat-blurb {
+  font-size: 11px;
+  color: var(--text-faint);
+  padding: 0 2px 6px;
+  font-style: italic;
+}
+
+.lr-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background 0.12s, border-color 0.12s, transform 0.08s;
+  cursor: default;
+}
+.lr-card:hover {
+  background: var(--bg-card-hi);
+  border-color: var(--mimosa-soft);
+}
+.lr-card-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+.lr-card-blurb {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.lr-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+.lr-card-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lr-launch {
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--mimosa);
+  color: #2a230a;
+  border: 1px solid var(--mimosa);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, transform 0.06s;
+  letter-spacing: 0.02em;
+}
+.lr-launch:hover  { background: #ffe26a; }
+.lr-launch:active { transform: translateY(1px); }
+.lr-launch:disabled {
+  opacity: 0.5;
+  cursor: wait;
+  background: var(--mimosa-soft);
+}
+
+/* ── Terminal-only demos (G1 / policy BATON) ─────────────────────────
+ * These need a deploy env a shell script sets, so they cannot be launched
+ * in-app. The card keeps the same shape; the launch button is disabled and
+ * the exact command is offered for copy/paste. */
+.lr-card--terminal:hover {
+  border-color: var(--border);   /* no "clickable" affordance on hover */
+}
+.lr-badge {
+  margin-left: 7px;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--mimosa);
+  background: rgba(245, 210, 73, 0.10);
+  border: 1px solid rgba(245, 210, 73, 0.35);
+  border-radius: 3px;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+.lr-launch--terminal {
+  background: transparent;
+  color: var(--text-faint);
+  border: 1px dashed var(--border);
+  cursor: not-allowed;
+  font-weight: 500;
+}
+/* The generic :disabled rule below is for the transient "Loading…" state;
+ * don't let it grey out / re-colour the terminal button. */
+.lr-launch--terminal:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  background: transparent;
+}
+.lr-cmd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 6px 8px;
+  background: #0d0f13;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.lr-cmd-text {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--mimosa);
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+  user-select: all;
+}
+.lr-cmd-text::-webkit-scrollbar { height: 0; }
+.lr-copy {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--bg-card-hi);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.lr-copy:hover { background: var(--border); color: var(--text); }
+.lr-copy.is-copied { color: var(--success); border-color: var(--success); }
+
+.lr-empty {
+  text-align: center;
+  padding: 30px 12px;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* ── Footer ────────────────────────────────────────────────────── */
+#lr-footer {
+  padding: 8px var(--pad);
+  border-top: 1px solid var(--border);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  text-align: center;
+  flex-shrink: 0;
+}
+.lr-foot-text b { color: var(--text-dim); font-weight: 600; }

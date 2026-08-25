@@ -1,0 +1,73 @@
+{
+ "schema": 2,
+ "name": "go2_turn",
+ "title": "Go2 turn-in-place (SHADOWING: certified differential-stride turn ghost + certified champion)",
+ "class": "quadruped",
+ "robots": [
+  "go2"
+ ],
+ "kind": "rl",
+ "method": "shadowing",
+ "status": "verified",
+ "motion_class": "cyclic",
+ "summary": "The missing third specialist of the quadruped BATON story: a Go2 turning in place by SHADOWING a certified turn ghost. The reference is the trot gait model's own yaw-rate steering (tangential stance sweep, self-tested reachable) at vx=0 -- outer and inner legs sweep equal-magnitude OPPOSITE strides, which is the textbook differential-stride turn. Commanded 0.8 rad/s; the plant ACHIEVES 0.5895 rad/s (33.8 deg/s) open-loop under the bare deploy PD, inside the conservative 30-45 deg/s design band. STATUS: VERIFIED 2026-07-17. The ladder: 95.5% (zero-hook) -> 97.5% (+400 iters) -> 99.2% (WZ_FIXED cert arm, >= the 99% bar, vx -0.003 = true turn-in-place), and the live BATON walk->turn->walk exam ran the same evening: 3/3 headless, zero falls, ~169 deg turn-in-place, both 'ONNX loaded:' asserted. Free-standing -- quads carry no harness.",
+ "ghost": {
+  "lut": "projects/policies/ghosts/go2/go2_turn_ghost_lut.json",
+  "format": "json lut (nb=64 bins, 12 joints, freq 1.8 Hz, vx~0, wz=0.8 cmd / wz_meas=0.5895 achieved)",
+  "provenance": "recorded/achieved (doctrine class 1a via the ANALYTIC source): the go2_trot_gait model at vx=0, wz=0.8 rad/s executed OPEN-LOOP and deterministically through the bare deploy-grade PD on the deploy-matched MJCF dump (go2_newton.xml, kp=250, 16 ms x 8 substeps), steady segment (t>=3 s, 16.2 cycles) phase-folded at 64 bins and harmonic-smoothed. The folded track is the plant's ACHIEVED response, not the reference -- no turn champion exists to record, and the walk champion has never seen a non-zero wz command, so the builder refuses --wz with --source champion.",
+  "builder": "projects/policies/research/shadowing/build_quad_shadow_ghost.py  (--robot go2 --source analytic --vx 0.0 --wz 0.8 --T 12)",
+  "validator": "PASS (stamped into the lut, 2026-07-17: all 9 gates ok against the REAL go2.urdf; T0.leg-symmetry is turn-aware -- a lut that declares wz!=0 is L/R-antisymmetric BY DESIGN, the mirror of a +wz turn is a -wz turn, and only the amp-ratio balance is still checked, 0.86 vs the 0.6 floor). Builder gates in the lut's `gates` key: lut_replay (bare deploy PD tracks the folded lut: steady wz +0.441 of source +0.439 rad/s at wz=0.6 probe / +0.592 of +0.590 at the shipped 0.8, closure drift p95 14.0 mm vs the 20 mm gate, peak torque 40%, no fall), construction_reroll (peak torque 59%, saturated 0/750, no fall), support_fwp_certificate_replay (PASS, base_frac95 0.0).",
+  "corridor_law": "ghost peak |cmd - q| = 0.111 rad at kp=250 -- UNDER the 0.15 corridor, so unlike the walk ghost (0.217) this reference is trackable by the corridor even without feedforward. GHOST_FF=1 is still declared and used for parity with the walk skill (same decode on both BATON legs) and to keep the residual budget for corrections."
+ },
+ "policy": {
+  "checkpoint": "projects/policies/research/inference/policies/gpu_go2_turn_main/policy.onnx",
+  "checkpoint_status": "CERTIFIED 2026-07-17: WZ_FIXED cert arm (seed 2, warm from the zero-hook lineage), in-engine eval never_fell 99.2% (>= 99% bar), vx -0.003 m/s (true turn-in-place). Live BATON exam PASSED the same day: walk:10,turn:5,walk:10 ran 3/3 with ZERO falls -- turn leg holds position (x drift ~0.01m, y ~0.15m < 0.3m bar) and produces a ~169 deg heading change (5s at the lut's wz_meas 0.5895 rad/s; evidenced by the third leg walking BACK along -x at ~0.4 m/s). Runs are deterministic (identical traces). Logs: _scratch/wtw_run6.log, wtw_verify_r2/r3.log.",
+  "arch": "residual-ppo (corridor-bounded around the turn ghost)",
+  "obs": {
+   "family": "quad_go2",
+   "dim": 48,
+   "notes": "UNCHANGED layout. Slot 48 (wz_cmd) stays 0.0 in the PRIMARY (zero-hook) training plan -- matching what the baton host already feeds -- the turn is carried entirely by the ghost corridor centre + gmatch. The UPGRADE plan (QUAD_WZ_FIXED hook) pins the slot to wz_meas (0.5895) and adds the yaw-tracking reward; the deploy wz-obs hook landed 5b64a27d. The certified champion is the UPGRADE-path arm. See TRAIN_PLAN.md."
+  },
+  "action": {
+   "dim": 12,
+   "space": "legs",
+   "decode": "ghost(phase) + a * QUAD_RES_SCALE (+ ghost feedforward)"
+  },
+  "warmstart": "projects/policies/research/inference/policies/gpu_go2_shadow_r2_main/policy.pt -- the r2 shadow champion (0.415 m/s, 99.7% never-fell), the best Go2 policy in the repo. Same obs/action contract; the turn ghost replaces the walk lut as corridor centre. DISCLOSURE: a champion fine-tuned from the walker is an upgrade experiment, not a from-scratch method claim."
+ },
+ "baton": {
+  "blend": "cyclic",
+  "mode": "turn",
+  "attractor": "locomotion",
+  "vx": "0",
+  "notes": "Phase-clocked and periodic at the SAME clock as the walk ghost (nb=64, freq=1.8, same joints order -- shape parity REQUIRED, BATON blends element-wise), so it is a legal cyclic BATON leg. Powers the quad walk->turn->walk sequence (sequences/go2_walk_turn_walk.json, VERIFIED 2026-07-17, 3/3 zero falls). Both host hooks landed the same day: the gait clock advances in mode 'turn' (8dcb293d) and the wz obs slot carries the morph-blended wz_meas (5b64a27d)."
+ },
+ "train": {
+  "trainer": "projects/policies/training/quad_walk_recipe.py",
+  "launcher": "projects/policies/training/run_quad_walk_rl.sh",
+  "status": "certified 2026-07-17 (in-engine, train == deploy)",
+  "env": "QUAD_ROBOT=go2 QUAD_GHOST=projects/policies/ghosts/go2/go2_turn_ghost_lut.json QUAD_GHOST_FF=1 QUAD_W_GMATCH=2.0 QUAD_RES_SCALE=0.15 QUAD_VX_TARGET=0.0 QUAD_YAW=0.0 QUAD_ENVS=16384 QUAD_FAST_RESET=1 MPC_NJMAX=64 MPC_NCONMAX=64 QUAD_ITERS=400 QUAD_WARMSTART=projects/policies/research/inference/policies/gpu_go2_shadow_r2_main/policy.pt RES_POLICY=projects/policies/research/inference/policies/gpu_go2_turn_main/policy.pt",
+  "notes": "PRIMARY PLAN IS ZERO-HOOK (see TRAIN_PLAN.md in this dir): every knob above EXISTS in quad_walk_recipe.py today. QUAD_YAW=0.0 is REQUIRED, not cosmetic -- the default -0.5 penalises |wz - wz_cmd| with wz_cmd=0, i.e. it would actively fight the turn the ghost commands. QUAD_VX_TARGET=0 makes the velocity reward pull vx to 0 (turn-IN-PLACE); QUAD_LAT already penalises drift; the turn itself is carried by the corridor centre (the turn lut) + QUAD_W_GMATCH. UPGRADE plan (only if the primary under-rotates): the QUAD_WZ_FIXED recipe hook + QUAD_YAW=-1.0, spec'd verbatim in TRAIN_PLAN.md. Ghost mode is opt-in, so legacy training stays byte-identical."
+ },
+ "deploy": {
+  "run": "world",
+  "world": "projects/policies/research/worlds/go2_baton_deploy.omniworld",
+  "controller": "projects/policies/research/controllers/go2_baton_deploy/go2_baton_deploy.py",
+  "launcher": "scripts/dev/run_go2_baton_deploy.sh",
+  "needed_hooks": [
+   "DONE (8dcb293d): go2_baton_deploy.py gait clock now advances for mode 'turn' as well as 'walk'.",
+   "DONE (5b64a27d): go2_baton_deploy.py obs slot 47 carries the morph-blended `wz_meas` of the active specialists (walk/stand luts declare none -> 0.0, byte-identical walk-only path; turn lut declares 0.5895).",
+   "go2_baton_deploy.py specialist entries with a non-empty checkpoint already load ONNX via BATON.setup -- no hook needed there."
+  ],
+  "notes": "Same world/scene/physics as the verified walk->stand->walk demo; only the schedule and the two obs/clock hooks differ. The support gate needs NO change: the turn gait shares duty=0.6/freq=1.8 phase structure, so the four-foot-support windows fall at the same phases the gate already computes."
+ },
+ "verification": {
+  "status": "VERIFIED 2026-07-17: (a) durability bar crossed -- 99.2% never_fell in-engine (24s window, K=16384); (b) live BATON walk->turn->walk exam 3/3 zero falls, both ONNX loads asserted, turn-in-place confirmed (position pinned during the turn leg, heading reversed ~169deg, post-turn walking 10.9-13m on the new heading). NO HARNESS -- quads carry none. Yaw rate is inferred from the heading change over the 5s leg (~0.59 rad/s), matching the lut's declared wz_meas; a direct yaw telemetry channel in the deploy log is a nice-to-have follow-up."
+ },
+ "doc": "docs/developer/shadowing.md",
+ "related": [
+  "go2_shadow_walk",
+  "go2_stand",
+  "g1_turn_in_place"
+ ]
+}

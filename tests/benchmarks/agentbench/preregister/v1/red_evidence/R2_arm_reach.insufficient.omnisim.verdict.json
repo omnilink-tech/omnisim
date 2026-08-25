@@ -1,0 +1,293 @@
+{
+  "schema": "agenticsimbench/red-evidence/v1",
+  "suite": "agenticsimbench/v1",
+  "task": "R2_arm_reach",
+  "sim": "omnisim",
+  "fixture": "insufficient",
+  "fixture_kind": "real_supervisor_link_fixture",
+  "fixture_transforms": [
+    "removed five of six joints"
+  ],
+  "expected_failures": [
+    "R2.2",
+    "R2.3",
+    "R2.4",
+    "R2.5",
+    "R2.6"
+  ],
+  "observed_failures": [
+    "R2.2",
+    "R2.3",
+    "R2.4",
+    "R2.5",
+    "R2.6"
+  ],
+  "outcome": "FAIL",
+  "qualifies_as_non_null_red_evidence": true,
+  "purpose": {
+    "R2.2": "the robot carries one joint rather than the required six",
+    "R2.3": "there is no qualifying arm whose target sequence can be measured",
+    "R2.4": "there is no qualifying arm whose actuation can be measured",
+    "R2.5": "there is no qualifying arm whose clearance can be measured",
+    "R2.6": "there is no qualifying arm whose completion can be measured"
+  },
+  "generated_utc": "2026-08-13T16:58:40.470176+00:00",
+  "engine_binary": {
+    "path": "msys64\\mingw64\\bin\\omnisim-bin.exe",
+    "sha256": "cbd80861c9f0d314f9760a39abc0f686ce161cac74337f80c41f5e2b5e0b836d"
+  },
+  "sources": [
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\fixtures\\r2\\r2_kinematic.wbt",
+      "sha256": "77430defcba0649a5ebfe40a6fb690970205fc5931bb5e51550ae819da6a5f0f"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\run_r2_red_fixture.py",
+      "sha256": "f968fee25f9845ce2fbe21b294e284d49664880fe2ca4ce4b0c115a10b2fa27b"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\r2_core_v1.py",
+      "sha256": "f27f53eaf04fd7d3951339a9389fb33eb4f7d2862f6c732b1f38dc6014123c08"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\graders\\r2_core.py",
+      "sha256": "2eb147cae92685b5716221a1a8b84a703e3783d8af8cba30d9b711fab9e70858"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\fixtures\\r2\\controllers\\r2_fixture\\r2_fixture.py",
+      "sha256": "83b965bc39b30d6ecc1fc97314f4cd6affe6bc66c4e22063e0f26a9f51ef95d9"
+    }
+  ],
+  "staged_world_sha256": "1dae69ddb94ff959d7cdcb9183aa6259e0805dab4dfec0fb69d83bba1dd0d466",
+  "verdict": {
+    "task": "R2_arm_reach",
+    "outcome": "FAIL",
+    "progress": 3,
+    "progress_name": "artifact_runs",
+    "assertions": {
+      "R2.1": {
+        "ok": true,
+        "what": "the run is clean",
+        "measured": {
+          "exit code": 0,
+          "ERROR: lines": 0,
+          "driver reached a clean quit": true
+        },
+        "threshold": {
+          "exit code": 0,
+          "ERROR: lines": 0
+        },
+        "detail": "",
+        "basis": "mixed",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R2.2": {
+        "ok": false,
+        "what": "there is one arm with at least six joints",
+        "measured": {
+          "robot-class bodies": 1,
+          "joints per robot body": [
+            1
+          ],
+          "of those, with >= 6 joints": 0,
+          "names": [
+            "arm"
+          ]
+        },
+        "threshold": {
+          "bodies with >= 6 joints": 1
+        },
+        "detail": "the neutral evidence carries a JOINT COUNT and nothing finer -- both recorders count hinge/slider/ball joints in the subtree without distinguishing motorised from passive or revolute from prismatic, so 'six actuated revolute joints' is asserted as 'six joints' and the gap is stated rather than overclaimed",
+        "basis": "mixed",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R2.3": {
+        "ok": false,
+        "what": "the three targets are reached, in order, and held",
+        "measured": null,
+        "threshold": null,
+        "detail": "no single arm to measure (R2.2)",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R2.4": {
+        "ok": false,
+        "what": "it was actuated, not teleported",
+        "measured": null,
+        "threshold": null,
+        "detail": "no single arm to measure (R2.2)",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R2.5": {
+        "ok": false,
+        "what": "nothing went into the ground",
+        "measured": null,
+        "threshold": null,
+        "detail": "no single arm to measure (R2.2)",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R2.6": {
+        "ok": false,
+        "what": "the sequence finished inside the deadline",
+        "measured": null,
+        "threshold": null,
+        "detail": "no single arm to measure (R2.2)",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      }
+    },
+    "n_pass": 1,
+    "n_total": 6,
+    "failed_assertion": "R2.2",
+    "failed_assertions": [
+      "R2.2",
+      "R2.3",
+      "R2.4",
+      "R2.5",
+      "R2.6"
+    ],
+    "self_verified": false,
+    "attribution": {
+      "backend": "newton",
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "degraded": false,
+      "finalised": true,
+      "source": "<log>.newton.json sidecar"
+    },
+    "measurements": {
+      "phase_b": {
+        "world": "O:\\omnisim\\.agentbench-v1-red-work\\r2-insufficient\\project\\worlds\\arm_reach.wbt",
+        "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\r2-insufficient\\project\\worlds\\_agentbench_phaseB_arm_reach.wbt",
+        "rc": 0,
+        "wall_s": 30.635884800001804,
+        "timed_out": false,
+        "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\r2-insufficient\\phaseB\\phaseB_engine.log",
+        "sidecar": {
+          "backend": "newton",
+          "degraded": false,
+          "finalised": true,
+          "runtime": {
+            "device": "cpu",
+            "mujoco": "3.8.1",
+            "mujoco_warp": "3.8.0.3",
+            "newton": "1.2.0",
+            "warp": "1.13.0"
+          },
+          "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+          "present": true
+        },
+        "recorder_complete": true,
+        "rows": 2189,
+        "n_robots": 1,
+        "n_tracks": 2,
+        "n_link_tracks": 1,
+        "n_solid_tracks": 0,
+        "links_truncated": false,
+        "scene_scan": {
+          "supported": true,
+          "cap": 128,
+          "found": 1,
+          "bounded": 1,
+          "truncated": false
+        },
+        "run_contacts": {
+          "supported": true,
+          "every_n_steps": 8,
+          "steps_sampled": 274,
+          "total_observed": 0,
+          "distinct_named": 0,
+          "unpaired": 0,
+          "truncated": false,
+          "error": null
+        },
+        "run_contact_pairs": [],
+        "attempts_used": 1,
+        "launch_backend_env": {},
+        "tamper": [],
+        "error": null
+      }
+    },
+    "artifacts": {
+      "world": "O:\\omnisim\\.agentbench-v1-red-work\\r2-insufficient\\project\\worlds\\arm_reach.wbt"
+    },
+    "notes": [],
+    "basis": {
+      "core-physical": [
+        "R2.3",
+        "R2.4",
+        "R2.5",
+        "R2.6"
+      ],
+      "mixed": [
+        "R2.1",
+        "R2.2"
+      ]
+    },
+    "vacuous_assertions": {}
+  },
+  "run": {
+    "world": "O:\\omnisim\\.agentbench-v1-red-work\\r2-insufficient\\project\\worlds\\arm_reach.wbt",
+    "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\r2-insufficient\\project\\worlds\\_agentbench_phaseB_arm_reach.wbt",
+    "rc": 0,
+    "wall_s": 30.635884800001804,
+    "timed_out": false,
+    "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\r2-insufficient\\phaseB\\phaseB_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "present": true
+    },
+    "recorder_complete": true,
+    "rows": 2189,
+    "n_robots": 1,
+    "n_tracks": 2,
+    "n_link_tracks": 1,
+    "n_solid_tracks": 0,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 1,
+      "bounded": 1,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 8,
+      "steps_sampled": 274,
+      "total_observed": 0,
+      "distinct_named": 0,
+      "unpaired": 0,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  }
+}

@@ -1,0 +1,47 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# Test-only arena whose `floorAppearance` is a template field, so that changing it forces the PROTO to regenerate.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+
+PROTO TestRectangleArena [
+  field SFNode     floorAppearance Parquetry { type "chequered" }  # Defines the appearance of the floor.
+]
+{
+  # This PROTO backs the `modify_proto_template_field` regression test.  The test
+  # points an infra-red DistanceSensor at the arena's surface, edits the texture URL
+  # of the appearance node it passed in, and asserts that (a) the PROTO regenerates,
+  # (b) the sensor sees the new surface, and (c) editing the regenerated node again
+  # does not crash.
+  #
+  # Two things therefore MUST NOT drift, or the assertions move with them:
+  #   * the surface stays exactly where it is -- one 1 x 1 m Floor, laid in the plane
+  #     the sensor is aimed at (the -90 deg rotation about x stands the Floor's quad
+  #     up in the world xz plane), because the asserted sensor readings are a function
+  #     of the range to it;
+  #   * 'floorAppearance' is READ inside the template block below.  That read is the
+  #     whole point: it is what makes the field a TEMPLATE field, which is what makes
+  #     the engine regenerate the PROTO when the field's node is edited.  Bind it with
+  #     a bare IS and nothing regenerates and the test silently stops testing.
+  %<
+    const floorAppearance = fields.floorAppearance.value;
+    if (floorAppearance === null)
+      console.error('TestRectangleArena: \'floorAppearance\' is NULL, the floor will be drawn with the default material.');
+
+    const size = 1.0;
+    const tileSize = 0.5;
+  >%
+  Solid {
+    children [
+      Floor {
+        rotation 1 0 0 -1.5708
+        size %<= size >% %<= size >%
+        tileSize %<= tileSize >% %<= tileSize >%
+        appearance IS floorAppearance
+      }
+    ]
+  }
+}

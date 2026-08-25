@@ -1,0 +1,29 @@
+# Commits that changed a great many lines without changing any behaviour.
+#
+# `git blame` attributes a line to whoever touched it last, so a tree-wide
+# mechanical sweep buries the real authorship of everything it touched. Listing
+# those commits here makes blame skip straight past them to the change that
+# actually wrote the logic.
+#
+# Enable it once per clone (scripts/dev/setup_hooks.sh does this for you):
+#
+#     git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub honours this file automatically in its blame view.
+#
+# Only add a commit whose diff is provably behaviour-neutral: a rename, a
+# reformat, a header sweep. Never add a commit that also changed logic -- doing
+# so hides the logic change from blame, which is exactly the harm this file
+# exists to prevent.
+
+# identity: flip 1,500 legacy #include <webots/...> to the canonical <omnisim/...>
+49374843ea97ad5d5faf4014ec7ce62c39e438c4
+
+# identity: the corpus speaks OmniSim -- 1,127 worlds and PROTOs flip to the #OMNISIM header
+9484a06566a650aa31800055080ef28cfff614c1
+
+# identity: the engine's classes are Om*, not Wb* -- Phase C (754 files, 39,914 identifiers)
+7a1efd58df4967a9a710f35e76038508ed475c8f
+
+# docs: follow the engine rename (1,577 prose references)
+3d1f885140f487751aad4054a91542d5366921d4

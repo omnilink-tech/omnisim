@@ -1,0 +1,43 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/protos/protos/NestedParameterTransformNode.proto"
+EXTERNPROTO "omnisim://tests/protos/protos/SolidWithExtensionSlot.proto"
+EXTERNPROTO "omnisim://tests/protos/protos/TemplateSlotContainer.proto"
+EXTERNPROTO "omnisim://tests/protos/protos/ProceduralSolidWithPhysics.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+}
+TestSuiteSupervisor {
+}
+Robot {
+  children [
+    TestSuiteEmitter {
+    }
+  ]
+  controller "nested_parameter_transform_node"
+  supervisor TRUE
+}
+DEF PARENT NestedParameterTransformNode {
+  translation 1 0 0
+}
+Group {
+  children [
+    SolidWithExtensionSlot {
+      translation 0.2 0.5 0
+      extensionSlot [
+        TemplateSlotContainer {
+          translation 0.25 0 0.03
+          children [
+            DEF PARAMETER ProceduralSolidWithPhysics {
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

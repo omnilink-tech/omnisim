@@ -1,0 +1,66 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "oracle_c2_omnisim",
+  "description": "C2 fall_through_floor oracle (omnisim): diagnose the missing collision surface, repair it in place, and prove the crate now rests on the floor with a measured re-run.",
+  "minimality": [
+    "read + write + one proof run = 3 calls. The proof run is demanded by the prompt ('prove it stays up'); --fail-on-runaway is the installed simulator's own physical-verdict lane, so the proof costs one call.",
+    "shell+tools alternative: harness start + load + step + contacts read = 4+ calls and still needs the file edit. Not cheaper."
+  ],
+  "turns": [
+    {
+      "text": "Reading the world to see why the crate falls through the floor.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "read_file",
+          "arguments": {
+            "path": "fall_through.wbt"
+          }
+        }
+      ]
+    },
+    {
+      "text": "DEF FLOOR is a Solid with visible geometry but NO boundingObject - scenery, not a collision surface. Adding a boundingObject Box matching the visible slab.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 1400
+      },
+      "tool_calls": [
+        {
+          "name": "write_file",
+          "arguments": {
+            "path": "fall_through.wbt",
+            "content": "#VRML_SIM R2025a utf8\n\n# AgentBench C2 fall_through_floor -- initial state (deliberately broken).\n#\n# Symptom: the crate does not stay on the floor.\n#\n# NOTHING ELSE IS DOCUMENTED HERE ON PURPOSE. This header used to name the\n# root cause, the fix, and the grading criteria, which meant the task tested\n# whether an agent could MEASURE rather than whether it could DIAGNOSE -- both\n# A/B conditions said so unprompted (2026-07-26), and they were right. The\n# answer now lives only in the grader, which the agent under test may not\n# read.\n\nEXTERNPROTO \"omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto\"\nEXTERNPROTO \"omnisim://projects/objects/lights/protos/OmniSimSun.proto\"\nEXTERNPROTO \"omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto\"\n\nWorldInfo {\n  basicTimeStep 16\n  title \"AgentBench C2 - the robot falls through the floor\"\n  # Pinned explicitly so the run is backend-attributable without an env var.\n  # Newton is the only backend (ODE was removed in bdc02139) -- the pin is kept\n  # so the .newton.json verdict sidecar names a backend the WORLD asked for\n  # rather than one that was merely defaulted to. Do not change it: the task is\n  # to fix the world on this backend, not to swap solvers until the symptom\n  # hides.\n  defaultPhysicsBackend \"newton\"\n}\nViewpoint {\n  orientation -0.35740674 0.35740674 0.86285621 1.7177716\n  position 6.000 -6.000 4.000\n}\nOmniSimSky { }\nDEF SUN OmniSimSun { }\nDEF SUN_MARKER OmniSimSunMarker { }\n\nDEF FLOOR Solid {\n  # GEOMETRY IS LOAD-BEARING -- do not \"tidy\" this back to z=0.\n  # The grader checks the body rests on the surface THIS FILE declares, within\n  # 0.15 m. With the ground at z=0 a body resting 0.05 m up is inside that\n  # tolerance by accident, and the task passed unfixed. Held off z=0 by more\n  # than the tolerance so only the authored surface can satisfy it.\n  # Pinned by tests/benchmarks/agentbench/test_c2_discriminates.py.\n  translation 0 0 0.5\n  name \"floor\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.45 0.47 0.50\n        roughness 0.95\n        metalness 0\n      }\n      geometry Box {\n        size 20 20 0.1\n      }\n    }\n  ]\n  boundingObject Box {\n    size 20 20 0.1\n  }\n}\n\nDEF CRATE_BOT Robot {\n  translation 0 0 1\n  name \"crate_bot\"\n  controller \"<none>\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.85 0.55 0.15\n        roughness 0.6\n        metalness 0\n      }\n      geometry Box {\n        size 0.4 0.4 0.4\n      }\n    }\n  ]\n  boundingObject Box {\n    size 0.4 0.4 0.4\n  }\n  physics Physics {\n    density -1\n    mass 5\n  }\n}\n"
+          }
+        }
+      ]
+    },
+    {
+      "text": "Proving it stays up: a 10 s headless re-run with the runaway watchdog, which fails if any body leaves the world through a missing collision surface.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "run_shell",
+          "arguments": {
+            "command": "python -m omnisim run-headless \"{{SCRATCH}}/fall_through.wbt\" --duration 10 --fail-on-runaway",
+            "cwd": "{{REPO}}",
+            "timeout_s": 170
+          }
+        }
+      ]
+    },
+    {
+      "text": "Fixed and proven. DEF FLOOR had no boundingObject, so it had no collision surface and the crate fell straight through. I added a boundingObject Box 20 x 20 x 0.1 matching the visible slab. Proof: the 10 s re-run above PASSes under --fail-on-runaway - the watchdog samples every dynamic body and confirms none left the world; the crate drops from z = 1.0 m, lands on the floor and stays there.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 240
+      }
+    }
+  ]
+}

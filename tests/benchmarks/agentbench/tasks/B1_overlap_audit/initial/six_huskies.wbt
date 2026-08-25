@@ -1,0 +1,91 @@
+#VRML_SIM R2025a utf8
+
+# AgentBench B1 overlap_audit -- initial state. Six Huskies.
+#
+# NOTHING ABOUT THE TASK'S QUESTION IS DOCUMENTED HERE ON PURPOSE (the C1/C2
+# rule, 4e5cbdc4): the world must not answer its own task in comments. The
+# question lives in prompt.txt only; the ground truth lives in the grader,
+# which re-derives it from measured t=0 geometry, never from this file's
+# text.
+#
+# defaultPhysicsBackend pins the whole world to ODE per the Phase W
+# both-cells-ODE rule (docs/developer/agent-edge-validation-plan.md): both
+# simulator arms grade on the same solver family, and the pin doubles as the
+# SPEC A1.10-style attribution for a world that never needs Newton. (The
+# WorldInfo-level field is defaultPhysicsBackend; bare physicsBackend is the
+# per-Solid override -- see docs/reference/worldinfo.md.)
+#
+# @HUSKY_URDF@ is substituted with the absolute path to
+# projects/robots/clearpath/husky_description/urdf/husky.urdf when the runner
+# materialises this file into the per-run scratch directory. URDFRobot urls
+# are resolved relative to the world file, so a relocated relative path would
+# silently break.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "AgentBench B1 - six Huskies"
+  defaultPhysicsBackend "newton"
+}
+Viewpoint {
+  orientation 0.000000 1.000000 0.000000 1.570796
+  position 4.000 2.000 26.000
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 30 30
+  wallHeight 0.4
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+URDFRobot {
+  url "@HUSKY_URDF@"
+  translation 0 0 0.2
+  name "husky_one"
+  controller "<none>"
+}
+
+URDFRobot {
+  url "@HUSKY_URDF@"
+  translation 0.3 0.1 0.2
+  name "husky_two"
+  controller "<none>"
+}
+
+URDFRobot {
+  url "@HUSKY_URDF@"
+  translation 4 0 0.2
+  name "husky_three"
+  controller "<none>"
+}
+
+URDFRobot {
+  url "@HUSKY_URDF@"
+  translation 8 0 0.2
+  name "husky_four"
+  controller "<none>"
+}
+
+URDFRobot {
+  url "@HUSKY_URDF@"
+  translation 4 4 0.2
+  name "husky_five"
+  controller "<none>"
+}
+
+URDFRobot {
+  url "@HUSKY_URDF@"
+  translation 8 4 0.2
+  name "husky_six"
+  controller "<none>"
+}

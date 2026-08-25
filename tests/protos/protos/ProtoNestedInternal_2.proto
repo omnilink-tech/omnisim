@@ -1,0 +1,21 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/SlotContainer.proto"
+EXTERNPROTO "omnisim://tests/protos/protos/BoxShape.proto"
+
+PROTO ProtoNestedInternal_2 [
+  field SFVec3f boxSize 1 1 1
+]
+{
+  Pose {
+    children [
+      SlotContainer {
+        slot [
+          BoxShape {
+            size IS boxSize
+          }
+        ]
+      }
+    ]
+  }
+}

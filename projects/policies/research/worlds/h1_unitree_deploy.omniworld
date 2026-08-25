@@ -1,0 +1,60 @@
+#OMNISIM R2025a utf8
+
+# Deploy world for UNITREE'S OFFICIAL H1 walk policy (unitree_rl_gym pre_train/h1).
+# Uses Unitree's faithful 10-DOF legs model (h1_legs_clean.urdf, derived straight
+# from their scene.xml: 51.65 kg, lumped torso+arms mass on the pelvis WITH the
+# full upper-body visual meshes attached, box feet). The h1_unitree_deploy
+# controller runs their motion.pt with their exact 41-d obs + torque PD
+# (kp=[150,150,150,200,40]x2, kd=[2,2,2,4,2]x2, knees-bent default). Their MuJoCo
+# model walks 25 m/60 s; OmniSim's engine is mujoco_warp.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco_warp"
+  newtonSubsteps 2
+  newtonStatics TRUE
+  newtonCompoundColliders TRUE
+  basicTimeStep 2
+  title "Unitree H1 official walk (their algorithm) in OmniSim"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 2.546 -2.710 4.512
+  follow "h1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  translation 50 0 0
+  floorSize 120 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/unitree/h1/h1_legs/h1_legs_clean.urdf"
+  translation 0 0 1.05
+  name "h1"
+  supervisor TRUE
+  controller "h1_unitree_deploy"
+  physicsBackend "newton"
+}

@@ -1,0 +1,49 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "oracle_b1_omnisim",
+  "description": "B1 overlap_audit oracle (omnisim): MEASURE, then answer. Read the scene for the six authored poses, read the robot model's own geometry source for the footprint, compute the pairwise clearances, and answer with the one overlapping pair. The grader re-measures the loaded scene itself and compares the answer to measured pairwise AABB clearances.",
+  "minimality": [
+    "The world no longer discloses the answer (its header comments were stripped 2026-08-01 so the task prices measurement, not file-reading). The poses live in the world file; the footprint lives in the robot model's own geometry source (the Husky URDF on the OmniSim arm; the cached Pioneer3at PROTO's boundingObject boxes on the Webots arm). Overlap = separation vs summed half-extents needs BOTH, so two reads + the computed answer is the minimal competent path on every surface; one read cannot honestly decide overlap for a model whose size the world does not state.",
+    "Bridge/tools alternatives enumerated (all strictly costlier): OmniSim shell+tools: start harness (run_shell) + load_world + get_scene_tree?bounds=1 = 3+ calls. Webots bridge: start simulator (run_shell) + 6x wb_supervisor_node_get_from_def + 6x wb_supervisor_node_get_position (+ quit) = 14 calls, and positions alone do not give AABBs. Neither surface can answer in fewer than two calls, so no condition can beat this path.",
+    "No verification call: the answer IS the deliverable and the grader measures the scene independently; a self-check run would be padding."
+  ],
+  "turns": [
+    {
+      "text": "The scene is a static file in my working directory. Reading it for the robot poses.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "read_file",
+          "arguments": {
+            "path": "six_huskies.wbt"
+          }
+        }
+      ]
+    },
+    {
+      "text": "The world instantiates six copies of one URDF robot; the poses alone do not decide overlap, so I need the model's own collision geometry. Reading the Husky URDF the world's `url` fields point at.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "read_file",
+          "arguments": {
+            "path": "{{HUSKY_URDF}}"
+          }
+        }
+      ]
+    },
+    {
+      "text": "Yes - husky_one and husky_two are overlapping. Measured from the two files: the URDF's base collision box is 0.9874 x 0.5709 m in plan, and the six authored translations give pairwise centre separations of 0.32 m for (husky_one, husky_two) - dx 0.3, dy 0.1 - against 3.70 m for the next-closest pair. Half-extents 0.494 + 0.494 = 0.99 m on x and 0.285 + 0.285 = 0.57 m on y both exceed the separations, so their bounding boxes interpenetrate deeply on every axis; every one of the other 14 pairs is metres clear.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 260
+      }
+    }
+  ]
+}

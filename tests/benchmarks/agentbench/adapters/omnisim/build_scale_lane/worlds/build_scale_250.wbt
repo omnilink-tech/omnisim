@@ -1,0 +1,286 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "../protos/ScaleBot.proto"
+
+WorldInfo {
+  title "AgenticSimBench BuildScale 250 oracle"
+  basicTimeStep 32
+  newtonSolver "mujoco"
+  newtonSubsteps 4
+  newtonRobotColliders TRUE
+  newtonNjmax 64000
+  newtonNconmax 32000
+}
+Viewpoint { position 0 0 500 }
+
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  name "floor"
+  children [ DEF FLOOR_GEOMETRY Shape { geometry Box { size 60 510 0.1 } } ]
+  boundingObject USE FLOOR_GEOMETRY
+}
+DEF CONTACT_WITNESS_SUPPORT Solid {
+  translation 20 252 0.05
+  name "contact witness support"
+  children [ DEF CONTACT_WITNESS_SUPPORT_SHAPE Shape { geometry Box { size 2 2 0.1 } } ]
+  boundingObject USE CONTACT_WITNESS_SUPPORT_SHAPE
+  physics Physics { density -1 mass 1 }
+}
+DEF CONTACT_WITNESS Solid {
+  translation 20 252 0.19
+  name "contact witness"
+  children [ DEF CONTACT_WITNESS_SHAPE Shape { geometry Box { size 0.2 0.2 0.2 } } ]
+  boundingObject USE CONTACT_WITNESS_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+
+ScaleBot { translation -10 -249 0 name "scale_000" }
+ScaleBot { translation -10 -247 0 name "scale_001" }
+ScaleBot { translation -10 -245 0 name "scale_002" }
+ScaleBot { translation -10 -243 0 name "scale_003" }
+ScaleBot { translation -10 -241 0 name "scale_004" }
+ScaleBot { translation -10 -239 0 name "scale_005" }
+ScaleBot { translation -10 -237 0 name "scale_006" }
+ScaleBot { translation -10 -235 0 name "scale_007" }
+ScaleBot { translation -10 -233 0 name "scale_008" }
+ScaleBot { translation -10 -231 0 name "scale_009" }
+ScaleBot { translation -10 -229 0 name "scale_010" }
+ScaleBot { translation -10 -227 0 name "scale_011" }
+ScaleBot { translation -10 -225 0 name "scale_012" }
+ScaleBot { translation -10 -223 0 name "scale_013" }
+ScaleBot { translation -10 -221 0 name "scale_014" }
+ScaleBot { translation -10 -219 0 name "scale_015" }
+ScaleBot { translation -10 -217 0 name "scale_016" }
+ScaleBot { translation -10 -215 0 name "scale_017" }
+ScaleBot { translation -10 -213 0 name "scale_018" }
+ScaleBot { translation -10 -211 0 name "scale_019" }
+ScaleBot { translation -10 -209 0 name "scale_020" }
+ScaleBot { translation -10 -207 0 name "scale_021" }
+ScaleBot { translation -10 -205 0 name "scale_022" }
+ScaleBot { translation -10 -203 0 name "scale_023" }
+ScaleBot { translation -10 -201 0 name "scale_024" }
+ScaleBot { translation -10 -199 0 name "scale_025" }
+ScaleBot { translation -10 -197 0 name "scale_026" }
+ScaleBot { translation -10 -195 0 name "scale_027" }
+ScaleBot { translation -10 -193 0 name "scale_028" }
+ScaleBot { translation -10 -191 0 name "scale_029" }
+ScaleBot { translation -10 -189 0 name "scale_030" }
+ScaleBot { translation -10 -187 0 name "scale_031" }
+ScaleBot { translation -10 -185 0 name "scale_032" }
+ScaleBot { translation -10 -183 0 name "scale_033" }
+ScaleBot { translation -10 -181 0 name "scale_034" }
+ScaleBot { translation -10 -179 0 name "scale_035" }
+ScaleBot { translation -10 -177 0 name "scale_036" }
+ScaleBot { translation -10 -175 0 name "scale_037" }
+ScaleBot { translation -10 -173 0 name "scale_038" }
+ScaleBot { translation -10 -171 0 name "scale_039" }
+ScaleBot { translation -10 -169 0 name "scale_040" }
+ScaleBot { translation -10 -167 0 name "scale_041" }
+ScaleBot { translation -10 -165 0 name "scale_042" }
+ScaleBot { translation -10 -163 0 name "scale_043" }
+ScaleBot { translation -10 -161 0 name "scale_044" }
+ScaleBot { translation -10 -159 0 name "scale_045" }
+ScaleBot { translation -10 -157 0 name "scale_046" }
+ScaleBot { translation -10 -155 0 name "scale_047" }
+ScaleBot { translation -10 -153 0 name "scale_048" }
+ScaleBot { translation -10 -151 0 name "scale_049" }
+ScaleBot { translation -10 -149 0 name "scale_050" }
+ScaleBot { translation -10 -147 0 name "scale_051" }
+ScaleBot { translation -10 -145 0 name "scale_052" }
+ScaleBot { translation -10 -143 0 name "scale_053" }
+ScaleBot { translation -10 -141 0 name "scale_054" }
+ScaleBot { translation -10 -139 0 name "scale_055" }
+ScaleBot { translation -10 -137 0 name "scale_056" }
+ScaleBot { translation -10 -135 0 name "scale_057" }
+ScaleBot { translation -10 -133 0 name "scale_058" }
+ScaleBot { translation -10 -131 0 name "scale_059" }
+ScaleBot { translation -10 -129 0 name "scale_060" }
+ScaleBot { translation -10 -127 0 name "scale_061" }
+ScaleBot { translation -10 -125 0 name "scale_062" }
+ScaleBot { translation -10 -123 0 name "scale_063" }
+ScaleBot { translation -10 -121 0 name "scale_064" }
+ScaleBot { translation -10 -119 0 name "scale_065" }
+ScaleBot { translation -10 -117 0 name "scale_066" }
+ScaleBot { translation -10 -115 0 name "scale_067" }
+ScaleBot { translation -10 -113 0 name "scale_068" }
+ScaleBot { translation -10 -111 0 name "scale_069" }
+ScaleBot { translation -10 -109 0 name "scale_070" }
+ScaleBot { translation -10 -107 0 name "scale_071" }
+ScaleBot { translation -10 -105 0 name "scale_072" }
+ScaleBot { translation -10 -103 0 name "scale_073" }
+ScaleBot { translation -10 -101 0 name "scale_074" }
+ScaleBot { translation -10 -99 0 name "scale_075" }
+ScaleBot { translation -10 -97 0 name "scale_076" }
+ScaleBot { translation -10 -95 0 name "scale_077" }
+ScaleBot { translation -10 -93 0 name "scale_078" }
+ScaleBot { translation -10 -91 0 name "scale_079" }
+ScaleBot { translation -10 -89 0 name "scale_080" }
+ScaleBot { translation -10 -87 0 name "scale_081" }
+ScaleBot { translation -10 -85 0 name "scale_082" }
+ScaleBot { translation -10 -83 0 name "scale_083" }
+ScaleBot { translation -10 -81 0 name "scale_084" }
+ScaleBot { translation -10 -79 0 name "scale_085" }
+ScaleBot { translation -10 -77 0 name "scale_086" }
+ScaleBot { translation -10 -75 0 name "scale_087" }
+ScaleBot { translation -10 -73 0 name "scale_088" }
+ScaleBot { translation -10 -71 0 name "scale_089" }
+ScaleBot { translation -10 -69 0 name "scale_090" }
+ScaleBot { translation -10 -67 0 name "scale_091" }
+ScaleBot { translation -10 -65 0 name "scale_092" }
+ScaleBot { translation -10 -63 0 name "scale_093" }
+ScaleBot { translation -10 -61 0 name "scale_094" }
+ScaleBot { translation -10 -59 0 name "scale_095" }
+ScaleBot { translation -10 -57 0 name "scale_096" }
+ScaleBot { translation -10 -55 0 name "scale_097" }
+ScaleBot { translation -10 -53 0 name "scale_098" }
+ScaleBot { translation -10 -51 0 name "scale_099" }
+ScaleBot { translation -10 -49 0 name "scale_100" }
+ScaleBot { translation -10 -47 0 name "scale_101" }
+ScaleBot { translation -10 -45 0 name "scale_102" }
+ScaleBot { translation -10 -43 0 name "scale_103" }
+ScaleBot { translation -10 -41 0 name "scale_104" }
+ScaleBot { translation -10 -39 0 name "scale_105" }
+ScaleBot { translation -10 -37 0 name "scale_106" }
+ScaleBot { translation -10 -35 0 name "scale_107" }
+ScaleBot { translation -10 -33 0 name "scale_108" }
+ScaleBot { translation -10 -31 0 name "scale_109" }
+ScaleBot { translation -10 -29 0 name "scale_110" }
+ScaleBot { translation -10 -27 0 name "scale_111" }
+ScaleBot { translation -10 -25 0 name "scale_112" }
+ScaleBot { translation -10 -23 0 name "scale_113" }
+ScaleBot { translation -10 -21 0 name "scale_114" }
+ScaleBot { translation -10 -19 0 name "scale_115" }
+ScaleBot { translation -10 -17 0 name "scale_116" }
+ScaleBot { translation -10 -15 0 name "scale_117" }
+ScaleBot { translation -10 -13 0 name "scale_118" }
+ScaleBot { translation -10 -11 0 name "scale_119" }
+ScaleBot { translation -10 -9 0 name "scale_120" }
+ScaleBot { translation -10 -7 0 name "scale_121" }
+ScaleBot { translation -10 -5 0 name "scale_122" }
+ScaleBot { translation -10 -3 0 name "scale_123" }
+ScaleBot { translation -10 -1 0 name "scale_124" }
+ScaleBot { translation -10 1 0 name "scale_125" }
+ScaleBot { translation -10 3 0 name "scale_126" }
+ScaleBot { translation -10 5 0 name "scale_127" }
+ScaleBot { translation -10 7 0 name "scale_128" }
+ScaleBot { translation -10 9 0 name "scale_129" }
+ScaleBot { translation -10 11 0 name "scale_130" }
+ScaleBot { translation -10 13 0 name "scale_131" }
+ScaleBot { translation -10 15 0 name "scale_132" }
+ScaleBot { translation -10 17 0 name "scale_133" }
+ScaleBot { translation -10 19 0 name "scale_134" }
+ScaleBot { translation -10 21 0 name "scale_135" }
+ScaleBot { translation -10 23 0 name "scale_136" }
+ScaleBot { translation -10 25 0 name "scale_137" }
+ScaleBot { translation -10 27 0 name "scale_138" }
+ScaleBot { translation -10 29 0 name "scale_139" }
+ScaleBot { translation -10 31 0 name "scale_140" }
+ScaleBot { translation -10 33 0 name "scale_141" }
+ScaleBot { translation -10 35 0 name "scale_142" }
+ScaleBot { translation -10 37 0 name "scale_143" }
+ScaleBot { translation -10 39 0 name "scale_144" }
+ScaleBot { translation -10 41 0 name "scale_145" }
+ScaleBot { translation -10 43 0 name "scale_146" }
+ScaleBot { translation -10 45 0 name "scale_147" }
+ScaleBot { translation -10 47 0 name "scale_148" }
+ScaleBot { translation -10 49 0 name "scale_149" }
+ScaleBot { translation -10 51 0 name "scale_150" }
+ScaleBot { translation -10 53 0 name "scale_151" }
+ScaleBot { translation -10 55 0 name "scale_152" }
+ScaleBot { translation -10 57 0 name "scale_153" }
+ScaleBot { translation -10 59 0 name "scale_154" }
+ScaleBot { translation -10 61 0 name "scale_155" }
+ScaleBot { translation -10 63 0 name "scale_156" }
+ScaleBot { translation -10 65 0 name "scale_157" }
+ScaleBot { translation -10 67 0 name "scale_158" }
+ScaleBot { translation -10 69 0 name "scale_159" }
+ScaleBot { translation -10 71 0 name "scale_160" }
+ScaleBot { translation -10 73 0 name "scale_161" }
+ScaleBot { translation -10 75 0 name "scale_162" }
+ScaleBot { translation -10 77 0 name "scale_163" }
+ScaleBot { translation -10 79 0 name "scale_164" }
+ScaleBot { translation -10 81 0 name "scale_165" }
+ScaleBot { translation -10 83 0 name "scale_166" }
+ScaleBot { translation -10 85 0 name "scale_167" }
+ScaleBot { translation -10 87 0 name "scale_168" }
+ScaleBot { translation -10 89 0 name "scale_169" }
+ScaleBot { translation -10 91 0 name "scale_170" }
+ScaleBot { translation -10 93 0 name "scale_171" }
+ScaleBot { translation -10 95 0 name "scale_172" }
+ScaleBot { translation -10 97 0 name "scale_173" }
+ScaleBot { translation -10 99 0 name "scale_174" }
+ScaleBot { translation -10 101 0 name "scale_175" }
+ScaleBot { translation -10 103 0 name "scale_176" }
+ScaleBot { translation -10 105 0 name "scale_177" }
+ScaleBot { translation -10 107 0 name "scale_178" }
+ScaleBot { translation -10 109 0 name "scale_179" }
+ScaleBot { translation -10 111 0 name "scale_180" }
+ScaleBot { translation -10 113 0 name "scale_181" }
+ScaleBot { translation -10 115 0 name "scale_182" }
+ScaleBot { translation -10 117 0 name "scale_183" }
+ScaleBot { translation -10 119 0 name "scale_184" }
+ScaleBot { translation -10 121 0 name "scale_185" }
+ScaleBot { translation -10 123 0 name "scale_186" }
+ScaleBot { translation -10 125 0 name "scale_187" }
+ScaleBot { translation -10 127 0 name "scale_188" }
+ScaleBot { translation -10 129 0 name "scale_189" }
+ScaleBot { translation -10 131 0 name "scale_190" }
+ScaleBot { translation -10 133 0 name "scale_191" }
+ScaleBot { translation -10 135 0 name "scale_192" }
+ScaleBot { translation -10 137 0 name "scale_193" }
+ScaleBot { translation -10 139 0 name "scale_194" }
+ScaleBot { translation -10 141 0 name "scale_195" }
+ScaleBot { translation -10 143 0 name "scale_196" }
+ScaleBot { translation -10 145 0 name "scale_197" }
+ScaleBot { translation -10 147 0 name "scale_198" }
+ScaleBot { translation -10 149 0 name "scale_199" }
+ScaleBot { translation -10 151 0 name "scale_200" }
+ScaleBot { translation -10 153 0 name "scale_201" }
+ScaleBot { translation -10 155 0 name "scale_202" }
+ScaleBot { translation -10 157 0 name "scale_203" }
+ScaleBot { translation -10 159 0 name "scale_204" }
+ScaleBot { translation -10 161 0 name "scale_205" }
+ScaleBot { translation -10 163 0 name "scale_206" }
+ScaleBot { translation -10 165 0 name "scale_207" }
+ScaleBot { translation -10 167 0 name "scale_208" }
+ScaleBot { translation -10 169 0 name "scale_209" }
+ScaleBot { translation -10 171 0 name "scale_210" }
+ScaleBot { translation -10 173 0 name "scale_211" }
+ScaleBot { translation -10 175 0 name "scale_212" }
+ScaleBot { translation -10 177 0 name "scale_213" }
+ScaleBot { translation -10 179 0 name "scale_214" }
+ScaleBot { translation -10 181 0 name "scale_215" }
+ScaleBot { translation -10 183 0 name "scale_216" }
+ScaleBot { translation -10 185 0 name "scale_217" }
+ScaleBot { translation -10 187 0 name "scale_218" }
+ScaleBot { translation -10 189 0 name "scale_219" }
+ScaleBot { translation -10 191 0 name "scale_220" }
+ScaleBot { translation -10 193 0 name "scale_221" }
+ScaleBot { translation -10 195 0 name "scale_222" }
+ScaleBot { translation -10 197 0 name "scale_223" }
+ScaleBot { translation -10 199 0 name "scale_224" }
+ScaleBot { translation -10 201 0 name "scale_225" }
+ScaleBot { translation -10 203 0 name "scale_226" }
+ScaleBot { translation -10 205 0 name "scale_227" }
+ScaleBot { translation -10 207 0 name "scale_228" }
+ScaleBot { translation -10 209 0 name "scale_229" }
+ScaleBot { translation -10 211 0 name "scale_230" }
+ScaleBot { translation -10 213 0 name "scale_231" }
+ScaleBot { translation -10 215 0 name "scale_232" }
+ScaleBot { translation -10 217 0 name "scale_233" }
+ScaleBot { translation -10 219 0 name "scale_234" }
+ScaleBot { translation -10 221 0 name "scale_235" }
+ScaleBot { translation -10 223 0 name "scale_236" }
+ScaleBot { translation -10 225 0 name "scale_237" }
+ScaleBot { translation -10 227 0 name "scale_238" }
+ScaleBot { translation -10 229 0 name "scale_239" }
+ScaleBot { translation -10 231 0 name "scale_240" }
+ScaleBot { translation -10 233 0 name "scale_241" }
+ScaleBot { translation -10 235 0 name "scale_242" }
+ScaleBot { translation -10 237 0 name "scale_243" }
+ScaleBot { translation -10 239 0 name "scale_244" }
+ScaleBot { translation -10 241 0 name "scale_245" }
+ScaleBot { translation -10 243 0 name "scale_246" }
+ScaleBot { translation -10 245 0 name "scale_247" }
+ScaleBot { translation -10 247 0 name "scale_248" }
+ScaleBot { translation -10 249 0 name "scale_249" }

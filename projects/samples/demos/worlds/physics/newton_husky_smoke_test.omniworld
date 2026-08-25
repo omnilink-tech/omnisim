@@ -1,0 +1,71 @@
+#OMNISIM R2025a utf8
+
+# Newton + URDFRobot smoke test (P3.10 of cuda-newton-physics-plan.md).
+#
+# A single Husky URDFRobot with `physicsBackend "newton"` on the
+# wrapper. WbUrdfImporter expands this into a Robot { ... } subtree
+# whose outer Robot inherits the field; the chassis + 4 wheel Solids
+# the URDF auto-generates pick it up via WbSolid::effective-
+# PhysicsBackendName so they all end up registered as Newton bodies,
+# their connecting HingeJoints as Newton revolute joints (motorized
+# via the URDF's RotationalMotor children).
+#
+# Expected behaviour: the husky drops onto the arena floor and -- once
+# drive_forward sets per-wheel velocities via customData-gated motor
+# torque -- rolls forward. The Newton step driver in
+# WbSimulationWorld::step pushes per-wheel target velocities to
+# SolverXPBD each tick.
+#
+# On NEWTON=OFF builds (or hosts without warp/newton wheels) the
+# physicsBackend field falls through to ODE per the registry's
+# safety net, and this world is identical to husky_damage_arena_drive
+# minus the box dropper.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Newton Husky Smoke Test"
+  info [
+    "P3.10: a single husky URDF auto-routed through the Newton dispatcher"
+    "via physicsBackend 'newton' on the URDFRobot wrapper. Watch the"
+    "WbNewtonBackend log lines for chassis + 4 wheel registrations + 4"
+    "motorized hinge joints + the per-wheel motor target_vel chain."
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position -3.036 -4.219 4.258
+  follow "newton_husky"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 16 16
+  wallHeight 0.5
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 0 0.3
+  name "newton_husky"
+  controller "drive_forward"
+  physicsBackend "newton"
+  # NB: physicsBackend MUST come before customData -- WbUrdfImporter's
+  # field-block parser bails at the first '"' after a quoted-string
+  # value's opening, and customData's escaped quotes (\") trip that
+  # bug. Putting physicsBackend earlier sidesteps it for now;
+  # WbUrdfImporter parser hardening is a separate cleanup.
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}

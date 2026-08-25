@@ -1,0 +1,184 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/buildings/protos/CommercialBuilding.proto
+# keywords: building/office
+# template language: javascript
+# An eight-storey commercial block in warm ochre render: glazed shopfront colonnade at
+# street level, a punched-window grid modelled as geometry on every upper storey, a signage
+# band and a parapet. No facade textures. The base sits at z = 0 and the entrance faces +y.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+
+PROTO CommercialBuilding [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "commercial building"
+]
+{
+  %<
+    const width = 24.0;          // along x
+    const depth = 18.0;          // along y
+    const groundHeight = 4.5;
+    const floors = 7;            // upper storeys
+    const floorHeight = 3.5;
+    const height = groundHeight + floors * floorHeight;   // 29 m
+    const hx = width / 2.0;
+    const hy = depth / 2.0;
+
+    let paneDefined = false;
+    function pane(x, y, z, yaw) {
+      let s = '      Pose { translation ' + x.toFixed(3) + ' ' + y.toFixed(3) + ' ' + z.toFixed(3);
+      s += ' rotation 0 0 1 ' + yaw.toFixed(4) + ' children [ ';
+      if (paneDefined)
+        s += 'USE WINDOW_PANE';
+      else {
+        s += 'DEF WINDOW_PANE Shape { appearance USE GLASS_APP geometry Box { size 2.6 0.14 2.0 } }';
+        paneDefined = true;
+      }
+      return s + ' ] }\n';
+    }
+
+    function row(count, from, to, fixed, z, yaw, alongX) {
+      let s = '';
+      const step = (to - from) / (count - 1);
+      for (let i = 0; i < count; ++i) {
+        const p = from + i * step;
+        s += alongX ? pane(p, fixed, z, yaw) : pane(fixed, p, z, yaw);
+      }
+      return s;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "commercial building"
+    children [
+      # ---- street-level colonnade ------------------------------------------
+      Pose {
+        translation 0 0 %<= groundHeight / 2.0 >%
+        children [
+          Shape {
+            appearance DEF GLASS_APP PBRAppearance {
+              baseColor 0.14 0.17 0.19
+              roughness 0.15
+              metalness 0.8
+            }
+            geometry Box { size %<= width - 1.2 >% %<= depth - 1.2 >% %<= groundHeight >% }
+          }
+        ]
+      }
+      # corner piers holding up the upper mass
+      %< for (let k = 0; k < 4; ++k) {
+           const px = (k % 2 === 0 ? -1 : 1) * (hx - 0.5);
+           const py = (k < 2 ? -1 : 1) * (hy - 0.5); >%
+      Pose {
+        translation %<= px >% %<= py >% %<= groundHeight / 2.0 >%
+        children [
+          %< if (k === 0) { >%
+          DEF PIER Shape {
+            appearance DEF STONE_APP PBRAppearance {
+              baseColor 0.45 0.44 0.42
+              roughness 0.9
+              metalness 0
+            }
+            geometry Box { size 1.2 1.2 %<= groundHeight >% }
+          }
+          %< } else { >%
+          USE PIER
+          %< } >%
+        ]
+      }
+      %< } >%
+
+      # ---- upper mass -------------------------------------------------------
+      Pose {
+        translation 0 0 %<= groundHeight + (height - groundHeight) / 2.0 >%
+        children [
+          Shape {
+            appearance DEF WALL_APP Roughcast {
+              colorOverride 0.85 0.55 0.34
+              textureTransform TextureTransform { scale 10 10 }
+            }
+            geometry Box { size %<= width >% %<= depth >% %<= height - groundHeight >% }
+          }
+        ]
+      }
+
+      # ---- punched windows on the four upper facades ------------------------
+      %< for (let f = 0; f < floors; ++f) {
+           const z = groundHeight + (f + 0.5) * floorHeight; >%
+      %<= row(7, -hx + 2.4, hx - 2.4, hy + 0.07, z, 0, true) >%
+      %<= row(7, -hx + 2.4, hx - 2.4, -hy - 0.07, z, 0, true) >%
+      %<= row(5, -hy + 2.4, hy - 2.4, hx + 0.07, z, 1.5708, false) >%
+      %<= row(5, -hy + 2.4, hy - 2.4, -hx - 0.07, z, 1.5708, false) >%
+      %< } >%
+
+      # ---- signage band above the shopfronts --------------------------------
+      Pose {
+        translation 0 %<= hy + 0.1 >% %<= groundHeight + 0.9 >%
+        children [
+          DEF SIGN_BAND Shape {
+            appearance DEF TRIM_APP PBRAppearance {
+              baseColor 0.22 0.24 0.26
+              roughness 0.5
+              metalness 0.4
+            }
+            geometry Box { size %<= width - 1 >% 0.2 1.4 }
+          }
+        ]
+      }
+      Pose { translation 0 %<= -hy - 0.1 >% %<= groundHeight + 0.9 >% children [ USE SIGN_BAND ] }
+
+      # ---- entrance canopy (+y) --------------------------------------------
+      Pose {
+        translation 0 %<= hy + 1.5 >% 3.4
+        children [
+          Shape {
+            appearance USE TRIM_APP
+            geometry Box { size 7 3 0.3 }
+          }
+        ]
+      }
+
+      # ---- parapet + roof plant ---------------------------------------------
+      Pose {
+        translation 0 %<= hy - 0.2 >% %<= height + 0.55 >%
+        children [
+          DEF PARAPET_NS Shape {
+            appearance USE STONE_APP
+            geometry Box { size %<= width >% 0.4 1.1 }
+          }
+        ]
+      }
+      Pose { translation 0 %<= -hy + 0.2 >% %<= height + 0.55 >% children [ USE PARAPET_NS ] }
+      Pose {
+        translation %<= hx - 0.2 >% 0 %<= height + 0.55 >%
+        children [
+          DEF PARAPET_EW Shape {
+            appearance USE STONE_APP
+            geometry Box { size 0.4 %<= depth >% 1.1 }
+          }
+        ]
+      }
+      Pose { translation %<= -hx + 0.2 >% 0 %<= height + 0.55 >% children [ USE PARAPET_EW ] }
+      Pose {
+        translation 3 -2 %<= height + 1.2 >%
+        children [
+          Shape {
+            appearance USE TRIM_APP
+            geometry Box { size 5 4 2.4 }
+          }
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation 0 0 %<= height / 2.0 >%
+      children [
+        Box { size %<= width >% %<= depth >% %<= height >% }
+      ]
+    }
+    locked TRUE
+  }
+}

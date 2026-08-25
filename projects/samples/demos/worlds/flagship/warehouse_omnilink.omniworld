@@ -1,0 +1,1788 @@
+#OMNISIM R2025a utf8
+
+# OmniLink WAREHOUSE — the flagship multi-agent site demo.
+# One warehouse shell (30 m x 18 m interior) staffed by three OmniLink-driven
+# robots, each exposing its own chat panel + HTTP bridge:
+#
+#   OmniArm 6    pick cell (west, fed by the inbound conveyor)  omnilink_arm_bridge    :8765  agent "OmniSim-omniarm6"
+#   TUG_A    OmniTug 500 tug in staging zone A             omnilink_mobile_bridge :8766  agent "OmniSim-tug_a"
+#   TUG_B    OmniTug 500 tug in staging zone B             omnilink_mobile_bridge :8767  agent "OmniSim-tug_b"
+#
+# A site-level "Warehouse-Foreman" agent (pushed by
+# controllers/_omnilink_relay/warehouse_foreman.py) supervises the three
+# robot agents platform-side via delegate_to_agent.
+#
+# NOTHING MOVES WITHOUT A VISIBLE CAUSE. This is the rule the whole world is
+# built around. Every box and every cart is, at all times, in exactly one of
+# four states: being TOWED by a tug, riding a CONVEYOR, resting on a cart
+# DECK, or PARKED on the floor. There is no "auto-park", no glide across open
+# concrete, no prop that slides into place because the choreography needed it
+# there. Where material has to cross a gap the world grows a machine to carry
+# it -- which is why there are FOUR conveyors, not one:
+#
+#   BELT (raised, z=0.40)     dock 1 -> fill stop. Carries BOXES.
+#   OUTFEED_SPUR (raised)     belt -> cart deck. Carries a FILLED box.
+#   FILL_CONVEYOR (in-floor)  station <-> fill spot. SHUTTLES CARTS both ways.
+#   CART_LANE_CONVEYOR (")    dock 2 -> lane pickup. Carries empty CARTS in.
+#   OUTBOUND_CONVEYOR (")     collection spot -> dock E. Carries CARTS out.
+#
+# The three cart conveyors are IN-FLOOR DRAG-CHAIN conveyors: the chain runs
+# in a shallow floor slot and a pusher dog (DEF *_DOG, a real moving body the
+# bridge drives) engages the cart while its wheels roll on the concrete. That
+# is why they can be flush with the floor and why a tug can drive straight
+# over one without a ramp.
+#
+# ALIVE AT IDLE — A CONTINUOUS CLOSED PRODUCTION LOOP (conveyor -> fill ->
+# dispatch -> park -> collect -> re-inbound -> repeat, indefinitely):
+#   1. CONVEYOR   three open-top boxes (DEF BOX_1..3, real physics compound
+#                 Solids) ride the inbound belt kinematically (anypick-line
+#                 ensemble pattern, advanced by the arm bridge's
+#                 WarehouseLine on the sim thread). They queue and the
+#                 frontmost stops at the FILL_STOP line beside the arm.
+#   2. FILL       OmniArm 6 ("--idle-loop pick") picks parts off the FEEDER
+#                 tray beside it (DEF GRASP_PART_A..F, a respawning source
+#                 of EIGHT, sized to the eight a three-box lap consumes)
+#                 and drops them into the box at the fill stop until it
+#                 holds its target of 2-3 parts ("filled").
+#   3. LOAD       the filled box (plus its parts, one rigid ensemble) turns
+#                 off the main belt onto the OUTFEED SPUR (DEF OUTFEED_SPUR,
+#                 a short transfer conveyor running south past the arm base),
+#                 rides it at belt height to its discharge end, and settles
+#                 onto the flat deck of the empty tug trolley parked flush at
+#                 the fill station. The box is over a surface the whole way --
+#                 belt, spur, or deck -- so nothing ever hangs in mid-air.
+#   3b. OUTFEED   the FILL_CONVEYOR then runs the loaded cart the full 4.6 m
+#                 south, PAST the conveyor station and out to DEF CART_PICKUP,
+#                 in one continuous move. The station is clear again within
+#                 seconds, so the next empty follows straight in behind and
+#                 the arm never waits on a tug's docking manoeuvre. This is
+#                 the decoupling that makes the line busy rather than bursty
+#                 -- see the note on DEF CART_PICKUP for the measurements.
+#   4. DISPATCH   TUG_A ("--idle-loop dispatch") polls the arm bridge's
+#                 /state line block, docks the loaded trolley AT THE PICKUP,
+#                 tows it out
+#                 the south tug gate and east along the transit lane to the
+#                 CART PARK -- a single open row of six painted spots
+#                 (DEF PARK_SPOT_1..6) at the back of the site. It PICKS A
+#                 FREE SPOT by reading every cart's live pose, pushes the
+#                 cart squarely into it from the south, detaches and goes
+#                 home. Carts accumulate, one per spot, never overlapping.
+#                 ~12 s after the cart settles the load "ships": the box
+#                 recycles to the belt entry, its parts respawn at the
+#                 feeder, and the cart is now a parked EMPTY.
+#   4b. COLLECT   When the park row is FULL, TUG_A's next job is a
+#                 COLLECTION run instead: it docks the OLDEST parked cart,
+#                 tows it to CART_OUTBOUND_INFEED and detaches. The
+#                 OUTBOUND_CONVEYOR carries it east out through dock E,
+#                 and at the door it is handed to the inbound side --
+#                 "collected by the outbound truck, returned as an empty".
+#                 That handoff is the ONE off-stage teleport in the world
+#                 and it happens entirely inside a doorway, cart-for-cart.
+#   5. RETURN     TUG_B ("--idle-loop trolley_return") keeps the fill
+#                 station fed from the WEST. Empty carts arrive through the
+#                 open dock 2 and ride the CART_LANE_CONVEYOR east to
+#                 CART_LANE_PICKUP. tug_b docks one there and tows it to
+#                 CONVEYOR_STATION, the mid-span infeed of the in-floor
+#                 FILL_CONVEYOR, and leaves it waiting -- it does this
+#                 WHILE tug_a is still hauling, so a cart is always staged.
+#                 The moment the fill station goes vacant the FILL_CONVEYOR
+#                 runs and visibly carries the cart the last 2 m north,
+#                 through the tug gate, to the fill spot in front of OmniArm 6.
+#                 Eight carts (TROLLEY_PAYLOAD, TROLLEY_B..H) circulate
+#                 through that loop forever; none is ever consumed.
+# COORDINATION: the arm bridge is the line master (its /state "line" block
+# is the authoritative fill/load state); the MAVs poll it and each other's
+# /state (:8766/:8767) for corridor + bay mutual exclusion, plus direct
+# supervisor reads of trolley/box poses. ANY chat prompt or bridge tool
+# call pauses that robot's loop instantly; it rejoins the choreography
+# from live world state after a quiet window, set here to 12 s on all three
+# robots (--idle-resume-s; the bridge default is 60 s and it measured ~56 s
+# end to end, which is a long time to watch an arm hold a cube still).
+#
+# SITE LAYOUT, WEST to EAST: inbound dock doors (dock 1 OPEN, the box belt
+# runs through it; dock 2 OPEN, empty carts roll in on the cart lane; dock 3
+# shuttered) -> cart lane + conveyor + pick cell (fill station at the south
+# gate, reached by the in-floor fill conveyor) -> staging zones A/B -> the
+# CART PARK row across the back of the site -> dock E on the east wall, the
+# outbound cart door. The south wall keeps its 4 m entrance gap; the
+# KIOSK_ZONE decal reserves floor for a future greeter robot.
+#
+# ENDLESS BY CONSTRUCTION -- nothing in this world can run out:
+#   BOXES  three totes recycle to the belt entry when their load ships.
+#   PARTS  eight feeder cubes respawn on the tray when their box ships --
+#          one per part a full three-box lap consumes (3+2+3), so the arm
+#          is not left standing while it waits on a tug's round trip.
+#   CARTS  eight carts circulate on a CLOSED ring (lane -> infeed -> fill
+#          -> park -> collect -> dock E -> dock 2 -> lane). The ring is
+#          conserved: a cart is never created or destroyed, so the supply
+#          cannot deplete and the park row cannot deadlock.
+#
+# Physics: Newton + MuJoCo solver (CPU). Skid-steer robots jam under the
+# default XPBD solver (no lateral wheel slip), so the MuJoCo solver is
+# pinned in WorldInfo below -- do NOT switch this world to mujoco_warp
+# (measured 0.3-0.4x realtime here; see the WorldInfo note).
+#
+# FLOOR: one constant colour site-wide. Zones are marked with PAINTED LINE
+# work only (lane lines, flow chevrons, cell/park/staging outlines, dock
+# thresholds) -- there are no filled colour tiles anywhere on the floor.
+#
+# Dock doors, thresholds, floor markings, conveyor visuals (the raised belt,
+# the outfeed spur, and all three in-floor cart conveyors), safety fences
+# and zone outlines are VISUAL-ONLY props (no boundingObject) per the
+# kinematic-prop repo rule. The exceptions are manipulanda + their
+# supports: the GRASP_* parts, the BOX_* line boxes, the feeder tabletop
+# and belt strip they rest on, the eight trolleys (kinematic-ensemble
+# bodies whose deck colliders travel with them), and the three conveyor
+# pusher DOGS (visual-only bodies the bridges drive along the slots).
+#
+# Headless verify:
+#   python scripts/dev/omnisim_dev.py run-headless \
+#     projects/samples/demos/worlds/flagship/warehouse_omnilink.omniworld --duration 30
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/Fence.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  # 32 ms + CPU MuJoCo + 6 even substeps. This world switched from
+  # mujoco_warp (GPU) to "mujoco" (CPU) for the idle-loop demo: the loops
+  # keep per-tick supervisor teleports alive (part weld, trolley tow), and
+  # each teleport costs the warp build a GPU re-sync — measured 0.3-0.4x
+  # realtime on an RTX 3060 laptop, vs 0.95-1.0x under the CPU solver with
+  # the same loops running. The CPU solver is also the proven grasp solver
+  # for the OmniArm 6 (see project notes on newtonSolver "mujoco").
+  basicTimeStep 32
+  title "OmniLink Warehouse — multi-agent site"
+  info [
+    "Flagship OmniLink warehouse: OmniArm 6 pick station + two OmniTug 500 tugs,"
+    "each chat-driven through its own OmniLink bridge, supervised by the"
+    "platform-side Warehouse-Foreman agent."
+  ]
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  newtonRobotColliders TRUE
+  newtonCompoundColliders TRUE
+  newtonSubsteps 6
+}
+# Hero view: just inside the south-west entrance, looking north-east along
+# the goods flow — pick cell + conveyor centre-left, flow chevrons and
+# staging ahead, storage bays on the east wall (axis-angle computed for a
+# roll-free +X-forward/+Z-up camera). Eye height 3.4 m, heading +43 deg,
+# pitched 12.7 deg down.
+#
+# DO NOT LET A MASS CAMERA PASS TOP-DOWN THIS WORLD AGAIN. Commit 39cc8654
+# (a 703-world set_viewpoint.py retrofit) replaced this node with a nadir
+# plan view — orientation (0,1,0) 1.5708 at z=34.513 — because the robot
+# bounding radius (6.741 m) tripped its AUTO_TOPDOWN_RADIUS_M = 6.0. Two
+# things went wrong and both are invisible from a screenshot thumbnail:
+#   * straight down, NOTHING VERTICAL RENDERS. The 3 m walls, the dock
+#     doors, the 1.1 m pick-cell fence, the raised belt and its legs and
+#     the conveyor drive cabinets all present as zero-area surfaces; the
+#     site reads as a black rectangle with white lines on it, and the
+#     OmniArm 6 — the robot the demo is about — occupies ~96 px of a 1080p
+#     frame (0.35%).
+#   * fieldOfView is the LARGER-dimension angle, so with up = +X, world X
+#     lands on the SHORT screen axis: the frame covered x[-15.95,+6.55],
+#     y[-20.1,+19.8]. PARK_SPOT_2..6, the outbound conveyor, dock E and
+#     the whole east wall were off-screen, while 57% of the frame was bare
+#     ground outside the walls (the retrofit also sized the distance
+#     against its own DEFAULT_FOV = pi/4, not the 1.05 declared here).
+# If a tool wants to rewrite this node, the answer is no. The pose below is
+# hand-set and is the shot this demo is presented from.
+Viewpoint {
+  orientation 0.0 0.313195 0.949689 0.775296
+  position -12.6 -7.2 3.4
+  fieldOfView 1.05
+}
+# Canonical lighting trio. The marker sits high to the south-west so the sun
+# rakes across the site from the SW — lighting the south/west faces the hero
+# camera sees (the default straight-down sun left every vertical face black).
+# ambientIntensity lifts the remaining shadow faces.
+OmniSimSky { }
+DEF SUN OmniSimSun { ambientIntensity 0.35 }
+DEF SUN_MARKER OmniSimSunMarker { translation -8 -12 20 }
+
+# Smooth polished dark-concrete floor: near-black with a slight sheen (low
+# roughness), no busy texture tiling -- the painted markings pop against it.
+Floor {
+  size 32 20
+  tileSize 32 20
+  appearance PBRAppearance {
+    baseColor 0.055 0.058 0.065
+    roughness 0.35
+    metalness 0.05
+  }
+}
+
+# ============================================================================
+# Perimeter walls. 30 m x 18 m interior, 0.2 m thick, 3 m tall. The south
+# wall is split to leave a 4 m entrance gap at x in [-13, -9] (west end).
+#
+# THE OPEN DOCKS ARE REAL OPENINGS, NOT PAINT. wall_W and wall_E used to be
+# single uncut 18.2 m colliders, so every "open" dock (1, 2 and E) was a
+# 0.08 m dark panel hung on 0.2 m of solid wall. That was not just dishonest
+# to look at, it was a physics fault: DEF CART_INBOUND_ENTRY (-14.55, 1.00)
+# and DEF CART_OUTBOUND_EXIT (14.55, -1.00) each stand a 0.70 m cart flush
+# against the inner face -- x[-14.900,-14.200] against wall_W's face at
+# -14.900 and x[14.200,14.900] against wall_E's at 14.900, i.e. 0.000 m of
+# margin between a 22 kg DYNAMIC body and a static collider. Any pose write
+# or solver correction outward was an interpenetration, and the cart also
+# buried 0.080 m of itself in the dock's own door panel.
+#
+# So the two side walls are now CUT. Each open dock is a genuine 2.6 m x
+# 2.7 m reveal through the full 0.2 m wall thickness, closed at the top by a
+# 0.3 m lintel (wall_*_head_*, z 2.70..3.00) so the shell still reads as a
+# building rather than a wall with a chunk missing:
+#   wall_W_south  y -9.100 .. -0.300   (up to the dock 2 opening)
+#   [dock 2 opening  y -0.300 .. 2.300, y = 1.00 +- 1.30]
+#   wall_W_mid    y  2.300 ..  3.700   (pier between docks 2 and 1)
+#   [dock 1 opening  y  3.700 .. 6.300, y = 5.00 +- 1.30]
+#   wall_W_north  y  6.300 ..  9.100
+#   wall_E_south  y -9.100 .. -2.300
+#   [dock E opening  y -2.300 .. 0.300, y = -1.00 +- 1.30]
+#   wall_E_north  y  0.300 ..  9.100
+# Dock 3 (y = -3) stays a shuttered roller door on solid wall, unchanged.
+# The east wall stripes were ALREADY authored around the dock E opening
+# (WALL_STRIPE_E_S ends at y = -2.400, _E_N starts at y = +0.400), which is
+# what the cut was always meant to be.
+#
+# CLEARANCES AFTER THE CUT: the two cart markers were NOT moved (they are
+# load-bearing config read live by MavIdleLoop), they simply no longer have
+# anything to touch. A cart at either marker now has open air on its outboard
+# side and 0.120 m to the dark backdrop panel (moved to the wall's OUTER
+# 0.08 m, see the dock door notes). Nothing routes through an opening: tug_b
+# never drives west of x = -11.03 (its dock reverse on the cart lane) and
+# tug_a never east of x = 13.86 (its nose at the dock E infeed hand-off), so
+# no tug path and no cart path leaves the shell. The conveyor decks are
+# unaffected -- CART_LANE_CONVEYOR still ends at x = -14.750 and CONVEYOR_LINE
+# at x = -14.800, both now visibly terminating INSIDE a real doorway instead
+# of 0.10 m short of a painted one.
+# ============================================================================
+Wall {
+  name "wall_N"
+  translation 0 9 0
+  size 30.2 0.2 3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+Wall {
+  name "wall_S_west"
+  translation -14.05 -9 0
+  size 2.1 0.2 3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+Wall {
+  name "wall_S_east"
+  translation 3.05 -9 0
+  size 24.1 0.2 3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+# East wall, cut for the dock E outbound cart door (opening y -2.3 .. 0.3).
+Wall {
+  name "wall_E_south"
+  translation 15 -5.7 0
+  size 0.2 6.8 3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+Wall {
+  name "wall_E_north"
+  translation 15 4.7 0
+  size 0.2 8.8 3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+# Lintel over dock E: z 2.70 .. 3.00, i.e. it starts exactly at the top of the
+# 2.7 m door reveal. Sits above TUG_TOP_Z, so the tugs' obstacle derivation
+# drops it as overhead rather than treating the doorway as blocked.
+Wall {
+  name "wall_E_head_e"
+  translation 15 -1 2.7
+  size 0.2 2.6 0.3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+# West wall, cut for dock 2 (empty-cart door, opening y -0.3 .. 2.3) and
+# dock 1 (box belt, opening y 3.7 .. 6.3). Dock 3 (y = -3) is shuttered and
+# stays inside the solid wall_W_south run.
+Wall {
+  name "wall_W_south"
+  translation -15 -4.7 0
+  size 0.2 8.8 3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+Wall {
+  name "wall_W_mid"
+  translation -15 3 0
+  size 0.2 1.4 3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+Wall {
+  name "wall_W_north"
+  translation -15 7.7 0
+  size 0.2 2.8 3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+Wall {
+  name "wall_W_head_1"
+  translation -15 5 2.7
+  size 0.2 2.6 0.3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+Wall {
+  name "wall_W_head_2"
+  translation -15 1 2.7
+  size 0.2 2.6 0.3
+  appearance PBRAppearance { baseColor 0.80 0.81 0.83 roughness 0.85 metalness 0 }
+}
+
+# Horizontal safety-yellow accent stripe on the interior faces (visual-only;
+# omitted on the west wall where the dock doors sit).
+# STAND-OFF: each stripe is 0.020 m thick and its outer face now sits 0.004 m
+# off the wall it is painted on, not 0.020 m. Twenty millimetres is about 5x
+# what depth-buffer separation needs and it read as a floating ribbon at any
+# oblique angle; 0.004 m is the same air gap the floor decals in this world
+# use (z = 0.005..0.006 over a floor at z = 0) and has never fought there.
+# Centres are therefore inner_face -/+ 0.014 (0.004 gap + 0.010 half-thickness):
+#   N   y = 8.900 - 0.014 =  8.886      E  x = 14.900 - 0.014 = 14.886
+#   S   y = -8.900 + 0.014 = -8.886
+DEF WALL_STRIPE_N Solid { translation 0 8.886 1.35 children [ Shape { appearance PBRAppearance { baseColor 0.93 0.72 0.10 roughness 0.9 metalness 0 } geometry Box { size 29.8 0.02 0.25 } } ] name "wall_stripe_n" }
+DEF WALL_STRIPE_E_S Solid { translation 14.886 -5.65 1.35 children [ Shape { appearance DEF WALL_STRIPE_APP PBRAppearance { baseColor 0.93 0.72 0.10 roughness 0.9 metalness 0 } geometry Box { size 0.02 6.5 0.25 } } ] name "wall_stripe_e_s" }
+DEF WALL_STRIPE_E_N Solid { translation 14.886 4.65 1.35 children [ Shape { appearance USE WALL_STRIPE_APP geometry Box { size 0.02 8.5 0.25 } } ] name "wall_stripe_e_n" }
+DEF WALL_STRIPE_S Solid { translation 3.05 -8.886 1.35 children [ Shape { appearance PBRAppearance { baseColor 0.93 0.72 0.10 roughness 0.9 metalness 0 } geometry Box { size 23.7 0.02 0.25 } } ] name "wall_stripe_s" }
+
+# ============================================================================
+# 1. INBOUND — west wall receiving. Three dock doors: dock 1 (y=5) is OPEN
+# (the conveyor runs through it), dock 2 (y=1) is OPEN (the empty-cart door),
+# and dock 3 (y=-3) is a closed roller shutter with a painted keep-clear
+# threshold line (the old filled apron slabs are gone -- the floor is one
+# constant colour). All visual-only.
+#
+# THE DARK PANEL IS A BACKDROP, NOT A DOOR. wall_W is now genuinely cut at
+# docks 1 and 2 (see the perimeter-wall note), so each of these openings is a
+# real 0.2 m reveal. The near-black panel that used to hang in the wall plane
+# at x[-14.900,-14.820] -- where a cart standing at DEF CART_INBOUND_ENTRY
+# drove 0.080 m into it -- has moved to the wall's OUTER 0.08 m,
+# x[-15.100,-15.020]. It now does what it always pretended to do: close the
+# far end of the reveal so the doorway reads dark rather than showing sky,
+# while leaving 0.120 m of clear air between it and a cart in the doorway.
+# The head beam stays inside the building where it was.
+# ============================================================================
+DEF DOCK_DOOR_1 Solid {
+  translation -14.86 5 0
+  children [
+    Transform { translation -0.20 0 1.35 children [ Shape { appearance PBRAppearance { baseColor 0.06 0.06 0.07 roughness 0.95 metalness 0 } geometry Box { size 0.08 2.6 2.7 } } ] }
+    Transform { translation 0.03 0 2.62 children [ Shape { appearance PBRAppearance { baseColor 0.35 0.37 0.40 roughness 0.7 metalness 0.4 } geometry Box { size 0.10 2.8 0.16 } } ] }
+  ]
+  name "dock_door_1"
+}
+# Dock 2 is OPEN (dark opening, same treatment as dock 1): this is the EMPTY
+# CART door. Empty carts appear at DEF CART_INBOUND_ENTRY, which sits INSIDE
+# this opening, and immediately ride the cart-lane conveyor east onto the
+# floor -- so a cart is never seen arriving out of open air, only rolling in
+# through a door the way it would off a truck.
+DEF DOCK_DOOR_2 Solid {
+  translation -14.86 1 0
+  children [
+    Transform { translation -0.20 0 1.35 children [ Shape { appearance PBRAppearance { baseColor 0.06 0.06 0.07 roughness 0.95 metalness 0 } geometry Box { size 0.08 2.6 2.7 } } ] }
+    Transform { translation 0.03 0 2.62 children [ Shape { appearance PBRAppearance { baseColor 0.35 0.37 0.40 roughness 0.7 metalness 0.4 } geometry Box { size 0.10 2.8 0.16 } } ] }
+  ]
+  name "dock_door_2"
+}
+DEF DOCK_DOOR_3 Solid {
+  translation -14.86 -3 0
+  children [
+    Transform { translation 0 0 1.35 children [ Shape { appearance PBRAppearance { baseColor 0.58 0.60 0.63 roughness 0.55 metalness 0.55 } geometry Box { size 0.08 2.6 2.7 } } ] }
+    Transform { translation 0.03 0 0.55 children [ Shape { appearance PBRAppearance { baseColor 0.38 0.40 0.43 roughness 0.6 metalness 0.5 } geometry Box { size 0.03 2.6 0.05 } } ] }
+    Transform { translation 0.03 0 1.15 children [ Shape { appearance PBRAppearance { baseColor 0.38 0.40 0.43 roughness 0.6 metalness 0.5 } geometry Box { size 0.03 2.6 0.05 } } ] }
+    Transform { translation 0.03 0 1.75 children [ Shape { appearance PBRAppearance { baseColor 0.38 0.40 0.43 roughness 0.6 metalness 0.5 } geometry Box { size 0.03 2.6 0.05 } } ] }
+    Transform { translation 0.03 0 2.35 children [ Shape { appearance PBRAppearance { baseColor 0.38 0.40 0.43 roughness 0.6 metalness 0.5 } geometry Box { size 0.03 2.6 0.05 } } ] }
+    Transform { translation 0.03 0 2.62 children [ Shape { appearance PBRAppearance { baseColor 0.35 0.37 0.40 roughness 0.7 metalness 0.4 } geometry Box { size 0.10 2.8 0.16 } } ] }
+  ]
+  name "dock_door_3"
+}
+
+# Dock threshold (dock 3, the one still shuttered). Painted LINE work only —
+# the floor is one constant colour across the whole site, so what used to be
+# a filled yellow apron slab is now a thin painted edge line in front of the
+# shutter (the shutter locates the dock; the line marks the keep-clear
+# threshold). Docks 1 and 2 have no threshold line: a conveyor runs through
+# each of them.
+DEF DOCK_APRON_3 Solid {
+  translation -13.9 -3 0.005
+  children [
+    Transform { translation 0.88 0 0 children [ Shape { appearance DEF DOCK_LINE PBRAppearance { baseColor 0.95 0.78 0.15 roughness 1 metalness 0 } geometry Box { size 0.07 2.4 0.002 } } ] }
+  ]
+  name "dock_apron_3"
+}
+
+# ============================================================================
+# 1b. THE CART LANE — in-floor drag-chain conveyor, dock 2 -> lane pickup.
+#
+# THE IN-FLOOR CONVEYOR PATTERN (all three cart conveyors share it): a deck
+# plate 10 mm proud of the concrete, two chain slots recessed into it, a
+# steel strand lying in each slot, low guide kerbs outboard, and painted
+# hatching either side. Total standing height 0.10 m at the kerbs and 0.014 m
+# on the running surface, which is what makes it (a) believable as the
+# floor-level chain conveyor a real site uses to shuttle tuggers' carts, and
+# (b) driveable -- a tug crosses it without a ramp, exactly as it must,
+# because tug_a's dock approach to the fill station runs straight down the
+# fill conveyor's centreline.
+#
+# Cart wheels roll on the concrete; the CHAIN DOG (DEF CART_LANE_DOG) is the
+# part that does the work and the part that sells it. The mobile bridge
+# drives the dog along the slot in lockstep with the cart it is pushing, and
+# parks it back at the infeed end when the carry finishes. It is the visible
+# cause: a cart on a cart conveyor is never moving on its own.
+#
+# LOAD-BEARING GEOMETRY (a contract with MavIdleLoop):
+#   DEF CART_INBOUND_ENTRY   (-14.55, 1.00)  inside the dock 2 opening
+#   DEF CART_LANE_PICKUP     (-11.60, 1.00)  where tug_b docks an empty
+# Carts on this lane sit at yaw 0 (hitch pointing EAST, into open floor), so
+# tug_b backs onto the hitch from the east and tows away east without ever
+# reversing toward the wall.
+# ============================================================================
+DEF CART_LANE_CONVEYOR Solid {
+  translation -13.05 1 0
+  children [
+    # deck plate
+    Transform { translation 0 0 0.005 children [ Shape { appearance DEF CONV_DECK PBRAppearance { baseColor 0.26 0.27 0.30 roughness 0.75 metalness 0.45 } geometry Box { size 3.40 1.10 0.010 } } ] }
+    # recessed chain slots
+    Transform { translation 0 0.20 0.012 children [ Shape { appearance DEF CONV_SLOT PBRAppearance { baseColor 0.07 0.07 0.09 roughness 0.95 metalness 0.2 } geometry Box { size 3.40 0.11 0.008 } } ] }
+    Transform { translation 0 -0.20 0.012 children [ Shape { appearance USE CONV_SLOT geometry Box { size 3.40 0.11 0.008 } } ] }
+    # steel strands lying in the slots
+    Transform { translation 0 0.20 0.014 children [ Shape { appearance DEF CONV_CHAIN PBRAppearance { baseColor 0.62 0.64 0.68 roughness 0.35 metalness 0.9 } geometry Box { size 3.40 0.055 0.006 } } ] }
+    Transform { translation 0 -0.20 0.014 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 3.40 0.055 0.006 } } ] }
+    # low guide kerbs
+    Transform { translation 0 0.56 0.05 children [ Shape { appearance DEF CONV_KERB PBRAppearance { baseColor 0.56 0.58 0.62 roughness 0.5 metalness 0.75 } geometry Box { size 3.40 0.07 0.10 } } ] }
+    Transform { translation 0 -0.56 0.05 children [ Shape { appearance USE CONV_KERB geometry Box { size 3.40 0.07 0.10 } } ] }
+    # painted hatching either side
+    Transform { translation 0 0.72 0.003 children [ Shape { appearance DEF CONV_HATCH PBRAppearance { baseColor 0.93 0.74 0.12 roughness 1 metalness 0 } geometry Box { size 3.40 0.09 0.002 } } ] }
+    Transform { translation 0 -0.72 0.003 children [ Shape { appearance USE CONV_HATCH geometry Box { size 3.40 0.09 0.002 } } ] }
+    # DRIVE HEAD at the discharge (east) end, SET BACK FROM THE LANE. It used
+    # to stand at world (-11.23, 1.80) -- x[-11.400,-11.060], y[1.600,2.000],
+    # 0.34 m of solid steel whose south face was only 0.600 m off the cart
+    # lane axis (y = 1.00). The OmniTug 500's pivot radius is 0.7244 m (footprint
+    # 0.7162 x 1.2595 m, taken from the union of its eight STL meshes), so a
+    # tug turning anywhere in x[-11.806,-10.654] on that axis swept 0.124 m
+    # INTO the cabinet -- and DEF CART_LANE_PICKUP (-11.60) and its hitch
+    # (-10.90) both sit in that band. The dock itself measured 0.168 m clear
+    # at the nominal post-reverse pose (-10.40, 1.00), which the 0.28 m lane
+    # drift measured while towing wipes out completely (0.009 m left).
+    #
+    # At world (-11.23, 2.15) -- y[1.950,2.350] -- nothing on either lane can
+    # reach it: 0.432 m clear of the tug pivoting at its real dock pose, and
+    # clear of a pivot ANYWHERE along the cart lane (0.226 m) or along the
+    # east-west transit lane at y = 0.70 (0.526 m). Even with the full 0.28 m
+    # drift the dock keeps 0.152 m. The little kerb-to-cabinet bracket is gone
+    # with it -- at z[0.25,0.35] it was inside the tug's own 0.2963 m height
+    # and it was the part that reached furthest south. The cabinet now stands
+    # free beside the deck exactly as the OUTBOUND_CONVEYOR's does, 0.185 m
+    # north of this conveyor's painted hatching.
+    Transform { translation 1.82 1.15 0.17 children [ Shape { appearance DEF CONV_DRIVE PBRAppearance { baseColor 0.22 0.24 0.28 roughness 0.6 metalness 0.6 } geometry Box { size 0.34 0.40 0.34 } } ] }
+  ]
+  name "cart_lane_conveyor"
+}
+# Chain dog — the pusher that engages a cart. Visual-only body driven along
+# the slot by the mobile bridge while a carry runs; parked at the infeed end
+# otherwise.
+DEF CART_LANE_DOG Solid {
+  translation -14.55 1 0
+  children [
+    Transform { translation 0 0 0.048 children [ Shape { appearance DEF CONV_DOG PBRAppearance { baseColor 0.88 0.52 0.08 roughness 0.6 metalness 0.35 } geometry Box { size 0.10 0.62 0.085 } } ] }
+    Transform { translation 0 0.20 0.020 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 0.16 0.09 0.03 } } ] }
+    Transform { translation 0 -0.20 0.020 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 0.16 0.09 0.03 } } ] }
+  ]
+  name "cart_lane_dog"
+}
+# Cart-lane markers (load-bearing config read live by the tug loops).
+#
+# DECAL HEIGHT z = 0.014, NOT the 0.006 the floor decals use. Every marker
+# in the closed cart ring is painted ON or ACROSS an in-floor conveyor, and
+# those deck plates span z[0.000,0.010] -- so at 0.006 the decal was BURIED
+# INSIDE the plate. Measured: CART_INBOUND_ENTRY, CONVEYOR_STATION and
+# CART_OUTBOUND_EXIT were 100% occluded, CART_PICKUP ~99% (0.01 m of one
+# bar poked past the deck's south edge), CART_LANE_PICKUP and
+# CART_OUTBOUND_INFEED clipped where they run off the end of their deck.
+# 0.014 spans z[0.013,0.015]: 3 mm of clear air over the deck plate, the
+# same margin DEF FILL_STOP uses over the belt top for the same reason.
+# The chain slots (z[0.008,0.016]) and strands (z[0.011,0.017]) still cross
+# OVER the paint where they meet it, which is what a drag chain does to a
+# painted line on a real deck.
+#
+# THE Z IS FREE, AND THAT IS CHECKED, NOT ASSUMED. MavIdleLoop resolves
+# every one of these DEFs as (p[0], p[1]) only -- omnilink_mobile_bridge.py
+# ~:5409-5427 (`got[key] = (p[0], p[1])`, `self.pickup_xy = (pk[0], pk[1])`,
+# and the same for the PARK_SPOT_* scan). Nothing reads a marker's z, so
+# moving one in Z ONLY cannot move a tug. Moving one in X or Y moves the
+# whole choreography.
+DEF CART_INBOUND_ENTRY Solid {
+  translation -14.55 1 0.014
+  children [
+    Shape { appearance DEF MARK_LINE PBRAppearance { baseColor 0.92 0.92 0.92 roughness 1 metalness 0 } geometry Box { size 0.10 0.86 0.002 } }
+  ]
+  name "cart_inbound_entry"
+}
+DEF CART_LANE_PICKUP Solid {
+  translation -11.6 1 0.014
+  children [
+    Transform { translation 0 0.46 0 children [ Shape { appearance USE MARK_LINE geometry Box { size 0.94 0.06 0.002 } } ] }
+    Transform { translation 0 -0.46 0 children [ Shape { appearance USE MARK_LINE geometry Box { size 0.94 0.06 0.002 } } ] }
+    Transform { translation 0.44 0 0 children [ Shape { appearance USE MARK_LINE geometry Box { size 0.06 0.92 0.002 } } ] }
+  ]
+  name "cart_lane_pickup"
+}
+
+# ============================================================================
+# 2. CONVEYOR LINE — raised roller conveyor from dock 1 (through the open
+# door) east into the pick cell. Belt top z=0.40. REAL boxes (BOX_1..3)
+# ride it kinematically toward the FILL_STOP line; a narrow static
+# belt-top strip bears their weight (colliders near the arm are kept to
+# the bare minimum -- see the elbow-wedge note below).
+# ============================================================================
+DEF CONVEYOR_LINE Solid {
+  translation -11.0 4.85 0
+  children [
+    Transform { translation 0 0 0.38 children [ Shape { appearance PBRAppearance { baseColor 0.15 0.16 0.19 roughness 0.9 metalness 0.4 } geometry Box { size 7.6 0.56 0.04 } } ] }
+    Transform { translation 0 0.30 0.40 children [ Shape { appearance PBRAppearance { baseColor 0.52 0.54 0.58 roughness 0.5 metalness 0.7 } geometry Box { size 7.6 0.04 0.12 } } ] }
+    # South guide rail, SPLIT to leave a discharge gap at world
+    # x in [-9.05, -8.45] where the OUTFEED_SPUR takes the filled box off the
+    # main belt (a real transfer junction cuts the rail; without the gap the
+    # box would appear to pass through it).
+    Transform { translation -0.925 -0.30 0.40 children [ Shape { appearance DEF BELT_RAIL PBRAppearance { baseColor 0.52 0.54 0.58 roughness 0.5 metalness 0.7 } geometry Box { size 5.75 0.04 0.12 } } ] }
+    Transform { translation 3.175 -0.30 0.40 children [ Shape { appearance USE BELT_RAIL geometry Box { size 1.25 0.04 0.12 } } ] }
+    Transform { translation -3.6 0.26 0.18 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation -3.6 -0.26 0.18 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation -1.8 0.26 0.18 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation -1.8 -0.26 0.18 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation 0 0.26 0.18 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation 0 -0.26 0.18 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation 1.8 0.26 0.18 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation 1.8 -0.26 0.18 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation 3.6 0.26 0.18 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation 3.6 -0.26 0.18 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+  ]
+  name "conveyor_line"
+}
+
+# Narrow static belt-top support strip: bears the boxes' weight between
+# kinematic advance corrections (a purely pinned box free-falls between
+# pins and the re-pin fight pumps energy into its contents -- the anypick
+# lesson). Top exactly at belt top z=0.40; cross-section kept narrow (0.30
+# in y) and ended at x=-8.05 so the OmniArm 6's west-leaning home elbow cannot
+# graze it (a grazed static collider wedges the soft-servo joints).
+DEF BELT_STRIP Solid {
+  translation -11.225 4.85 0.38
+  physicsBackend "newton"
+  children [ ]
+  name "belt_strip"
+  boundingObject Box { size 6.35 0.30 0.04 }
+}
+
+# OUTFEED SPUR — the short transfer conveyor that carries a FILLED box off
+# the main belt and out to the trolley parked at the fill station. Without it
+# the load glide crossed ~1.5 m of open floor and read as the box FLOATING to
+# the cart; the box now rides a real conveyor section the whole way and only
+# leaves it to settle onto the trolley deck.
+#
+# LOAD-BEARING GEOMETRY, not decor: the arm bridge's WarehouseLine._start_glide
+# routes the load glide down this centreline (west off the belt at
+# fill_x - OUTFEED_DX, south along it, then east onto the deck), so the three
+# numbers below are a contract with that code:
+#   centreline x = -8.75  == FILL_STOP.x (-8.35) - WarehouseLine.OUTFEED_DX (0.40)
+#   belt top   z = 0.40   == the main belt top (the glide holds this height)
+#   south end  y = 3.30   <= TROLLEY_PAYLOAD.y (3.60) - half a box (0.30)
+# Its east edge (-8.45) stops 0.10 m short of the parked deck edge (-8.35):
+# a 0.40 m box spans that transfer gap, and the clearance keeps a towed
+# trolley from grazing the spur. Visual-only (no boundingObject) per the
+# kinematic-prop rule -- the box is moved kinematically by the line master,
+# so the spur has to LOOK like the support, not be it.
+DEF OUTFEED_SPUR Solid {
+  translation -8.75 3.935 0
+  children [
+    Transform { translation 0 0 0.38 children [ Shape { appearance PBRAppearance { baseColor 0.15 0.16 0.19 roughness 0.9 metalness 0.4 } geometry Box { size 0.60 1.27 0.04 } } ] }
+    # west guide rail, full length; east rail stops short so the south end is
+    # an open discharge onto the cart deck.
+    Transform { translation -0.28 0 0.40 children [ Shape { appearance DEF SPUR_RAIL PBRAppearance { baseColor 0.52 0.54 0.58 roughness 0.5 metalness 0.7 } geometry Box { size 0.04 1.27 0.12 } } ] }
+    Transform { translation 0.28 0.30 0.40 children [ Shape { appearance USE SPUR_RAIL geometry Box { size 0.04 0.67 0.12 } } ] }
+    # south end-stop (the box turns EAST off the open side before reaching it)
+    Transform { translation -0.10 -0.615 0.40 children [ Shape { appearance USE SPUR_RAIL geometry Box { size 0.40 0.04 0.12 } } ] }
+    Transform { translation -0.26 -0.535 0.18 children [ Shape { appearance DEF SPUR_LEG PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.05 0.05 0.36 } } ] }
+    # SOUTH-EAST LEG, STEPPED INBOARD. At local x = 0.26 it stood at world
+    # x[-8.515,-8.465] y[3.375,3.425] z[0,0.360] -- fully inside the
+    # FILL_CONVEYOR deck plate (x[-8.550,-7.450] y[-1.450,3.750] z[0,0.010]).
+    # The box conveyor above and the cart conveyor below share this footprint
+    # by design, so the leg has to come down in the 0.125 m channel between
+    # the deck's west edge (-8.550) and the west painted hatching (-8.675).
+    # Local x = 0.14 -> world x[-8.635,-8.585]: 0.035 m clear of the deck,
+    # 0.040 m clear of the hatching. The spur's east rail stays at 0.28.
+    Transform { translation 0.14 -0.535 0.18 children [ Shape { appearance USE SPUR_LEG geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation -0.26 0.535 0.18 children [ Shape { appearance USE SPUR_LEG geometry Box { size 0.05 0.05 0.36 } } ] }
+    Transform { translation 0.26 0.535 0.18 children [ Shape { appearance USE SPUR_LEG geometry Box { size 0.05 0.05 0.36 } } ] }
+  ]
+  name "outfeed_spur"
+}
+
+# Painted fill-stop line on the belt: the frontmost box halts here, in the
+# arm's reach. The arm bridge's WarehouseLine reads this DEF's position as
+# the fill-station stop, so the marker is load-bearing config, not decor.
+# ONLY x AND y ARE READ (WarehouseLine._resolve: fill_x, belt_y = fp[0],
+# fp[1]; the belt height comes from BOX_1's own z), so the decal's z is free
+# and has been fixed: it used to span z[0.400,0.402], i.e. its underside was
+# COPLANAR with the belt top (0.400) AND with the bottom of a box standing at
+# the stop -- three surfaces in one plane at the busiest square metre on
+# camera. It now spans z[0.403,0.405]: 3 mm of clear air over the belt (the
+# same order as this world's floor decals) and still 17 mm below the top of a
+# stopped box's floor slab (0.422), so a box parked on the line buries the
+# line instead of fighting it, which is what a painted line does.
+DEF FILL_STOP Solid {
+  translation -8.35 4.85 0.404
+  children [
+    Shape { appearance PBRAppearance { baseColor 0.95 0.78 0.10 roughness 1 metalness 0 } geometry Box { size 0.06 0.56 0.002 } }
+  ]
+  name "fill_stop"
+}
+
+# The three line boxes — open-top totes the conveyor delivers to the fill
+# stop. Real physics compound bodies (floor + 4 walls) so dropped parts
+# rest inside and travel with the box (belt advance, deck glide, trolley
+# tow all move box + contents as a rigid ensemble). DEF BOX_* opts them
+# into the mobile bridge's trolley-rider capture. Origin at box bottom.
+DEF BOX_1 Solid {
+  translation -10.2 4.85 0.40
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.011 children [ Shape { appearance DEF BOX_SHELL PBRAppearance { baseColor 0.30 0.33 0.38 roughness 0.85 metalness 0.2 } geometry Box { size 0.40 0.40 0.022 } } ] }
+    Transform { translation -0.185 0 0.082 children [ Shape { appearance DEF BOX_WALL PBRAppearance { baseColor 0.36 0.39 0.44 roughness 0.8 metalness 0.3 } geometry Box { size 0.03 0.40 0.12 } } ] }
+    Transform { translation 0.185 0 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.03 0.40 0.12 } } ] }
+    Transform { translation 0 -0.185 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.40 0.03 0.12 } } ] }
+    Transform { translation 0 0.185 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.40 0.03 0.12 } } ] }
+  ]
+  name "line_box_1"
+  boundingObject Group { children [
+    Transform { translation 0 0 0.011 children [ Box { size 0.40 0.40 0.022 } ] }
+    Transform { translation -0.185 0 0.082 children [ Box { size 0.03 0.40 0.12 } ] }
+    Transform { translation 0.185 0 0.082 children [ Box { size 0.03 0.40 0.12 } ] }
+    Transform { translation 0 -0.185 0.082 children [ Box { size 0.40 0.03 0.12 } ] }
+    Transform { translation 0 0.185 0.082 children [ Box { size 0.40 0.03 0.12 } ] }
+  ] }
+  physics Physics { density -1 mass 3.0 centerOfMass [ 0 0 0.015 ] }
+}
+DEF BOX_2 Solid {
+  translation -11.6 4.85 0.40
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.011 children [ Shape { appearance USE BOX_SHELL geometry Box { size 0.40 0.40 0.022 } } ] }
+    Transform { translation -0.185 0 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.03 0.40 0.12 } } ] }
+    Transform { translation 0.185 0 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.03 0.40 0.12 } } ] }
+    Transform { translation 0 -0.185 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.40 0.03 0.12 } } ] }
+    Transform { translation 0 0.185 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.40 0.03 0.12 } } ] }
+  ]
+  name "line_box_2"
+  boundingObject Group { children [
+    Transform { translation 0 0 0.011 children [ Box { size 0.40 0.40 0.022 } ] }
+    Transform { translation -0.185 0 0.082 children [ Box { size 0.03 0.40 0.12 } ] }
+    Transform { translation 0.185 0 0.082 children [ Box { size 0.03 0.40 0.12 } ] }
+    Transform { translation 0 -0.185 0.082 children [ Box { size 0.40 0.03 0.12 } ] }
+    Transform { translation 0 0.185 0.082 children [ Box { size 0.40 0.03 0.12 } ] }
+  ] }
+  physics Physics { density -1 mass 3.0 centerOfMass [ 0 0 0.015 ] }
+}
+DEF BOX_3 Solid {
+  translation -13.0 4.85 0.40
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.011 children [ Shape { appearance USE BOX_SHELL geometry Box { size 0.40 0.40 0.022 } } ] }
+    Transform { translation -0.185 0 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.03 0.40 0.12 } } ] }
+    Transform { translation 0.185 0 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.03 0.40 0.12 } } ] }
+    Transform { translation 0 -0.185 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.40 0.03 0.12 } } ] }
+    Transform { translation 0 0.185 0.082 children [ Shape { appearance USE BOX_WALL geometry Box { size 0.40 0.03 0.12 } } ] }
+  ]
+  name "line_box_3"
+  boundingObject Group { children [
+    Transform { translation 0 0 0.011 children [ Box { size 0.40 0.40 0.022 } ] }
+    Transform { translation -0.185 0 0.082 children [ Box { size 0.03 0.40 0.12 } ] }
+    Transform { translation 0.185 0 0.082 children [ Box { size 0.03 0.40 0.12 } ] }
+    Transform { translation 0 -0.185 0.082 children [ Box { size 0.40 0.03 0.12 } ] }
+    Transform { translation 0 0.185 0.082 children [ Box { size 0.40 0.03 0.12 } ] }
+  ] }
+  physics Physics { density -1 mass 3.0 centerOfMass [ 0 0 0.015 ] }
+}
+
+# PARTS FEEDER — a small tray table beside (south-east of) the arm: the
+# respawning parts source the arm picks from. The tabletop slab is the only
+# collider (manipulanda-support exception to the visual-only prop rule; the
+# OmniArm 6's home elbow leans WEST over the belt, so this east-side collider
+# stays clear of it -- keep its top exactly at working height z=0.40).
+# Parts placed into a box "ship" with it at the dispatch bay and respawn
+# here (handled by the arm bridge's WarehouseLine).
+#
+# TRAY WIDENED 0.52 -> 0.68 IN X, GROWING WEST ONLY, TO CARRY A FOURTH
+# COLUMN OF PARTS. This is the fix for the arm standing still: the line
+# commits FILL_TARGETS = (3, 2) cycled over three boxes = 3+2+3 = 8 parts
+# per lap (omnilink_arm_bridge.py:4070), against a stock of six, and parts
+# only come back when a load SHIPS -- which is chained to tug_a's ~145 s
+# park-and-detach round trip. Measured over 605 s: the TCP was motionless
+# 482 s of it, in blocks of 58-114 s, while the pick cycle itself ran
+# healthy (11.3 s wall against 10.8 s commanded). Eight parts on the tray
+# match the eight the lap consumes, so the cell stops running dry between
+# ships.
+#
+# WHY WEST-ONLY AND NOT SYMMETRIC. Centred growth would push the tray's
+# EAST face 0.08 m further into the pick cell and still leave the new
+# column's cubes hanging 5 mm off the slab edge, with the west rim fence
+# stranded BETWEEN the new column and the other six. Shifting the slab's
+# local centre to x = -0.08 keeps the east face exactly where it was
+# (world -7.20) and moves the west face -7.72 -> -7.88. The west rim and
+# the two west legs move with it; the north/south rims grow 0.46 -> 0.62
+# to span the new gap. The new column then gets 0.045 m of rim clearance,
+# matching the 0.055 m the east-most column already has.
+#
+# CLEARANCE TO THE ARM, CHECKED: the OmniArm 6's own colliders are link0
+# (cylinder r=0.12 about base x=-0.02, z[0,0.075]) and link1 (r=0.10,
+# z[0.055,0.285]) -- both reaching world x = -7.90 at most. The widened
+# slab's west face is -7.88 and its collider sits at z[0.355,0.400],
+# ABOVE both, so there is no overlap in x or z; and both bodies are static
+# (staticBase TRUE, and this Solid has no `physics`), so two static
+# colliders 0.02 m apart never generate a solved contact anyway. The west
+# legs stop at world x -7.86, 0.04 m clear.
+DEF FEEDER Solid {
+  translation -7.46 4.23 0
+  physicsBackend "newton"
+  children [
+    # WIDTH IS LOAD-BEARING -- DO NOT GROW THIS SLAB WEST. It was widened
+    # 0.52 -> 0.68 (west, toward the arm) to seat a 4th part column, and
+    # that BROKE THE PICK: the OmniArm 6's link2 collider is offset +0.13 m
+    # along the joint-2 axis, so at the pick poses the upper-arm yoke
+    # sweeps the tray's NORTH-WEST corner -- world x -8.05..-7.83,
+    # y 4.39..4.44 -- which is exactly where the wider slab went. With
+    # WorldInfo.newtonRobotColliders TRUE those URDF collision cylinders
+    # are live, so the arm collided with the tray it was reaching over.
+    # Measured clearance of link2 to the geometry, by pad:
+    #     D +0.074  G +0.043  -> gripped
+    #     A -0.010  E -0.076  C -0.081  B -0.082  F -0.100 -> ALL FAILED
+    # and at the HOME pose link2 sat 0.037 m INSIDE the wider slab.
+    # Restored to the only footprint with positive evidence: a 606 s trace
+    # in which all six pads were picked, ten grips, zero failures.
+    Transform { translation 0 0 0.38 children [ Shape { appearance PBRAppearance { baseColor 0.20 0.22 0.26 roughness 0.8 metalness 0.4 } geometry Box { size 0.52 0.40 0.04 } } ] }
+    Transform { translation -0.245 0 0.415 children [ Shape { appearance DEF FEEDER_RIM PBRAppearance { baseColor 0.55 0.57 0.60 roughness 0.6 metalness 0.6 } geometry Box { size 0.03 0.40 0.03 } } ] }
+    Transform { translation 0.245 0 0.415 children [ Shape { appearance USE FEEDER_RIM geometry Box { size 0.03 0.40 0.03 } } ] }
+    Transform { translation 0 -0.185 0.415 children [ Shape { appearance USE FEEDER_RIM geometry Box { size 0.46 0.03 0.03 } } ] }
+    Transform { translation 0 0.185 0.415 children [ Shape { appearance USE FEEDER_RIM geometry Box { size 0.46 0.03 0.03 } } ] }
+    Transform { translation -0.22 -0.16 0.18 children [ Shape { appearance DEF FEEDER_LEG PBRAppearance { baseColor 0.30 0.32 0.36 roughness 0.6 metalness 0.6 } geometry Box { size 0.04 0.04 0.36 } } ] }
+    Transform { translation 0.22 -0.16 0.18 children [ Shape { appearance USE FEEDER_LEG geometry Box { size 0.04 0.04 0.36 } } ] }
+    Transform { translation -0.22 0.16 0.18 children [ Shape { appearance USE FEEDER_LEG geometry Box { size 0.04 0.04 0.36 } } ] }
+    Transform { translation 0.22 0.16 0.18 children [ Shape { appearance USE FEEDER_LEG geometry Box { size 0.04 0.04 0.36 } } ] }
+  ]
+  name "parts_feeder"
+  boundingObject Transform { translation 0 0 0.3775 children [ Box { size 0.52 0.40 0.045 } ] }
+}
+
+# REAL parts on the feeder tray — physics bodies inside the OmniArm 6 reach
+# envelope. DEF GRASP_* opts them into the arm bridge's kinematic-attach
+# grasp (manipulanda are exempt from the visual-only prop rule). Solid +
+# mass pattern from flagship/omniarm6_pick_place.omniworld / omniarm6_anypick_line.omniworld.
+# SPAWN HEIGHT: z = 0.425, so a 0.05 m cube's underside is exactly on the
+# feeder's collider top (0.400) and the part starts AT REST. It used to be
+# 0.427 -- six cubes hanging 2 mm in the air and dropping at t=0. Harmless,
+# but it is a settle the audience can see on the very first frames, and the
+# arm bridge respawns parts at these authored poses, so it happened again
+# every time a load shipped.
+#
+# EIGHT PARTS, FOUR COLUMNS. A..F are the original 3x2 grid at x
+# -7.62/-7.46/-7.30 (0.16 pitch), y 4.14/4.32 (0.18 pitch); G and H
+# continue the same pitch onto the widened tray at x = -7.78. Nothing in
+# the controller has to learn about them: the arm bridge finds graspables
+# by DEF PREFIX, not by a list. `_iter_graspables` (omnilink_arm_bridge.py
+# ~:3440) walks root.children and yields every node whose DEF starts with
+# "GRASP_"; ArmIdleLoop._snapshot_scene builds its pick pads straight from
+# that walk, and WarehouseLine._resolve builds the respawn table
+# (`_parts_spawn`) from the same walk. So adding a root-level DEF GRASP_*
+# Solid adds a pickable, respawning part -- and the count the arm quotes
+# when an operator asks "how many parts are left?" (feeder_status) follows
+# automatically.
+#
+# REACH, CHECKED AGAINST THE ARM'S OWN GATE. The OmniArm 6 config
+# (_arm_configs.py) declares workspace_min_radius 0.15,
+# workspace_max_radius 0.95, workspace_min_z -0.10, and the gate
+# (`_workspace_refusal`) tests the FULL 3-D radius of the base-frame
+# waypoint, height included. The new column sits 0.22 m east and 0.16/0.02 m
+# south of the base in XY but 0.425 m up, so its grasp waypoints are
+# 0.479-0.505 m out -- three times the 0.15 m dead zone and half the
+# envelope. It is also LESS extended than the existing outer column: with
+# the wrist offset (tcp_offset 0.1655 + vacuum tool_reach 0.13 = 0.2955)
+# the lift waypoint puts the wrist centre 0.733 m from the shoulder here
+# against 0.780 m for GRASP_PART_D, on a 0.380+0.420 = 0.800 m two-link
+# arm. The tight column is the easier one to reach, not the harder.
+DEF GRASP_PART_A Solid {
+  translation -7.62 4.14 0.425
+  rotation 0 0 1 0.35
+  physicsBackend "newton"
+  children [
+    DEF PART_A_SH Shape { appearance PBRAppearance { baseColor 0.88 0.18 0.16 roughness 1 metalness 0 } geometry Box { size 0.05 0.05 0.05 } }
+  ]
+  name "part_a"
+  boundingObject USE PART_A_SH
+  physics Physics { density -1 mass 0.06 }
+}
+DEF GRASP_PART_B Solid {
+  translation -7.46 4.14 0.425
+  rotation 0 0 1 -0.6
+  physicsBackend "newton"
+  children [
+    DEF PART_B_SH Shape { appearance PBRAppearance { baseColor 0.16 0.36 0.88 roughness 1 metalness 0 } geometry Box { size 0.05 0.05 0.05 } }
+  ]
+  name "part_b"
+  boundingObject USE PART_B_SH
+  physics Physics { density -1 mass 0.06 }
+}
+DEF GRASP_PART_C Solid {
+  translation -7.30 4.14 0.425
+  rotation 0 0 1 1.1
+  physicsBackend "newton"
+  children [
+    DEF PART_C_SH Shape { appearance PBRAppearance { baseColor 0.16 0.78 0.30 roughness 1 metalness 0 } geometry Box { size 0.05 0.05 0.05 } }
+  ]
+  name "part_c"
+  boundingObject USE PART_C_SH
+  physics Physics { density -1 mass 0.06 }
+}
+DEF GRASP_PART_D Solid {
+  translation -7.62 4.32 0.425
+  rotation 0 0 1 -1.3
+  physicsBackend "newton"
+  children [
+    DEF PART_D_SH Shape { appearance PBRAppearance { baseColor 0.88 0.45 0.16 roughness 1 metalness 0 } geometry Box { size 0.05 0.05 0.05 } }
+  ]
+  name "part_d"
+  boundingObject USE PART_D_SH
+  physics Physics { density -1 mass 0.06 }
+}
+DEF GRASP_PART_E Solid {
+  translation -7.46 4.32 0.425
+  rotation 0 0 1 0.8
+  physicsBackend "newton"
+  children [
+    DEF PART_E_SH Shape { appearance PBRAppearance { baseColor 0.55 0.20 0.80 roughness 1 metalness 0 } geometry Box { size 0.05 0.05 0.05 } }
+  ]
+  name "part_e"
+  boundingObject USE PART_E_SH
+  physics Physics { density -1 mass 0.06 }
+}
+DEF GRASP_PART_F Solid {
+  translation -7.30 4.32 0.425
+  rotation 0 0 1 -0.25
+  physicsBackend "newton"
+  children [
+    DEF PART_F_SH Shape { appearance PBRAppearance { baseColor 0.93 0.80 0.15 roughness 1 metalness 0 } geometry Box { size 0.05 0.05 0.05 } }
+  ]
+  name "part_f"
+  boundingObject USE PART_F_SH
+  physics Physics { density -1 mass 0.06 }
+}
+# A FOURTH PART COLUMN IS NOT VIABLE ON THIS ARM -- do not re-add one.
+# GRASP_PART_G/H lived at x = -7.78 and were removed with the slab
+# widening above. West is where the OmniArm 6's shoulder yoke lives (link2's
+# collider is offset +0.13 m along the joint-2 axis), so a column there is
+# inside the arm's own swept volume: cube H measured -0.010 to -0.100 m of
+# clearance at five of the seven pick poses, and those five all failed to
+# grip. East is past the workspace -- a column at x = -7.14 sits at
+# 0.977 m base-frame radius against workspace_max_radius 0.95.
+# The problem G/H were added to solve is real (FILL_TARGETS committed 8
+# parts per lap against a stock of 6, so the arm ran dry and stood idle),
+# but the fix belongs in the CONSUMPTION rate, not in the tray footprint.
+# See FILL_TARGETS in omnilink_arm_bridge.py.
+
+# ============================================================================
+# 3. OmniArm 6 PICK CELL — painted yellow border (3.6 m x 3.6 m) with safety
+# fencing on the two open sides: south (with a tug gate gap in front of the
+# fill station) and east. West side admits the conveyor; the parts feeder
+# sits south-east of the arm and the fill-station trolley south of it,
+# just inside the tug gate. Arm-bridge chat wiring copied
+# from chat/omnilink_omniarm6.omniworld; suction rig (gum-pad URDF + vacuum effector) from flagship/omniarm6_anypick_line.omniworld.
+# ============================================================================
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_gumgrip.urdf"
+  translation -8 4.3 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omnilink_arm_bridge"
+  # --idle-resume-s 12: SET EXPLICITLY, DO NOT DROP IT. The bridge default
+  # is 60.0 s, and this world used to take it. Any operator command -- a
+  # chat turn included -- pauses the idle loop instantly, and the loop
+  # re-checks that pause INSIDE its motion wait (`while ...: if
+  # self._blocked(): return False`, omnilink_arm_bridge.py ~:5041), so a
+  # single chat message lands the arm frozen MID-TRANSFER with a cube welded
+  # to the suction pad until the window expires. Chat is the headline
+  # feature of this demo, so the default put the worst frame in the show
+  # right after the best one. 12 s is long enough to finish a sentence and
+  # short enough that nobody watching thinks it broke. The floor is 5.0 s
+  # (`resume_s = max(5.0, ...)`), so this value is honoured as written.
+  controllerArgs [ "--robot" "omniarm6" "--gripper" "vacuum" "--port" "8765" "--idle-loop" "pick" "--idle-resume-s" "12" "--idle-drop" "TROLLEY_PAYLOAD,TROLLEY_B,TROLLEY_C,TROLLEY_D,TROLLEY_E,TROLLEY_F,TROLLEY_G,TROLLEY_H" ]
+  window "omnilink_chat"
+}
+
+# Painted cell border (yellow lines, z decal).
+# South cell line is SPLIT where the FILL_CONVEYOR crosses it (x in
+# [-8.62,-7.38]): painted floor markings stop at a conveyor, they do not run
+# over the deck, and a decal at z=0.006 would z-fight the deck plate anyway.
+DEF CELL_LINE_S_W Solid { translation -9.23 2.6 0.006 children [ Shape { appearance DEF CELL_LINE PBRAppearance { baseColor 0.95 0.78 0.10 roughness 1 metalness 0 } geometry Box { size 1.22 0.08 0.002 } } ] name "cell_line_s_w" }
+DEF CELL_LINE_S_E Solid { translation -6.77 2.6 0.006 children [ Shape { appearance USE CELL_LINE geometry Box { size 1.22 0.08 0.002 } } ] name "cell_line_s_e" }
+DEF CELL_LINE_N Solid { translation -8 6.2 0.006 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.78 0.10 roughness 1 metalness 0 } geometry Box { size 3.68 0.08 0.002 } } ] name "cell_line_n" }
+DEF CELL_LINE_E Solid { translation -6.2 4.4 0.006 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.78 0.10 roughness 1 metalness 0 } geometry Box { size 0.08 3.52 0.002 } } ] name "cell_line_e" }
+DEF CELL_LINE_W1 Solid { translation -9.8 3.55 0.006 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.78 0.10 roughness 1 metalness 0 } geometry Box { size 0.08 1.82 0.002 } } ] name "cell_line_w1" }
+DEF CELL_LINE_W2 Solid { translation -9.8 5.7 0.006 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.78 0.10 roughness 1 metalness 0 } geometry Box { size 0.08 0.92 0.002 } } ] name "cell_line_w2" }
+
+# Safety fencing (visual-only — Fence.proto has no boundingObject by
+# default). South side is split to leave a 1.6 m tug gate at the drop zone.
+Fence {
+  name "fence_pick_s_west"
+  height 1.1
+  poleGap 0.9
+  poleRadius 0.03
+  poleShape "square"
+  poleAppearance PBRAppearance { baseColor 0.95 0.73 0.08 roughness 0.7 metalness 0 emissiveColor 0.38 0.28 0.03 }
+  horizontalBarAppearance PBRAppearance { baseColor 0.95 0.73 0.08 roughness 0.7 metalness 0 emissiveColor 0.38 0.28 0.03 }
+  path [ -9.8 2.6 0, -8.8 2.6 0 ]
+}
+Fence {
+  name "fence_pick_s_east"
+  height 1.1
+  poleGap 0.9
+  poleRadius 0.03
+  poleShape "square"
+  poleAppearance PBRAppearance { baseColor 0.95 0.73 0.08 roughness 0.7 metalness 0 emissiveColor 0.38 0.28 0.03 }
+  horizontalBarAppearance PBRAppearance { baseColor 0.95 0.73 0.08 roughness 0.7 metalness 0 emissiveColor 0.38 0.28 0.03 }
+  path [ -7.2 2.6 0, -6.2 2.6 0 ]
+}
+Fence {
+  name "fence_pick_e"
+  height 1.1
+  poleGap 0.9
+  poleRadius 0.03
+  poleShape "square"
+  poleAppearance PBRAppearance { baseColor 0.95 0.73 0.08 roughness 0.7 metalness 0 emissiveColor 0.38 0.28 0.03 }
+  horizontalBarAppearance PBRAppearance { baseColor 0.95 0.73 0.08 roughness 0.7 metalness 0 emissiveColor 0.38 0.28 0.03 }
+  path [ -6.2 2.6 0, -6.2 6.2 0 ]
+}
+
+# ============================================================================
+# THE TROLLEYS — EIGHT identical flat-deck tug trolleys (AMR tugger carts)
+# circulating on a closed ring. Every spawn pose below is a LEGITIMATE
+# resting place in that ring, so the world is already mid-shift at t=0
+# rather than staged:
+#   TROLLEY_PAYLOAD  fill station, under the arm      (being filled)
+#   TROLLEY_B        CART_STAGE                       (next empty, pre-fetched)
+#   TROLLEY_C        CART_LANE_PICKUP                 (empty, off the truck)
+#   TROLLEY_D..G     PARK_SPOT_1..4                   (parked at the back)
+#   TROLLEY_H        CART_INBOUND_ENTRY               (just off the truck)
+# That leaves PARK_SPOT_5 and _6 free. Two, not one, and not zero: tug_a
+# keeps PARK_RESERVE (1) spot free by collecting the oldest cart during its
+# DEAD time, so the row wants a spare to work with. Starting one below the
+# reserve means the recycle path fires within the first few minutes of any
+# run -- it is exercised, not dead code -- but it fires in the window where
+# the arm is busy rather than while a loaded cart blocks the station.
+#
+# Filled line boxes ride the outfeed spur onto the flat deck; the OmniTug 500 tugs
+# magnetically dock to the hitch (mobile bridge attach_trolley) and tow with
+# one-trailer kinematics. Parked carts sit hitch-SOUTH so tug_a can always
+# dock one from the open lane side without reversing into a neighbour; lane
+# carts sit hitch-EAST for the same reason.
+#
+# TROLLEY_PAYLOAD is written out in full because it carries the DEF
+# appearances (TROLLEY_STEEL / _DARK / _CLEAT / _WHEEL / _HITCH) the other
+# seven USE; B..H are generated from one template so a cart cannot drift.
+#
+# Kinematic-ensemble body (the anypick-line bin pattern): a physics body
+# with a compound collider, towed by the mobile bridge with per-tick pose +
+# resetPhysics (zero velocity). The deck collider MOVES WITH IT, so the
+# box (and the parts inside the box) rest on the deck at the fill station
+# AND at the dispatch bay after the tow — no static catch solids, no
+# steady-state pinning. Collider = deck column only (tunnel-proof; corner
+# cleats are visual so nothing can wedge the OmniArm 6's sweep); the hitch
+# stays collider-free so the docking tug's tail never fights it. Local
+# frame: hitch bar along +x; hitch POINT at local (0.70, 0, 0.25). The
+# drawbar was lengthened from 0.60 to 0.70 m so the tow's articulation clamp
+# (mobile bridge _ARTIC_MAX_RAD, the jackknife guard) has a workable ~50deg
+# swing before the deck would reach the tug body; keep this in step with the
+# controller constant _HITCH_LOCAL.
+# Spawned yaw -90 deg -> hitch faces the south gate.
+# ============================================================================
+DEF TROLLEY_PAYLOAD Solid {
+  translation -8 3.6 0
+  rotation 0 0 1 -1.5708
+  physicsBackend "newton"
+  children [
+    # — steel deck (top 0.325) —
+    Transform { translation 0 0 0.30 children [ Shape { appearance DEF TROLLEY_STEEL PBRAppearance { baseColor 0.30 0.34 0.40 roughness 0.55 metalness 0.7 } geometry Box { size 0.70 0.70 0.05 } } ] }
+    Transform { translation 0 0 0.265 children [ Shape { appearance DEF TROLLEY_DARK PBRAppearance { baseColor 0.16 0.17 0.20 roughness 0.7 metalness 0.5 } geometry Box { size 0.66 0.66 0.02 } } ] }
+    # — corner cleats that cradle the line box (visual-only) —
+    Transform { translation 0.245 0.245 0.34 children [ Shape { appearance DEF TROLLEY_CLEAT PBRAppearance { baseColor 0.85 0.55 0.10 roughness 0.7 metalness 0.3 } geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    # — four caster assemblies (fork + wheel), visual-only —
+    Transform { translation 0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance DEF TROLLEY_WHEEL PBRAppearance { baseColor 0.09 0.09 0.10 roughness 0.9 metalness 0.1 } geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    # — hitch drawbar + plate (hitch point local (0.70, 0, 0.25)) —
+    Transform { translation 0.525 0 0.25 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.35 0.05 0.04 } } ] }
+    Transform { translation 0.70 0 0.21 children [ Shape { appearance DEF TROLLEY_HITCH PBRAppearance { baseColor 0.85 0.55 0.10 roughness 0.6 metalness 0.4 } geometry Box { size 0.035 0.14 0.12 } } ] }
+    Transform { translation 0.70 0 0.27 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_HITCH geometry Cylinder { radius 0.028 height 0.03 } } ] }
+  ]
+  name "trolley_payload"
+  boundingObject Transform { translation 0 0 0.1625 children [ Box { size 0.70 0.70 0.325 } ] }
+  physics Physics { density -1 mass 22.0 centerOfMass [ 0 0 0.12 ] }
+}
+# waiting at CART_STAGE, next in line for the fill conveyor (hitch east)
+DEF TROLLEY_B Solid {
+  translation -9.7 0.55 0
+  rotation 0 0 1 0.0
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.30 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.70 0.70 0.05 } } ] }
+    Transform { translation 0 0 0.265 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.66 0.66 0.02 } } ] }
+    Transform { translation 0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.525 0 0.25 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.35 0.05 0.04 } } ] }
+    Transform { translation 0.70 0 0.21 children [ Shape { appearance USE TROLLEY_HITCH geometry Box { size 0.035 0.14 0.12 } } ] }
+    Transform { translation 0.70 0 0.27 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_HITCH geometry Cylinder { radius 0.028 height 0.03 } } ] }
+  ]
+  name "trolley_b"
+  boundingObject Transform { translation 0 0 0.1625 children [ Box { size 0.70 0.70 0.325 } ] }
+  physics Physics { density -1 mass 22.0 centerOfMass [ 0 0 0.12 ] }
+}
+
+# waiting at CART_LANE_PICKUP (hitch east, into open floor)
+DEF TROLLEY_C Solid {
+  translation -11.6 1.0 0
+  rotation 0 0 1 0.0
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.30 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.70 0.70 0.05 } } ] }
+    Transform { translation 0 0 0.265 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.66 0.66 0.02 } } ] }
+    Transform { translation 0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.525 0 0.25 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.35 0.05 0.04 } } ] }
+    Transform { translation 0.70 0 0.21 children [ Shape { appearance USE TROLLEY_HITCH geometry Box { size 0.035 0.14 0.12 } } ] }
+    Transform { translation 0.70 0 0.27 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_HITCH geometry Cylinder { radius 0.028 height 0.03 } } ] }
+  ]
+  name "trolley_c"
+  boundingObject Transform { translation 0 0 0.1625 children [ Box { size 0.70 0.70 0.325 } ] }
+  physics Physics { density -1 mass 22.0 centerOfMass [ 0 0 0.12 ] }
+}
+
+# parked, PARK_SPOT_1
+DEF TROLLEY_D Solid {
+  translation 5.9 4.2 0
+  rotation 0 0 1 1.5708
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.30 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.70 0.70 0.05 } } ] }
+    Transform { translation 0 0 0.265 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.66 0.66 0.02 } } ] }
+    Transform { translation 0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.525 0 0.25 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.35 0.05 0.04 } } ] }
+    Transform { translation 0.70 0 0.21 children [ Shape { appearance USE TROLLEY_HITCH geometry Box { size 0.035 0.14 0.12 } } ] }
+    Transform { translation 0.70 0 0.27 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_HITCH geometry Cylinder { radius 0.028 height 0.03 } } ] }
+  ]
+  name "trolley_d"
+  boundingObject Transform { translation 0 0 0.1625 children [ Box { size 0.70 0.70 0.325 } ] }
+  physics Physics { density -1 mass 22.0 centerOfMass [ 0 0 0.12 ] }
+}
+
+# parked, PARK_SPOT_2
+DEF TROLLEY_E Solid {
+  translation 7.3 4.2 0
+  rotation 0 0 1 1.5708
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.30 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.70 0.70 0.05 } } ] }
+    Transform { translation 0 0 0.265 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.66 0.66 0.02 } } ] }
+    Transform { translation 0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.525 0 0.25 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.35 0.05 0.04 } } ] }
+    Transform { translation 0.70 0 0.21 children [ Shape { appearance USE TROLLEY_HITCH geometry Box { size 0.035 0.14 0.12 } } ] }
+    Transform { translation 0.70 0 0.27 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_HITCH geometry Cylinder { radius 0.028 height 0.03 } } ] }
+  ]
+  name "trolley_e"
+  boundingObject Transform { translation 0 0 0.1625 children [ Box { size 0.70 0.70 0.325 } ] }
+  physics Physics { density -1 mass 22.0 centerOfMass [ 0 0 0.12 ] }
+}
+
+# parked, PARK_SPOT_3
+DEF TROLLEY_F Solid {
+  translation 8.7 4.2 0
+  rotation 0 0 1 1.5708
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.30 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.70 0.70 0.05 } } ] }
+    Transform { translation 0 0 0.265 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.66 0.66 0.02 } } ] }
+    Transform { translation 0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.525 0 0.25 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.35 0.05 0.04 } } ] }
+    Transform { translation 0.70 0 0.21 children [ Shape { appearance USE TROLLEY_HITCH geometry Box { size 0.035 0.14 0.12 } } ] }
+    Transform { translation 0.70 0 0.27 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_HITCH geometry Cylinder { radius 0.028 height 0.03 } } ] }
+  ]
+  name "trolley_f"
+  boundingObject Transform { translation 0 0 0.1625 children [ Box { size 0.70 0.70 0.325 } ] }
+  physics Physics { density -1 mass 22.0 centerOfMass [ 0 0 0.12 ] }
+}
+
+# parked, PARK_SPOT_4
+DEF TROLLEY_G Solid {
+  translation 10.1 4.2 0
+  rotation 0 0 1 1.5708
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.30 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.70 0.70 0.05 } } ] }
+    Transform { translation 0 0 0.265 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.66 0.66 0.02 } } ] }
+    Transform { translation 0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.525 0 0.25 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.35 0.05 0.04 } } ] }
+    Transform { translation 0.70 0 0.21 children [ Shape { appearance USE TROLLEY_HITCH geometry Box { size 0.035 0.14 0.12 } } ] }
+    Transform { translation 0.70 0 0.27 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_HITCH geometry Cylinder { radius 0.028 height 0.03 } } ] }
+  ]
+  name "trolley_g"
+  boundingObject Transform { translation 0 0 0.1625 children [ Box { size 0.70 0.70 0.325 } ] }
+  physics Physics { density -1 mass 22.0 centerOfMass [ 0 0 0.12 ] }
+}
+
+# just off the truck at CART_INBOUND_ENTRY, inside the dock 2 doorway
+DEF TROLLEY_H Solid {
+  translation -14.55 1.0 0
+  rotation 0 0 1 0.0
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.30 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.70 0.70 0.05 } } ] }
+    Transform { translation 0 0 0.265 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.66 0.66 0.02 } } ] }
+    Transform { translation 0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation -0.245 -0.245 0.34 children [ Shape { appearance USE TROLLEY_CLEAT geometry Box { size 0.06 0.06 0.03 } } ] }
+    Transform { translation 0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation -0.27 -0.27 0.185 children [ Shape { appearance USE TROLLEY_DARK geometry Box { size 0.04 0.07 0.13 } } ] }
+    Transform { translation 0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation -0.27 -0.27 0.06 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_WHEEL geometry Cylinder { radius 0.06 height 0.05 } } ] }
+    Transform { translation 0.525 0 0.25 children [ Shape { appearance USE TROLLEY_STEEL geometry Box { size 0.35 0.05 0.04 } } ] }
+    Transform { translation 0.70 0 0.21 children [ Shape { appearance USE TROLLEY_HITCH geometry Box { size 0.035 0.14 0.12 } } ] }
+    Transform { translation 0.70 0 0.27 rotation 1 0 0 1.5708 children [ Shape { appearance USE TROLLEY_HITCH geometry Cylinder { radius 0.028 height 0.03 } } ] }
+  ]
+  name "trolley_h"
+  boundingObject Transform { translation 0 0 0.1625 children [ Box { size 0.70 0.70 0.325 } ] }
+  physics Physics { density -1 mass 22.0 centerOfMass [ 0 0 0.12 ] }
+}
+
+# ============================================================================
+# THE FILL CONVEYOR — the in-floor drag-chain conveyor that runs the whole
+# north-south cart column of the pick cell: empties IN to the fill spot in
+# front of OmniArm 6, loaded carts back OUT and clear of the cell.
+#
+# THIS NODE EXISTS TO KILL THE MAGIC GLIDE. Before it, tug_b dropped the
+# returning cart on the lane and the cart slid into position on its own --
+# the single worst read in the demo, because a 22 kg steel cart moved with no
+# cause on screen. Now the tug tows the cart only as far as CONVEYOR_STATION
+# (the middle of this deck), detaches, and the conveyor takes it from
+# there: chain dog engaged, constant 0.26 m/s, straight up the slot. Every
+# metre a cart travels in this world is now either towed or conveyed.
+#
+# IT RUNS PAST THE STATION, and that is the fix for the demo's dead air.
+# The deck used to STOP at the station, so a loaded cart had to sit there
+# until tug_a came and dragged it away -- and because the station is also the
+# only way an empty can reach the arm, the arm stalled for the whole of that
+# dock-and-drag (measured 20 s of a 34 s wait). The deck now continues 2.55 m
+# further south to DEF CART_PICKUP, so the loaded cart clears the station in
+# one continuous move and the next empty follows straight in behind it. See
+# the CART_PICKUP note below for the before/after numbers.
+#
+# LOAD-BEARING GEOMETRY (a contract with MavIdleLoop + WarehouseLine):
+#   centreline x = -8.00  == TROLLEY_PAYLOAD.x, so the carry is a straight
+#                            line and the cart needs no turn at any stop.
+#   pickup  y = -1.00     == DEF CART_PICKUP, the loaded-cart outfeed.
+#   station y =  1.55     == DEF CONVEYOR_STATION, the empty-cart infeed.
+#   discharge y = 3.60    == TROLLEY_PAYLOAD.y, the fill spot the arm bridge
+#                            derives from that trolley's spawn pose.
+# The deck runs y -1.45..3.75; the guide kerbs cover the NORTH leg only
+# (y 1.425..3.175): they clear the OUTFEED_SPUR's south legs at y=3.40 -- the
+# box conveyor above and the cart conveyor below share this footprint and must
+# not intersect -- and the SOUTH leg deliberately has none, because that leg
+# crosses the transit lane at y=0.70 and a 0.10 m kerb there would be a tug
+# trap. Visual-only (no boundingObject): the cart is carried kinematically,
+# and a collider here would fight both the cart and any tug driving over it.
+# ============================================================================
+DEF FILL_CONVEYOR Solid {
+  translation -8 1.15 0
+  children [
+    Transform { translation 0 0 0.005 children [ Shape { appearance USE CONV_DECK geometry Box { size 1.10 5.20 0.010 } } ] }
+    Transform { translation 0.20 0 0.012 children [ Shape { appearance USE CONV_SLOT geometry Box { size 0.11 5.20 0.008 } } ] }
+    Transform { translation -0.20 0 0.012 children [ Shape { appearance USE CONV_SLOT geometry Box { size 0.11 5.20 0.008 } } ] }
+    Transform { translation 0.20 0 0.014 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 0.055 5.20 0.006 } } ] }
+    Transform { translation -0.20 0 0.014 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 0.055 5.20 0.006 } } ] }
+    # kerbs guard the NORTH leg only, and stop short of the outfeed spur's
+    # legs (see the header note). World y 1.425..3.175, unchanged.
+    Transform { translation 0.56 1.15 0.05 children [ Shape { appearance USE CONV_KERB geometry Box { size 0.07 1.75 0.10 } } ] }
+    Transform { translation -0.56 1.15 0.05 children [ Shape { appearance USE CONV_KERB geometry Box { size 0.07 1.75 0.10 } } ] }
+    Transform { translation 0.72 0 0.003 children [ Shape { appearance USE CONV_HATCH geometry Box { size 0.09 5.20 0.002 } } ] }
+    Transform { translation -0.72 0 0.003 children [ Shape { appearance USE CONV_HATCH geometry Box { size 0.09 5.20 0.002 } } ] }
+    # drive head beside the STATION, east side — the mid-span drive between
+    # the two legs of the shuttle. Left exactly where it was in WORLD
+    # coordinates (-7.20, 1.555) when the deck grew south, because it is the
+    # one raised part of this conveyor and both tugs' approaches are built
+    # around it standing there.
+    Transform { translation 0.80 0.405 0.17 children [ Shape { appearance USE CONV_DRIVE geometry Box { size 0.40 0.34 0.34 } } ] }
+    Transform { translation 0.56 0.405 0.30 children [ Shape { appearance USE CONV_KERB geometry Box { size 0.10 0.16 0.10 } } ] }
+  ]
+  name "fill_conveyor"
+}
+DEF FILL_CONVEYOR_DOG Solid {
+  translation -8 1.55 0
+  children [
+    Transform { translation 0 0 0.048 children [ Shape { appearance USE CONV_DOG geometry Box { size 0.62 0.10 0.085 } } ] }
+    Transform { translation 0.20 0 0.020 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 0.09 0.16 0.03 } } ] }
+    Transform { translation -0.20 0 0.020 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 0.09 0.16 0.03 } } ] }
+  ]
+  name "fill_conveyor_dog"
+}
+# CONVEYOR STATION — the painted hand-off spot at the south end of the fill
+# conveyor, and the single busiest square metre in the demo. It is BOTH ends
+# of the shuttle: tug_b delivers an empty cart here and the conveyor takes it
+# north to the arm; when that cart comes back loaded, the conveyor sets it
+# down here again and tug_a tows it away.
+#
+# WHY THE CONVEYOR SHUTTLES BOTH WAYS. The fill spot sits between the belt
+# and the arm, so the only way in or out is straight up this column -- which
+# means a tug docking a loaded cart AT the fill spot would have to stand
+# exactly where the next empty cart is staged, and the two jobs would fight
+# over the same 2 m of floor forever. Running the conveyor in reverse for the
+# loaded cart removes the conflict outright: no tug ever enters the pick cell,
+# tug_a collects from open floor south of the gate, and the cart's whole trip
+# to and from the arm is conveyed rather than towed.
+#
+# THE SHUTTLE INVARIANT — at most ONE cart may be inside {station, fill spot}
+# at any moment. The conveyor is a single lane and this marker is both its
+# ends, so a cart parked here while another stands at the fill spot is a hard
+# deadlock: the loaded one has nowhere to come out to and the empty has
+# nowhere to go in. That is why TROLLEY_B spawns at CART_STAGE rather than
+# here, and why tug_b will not move a staged cart onto this spot until the
+# fill spot is clear. Do not "helpfully" park a cart here in the world file.
+#
+# tug_a and tug_b both read this DEF's position, so the decal is load-bearing
+# config, not decor. Painted OUTLINE only (the floor stays one colour).
+DEF CONVEYOR_STATION Solid {
+  translation -8 1.55 0.014
+  children [
+    Transform { translation 0 -0.46 0 children [ Shape { appearance DEF BUFFER_LINE PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 0.94 0.06 0.002 } } ] }
+    Transform { translation -0.44 0 0 children [ Shape { appearance USE BUFFER_LINE geometry Box { size 0.06 0.92 0.002 } } ] }
+    Transform { translation 0.44 0 0 children [ Shape { appearance USE BUFFER_LINE geometry Box { size 0.06 0.92 0.002 } } ] }
+  ]
+  name "conveyor_station"
+}
+
+# ============================================================================
+# CART PICKUP — the LOADED-cart outfeed spot, 2.55 m south of the station at
+# the far end of the same in-floor fill conveyor. This marker is the whole of
+# the throughput fix.
+#
+# WHY IT EXISTS. The station used to be where a loaded cart WAITED for tug_a,
+# and because the station is also the only way an empty cart can reach the
+# arm, that wait blocked the empty, which blocked the fill spot, which stalled
+# OmniArm 6 for the whole of tug_a's dock-and-drag. Measured on one baseline
+# cycle: cart down at the station t=60.5, tug_a attached t=76.0, station
+# actually clear t~80 -- 20 s of the arm's 34 s wait spent watching a tug
+# reverse onto a hitch.
+#
+# So the loaded cart no longer stops at the station. The conveyor runs it
+# straight through, 4.60 m in one continuous move, and sets it down HERE. The
+# station is clear the moment the cart passes it, the next empty comes in
+# behind, and tug_a collects from this spot on its own schedule instead of
+# being on the arm's critical path at all.
+#
+# LOAD-BEARING GEOMETRY:
+#   x = -8.00   the fill conveyor centreline; the run is one straight line.
+#   y = -1.00   far enough south that a cart standing here is clear of the
+#               tug that stages the NEXT empty on the station. That tug ends
+#               its push at y=+0.32 (it pushes the cart north from behind),
+#               so its tail sits at about y=-0.03; a cart here spans
+#               y -1.35..-0.65, leaving 0.62 m. y=-0.50 -- the obvious
+#               "same pitch as station->fill" choice -- leaves 0.12 m and
+#               would eventually clip.
+#
+# The cart arrives hitch-SOUTH (the conveyor sets final yaw from the fill
+# spot's), so tug_a pre-docks at (-8.00, -3.15), reverses north onto the
+# hitch and tows north onto the transit lane -- it never pulls a cart back
+# through the station. Painted OUTLINE only, open on the south side where
+# the tug backs on. A cart standing here is ON A CONVEYOR, so the "a cart
+# only ever moves because a tug tows it or a machine runs it" invariant is
+# intact.
+# ============================================================================
+DEF CART_PICKUP Solid {
+  translation -8 -1.00 0.014
+  children [
+    Transform { translation 0 0.46 0 children [ Shape { appearance USE BUFFER_LINE geometry Box { size 0.94 0.06 0.002 } } ] }
+    Transform { translation -0.44 0 0 children [ Shape { appearance USE BUFFER_LINE geometry Box { size 0.06 0.92 0.002 } } ] }
+    Transform { translation 0.44 0 0 children [ Shape { appearance USE BUFFER_LINE geometry Box { size 0.06 0.92 0.002 } } ] }
+  ]
+  name "cart_pickup"
+}
+
+
+# CART STAGE — a painted holding spot west of the conveyor column where tug_b
+# parks the NEXT empty cart while the station is still busy. This is the whole
+# of the overlap fix: the long fetch from the cart lane happens WHILE tug_a is
+# out hauling, so when the station finally clears, the empty is two metres
+# away instead of fifteen. Deliberately OFF the conveyor column (x=-9.7, not
+# -8.0) so a staged cart never stands in tug_a's collection approach.
+# tug_b's loop reads this DEF's position. Painted OUTLINE only.
+#
+# WHY y = 0.55 AND NOT 1.30. A one-trailer dock is a straight-line manoeuvre
+# along the cart's hitch axis, so this marker's y IS the y of the tug that
+# services it: tug_b finishes the drop at (-8.37, y) and pre-docks the staged
+# cart at (-7.45, y), both facing east, both 0.36 m half-beam. At y=1.30 those
+# two poses put the tug's north flank at y=1.66 -- INSIDE the fill conveyor's
+# east guide kerb (y>=1.425) and its drive-head cabinet (y>=1.385, 0.34 m
+# tall). That was not a near miss: it was 111 of 780 sampled ticks with the
+# tug's footprint inside a solid machine, and it was invisible because the
+# tug's obstacle list did not contain the conveyor. Moving the stage 0.75 m
+# south clears both by more than 0.22 m and clears the tug's pivot circle too,
+# and costs the choreography nothing -- the stage is still west of the column,
+# still two metres from the station, still out of tug_a's approach (which runs
+# north up x=-8 and never comes west of it).
+DEF CART_STAGE Solid {
+  translation -9.7 0.55 0.006
+  children [
+    Transform { translation 0 0.46 0 children [ Shape { appearance USE BUFFER_LINE geometry Box { size 0.94 0.06 0.002 } } ] }
+    Transform { translation 0 -0.46 0 children [ Shape { appearance USE BUFFER_LINE geometry Box { size 0.94 0.06 0.002 } } ] }
+    Transform { translation -0.44 0 0 children [ Shape { appearance USE BUFFER_LINE geometry Box { size 0.06 0.92 0.002 } } ] }
+  ]
+  name "cart_stage"
+}
+
+# ============================================================================
+# 4. STAGING — two painted zones on the transit floor between the pick cell
+# and the cart park. The OmniTug 500 tugs park in them facing the main aisle
+# (south) whenever they have nothing to do. Both run the mobile bridge
+# trolley tow over the WHOLE eight-cart fleet (--pallets ...), because
+# either tug may end up handling any cart in the ring.
+#
+# ROLES ARE PARTITIONED BY PLACE, NOT BY NEGOTIATION -- this is what keeps
+# two supervisors out of each other's way without a scheduler:
+#   tug_a ("dispatch")       collects loaded carts FROM the conveyor station,
+#                            and owns the transit lane eastbound, the CART
+#                            PARK and DOCK E.
+#   tug_b ("trolley_return") owns the CART LANE, CART_STAGE, CONVEYOR_STATION
+#                            and the fill conveyor (both directions).
+# The two sets are disjoint, so the tugs cannot select the same cart. The
+# only shared resource left is the east-west transit lane, and that -- and
+# only that -- gets an explicit lock (on_lane in each bridge's /state).
+# ============================================================================
+# Painted OUTLINE only (no filled tile): the floor is one constant colour
+# site-wide, so each staging bay is marked by a thin painted border the way a
+# real warehouse paints a parking box.
+DEF STAGING_ZONE_A Solid {
+  translation -4.6 -4.6 0.005
+  children [
+    Transform { translation 0 1.3 0 children [ Shape { appearance DEF STAGE_LINE PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 2.67 0.07 0.002 } } ] }
+    Transform { translation 0 -1.3 0 children [ Shape { appearance USE STAGE_LINE geometry Box { size 2.67 0.07 0.002 } } ] }
+    Transform { translation -1.3 0 0 children [ Shape { appearance USE STAGE_LINE geometry Box { size 0.07 2.67 0.002 } } ] }
+    Transform { translation 1.3 0 0 children [ Shape { appearance USE STAGE_LINE geometry Box { size 0.07 2.67 0.002 } } ] }
+  ]
+  name "staging_zone_a"
+}
+DEF STAGING_ZONE_B Solid {
+  translation -1.4 -4.6 0.005
+  children [
+    Transform { translation 0 1.3 0 children [ Shape { appearance USE STAGE_LINE geometry Box { size 2.67 0.07 0.002 } } ] }
+    Transform { translation 0 -1.3 0 children [ Shape { appearance USE STAGE_LINE geometry Box { size 2.67 0.07 0.002 } } ] }
+    Transform { translation -1.3 0 0 children [ Shape { appearance USE STAGE_LINE geometry Box { size 0.07 2.67 0.002 } } ] }
+    Transform { translation 1.3 0 0 children [ Shape { appearance USE STAGE_LINE geometry Box { size 0.07 2.67 0.002 } } ] }
+  ]
+  name "staging_zone_b"
+}
+
+# OmniTug 500 tugs. The OmniTug 500 URDF is a single visual link (no wheel
+# joints, no physics) driven kinematically by its controllers via
+# supervisor pose writes -- the mobile bridge's "kinematic" layout does the
+# same. Local +Y is forward and the wheels touch the floor at z=0, so the
+# spawn rotation -pi points the nose (heading) south. See
+# projects/robots/omnisim/omnitug500/.
+DEF TUG_A URDFRobot {
+  url "../../../../robots/omnisim/omnitug500/urdf/omnitug500.urdf"
+  translation -4.6 -4.6 0
+  rotation 0 0 1 3.14159
+  name "tug_a"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  # --idle-resume-s 12: see the note on the OmniArm 6's controllerArgs. All
+  # three robots take the SAME quiet window, so a chat turn with the site
+  # never leaves one robot parked long after its neighbours went back to
+  # work.
+  controllerArgs [ "--robot" "omnitug500" "--port" "8766" "--name" "tug_a" "--pallets" "TROLLEY_PAYLOAD,TROLLEY_B,TROLLEY_C,TROLLEY_D,TROLLEY_E,TROLLEY_F,TROLLEY_G,TROLLEY_H" "--idle-loop" "dispatch" "--idle-resume-s" "12" "--idle-arm-port" "8765" "--idle-peer-port" "8767" ]
+  window "omnilink_chat"
+}
+DEF TUG_B URDFRobot {
+  url "../../../../robots/omnisim/omnitug500/urdf/omnitug500.urdf"
+  translation -1.4 -4.6 0
+  rotation 0 0 1 3.14159
+  name "tug_b"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  # --idle-resume-s 12: see the note on the OmniArm 6's controllerArgs.
+  controllerArgs [ "--robot" "omnitug500" "--port" "8767" "--name" "tug_b" "--pallets" "TROLLEY_PAYLOAD,TROLLEY_B,TROLLEY_C,TROLLEY_D,TROLLEY_E,TROLLEY_F,TROLLEY_G,TROLLEY_H" "--idle-loop" "trolley_return" "--idle-resume-s" "12" "--idle-arm-port" "8765" "--idle-peer-port" "8766" ]
+  window "omnilink_chat"
+}
+
+# Painted flow chevrons across the transit floor — the tug route from the
+# pick-cell gate to the staging zones (visual-only decals).
+DEF FLOW_CHEVRON_1 Solid {
+  translation -7.3 1.0 0.006
+  rotation 0 0 1 -1.11
+  children [
+    Transform { translation -0.027 -0.177 0 rotation 0 0 1 0.785 children [ Shape { appearance PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 0.5 0.09 0.002 } } ] }
+    Transform { translation -0.027 0.177 0 rotation 0 0 1 -0.785 children [ Shape { appearance PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 0.5 0.09 0.002 } } ] }
+  ]
+  name "flow_chevron_1"
+}
+DEF FLOW_CHEVRON_2 Solid {
+  translation -6.3 -1.0 0.006
+  rotation 0 0 1 -1.11
+  children [
+    Transform { translation -0.027 -0.177 0 rotation 0 0 1 0.785 children [ Shape { appearance PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 0.5 0.09 0.002 } } ] }
+    Transform { translation -0.027 0.177 0 rotation 0 0 1 -0.785 children [ Shape { appearance PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 0.5 0.09 0.002 } } ] }
+  ]
+  name "flow_chevron_2"
+}
+DEF FLOW_CHEVRON_3 Solid {
+  translation -5.4 -2.9 0.006
+  rotation 0 0 1 -1.11
+  children [
+    Transform { translation -0.027 -0.177 0 rotation 0 0 1 0.785 children [ Shape { appearance PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 0.5 0.09 0.002 } } ] }
+    Transform { translation -0.027 0.177 0 rotation 0 0 1 -0.785 children [ Shape { appearance PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 0.5 0.09 0.002 } } ] }
+  ]
+  name "flow_chevron_3"
+}
+
+# ============================================================================
+# 5. THE CART PARK — the open back of the site, where tug_a parks every cart
+# it dispatches. This REPLACES the three green storage bays (deleted): the
+# demo no longer has a single privileged "dispatch bay" that one cart shuttles
+# in and out of. It has a row, and carts accumulate in it.
+#
+# ONE ROW, SIX SPOTS, ALL DIRECTLY REACHABLE. The row is deliberately a
+# single line rather than a grid: in a grid, parking in the back row means
+# towing a cart through the front row's spots, so the front row can only be
+# filled last and collecting a back-row cart deadlocks the moment the front
+# row is full. One row has no such ordering constraint -- every spot is
+# entered straight off the transit lane and left straight into the back
+# aisle, so tug_a can take ANY spot and collect ANY cart at any time.
+#
+# CIRCULATION (why parked carts face north). tug_a tows a cart north up the
+# column into its spot, detaches, and keeps going north to the BACK AISLE
+# (y=6.6), west along it, and back down the WEST LINK (x=4.5) to the transit
+# lane -- a one-way loop, no reversing, no three-point turns behind a row of
+# parked carts. Because the tug leaves northward, the cart it drops is left
+# hitch-NORTH, which is exactly the side tug_a must come back to when it
+# collects that cart later.
+#
+# LOAD-BEARING GEOMETRY: DEF PARK_SPOT_1..6 are read live by MavIdleLoop,
+# which scans them in order for the first one no cart is standing on. Moving
+# a marker moves the parking. Spacing is 1.40 m for 0.70 m carts, so there is
+# a 0.70 m walkway between neighbours and a tug can always see daylight.
+# All visual-only floor line markings.
+# ============================================================================
+# Six painted drive-through spots. Side lines only (the tug enters from the
+# south and leaves to the north, so a closed box would just be paint the
+# cart drives over); the blue tick on the aisle side is the spot ID mark.
+DEF PARK_SPOT_1 Solid {
+  translation 5.9 4.2 0.005
+  children [
+    Transform { translation -0.55 0 0 children [ Shape { appearance DEF PARK_LINE PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0 -0.60 0 children [ Shape { appearance DEF PARK_TICK PBRAppearance { baseColor 0.30 0.72 0.95 roughness 1 metalness 0 } geometry Box { size 0.62 0.07 0.002 } } ] }
+  ]
+  name "park_spot_1"
+}
+DEF PARK_SPOT_2 Solid {
+  translation 7.3 4.2 0.005
+  children [
+    Transform { translation -0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0 -0.60 0 children [ Shape { appearance USE PARK_TICK geometry Box { size 0.62 0.07 0.002 } } ] }
+  ]
+  name "park_spot_2"
+}
+DEF PARK_SPOT_3 Solid {
+  translation 8.7 4.2 0.005
+  children [
+    Transform { translation -0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0 -0.60 0 children [ Shape { appearance USE PARK_TICK geometry Box { size 0.62 0.07 0.002 } } ] }
+  ]
+  name "park_spot_3"
+}
+DEF PARK_SPOT_4 Solid {
+  translation 10.1 4.2 0.005
+  children [
+    Transform { translation -0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0 -0.60 0 children [ Shape { appearance USE PARK_TICK geometry Box { size 0.62 0.07 0.002 } } ] }
+  ]
+  name "park_spot_4"
+}
+DEF PARK_SPOT_5 Solid {
+  translation 11.5 4.2 0.005
+  children [
+    Transform { translation -0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0 -0.60 0 children [ Shape { appearance USE PARK_TICK geometry Box { size 0.62 0.07 0.002 } } ] }
+  ]
+  name "park_spot_5"
+}
+DEF PARK_SPOT_6 Solid {
+  translation 12.9 4.2 0.005
+  children [
+    Transform { translation -0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0.55 0 0 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 1.10 0.002 } } ] }
+    Transform { translation 0 -0.60 0 children [ Shape { appearance USE PARK_TICK geometry Box { size 0.62 0.07 0.002 } } ] }
+  ]
+  name "park_spot_6"
+}
+
+# Back aisle + west link — the return half of tug_a's one-way loop, marked so
+# the circulation reads as designed rather than as a tug wandering.
+# The aisle line used to run x[3.700,15.100] -- 0.200 m INTO wall_E (inner
+# face 14.900) and out to its outer face, so the paint crossed the building
+# line. It now ends at x = 14.800, 0.100 m short of the wall, which is where
+# a real aisle line stops: x[3.700,14.800], length 11.100, centre 9.250. The
+# west end is unchanged, so the junction with PARK_LINK_LINE (x = 4.5) is too.
+DEF PARK_AISLE_LINE Solid { translation 9.25 6.6 0.006 children [ Shape { appearance USE PARK_LINE geometry Box { size 11.1 0.07 0.002 } } ] name "park_aisle_line" }
+DEF PARK_LINK_LINE Solid { translation 4.5 3.65 0.006 children [ Shape { appearance USE PARK_LINE geometry Box { size 0.07 5.9 0.002 } } ] name "park_link_line" }
+DEF PARK_ROW_LABEL Solid {
+  translation 4.35 4.2 0.006
+  children [
+    Transform { translation 0 0.30 0 children [ Shape { appearance USE PARK_TICK geometry Box { size 0.30 0.07 0.002 } } ] }
+    Transform { translation 0 0 0 children [ Shape { appearance USE PARK_TICK geometry Box { size 0.30 0.07 0.002 } } ] }
+    Transform { translation 0 -0.30 0 children [ Shape { appearance USE PARK_TICK geometry Box { size 0.30 0.07 0.002 } } ] }
+  ]
+  name "park_row_label"
+}
+
+# ============================================================================
+# 5b. DOCK E — the OUTBOUND CART DOOR on the east wall, and the third in-floor
+# drag-chain conveyor. When the park row is full, tug_a docks the oldest cart,
+# tows it down to CART_OUTBOUND_INFEED and detaches; the conveyor carries it
+# east and out through the door. At the door the cart is handed straight back
+# to the inbound side (CART_INBOUND_ENTRY, inside dock 2) -- the same cart,
+# "round the block on the outbound truck and back as an empty".
+#
+# THIS IS THE ONE OFF-STAGE MOVE IN THE WORLD, and it is deliberately placed
+# where a warehouse actually hides things: inside a doorway, past the wall
+# line, at the end of a conveyor that visibly took the cart there. Carts are
+# CONSERVED across it (one out, the same one in), which is what makes the
+# eight-cart ring endless rather than a spawner.
+#
+# LOAD-BEARING GEOMETRY:
+#   DEF CART_OUTBOUND_INFEED (11.90, -1.00)  where tug_a lets go
+#   DEF CART_OUTBOUND_EXIT   (14.55, -1.00)  inside the door; the handoff
+# Carts here sit at yaw 0 (hitch east) -- the same yaw the inbound lane
+# wants, so the ride out, the handoff and the ride in never rotate a cart.
+# ============================================================================
+# wall_E is cut here (opening y -2.3 .. 0.3, lintel wall_E_head_e above), so
+# this is a real doorway and the dark panel is the backdrop closing its outer
+# end at x[15.020,15.100] -- 0.120 m clear of a cart standing at DEF
+# CART_OUTBOUND_EXIT, which used to sit 0.000 m off wall_E's inner face and
+# 0.080 m inside this panel. Local -x is world +x here (yaw pi).
+DEF DOCK_DOOR_E Solid {
+  translation 14.86 -1 0
+  rotation 0 0 1 3.14159
+  children [
+    Transform { translation -0.20 0 1.35 children [ Shape { appearance PBRAppearance { baseColor 0.06 0.06 0.07 roughness 0.95 metalness 0 } geometry Box { size 0.08 2.6 2.7 } } ] }
+    Transform { translation 0.03 0 2.62 children [ Shape { appearance PBRAppearance { baseColor 0.35 0.37 0.40 roughness 0.7 metalness 0.4 } geometry Box { size 0.10 2.8 0.16 } } ] }
+  ]
+  name "dock_door_e"
+}
+DEF OUTBOUND_CONVEYOR Solid {
+  translation 13.25 -1 0
+  children [
+    Transform { translation 0 0 0.005 children [ Shape { appearance USE CONV_DECK geometry Box { size 3.00 1.10 0.010 } } ] }
+    Transform { translation 0 0.20 0.012 children [ Shape { appearance USE CONV_SLOT geometry Box { size 3.00 0.11 0.008 } } ] }
+    Transform { translation 0 -0.20 0.012 children [ Shape { appearance USE CONV_SLOT geometry Box { size 3.00 0.11 0.008 } } ] }
+    Transform { translation 0 0.20 0.014 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 3.00 0.055 0.006 } } ] }
+    Transform { translation 0 -0.20 0.014 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 3.00 0.055 0.006 } } ] }
+    # GUIDE KERBS AT THE DOOR END ONLY (world x 14.15..14.75). The western
+    # 2.4 m of this deck is a TUG WORKING STRETCH, not a cart lane, and a
+    # kerb there is exactly the trap the fill conveyor's south leg already
+    # avoids ("that leg crosses the transit lane and a 0.10 m kerb there
+    # would be a tug trap"). tug_a drives the full length of this deck to set
+    # a cart on the infeed -- it finishes _trail = 1.33 m EAST of the cart, at
+    # x = 13.23 -- and then has to leave sideways, because the cart is west of
+    # it and the dock door is east. Full-length kerbs left 1.05 m between
+    # their inner faces (centres y = +-0.56, 0.07 thick) for a tug measuring
+    # 0.7160 m across -- its true footprint, taken from the union of the
+    # OmniTug 500's own primitive-solid URDF geometry, not the 0.72 m round
+    # number. That is
+    # 0.167 m a side: less than the 0.28 m drift measured on this lane while
+    # towing, and the tug's 1.45 m turning circle crossed them outright
+    # (measured at 055d7c82: 36 incursion ticks). Keeping the
+    # kerbs where the cart is handed to the door and dropping them where the
+    # tug works is the honest resolution; the cart is 0.70 m wide, rides the
+    # chain dead on the centreline, and never needed guiding here.
+    Transform { translation 1.20 0.56 0.05 children [ Shape { appearance USE CONV_KERB geometry Box { size 0.60 0.07 0.10 } } ] }
+    Transform { translation 1.20 -0.56 0.05 children [ Shape { appearance USE CONV_KERB geometry Box { size 0.60 0.07 0.10 } } ] }
+    Transform { translation 0 0.72 0.003 children [ Shape { appearance USE CONV_HATCH geometry Box { size 3.00 0.09 0.002 } } ] }
+    Transform { translation 0 -0.72 0.003 children [ Shape { appearance USE CONV_HATCH geometry Box { size 3.00 0.09 0.002 } } ] }
+    # Drive head SOUTH of the lane and clear of it. It used to sit at world
+    # (11.63, -0.20) -- 0.90 m north of the lane, directly under PARK_SPOT_5's
+    # approach, where the tug that pushes a cart into that spot stood with its
+    # tail 0.07 m off a 0.34 m steel cabinet and swept it while pivoting. At
+    # y = -2.05 it is 0.49 m clear of a tug running the lane dead centre and
+    # still 0.21 m clear of one that has drifted a quarter-metre while towing
+    # (measured drift: 0.28 m). The little kerb-to-drive-head connector that
+    # used to bridge them is gone with the west kerbs it connected to -- a
+    # 0.015 m overlap. It was NOT the last one in the world when that was
+    # written: OUTFEED_SPUR's south-east leg stood fully inside the
+    # FILL_CONVEYOR deck plate. THAT ONE IS NOW FIXED TOO (the leg stepped in
+    # to local x = 0.14, into the channel between the deck edge and the
+    # hatching -- see its own note), so the world has no remaining
+    # prop-in-prop overlap on either conveyor.
+    #
+    # WHY THIS CABINET IS NOT MOVING AGAIN. An audit re-derived the old bug
+    # here and concluded the cabinet still sits "entirely inside PARK_SPOT_5's
+    # approach column". The x-overlap is real -- x[11.460,11.800] is inside
+    # the 0.7162 m-wide tug column x[11.142,11.858] centred on the spot -- but
+    # the CONSEQUENCE does not follow, because that column is only ever
+    # entered from the NORTH end. MavIdleLoop._park_in_spot runs the tow east
+    # along Y_LANE = +0.70 (mobile bridge, class constant), turns north THERE,
+    # and drives up to y = 4.20; the pivot at (11.50, +0.70) reaches y =
+    # -0.024 at worst, 1.826 m north of this cabinet's north face. The only
+    # traffic that ever gets south of that is the dock E run itself, which is
+    # the y = -1.00 lane this cabinet is already dimensioned against, and the
+    # tug's turn-and-leave pivot at its hand-off pose (13.23, -1.00) clears
+    # the cabinet by 0.939 m. Moving it east to "clear the column" would eat
+    # straight into that 0.939 m, i.e. trade a clearance that is real for one
+    # that is not. Same for the other half of the finding: a cart standing at
+    # DEF CART_OUTBOUND_INFEED spans x[11.550,12.250] and does overlap
+    # PARK_SPOT_5's cart column by 0.300 m, but it sits at y[-1.350,-0.650],
+    # 5.55 m south of the spot and 0.627 m clear of the spot-5 pivot circle,
+    # so no park approach and no collect run can ever meet it.
+    Transform { translation -1.62 -1.05 0.17 children [ Shape { appearance USE CONV_DRIVE geometry Box { size 0.34 0.40 0.34 } } ] }
+  ]
+  name "outbound_conveyor"
+}
+DEF OUTBOUND_DOG Solid {
+  translation 11.9 -1 0
+  children [
+    Transform { translation 0 0 0.048 children [ Shape { appearance USE CONV_DOG geometry Box { size 0.10 0.62 0.085 } } ] }
+    Transform { translation 0 0.20 0.020 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 0.16 0.09 0.03 } } ] }
+    Transform { translation 0 -0.20 0.020 children [ Shape { appearance USE CONV_CHAIN geometry Box { size 0.16 0.09 0.03 } } ] }
+  ]
+  name "outbound_dog"
+}
+DEF CART_OUTBOUND_INFEED Solid {
+  translation 11.9 -1 0.014
+  children [
+    Transform { translation 0 0.46 0 children [ Shape { appearance USE MARK_LINE geometry Box { size 0.94 0.06 0.002 } } ] }
+    Transform { translation 0 -0.46 0 children [ Shape { appearance USE MARK_LINE geometry Box { size 0.94 0.06 0.002 } } ] }
+    Transform { translation -0.44 0 0 children [ Shape { appearance USE MARK_LINE geometry Box { size 0.06 0.92 0.002 } } ] }
+  ]
+  name "cart_outbound_infeed"
+}
+DEF CART_OUTBOUND_EXIT Solid {
+  translation 14.55 -1 0.014
+  children [
+    Shape { appearance USE MARK_LINE geometry Box { size 0.10 0.86 0.002 } }
+  ]
+  name "cart_outbound_exit"
+}
+
+# ============================================================================
+# 6. MAIN AISLE — white lane lines along the south corridor, running from
+# the entrance area east past the staging zones to the bays.
+# ============================================================================
+DEF AISLE_LINE_N Solid { translation 2.6 -6.4 0.006 children [ Shape { appearance PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 22 0.07 0.002 } } ] name "aisle_line_n" }
+DEF AISLE_LINE_S Solid { translation 2.6 -8.6 0.006 children [ Shape { appearance PBRAppearance { baseColor 0.90 0.90 0.90 roughness 1 metalness 0 } geometry Box { size 22 0.07 0.002 } } ] name "aisle_line_s" }
+
+# ============================================================================
+# KIOSK ZONE — reserved floor space just inside the south-west entrance gap
+# for a future greeter/kiosk robot. Painted OUTLINE only (visual-only decal;
+# the filled yellow tile was removed to keep the floor one constant colour).
+# ============================================================================
+DEF KIOSK_ZONE Solid {
+  translation -11 -7.5 0.005
+  children [
+    Transform { translation 0 1 0 children [ Shape { appearance DEF KIOSK_LINE PBRAppearance { baseColor 0.95 0.78 0.10 roughness 1 metalness 0 } geometry Box { size 2.07 0.07 0.002 } } ] }
+    Transform { translation 0 -1 0 children [ Shape { appearance USE KIOSK_LINE geometry Box { size 2.07 0.07 0.002 } } ] }
+    Transform { translation -1 0 0 children [ Shape { appearance USE KIOSK_LINE geometry Box { size 0.07 2.07 0.002 } } ] }
+    Transform { translation 1 0 0 children [ Shape { appearance USE KIOSK_LINE geometry Box { size 0.07 2.07 0.002 } } ] }
+  ]
+  name "kiosk_zone"
+}

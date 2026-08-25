@@ -1,0 +1,41 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "limit_max_tool_calls",
+  "description": "Trips the max-tool-calls limit: several tool calls per turn, so the tool-call cap is reached before the turn cap.",
+  "turns": [
+    {
+      "text": "fan out",
+      "tool_calls": [
+        {
+          "name": "list_dir",
+          "arguments": {
+            "path": "."
+          }
+        },
+        {
+          "name": "list_dir",
+          "arguments": {
+            "path": "."
+          }
+        },
+        {
+          "name": "list_dir",
+          "arguments": {
+            "path": "."
+          }
+        },
+        {
+          "name": "list_dir",
+          "arguments": {
+            "path": "."
+          }
+        }
+      ],
+      "usage": {
+        "tokens_in": 1000,
+        "tokens_out": 20
+      },
+      "repeat": 40
+    }
+  ]
+}

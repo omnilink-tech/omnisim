@@ -1,0 +1,12 @@
+Create a 10 m x 10 m indoor mobile-robot environment and implement autonomous obstacle avoidance using simulated LiDAR.
+
+Requirements:
+- Use a differential-drive robot.
+- Add a planar LiDAR with at least 180 degrees field of view, at least 180 range samples per scan, and at least 5 m maximum range.
+- Start pose: (-4.0, -4.0, 0 degrees).
+- Goal: (4.0, 4.0).
+- Add five static box obstacles using the obstacle specification provided in benchmark_assets/obstacles.json.
+- The controller must consume LiDAR measurements during execution and use them to avoid obstacles.
+- Reach the goal without colliding with any obstacle or wall.
+
+Do not use teleportation or a pre-scripted sequence of exact poses. Execute the navigation task before submitting.

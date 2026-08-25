@@ -1,0 +1,163 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/plants/protos/PottedTree.proto
+# keywords: interior/plant
+# A 2 m indoor potted tree: a textured terracotta pot, a bark trunk and a crown made of crossed alpha-cut foliage billboards. The origin sits on the floor, under the pot.
+
+PROTO PottedTree [
+  field SFVec3f    translation          0 0 0
+  field SFRotation rotation             0 0 1 0
+  field SFString   name                 "potted tree"
+  field SFColor    potAndTreeColor      1 1 1                                    # Defines the color of the pot and the three.
+  field MFString   potAndTreeTextureUrl "textures/potted_tree_pot_and_tree.jpg"  # Defines the textures used for of the pot and the three.
+  field SFColor    leavesColor          1 1 1                                    # Defines the color of the leaves.
+  field MFString   leavesTextureUrl     "textures/potted_tree_leaves.png"        # Defines the textures used for of the leaves.
+  field SFNode     physics              NULL                                     # Is `Solid.physics`.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      # ------------------------------------------------------------------ pot
+      Pose {
+        translation 0 0 0.15
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS potAndTreeColor
+              baseColorMap ImageTexture {
+                url IS potAndTreeTextureUrl
+              }
+              roughness 0.9
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.22
+              height 0.3
+              subdivision 24
+            }
+          }
+        ]
+      }
+      # soil
+      Pose {
+        translation 0 0 0.301
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.18 0.13 0.09
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.2
+              height 0.02
+              subdivision 20
+            }
+          }
+        ]
+      }
+      # ---------------------------------------------------------------- trunk
+      Pose {
+        translation 0 0 0.75
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS potAndTreeColor
+              baseColorMap ImageTexture {
+                url IS potAndTreeTextureUrl
+              }
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.04
+              height 0.9
+              subdivision 12
+            }
+          }
+        ]
+      }
+      # --------------------------------------------------------------- crown
+      # two alpha-cut quads crossed at 90 degrees: the PNG alpha channel does the
+      # leaf cut-out, so a handful of triangles reads as a full canopy.
+      Pose {
+        translation 0 0 1.55
+        children [
+          DEF POTTED_TREE_FOLIAGE Shape {
+            appearance PBRAppearance {
+              baseColor IS leavesColor
+              baseColorMap ImageTexture {
+                url IS leavesTextureUrl
+                repeatS FALSE
+                repeatT FALSE
+              }
+              roughness 1
+              metalness 0
+            }
+            geometry IndexedFaceSet {
+              coord Coordinate {
+                point [
+                  -0.55 0 -0.55
+                  0.55 0 -0.55
+                  0.55 0 0.55
+                  -0.55 0 0.55
+                ]
+              }
+              texCoord TextureCoordinate {
+                point [
+                  0 0
+                  1 0
+                  1 1
+                  0 1
+                ]
+              }
+              coordIndex [
+                0 1 2 3 -1
+              ]
+              texCoordIndex [
+                0 1 2 3 -1
+              ]
+            }
+          }
+          Pose {
+            rotation 0 0 1 1.5708
+            children [
+              USE POTTED_TREE_FOLIAGE
+            ]
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "potted tree"
+    recognitionColors [
+      0.2 0.42 0.15
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 0.15
+          children [
+            Cylinder {
+              radius 0.22
+              height 0.3
+            }
+          ]
+        }
+        Pose {
+          translation 0 0 0.75
+          children [
+            Cylinder {
+              radius 0.05
+              height 0.9
+            }
+          ]
+        }
+      ]
+    }
+    physics IS physics
+  }
+}

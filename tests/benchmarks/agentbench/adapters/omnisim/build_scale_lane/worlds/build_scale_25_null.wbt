@@ -1,0 +1,61 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "../protos/ScaleBot.proto"
+
+WorldInfo {
+  title "AgenticSimBench BuildScale 25 null"
+  basicTimeStep 8
+  newtonSolver "mujoco"
+  newtonSubsteps 4
+  newtonRobotColliders TRUE
+  newtonNjmax 8192
+  newtonNconmax 4096
+}
+Viewpoint { position 0 0 55 }
+
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  name "floor"
+  children [ DEF FLOOR_GEOMETRY Shape { geometry Box { size 60 60 0.1 } } ]
+  boundingObject USE FLOOR_GEOMETRY
+}
+DEF CONTACT_WITNESS_SUPPORT Solid {
+  translation 20 27 0.05
+  name "contact witness support"
+  children [ DEF CONTACT_WITNESS_SUPPORT_SHAPE Shape { geometry Box { size 2 2 0.1 } } ]
+  boundingObject USE CONTACT_WITNESS_SUPPORT_SHAPE
+  physics Physics { density -1 mass 1 }
+}
+DEF CONTACT_WITNESS Solid {
+  translation 20 27 0.19
+  name "contact witness"
+  children [ DEF CONTACT_WITNESS_SHAPE Shape { geometry Box { size 0.2 0.2 0.2 } } ]
+  boundingObject USE CONTACT_WITNESS_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+
+ScaleBot { translation -10 -24 0 name "scale_000" controller "build_scale_idle" }
+ScaleBot { translation -10 -22 0 name "scale_001" controller "build_scale_idle" }
+ScaleBot { translation -10 -20 0 name "scale_002" controller "build_scale_idle" }
+ScaleBot { translation -10 -18 0 name "scale_003" controller "build_scale_idle" }
+ScaleBot { translation -10 -16 0 name "scale_004" controller "build_scale_idle" }
+ScaleBot { translation -10 -14 0 name "scale_005" controller "build_scale_idle" }
+ScaleBot { translation -10 -12 0 name "scale_006" controller "build_scale_idle" }
+ScaleBot { translation -10 -10 0 name "scale_007" controller "build_scale_idle" }
+ScaleBot { translation -10 -8 0 name "scale_008" controller "build_scale_idle" }
+ScaleBot { translation -10 -6 0 name "scale_009" controller "build_scale_idle" }
+ScaleBot { translation -10 -4 0 name "scale_010" controller "build_scale_idle" }
+ScaleBot { translation -10 -2 0 name "scale_011" controller "build_scale_idle" }
+ScaleBot { translation -10 0 0 name "scale_012" controller "build_scale_idle" }
+ScaleBot { translation -10 2 0 name "scale_013" controller "build_scale_idle" }
+ScaleBot { translation -10 4 0 name "scale_014" controller "build_scale_idle" }
+ScaleBot { translation -10 6 0 name "scale_015" controller "build_scale_idle" }
+ScaleBot { translation -10 8 0 name "scale_016" controller "build_scale_idle" }
+ScaleBot { translation -10 10 0 name "scale_017" controller "build_scale_idle" }
+ScaleBot { translation -10 12 0 name "scale_018" controller "build_scale_idle" }
+ScaleBot { translation -10 14 0 name "scale_019" controller "build_scale_idle" }
+ScaleBot { translation -10 16 0 name "scale_020" controller "build_scale_idle" }
+ScaleBot { translation -10 18 0 name "scale_021" controller "build_scale_idle" }
+ScaleBot { translation -10 20 0 name "scale_022" controller "build_scale_idle" }
+ScaleBot { translation -10 22 0 name "scale_023" controller "build_scale_idle" }
+ScaleBot { translation -10 24 0 name "scale_024" controller "build_scale_idle" }

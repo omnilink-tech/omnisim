@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Monochrome dark wordmark for use on mimosa or light surfaces. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" role="img" aria-label="OMNISIM">
+  <title>OMNISIM wordmark — mono dark</title>
+  <style>
+    .wm { font-family: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+          font-weight: 500; font-size: 130px; letter-spacing: 10.4px; fill: #0A0A06; }
+  </style>
+  <text class="wm" x="0" y="125">OMNISIM</text>
+</svg>

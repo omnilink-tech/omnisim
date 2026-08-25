@@ -1,0 +1,168 @@
+#OMNISIM R2025a utf8
+
+# OmniTug 500 - MOVING laser-scanner demo.
+#
+# The OMNITUG500 drives a smooth elliptical patrol loop while its two diagonal
+# corner safety scanners (front-right + rear-left) stay live and their fused
+# coverage area is drawn as a half-transparent red region IN THE SCENE that
+# FOLLOWS the rover -- so you watch the covered area (and its shadows behind
+# obstacles) sweep around as the rover moves.
+#
+# The 'omnitug500_lidar_patrol' supervisor drives the visual rover AND the sidecar
+# SCANNERS robot (which carries the Lidars) along the same pose every tick, then
+# rebuilds the two coverage fans in world coordinates from the live scans. A
+# separate fixed overhead camera (CEILING_CAM / omnitug500_cam) saves proof frames.
+#
+# Run it (rendering MUST be on):
+#   python scripts/dev/headless_runner.py \
+#      projects/robots/omnisim/omnitug500/worlds/omnitug500_lidar_patrol.omniworld --gui --duration 45
+# Add --realtime to watch the motion at true speed.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniTug 500 - Moving Laser-Scanner Coverage"
+  info [
+    "OMNITUG500 drives an elliptical patrol while its two corner laser scanners"
+    "stay live; the fused red coverage area follows the rover around the room."
+  ]
+}
+
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 3.964 -6.019 3.958
+  exposure 1.0
+}
+
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# --- Floor (11 x 9 m room) -------------------------------------------------
+DEF FLOOR Solid {
+  translation 0 0 -0.02
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.22 0.23 0.25 roughness 0.9 metalness 0 }
+      geometry Box { size 13 11 0.04 }
+    }
+  ]
+  name "floor"
+  boundingObject Box { size 13 11 0.04 }
+}
+
+# --- Room walls ------------------------------------------------------------
+DEF WALL_N Solid {
+  translation 0 3.5 0.5
+  children [ Shape { appearance PBRAppearance { baseColor 0.78 0.76 0.72 roughness 0.95 } geometry Box { size 11 0.2 1.0 } } ]
+  name "wall_north"
+}
+DEF WALL_S Solid {
+  translation 0 -3.5 0.5
+  children [ Shape { appearance PBRAppearance { baseColor 0.78 0.76 0.72 roughness 0.95 } geometry Box { size 11 0.2 1.0 } } ]
+  name "wall_south"
+}
+DEF WALL_E Solid {
+  translation 5.5 0 0.5
+  children [ Shape { appearance PBRAppearance { baseColor 0.74 0.72 0.69 roughness 0.95 } geometry Box { size 0.2 7.2 1.0 } } ]
+  name "wall_east"
+}
+DEF WALL_W Solid {
+  translation -5.5 0 0.5
+  children [ Shape { appearance PBRAppearance { baseColor 0.74 0.72 0.69 roughness 0.95 } geometry Box { size 0.2 7.2 1.0 } } ]
+  name "wall_west"
+}
+
+# --- Obstacles in the ring OUTSIDE the patrol ellipse (A=2.8, B=1.8), so the
+#     rover never hits them but its scanners sweep across them. Each >=0.6 m
+#     tall to cross the z=0.131 scan plane. -----------------------------------
+DEF OBST_CYL_W Solid {
+  translation -4.0 0.3 0.4
+  children [ Shape { appearance PBRAppearance { baseColor 0.85 0.3 0.1 roughness 0.7 } geometry Cylinder { radius 0.32 height 0.8 } } ]
+  name "cyl_west"
+}
+DEF OBST_BOX_E Solid {
+  translation 4.0 0.8 0.4
+  children [ Shape { appearance PBRAppearance { baseColor 0.2 0.4 0.85 roughness 0.7 } geometry Box { size 0.7 0.7 0.8 } } ]
+  name "box_east"
+}
+DEF OBST_CRATE_N Solid {
+  translation 0.4 2.7 0.4
+  children [ Shape { appearance PBRAppearance { baseColor 0.55 0.45 0.3 roughness 0.85 } geometry Box { size 1.6 0.5 0.8 } } ]
+  name "crate_north"
+}
+DEF OBST_PILLAR_SW Solid {
+  translation -2.2 -2.7 0.45
+  children [ Shape { appearance PBRAppearance { baseColor 0.15 0.6 0.35 roughness 0.7 } geometry Cylinder { radius 0.2 height 0.9 } } ]
+  name "pillar_sw"
+}
+DEF OBST_BOX_SE Solid {
+  translation 2.6 -2.6 0.4
+  children [ Shape { appearance PBRAppearance { baseColor 0.7 0.65 0.15 roughness 0.7 } geometry Box { size 0.6 0.6 0.8 } } ]
+  name "box_se"
+}
+
+# --- The OMNITUG500 rover (visual body); driven by the SCANNERS supervisor -------
+DEF OMNITUG500 URDFRobot {
+  url "../urdf/omnitug500.urdf"
+  translation 0 -1.8 0
+  rotation 0 0 1 0
+  name "OMNITUG500"
+  controller "<none>"
+}
+
+# --- Sidecar Robot carrying the two corner scanners; moves with the rover ----
+DEF SCANNERS Robot {
+  translation 0 -1.8 0
+  rotation 0 0 1 0
+  name "OMNITUG500_scanners"
+  controller "omnitug500_lidar_patrol"
+  supervisor TRUE
+  children [
+    DEF SCAN_FR Lidar {
+      translation 0.290 0.537 0.131
+      rotation 0 0 1 0.7854
+      name "scanner_front_right"
+      horizontalResolution 512
+      fieldOfView 3.0
+      verticalFieldOfView 0.02
+      numberOfLayers 1
+      near 0.05
+      minRange 0.06
+      maxRange 12.0
+      type "fixed"
+    }
+    DEF SCAN_RL Lidar {
+      translation -0.290 -0.536 0.131
+      rotation 0 0 1 3.9270
+      name "scanner_rear_left"
+      horizontalResolution 512
+      fieldOfView 3.0
+      verticalFieldOfView 0.02
+      numberOfLayers 1
+      near 0.05
+      minRange 0.06
+      maxRange 12.0
+      type "fixed"
+    }
+  ]
+}
+
+# --- Fixed overhead camera for proof stills (forward = +X -> world -Z) -------
+DEF CEILING_CAM Robot {
+  translation 0 0 9
+  rotation -0.5774 0.5774 0.5774 2.0944
+  name "ceiling_cam"
+  controller "omnitug500_cam"
+  children [
+    Camera {
+      name "cam"
+      width 1100
+      height 900
+      fieldOfView 1.2
+    }
+  ]
+}

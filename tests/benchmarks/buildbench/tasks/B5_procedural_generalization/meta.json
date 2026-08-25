@@ -1,0 +1,59 @@
+{
+  "suite": "buildbench/v0.1",
+  "id": "B5_procedural_generalization",
+  "title": "train across seeded procedural worlds, grade on an unseen seed",
+  "prompt": "Generate fifty different worlds from seeds 1 to 50, train a policy that works across all of them, and then show it working in a world generated from a seed it has never seen.",
+  "demonstrates": "deterministic seeded world generation and training across a distribution of environments, graded on held-out generalisation",
+  "why_this_is_real_work": "A policy trained in one environment memorises that environment. Training across a generated distribution and holding out unseen instances is the standard way to tell generalisation from memorisation -- and it only works if world generation is deterministic from a seed, so the held-out instance is reproducible and the training set is exactly stated.",
+  "build_status": "DECLARED",
+  "blocked_reason": "",
+  "depends_on_risks": [
+    "risk_1_sensors_under_batching"
+  ],
+  "grading_sketch": "the held-out seed is the whole point, so the grader draws it ITSELF and never accepts one the agent chose: generate the world from a seed outside the training range at grade time, verify byte-identical regeneration from that seed, then measure task completion geometrically in it. A policy that only completes training seeds fails, and that gap IS the finding.",
+  "claims": {
+    "omnisim": {
+      "sim": "omnisim",
+      "verdict": "EXPRESSIBLE",
+      "reason": "seeded deterministic world generation is a shipped tool (same recipe+seed+params -> byte-identical .wbt) and in-engine batched training exists",
+      "missing_capability": "",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "This may be wrong about US, not about them (SPEC 6.1 risk 1): it is UNVERIFIED whether Camera devices render at all in the batched mujoco_warp GPU path. If they do not, the sensor half of this task does not exist on OmniSim either and the EXPRESSIBLE verdict is wrong.",
+        "Byte-identical generation is a documented property of the generator; that it holds is UNVERIFIED here, and 'documented' is not 'measured' (SPEC 2 rule 2). It is cheap to check and should be checked before the row is quoted.",
+        "Training across 50 DISTINCT worlds is not the same shape as batching 4096 copies of one world. Whether the in-engine trainer can batch heterogeneous worlds at all is not established, and if it cannot, this task is not expressible on OmniSim as written."
+      ],
+      "publishable": false
+    },
+    "webots": {
+      "sim": "webots",
+      "verdict": "NOT_EXPRESSIBLE",
+      "reason": "declared: neither the training half nor seeded deterministic world generation",
+      "missing_capability": "a seeded deterministic procedural world generator, and a GPU-batched training path",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "A user can write a world generator in fifty lines of Python -- .wbt is text. 'The simulator does not ship one' is a very different claim from 'this cannot be expressed', and only the first is defensible. This row is the one most likely to be flipped by a single credible counter-example, which is exactly the SPEC 0.2 rule 2 trigger."
+      ],
+      "publishable": false
+    },
+    "mujoco": {
+      "sim": "mujoco",
+      "verdict": "NOT_EXPRESSIBLE",
+      "reason": "declared: no seeded deterministic world generation as a shipped capability",
+      "missing_capability": "a seeded deterministic procedural world generator",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "MJCF is text and procedurally generating it is routine in MuJoCo-based RL work; domain randomisation over generated scenes is arguably more common there than here. This row should be expected to flip to EXPRESSIBLE and it is recorded in that expectation."
+      ],
+      "publishable": false
+    }
+  },
+  "oracle_null_gate": {
+    "omnisim": "NOT RUN",
+    "webots": "NOT RUN",
+    "mujoco": "NOT RUN"
+  }
+}

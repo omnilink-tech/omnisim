@@ -1,0 +1,49 @@
+#OMNISIM R2025a utf8
+
+# IMPROVED-SHADOW demo. A SINGLE kinematic, physics-free G1 (staticBase TRUE)
+# plays the PURE improved human-gait MODEL and SELF-WALKS forward across the
+# floor (g1_ghost controller, G1_GHOST_SELF_WALK=1). No RL robot, no physics --
+# this is "the shadow" itself, in 3D. Select the shadow upgrade via the launch
+# script run_g1_shadow_demo.ps1:
+#   legacy | A (LIPM weight transfer) | B (achieved) | C (human 3D kinematics).
+# The frontal/transverse plane (hip-roll + hip-yaw) is what changed -- watch it
+# rock/turn its legs, not just stride.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Unitree G1 -- the improved shadow walking (kinematic gait model)"
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5 1.8
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 60 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF G1_SHADOW URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "ghost_hologram"
+  staticBase TRUE
+}

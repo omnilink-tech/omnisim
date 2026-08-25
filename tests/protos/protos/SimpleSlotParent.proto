@@ -1,0 +1,15 @@
+#OMNISIM R2025a utf8
+
+PROTO SimpleSlotParent [
+  field SFNode endPoint NULL
+]
+{
+  Robot {
+    name "simple slot parent"
+    children [
+      Slot {
+        endPoint IS endPoint
+      }
+    ]
+  }
+}

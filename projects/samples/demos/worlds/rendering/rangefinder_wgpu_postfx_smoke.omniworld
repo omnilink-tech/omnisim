@@ -1,0 +1,59 @@
+#OMNISIM R2025a utf8
+
+# Lane E1 (P5) smoke world: the R5c RangeFinder rig + `noise 0.1` + `resolution 0.25`,
+# exercising the RangeFinder call site of the shared CPU post-FX port
+# (OmAbstractCamera::applyWgpuRangePostFx -- noise BEFORE quantization, WREN pass order).
+# Geometry as rangefinder_wgpu_smoke: front face 0.7 m from the sensor.
+#
+# The controller asserts every finite depth is a multiple of 0.25 (quantization) AND that
+# more than one distinct quantized level appears around the 0.70 m face (sigma 0.1 spreads
+# samples across the 0.625/0.875 bucket edges), i.e. the noise is live too.
+# RED-CAPABLE: with the port absent (or OMNISIM_WGPU_SENSOR_POSTFX=0) the wgpu floats are
+# the smooth clamped depth -- 0.70 is not a multiple of 0.25 -> FAIL.
+
+WorldInfo {
+  info [
+    "Lane E1 smoke -- wgpu RangeFinder applies authored noise + quantization"
+  ]
+  title "Lane E1 wgpu RangeFinder post-FX smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    RangeFinder {
+      name "rf_wgpu"
+      width 64
+      height 48
+      fieldOfView 0.8
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      noise 0.1
+      resolution 0.25
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "rangefinder_wgpu_postfx_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

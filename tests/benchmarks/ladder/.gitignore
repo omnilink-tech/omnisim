@@ -1,0 +1,27 @@
+# Raw per-cell run directories are session output, not artefacts of it: one
+# `python cell/run_ladder_cell.py` writes transcripts, frame dumps, a copied
+# workspace_container/ and phase-B telemetry, and 365 such files reached 227 MB
+# before anyone noticed this file was missing. Every sibling benchmark
+# directory has had one of these; ladder did not, which is how the output got
+# committed in the first place.
+#
+# The REDUCED measurements -- the ones a reader would cite and the only ones
+# any tracked code reads -- are allowlisted below:
+#   rows.jsonl        cell_progress.py:145 globs */rows.jsonl for the historical
+#                     median; test_ladder_cell.py:794 asserts on one of them.
+#   cell_report.json  cell_progress.py:176 reads .workspace from it.
+#   cell_report.md    the human-readable twin.
+#   verdict.json      cell_progress.py:75 "graded" milestone.
+#
+# `!/results/**/` re-includes DIRECTORIES at every depth. Without it git never
+# descends into results/ and none of the allowlists below can ever match --
+# a bare `results/` would silently ignore the four kept files too.
+#
+# Anything else worth keeping (a doc-cited transcript, say) needs `git add -f`.
+# This affects FUTURE output only; .gitignore never untracks what is already in.
+/results/**
+!/results/**/
+!/results/**/rows.jsonl
+!/results/**/verdict.json
+!/results/**/cell_report.json
+!/results/**/cell_report.md

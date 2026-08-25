@@ -1,0 +1,104 @@
+#OMNISIM R2025a utf8
+
+# Test fixture for wgpu multi-light (pre-flip worklist gap: "single-sun lighting").
+# A dim sun (shadowed direct path) + three EXTRA lights that the wgpu main view used
+# to ignore entirely: a red PointLight over the left sphere, a cyan SpotLight aimed
+# at the center box, and a warm side DirectionalLight. Correct output: a red pool of
+# light on and around the left sphere, a cyan cone patch on the center box + floor,
+# and warm grazing light on right-side faces. Under the old single-sun harvest the
+# scene renders uniformly dim. Static (no physics).
+
+WorldInfo {
+  basicTimeStep 16
+  FPS 30
+}
+Viewpoint {
+  orientation 0 0.39 0.921 1.5708
+  position 0 -3.2 1.6
+}
+Background {
+  skyColor [ 0.05 0.06 0.10 ]
+}
+DEF SUN DirectionalLight {
+  color 1.0 1.0 1.0
+  direction -0.4 -0.4 -0.82
+  intensity 0.6
+  castShadows TRUE
+}
+DEF FLOOR Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.5 0.5 0.52
+        roughness 0.9
+        metalness 0.0
+      }
+      geometry Box { size 5 5 0.02 }
+    }
+  ]
+  name "floor"
+}
+DEF LEFT_SPHERE Solid {
+  translation -1.2 0 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.85 0.85
+        roughness 0.6
+        metalness 0.0
+      }
+      geometry Sphere { radius 0.24 subdivision 3 }
+    }
+  ]
+  name "left sphere"
+}
+DEF RED_POINT PointLight {
+  location -1.2 0 1.0
+  color 1 0.15 0.1
+  intensity 2.5
+  attenuation 0 0 1
+  radius 6
+}
+DEF CENTER_BOX Solid {
+  translation 0 0 0.2
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.8 0.8 0.8
+        roughness 0.7
+        metalness 0.0
+      }
+      geometry Box { size 0.4 0.4 0.4 }
+    }
+  ]
+  name "center box"
+}
+DEF CYAN_SPOT SpotLight {
+  location 0 -1.2 1.4
+  direction 0 0.65 -0.75
+  color 0.1 0.85 1.0
+  intensity 4.0
+  beamWidth 0.35
+  cutOffAngle 0.6
+  attenuation 0 0 1
+  radius 8
+}
+DEF RIGHT_CYL Solid {
+  translation 1.2 0 0.3
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.85 0.85
+        roughness 0.6
+        metalness 0.0
+      }
+      geometry Cylinder { radius 0.2 height 0.6 }
+    }
+  ]
+  name "right cylinder"
+}
+DEF WARM_FILL DirectionalLight {
+  color 1.0 0.7 0.35
+  direction -1 0.15 -0.25
+  intensity 1.2
+}

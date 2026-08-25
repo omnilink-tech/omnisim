@@ -1,0 +1,177 @@
+# SoftBody — a rectangular block of VOLUMETRIC (tetrahedral FEM) soft matter,
+# driven by newton's SolverVBD.
+#
+# The second deformable node and the twin of `Cloth`: same coupled solver, same
+# per-frame particle readback, same engine-owned rendering. What differs is where
+# the elasticity lives. A Cloth is a triangle SHEET, stiff in its triangles and
+# bending edges. A SoftBody is a lattice of TETRAHEDRA and the stiffness is
+# entirely in the tets — kMu and kLambda are the Lame parameters in Pa, kDamp the
+# viscous damping. Its surface triangles exist for collision and rendering only
+# and carry no elastic force at all, which is why there is no triKe/edgeKe here.
+#
+# ⚠ A SoftBody ONLY simulates in a world whose WorldInfo declares
+#   newtonSolver "mujoco+vbd"
+# because that is the only value under which the runtime builds a SolverVBD to
+# integrate particles alongside the rigid SolverMuJoCo. In any other world the
+# node still parses and still occupies a row in the scene tree, but it registers
+# no particles, never moves, and — see the rendering note below — draws nothing.
+# It says so once, with a warning naming this field. That warning is the only
+# thing separating "misconfigured" from "the physics is broken".
+#
+# Geometry. The block is dimX x dimY x dimZ CELLS, so
+# (dimX + 1) * (dimY + 1) * (dimZ + 1) particles, spanning dimX*cellX by
+# dimY*cellY by dimZ*cellZ metres in its own local frame. Each hexahedral cell is
+# decomposed into 5 tetrahedra by newton.
+#
+# ⚠ `translation` is the block's MINIMUM CORNER, not its centre. The lattice runs
+# from that corner along +X/+Y/+Z, so a 4x4x4 block of 0.05 m cells authored at
+# (0, 0, 0.5) spans z = 0.5 .. 0.7 — its centre is 0.1 m above the number in the
+# file. That is newton's convention and it is the OPPOSITE of Solid/Box, where
+# translation is the centre. `rotation` then turns the whole block about that
+# corner.
+#
+# Pinning. fixLeft / fixRight pin the low / high ends of the block's LOCAL X axis;
+# fixTop / fixBottom pin the HIGH / LOW ends of its LOCAL Y axis. ⚠ Read that
+# twice: "top" is local +Y and "bottom" is local -Y, NOT world up and down, and
+# there is NO pin on the Z faces at all. To pin the WORLD-top face of a block in a
+# Z-up (ENU) world, rotate +90 deg about X so local +Y maps to world +Z, and set
+# fixTop:
+#     rotation 1 0 0 1.5708
+#     fixTop TRUE
+# MEASURED exactly that way on the reference world: the pinned face held
+# 1.500000 while the free end sagged 43.7 mm. A pinned face that DRIFTS means the
+# fix flags never reached the solver. A pinned particle gets zero mass and stops
+# integrating, so the block hangs from that face rather than falling.
+#
+# Unset convention. 0 means "leave it to the runtime" on density, kMu, kLambda,
+# kDamp and particleRadius — the same convention every WorldInfo newton* field
+# uses, so authors already know it. The values a 0 becomes are the runtime's own:
+# density 1000, kMu 1e4, kLambda 1e4, kDamp 1, particleRadius 0.01. ⚠ Consequence
+# of 0 meaning unset: a genuinely zero value cannot be authored here — an
+# undamped block needs a tiny kDamp, not 0.
+#
+# Rendering is engine-owned (as for Cloth and GranularGroup): the simulated
+# particle positions are streamed into a WREN dynamic mesh every frame, so there
+# is no Shape / IndexedFaceSet child to author and none is accepted. The
+# MATERIAL, though, is authored exactly the way every other node's is -- see
+# `appearance` below, which is the field that makes a block render like the rest
+# of the scene rather than like a lump of flat colour.
+#
+# ⚠ AND, UNLIKE Cloth, AN UNSIMULATED SoftBody RENDERS NOTHING. A cloth sheet's
+# triangle winding is derived analytically from dimX/dimY, so a misconfigured
+# Cloth still draws its rest pose and can be placed in the editor. A soft block's
+# surface is the set of OPEN FACES of its tet mesh: only newton knows it, it is
+# snapshotted at authoring time (the ModelBuilder is consumed at finalize, so it
+# cannot be recovered afterwards), and with no successful registration there is
+# no surface to draw. An invisible block in a world that also logged a solver
+# warning is THAT, not a missing geometry field.
+#
+# ⚠ SOFT BODIES ARE A GPU-CLASS WORKLOAD. Measured on CPU: 31 ms/step for a 4^3
+# block alone, 70 ms/step coupled to a rigid scene. Keep blocks small, and declare
+# an EVEN WorldInfo.newtonSubsteps — the CUDA-graph predicate requires
+# `_n_substeps % 2 == 0` and OmniSim's default of 1 is odd, so the graph can never
+# arm. Measured on a 4^3 block: 21.3 -> 6.5 ms/step at newtonSubsteps 2, while
+# doing twice the physics.
+#
+# ⚠ MEASURED LIMIT, and soft bodies are NOT symmetric here: do not stage a rigid
+# body resting ON a soft one. Soft-on-rigid is stable (a 15.6 kg soft block
+# presses a 2 kg dynamic box from 0.060000 to 0.059385 and holds), but
+# RIGID-ON-SOFT — a rigid body supported only by particles — gains energy and is
+# ejected. That reproduces in pure newton with OmniSim absent, in both the coupled
+# and uncoupled solvers, is not a timestep artifact (8x smaller dt made it worse)
+# and is not self-contact. Newton-side, mechanism unidentified.
+#
+# Reference world, with the numbers above staged as assertions:
+#   projects/samples/demos/worlds/physics/newton_softbody_drop.omniworld
+# A block released from z = 0.5 onto a floor lands, squashes (height 0.200 ->
+# 0.187) and settles with its lowest particle at z = 0.009284 — resting on its own
+# 0.01 particleRadius. Below zero would mean it tunnelled; a rigid-looking 0.200
+# would mean the tets carry no elasticity.
+
+SoftBody {
+  field SFVec3f    translation     0 0 1     # world position of the block's MINIMUM CORNER (not its centre)
+  field SFRotation rotation        0 0 1 0   # world orientation of the block (axis x/y/z + angle in rad), about that corner
+  field SFInt32    dimX            4         # cells along local X (>= 1). Particles along X = dimX + 1
+  field SFInt32    dimY            4         # cells along local Y (>= 1). Particles along Y = dimY + 1
+  field SFInt32    dimZ            4         # cells along local Z (>= 1). Particles along Z = dimZ + 1
+  field SFFloat    cellX           0.05      # cell size along local X (m); total width = dimX * cellX
+  field SFFloat    cellY           0.05      # cell size along local Y (m); total depth = dimY * cellY
+  field SFFloat    cellZ           0.05      # cell size along local Z (m); total height = dimZ * cellZ
+  # Material. 0 = "leave it to the runtime" on all four, as documented above.
+  # Per-particle mass is DERIVED (cellX * cellY * cellZ * density), so there is no
+  # `mass` field the way Cloth has one: halving the cell size at a fixed density
+  # is an eightfold lighter particle, not a denser block.
+  field SFFloat    density         0         # kg/m^3. 0 => 1000 (water). Scales mass, not stiffness
+  field SFFloat    kMu             0         # first Lame parameter (Pa), the shear/rigidity term. 0 => 1e4. Raise for rubber, lower for gel
+  field SFFloat    kLambda         0         # second Lame parameter (Pa), the volume-preservation term. 0 => 1e4. Raise to resist squashing
+  field SFFloat    kDamp           0         # viscous damping (Pa.s). 0 => 1. Raise to kill ringing after an impact
+  field SFFloat    particleRadius  0         # per-particle collision thickness (m). 0 => 0.01. A resting block sits on this, not on its face
+  field SFBool     fixLeft         FALSE     # pin the local -X face
+  field SFBool     fixRight        FALSE     # pin the local +X face
+  field SFBool     fixBottom       FALSE     # pin the local -Y face (LOCAL, not world down)
+  field SFBool     fixTop          FALSE     # pin the local +Y face (LOCAL, not world up -- see the rotation recipe above)
+  field SFColor    diffuseColor    0.85 0.35 0.3   # engine-owned phong diffuse colour, used ONLY when `appearance` is NULL
+  # ⚠ THE FIELD THAT MAKES A SoftBody RENDER LIKE THE REST OF THE SCENE.
+  #
+  # Leave it NULL and the node keeps its original engine-owned Phong material
+  # driven by `diffuseColor` above -- unchanged, so no existing world moves.
+  # Set it to the SAME `PBRAppearance` (or legacy `Appearance`) node any Shape
+  # takes and the block goes through the identical WREN material path every Solid
+  # uses: baseColorMap, roughnessMap, metalnessMap, normalMap, occlusionMap,
+  # emissiveColorMap, textureTransform, and the sky's image-based lighting.
+  # `diffuseColor` is then IGNORED (the appearance carries the colour).
+  #
+  # ⚠ WHY THIS IS NOT COSMETIC, and it is the same argument as Cloth's. The
+  # canonical world recipe declares `ambientIntensity 0`
+  # (projects/objects/lights/protos/OmniSimSun.proto), so ALL fill light in an
+  # OmniSim world is image-based and reaches a surface only through a PBR
+  # material. A Phong SoftBody therefore renders EXACTLY (0,0,0) on every square
+  # millimetre the sun does not hit directly -- and a block is a closed volume, so
+  # at any given moment three of its six faces are turned away from the sun. That
+  # -- not lattice resolution -- is the single biggest reason a Phong block looks
+  # unlike everything around it.
+  #
+  # UVs. The surface is parameterised by a BOX projection in the block's own local
+  # frame: each render vertex is mapped by the face it belongs to (the crease
+  # split below is what makes that possible -- a vertex shared by three faces has
+  # three copies, one per face, so each can carry its own UV), normalised so a
+  # texture covers each face exactly once. ⚠ Faces with different aspect ratios
+  # therefore stretch the texture differently; use `TextureTransform.scale` to
+  # tile in metres if that shows.
+  field SFNode     appearance      NULL      # Appearance | PBRAppearance. NULL => the legacy phong `diffuseColor` above
+  # ⚠ WITHOUT THIS A RECTANGULAR BLOCK RENDERS AS A ROUNDED BAR OF SOAP.
+  #
+  # The maximum angle (RADIANS) between two adjacent surface triangles that still
+  # get a SHARED, smoothed vertex normal. Above it the shared vertex is SPLIT so
+  # each side keeps its own flat normal and the edge reads as an edge. Same name,
+  # same units and the same `angle < creaseAngle` rule as IndexedFaceSet, so a
+  # value carried over from a Shape means here what it meant there.
+  #
+  # The default is 0.8 rad (~46 deg), which is the value 2168 nodes in this tree
+  # already use, and it is chosen against the geometry: a block's edges are 90 deg
+  # so they always split, while a squashed or draped face bends far less than 46
+  # deg per triangle and stays smooth. 0 splits EVERY triangle (fully faceted, and
+  # ~3x the vertices); anything >= pi shares every vertex, which is the old
+  # pre-crease behaviour and is what produced the soap bar.
+  #
+  # MEASURED on the reference sponge (dimX 4 dimY 3 dimZ 2 -> 60 particles, 104
+  # surface triangles, 54 surface particles): a bottom-edge vertex used to read
+  # (0, -0.625, -0.781), a 51 deg smear across a hard 90 deg edge, and a corner
+  # vertex (-0.530, -0.530, -0.662). At 0.8 the split produces 94 render vertices
+  # -- exactly the six-face ideal, 2*(5*4 + 5*3 + 4*3) -- and every one of them
+  # carries its own face's normal. Cost is a bigger vertex array, computed ONCE at
+  # registration; the per-frame upload still scatters one particle position per
+  # render vertex and nothing else.
+  #
+  # ⚠ Editing this REBUILDS the WREN mesh (the vertex count changes, and indices +
+  # UVs are static-draw buffers uploaded once), which shows the block at its
+  # authored rest pose for a single frame before the next readback lands.
+  field SFFloat    creaseAngle     0.8       # max angle (rad) between adjacent faces that still share a smoothed normal
+  # Same story as Cloth: TRUE used to fault the GL driver because WrDynamicMesh's
+  # second, shadow-pass vertex array (mShadowCoords) was never given a data store
+  # when a node filled its mesh before building the Renderable that attaches the
+  # ShadowVolumeCaster. Fixed in src/wren/DynamicMesh.cpp::updateGlShadow, which
+  # re-derives mShadowCoords whenever it disagrees with the coords — so the
+  # default is TRUE and the ordering this node uses is a supported one.
+  field SFBool     castShadows     TRUE      # whether the block casts a shadow (silhouette is recomputed per light per frame)
+}

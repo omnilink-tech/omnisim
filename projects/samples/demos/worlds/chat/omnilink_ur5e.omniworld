@@ -1,0 +1,47 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — UR5e
+#
+# UR5e arm with an OmniLink agent attached. Open the OmniLink robot
+# console side menu and type prompts:
+#
+#   home / wave hello / move to 0.4 0.2 0.4 / joint 3 to 1.5 / stop
+#
+# Bridge HTTP surface (Axis-compatible): http://127.0.0.1:8765/list_robots
+# OmniLink integration: set OMNI_KEY before launching Webots to route
+# prompts through OmniLink (otherwise the bridge uses a local regex
+# intent router).
+# See projects/samples/demos/controllers/omnilink_arm_bridge/.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — UR5e"
+  info [
+    "UR5e driven by an OmniLink agent through a chat-style side menu."
+    "Open the robot window and type a prompt. Bridge: 127.0.0.1:8765."
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 1.959 -2.085 2.282
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { }
+
+DEF UR5E URDFRobot {
+  url "../../../../robots/universal_robots/ur_description/urdf/ur5e.urdf"
+  translation 0 0 0
+  name "ur5e"
+  supervisor TRUE
+  staticBase TRUE
+  controller "omnilink_arm_bridge"
+  controllerArgs [ "--robot" "ur5e" "--port" "8765" ]
+  window "omnilink_chat"
+}

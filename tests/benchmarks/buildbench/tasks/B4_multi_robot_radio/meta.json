@@ -1,0 +1,59 @@
+{
+  "suite": "buildbench/v0.1",
+  "id": "B4_multi_robot_radio",
+  "title": "~20 robots coordinating over a radio device model",
+  "prompt": "Build a scene with twenty mobile robots that must each reach a different goal without colliding with one another, coordinating over a simulated radio link -- each robot broadcasts and receives messages, and there is no central controller. Show every robot at its goal and no collisions along the way.",
+  "demonstrates": "many independent robots, each with its own controller process and a message-passing device, solving a shared spatial problem",
+  "why_this_is_real_work": "Warehouse fleets, agricultural swarms and inspection teams are decentralised: each machine runs its own controller and coordinates over a radio with latency and range limits. Whether a distributed policy actually avoids deadlock and collision at fleet scale is a question only a simulator answers before the fleet is bought.",
+  "build_status": "DECLARED",
+  "blocked_reason": "",
+  "depends_on_risks": [
+    "risk_2_njmax_silent_overflow"
+  ],
+  "grading_sketch": "geometric and per-robot: every robot's base within tolerance of its own goal; zero robot-robot contacts over the whole run (contacts scanned for the entire window -- a zero-length window makes collision-freedom unknowable, and 'we could not check' must never read as 'nothing was hit'); messages actually delivered, evidenced behaviourally rather than by a send counter. PLUS a mandatory instrument check: the world must declare newtonNjmax/newtonNconmax and the run must record observed peak nefc against the cap, or the result is INVALID.",
+  "claims": {
+    "omnisim": {
+      "sim": "omnisim",
+      "verdict": "EXPRESSIBLE",
+      "reason": "Emitter/Receiver devices and one controller process per robot both exist, and multi-robot worlds at this scale are routine",
+      "missing_capability": "",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "SPEC 6.1 risk 2: newtonNjmax/newtonNconmax default to 256 and overflow SILENTLY on mujoco_warp -- the constraint vector is truncated, contact solving degrades, and the only warning is a kernel-side wp.printf that Windows discards entirely. A wheeled robot on four wheels is ~32 constraint rows, so 20 robots is far past the default. Unless the world sets the fields deliberately, this task does not measure multi-robot coordination -- it measures our own unset default.",
+        "The ~9-robot threshold above is itself UNCONFIRMED on the present runtime: OmniBench lane 4b swept driven rovers, found peak nefc tracking 32*N exactly but the ALLOCATED cap tracking it too, and could not force an overflow in three attempts -- so it reports cliff_detector_validated: false and refuses to call it a pass. Do not quote lane 4b as reassurance and do not read it as refuting the threshold."
+      ],
+      "publishable": false
+    },
+    "webots": {
+      "sim": "webots",
+      "verdict": "PARTIAL",
+      "reason": "upstream has both Emitter/Receiver and per-robot controller processes; the declared limitation is throughput at scale",
+      "missing_capability": "",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "The throughput claim names the WRONG ENGINE VERSION. Upstream Webots R2025a is not this tree's deleted ODE path, and nobody has measured upstream at 20 robots. Recorded as PARTIAL rather than NOT_EXPRESSIBLE precisely because the devices plainly exist -- and if the throughput holds, the honest verdict is EXPRESSIBLE and this is a task upstream does as well as we do or better. That would be a fine result.",
+        "Our own historical measurement cuts against the assumption: same-harness on the step_cost bench while ODE still shipped, ODE was FASTER per step than Newton at every scene size measured. Any 'ODE collapses at scale' phrasing is unsupported by this tree's own numbers and must not be repeated."
+      ],
+      "publishable": false
+    },
+    "mujoco": {
+      "sim": "mujoco",
+      "verdict": "NOT_EXPRESSIBLE",
+      "reason": "declared: no radio device model and no independent controller processes -- one process steps one model",
+      "missing_capability": "an inter-robot message-passing device (Emitter/Receiver) and independent per-robot controller processes",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "A user would reasonably implement message passing in the driving Python program, which may well be an honest formulation -- the task says the robots coordinate over a radio, not that the simulator ships a radio node. If so this is EXPRESSIBLE. The narrower defensible claim is about a MODELLED link (range limits, latency, collisions) rather than about message passing as such, and the declaration has not settled which the task requires."
+      ],
+      "publishable": false
+    }
+  },
+  "oracle_null_gate": {
+    "omnisim": "NOT RUN",
+    "webots": "NOT RUN",
+    "mujoco": "NOT RUN"
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "arm": "webots",
+  "engine": "upstream Webots R2025a",
+  "generated_utc": "2026-08-12T19:38:05Z",
+  "fault": "weak_grip",
+  "rows": [
+    {
+      "rung": 8,
+      "sim": "webots",
+      "fault": "weak_grip",
+      "title": "gripper lifts a payload off a table",
+      "measured": {
+        "steps": 1875.0,
+        "sim_time_end": 7.5,
+        "exit_code": 0.0,
+        "n_samples": 1875,
+        "part_rest_z": 0.7299901900000002,
+        "lift_height": 0.7299911709999575,
+        "hold_clearance": -8.829000042509527e-06,
+        "part_final_z": 0.7299911709999575,
+        "place_x": -8.978956388454126e-19,
+        "part_final_x": -8.978956388454126e-19,
+        "carry_rel": 0.47434366416697216,
+        "carry_rel_final": 0.47434362205782854,
+        "part_speed_max": 0.0001528394177422824
+      },
+      "checks": [
+        {
+          "name": "part_rest_z",
+          "measured": 0.7299901900000002,
+          "expected": 0.73,
+          "tol": 0.005,
+          "unit": "m",
+          "rel": false,
+          "error": -9.809999999776942e-06,
+          "margin": 0.004990190000000223,
+          "ok": true,
+          "why": "before the fingers close, the payload rests where geometry says: table top 0.70 m plus half its 0.06 m edge.  It separates 'the grasp failed' from 'the scene was already wrong'",
+          "key": "part_rest_z"
+        },
+        {
+          "name": "carry_rel",
+          "measured": 0.47434366416697216,
+          "expected": 0.0,
+          "tol": 0.01,
+          "unit": "m",
+          "rel": false,
+          "error": 0.47434366416697216,
+          "margin": -0.46434366416697215,
+          "ok": false,
+          "why": "max over the WHOLE run of |r_payload - r_wrist|.  The wrist origin is AUTHORED at the payload's centre, so this expectation is an analytic zero rather than a value read from the run -- the payload tracks the gripper, or it does not",
+          "key": "carry_rel"
+        },
+        {
+          "name": "lift_height",
+          "measured": 0.7299911709999575,
+          "expected": 0.88,
+          "tol": 0.01,
+          "unit": "m",
+          "rel": false,
+          "error": -0.15000882900004253,
+          "margin": -0.14000882900004252,
+          "ok": false,
+          "why": "payload centre while held at the target: rest height 0.73 m plus the commanded 0.15 m lift",
+          "key": "lift_height"
+        },
+        {
+          "name": "place_x",
+          "measured": -8.978956388454126e-19,
+          "expected": 0.45,
+          "tol": 0.01,
+          "unit": "m",
+          "rel": false,
+          "error": -0.45,
+          "margin": -0.44,
+          "ok": false,
+          "why": "the payload ends at the commanded target, 0.45 m from where it was picked up -- 8x its own edge, so a carry cannot be confused with a jiggle",
+          "key": "place_x"
+        },
+        {
+          "name": "hold_clearance",
+          "measured": -8.829000042509527e-06,
+          "expected": 0.15,
+          "tol": 0.01,
+          "unit": "m",
+          "rel": false,
+          "error": -0.1500088290000425,
+          "margin": -0.1400088290000425,
+          "ok": false,
+          "why": "minimum over the whole carry of (payload underside - table top).  AIRBORNE, asserted over every sample of the carry rather than at the end of it, so a payload that touched down mid-traverse cannot be rescued by where it finished",
+          "key": "hold_clearance"
+        },
+        {
+          "name": "part_speed_max",
+          "measured": 0.0001528394177422824,
+          "expected": 0.0,
+          "tol": 0.44999999999999996,
+          "unit": "m/s",
+          "rel": false,
+          "error": 0.0001528394177422824,
+          "margin": 0.44984716058225765,
+          "ok": true,
+          "why": "fastest the payload ever moves, read over 50 ms windows so sampling noise cannot set it.  The measured failure this guards is a pinch that EJECTED its part at 3.5 m/s and left it on the gripper's own wrist plate",
+          "key": "part_speed_max"
+        }
+      ],
+      "wall": {
+        "startup_s": 3.2070446014404297,
+        "total_s": 4.42862343788147,
+        "step_s": 0.8276739120483398
+      },
+      "passed": false,
+      "meta": {
+        "sim": "webots",
+        "rung": 8,
+        "fault": "weak_grip",
+        "engine": "upstream Webots R2025a",
+        "webots_home": "/opt/upstream-webots/R2025a",
+        "port": 1604,
+        "error": null,
+        "exit_code": 0,
+        "timed_out": false,
+        "proc_t0": 1786563487.267163,
+        "proc_t1": 1786563491.6957865,
+        "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung8_weak_grip.wbt",
+        "cmd": "wsl.exe -e bash /mnt/o/omnisim/tests/benchmarks/ladder0/webots/run_cell.sh 8 weak_grip /mnt/o/omnisim/tests/benchmarks/ladder0/webots/results/rung8_weak_grip /mnt/o/omnisim/tests/benchmarks/ladder0/webots/worlds/rung8_weak_grip.wbt 240 1604",
+        "engine_version": "R2025a",
+        "engine_sha256_16": "c12c65e8680b579d",
+        "engine_complaints": [
+          "WARNING: It is not recommended to run Webots as root."
+        ]
+      }
+    }
+  ]
+}

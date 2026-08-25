@@ -1,0 +1,10 @@
+{
+ "exit_code": 0,
+ "timed_out": false,
+ "wall_s": 22.624,
+ "attempts_used": 1,
+ "perf_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools\\webots\\perf.txt",
+ "webots_version": "R2025a",
+ "command": "WEBOTS_HOME=/opt/upstream-webots/R2025a timeout 420 xvfb-run -a /opt/upstream-webots/R2025a/webots --batch --mode=fast --no-rendering --minimize --stdout --stderr --log-performance=\"/tmp/agentbench_webots/six_pioneers_f465152d/out/perf.txt\",62 --port=1504 \"/tmp/agentbench_webots/six_pioneers_f465152d/project/worlds/six_pioneers.wbt\"",
+ "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools\\scratch\\six_pioneers.wbt"
+}

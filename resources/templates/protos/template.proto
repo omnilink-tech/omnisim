@@ -1,0 +1,12 @@
+#OMNISIM %release% utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+%description%
+%tags%
+%externproto%
+PROTO %name% [
+%interface%
+]
+{
+%body%
+}

@@ -1,0 +1,40 @@
+{
+  "id": "B1_overlap_audit",
+  "tier": "inspect",
+  "flagship": false,
+  "prompt_file": "prompt.txt",
+  "grader": "agentbench.graders.b1",
+  "par_s": 300,
+  "timeout_s": 900,
+  "repeats_default": 1,
+  "stresses": "bounds retrieval, pairwise reasoning, honest reporting",
+  "initial_state": "six Huskies, exactly one pair deeply interpenetrating",
+  "initial_files": [
+    "six_huskies.wbt"
+  ],
+  "deliverable": "the agent's final message (there is no artifact)",
+  "phases": {
+    "harness": {
+      "enabled": false
+    },
+    "standalone": {
+      "settle_s": 0.0,
+      "duration_s": 1.0,
+      "contact_steps": 1,
+      "note": "the run exists only to freeze t=0 and read every robot's world-space AABB; the grader derives WHICH pair overlaps from that geometry, never from a hardcoded name"
+    }
+  },
+  "constants": {
+    "OVERLAP_MIN_M": 0.05,
+    "CLEAR_MIN_M": 0.05
+  },
+  "budget": {
+    "rule": "timeout_s = min(3 x par_s, TASK_HARD_CEILING_S)",
+    "hard_ceiling_s": 2700,
+    "truncated_by_ceiling": false,
+    "ratio_to_par": 3.0,
+    "runs_per_cell": 1,
+    "variance_measured": false,
+    "note": "the full 3x-par rule applies under the 2700 s (45 min) ceiling. ONE run per (task, arm): a single observation is an OUTCOME, never a rate -- pass@1 and a confidence interval are undefined at n = 1 (SPEC 3.5)."
+  }
+}

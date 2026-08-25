@@ -1,0 +1,51 @@
+#OMNISIM R2025a utf8
+
+# DJI Mavic 2 Pro baseline showcase, loaded from URDF via URDFRobot.
+# Shows the kinematic chain (body + 4 props + 3-axis camera gimbal)
+# without flight. To see the drone actually fly, run
+# projects/samples/demos/worlds/chat/omnilink_mavic.omniworld, which uses the
+# same URDF with the mavic_omnilink_bridge controller. That bridge
+# pairs with the rotor-dynamics module
+# (samples/demos/controllers/mavic_omnilink_bridge/mavic_dynamics.py)
+# to replace the lift + reaction-torque that the legacy PROTO's
+# Propeller nodes used to provide automatically.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "DJI Mavic 2 Pro (URDF)"
+  info [
+    "Mavic 2 Pro imported from URDF. Static kinematics demo — see"
+    "samples/demos/worlds/chat/omnilink_mavic.omniworld for flight."
+  ]
+}
+
+Viewpoint {
+  orientation -0.18 0.32 0.93 1.5
+  position 1.5 -1.8 1.2
+  exposure 1.4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 3 3
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.23
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../urdf/mavic_2_pro.urdf"
+  translation 0 0 0.05
+  name "Mavic 2 PRO"
+  controller "<none>"
+}

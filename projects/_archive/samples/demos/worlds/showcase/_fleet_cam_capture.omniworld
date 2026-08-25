@@ -1,0 +1,134 @@
+#OMNISIM R2025a utf8
+
+# Auto-capture variant of husky_fleet_arena.omniworld: identical fleet, plus a
+# DEF CAMBOT supervisor carrying a Camera device that records the scene to a
+# PNG frame sequence via the fleet_cam controller. Throwaway / regenerable.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky Fleet - Arena (capture)"
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 32
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+RectangleArena {
+  floorSize 20 20
+  wallHeight 0.4
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+DEF CAMBOT Robot {
+  translation -3 -20 22
+  name "fleet_cam_bot"
+  controller "fleet_cam"
+  supervisor TRUE
+  children [
+    Camera {
+      name "cam"
+      width 1920
+      height 1080
+      fieldOfView 0.785398
+    }
+  ]
+}
+
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 4 0.1
+  name "husky_01"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -4 4 0.1
+  name "husky_02"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 4 0.1
+  name "husky_03"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 4 4 0.1
+  name "husky_04"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 4 0.1
+  name "husky_05"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -4 0.1
+  name "husky_06"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -4 -4 0.1
+  name "husky_07"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 -4 0.1
+  name "husky_08"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 4 -4 0.1
+  name "husky_09"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -4 0.1
+  name "husky_10"
+  controller "husky_random"
+  supervisor TRUE
+  customData "{\"world_centre\":[0,0],\"world_size\":20.0,\"boundary_margin\":2.0}"
+}

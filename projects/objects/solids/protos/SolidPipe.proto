@@ -1,0 +1,200 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/solids/protos/SolidPipe.proto
+# keywords: primitive/geometry
+# A hollow tube (an annular cylinder) exposed as a Solid.
+# Graphically it is a single IndexedFaceSet: an outer wall, an inner wall and two end rings.
+# Physically it is a ring of boxes -- a collision engine cannot represent a concave hollow shell,
+# so the annulus is tiled with 'subdivision' straight boxes; 'accuracy' bounds how far that
+# polygonal ring may sit from the true circular wall.
+# template language: javascript
+
+PROTO SolidPipe [
+  field SFVec3f    translation           0 0 1
+  field SFRotation rotation              0 0 1 0
+  field SFString   name                  "pipe"
+  field SFFloat    height                2                                                                                                             # Defines the height of the pipe.
+  field SFFloat    radius                1                                                                                                             # Defines the radius of the pipe.
+  field SFFloat    thickness             0.1                                                                                                           # Defines the thickness of the pipe.
+  field SFInt32    subdivision           24                                                                                                            # Defines the number of polygons used to represent the pipe and so its resolution.
+  field SFFloat    accuracy              0.0001                                                                                                        # Defines how far the boxes of the bounding object may sit from the true circular wall: a smaller value keeps more boxes and so slows the simulation down.
+  field SFString   contactMaterial       "default"                                                                                                     # Is `Solid.contactMaterial`.
+  field SFNode     appearance            PBRAppearance { baseColorMap ImageTexture { url [ "omnisim://projects/default/worlds/textures/tagged_wall.jpg" ] } metalness 0 roughness 0.5 }  # Defines the appearance of the pipe.
+  field SFNode     physics               NULL                                                                                                          # Is `Solid.physics`.
+  field SFBool     enableBoundingObject  TRUE                                                                                                          # Defines whether the solid should have a bounding object.
+]
+{
+  # GEOMETRY
+  #   The pipe is centred on its own origin and runs along the local z axis, so a
+  #   pipe of height h spans z = -h/2 .. +h/2.  'radius' is the OUTER radius and the
+  #   bore is radius - thickness.  Four rings of 'subdivision' vertices are emitted
+  #   (outer-bottom, outer-top, inner-bottom, inner-top) and the faces are wound so
+  #   that the outer wall looks outward, the bore looks inward, and the two end rings
+  #   look along -z and +z respectively.
+  #
+  # BOUNDING OBJECT
+  #   One box per angular sector, each spanning the full wall thickness, rotated to
+  #   sit tangentially in the ring.  Its tangential width is the CIRCUMSCRIBED chord
+  #   2 * r * tan(pi / n) rather than the inscribed one, so neighbouring boxes meet
+  #   edge to edge instead of leaving a gap a foot or a wheel could drop into.
+  #   The straight box cannot follow the curved wall, and the residual radial error
+  #   of an n-box ring is r * (1 - cos(pi / n)).  'accuracy' is the budget for that
+  #   error: the ring is thinned to the fewest boxes that still stay inside the
+  #   budget, and only falls back to the full 'subdivision' when even that is not
+  #   accurate enough.  Loose budget -> few boxes -> fast; tight budget -> the full
+  #   requested resolution.
+  %<
+    let height = fields.height.value;
+    if (height <= 0.0) {
+      height = fields.height.defaultValue;
+      console.error('SolidPipe: \'height\' must be strictly positive. Falling back to ' + height + '.');
+    }
+
+    let radius = fields.radius.value;
+    if (radius <= 0.0) {
+      radius = fields.radius.defaultValue;
+      console.error('SolidPipe: \'radius\' must be strictly positive. Falling back to ' + radius + '.');
+    }
+
+    let thickness = fields.thickness.value;
+    if (thickness <= 0.0 || thickness >= radius) {
+      thickness = Math.min(fields.thickness.defaultValue, 0.5 * radius);
+      console.error('SolidPipe: \'thickness\' must be strictly positive and smaller than \'radius\'. Falling back to ' +
+                    thickness + '.');
+    }
+
+    let subdivision = fields.subdivision.value;
+    if (subdivision < 3) {
+      subdivision = fields.subdivision.defaultValue;
+      console.error('SolidPipe: \'subdivision\' must be at least 3. Falling back to ' + subdivision + '.');
+    }
+
+    let accuracy = fields.accuracy.value;
+    if (accuracy < 0.0)
+      accuracy = 0.0;
+
+    const n = subdivision;
+    const outer = radius;
+    const inner = radius - thickness;
+    const halfHeight = 0.5 * height;
+    const step = 2.0 * Math.PI / n;
+
+    // vertex rings: 0 = outer bottom, 1 = outer top, 2 = inner bottom, 3 = inner top
+    const points = [];
+    const rings = [[outer, -halfHeight], [outer, halfHeight], [inner, -halfHeight], [inner, halfHeight]];
+    for (let r = 0; r < 4; ++r) {
+      for (let i = 0; i < n; ++i) {
+        const a = i * step;
+        points.push({x: rings[r][0] * Math.cos(a), y: rings[r][0] * Math.sin(a), z: rings[r][1]});
+      }
+    }
+
+    // faces, all wound counter-clockwise as seen from outside the material
+    const faces = [];
+    const texFaces = [];
+    // the wall texture grid carries n + 1 columns so the seam gets u = 1 instead of
+    // wrapping to 0 and mirroring the last strip of texture back on itself
+    const wallTc = function(i, top) { return 2 * i + (top ? 1 : 0); };
+    const capTc = function(i, isInner) { return 2 * (n + 1) + (isInner ? n : 0) + (i % n); };
+    for (let i = 0; i < n; ++i) {
+      const j = (i + 1) % n;
+      // outer wall (normal points away from the axis)
+      faces.push(i + ' ' + j + ' ' + (n + j) + ' ' + (n + i) + ' -1');
+      texFaces.push(wallTc(i, false) + ' ' + wallTc(i + 1, false) + ' ' +
+                    wallTc(i + 1, true) + ' ' + wallTc(i, true) + ' -1');
+      // bore (normal points back toward the axis)
+      faces.push((2 * n + i) + ' ' + (3 * n + i) + ' ' + (3 * n + j) + ' ' + (2 * n + j) + ' -1');
+      texFaces.push(wallTc(i, false) + ' ' + wallTc(i, true) + ' ' +
+                    wallTc(i + 1, true) + ' ' + wallTc(i + 1, false) + ' -1');
+      // top ring (+z)
+      faces.push((n + i) + ' ' + (n + j) + ' ' + (3 * n + j) + ' ' + (3 * n + i) + ' -1');
+      texFaces.push(capTc(i, false) + ' ' + capTc(i + 1, false) + ' ' +
+                    capTc(i + 1, true) + ' ' + capTc(i, true) + ' -1');
+      // bottom ring (-z)
+      faces.push(i + ' ' + (2 * n + i) + ' ' + (2 * n + j) + ' ' + j + ' -1');
+      texFaces.push(capTc(i, false) + ' ' + capTc(i, true) + ' ' +
+                    capTc(i + 1, true) + ' ' + capTc(i + 1, false) + ' -1');
+    }
+
+    // how many boxes does the bounding ring actually need?
+    let boxCount = n;
+    if (accuracy > 0.0) {
+      for (let m = 3; m <= n; ++m) {
+        if (outer * (1.0 - Math.cos(Math.PI / m)) <= accuracy) {
+          boxCount = m;
+          break;
+        }
+      }
+    }
+    const boxStep = 2.0 * Math.PI / boxCount;
+    const midRadius = radius - 0.5 * thickness;
+    const boxWidth = 2.0 * midRadius * Math.tan(Math.PI / boxCount);
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Shape {
+        appearance IS appearance
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+              %< for (let i = 0; i < points.length; ++i) { >%
+              %<= points[i].x >% %<= points[i].y >% %<= points[i].z >%
+              %< } >%
+            ]
+          }
+          texCoord TextureCoordinate {
+            point [
+              %< for (let i = 0; i <= n; ++i) { >%
+              %<= i / n >% 0
+              %<= i / n >% 1
+              %< }
+                 for (let i = 0; i < n; ++i) { >%
+              %<= 0.5 + 0.5 * Math.cos(i * step) >% %<= 0.5 + 0.5 * Math.sin(i * step) >%
+              %< }
+                 for (let i = 0; i < n; ++i) {
+                   const f = inner / outer; >%
+              %<= 0.5 + 0.5 * f * Math.cos(i * step) >% %<= 0.5 + 0.5 * f * Math.sin(i * step) >%
+              %< } >%
+            ]
+          }
+          coordIndex [
+            %< for (let i = 0; i < faces.length; ++i) { >%
+            %<= faces[i] >%
+            %< } >%
+          ]
+          texCoordIndex [
+            %< for (let i = 0; i < texFaces.length; ++i) { >%
+            %<= texFaces[i] >%
+            %< } >%
+          ]
+          creaseAngle 1.5
+        }
+      }
+    ]
+    name IS name
+    model "pipe"
+    contactMaterial IS contactMaterial
+    %< if (fields.enableBoundingObject.value) { >%
+    boundingObject Group {
+      children [
+        %< for (let i = 0; i < boxCount; ++i) {
+             const a = i * boxStep; >%
+        Pose {
+          translation %<= midRadius * Math.cos(a) >% %<= midRadius * Math.sin(a) >% 0
+          rotation 0 0 1 %<= a >%
+          children [
+            Box {
+              size %<= thickness >% %<= boxWidth >% %<= height >%
+            }
+          ]
+        }
+        %< } >%
+      ]
+    }
+    %< } >%
+    physics IS physics
+  }
+}

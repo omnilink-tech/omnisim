@@ -1,0 +1,74 @@
+#OMNISIM R2025a utf8
+
+# OmniQuad residual deploy world. Same arena as omniquad_walk_demo.omniworld so the
+# verify harness reports apples-to-apples metrics vs v12_200k. Uses
+# the omniquad_residual_deploy controller which combines the model walker
+# (gait + IK + balance) with an ONNX residual policy.
+#
+# Physics: Newton (migrated from ODE 2026-06-11). Newton policy:
+#   OMNIQUAD_POLICY_ONNX=projects/policies/research/inference/policies/omniquad_residual_newton_main/policy.onnx
+# + the standard OmniQuad Newton knobs (docs/developer/omniquad-residual-rl.md "Newton port").
+#
+# *** STATUS 2026-06-11 (later): root cause FIXED (W1 self-collision; see
+# newton-ode-replacement-plan.md "W6" RESOLVED). OmniQuad STANDS + gait-steps
+# 30 s / 100% upright at OMNISIM_NEWTON_TARGET_KE=500 KD=200 SUBSTEPS=8.
+# With OMNIQUAD_GAIT_STEP_HEIGHT=0.09 the walker moves FORWARD (+2.7 m / 30 s,
+# zero falls) but still curves; the May-era ONNX policies predate the fix.
+# A STRAIGHT-walking residual retrain is the open follow-up (pipeline
+# ready — see omniquad-residual-rl.md banner + scripts/dev/run_omniquad_walk_newton.ps1). ***
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "OmniQuad residual deploy"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 7
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 60 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+Solid { translation 3 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m3" }
+Solid { translation 6 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0.6 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m6" }
+Solid { translation 9 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m9" }
+Solid { translation 12 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m12" }
+Solid { translation 15 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 0.6 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m15" }
+Solid { translation 18 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.5 0 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m18" }
+Solid { translation 21 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m21" }
+
+URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad.urdf"
+  translation 0 0 0.70
+  name "omniquad"
+  supervisor TRUE
+  controller "omniquad_residual_deploy"
+  physicsBackend "newton"
+}

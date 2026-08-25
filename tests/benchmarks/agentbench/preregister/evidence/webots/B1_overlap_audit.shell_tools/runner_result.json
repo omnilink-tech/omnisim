@@ -1,0 +1,59 @@
+{
+  "final_message": "Yes - robot_one and robot_two are overlapping. Measured from the scene and the PROTO's own collision geometry: the Pioneer 3-AT body's boundingObject boxes are 0.197 x 0.2 x 0.402 and 0.264 x 0.2 x 0.332 (a body about 0.5 m long and 0.4 m wide), and the six authored translations give a centre separation of 0.168 m for (robot_one, robot_two) - dx 0.16, dy 0.05 - against 3.84 m for the next-closest pair. The body half-extents exceed the separation on every axis, so their bounding boxes interpenetrate deeply; every one of the other 14 pairs is metres clear.",
+  "stop_reason": "model_stopped",
+  "stop_detail": "end_turn",
+  "self_verified": true,
+  "usd": null,
+  "tool_set": "shell_plus_tools",
+  "tools_sha256": "a624c7f4a42205322f54b1574cddecdd9022f2888aae99c1b1c69d794c2895ca",
+  "manifest_sha256": "00219b2bd161f880595e9b0e65668cba7152c0d4c3ea597f242c1160c5dae1f1",
+  "system_prompt_sha": "19759dc6c55d0b1e16f5584911dbf05b81d51427ca3c3c681878e4071fb736ef",
+  "system_full_sha": "47ba167140c8913f9505763b21cd97a9c4008cc2f720b1a642f9bb2b6e9b4500",
+  "backend": {
+    "backend": "scripted",
+    "model": "scripted:oracle_b1_webots",
+    "temperature": null,
+    "script": "O:\\omnisim\\tests\\benchmarks\\agentbench\\runner\\scripts\\oracle_b1_webots.json",
+    "script_name": "oracle_b1_webots",
+    "script_turns": 3,
+    "usage_is_synthetic": true
+  },
+  "sandbox": {
+    "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools",
+    "scratch_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools\\scratch",
+    "repo": "O:\\omnisim",
+    "harness_port": 7100,
+    "supervisor_port": 7101,
+    "log_path": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools\\agent_engine.log",
+    "shell": [
+      "C:\\Program Files\\Git\\usr\\bin\\bash.EXE",
+      "-lc"
+    ],
+    "shell_source": "which:C:\\Program Files\\Git\\usr\\bin\\bash.EXE",
+    "read_deny": [],
+    "deviations": []
+  },
+  "deviations": [],
+  "artifacts": {
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools\\trace.jsonl",
+    "tool_set_manifest": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools\\tool_set.shell_plus_tools.json",
+    "leak_suspect_tool_calls": 0,
+    "tokens_cache_write": null,
+    "system_prompt": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools\\system_prompt.txt"
+  },
+  "error": null,
+  "port_survivors": [],
+  "metrics": {
+    "turns": 2,
+    "model_calls": 3,
+    "tool_calls": 2,
+    "tokens_in": 12000,
+    "tokens_out": 860,
+    "tokens_cache_read": null,
+    "tokens_cache_write": null,
+    "elapsed_s": 1.883,
+    "stop_reason": "model_stopped",
+    "stop_detail": "end_turn"
+  },
+  "hit_budget": false
+}

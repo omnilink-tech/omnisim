@@ -1,0 +1,1248 @@
+#OMNISIM R2025a utf8
+
+# Desert ruins (cinematic golden-hour edition) — pushed to the
+# visualization limits of OmniSim's WREN/OpenGL renderer.
+#
+# The backdrop is hand-built ancient desert architecture: a 4-tier
+# ziggurat, an Egyptian-style pylon gate, a colossal marble colonnade
+# (eight columns, three collapsed), an obelisk, and a half-buried
+# stone dome — plus haze-faded duplicates on the far horizon. We
+# deliberately do NOT use the generic city-stock building protos
+# (HollowBuilding, BigGlassTower, BuildingUnderConstruction) — they
+# read as textured boxes and look wrong in a desert. All the
+# silhouettes here are primitive composites (Box/Cylinder/Sphere)
+# with mineral PBRAppearance (Plaster/DryMud/Marble) so the
+# Rayleigh-tinted sun catches them as warm sandstone.
+#
+# What changed vs. the previous pass:
+#   - Low warm sun + atmosphericSky=earth: scattering tints the sky to
+#     dusk and the sun casts long shadows across every dune.
+#   - Eye-level cinematic camera (~2.4 m), 35° FOV, framed across the
+#     plaza toward the backlit NW skyline.
+#   - Layered composition:
+#       * hero foreground: fractured colonnade + rebar-spiked debris
+#       * mid plaza: StoneFountain, broken benches, columns, brick stub
+#       * far skyline: tilted ruined towers, silhouetted, half-buried
+#     The eye reads foreground → midground → silhouettes → sun.
+#   - Material variety (not just RoughConcrete): FormedConcrete, Marble,
+#     RedBricks, RustyMetal, OldSteel, CorrodedMetal, DryMud, Plaster.
+#   - 300 m perlin terrain at 8 octaves with Sand (PBR + normal map).
+#   - Dense scatter: ~50 rocks, sand drifts, dead-vegetation specks.
+#   - Warm exponential fog: cheap atmospheric perspective.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/UnevenTerrain.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Sand.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/SandyGround.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughConcrete.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/FormedConcrete.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Marble.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RedBricks.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RustyMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/CorrodedMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/OldSteel.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/DryMud.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Plaster.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/StoneFountain.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/StoneBench.proto"
+EXTERNPROTO "omnisim://projects/objects/rocks/protos/Rock.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/PalmTree.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Desert Ruins"
+}
+
+# Cinematic eye-level shot: camera SE of the plaza at 2.4 m, looking NW
+# across the broken colonnade past the fountain to the backlit tower
+# silhouettes and the low sun beyond. ~35° FOV (0.6 rad) for a cinema
+# lens feel — long focal length compresses the dunes and stacks the
+# skyline against the foreground ruins. Orientation computed via
+# POST /scene/look_at {position:[16,-22,2.4], target:[-18,18,6]} —
+# see scripts/harness/README.md §5.
+Viewpoint {
+  orientation 0.0 -0.03546155 0.99937104 2.32255962
+  position 14 -19 2.4
+  fieldOfView 0.95
+  near 0.1
+  ambientOcclusionRadius 2
+  bloomThreshold 3
+}
+
+# atmosphericSky="earth" renders procedural Rayleigh/Mie scattering
+# tuned to the sun direction — when SUN is low (golden hour), the sky
+# auto-grades from peach near the horizon to deep blue at zenith.
+# skyColor sets the unlit base; we warm it slightly so it blends into
+# the fog cleanly. Higher luminosity pushes the upper sky brighter so
+# silhouettes read against it.
+OmniSimSky {
+  skyColor [ 0.55 0.42 0.32 ]
+  luminosity 1.7
+}
+
+# Golden-hour sun: warm amber, intensity bumped so backlit silhouettes
+# stay legible against the bright sky. castShadows TRUE (the OmniSimSun
+# default) — this is the most important single change for realism.
+# The actual direction is overwritten every step by the sun_marker
+# controller using SUN_MARKER's position; the explicit value below
+# matches the marker (-32, 28, 22) so the t=0 atmosphericSky bake
+# matches the post-step direction.
+DEF SUN OmniSimSun {
+  color 1.0 0.70 0.40
+  direction 0.741 -0.648 -0.510
+  intensity 4.2
+  ambientIntensity 0
+}
+
+# Sun marker parked low in the NW quadrant — ~7° above the horizon, far
+# enough that the backlit towers fall between the camera and the sun.
+# Drag the glowing sphere live in the viewport to rotate the lighting
+# (V hides it for clean stills).
+DEF SUN_MARKER OmniSimSunMarker {
+  translation -32 28 22
+  radius 1.1
+  baseColor 1.0 0.85 0.45
+  emissiveColor 1.0 0.65 0.18
+  emissiveIntensity 220
+}
+
+# Cool sky fill from the opposite quadrant of the sun — keeps shaded
+# sides of ruins from going pitch black. Higher intensity than usual
+# (1.8) because backlit composition is otherwise contrast-extreme.
+DirectionalLight {
+  direction -0.6 0.5 -0.6
+  color 0.55 0.65 0.85
+  intensity 1.8
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+# Warm ground-bounce fill — simulates light reflected off the sunlit
+# sand back up onto the underside of ruins. Faint, warm, no shadows.
+# Comes from below + behind the sun so it wraps around the silhouettes.
+DirectionalLight {
+  direction 0.4 -0.3 0.6
+  color 0.95 0.65 0.38
+  intensity 0.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+# Warm exponential haze — atmospheric perspective without textures.
+# Tuned so the near towers stay legible, the far towers fade into the
+# sky, and the central plaza retains crisp contrast. Slightly warmer
+# than the sky so the dune crests in the distance pick up a sunset
+# wash that flows into the sky-band.
+Fog {
+  color 0.85 0.66 0.48
+  fogType "EXPONENTIAL"
+  visibilityRange 320
+}
+
+# ============================================================================
+# Terrain — 300 m, deep perlin dunes (size z=14, 9 octaves) so the
+# crests around the plaza read as proper sand dunes, not gentle swells.
+# Texture scale dropped from 120 -> 45 (tiles 2.5 m -> 6.7 m) so the
+# repeating pattern is far less obvious at close range. flatCenter
+# keeps the inner ~7 m flat for the plaza ruins. The remaining tile
+# repeat is broken visually by the hand-placed dune mounds + wind
+# drifts + sand ripples below — each of those has its own
+# textureTransform rotation so the grain pattern reads differently
+# on every patch.
+# ============================================================================
+UnevenTerrain {
+  translation 0 0 0
+  name "desert_terrain"
+  size 300 300 14
+  xDimension 200
+  yDimension 200
+  appearance Sand {
+    textureTransform TextureTransform { scale 45 45 }
+  }
+  randomSeed 13
+  flatCenter TRUE
+  perlinNOctaves 9
+}
+
+# ============================================================================
+# Ancient desert architecture — hand-built from primitives so the
+# silhouettes read as eroded stone rather than the textured-box skyscraper
+# protos the previous pass used (those are generic city stock and look
+# wrong here). Materials are mineral (Plaster/DryMud/Marble) so the
+# Rayleigh-tinted sun catches them as warm sandstone at golden hour.
+#
+# Inventory:
+#   - Ziggurat (4-tier stepped pyramid)         NW background — primary backdrop
+#   - Pylon Gate (twin trapezoidal towers)      NE background — Egyptian-style entrance
+#   - Colossal colonnade (8 huge columns)       SW mid — temple ruin, some fallen
+#   - Obelisk (tall tapered shaft + pyramidion) W   midground — solo vertical
+#   - Dome ruin (hemisphere broken open)        SE midground — silhouetted curve
+#   - Far ziggurat + far pylons                 horizon haze — depth layer
+# ============================================================================
+
+# --- Ziggurat: NW background, 4 tiers of stacked stone. Mud-brick
+# appearance reads as sun-baked desert sandstone at distance.
+# Footprint 30x30 m, total height ~22 m. Half-buried (z=-1.5) for
+# weight and "settled into the dunes" reading.
+DEF ZIGGURAT Solid {
+  translation -88 72 -1.5
+  rotation 0 0 1 0.45
+  children [
+    Pose { translation 0 0 3    children [ Shape { appearance DryMud  { textureTransform TextureTransform { scale 8 4 } } geometry Box { size 30 30 6   } } ] }
+    Pose { translation 0 0 8.75 children [ Shape { appearance DryMud  { textureTransform TextureTransform { scale 6 3 } } geometry Box { size 22 22 5.5 } } ] }
+    Pose { translation 0 0 14.0 children [ Shape { appearance DryMud  { textureTransform TextureTransform { scale 4 2.5 } } geometry Box { size 15 15 5   } } ] }
+    Pose { translation 0 0 18.75 children [ Shape { appearance Plaster { textureTransform TextureTransform { scale 3 2 } } geometry Box { size  9  9 4.5 } } ] }
+    # Stair-block on the south face — a single ramp of stone leading up
+    # the first tier; reads as the ceremonial stair.
+    Pose { translation 0 -15.5 1.5 rotation 1 0 0 -0.45
+           children [ Shape { appearance DryMud {} geometry Box { size 5 6 0.5 } } ] }
+  ]
+  name "ziggurat"
+}
+
+# --- Far ziggurat (smaller, hazy) on the far horizon, NW deep.
+# Inside the 300 m terrain (-150..+150) so it stands on sand.
+DEF ZIGGURAT_FAR Solid {
+  translation -128 108 -3
+  rotation 0 0 1 -0.4
+  children [
+    Pose { translation 0 0 3    children [ Shape { appearance DryMud {} geometry Box { size 22 22 6  } } ] }
+    Pose { translation 0 0 8.25 children [ Shape { appearance DryMud {} geometry Box { size 16 16 4.5 } } ] }
+    Pose { translation 0 0 12.5 children [ Shape { appearance DryMud {} geometry Box { size 10 10 4 } } ] }
+    Pose { translation 0 0 16.0 children [ Shape { appearance Plaster {} geometry Box { size  6  6 3 } } ] }
+  ]
+  name "ziggurat_far"
+}
+
+# --- Pylon Gate: twin trapezoidal towers flanking a ceremonial passage,
+# Egyptian-style. Built as tilted boxes (approximating the trapezoidal
+# batter — wider at base than top). Limestone (Plaster) so it stays
+# pale against the sky.
+DEF PYLON_LEFT Solid {
+  translation 64 58 -1
+  rotation 0 0 1 -0.35
+  children [
+    Pose { translation -4 0 7 children [ Shape { appearance Plaster { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 5 7 14 } } ] }
+    # outer batter — narrower top suggesting trapezoidal profile
+    Pose { translation -4 0 14.5 children [ Shape { appearance Plaster {} geometry Box { size 4.2 6.2 1 } } ] }
+  ]
+  name "pylon_left"
+}
+DEF PYLON_RIGHT Solid {
+  translation 64 58 -1
+  rotation 0 0 1 -0.35
+  children [
+    Pose { translation 4 0 7 children [ Shape { appearance Plaster { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 5 7 14 } } ] }
+    Pose { translation 4 0 14.5 children [ Shape { appearance Plaster {} geometry Box { size 4.2 6.2 1 } } ] }
+  ]
+  name "pylon_right"
+}
+# Lintel beam across the top of the pylon — broken at the right end.
+DEF PYLON_LINTEL Solid {
+  translation 64 58 -1
+  rotation 0 0 1 -0.35
+  children [
+    Pose { translation -1.2 0 15.7 children [ Shape { appearance Plaster {} geometry Box { size 8 2 1.2 } } ] }
+  ]
+  name "pylon_lintel"
+}
+
+# --- Far pylons in the SE deep — broken, eroded, just silhouettes.
+# Inside terrain bounds so they sit on sand instead of the void.
+DEF PYLON_FAR_LEFT Solid {
+  translation 132 -62 -3
+  rotation 0 0 1 1.4
+  children [ Pose { translation 0 0 6 children [ Shape { appearance Plaster {} geometry Box { size 5 6 12 } } ] } ]
+  name "pylon_far_left"
+}
+DEF PYLON_FAR_RIGHT Solid {
+  translation 140 -57 -3
+  rotation 0 0 1 1.4
+  children [ Pose { translation 0 0 4 children [ Shape { appearance Plaster {} geometry Box { size 4 5 8 } } ] } ]
+  name "pylon_far_right"
+}
+
+# --- Colossal colonnade: ruins of a great temple. Row of 8 huge
+# columns running NE-SW in the SW quadrant. Three have fallen, five
+# stand at varying heights. Marble so they catch the sun warmly.
+# Centerline runs from (-105, -45) to (-55, -15), spaced ~6 m apart.
+DEF COLOSSUS_1 Solid {
+  translation -102 -44 4.5
+  rotation 0 1 0 0.02
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 5 } } geometry Cylinder { height 9   radius 1.2 } } ]
+  name "colossus_1"
+}
+DEF COLOSSUS_1_CAP Solid {
+  translation -102 -44 9.2
+  children [ Shape { appearance Marble {} geometry Box { size 3 3 0.4 } } ]
+  name "colossus_1_cap"
+}
+DEF COLOSSUS_2 Solid {
+  translation -96 -41 5
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 5 } } geometry Cylinder { height 10 radius 1.2 } } ]
+  name "colossus_2"
+}
+DEF COLOSSUS_2_CAP Solid {
+  translation -96 -41 10.2
+  children [ Shape { appearance Marble {} geometry Box { size 3 3 0.4 } } ]
+  name "colossus_2_cap"
+}
+# Fallen across the line — column 3 lying east-west
+DEF COLOSSUS_3 Solid {
+  translation -88 -37 1.2
+  rotation 0.95 -0.31 0 1.5708
+  children [ Shape { appearance Marble {} geometry Cylinder { height 11 radius 1.2 } } ]
+  name "colossus_3"
+}
+DEF COLOSSUS_4 Solid {
+  translation -82 -34 3.5
+  rotation 1 0 0 0.04
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 5 } } geometry Cylinder { height 7 radius 1.2 } } ]
+  name "colossus_4"
+}
+# Fallen
+DEF COLOSSUS_5 Solid {
+  translation -75 -30 1.2
+  rotation 0.92 -0.39 0 1.5708
+  children [ Shape { appearance Marble {} geometry Cylinder { height 10.5 radius 1.15 } } ]
+  name "colossus_5"
+}
+DEF COLOSSUS_6 Solid {
+  translation -69 -27 4.5
+  rotation 0 1 0 -0.03
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 5 } } geometry Cylinder { height 9 radius 1.15 } } ]
+  name "colossus_6"
+}
+DEF COLOSSUS_6_CAP Solid {
+  translation -69 -27 9.2
+  children [ Shape { appearance Marble {} geometry Box { size 2.9 2.9 0.4 } } ]
+  name "colossus_6_cap"
+}
+DEF COLOSSUS_7 Solid {
+  translation -63 -23 5
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 5 } } geometry Cylinder { height 10 radius 1.15 } } ]
+  name "colossus_7"
+}
+# Last column — stub remnant, broken low
+DEF COLOSSUS_8 Solid {
+  translation -57 -19 1.6
+  children [ Shape { appearance Marble {} geometry Cylinder { height 3.2 radius 1.1 } } ]
+  name "colossus_8"
+}
+# Architrave fragment — a stone beam that once linked two columns,
+# now collapsed between #6 and #7.
+DEF ARCHITRAVE Solid {
+  translation -66 -25 5.0
+  rotation 0.4 0.92 0 0.5
+  children [ Shape { appearance Marble {} geometry Box { size 7 1.2 1.0 } } ]
+  name "architrave"
+}
+
+# --- Obelisk: tall tapered shaft + pyramidion. West midground,
+# isolated against the sky. Marble — reads as polished granite.
+DEF OBELISK Solid {
+  translation -55 18 0
+  children [
+    # base plinth
+    Pose { translation 0 0 1.5 children [ Shape { appearance Marble {} geometry Box { size 4 4 3 } } ] }
+    # shaft — slightly tapered top (we cheat: two stacked tapering boxes)
+    Pose { translation 0 0 8.5 children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 6 } } geometry Box { size 2.4 2.4 11 } } ] }
+    Pose { translation 0 0 15.3 children [ Shape { appearance Marble {} geometry Box { size 2.0 2.0 2.6 } } ] }
+    # pyramidion (capstone) — small cone-like topper via small box
+    Pose { translation 0 0 17.2 children [ Shape { appearance Marble {} geometry Box { size 1.4 1.4 1.6 } } ] }
+    Pose { translation 0 0 18.4 children [ Shape { appearance Marble {} geometry Box { size 0.7 0.7 0.8 } } ] }
+  ]
+  name "obelisk"
+}
+
+# --- Far obelisk silhouette, broken in half
+DEF OBELISK_FAR Solid {
+  translation -125 60 -2
+  children [
+    Pose { translation 0 0 1.5 children [ Shape { appearance Marble {} geometry Box { size 3 3 3 } } ] }
+    Pose { translation 0 0 7   children [ Shape { appearance Marble {} geometry Box { size 1.8 1.8 8 } } ] }
+  ]
+  name "obelisk_far"
+}
+
+# --- Dome ruin: hemisphere half-collapsed into the dunes. The sphere's
+# lower half is buried under the terrain, so we read the upper hemisphere
+# as a dome. A vertical box cuts a "crack" out of the top so it doesn't
+# look pristine.
+DEF DOME Solid {
+  translation 78 -38 -3
+  rotation 0 0 1 0.6
+  children [
+    Shape {
+      appearance Plaster { textureTransform TextureTransform { scale 6 6 } }
+      geometry Sphere { radius 9 subdivision 3 }
+    }
+    # ring base — a low ring of stone around the dome's footprint
+    Pose { translation 0 0 0.3 children [ Shape { appearance DryMud {} geometry Cylinder { height 0.6 radius 9.5 } } ] }
+  ]
+  name "dome"
+}
+
+# --- Far broken arch silhouette on the eastern horizon (inside bounds)
+DEF ARCH_FAR_LEFT Solid {
+  translation 130 82 -1
+  rotation 0 0 1 -0.8
+  children [ Pose { translation 0 0 5 children [ Shape { appearance Plaster {} geometry Box { size 1.5 1.5 10 } } ] } ]
+  name "arch_far_left"
+}
+DEF ARCH_FAR_RIGHT Solid {
+  translation 137 82 -1
+  rotation 0 0 1 -0.8
+  children [ Pose { translation 0 0 4 children [ Shape { appearance Plaster {} geometry Box { size 1.5 1.5 8 } } ] } ]
+  name "arch_far_right"
+}
+DEF ARCH_FAR_TOP Solid {
+  translation 133.5 82 -1
+  rotation 0 0 1 -0.8
+  children [ Pose { translation 0 0 9.5 children [ Shape { appearance Plaster {} geometry Box { size 8 1.5 1 } } ] } ]
+  name "arch_far_top"
+}
+
+# ============================================================================
+# Extended ruins — same architectural vocabulary, distributed across the
+# map so wherever the user pans they find more to look at.
+# ============================================================================
+
+# --- Avenue of Sphinxes: a processional way running NW from the plaza
+# toward the ziggurat, flanked by six recumbent stone statues in pairs.
+# Each statue: low rectangular base + horizontal body + small head block.
+# Visible from the hero shot as a line of forms across the dunes.
+DEF SPHINX_1L Solid {
+  translation -8 18 0
+  rotation 0 0 1 0.7
+  children [
+    Pose { translation 0 0 0.25 children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 3 2 } } geometry Box { size 3.4 1.6 0.5 } } ] }
+    Pose { translation -0.3 0 1.1 children [ Shape { appearance DryMud {} geometry Box { size 2.8 1.2 1.2 } } ] }
+    Pose { translation -1.6 0 2.0 children [ Shape { appearance DryMud {} geometry Box { size 0.9 0.9 0.9 } } ] }
+  ]
+  name "sphinx_1l"
+}
+DEF SPHINX_1R Solid {
+  translation -4 14 0
+  rotation 0 0 1 0.7
+  children [
+    Pose { translation 0 0 0.25 children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 3 2 } } geometry Box { size 3.4 1.6 0.5 } } ] }
+    Pose { translation -0.3 0 1.1 children [ Shape { appearance DryMud {} geometry Box { size 2.8 1.2 1.2 } } ] }
+    Pose { translation -1.6 0 2.0 children [ Shape { appearance DryMud {} geometry Box { size 0.9 0.9 0.9 } } ] }
+  ]
+  name "sphinx_1r"
+}
+DEF SPHINX_2L Solid {
+  translation -22 30 0
+  rotation 0 0 1 0.7
+  children [
+    Pose { translation 0 0 0.25 children [ Shape { appearance DryMud {} geometry Box { size 3.4 1.6 0.5 } } ] }
+    Pose { translation -0.3 0 1.1 children [ Shape { appearance DryMud {} geometry Box { size 2.8 1.2 1.2 } } ] }
+    Pose { translation -1.6 0 2.0 children [ Shape { appearance DryMud {} geometry Box { size 0.9 0.9 0.9 } } ] }
+  ]
+  name "sphinx_2l"
+}
+DEF SPHINX_2R Solid {
+  translation -18 26 0
+  rotation 0 0 1 0.7
+  children [
+    Pose { translation 0 0 0.25 children [ Shape { appearance DryMud {} geometry Box { size 3.4 1.6 0.5 } } ] }
+    Pose { translation -0.3 0 1.1 children [ Shape { appearance DryMud {} geometry Box { size 2.8 1.2 1.2 } } ] }
+    Pose { translation -1.6 0 2.0 children [ Shape { appearance DryMud {} geometry Box { size 0.9 0.9 0.9 } } ] }
+  ]
+  name "sphinx_2r"
+}
+# Third pair partially collapsed — one fallen on its side.
+DEF SPHINX_3L Solid {
+  translation -36 42 0
+  rotation 0 0 1 0.7
+  children [
+    Pose { translation 0 0 0.25 children [ Shape { appearance DryMud {} geometry Box { size 3.4 1.6 0.5 } } ] }
+    Pose { translation -0.3 0 1.1 children [ Shape { appearance DryMud {} geometry Box { size 2.8 1.2 1.2 } } ] }
+  ]
+  name "sphinx_3l_broken"
+}
+DEF SPHINX_3R Solid {
+  translation -32 38 0.7
+  rotation 0.5 0.5 0.7 1.6
+  children [
+    Pose { translation 0 0 0 children [ Shape { appearance DryMud {} geometry Box { size 3.4 1.6 1.6 } } ] }
+  ]
+  name "sphinx_3r_toppled"
+}
+
+# --- Stone Circle (henge): ring of 8 standing stones, ~14 m diameter,
+# at the east edge of the visible scene. A ceremonial ring half-eaten
+# by the desert.
+# Stones are tall (5-6 m) so they clear the perlin dune crests at this
+# distance from origin — at 90 m out, terrain noise can lift the
+# ground by 2-3 m, which was burying the previous 3 m stones.
+DEF HENGE_1 Solid { translation  97  -5 3.0 children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 1 4 } } geometry Box { size 1.8 0.9 6.0 } } ] name "henge_1" }
+DEF HENGE_2 Solid { translation  95   0 2.7 rotation 0 0 1 0.79 children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 1 4 } } geometry Box { size 1.8 0.9 5.4 } } ] name "henge_2" }
+DEF HENGE_3 Solid { translation  90   2 3.2 rotation 0 0 1 1.57 children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 1 4 } } geometry Box { size 1.8 0.9 6.4 } } ] name "henge_3" }
+DEF HENGE_4 Solid { translation  85   0 2.4 rotation 0 0 1 2.36 children [ Shape { appearance DryMud {} geometry Box { size 1.8 0.9 4.8 } } ] name "henge_4" }
+# Fallen stone — toppled onto its side, half-buried.
+DEF HENGE_5 Solid { translation  83  -5 0.55 rotation 0 1 0 1.5708 children [ Shape { appearance DryMud {} geometry Box { size 0.9 1.8 5.0 } } ] name "henge_5_fallen" }
+DEF HENGE_6 Solid { translation  85 -10 2.5 rotation 0 0 1 -2.36 children [ Shape { appearance DryMud {} geometry Box { size 1.8 0.9 5.0 } } ] name "henge_6" }
+DEF HENGE_7 Solid { translation  90 -12 2.9 rotation 0 0 1 -1.57 children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 1 4 } } geometry Box { size 1.8 0.9 5.8 } } ] name "henge_7" }
+DEF HENGE_8 Solid { translation  95 -10 2.5 rotation 0 0 1 -0.79 children [ Shape { appearance DryMud {} geometry Box { size 1.8 0.9 5.0 } } ] name "henge_8" }
+# Lintel slab balanced across HENGE_3 and HENGE_2 (a la Stonehenge trilithon)
+DEF HENGE_LINTEL Solid {
+  translation 92.5 1 6.6
+  rotation 0 0 1 0.4
+  children [ Shape { appearance DryMud {} geometry Box { size 4.5 0.9 0.7 } } ]
+  name "henge_lintel"
+}
+# Central altar stone in the middle of the ring
+DEF HENGE_ALTAR Solid {
+  translation 90 -5 1.2
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 2 1 } } geometry Box { size 3.0 1.4 1.6 } } ]
+  name "henge_altar"
+}
+
+# --- Petra-style cliff facade: a tall flat front of stone with
+# columns and a deep arched doorway. Approximated with a back wall,
+# four standing columns, a horizontal entablature, and a pediment.
+# Placed N of the plaza so it backs the avenue of sphinxes.
+DEF FACADE_WALL Solid {
+  translation -55 105 -1
+  rotation 0 0 1 -0.15
+  children [
+    # Tall back wall
+    Pose { translation 0 0 8 children [ Shape { appearance Plaster { textureTransform TextureTransform { scale 8 6 } } geometry Box { size 22 2 18 } } ] }
+    # Pediment (triangular topper) — approximated as a smaller box on top
+    Pose { translation 0 0 18.5 children [ Shape { appearance Plaster {} geometry Box { size 18 2.2 2 } } ] }
+    Pose { translation 0 0 20.0 children [ Shape { appearance Plaster {} geometry Box { size 12 2.2 1.5 } } ] }
+  ]
+  name "facade_wall"
+}
+# Standing columns in front of the facade
+DEF FACADE_COL_1 Solid {
+  translation -64 104 4
+  rotation 0 0 1 -0.15
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 4 } } geometry Cylinder { height 8 radius 0.8 } } ]
+  name "facade_col_1"
+}
+DEF FACADE_COL_2 Solid {
+  translation -59 103 4
+  rotation 0 0 1 -0.15
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 4 } } geometry Cylinder { height 8 radius 0.8 } } ]
+  name "facade_col_2"
+}
+DEF FACADE_COL_3 Solid {
+  translation -51 102 4
+  rotation 0 0 1 -0.15
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 4 } } geometry Cylinder { height 8 radius 0.8 } } ]
+  name "facade_col_3"
+}
+# Fourth column collapsed — fragment lying at base
+DEF FACADE_COL_4 Solid {
+  translation -46 100 0.8
+  rotation 0.9 -0.4 0 1.5708
+  children [ Shape { appearance Marble {} geometry Cylinder { height 6 radius 0.8 } } ]
+  name "facade_col_4_fallen"
+}
+# Entablature — horizontal beam across the columns
+DEF FACADE_ENTABLATURE Solid {
+  translation -56 103 8.3
+  rotation 0 0 1 -0.15
+  children [ Shape { appearance Plaster {} geometry Box { size 16 1.2 0.8 } } ]
+  name "facade_entablature"
+}
+
+# --- Stepped Altar Platform: small terraced platform with stairs,
+# between the plaza and the pylon gate. Marble base + DryMud upper
+# tiers so the materials read as a layered build.
+DEF ALTAR_PLATFORM Solid {
+  translation 38 25 0
+  rotation 0 0 1 0.5
+  children [
+    Pose { translation 0 0 0.4 children [ Shape { appearance Marble  { textureTransform TextureTransform { scale 5 3 } } geometry Box { size 9 9 0.8 } } ] }
+    Pose { translation 0 0 1.4 children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 4 2 } } geometry Box { size 7 7 1.2 } } ] }
+    Pose { translation 0 0 2.6 children [ Shape { appearance DryMud {} geometry Box { size 5 5 1.2 } } ] }
+    Pose { translation 0 0 3.7 children [ Shape { appearance Marble {} geometry Box { size 3 3 1.0 } } ] }
+    # Stair ramp on the south face
+    Pose { translation 0 -5 0.7 rotation 1 0 0 -0.4
+           children [ Shape { appearance Marble {} geometry Box { size 3.5 4 0.4 } } ] }
+  ]
+  name "altar_platform"
+}
+
+# --- Watchtower ruin: tall narrow stone tower, partially collapsed
+# at the top. SW corner of the map, reads as a lonely lookout point.
+DEF WATCHTOWER Solid {
+  translation -115 -90 -1
+  rotation 0 0 1 0.6
+  children [
+    Pose { translation 0 0 1.2 children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 3 3 } } geometry Box { size 6 6 2.4 } } ] }
+    Pose { translation 0 0 5.0 children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 2 4 } } geometry Cylinder { height 5 radius 2.3 } } ] }
+    Pose { translation 0 0 9.0 children [ Shape { appearance DryMud {} geometry Cylinder { height 3 radius 2.0 } } ] }
+    # Broken top — fragment of the parapet on one side
+    Pose { translation 1.3 0 11.0 children [ Shape { appearance DryMud {} geometry Box { size 0.6 2 1.4 } } ] }
+  ]
+  name "watchtower"
+}
+
+# --- Buried colossal statue: a half-sunken torso + shoulders, like
+# the Ozymandias trope. Just visible above the sand. Marble so it
+# catches the warm sun.
+DEF BURIED_STATUE_BODY Solid {
+  translation 50 -27 0.5
+  rotation 0 0 1 -0.4
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 2 3 } } geometry Box { size 4 2.4 6 } } ]
+  name "buried_statue_body"
+}
+DEF BURIED_STATUE_SHOULDERS Solid {
+  translation 50 -27 4.0
+  rotation 0 0 1 -0.4
+  children [ Shape { appearance Marble {} geometry Box { size 5.5 3.0 1.8 } } ]
+  name "buried_statue_shoulders"
+}
+DEF BURIED_STATUE_HEAD Solid {
+  translation 49.5 -27.3 5.7
+  rotation 0 0 1 -0.45
+  children [ Shape { appearance Marble {} geometry Box { size 2.2 2.0 2.0 } } ]
+  name "buried_statue_head"
+}
+# Detached crown stone lying nearby in the sand
+DEF BURIED_STATUE_CROWN Solid {
+  translation 52.5 -23 0.4
+  rotation 0.7 0.3 0.6 1.0
+  children [ Shape { appearance Marble {} geometry Cylinder { height 1.0 radius 0.8 } } ]
+  name "buried_statue_crown_fragment"
+}
+
+# --- Sandstone curtain wall sections: broken stretches of low wall
+# linking the ziggurat area to the obelisk. Reads as the outer wall
+# of a vanished temple precinct. Mixed heights and angles for variety.
+DEF CURTAIN_1 Solid {
+  translation -72 50 0.8
+  rotation 0 0 1 1.2
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 6 2 } } geometry Box { size 9 0.8 1.6 } } ]
+  name "curtain_1"
+}
+DEF CURTAIN_2 Solid {
+  translation -64 40 0.5
+  rotation 0 0 1 1.1
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 5 1.5 } } geometry Box { size 7 0.8 1.0 } } ]
+  name "curtain_2"
+}
+DEF CURTAIN_3 Solid {
+  translation -58 30 1.0
+  rotation 0 0 1 1.0
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 6 2 } } geometry Box { size 8 0.8 2.0 } } ]
+  name "curtain_3"
+}
+DEF CURTAIN_4 Solid {
+  translation -50 24 0.6
+  rotation 0 0 1 0.9
+  children [ Shape { appearance DryMud {} geometry Box { size 5 0.8 1.2 } } ]
+  name "curtain_4"
+}
+DEF CURTAIN_5 Solid {
+  translation 30 50 0.7
+  rotation 0 0 1 0.4
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 5 1.5 } } geometry Box { size 8 0.8 1.4 } } ]
+  name "curtain_5"
+}
+DEF CURTAIN_6 Solid {
+  translation 50 42 0.5
+  rotation 0 0 1 0.6
+  children [ Shape { appearance DryMud {} geometry Box { size 6 0.8 1.0 } } ]
+  name "curtain_6"
+}
+
+# --- Carved stelae / standing inscribed blocks: a cluster of three
+# tall narrow stones near the avenue, like commemorative markers.
+DEF STELA_1 Solid {
+  translation 8 32 1.5
+  rotation 0 0 1 0.3
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 3 } } geometry Box { size 1.0 0.3 3.0 } } ]
+  name "stela_1"
+}
+DEF STELA_2 Solid {
+  translation 11 35 1.3
+  rotation 0 0 1 0.4
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 3 } } geometry Box { size 0.9 0.3 2.6 } } ]
+  name "stela_2"
+}
+DEF STELA_3 Solid {
+  translation 6 36 1.6
+  rotation 0 0 1 0.5
+  children [ Shape { appearance Marble { textureTransform TextureTransform { scale 1 3 } } geometry Box { size 1.1 0.3 3.2 } } ]
+  name "stela_3"
+}
+
+# --- Additional fallen marble blocks scattered through the colonnade
+# area — debris from the collapsed columns, gives the SW quadrant
+# more density.
+DEF COLOSSUS_DEBRIS_1 Solid { translation -90 -40 0.4 rotation 0 0 1 0.6 children [ Shape { appearance Marble {} geometry Box { size 2.4 1.6 0.8 } } ] name "colossus_debris_1" }
+DEF COLOSSUS_DEBRIS_2 Solid { translation -85 -35 0.5 rotation 0 0 1 -0.4 children [ Shape { appearance Marble {} geometry Box { size 3 2 1 } } ] name "colossus_debris_2" }
+DEF COLOSSUS_DEBRIS_3 Solid { translation -77 -29 0.4 rotation 0 0 1 1.1 children [ Shape { appearance Marble {} geometry Box { size 2.0 1.4 0.7 } } ] name "colossus_debris_3" }
+DEF COLOSSUS_DEBRIS_4 Solid { translation -68 -23 0.5 rotation 0 0 1 -0.7 children [ Shape { appearance Marble {} geometry Box { size 2.6 1.8 0.9 } } ] name "colossus_debris_4" }
+# Capital stone (fluted top fragment) — slightly bigger detail block
+DEF COLOSSUS_CAPITAL_1 Solid { translation -94 -39 0.6 rotation 0 0 1 0.4 children [ Shape { appearance Marble {} geometry Cylinder { height 1.0 radius 1.4 } } ] name "colossus_capital_1" }
+DEF COLOSSUS_CAPITAL_2 Solid { translation -80 -32 0.6 rotation 0.3 0.9 0 0.5 children [ Shape { appearance Marble {} geometry Cylinder { height 1.0 radius 1.4 } } ] name "colossus_capital_2" }
+
+# ============================================================================
+# Central plaza — ancient ruins on the flat zone. Mixed materials so
+# nothing reads as repeating concrete: Marble for the fountain ring,
+# RedBricks for the eastern wall, FormedConcrete for foundations, etc.
+# ============================================================================
+StoneFountain {
+  translation 0 0 0
+  name "central_fountain"
+}
+StoneBench { translation -3.5  3.0 0 rotation 0 0 1  0.5 name "bench_NW" }
+StoneBench { translation  3.5  3.0 0 rotation 0 0 1 -0.5 name "bench_NE" }
+StoneBench { translation -3.5 -3.0 0 rotation 0 0 1  2.6 name "bench_SW" }
+StoneBench { translation  3.5 -3.0 0 rotation 0 0 1 -2.6 name "bench_SE" }
+
+# ----------------------------------------------------------------------------
+# Plaza foundation slabs — large flat marble pavers, half-buried, drift
+# of sand reading across. These catch the long sun shadows from the
+# columns and read as the "floor" of the lost city.
+# ----------------------------------------------------------------------------
+DEF PAVER_1 Solid {
+  translation 0 0 -0.02
+  children [
+    Shape {
+      appearance Marble { textureTransform TextureTransform { scale 8 8 } }
+      geometry Box { size 14 14 0.15 }
+      castShadows FALSE
+    }
+  ]
+  name "plaza_paver"
+}
+
+# ----------------------------------------------------------------------------
+# Broken wall stubs around the plaza — mixed appearance and heights so
+# they read as the foundations of different buildings collapsed into
+# each other. RedBricks east wall, FormedConcrete west wall, etc.
+# ----------------------------------------------------------------------------
+Wall { name "stub_brick_01" translation   8.5 -4 0 rotation 0 0 1  0.0 size 7 0.4 1.8 appearance RedBricks { textureTransform TextureTransform { scale 6 1.5 } } }
+Wall { name "stub_brick_02" translation  10.0  2 0 rotation 0 0 1  1.55 size 5 0.4 1.1 appearance RedBricks { textureTransform TextureTransform { scale 6 1.5 } } }
+Wall { name "stub_brick_03" translation   6.5  7 0 rotation 0 0 1 -0.15 size 4 0.4 0.6 appearance RedBricks { textureTransform TextureTransform { scale 6 1.5 } } }
+
+Wall { name "stub_conc_01" translation  -9  -5 0 rotation 0 0 1  0.0  size 6 0.4 2.2 appearance FormedConcrete { textureTransform TextureTransform { scale 4 1 } } }
+Wall { name "stub_conc_02" translation -11.5 -1.5 0 rotation 0 0 1  1.55 size 4 0.4 1.5 appearance FormedConcrete { textureTransform TextureTransform { scale 4 1 } } }
+Wall { name "stub_conc_03" translation  -8  -9 0 rotation 0 0 1  1.55 size 3 0.4 0.8 appearance FormedConcrete { textureTransform TextureTransform { scale 4 1 } } }
+
+Wall { name "stub_plaster_01" translation  -7   9 0 rotation 0 0 1  1.2 size 5 0.4 1.4 appearance Plaster { textureTransform TextureTransform { scale 4 1 } } }
+Wall { name "stub_plaster_02" translation -11   6 0 rotation 0 0 1  0.0 size 4 0.4 0.9 appearance Plaster { textureTransform TextureTransform { scale 4 1 } } }
+
+# Half-collapsed arch — two short stubs + lintel, foreground hero
+# silhouette against the sun. Position chosen so its shadow lands across
+# the plaza toward the camera.
+DEF ARCH_LEFT Solid {
+  translation -1.7 11.5 1.25
+  children [
+    Shape {
+      appearance FormedConcrete { textureTransform TextureTransform { scale 2 2 } }
+      geometry Box { size 0.6 0.6 2.5 }
+    }
+  ]
+  name "arch_left"
+  boundingObject Box { size 0.6 0.6 2.5 }
+}
+DEF ARCH_RIGHT Solid {
+  translation  1.7 11.5 1.25
+  children [
+    Shape {
+      appearance FormedConcrete { textureTransform TextureTransform { scale 2 2 } }
+      geometry Box { size 0.6 0.6 2.5 }
+    }
+  ]
+  name "arch_right"
+  boundingObject Box { size 0.6 0.6 2.5 }
+}
+DEF ARCH_LINTEL Solid {
+  translation 0 11.5 2.65
+  rotation 0 1 0 0.08
+  children [
+    Shape {
+      appearance FormedConcrete { textureTransform TextureTransform { scale 3 1 } }
+      geometry Box { size 4.4 0.6 0.35 }
+    }
+  ]
+  name "arch_lintel"
+  boundingObject Box { size 4.4 0.6 0.35 }
+}
+
+# ----------------------------------------------------------------------------
+# Fallen + standing stone columns. Six total, mixed marble + concrete,
+# with deliberate tilt on the standing ones so they read as "barely
+# standing" rather than perfectly vertical.
+# ----------------------------------------------------------------------------
+DEF FALLEN_COL_1 Solid {
+  translation -5 -10 0.5
+  rotation 1 0 0 1.5708
+  children [
+    Shape { appearance Marble { textureTransform TextureTransform { scale 1 3 } } geometry Cylinder { height 4 radius 0.5 } }
+  ]
+  name "fallen_col_1"
+  boundingObject Cylinder { height 4 radius 0.5 }
+}
+DEF FALLEN_COL_2 Solid {
+  translation  6 10 0.4
+  rotation 0.7 0.7 0 1.5708
+  children [
+    Shape { appearance Marble { textureTransform TextureTransform { scale 1 3 } } geometry Cylinder { height 3.5 radius 0.45 } }
+  ]
+  name "fallen_col_2"
+  boundingObject Cylinder { height 3.5 radius 0.45 }
+}
+DEF FALLEN_COL_3 Solid {
+  translation -11 7 0.5
+  rotation 0.3 0.95 0 1.5708
+  children [
+    Shape { appearance FormedConcrete {} geometry Cylinder { height 3 radius 0.42 } }
+  ]
+  name "fallen_col_3"
+  boundingObject Cylinder { height 3 radius 0.42 }
+}
+DEF STANDING_COL_1 Solid {
+  translation -9 1 1.6
+  rotation 0 1 0 0.06
+  children [
+    Shape { appearance Marble { textureTransform TextureTransform { scale 1 3 } } geometry Cylinder { height 3.2 radius 0.45 } }
+  ]
+  name "standing_col_1"
+  boundingObject Cylinder { height 3.2 radius 0.45 }
+}
+DEF STANDING_COL_1_CAP Solid {
+  translation -9 1 3.32
+  children [
+    Shape { appearance Marble {} geometry Box { size 1.1 1.1 0.25 } }
+  ]
+  name "standing_col_1_cap"
+  boundingObject Box { size 1.1 1.1 0.25 }
+}
+DEF STANDING_COL_2 Solid {
+  translation 9 -1 0.9
+  rotation 1 0 0 0.04
+  children [
+    Shape { appearance FormedConcrete {} geometry Cylinder { height 1.8 radius 0.4 } }
+  ]
+  name "standing_col_2"
+  boundingObject Cylinder { height 1.8 radius 0.4 }
+}
+# Hero foreground column — tall, broken at the top, close to camera so
+# it frames the right edge of the shot as a silhouette against the
+# bright sky. Sits off-axis to the camera's right so it leads the eye
+# into the plaza rather than blocking it.
+DEF HERO_COL Solid {
+  translation 7 -10 2.0
+  rotation 0 1 0 0.03
+  children [
+    Shape { appearance Marble { textureTransform TextureTransform { scale 1 4 } } geometry Cylinder { height 4.0 radius 0.42 } }
+  ]
+  name "hero_col"
+  boundingObject Cylinder { height 4.0 radius 0.42 }
+}
+DEF HERO_COL_FRAG Solid {
+  translation 7.4 -9.6 4.15
+  rotation 0.4 0.9 0.1 0.9
+  children [
+    Shape { appearance Marble {} geometry Cylinder { height 0.6 radius 0.42 } }
+  ]
+  name "hero_col_frag"
+  boundingObject Cylinder { height 0.6 radius 0.42 }
+}
+
+# Colonnade — row of 4 short broken column stubs flanking the SW edge,
+# casting parallel stripes of shadow across the plaza in the low sun.
+DEF COLONNADE_1 Solid { translation -4 -8.5 0.55 children [ Shape { appearance Marble {} geometry Cylinder { height 1.1 radius 0.35 } } ] name "colonnade_1" boundingObject Cylinder { height 1.1 radius 0.35 } }
+DEF COLONNADE_2 Solid { translation -1 -8.5 0.75 children [ Shape { appearance Marble {} geometry Cylinder { height 1.5 radius 0.35 } } ] name "colonnade_2" boundingObject Cylinder { height 1.5 radius 0.35 } }
+DEF COLONNADE_3 Solid { translation  2 -8.5 0.45 children [ Shape { appearance Marble {} geometry Cylinder { height 0.9 radius 0.35 } } ] name "colonnade_3" boundingObject Cylinder { height 0.9 radius 0.35 } }
+DEF COLONNADE_4 Solid { translation  5 -8.5 0.95 children [ Shape { appearance Marble {} geometry Cylinder { height 1.9 radius 0.35 } } ] name "colonnade_4" boundingObject Cylinder { height 1.9 radius 0.35 } }
+
+# ----------------------------------------------------------------------------
+# Debris boxes — collapsed roof slabs / wall fragments. Tinted variants.
+# ----------------------------------------------------------------------------
+DEF DEBRIS_1 Solid {
+  translation -6 4 0.25
+  rotation 0 0 1 0.4
+  children [ Shape { appearance FormedConcrete {} geometry Box { size 1.6 0.9 0.5 } } ]
+  name "debris_1"
+  boundingObject Box { size 1.6 0.9 0.5 }
+}
+DEF DEBRIS_2 Solid {
+  translation 4 -8 0.2
+  rotation 0 0 1 -0.7
+  children [ Shape { appearance RoughConcrete {} geometry Box { size 1.2 0.7 0.4 } } ]
+  name "debris_2"
+  boundingObject Box { size 1.2 0.7 0.4 }
+}
+DEF DEBRIS_3 Solid {
+  translation 11 1 0.25
+  rotation 0 0 1 1.2
+  children [ Shape { appearance FormedConcrete {} geometry Box { size 2.0 1.1 0.5 } } ]
+  name "debris_3"
+  boundingObject Box { size 2.0 1.1 0.5 }
+}
+DEF DEBRIS_4 Solid {
+  translation -13 3 0.2
+  rotation 0 0 1 0.2
+  children [ Shape { appearance RedBricks { textureTransform TextureTransform { scale 2 1 } } geometry Box { size 1.4 0.8 0.4 } } ]
+  name "debris_4"
+  boundingObject Box { size 1.4 0.8 0.4 }
+}
+DEF DEBRIS_5 Solid {
+  translation 13 -8 0.3
+  rotation 0 0 1 -0.4
+  children [ Shape { appearance FormedConcrete {} geometry Box { size 2.4 1.0 0.6 } } ]
+  name "debris_5"
+  boundingObject Box { size 2.4 1.0 0.6 }
+}
+DEF DEBRIS_6 Solid {
+  translation -8 -14 0.2
+  rotation 0 0 1 1.0
+  children [ Shape { appearance Plaster {} geometry Box { size 1.8 0.8 0.4 } } ]
+  name "debris_6"
+  boundingObject Box { size 1.8 0.8 0.4 }
+}
+DEF DEBRIS_7 Solid {
+  translation 7 14 0.35
+  rotation 0 0 1 -1.2
+  children [ Shape { appearance RoughConcrete {} geometry Box { size 1.5 1.5 0.7 } } ]
+  name "debris_7"
+  boundingObject Box { size 1.5 1.5 0.7 }
+}
+DEF DEBRIS_8 Solid {
+  translation -16 -3 0.25
+  rotation 0 0 1 0.5
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 2 2 } } geometry Box { size 2.2 1.4 0.5 } } ]
+  name "debris_8"
+  boundingObject Box { size 2.2 1.4 0.5 }
+}
+
+# ----------------------------------------------------------------------------
+# Rusted rebar — thin vertical cylinders sticking out of debris slabs.
+# Tiny, but their orange tone catches the sun and adds the kind of
+# micro-detail that sells a ruin shot. Mostly clustered around debris_1
+# and the foreground hero column.
+# ----------------------------------------------------------------------------
+DEF REBAR_1 Solid { translation -6.2 4.1 0.85 rotation 1 0 0 0.12 children [ Shape { appearance RustyMetal {} geometry Cylinder { height 1.0 radius 0.025 } } ] name "rebar_1" }
+DEF REBAR_2 Solid { translation -5.7 3.8 0.85 rotation 1 0 0 -0.08 children [ Shape { appearance RustyMetal {} geometry Cylinder { height 1.1 radius 0.025 } } ] name "rebar_2" }
+DEF REBAR_3 Solid { translation -6.5 4.3 0.80 rotation 0 1 0 0.15 children [ Shape { appearance RustyMetal {} geometry Cylinder { height 0.9 radius 0.025 } } ] name "rebar_3" }
+DEF REBAR_4 Solid { translation 11.1 1.2 0.95 rotation 1 0 0 0.10 children [ Shape { appearance RustyMetal {} geometry Cylinder { height 1.3 radius 0.025 } } ] name "rebar_4" }
+DEF REBAR_5 Solid { translation 10.7 0.7 0.95 rotation 0 1 0 -0.18 children [ Shape { appearance RustyMetal {} geometry Cylinder { height 1.2 radius 0.025 } } ] name "rebar_5" }
+DEF REBAR_6 Solid { translation 13.0 -7.5 1.05 rotation 1 0 0 0.20 children [ Shape { appearance RustyMetal {} geometry Cylinder { height 1.4 radius 0.025 } } ] name "rebar_6" }
+DEF REBAR_7 Solid { translation 12.7 -8.2 1.00 rotation 0 1 0 -0.12 children [ Shape { appearance RustyMetal {} geometry Cylinder { height 1.1 radius 0.025 } } ] name "rebar_7" }
+DEF REBAR_8 Solid { translation 7.2 -9.8 4.55 rotation 1 0 0 0.4 children [ Shape { appearance RustyMetal {} geometry Cylinder { height 0.6 radius 0.022 } } ] name "rebar_8" }
+
+# ----------------------------------------------------------------------------
+# Corroded steel I-beams jutting from the dunes — signposts of a buried
+# industrial layer beneath the desert. Two clusters at mid-distance so
+# they read between the plaza and the towers.
+# ----------------------------------------------------------------------------
+DEF BEAM_1 Solid {
+  translation -22 -10 0.6
+  rotation 0.4 0.9 0 1.2
+  children [ Shape { appearance CorrodedMetal {} geometry Box { size 4 0.4 0.3 } } ]
+  name "beam_1"
+  boundingObject Box { size 4 0.4 0.3 }
+}
+DEF BEAM_2 Solid {
+  translation -25 -8 0.8
+  rotation 0.2 0.95 0 1.0
+  children [ Shape { appearance OldSteel {} geometry Box { size 3.5 0.35 0.25 } } ]
+  name "beam_2"
+  boundingObject Box { size 3.5 0.35 0.25 }
+}
+DEF BEAM_3 Solid {
+  translation 24 -22 0.7
+  rotation 0.5 0.85 0 1.4
+  children [ Shape { appearance CorrodedMetal {} geometry Box { size 5 0.4 0.3 } } ]
+  name "beam_3"
+  boundingObject Box { size 5 0.4 0.3 }
+}
+DEF BEAM_4 Solid {
+  translation -32 14 0.9
+  rotation 0.3 0.9 0 1.3
+  children [ Shape { appearance OldSteel {} geometry Box { size 4.5 0.35 0.28 } } ]
+  name "beam_4"
+  boundingObject Box { size 4.5 0.35 0.28 }
+}
+
+# ============================================================================
+# Rocks — heavy rubble around the plaza, thinning across the dunes.
+# Scale variance 0.3 → 2.5 so the eye reads natural distribution.
+# ============================================================================
+# Plaza-edge rubble (small, dense)
+Rock { translation  -6  -2 0 rotation 0 0 1  0.3 name "rock_01" scale 0.7 }
+Rock { translation   5   2 0 rotation 0 0 1  1.1 name "rock_02" scale 0.6 }
+Rock { translation -12   1 0 rotation 0 0 1 -0.7 name "rock_03" scale 0.9 }
+Rock { translation  12   2 0 rotation 0 0 1  0.4 name "rock_04" scale 0.8 type "flat" }
+Rock { translation  -3  11 0 rotation 0 0 1 -0.9 name "rock_05" scale 1.0 }
+Rock { translation   3 -11 0 rotation 0 0 1  0.0 name "rock_06" scale 1.1 }
+Rock { translation  -5  -6 0 rotation 0 0 1  0.5 name "rock_07a" scale 0.5 }
+Rock { translation   2  -5 0 rotation 0 0 1  1.5 name "rock_07b" scale 0.4 type "flat" }
+Rock { translation   8   4 0 rotation 0 0 1 -1.0 name "rock_07c" scale 0.55 }
+Rock { translation  -2   6 0 rotation 0 0 1  0.7 name "rock_07d" scale 0.45 }
+# Mid-ring
+Rock { translation -15  -8 0 rotation 0 0 1  1.3 name "rock_08" scale 1.2 }
+Rock { translation  16   8 0 rotation 0 0 1 -0.4 name "rock_09" scale 1.4 }
+Rock { translation -22  15 0 rotation 0 0 1  0.6 name "rock_10" scale 1.6 }
+Rock { translation  25 -18 0 rotation 0 0 1  1.0 name "rock_11" scale 1.3 }
+Rock { translation -28  -2 0 rotation 0 0 1 -0.3 name "rock_12" scale 1.1 type "flat" }
+Rock { translation  30   5 0 rotation 0 0 1  0.8 name "rock_13" scale 0.9 type "flat" }
+Rock { translation -18  20 0 rotation 0 0 1 -0.8 name "rock_14" scale 1.0 }
+Rock { translation  20 -10 0 rotation 0 0 1  0.4 name "rock_15" scale 1.2 }
+Rock { translation -10  25 0 rotation 0 0 1  1.6 name "rock_16" scale 1.1 }
+# Outer ring — larger boulders catch the long shadows
+Rock { translation -35  25 0 rotation 0 0 1  0.2 name "rock_17" scale 1.8 }
+Rock { translation  40 -30 0 rotation 0 0 1 -0.6 name "rock_18" scale 1.7 type "flat" }
+Rock { translation -40 -25 0 rotation 0 0 1  0.5 name "rock_19" scale 2.0 }
+Rock { translation  35  35 0 rotation 0 0 1  1.2 name "rock_20" scale 1.5 }
+Rock { translation  60   0 0 rotation 0 0 1  0.4 name "rock_21" scale 2.4 }
+Rock { translation -55  10 0 rotation 0 0 1  1.4 name "rock_22" scale 2.1 type "flat" }
+Rock { translation  20  50 0 rotation 0 0 1 -0.2 name "rock_23" scale 1.9 }
+Rock { translation -30 -45 0 rotation 0 0 1  0.9 name "rock_24" scale 2.5 }
+Rock { translation  70 -20 0 rotation 0 0 1  0.1 name "rock_25" scale 1.6 }
+Rock { translation -75  35 0 rotation 0 0 1 -0.8 name "rock_26" scale 2.2 type "flat" }
+Rock { translation  85  40 0 rotation 0 0 1  0.6 name "rock_27" scale 2.0 }
+Rock { translation -90 -60 0 rotation 0 0 1  1.1 name "rock_28" scale 2.3 }
+Rock { translation 100  10 0 rotation 0 0 1 -1.3 name "rock_29" scale 2.5 type "flat" }
+Rock { translation -65  80 0 rotation 0 0 1  0.5 name "rock_30" scale 2.1 }
+
+# ============================================================================
+# Sand drifts — flat thin slabs of slightly darker sand reading as
+# wind-deposited drifts piled against debris/rocks. They break up the
+# terrain monotony at distance and give the foreground rocks a base.
+# ============================================================================
+DEF DRIFT_1 Solid {
+  translation -6 2 0.05
+  rotation 0 0 1 0.4
+  children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 4 2.4 0.1 } castShadows FALSE } ]
+  name "drift_1"
+}
+DEF DRIFT_2 Solid {
+  translation 8 -6 0.05
+  rotation 0 0 1 -0.7
+  children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 5 2.2 0.1 } castShadows FALSE } ]
+  name "drift_2"
+}
+DEF DRIFT_3 Solid {
+  translation -14 -4 0.05
+  rotation 0 0 1 0.2
+  children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 6 2.6 0.1 } castShadows FALSE } ]
+  name "drift_3"
+}
+DEF DRIFT_4 Solid {
+  translation 12 12 0.05
+  rotation 0 0 1 1.3
+  children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 4.5 2 0.1 } castShadows FALSE } ]
+  name "drift_4"
+}
+DEF DRIFT_5 Solid {
+  translation -20 8 0.05
+  rotation 0 0 1 0.6
+  children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 7 3 0.1 } castShadows FALSE } ]
+  name "drift_5"
+}
+
+# ============================================================================
+# Dune system — hand-placed sand mounds, ridges, and wind ripples that
+# overlay the perlin terrain. Their purpose is twofold:
+#   1. Add real geometric variation at the mid scale (2-20 m) — the
+#      perlin terrain handles macro form and the textures handle micro;
+#      this fills the gap and is what the eye reads as "this is desert."
+#   2. Break up the unavoidable repeat of the Sand PBR tiling. Each mound
+#      has its own textureTransform rotation/scale, so the grain
+#      pattern reads differently on every patch — the underlying terrain
+#      tile is no longer the dominant visual.
+#
+# Positioned away from the ruin structures so nothing visually clips. The
+# crescent dunes use stacked flat Boxes (cheap dune-profile silhouettes);
+# ridge dunes are elongated rotated Boxes aligned with a notional NW-SE
+# prevailing wind; sand piles are flat Cylinders; ripples are thin Box
+# clusters in groups.
+# ============================================================================
+
+# --- Crescent dunes: large rounded mounds, 15-25 m across, ~3 m tall.
+# Two-tier stacked box silhouette so they catch light on the sunward
+# face and shadow on the lee side.
+DEF DUNE_CRESCENT_1 Solid {
+  translation -20 -45 0
+  rotation 0 0 1 0.3
+  children [
+    Pose { translation 0 0 0.6 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 6 6 rotation 0.7 } } geometry Box { size 22 13 1.2 } } ] }
+    Pose { translation 1 0 1.7 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 5 5 rotation 1.1 } } geometry Box { size 16 9 0.9 } } ] }
+  ]
+  name "dune_crescent_1"
+}
+DEF DUNE_CRESCENT_2 Solid {
+  translation 32 -55 0
+  rotation 0 0 1 -0.4
+  children [
+    Pose { translation 0 0 0.7 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 6 6 rotation 0.3 } } geometry Box { size 24 14 1.4 } } ] }
+    Pose { translation -1 0 1.9 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 5 5 rotation 1.7 } } geometry Box { size 17 10 1.0 } } ] }
+  ]
+  name "dune_crescent_2"
+}
+DEF DUNE_CRESCENT_3 Solid {
+  translation 65 12 0
+  rotation 0 0 1 1.1
+  children [
+    Pose { translation 0 0 0.6 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 6 6 rotation 2.1 } } geometry Box { size 20 12 1.3 } } ] }
+    Pose { translation 0.8 0 1.8 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 5 5 rotation 0.5 } } geometry Box { size 14 8 0.9 } } ] }
+  ]
+  name "dune_crescent_3"
+}
+DEF DUNE_CRESCENT_4 Solid {
+  translation -38 -80 0
+  rotation 0 0 1 0.8
+  children [
+    Pose { translation 0 0 0.8 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 7 7 rotation 1.3 } } geometry Box { size 26 16 1.6 } } ] }
+    Pose { translation 1.5 0 2.2 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 6 6 rotation 2.8 } } geometry Box { size 18 11 1.2 } } ] }
+  ]
+  name "dune_crescent_4"
+}
+DEF DUNE_CRESCENT_5 Solid {
+  translation 95 60 0
+  rotation 0 0 1 -0.6
+  children [
+    Pose { translation 0 0 1.0 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 8 8 rotation 0.9 } } geometry Box { size 28 18 2.0 } } ] }
+    Pose { translation -1 0 2.7 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 6 6 rotation 2.2 } } geometry Box { size 20 12 1.4 } } ] }
+  ]
+  name "dune_crescent_5"
+}
+DEF DUNE_CRESCENT_6 Solid {
+  translation -75 -10 0
+  rotation 0 0 1 1.7
+  children [
+    Pose { translation 0 0 0.7 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 6 6 rotation 1.9 } } geometry Box { size 22 13 1.4 } } ] }
+    Pose { translation 1 0 1.9 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 5 5 rotation 0.4 } } geometry Box { size 15 9 0.9 } } ] }
+  ]
+  name "dune_crescent_6"
+}
+
+# --- Ridge dunes: long elongated mounds aligned with a notional
+# prevailing wind (NW-SE), 30-45 m long, 6-10 m wide. They draw the
+# eye to the horizon and add directional structure across the open
+# dune fields.
+DEF DUNE_RIDGE_1 Solid {
+  translation 45 65 0.6
+  rotation 0 0 1 0.6
+  children [ Shape { appearance Sand { textureTransform TextureTransform { scale 12 5 rotation 0 } } geometry Box { size 36 7 1.2 } } ]
+  name "dune_ridge_1"
+}
+DEF DUNE_RIDGE_2 Solid {
+  translation -55 -35 0.7
+  rotation 0 0 1 0.55
+  children [ Shape { appearance Sand { textureTransform TextureTransform { scale 10 4 rotation 0 } } geometry Box { size 32 8 1.4 } } ]
+  name "dune_ridge_2"
+}
+DEF DUNE_RIDGE_3 Solid {
+  translation 70 -80 0.8
+  rotation 0 0 1 0.7
+  children [ Shape { appearance Sand { textureTransform TextureTransform { scale 14 5 rotation 0 } } geometry Box { size 40 9 1.6 } } ]
+  name "dune_ridge_3"
+}
+DEF DUNE_RIDGE_4 Solid {
+  translation 105 -25 0.9
+  rotation 0 0 1 0.5
+  children [ Shape { appearance Sand { textureTransform TextureTransform { scale 14 5 rotation 0 } } geometry Box { size 42 8 1.8 } } ]
+  name "dune_ridge_4"
+}
+DEF DUNE_RIDGE_5 Solid {
+  translation -110 30 0.8
+  rotation 0 0 1 0.7
+  children [ Shape { appearance Sand { textureTransform TextureTransform { scale 12 4 rotation 0 } } geometry Box { size 36 7 1.6 } } ]
+  name "dune_ridge_5"
+}
+DEF DUNE_RIDGE_6 Solid {
+  translation -10 95 0.6
+  rotation 0 0 1 0.65
+  children [ Shape { appearance Sand { textureTransform TextureTransform { scale 10 4 rotation 0 } } geometry Box { size 32 7 1.2 } } ]
+  name "dune_ridge_6"
+}
+DEF DUNE_RIDGE_7 Solid {
+  translation 50 -110 0.7
+  rotation 0 0 1 0.6
+  children [ Shape { appearance Sand { textureTransform TextureTransform { scale 13 5 rotation 0 } } geometry Box { size 38 8 1.4 } } ]
+  name "dune_ridge_7"
+}
+DEF DUNE_RIDGE_8 Solid {
+  translation -85 90 0.8
+  rotation 0 0 1 0.4
+  children [ Shape { appearance Sand { textureTransform TextureTransform { scale 11 4 rotation 0 } } geometry Box { size 34 7 1.6 } } ]
+  name "dune_ridge_8"
+}
+
+# --- Sand piles: small flat circular mounds, 4-7 m radius. Cylinder
+# geometry so the silhouette is rounded — reads better than a square
+# patch up close. Heavy mid-ground coverage.
+DEF SAND_PILE_01 Solid { translation  18  -8 0.25 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 3 3 rotation 0.4 } } geometry Cylinder { height 0.5 radius 4 subdivision 12 } } ] name "sand_pile_01" }
+DEF SAND_PILE_02 Solid { translation -25  18 0.30 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 3 3 rotation 1.1 } } geometry Cylinder { height 0.6 radius 5 subdivision 12 } } ] name "sand_pile_02" }
+DEF SAND_PILE_03 Solid { translation  40   8 0.20 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 2 2 rotation 1.7 } } geometry Cylinder { height 0.4 radius 3 subdivision 12 } } ] name "sand_pile_03" }
+DEF SAND_PILE_04 Solid { translation  -8  35 0.30 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 3 3 rotation 0.8 } } geometry Cylinder { height 0.6 radius 4.5 subdivision 12 } } ] name "sand_pile_04" }
+DEF SAND_PILE_05 Solid { translation  22  42 0.25 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 2 2 rotation 2.4 } } geometry Cylinder { height 0.5 radius 3.5 subdivision 12 } } ] name "sand_pile_05" }
+DEF SAND_PILE_06 Solid { translation  60 -25 0.35 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 3 3 rotation 0.3 } } geometry Cylinder { height 0.7 radius 5 subdivision 12 } } ] name "sand_pile_06" }
+DEF SAND_PILE_07 Solid { translation -40  10 0.30 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 3 3 rotation 1.5 } } geometry Cylinder { height 0.6 radius 4 subdivision 12 } } ] name "sand_pile_07" }
+DEF SAND_PILE_08 Solid { translation -25 -30 0.40 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 4 4 rotation 0.6 } } geometry Cylinder { height 0.8 radius 6 subdivision 12 } } ] name "sand_pile_08" }
+DEF SAND_PILE_09 Solid { translation  80  10 0.30 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 3 3 rotation 2.0 } } geometry Cylinder { height 0.6 radius 4.5 subdivision 12 } } ] name "sand_pile_09" }
+DEF SAND_PILE_10 Solid { translation -70  60 0.35 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 3 3 rotation 1.3 } } geometry Cylinder { height 0.7 radius 5 subdivision 12 } } ] name "sand_pile_10" }
+DEF SAND_PILE_11 Solid { translation  -5 -60 0.30 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 3 3 rotation 0.5 } } geometry Cylinder { height 0.6 radius 4.5 subdivision 12 } } ] name "sand_pile_11" }
+DEF SAND_PILE_12 Solid { translation  25 -28 0.25 children [ Shape { appearance Sand { textureTransform TextureTransform { scale 2 2 rotation 2.6 } } geometry Cylinder { height 0.5 radius 3.5 subdivision 12 } } ] name "sand_pile_12" }
+
+# --- Wind ripples: thin elongated strips of SandyGround (slightly
+# different tone than Sand) in groups of 3-5, oriented along wind
+# direction. Sub-meter relief — mostly visual texture variation that
+# disrupts the regular tile pattern.
+DEF RIPPLE_GROUP_A_1 Solid { translation -10 -18 0.08 rotation 0 0 1 0.6 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 8 0.8 0.15 } castShadows FALSE } ] name "ripple_a_1" }
+DEF RIPPLE_GROUP_A_2 Solid { translation -8  -20 0.08 rotation 0 0 1 0.6 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 7 0.7 0.15 } castShadows FALSE } ] name "ripple_a_2" }
+DEF RIPPLE_GROUP_A_3 Solid { translation -12 -22 0.08 rotation 0 0 1 0.6 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 9 0.9 0.15 } castShadows FALSE } ] name "ripple_a_3" }
+DEF RIPPLE_GROUP_A_4 Solid { translation -6 -24 0.08 rotation 0 0 1 0.6 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 6 0.7 0.15 } castShadows FALSE } ] name "ripple_a_4" }
+
+DEF RIPPLE_GROUP_B_1 Solid { translation 28  20 0.08 rotation 0 0 1 0.4 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 7 0.8 0.15 } castShadows FALSE } ] name "ripple_b_1" }
+DEF RIPPLE_GROUP_B_2 Solid { translation 30  22 0.08 rotation 0 0 1 0.4 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 8 0.7 0.15 } castShadows FALSE } ] name "ripple_b_2" }
+DEF RIPPLE_GROUP_B_3 Solid { translation 26  24 0.08 rotation 0 0 1 0.4 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 6 0.8 0.15 } castShadows FALSE } ] name "ripple_b_3" }
+DEF RIPPLE_GROUP_B_4 Solid { translation 32  18 0.08 rotation 0 0 1 0.4 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 7 0.7 0.15 } castShadows FALSE } ] name "ripple_b_4" }
+
+DEF RIPPLE_GROUP_C_1 Solid { translation -35 -15 0.08 rotation 0 0 1 0.55 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 8 0.9 0.15 } castShadows FALSE } ] name "ripple_c_1" }
+DEF RIPPLE_GROUP_C_2 Solid { translation -33 -18 0.08 rotation 0 0 1 0.55 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 9 0.8 0.15 } castShadows FALSE } ] name "ripple_c_2" }
+DEF RIPPLE_GROUP_C_3 Solid { translation -37 -12 0.08 rotation 0 0 1 0.55 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 7 0.8 0.15 } castShadows FALSE } ] name "ripple_c_3" }
+
+DEF RIPPLE_GROUP_D_1 Solid { translation 55  -8 0.08 rotation 0 0 1 0.5 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 7 0.9 0.15 } castShadows FALSE } ] name "ripple_d_1" }
+DEF RIPPLE_GROUP_D_2 Solid { translation 53  -5 0.08 rotation 0 0 1 0.5 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 8 0.8 0.15 } castShadows FALSE } ] name "ripple_d_2" }
+DEF RIPPLE_GROUP_D_3 Solid { translation 57 -11 0.08 rotation 0 0 1 0.5 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 6 0.8 0.15 } castShadows FALSE } ] name "ripple_d_3" }
+
+DEF RIPPLE_GROUP_E_1 Solid { translation -60  45 0.08 rotation 0 0 1 0.65 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 8 0.8 0.15 } castShadows FALSE } ] name "ripple_e_1" }
+DEF RIPPLE_GROUP_E_2 Solid { translation -57  42 0.08 rotation 0 0 1 0.65 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 9 0.9 0.15 } castShadows FALSE } ] name "ripple_e_2" }
+DEF RIPPLE_GROUP_E_3 Solid { translation -63  48 0.08 rotation 0 0 1 0.65 children [ Shape { appearance SandyGround { textureTransform TextureTransform { scale 5 1 } } geometry Box { size 7 0.8 0.15 } castShadows FALSE } ] name "ripple_e_3" }
+
+# --- Darker mineral patches: small areas of DryMud reading as exposed
+# clay / dry mud-pan amongst the sand. Two patches break up the
+# otherwise-uniform sand colour palette.
+DEF DRYMUD_PATCH_1 Solid {
+  translation -30 -55 0.06
+  rotation 0 0 1 0.4
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 14 9 0.12 } castShadows FALSE } ]
+  name "drymud_patch_1"
+}
+DEF DRYMUD_PATCH_2 Solid {
+  translation 90 -50 0.06
+  rotation 0 0 1 -0.7
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 18 11 0.12 } castShadows FALSE } ]
+  name "drymud_patch_2"
+}
+
+# ============================================================================
+# Palm tree silhouettes — organic shapes break up the geometric ruin
+# skyline. Placed in the mid-distance (25-45 m) so they read as
+# silhouettes against the bright sky, framing the central plaza.
+# enableBoundingObject FALSE keeps them visual-only (kinematic_props
+# guidance — they're decor, no need to snag bridges).
+# ============================================================================
+PalmTree { translation -25  18 0 rotation 0 0 1  0.4 name "palm_1" enableBoundingObject FALSE }
+PalmTree { translation -32  -8 0 rotation 0 0 1 -1.1 name "palm_2" enableBoundingObject FALSE }
+PalmTree { translation  28  20 0 rotation 0 0 1  0.7 name "palm_3" enableBoundingObject FALSE }
+PalmTree { translation  42 -12 0 rotation 0 0 1  1.4 name "palm_4" enableBoundingObject FALSE }
+PalmTree { translation -45  30 0 rotation 0 0 1  0.2 name "palm_5" enableBoundingObject FALSE }
+PalmTree { translation  18 -30 0 rotation 0 0 1 -0.6 name "palm_6" enableBoundingObject FALSE }

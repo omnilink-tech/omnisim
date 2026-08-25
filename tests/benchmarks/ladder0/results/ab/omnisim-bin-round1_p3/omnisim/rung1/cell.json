@@ -1,0 +1,94 @@
+{
+ "sim": "omnisim",
+ "rung": 1,
+ "title": "box resting on a floor",
+ "checks": [
+  {
+   "name": "rest_z",
+   "measured": 0.599892258644104,
+   "expected": 0.6,
+   "tol": 0.005,
+   "unit": "m",
+   "rel": false,
+   "error": -0.00010774135589597389,
+   "margin": 0.004892258644104026,
+   "ok": true,
+   "why": "a box of half-height 0.100 m resting on a floor whose top is at z=0.500 m has its centre at z=0.600 m; contact compliance may sink it by up to g*tau^2 ~ 4 mm",
+   "key": "rest_z"
+  },
+  {
+   "name": "contact_penetration",
+   "measured": 0.00010774135589597389,
+   "expected": 0.0,
+   "tol": 0.001,
+   "unit": "m",
+   "rel": false,
+   "error": 0.00010774135589597389,
+   "margin": 0.0008922586441040261,
+   "ok": true,
+   "why": "how far the box sank INTO the floor.  Failing this while rest_z passes means the contact is softer than the solver's own defaults imply -- a different claim from 'the body is on the wrong surface'",
+   "key": "penetration"
+  },
+  {
+   "name": "z_drift",
+   "measured": 0.0,
+   "expected": 0.0,
+   "tol": 0.005,
+   "unit": "m",
+   "rel": false,
+   "error": 0.0,
+   "margin": 0.005,
+   "ok": true,
+   "why": "a body at rest must stay at rest: peak-to-peak z over the settle window is zero for a body in equilibrium",
+   "key": "z_drift"
+  }
+ ],
+ "timing": {
+  "startup_s": 10.433494806289673,
+  "total_s": 11.73928713798523,
+  "step_s": 0.8539419174194336
+ },
+ "green": true,
+ "meta": {
+  "sim": "omnisim",
+  "rung": 1,
+  "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung1.wbt",
+  "fault": "none",
+  "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe",
+  "error": null,
+  "exit_code": 0,
+  "timed_out": false,
+  "binary_sha256": "8a6f8bc54194dd58",
+  "binary_mtime": "2026-08-11 22:33:49",
+  "proc_t0": 1786547764.2858968,
+  "proc_t1": 1786547776.025184,
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cpu",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "command": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung1.wbt --batch --mode=fast --no-rendering --minimize --stdout --stderr"
+ },
+ "measurement": {
+  "steps": 500.0,
+  "sim_time_end": 2.0,
+  "exit_code": 0.0,
+  "n_samples": 501,
+  "rest_z": 0.599892258644104,
+  "z_drift": 0.0,
+  "spawn_z": 0.6,
+  "min_z": 0.59968101978302,
+  "final_z": 0.599892258644104,
+  "penetration": 0.00010774135589597389,
+  "penetration_mm": 0.10774135589597389
+ }
+}

@@ -1,0 +1,246 @@
+<?xml version="1.0"?>
+<!--
+DJI Mavic 2 Pro URDF — kinematic description for OmniSim.
+
+Geometry mirrors the legacy Mavic2Pro.proto: a body link plus four
+continuous-rotation propeller joints, plus a three-axis camera gimbal
+(yaw -> pitch -> roll) ending in a downward-facing camera. Joint names
+are preserved from the PROTO so the existing mavic_omnilink_bridge
+controller can keep its getDevice("front left propeller") etc. lookups.
+
+URDF can't model rotor lift on its own — there is no Propeller analogue.
+Lift + reaction torque are applied via supervisor add_force_with_offset
+in mavic_dynamics.py at each controller tick. The continuous joints
+exist mainly so the visual rotors spin; the actual flight forces come
+from the dynamics module reading the same motor target velocities the
+bridge sends.
+
+Sensors (camera + IMU + GPS) are emitted via <gazebo><sensor> blocks;
+the URDF importer materialises them as Camera / InertialUnit / Gyro /
+Accelerometer / GPS nodes when OMNISIM_URDF_USE_SENSORS=1 is set.
+-->
+<robot name="mavic_2_pro" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- =========================================================
+       Body
+       ========================================================= -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.30 0.08 0.05"/>
+      </geometry>
+      <material name="mavic_grey">
+        <color rgba="0.18 0.18 0.20 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.30 0.08 0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.9"/>
+      <inertia ixx="0.005" ixy="0" ixz="0" iyy="0.010" iyz="0" izz="0.012"/>
+    </inertial>
+  </link>
+
+  <!-- =========================================================
+       Propellers — 4 continuous joints, anchor offsets from PROTO
+       ========================================================= -->
+  <joint name="front left propeller" type="continuous">
+    <parent link="base_link"/>
+    <child link="front_left_propeller_link"/>
+    <origin xyz="0.054854 0.151294 -0.003" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="30.0" velocity="576.0"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <link name="front_left_propeller_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.12" length="0.005"/>
+      </geometry>
+      <material name="prop_dark">
+        <color rgba="0.1 0.1 0.1 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.12" length="0.005"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.02"/>
+      <inertia ixx="7.3e-05" ixy="0" ixz="0" iyy="7.3e-05" iyz="0" izz="1.4e-04"/>
+    </inertial>
+  </link>
+
+  <joint name="front right propeller" type="continuous">
+    <parent link="base_link"/>
+    <child link="front_right_propeller_link"/>
+    <origin xyz="0.054854 -0.151294 -0.003" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="30.0" velocity="576.0"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <link name="front_right_propeller_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.12" length="0.005"/>
+      </geometry>
+      <material name="prop_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.12" length="0.005"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.02"/>
+      <inertia ixx="7.3e-05" ixy="0" ixz="0" iyy="7.3e-05" iyz="0" izz="1.4e-04"/>
+    </inertial>
+  </link>
+
+  <joint name="rear left propeller" type="continuous">
+    <parent link="base_link"/>
+    <child link="rear_left_propeller_link"/>
+    <origin xyz="-0.177179 0.127453 -0.032" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="30.0" velocity="576.0"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <link name="rear_left_propeller_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.12" length="0.005"/>
+      </geometry>
+      <material name="prop_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.12" length="0.005"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.02"/>
+      <inertia ixx="7.3e-05" ixy="0" ixz="0" iyy="7.3e-05" iyz="0" izz="1.4e-04"/>
+    </inertial>
+  </link>
+
+  <joint name="rear right propeller" type="continuous">
+    <parent link="base_link"/>
+    <child link="rear_right_propeller_link"/>
+    <origin xyz="-0.177179 -0.127453 -0.032" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="30.0" velocity="576.0"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <link name="rear_right_propeller_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.12" length="0.005"/>
+      </geometry>
+      <material name="prop_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.12" length="0.005"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.02"/>
+      <inertia ixx="7.3e-05" ixy="0" ixz="0" iyy="7.3e-05" iyz="0" izz="1.4e-04"/>
+    </inertial>
+  </link>
+
+  <!-- =========================================================
+       Camera gimbal: yaw -> pitch -> roll
+       ========================================================= -->
+  <joint name="camera yaw" type="revolute">
+    <parent link="base_link"/>
+    <child link="camera_yaw_link"/>
+    <origin xyz="0.0412774 -0.00469654 -0.00405862" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.7" upper="1.7" effort="5.0" velocity="2.0"/>
+  </joint>
+  <link name="camera_yaw_link">
+    <inertial>
+      <mass value="0.01"/>
+      <inertia ixx="1e-06" ixy="0" ixz="0" iyy="1e-06" iyz="0" izz="1e-06"/>
+    </inertial>
+  </link>
+
+  <joint name="camera pitch" type="revolute">
+    <parent link="camera_yaw_link"/>
+    <child link="camera_pitch_link"/>
+    <origin xyz="0.000625212 -0.00530346 -0.0207448" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.5" upper="1.7" effort="5.0" velocity="2.0"/>
+  </joint>
+  <link name="camera_pitch_link">
+    <inertial>
+      <mass value="0.01"/>
+      <inertia ixx="1e-06" ixy="0" ixz="0" iyy="1e-06" iyz="0" izz="1e-06"/>
+    </inertial>
+  </link>
+
+  <joint name="camera roll" type="revolute">
+    <parent link="camera_pitch_link"/>
+    <child link="camera_roll_link"/>
+    <origin xyz="0.00754686 0.0160388 -0.00586401" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.5" upper="0.5" effort="5.0" velocity="2.0"/>
+  </joint>
+  <link name="camera_roll_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.025 0.020 0.022"/>
+      </geometry>
+      <material name="cam_dark">
+        <color rgba="0.08 0.08 0.08 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <origin xyz="-0.00915058 0 -0.000984" rpy="0 0 0"/>
+      <mass value="0.0333"/>
+      <inertia ixx="1.5e-06" ixy="0" ixz="0" iyy="1.5e-06" iyz="0" izz="1.5e-06"/>
+    </inertial>
+  </link>
+
+  <!-- =========================================================
+       Sensors (require OMNISIM_URDF_USE_SENSORS=1 to materialise)
+       ========================================================= -->
+  <gazebo reference="camera_roll_link">
+    <sensor name="camera" type="camera">
+      <camera>
+        <horizontal_fov>0.7854</horizontal_fov>
+        <image>
+          <width>400</width>
+          <height>240</height>
+        </image>
+      </camera>
+      <update_rate>30</update_rate>
+    </sensor>
+  </gazebo>
+  <gazebo reference="base_link">
+    <sensor name="inertial unit" type="imu">
+      <update_rate>100</update_rate>
+    </sensor>
+    <sensor name="gps" type="gps">
+      <update_rate>10</update_rate>
+    </sensor>
+  </gazebo>
+
+</robot>

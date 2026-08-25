@@ -1,0 +1,1098 @@
+{
+  "bounce": {
+    "points": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 1.0,
+        "error": 0.17253090702649954,
+        "cost": 3.599450457841158
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 2.0,
+        "error": 0.271475424851523,
+        "cost": 2.294199919560924
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 4.0,
+        "error": 0.14777689982916195,
+        "cost": 0.7869751716498286
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 1.0,
+        "error": 0.010302202090426487,
+        "cost": 5.883
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 0.01766870449924008,
+        "cost": 2.8295
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 4.0,
+        "error": 0.03811226648097238,
+        "cost": 1.409
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 8.0,
+        "error": 0.08394039317535454,
+        "cost": 0.7099
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 16.0,
+        "error": 0.21670279239171675,
+        "cost": 0.3496
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "error": 0.4845987511587852,
+        "cost": 0.1743
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 0.017060621134230746,
+        "cost": 3.970374644268304
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 2.0,
+        "error": 0.039236419460269074,
+        "cost": 2.524025388993323
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 0.07336531806034903,
+        "cost": 1.2917500571347773
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 8.0,
+        "error": 0.1606497131274941,
+        "cost": 0.8387504785787314
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 16.0,
+        "error": 0.3497171605010893,
+        "cost": 0.26839980273507535
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 32.0,
+        "error": 0.7752466869224628,
+        "cost": 0.1385999785270542
+      }
+    ],
+    "rejected": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 8.0,
+        "reason": "diverged (relative error 35.97 > 100%: worse than predicting zero)",
+        "raw": 35.96627896585275
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 16.0,
+        "reason": "diverged (relative error 33.52 > 100%: worse than predicting zero)",
+        "raw": 33.52437540597171
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 32.0,
+        "reason": "diverged (relative error 396.5 > 100%: worse than predicting zero)",
+        "raw": 396.5285934347819
+      }
+    ],
+    "front": [
+      {
+        "engine": "pybullet",
+        "dt_ms": 32.0,
+        "error": 0.7752466869224628,
+        "cost": 0.1385999785270542
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "error": 0.4845987511587852,
+        "cost": 0.1743
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 16.0,
+        "error": 0.3497171605010893,
+        "cost": 0.26839980273507535
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 16.0,
+        "error": 0.21670279239171675,
+        "cost": 0.3496
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 8.0,
+        "error": 0.08394039317535454,
+        "cost": 0.7099
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 0.07336531806034903,
+        "cost": 1.2917500571347773
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 4.0,
+        "error": 0.03811226648097238,
+        "cost": 1.409
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 0.01766870449924008,
+        "cost": 2.8295
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 0.017060621134230746,
+        "cost": 3.970374644268304
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 1.0,
+        "error": 0.010302202090426487,
+        "cost": 5.883
+      }
+    ]
+  },
+  "incline": {
+    "points": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 1.0,
+        "error": 0.00044180878582805527,
+        "cost": 47.91020081999401
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 2.0,
+        "error": 0.00044180917911744607,
+        "cost": 21.657533167550962
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 4.0,
+        "error": 0.00044181038075734053,
+        "cost": 11.287500150501728
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 8.0,
+        "error": 0.00044246996310457403,
+        "cost": 5.05219978125145
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 16.0,
+        "error": 0.0006394205043512464,
+        "cost": 2.865525296309646
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 32.0,
+        "error": 0.0007694570775287557,
+        "cost": 1.311801865317938
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 1.0,
+        "error": 0.0004418726569002015,
+        "cost": 56.276
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 0.0004414440785013543,
+        "cost": 28.1065
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 4.0,
+        "error": 0.0004418726569002015,
+        "cost": 14.1173
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 8.0,
+        "error": 0.0004429388453497693,
+        "cost": 7.026500000000001
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 16.0,
+        "error": 0.0006412919573497301,
+        "cost": 3.5206000000000004
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "error": 0.0009982043979836703,
+        "cost": 1.7101
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 0.0011159927223374061,
+        "cost": 67.5517999722312
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 2.0,
+        "error": 0.0014339089817645935,
+        "cost": 35.949034111884735
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 0.0019521073570485125,
+        "cost": 19.997800157094996
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 8.0,
+        "error": 0.0013491985098204621,
+        "cost": 10.213133335734407
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 16.0,
+        "error": 0.0013773099202079408,
+        "cost": 5.534375111195952
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 32.0,
+        "error": 0.0014574317858770858,
+        "cost": 2.9745014158989043
+      }
+    ],
+    "rejected": [],
+    "front": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 32.0,
+        "error": 0.0007694570775287557,
+        "cost": 1.311801865317938
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 16.0,
+        "error": 0.0006394205043512464,
+        "cost": 2.865525296309646
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 8.0,
+        "error": 0.00044246996310457403,
+        "cost": 5.05219978125145
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 4.0,
+        "error": 0.00044181038075734053,
+        "cost": 11.287500150501728
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 2.0,
+        "error": 0.00044180917911744607,
+        "cost": 21.657533167550962
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 0.0004414440785013543,
+        "cost": 28.1065
+      }
+    ]
+  },
+  "momentum": {
+    "points": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 1.0,
+        "error": 0.00013206882101546302,
+        "cost": 4.474170075263828
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 2.0,
+        "error": 0.045679689074288876,
+        "cost": 2.027989726047963
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 4.0,
+        "error": 0.7645565783782082,
+        "cost": 1.118590123951435
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 8.0,
+        "error": 0.037738079835521354,
+        "cost": 0.4827800206840038
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 16.0,
+        "error": 0.4734237110680367,
+        "cost": 1.5427899896167219
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 32.0,
+        "error": 1.2955660902459891,
+        "cost": 1.2473658269020513
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 1.0,
+        "error": 0.04517415559429805,
+        "cost": 3.996
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 0.011974500537164201,
+        "cost": 1.978
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 4.0,
+        "error": 0.5095008165849824,
+        "cost": 0.9915
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 8.0,
+        "error": 0.0346320622831085,
+        "cost": 0.4865
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 16.0,
+        "error": 0.3707090333994817,
+        "cost": 0.2407
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "error": 0.9540016850122821,
+        "cost": 0.1247
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 1.012940024568143e-05,
+        "cost": 6.9249501917511225
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 2.0,
+        "error": 0.04400080953882003,
+        "cost": 3.331299696583301
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 0.7967856044471195,
+        "cost": 1.4480500249192119
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 8.0,
+        "error": 0.07982756790694229,
+        "cost": 0.7764601265080273
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 16.0,
+        "error": 7.607023473237732,
+        "cost": 0.5394299631007016
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 32.0,
+        "error": 15.186868145000544,
+        "cost": 0.3304386994456693
+      }
+    ],
+    "rejected": [],
+    "front": [
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "error": 0.9540016850122821,
+        "cost": 0.1247
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 16.0,
+        "error": 0.3707090333994817,
+        "cost": 0.2407
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 8.0,
+        "error": 0.037738079835521354,
+        "cost": 0.4827800206840038
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 8.0,
+        "error": 0.0346320622831085,
+        "cost": 0.4865
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 0.011974500537164201,
+        "cost": 1.978
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 1.0,
+        "error": 0.00013206882101546302,
+        "cost": 4.474170075263828
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 1.012940024568143e-05,
+        "cost": 6.9249501917511225
+      }
+    ]
+  },
+  "pendulum_energy": {
+    "points": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 1.0,
+        "error": 0.09359045370136718,
+        "cost": 4.600490164011717
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 2.0,
+        "error": 0.16132251056432603,
+        "cost": 1.8802194739691913
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 4.0,
+        "error": 0.38706271298950745,
+        "cost": 1.016229938250035
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 8.0,
+        "error": 0.6089487225193484,
+        "cost": 0.44739010045304894
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 16.0,
+        "error": 0.4205251025711005,
+        "cost": 0.25418997975066304
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 1.0,
+        "error": 0.12361813444914686,
+        "cost": 3.726
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 0.1620880173160152,
+        "cost": 1.8555
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 4.0,
+        "error": 0.3809689728872127,
+        "cost": 0.937
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 8.0,
+        "error": 0.6090705610994207,
+        "cost": 0.4755
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 16.0,
+        "error": 0.4183475448071954,
+        "cost": 0.2495
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 0.06948075953819015,
+        "cost": 6.632620375603437
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 2.0,
+        "error": 0.15854169564279277,
+        "cost": 3.8907303009182215
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 0.3858557833450748,
+        "cost": 1.5894901123829186
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 8.0,
+        "error": 0.6112525097687628,
+        "cost": 0.8042500470764935
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 16.0,
+        "error": 0.40561174722884136,
+        "cost": 0.4013999830931425
+      }
+    ],
+    "rejected": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 32.0,
+        "reason": "energy_blew_up",
+        "raw": 1.546895504620179e-08
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "reason": "energy_blew_up",
+        "raw": 8.424552366368768e-13
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 32.0,
+        "reason": "energy_blew_up",
+        "raw": 0.9992294778553744
+      }
+    ],
+    "front": [
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 16.0,
+        "error": 0.4183475448071954,
+        "cost": 0.2495
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 16.0,
+        "error": 0.40561174722884136,
+        "cost": 0.4013999830931425
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 4.0,
+        "error": 0.3809689728872127,
+        "cost": 0.937
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 0.1620880173160152,
+        "cost": 1.8555
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 2.0,
+        "error": 0.16132251056432603,
+        "cost": 1.8802194739691913
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 1.0,
+        "error": 0.12361813444914686,
+        "cost": 3.726
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 1.0,
+        "error": 0.09359045370136718,
+        "cost": 4.600490164011717
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 0.06948075953819015,
+        "cost": 6.632620375603437
+      }
+    ]
+  },
+  "roll": {
+    "points": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 1.0,
+        "error": 0.0010035529417566267,
+        "cost": 9.62659833021462
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 2.0,
+        "error": 0.0010035254845852078,
+        "cost": 2.7318999054841697
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 4.0,
+        "error": 0.001003434053751075,
+        "cost": 1.3806499191559851
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 8.0,
+        "error": 0.0010030435505094786,
+        "cost": 0.6603499059565365
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 16.0,
+        "error": 0.0017696940690081367,
+        "cost": 0.671549467369914
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 32.0,
+        "error": 0.005122471074801142,
+        "cost": 0.17353833696219106
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 1.0,
+        "error": 0.0005828475733600938,
+        "cost": 5.346
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 0.0005829530785206843,
+        "cost": 2.715
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 4.0,
+        "error": 0.0005821351711044256,
+        "cost": 1.382
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 8.0,
+        "error": 0.0005849562117657574,
+        "cost": 0.713
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 16.0,
+        "error": 0.0012053854818075405,
+        "cost": 0.3555
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "error": 0.0025541602549002786,
+        "cost": 0.1721
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 1.4824073232655545e-15,
+        "cost": 6.540651724208146
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 2.0,
+        "error": 7.412036616327772e-16,
+        "cost": 5.918200011365116
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 2.0383100694901377e-15,
+        "cost": 3.0866008019074798
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 8.0,
+        "error": 1.0376851262858882e-14,
+        "cost": 1.031699648592621
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 16.0,
+        "error": 1.1673957670716241e-14,
+        "cost": 0.4708502092398703
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 32.0,
+        "error": 1.0932754009083465e-14,
+        "cost": 0.23613903331645433
+      }
+    ],
+    "rejected": [],
+    "front": [
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "error": 0.0025541602549002786,
+        "cost": 0.1721
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 32.0,
+        "error": 1.0932754009083465e-14,
+        "cost": 0.23613903331645433
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 2.0383100694901377e-15,
+        "cost": 3.0866008019074798
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 2.0,
+        "error": 7.412036616327772e-16,
+        "cost": 5.918200011365116
+      }
+    ]
+  },
+  "spin": {
+    "points": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 1.0,
+        "error": 0.0016912620701824898,
+        "cost": 3.094220196362585
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 2.0,
+        "error": 0.0032993372880931572,
+        "cost": 1.40643953345716
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 4.0,
+        "error": 0.006249510380150393,
+        "cost": 1.1317401775158942
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 8.0,
+        "error": 0.011034140813753196,
+        "cost": 0.6105208187364042
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 16.0,
+        "error": 0.016448484949994437,
+        "cost": 0.182000279892236
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 32.0,
+        "error": 0.01631485977926668,
+        "cost": 0.10259416227106553
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 1.0,
+        "error": 1.602331376552676e-06,
+        "cost": 2.885
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 6.370727201923276e-06,
+        "cost": 1.476
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 4.0,
+        "error": 2.5477126135868525e-05,
+        "cost": 0.735
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 8.0,
+        "error": 0.00010187475068603018,
+        "cost": 0.3729
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 16.0,
+        "error": 0.00040700480012766235,
+        "cost": 0.1816
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "error": 0.0016207879895730505,
+        "cost": 0.092
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 4.877701953509303e-06,
+        "cost": 3.0093601788394153
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 2.0,
+        "error": 9.761891907564001e-06,
+        "cost": 1.6919395187869668
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 1.9529540547784182e-05,
+        "cost": 0.7955902023240924
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 8.0,
+        "error": 3.918014140299422e-05,
+        "cost": 0.3595000132918358
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 16.0,
+        "error": 7.884385223841922e-05,
+        "cost": 0.16731995856389403
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 32.0,
+        "error": 0.00015958220638046246,
+        "cost": 0.09926879311723706
+      }
+    ],
+    "rejected": [],
+    "front": [
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "error": 0.0016207879895730505,
+        "cost": 0.092
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 32.0,
+        "error": 0.00015958220638046246,
+        "cost": 0.09926879311723706
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 16.0,
+        "error": 7.884385223841922e-05,
+        "cost": 0.16731995856389403
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 8.0,
+        "error": 3.918014140299422e-05,
+        "cost": 0.3595000132918358
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 4.0,
+        "error": 2.5477126135868525e-05,
+        "cost": 0.735
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 1.9529540547784182e-05,
+        "cost": 0.7955902023240924
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 6.370727201923276e-06,
+        "cost": 1.476
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 1.0,
+        "error": 1.602331376552676e-06,
+        "cost": 2.885
+      }
+    ]
+  },
+  "stack": {
+    "points": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 1.0,
+        "error": 0.0006176779864107973,
+        "cost": 84.98137006536126
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 2.0,
+        "error": 0.0006176689532345903,
+        "cost": 39.93473048321903
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 4.0,
+        "error": 0.0006176689530831558,
+        "cost": 18.95134000806138
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 8.0,
+        "error": 0.000617668901576357,
+        "cost": 9.925800107885152
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 1.0,
+        "error": 0.0009019136428833063,
+        "cost": 64.374
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 2.0,
+        "error": 0.0009017944335937556,
+        "cost": 32.7145
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 4.0,
+        "error": 0.0009017944335937556,
+        "cost": 15.7925
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 8.0,
+        "error": 0.0009025692939758356,
+        "cost": 8.0652
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 3.202930115345226e-05,
+        "cost": 323.39160990668455
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 2.0,
+        "error": 9.69439053708776e-05,
+        "cost": 159.0006401063874
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 0.00035554029625775585,
+        "cost": 72.6379405008629
+      }
+    ],
+    "rejected": [
+      {
+        "engine": "mujoco",
+        "dt_ms": 16.0,
+        "reason": "stack collapsed (survivors < 10)",
+        "raw": 0.001199771073506245
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 32.0,
+        "reason": "stack collapsed (survivors < 10)",
+        "raw": 0.2978865310261488
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 16.0,
+        "reason": "stack collapsed (survivors < 10)",
+        "raw": 0.5999999813735485
+      },
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 32.0,
+        "reason": "stack collapsed (survivors < 10)",
+        "raw": 0.19863626956939698
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 8.0,
+        "reason": "stack collapsed (survivors < 10)",
+        "raw": 0.10000174288373001
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 16.0,
+        "reason": "stack collapsed (survivors < 10)",
+        "raw": 0.29980455181752297
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 32.0,
+        "reason": "stack collapsed (survivors < 10)",
+        "raw": 0.10001136287213377
+      }
+    ],
+    "front": [
+      {
+        "engine": "omnisim-newton",
+        "dt_ms": 8.0,
+        "error": 0.0009025692939758356,
+        "cost": 8.0652
+      },
+      {
+        "engine": "mujoco",
+        "dt_ms": 8.0,
+        "error": 0.000617668901576357,
+        "cost": 9.925800107885152
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 4.0,
+        "error": 0.00035554029625775585,
+        "cost": 72.6379405008629
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 2.0,
+        "error": 9.69439053708776e-05,
+        "cost": 159.0006401063874
+      },
+      {
+        "engine": "pybullet",
+        "dt_ms": 1.0,
+        "error": 3.202930115345226e-05,
+        "cost": 323.39160990668455
+      }
+    ]
+  }
+}

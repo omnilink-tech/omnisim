@@ -1,0 +1,56 @@
+{
+  "schema": 2,
+  "name": "balance_two_legs",
+  "title": "Balance on two legs (hold + reject external pushes)",
+  "class": "humanoid",
+  "robots": [
+    "g1",
+    "h1"
+  ],
+  "kind": "deterministic",
+  "method": "deterministic-overlay",
+  "motion_class": "static",
+  "status": "verified",
+  "summary": "The deterministic two-leg stand: a stiff, statically-stable squat held by a Newton position PD, kept centred by a reactive ankle lean + a fast arm-swing balancer + a hip return-to-home integral. Robust to external pushes -- the reference demo throws DEF CUBE0..n at the torso one at a time from every side and the robot keeps standing (the cube-defense demo). This is the balance CORE every other humanoid posture/arm skill rides on top of.",
+  "controller": "humanoid_stand_deploy",
+  "spec": "projects/policies/controllers/humanoid_stand_deploy/specs/g1_armsdown.json",
+  "world": "projects/policies/worlds/g1_hstand_cubethrow.omniworld",
+  "launcher": "scripts/dev/run_humanoid_stand_deploy.ps1",
+  "launch_flags": [
+    "-Robot",
+    "g1",
+    "-ArmsDown"
+  ],
+  "composable_with": [
+    "-Throw"
+  ],
+  "arbitration": "core",
+  "owns_effectors": [
+    "whole body (the balance core; other skills overlay on top of it)"
+  ],
+  "balance_by": [
+    "stiff statically-stable squat (Newton position hold, ank_bias centred)",
+    "reactive ankle lean (disturbance-driven, catches a push)",
+    "arm_balance: shoulder swing as a fast CoM-shift + counter-rotation effector (kp=6)",
+    "hip auto_trim integral: return-to-0-rad upright"
+  ],
+  "success_criteria": {
+    "stands_s": ">=120",
+    "falls": 0,
+    "ends_upright": true,
+    "rejects_external_pushes": true
+  },
+  "verification": {
+    "date": "2026-06-27",
+    "engine": "Newton/mujoco_warp",
+    "result": "G1 stands robustly (0 falls over 400 s+ sim) and holds all thrown cubes, returning pitch & roll to ~0; runs robust COLD. H1 also stands via the same generic harness (per-robot specs). See docs/developer/humanoid-deterministic-stand.md and docs/developer/rl-current-state.md.",
+    "note": "This run ALSO covered a NASA Valkyrie, which is why older copies of this manifest and its README said 'G1, H1, Valkyrie'. That robot package was removed from the tree in be41986f8 -- it had no valid grant (its LICENSE.upstream was a blank NOSA template that never named the agency) -- and specs/valkyrie.json went with it. The 2026-06-27 measurement is not retracted; the robot is simply no longer here, so the skill is no longer offered for it. The machine-readable `robots` field has always read [g1, h1] and is unchanged."
+  },
+  "doc": "docs/developer/humanoid-deterministic-stand.md",
+  "related": [
+    "arm_motion (move the arms in 3-D while balancing)",
+    "one_leg",
+    "manip",
+    "squat"
+  ]
+}

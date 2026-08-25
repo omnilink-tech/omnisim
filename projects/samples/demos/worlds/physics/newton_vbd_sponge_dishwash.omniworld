@@ -1,0 +1,962 @@
+#OMNISIM R2025a utf8
+
+# A GRIPPER PICKS UP A SPONGE AND SCRUBS A DISH WITH IT.
+#
+# The first world in this tree in which a rigid gripper manipulates a VOLUMETRIC
+# soft body and then USES it as a tool. The sponge is a tetrahedral-FEM
+# `SoftBody` on newton's SolverVBD; the gripper is a five-axis prismatic gantry
+# of ordinary rigid bodies; and both are owned by ONE SolverVBD, which is the
+# whole reason the pinch holds (see THE SOLVER, below).
+#
+# Lineage: the gantry is the same 5-DoF unit as newton_vbd_cloth_grasp and
+# newton_vbd_tshirt_grasp, unchanged in structure. What is new here is the
+# TOOL USE -- the deformable is not the payload, it is the instrument, and the
+# demo is scored on what the instrument accomplishes against a third body.
+#
+# ---------------------------------------------------------------------------
+# WHAT TO EXPECT, and the proof is numeric rather than visual
+# ---------------------------------------------------------------------------
+#
+#   SPONGE   a 100 x 75 x 40 mm tet-FEM block, 60 particles, resting on the
+#            worktop. It is squeezed between two pads, lifted, carried over the
+#            dish, pressed onto it and swept in a raster. It must DEFORM (the
+#            pads close past its rest half-width and it squashes) and it must
+#            TRACK the pads through the lift.
+#
+#   DISH     a static 200 mm plate. Its scrub surface is at z = 0.912.
+#
+#   GRIME    12 visual-only specks on the plate. They carry NO Solid, NO
+#            boundingObject and NO Physics, so they are never registered with
+#            Newton at all -- they cannot perturb the physics and the
+#            "a deleted node keeps blocking rays and contacts" engine gap
+#            cannot apply to them. The controller lerps each speck's baseColor
+#            toward the plate's own ceramic colour as the sponge passes over.
+#
+# ---------------------------------------------------------------------------
+# THE SOLVER, and why it is "vbd" and not "mujoco+vbd"
+# ---------------------------------------------------------------------------
+#
+# `newtonSolver "vbd"` puts ONE SolverVBD in charge of every rigid body, joint
+# AND particle. That is the only configuration in which a gripper pad and a
+# sponge particle are relaxed in the SAME solver sweep. The coupled
+# "mujoco+vbd" path exchanges state over a proxy, so the particles only ever
+# see a pad whose pose was synced from the PREVIOUS rigid solve -- a pinch
+# resolved against a one-step-stale jaw. Both shipped deformable-grasp worlds
+# are on "vbd" for this reason.
+#
+# ⚠ THE PRICE IS LARGE AND IS LOGGED AT `INFO`, SO --fail-on-warning WILL NOT
+# CATCH ANY OF IT. There is no mj_model on this path, therefore:
+#   * NO TouchSensor, NO Connector / VacuumGripper welds, NO raycast-backed
+#     devices (DistanceSensor / Receiver / LightSensor / Radar / recognition
+#     occlusion).
+#   * NO contact readback at all -- getContactPoints, GET /sim/contacts and
+#     GET /sim/grips are empty. THE GRASP CANNOT BE PROVEN BY A CONTACT QUERY
+#     HERE. It is proven geometrically instead (see THE GATE, below).
+#   * newtonCone / newtonImpratio / newtonIterations / newtonLsIterations /
+#     newtonNoslipIterations / newtonNjmax / newtonNconmax are MuJoCo fields and
+#     NONE of them is read. Deliberately absent from the WorldInfo below --
+#     writing them here would be cargo cult.
+#   * Rigid contact is AVBD penalty / augmented-Lagrangian, not a friction cone.
+#     The only friction knob is newtonGroundMu (which also supplies
+#     model.soft_contact_mu, i.e. how grippy the pads are against the sponge).
+#
+# ⚠ A `PositionSensor` READS 0.0 FOREVER ON THIS PATH, SILENTLY. VBD is a
+# maximal-coordinate solver: it integrates body_q and never maintains joint_q,
+# which is what get_joint_angle reads. Measured on a 2-axis probe: the sensor
+# read 0.0 while the body moved half a metre, exit 0, PASS, no warning. There
+# is therefore DELIBERATELY NO PositionSensor in this world -- every position in
+# the controller comes from Supervisor.getFromDef(...).getPosition(), which
+# reads body_q and is exact.
+#
+# ⚠ `maxForce` IS NOT A FORCE CEILING. OmniSim turns a position motor's
+# maxForce into the joint's PD stiffness (targetKe = maxForce * 10, targetKd =
+# maxForce * 0.5) and VBD honours those gains while IGNORING the effort limit
+# itself. Read every maxForce below as a stiffness. The sizing rule is
+# arithmetic and was verified to 7 significant figures on a static-sag probe:
+#
+#       maxForce = load_newtons / (10 * acceptable_sag_metres)
+#
+# ---------------------------------------------------------------------------
+# ⚠⚠ RUN WITH  OMNISIM_CLOTH_SELF_CONTACT=0  OR THE GRIP SLIPS
+# ---------------------------------------------------------------------------
+#
+# Measured on the sibling t-shirt world: particle self-contact ON gives 22.11 mm
+# of slip during the carry, OFF gives 0.92 mm -- a 24x difference. There is NO
+# WORLD FIELD FOR THIS, only the environment variable, which is a real
+# expressiveness gap in the format and is flagged as such here rather than
+# quietly worked around.
+#
+# ⚠ Note for anyone reading commit 1fb7f135f: its message says self-contact
+# "STAYS: it buys the 24x grasp-tracking improvement". That reads the same
+# measurement BACKWARDS. Both deformable-grasp worlds require it OFF.
+#
+# The full run line, including the telemetry that is the ONLY way to read
+# particle state (a SoftBody's `translation` is never written back, so a
+# supervisor polling it sees the authored value forever whether the block is
+# simulating perfectly or is completely inert):
+#
+#   OMNISIM_CLOTH_SELF_CONTACT=0 \
+#   OMNISIM_CLOTH_TELEMETRY=$PWD/.build_tmp/sponge.jsonl \
+#   OMNISIM_CLOTH_TELEMETRY_EVERY=10 \
+#   SPONGE_LOG=$PWD/.build_tmp/sponge_pads.jsonl \
+#   python -m omnisim run-headless \
+#     projects/samples/demos/worlds/physics/newton_vbd_sponge_dishwash.omniworld \
+#     --duration 420
+#
+# ⚠ ALWAYS SET `SPONGE_LOG`. The controller's default log path is inside its own
+# committed .build_tmp/, and a sibling demo has already truncated a tracked file
+# that way.
+#
+# ⚠ BUDGET REAL TIME. This is a CUDA workload (SolverVBD is a warp solver, so
+# the model is forced to the GPU even though the rigid half is small). The
+# sibling t-shirt demo needs ~3-4 minutes of wall clock for ~7 s of sim on an
+# RTX 3060 laptop. `--duration 45` does NOT complete it. Expect a slow FIRST run
+# after any runtime version bump -- that is the cold warp kernel cache, not a
+# hang.
+#
+# ⚠ THE HEADLESS EXIT CODE IS NOT THE VERDICT for this class of demo. The
+# sibling world reports `FAIL: simulator exited early with code 4294967295`
+# AFTER its controller finishes and pauses the sim, while incomplete runs
+# report PASS. Judge this demo by SPONGE_LOG, never by the exit code.
+#
+# ---------------------------------------------------------------------------
+# THE GATE -- why the dish cannot be cleaned by an empty gripper
+# ---------------------------------------------------------------------------
+#
+# The obvious way to write this demo is to clean a speck whenever the gripper
+# passes over it. That would score the gripper's INTENT, not its achievement --
+# a gripper that missed the sponge entirely would still polish the plate, and
+# the demo would look perfect while proving nothing.
+#
+# So the scrub is gated on a MEASURED quantity: the live separation of the two
+# pad Solids. Commanded closed gap is 2 * CLOSED_HALF_GAP; the sponge pushes the
+# PD-driven jaws apart from it, and the excess IS the sponge. Below
+# SPONGE_MIN_GAP the jaws have met and there is nothing between them, so no
+# speck is cleaned no matter where the gripper goes.
+#
+# ---------------------------------------------------------------------------
+# THE LOAD PATH -- designed around a known engine defect
+# ---------------------------------------------------------------------------
+#
+# ⚠ RIGID-ON-SOFT IS BROKEN IN NEWTON. A rigid body supported ONLY by particles
+# gains energy and is ejected (measured z = 0.57 .. 194 m). It reproduces in
+# pure newton with OmniSim absent, in both coupled and uncoupled solvers, is not
+# a timestep artifact (8x smaller dt made it worse), and the mechanism is
+# unidentified. SOFT-ON-RIGID is stable and is measured to hold.
+#
+# Every load path in this world is therefore soft-on-rigid:
+#   * the pads are held by PD joints, never by the sponge;
+#   * the sponge rests on a STATIC worktop and presses onto a STATIC dish.
+# Do not add a rigid body that rests on the sponge. It will launch.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  # ⚠ Every MuJoCo tuning field is UNREAD on this path and is deliberately
+  # omitted. newtonGroundMu is the exception: it is the rigid friction AND it
+  # supplies model.soft_contact_mu, i.e. the pad-vs-sponge grip.
+  newtonSolver "vbd"
+  newtonSubsteps 10
+  newtonStatics TRUE
+  newtonGroundMu 3
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 0.826 -0.879 1.672
+}
+# ==========================================================================
+# THE LIGHTING IS NOW THREE LINES. IT USED TO BE FIVE NODES.
+# ==========================================================================
+# ⚠ THE CANONICAL RECIPE, AND DEF SUN MUST COME FIRST. OmBackground.cpp:654-675
+# derives BOTH the atmospheric sky and the baked IBL cube from the FIRST enabled
+# DirectionalLight in file order and then `break`s. A fill light authored above
+# this line silently hijacks the sky bake -- the sky would be lit by the fill's
+# direction and the sun would become an ordinary lamp. Nothing warns.
+#
+# ⚠ WHAT WAS DELETED HERE, AND WHY IT WAS SAFE. This world used to carry a
+# shadowless fill `DirectionalLight` AND a `PointLight` over the sink, both
+# authored after DEF SUN so as not to trip the hazard above. Their stated job
+# was to make the SPONGE legible, because `SoftBody` had no `appearance` field
+# and a Phong surface takes no image-based fill -- so the sponge was pure black
+# on every face the sun missed, and two lamps were the only available fix. The
+# node gained `appearance` on 2026-08-15, the sponge is now a PBRAppearance, and
+# the reason both lamps existed is gone. They are deleted rather than dimmed:
+# a fill light that is no longer needed is not neutral, it costs a light slot,
+# it flattens the shading it touches, and it is the thing most likely to be
+# copied into the next world along with its obsolete justification.
+#
+# ⭐ `luminosity` IS THE REPLACEMENT AND IT IS A BETTER INSTRUMENT THAN A LAMP.
+# OmPbrAppearance.cpp:419-422 hands the shader `backgroundLuminosity *
+# IBLStrength` as one premultiplied float, so this single number scales the fill
+# on EVERY PBR material in the world at once. Two properties a DirectionalLight
+# does not have: it reaches surfaces facing ANY direction (a directional fill
+# contributes exactly 0 to an underside, which is precisely where the black
+# was), and on the atmospheric path the VISIBLE SKY is drawn by sky_apply.frag
+# and is byte-identical at every value -- so raising it buys fill for free
+# instead of blowing out the background.
+#
+# 3.2 rather than the old 1.8 because this is an indoor scene that has just lost
+# two lamps, and the value was tuned by measurement, not by eye: see the DISH
+# below, where the pair (luminosity, dish roughness) is what took the frame from
+# 34.7% blown-out pixels to a plate that still reads as glazed ceramic.
+#
+# ⚠ The IBL cube is ACHROMATIC by construction (sky_to_cubemap.frag:181
+# white-balances it to neutral grey), so this fill is grey no matter what the
+# sky looks like. Anything warm in this scene has to come from a baseColor.
+OmniSimSky {
+  luminosity 1.6
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.02
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.22 0.23 0.26
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 6 6 0.04
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 6 6 0.04
+  }
+}
+# The worktop. Static (no Physics node), so it is a Newton static collider --
+# statics are ON by default and newtonStatics TRUE pins them ON regardless.
+# Top face at z = 0.90; that is the number the sponge's rest height is built on.
+DEF WORKTOP Solid {
+  translation 0 0 0.88
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.31 0.34
+        roughness 0.35
+        metalness 0
+      }
+      geometry Box {
+        size 1.1 0.62 0.04
+      }
+    }
+  ]
+  name "worktop"
+  boundingObject Box {
+    size 1.1 0.62 0.04
+  }
+}
+# Splashback, visual only -- no boundingObject, so it is never registered with
+# Newton and cannot snag the gantry.
+DEF SPLASHBACK Solid {
+  translation 0 0.32 1.10
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.82 0.84 0.83
+        roughness 0.25
+        metalness 0
+      }
+      geometry Box {
+        size 1.1 0.02 0.4
+      }
+    }
+  ]
+  name "splashback"
+}
+# ===========================================================================
+# THE DISH. Shallow 200 mm plate, static, resting on the worktop.
+#
+# ⚠ VISUAL AND COLLIDER ARE DELIBERATELY DIFFERENT SHAPES. Two engine facts
+# force it:
+#   1. A `Cylinder` boundingObject IS SUBSTITUTED BY A CAPSULE, and for a disc
+#      (half_height <= radius) the length correction is deliberately skipped --
+#      so `Cylinder { radius 0.1 height 0.012 }` would collide as a 212 mm PILL,
+#      an invisible bulge 17x the plate's real thickness.
+#   2. Every triangle-mesh collider is silently convexified by MuJoCo, so a
+#      one-piece concave plate would collide as its own hull and the sponge
+#      would ride the rim.
+# A Box is the one primitive that reaches the solver with its authored geometry
+# AND rotation intact. Side 0.170 supports the full scrub radius (0.085) while
+# never protruding past the visible disc except on the diagonals.
+#
+# ⛔ NEVER a `Cone` boundingObject -- GeoType.CONE is absent from newton's
+# MuJoCo geom mapping and registering one kills physics for the WHOLE world.
+#
+# NOTE: OmniSim's Cylinder is Z-ALIGNED, so in this Z-up ENU world it lies flat
+# as a disc with NO rotation. This differs from classic VRML, where Cylinder is
+# Y-aligned.
+#
+# Plate spans z = 0.900 .. 0.912. SCRUB SURFACE IS AT z = 0.912.
+# ===========================================================================
+#
+# ⚠ THE PLATE BLEW OUT, AND `IBLStrength` WAS THE WHOLE CAUSE. THE OBVIOUS
+# SUSPECTS WERE ALL MEASURED AND ALL CLEARED.
+#
+# The plate was 34.7% of the frame at or past 250/255 -- a third of the image
+# carrying no information. A near-white horizontal disc under a key light looks
+# exactly like a specular blowout, and `roughness 0.14` (a mirror-narrow lobe)
+# looks exactly like the reason. It is not. Held at one framing (150 steps,
+# harness, 1896x1113) and changed one at a time:
+#
+#   sky luminosity   1.2 / 1.6 / 2.0        ->  7.37% / 7.65% / 7.80% saturated
+#   SUN intensity    2.5 / 1.6 / 1.2 / 0.9  ->  no effect (tracked luminosity)
+#   plate roughness  0.38 / 0.75            ->  7.65% / 7.65%  -- IDENTICAL
+#   plate IBLStrength 1.0 / 0.5 / 0.25      ->  7.65% / 0.80% / 0.80%
+#
+# So it is a DIFFUSE clip from image-based light, not a specular highlight: a
+# 0.94 albedo times a per-material IBL multiplier is already over 1.0 before any
+# lamp is involved, which is why widening the specular lobe by 2x and dimming
+# the sun to a third both did precisely nothing. The fix is one number:
+#
+#   IBLStrength 1.4 -> 0.5   the ONLY change that moves the measurement.
+#                            0.25 is no better than 0.5, i.e. 0.5 is already
+#                            below the clip, so it is the value that keeps the
+#                            most light while carrying no blown pixels.
+#
+#   roughness 0.14 -> 0.30   kept, but labelled honestly: this was measured NOT
+#                            to be the blowout, and it is here only because a
+#                            glazed dinner plate is not a mirror and 0.14 will
+#                            catch a hard sun glint at camera angles this
+#                            framing does not happen to use.
+#
+# ⚠ GENERAL LESSON, since this cost a round: on a world using the canonical
+# recipe, ambient is not a soft floor you can ignore -- `ambientIntensity 0`
+# means IBL is ALL the fill there is, so `IBLStrength` is a first-class exposure
+# control and is the first thing to sweep when something is too bright, ahead of
+# the light nodes.
+#
+# ⛔ baseColor IS NOT AVAILABLE AS AN EXPOSURE KNOB HERE, AND THE REASON IS NOT
+# IN THIS FILE. 0.94 0.945 0.93 is brighter than any real dielectric and the
+# obvious fix is to drop it to a physical ~0.86 -- DO NOT. The controller
+# hardcodes the plate colour as its clean endpoint:
+#
+#     vbd_sponge_dishwash.py:157   CLEAN_RGB = (0.94, 0.945, 0.93)
+#
+# and lerps every speck's baseColor between GRIME_RGB and that value as the
+# sponge passes. Darken the plate and a fully-cleaned speck lands on 0.94
+# against a 0.86 plate -- twelve pale discs, permanently, on a plate the demo
+# has just declared clean. The two numbers are ONE number living in two files
+# and the world cannot see the other half. (This also makes the authored
+# baseColor on each speck below cosmetic: the controller overwrites all twelve
+# every step from GRIME_RGB. Their roughness / metalness / IBLStrength are NOT
+# overwritten, which is why those three do have to be maintained by hand.)
+#
+# ⚠ THE 12 GRIME SPECKS MUST TRACK BOTH CHANGES ABOVE. A speck is invisible at
+# grime = 0 only if its material is IDENTICAL to the plate's, so roughness,
+# metalness and IBLStrength are copied verbatim below, twelve times. Retune the
+# plate and not the specks and a "cleaned" plate keeps twelve faintly visible
+# discs -- the demo would look finished and prove nothing.
+DEF DISH Solid {
+  translation 0.18 0 0.906
+  children [
+    Shape {
+      appearance PBRAppearance {
+        # ⛔ PINNED to vbd_sponge_dishwash.py:157 CLEAN_RGB -- see above.
+        baseColor 0.94 0.945 0.93
+        roughness 0.30
+        # ⚠ metalness DEFAULTS TO 1 in the schema. An inline PBRAppearance that
+        # omits it is a METAL, which under ambientIntensity 0 renders near-black.
+        metalness 0
+        IBLStrength 0.5
+      }
+      geometry Cylinder {
+        radius 0.1
+        height 0.012
+        subdivision 64
+      }
+    }
+    # -----------------------------------------------------------------------
+    # GRIME. Visual-only: Pose > Shape, with no Solid, no boundingObject and no
+    # Physics anywhere, so none of this is ever registered with Newton.
+    #
+    # ⚠ EACH SPECK OWNS ITS OWN PBRAppearance. A `USE` would share ONE node, and
+    # a single setSFColor would then clean every speck at once.
+    #
+    # roughness and metalness match the plate exactly, so at grime = 0 a speck
+    # is indistinguishable from clean ceramic -- visually gone, still present in
+    # the tree, so the demo replays after a reset.
+    #
+    # Specks sit at local z = +0.0065, a 0.5 mm proud of the plate face, which
+    # kills z-fighting. All centres are within r = 0.075 so every one lies over
+    # supported collider.
+    # -----------------------------------------------------------------------
+    DEF GRIME_00 Pose {
+      translation 0.021 -0.034 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_00 PBRAppearance {
+            baseColor 0.34 0.26 0.14
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.011
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_01 Pose {
+      translation -0.038 0.017 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_01 PBRAppearance {
+            baseColor 0.34 0.26 0.14
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.013
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_02 Pose {
+      translation 0.055 0.028 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_02 PBRAppearance {
+            baseColor 0.31 0.24 0.13
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.010
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_03 Pose {
+      translation -0.014 0.052 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_03 PBRAppearance {
+            baseColor 0.36 0.28 0.15
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.012
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_04 Pose {
+      translation 0.008 0.004 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_04 PBRAppearance {
+            baseColor 0.29 0.22 0.12
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.015
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_05 Pose {
+      translation -0.058 -0.031 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_05 PBRAppearance {
+            baseColor 0.33 0.25 0.14
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.011
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_06 Pose {
+      translation 0.041 -0.061 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_06 PBRAppearance {
+            baseColor 0.35 0.27 0.15
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.009
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_07 Pose {
+      translation -0.031 -0.062 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_07 PBRAppearance {
+            baseColor 0.32 0.24 0.13
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.012
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_08 Pose {
+      translation 0.066 -0.012 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_08 PBRAppearance {
+            baseColor 0.30 0.23 0.12
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.010
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_09 Pose {
+      translation -0.062 0.041 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_09 PBRAppearance {
+            baseColor 0.34 0.26 0.14
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.009
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_10 Pose {
+      translation 0.026 0.058 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_10 PBRAppearance {
+            baseColor 0.31 0.24 0.13
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.011
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+    DEF GRIME_11 Pose {
+      translation -0.004 -0.070 0.0065
+      children [
+        Shape {
+          appearance DEF GRIME_APP_11 PBRAppearance {
+            baseColor 0.33 0.25 0.14
+            roughness 0.30
+            metalness 0
+            IBLStrength 0.5
+          }
+          geometry Cylinder {
+            radius 0.010
+            height 0.0006
+            subdivision 48
+          }
+        }
+      ]
+    }
+  ]
+  name "dish"
+  boundingObject Box {
+    size 0.17 0.17 0.012
+  }
+}
+# ===========================================================================
+# THE SPONGE. A tetrahedral-FEM block: 5 tets per hexahedral cell, Lame
+# parameters kMu / kLambda, viscous kDamp.
+#
+# ⚠ `translation` IS THE BLOCK'S MINIMUM CORNER, not its centre -- the opposite
+# convention to every Solid in this file.
+#
+# ⚠ A SoftBody IS TOP-LEVEL ONLY. It cannot be nested in a Pose or a Group, and
+# it cannot be attached, welded or parented to a robot link: the only pinning
+# mechanism in the node is the four fix* flags, which zero a particle's mass and
+# therefore nail it to the WORLD, not to a gripper. THE SPONGE IS HELD BY
+# FRICTION AND NOTHING ELSE. That is why newtonGroundMu is 3 rather than the 1
+# the sibling cloth worlds use -- it supplies model.soft_contact_mu.
+#
+# Geometry: 4 x 3 x 2 cells of 25 x 25 x 20 mm = 100 x 75 x 40 mm, 5*4*3 = 60
+# particles. Kept small on purpose; soft bodies are a GPU workload and cost
+# scales with particle count.
+#
+# The pinch axis is local/world Y, across the 75 mm dimension. The pad faces see
+# 5 x 3 = 15 particles each, well above the 8 the sibling t-shirt grasp needed
+# for a reliable bite.
+#
+# Material: kMu / kLambda 3000 rather than the 1e4 default, because a kitchen
+# sponge is soft and must visibly squash; kDamp 30 because at newton's default
+# damping of 1 an elastic solid rings for ever instead of settling. density 300
+# gives 60 * (0.025*0.025*0.02*300) = 0.225 kg, about right for a damp sponge.
+#
+# ⚠ `0` MEANS "RUNTIME DEFAULT" ON EVERY MATERIAL FIELD, so a genuinely zero
+# value cannot be authored. Every one below is set explicitly.
+#
+# Rest height: the block rests on its particle RADIUS, not on its face, so the
+# bottom particle layer settles at worktop_top + particleRadius = 0.90 + 0.01 =
+# 0.91. It is authored there so it starts at rest rather than dropping.
+#
+# ⚠ There is NO `appearance` field on this node -- only phong `diffuseColor`.
+# See the PointLight above for why that matters.
+# ===========================================================================
+DEF SPONGE SoftBody {
+  translation -0.23 -0.0375 0.91
+  dimX 4
+  dimY 3
+  dimZ 2
+  cellX 0.025
+  cellY 0.025
+  cellZ 0.02
+  density 300
+  # ⚠ 3000 Pa COLLAPSED THE BLOCK, MEASURED. At kMu/kLambda 3000 the sponge is a
+  # 3 kPa jelly. It survived the pick, the 88 mm lift, the 360 mm carry and the
+  # press -- and then, part-way through the lateral scrub, every one of its 60
+  # particles converged to a single point: the particle-centre bbox went
+  # 0.0527 -> 0.0045 -> 0.00000 m and stayed there. That is a total FEM failure,
+  # not a soft material looking squashy.
+  #
+  # The load that does it is SHEAR, not the squeeze. newtonGroundMu 3 also
+  # supplies soft_contact_mu, so the plate grips the sponge's underside hard
+  # while the pads drag its top sideways. A 3 kPa solid cannot carry that.
+  # A real kitchen sponge is 20-50 kPa; 20000 sits at the soft end of real and
+  # still squashes visibly (the grip compresses it 75 -> 52 mm at 3 kPa, and a
+  # ~7x stiffer block still yields several mm under the same pads).
+  kMu 20000
+  kLambda 20000
+  kDamp 30
+  particleRadius 0.01
+  diffuseColor 0.93 0.78 0.16
+  # ⚠ 0.8 rad (~46 deg) IS WHY THIS READS AS A BLOCK AND NOT AS A BAR OF SOAP.
+  # Adjacent surface triangles further apart than this angle do NOT share a
+  # smoothed vertex normal -- the vertex is split so each side keeps its own
+  # face normal. A block's edges are 90 deg so they always split; a face being
+  # squashed by the pads bends far less than 46 deg per triangle and stays
+  # smooth. Which is exactly the discrimination this demo needs: the hard edges
+  # stay hard and the SQUASH stays visible. It is the node default and is
+  # written out because it is load-bearing for how the demo reads, not because
+  # it needs setting.
+  creaseAngle 0.8
+  # ⚠ THIS BLOCK REPLACED TWO LIGHTS. Until 2026-08-15 `SoftBody` had no
+  # `appearance` field, so the sponge rendered through the engine-owned PHONG
+  # path from `diffuseColor` above -- and Phong takes NO image-based fill, so
+  # under the canonical recipe (`ambientIntensity 0`) the sponge was pure black
+  # on every face the sun did not strike. This world carried a fill
+  # DirectionalLight and a PointLight whose stated job was to paper over exactly
+  # that. Both are now GONE (see the lighting section above): the sponge takes
+  # the same image-based fill every other PBR surface in the scene takes, so it
+  # no longer needs its own private lighting rig.
+  #
+  # ⚠ baseColor IS LEFT AT ITS 1 1 1 DEFAULT AND MUST STAY THERE. WREN
+  # MULTIPLIES baseColorMap by the baseColor field (pbr.frag:259) rather than
+  # replacing it, and the sponge set carries its OWN yellow -- it is generated
+  # from linear (0.93, 0.78, 0.16), the very numbers on the `diffuseColor` line
+  # above. Re-declaring that colour here would square it and the sponge would go
+  # muddy brown. (The woven-cotton set beside it is the opposite case: generated
+  # near-neutral precisely SO a world can tint it. Same directory, opposite
+  # rule.)
+  #
+  # ⚠ metalness 0 EXPLICITLY -- the schema default is 1, and a metal sponge
+  # under ambientIntensity 0 renders near-black, i.e. exactly like the bug this
+  # whole block exists to remove.
+  #
+  # occlusionMap is what sells the POROSITY, and it is the map most likely to be
+  # dropped as an afterthought: it modulates AMBIENT only, so a pore that fails
+  # to darken as the key light swings away is a painted dot rather than a hole.
+  # On a scene whose fill is now entirely image-based, ambient IS most of the
+  # light, so this map does more here than it would in a lit-from-everywhere
+  # scene.
+  #
+  # TEXTURE SCALE, worked from the geometry rather than guessed. A SoftBody's
+  # surface is BOX-projected in the block's own local frame, one texture per
+  # face, so `scale` is in units of "tiles per face" and the physical tile size
+  # differs per face because the faces differ in size. The sponge set is drawn
+  # at ONE TILE = 4 CM (14 pores across it, ~2.9 mm each, which is a real
+  # cellulose sponge). The block is 100 x 75 x 40 mm, so its largest face wants
+  # 100/40 x 75/40 = 2.5 x 1.875 tiles -- rounded to 2.5 x 1.9, which puts that
+  # face's tile at 40.0 x 39.5 mm, i.e. on design. The 40 mm-deep faces then
+  # carry a stretched tile; that is inherent to one box projection over a
+  # non-cubic block and is not worth a second material to fix on a body this
+  # small. normalMapFactor is left at 1 BECAUSE the tile is on design -- unlike
+  # the cloth worlds, which stretch their weave 8x and pay for it with 0.45.
+  appearance PBRAppearance {
+    baseColorMap ImageTexture {
+      url [
+        "textures/sponge_cellulose_basecolor.png"
+      ]
+    }
+    normalMap ImageTexture {
+      url [
+        "textures/sponge_cellulose_normal.png"
+      ]
+    }
+    roughnessMap ImageTexture {
+      url [
+        "textures/sponge_cellulose_roughness.png"
+      ]
+    }
+    occlusionMap ImageTexture {
+      url [
+        "textures/sponge_cellulose_occlusion.png"
+      ]
+    }
+    metalness 0
+    normalMapFactor 1
+    IBLStrength 1.5
+    textureTransform TextureTransform {
+      scale 2.5 1.9
+    }
+  }
+}
+# ===========================================================================
+# THE FLYING GRIPPER. Five prismatic DoF: gantry X/Y/Z plus two opposed jaws.
+#
+# ⚠ THE ROOT Robot DECLARES NO `physics`, MAKING IT A STATIC ANCHOR. That is
+# not tidiness: it keeps a 7-q / 6-qd FREE joint out of the articulation. Both
+# shipped vbd worlds are rooted this way.
+#
+# ⚠ EVERY INTERMEDIATE LINK CARRIES A 1 mm SPHERE COLLIDER. A Newton body with
+# no resolvable boundingObject is given a 12 CM SPHERE FALLBACK -- an invisible
+# ball that would swipe through the sponge and the dish.
+#
+# The two jaws use OPPOSED axes (0 1 0 and 0 -1 0) so both take the SAME scalar
+# command. The pinch is symmetric by construction rather than by two matching
+# sign flips that can drift apart.
+#
+# Gains, via maxForce = load / (10 * sag):
+#   gantry axes  maxForce 5000  -> ke = 5e4 N/m. Carrying ~0.3 kg that is
+#                                  0.06 mm of sag.
+#   jaws         maxForce 2000  -> ke = 2e4 N/m.
+#
+# ⚠ THE JAWS ARE DELIBERATELY 5x SOFTER THAN THE CLOTH-GRASP TEMPLATES, which
+# use maxForce 10000 (ke = 1e5, newton's own finger_drive_ke). That value is
+# right for FABRIC, which is one particle thick and cannot be over-compressed --
+# the pad is meant to win outright. A sponge is 75 mm of compliant tetrahedra
+# and CAN be crushed: the pads stall where the jaw spring balances the particle
+# contact springs,
+#
+#       penetration = commanded_interference * ke_jaw / (ke_jaw + ke_soft_eff)
+#
+# and with ~15 particles per pad face at soft_contact_ke = 1e3 the sponge only
+# resists with ke_soft_eff ~ 1.5e4 N/m. At ke_jaw = 1e5 that ratio is 87%, so
+# nearly the whole commanded interference becomes real penetration and the pads
+# drive straight through particles whose radius is only 10 mm. At 2e4 it is 57%,
+# which squeezes rather than crushes.
+#
+# ⚠ THIS ARITHMETIC IS A PREDICTION, NOT A MEASUREMENT -- ke_soft_eff is
+# estimated from the particle count, not read from the solver. The value that
+# matters is the MEASURED jaw gap in SPONGE_LOG, and the controller's
+# SPONGE_MIN_GAP gate must be set from that, not from this comment.
+# ===========================================================================
+DEF GANTRY Robot {
+  translation 0 0 1.30
+  children [
+    DEF GX SliderJoint {
+      jointParameters JointParameters {
+        axis 1 0 0
+      }
+      device [
+        LinearMotor {
+          name "gantry_x"
+          maxForce 5000
+          maxVelocity 5
+          minPosition -0.5
+          maxPosition 0.5
+        }
+      ]
+      endPoint DEF BASE_X Solid {
+        children [
+          DEF GY SliderJoint {
+            jointParameters JointParameters {
+              axis 0 1 0
+            }
+            device [
+              LinearMotor {
+                name "gantry_y"
+                maxForce 5000
+                maxVelocity 5
+                minPosition -0.25
+                maxPosition 0.25
+              }
+            ]
+            endPoint DEF BASE_Y Solid {
+              children [
+                DEF GZ SliderJoint {
+                  jointParameters JointParameters {
+                    axis 0 0 1
+                  }
+                  device [
+                    LinearMotor {
+                      name "gantry_z"
+                      maxForce 5000
+                      maxVelocity 5
+                      minPosition -0.5
+                      maxPosition 0.1
+                    }
+                  ]
+                  endPoint DEF CARRIAGE Solid {
+                    children [
+                      # Jaw joint zero == OPEN, at a 140 mm gap. The command is
+                      # "how far closed from open", identical for both jaws.
+                      DEF JL SliderJoint {
+                        jointParameters JointParameters {
+                          axis 0 1 0
+                        }
+                        device [
+                          LinearMotor {
+                            name "jaw_left"
+                            maxForce 2000
+                            maxVelocity 5
+                            minPosition -0.15
+                            maxPosition 0.06
+                          }
+                        ]
+                        endPoint DEF LEFT_PAD Solid {
+                          translation 0 -0.07 0
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.72 0.74 0.78
+                                roughness 0.4
+                                metalness 0.1
+                              }
+                              geometry Box {
+                                size 0.09 0.01 0.04
+                              }
+                            }
+                          ]
+                          name "left_pad"
+                          boundingObject Box {
+                            size 0.09 0.01 0.04
+                          }
+                          physics Physics {
+                            density -1
+                            mass 0.025
+                          }
+                        }
+                      }
+                      DEF JR SliderJoint {
+                        jointParameters JointParameters {
+                          axis 0 -1 0
+                        }
+                        device [
+                          LinearMotor {
+                            name "jaw_right"
+                            maxForce 2000
+                            maxVelocity 5
+                            minPosition -0.15
+                            maxPosition 0.06
+                          }
+                        ]
+                        endPoint DEF RIGHT_PAD Solid {
+                          translation 0 0.07 0
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.72 0.74 0.78
+                                roughness 0.4
+                                metalness 0.1
+                              }
+                              geometry Box {
+                                size 0.09 0.01 0.04
+                              }
+                            }
+                          ]
+                          name "right_pad"
+                          boundingObject Box {
+                            size 0.09 0.01 0.04
+                          }
+                          physics Physics {
+                            density -1
+                            mass 0.025
+                          }
+                        }
+                      }
+                    ]
+                    name "carriage"
+                    boundingObject Sphere {
+                      radius 0.001
+                    }
+                    physics Physics {
+                      density -1
+                      mass 0.01
+                    }
+                  }
+                }
+              ]
+              name "base_y"
+              boundingObject Sphere {
+                radius 0.001
+              }
+              physics Physics {
+                density -1
+                mass 0.01
+              }
+            }
+          }
+        ]
+        name "base_x"
+        boundingObject Sphere {
+          radius 0.001
+        }
+        physics Physics {
+          density -1
+          mass 0.01
+        }
+      }
+    }
+  ]
+  name "gantry"
+  controller "vbd_sponge_dishwash"
+  supervisor TRUE
+}

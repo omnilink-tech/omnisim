@@ -1,0 +1,63 @@
+{
+  "id": "B2_subject_in_frame",
+  "tier": "inspect",
+  "flagship": false,
+  "prompt_file": "prompt.txt",
+  "grader": "agentbench.graders.b2",
+  "par_s": 240,
+  "timeout_s": 720,
+  "repeats_default": 1,
+  "stresses": "camera control with numeric verification; committing to a checkable proof rather than narrating one",
+  "initial_state": "a 40 x 40 m arena holding one red cylinder (the subject) and four distractor props -- a blue cylinder, a green cylinder, a yellow crate and a grey sphere -- with the camera aimed at the green cylinder, 130.27 deg off the direction to the red one",
+  "initial_files": [
+    "frame_the_cylinder.wbt"
+  ],
+  "deliverable": "the final camera pose (however the agent set it -- an edited world or a live push) plus the agent's final message, which must commit to a checkable proof",
+  "phases": {
+    "harness": {
+      "enabled": false
+    },
+    "standalone": {
+      "settle_s": 0.0,
+      "duration_s": 1.0,
+      "contact_steps": 1,
+      "solids": [
+        "red_cylinder",
+        "blue_cylinder",
+        "green_cylinder",
+        "yellow_crate",
+        "grey_sphere"
+      ],
+      "note": "nothing in this world is dynamic; the run exists only to freeze t=0 and read the props' world-space bounds (the five named Solids above) -- the camera pose comes from the adapter's view-evidence pass"
+    }
+  },
+  "constants": {
+    "MARGIN_DEG": 2.0,
+    "MIN_ANGULAR_SIZE_DEG": 2.0,
+    "TIE_DEG": 0.1,
+    "MIN_AIM_CHANGE_DEG": 1.0,
+    "MIN_MOVE_M": 0.05,
+    "ANGLE_TOL_DEG": 2.0,
+    "DISTANCE_TOL_M": 1.0
+  },
+  "subject": "red_cylinder",
+  "distractors": [
+    "blue_cylinder",
+    "green_cylinder",
+    "yellow_crate",
+    "grey_sphere"
+  ],
+  "deviations": [
+    "SPEC 2.1 summarises B2's initial state as 'world with red + blue + green cylinders'. Two further distractors (a crate and a sphere) are present so that 'among several distractor objects' is true and so B2.4's discrimination clause has more than one counter-candidate. The three cylinders SPEC names are all present and unchanged in role.",
+    "The camera evidence types (CameraPose / ViewEvidence) were born in b2_core and lifted verbatim into graders/evidence.py at integration; EvidenceBundle carries an optional 'view' field and the OmniSim adapter reads both poses live via GET /scene/viewpoint (adapters/omnisim/evidence.build_view_evidence). b2_core re-exports the types, so either import path is the same class."
+  ],
+  "budget": {
+    "rule": "timeout_s = min(3 x par_s, TASK_HARD_CEILING_S)",
+    "hard_ceiling_s": 2700,
+    "truncated_by_ceiling": false,
+    "ratio_to_par": 3.0,
+    "runs_per_cell": 1,
+    "variance_measured": false,
+    "note": "the full 3x-par rule applies under the 2700 s (45 min) ceiling. ONE run per (task, arm): a single observation is an OUTCOME, never a rate -- pass@1 and a confidence interval are undefined at n = 1 (SPEC 3.5)."
+  }
+}

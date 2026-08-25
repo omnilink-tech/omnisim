@@ -1,0 +1,78 @@
+#OMNISIM R2025a utf8
+
+# Generic RL deploy world.
+#
+# Uses the robot-agnostic `rl_deploy` controller which reads its
+# RobotSpec from a JSON sidecar next to the policy ONNX. Any
+# OmniSim-trained robot can deploy here just by pointing
+# OMNISIM_POLICY_ONNX at the right policy.
+#
+# By default this world targets OmniQuad, but you can swap the URDFRobot
+# `url` to any URDF; the `rl_deploy` controller picks up the matching
+# joint names + nominal pose + limits from the policy's sidecar.
+#
+# Usage:
+#   OMNISIM_POLICY_ONNX=path/to/policy.onnx \
+#     omnisim-bin.exe projects/policies/research/worlds/rl_deploy.omniworld
+#
+# If OMNISIM_POLICY_ONNX is unset the controller falls back to
+# projects/policies/research/inference/policies/omniquad_ppo_main/policy.onnx (the
+# canonical shipped OmniQuad policy).
+#
+# Physics: Newton (migrated from ODE 2026-06-11). Launch with the standard
+# OmniQuad Newton knobs (OMNISIM_NEWTON_TARGET_KE=250 / KD=60 / GROUND_MU=2.0 /
+# SEED_POSE=1 / FORCE_MUJOCO=1 / OMNISIM_URDF_USE_INERTIA=1).
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "OmniSim RL deploy (generic)"
+  info [
+    "Generic RL deploy world. Drives any trained policy whose"
+    "robot_spec.json sidecar lives next to its policy.onnx."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.624 -4.923 5.476
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+# Default: OmniQuad. Swap `url` to deploy a different robot (and the
+# policy at OMNISIM_POLICY_ONNX must have its joint_names matching
+# this URDF's motor names).
+URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad.urdf"
+  translation 0 0 0.70
+  name "omniquad"
+  supervisor TRUE
+  controller "rl_deploy"
+  physicsBackend "newton"
+}

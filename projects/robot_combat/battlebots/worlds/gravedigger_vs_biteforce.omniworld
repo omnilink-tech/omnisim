@@ -1,0 +1,587 @@
+#OMNISIM R2025a utf8
+
+# Gravedigger vs BiteBot — heavyweight BattleBots-tribute matchup.
+#
+# GRAVEDIGGER  (Tombstone tribute)  horizontal bar spinner
+# BITEBOT       (Bite Force tribute) vertical disc spinner
+#
+# Both bots are roughly 100 kg heavyweight class, with realistic weapon
+# RPMs, motor torques, and inertia tensors so the weapon impacts
+# transfer the right amount of kinetic energy.
+#
+# Spec sheet (publicly-known approximations):
+#
+#   Gravedigger (Tombstone-class)
+#     mass            ~108 kg
+#     wheel base       0.90 x 0.60 x 0.15 m
+#     bar             1.20 m long, 0.06 wide, 0.04 thick, 30 kg
+#     max RPM          ~2500 (262 rad/s)
+#     motor stall T    ~200 N.m, peak power ~6 kW
+#     spin-up time     ~5 s to full speed
+#     bar inertia      ~3.6 kg.m^2  (I = (1/12) m L^2 for a rod)
+#     tip speed        ~315 m/s  (= L/2 * omega ... ~50% of real Tombstone tip)
+#
+#   BiteBot (Bite Force-class)
+#     mass            ~ 98 kg
+#     wheel base       0.80 x 0.55 x 0.18 m
+#     disc            0.20 m radius, 0.04 thick, 8 kg
+#     max RPM          ~5000 (524 rad/s)
+#     motor stall T    ~ 60 N.m, peak power ~5 kW
+#     spin-up time     ~1.5 s to full speed
+#     disc inertia    ~0.16 kg.m^2  (I = (1/2) m r^2 for a disc)
+#     tip speed       ~105 m/s
+#
+# Damage system: same battlebot_damage_director used by battlebox_duel.
+# DEF labels follow GRAVEDIGGER_FL_WHEEL / BITEBOT_WEAPON convention so
+# the director can find + detach broken parts via Supervisor.
+
+EXTERNPROTO "omnisim://projects/robot_combat/battlebots/protos/BattleBox.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 4
+  title "Gravedigger vs BiteBot — Heavyweight Tribute Match"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.9 ]
+      bounce 0.05
+      bounceVelocity 0.5
+    }
+  ]
+  # Newton combat config. MuJoCo solver REQUIRED -- the default XPBD solver structurally
+  # cannot drive a multi-wheel rover (lateral left/right wheel pairs lock; proven in pure
+  # Python via scripts/dev/wheel_model_diff.py). MuJoCo + ODE drive them; MuJoCo also gives
+  # the robust frictional contact combat ramming needs.
+  newtonSolver "mujoco"
+  # Register arena walls as collision surfaces, else bots drive through them:
+  newtonStatics TRUE
+  # Give each bot's chassis Box a real collider so ramming registers chassis contacts
+  # (without it a Robot wrapper gets a 1 mm placeholder and bots phase through each other):
+  newtonRobotColliders TRUE
+  # 4 sub-steps keep high closing-speed ram impacts from diverging XPBD to NaN:
+  newtonSubsteps 4
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 14
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+BattleBox {
+  enableKillsaw TRUE
+  enablePushers TRUE
+  enableScrews TRUE
+}
+
+# ===========================================================================
+# GRAVEDIGGER  —  horizontal bar spinner (Tombstone tribute)
+#   Spawns at -X, facing east. Bar mounted on vertical axis above chassis.
+# ===========================================================================
+DEF GRAVEDIGGER Robot {
+  translation -3.0 0 0.35
+  rotation 0 0 1 0
+  name "gravedigger"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "bitebot" "--strategy" "aggressor" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    # ---------------- Tombstone-style chassis visuals ----------------
+    # Composed from several primitives so the silhouette reads like the
+    # real bot from the standard top-down view. boundingObject below is
+    # still a single Box so ODE has nothing fancy to integrate.
+    #
+    # Main body — low black box.
+    Shape {
+      appearance PBRAppearance { baseColor 0.06 0.06 0.08 metalness 0 roughness 1 }
+      geometry Box { size 0.82 0.54 0.13 }
+    }
+    # Top deck — slightly smaller dark plate hovering over the body.
+    Transform {
+      translation 0 0 0.08
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.12 0.12 0.14 metalness 0 roughness 1 }
+        geometry Box { size 0.55 0.45 0.02 }
+      } ]
+    }
+    # Front yellow wedge plates — two angled slabs at the front-left and
+    # front-right that catch opponents under the bar. Rotated ~28° about
+    # Z to fan outward from the centerline.
+    Transform {
+      translation 0.38 0.20 -0.02
+      rotation 0 0 1 0.49
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.80 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.10 0.06 }
+      } ]
+    }
+    Transform {
+      translation 0.38 -0.20 -0.02
+      rotation 0 0 1 -0.49
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.80 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.10 0.06 }
+      } ]
+    }
+    # Side yellow stripes running front-to-back along each flank.
+    Transform {
+      translation 0 0.275 0
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.80 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.78 0.01 0.06 }
+      } ]
+    }
+    Transform {
+      translation 0 -0.275 0
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.80 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.78 0.01 0.06 }
+      } ]
+    }
+    # Side wheel pods — dark housings that surround each wheel.
+    Transform {
+      translation 0.35 0.30 -0.05
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.20 0.20 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.04 0.18 }
+      } ]
+    }
+    Transform {
+      translation 0.35 -0.30 -0.05
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.20 0.20 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.04 0.18 }
+      } ]
+    }
+    Transform {
+      translation -0.35 0.30 -0.05
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.20 0.20 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.04 0.18 }
+      } ]
+    }
+    Transform {
+      translation -0.35 -0.30 -0.05
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.20 0.20 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.04 0.18 }
+      } ]
+    }
+    # ---------------- 4 wheels (4WD differential) ----------------
+    DEF GRAVEDIGGER_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.35 0.32 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 25 maxTorque 30 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF GRAVEDIGGER_FL_WHEEL Solid {
+        translation 0.35 0.32 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF GRAVEDIGGER_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.35 -0.32 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 25 maxTorque 30 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF GRAVEDIGGER_FR_WHEEL Solid {
+        translation 0.35 -0.32 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF GRAVEDIGGER_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.35 0.32 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 25 maxTorque 30 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF GRAVEDIGGER_RL_WHEEL Solid {
+        translation -0.35 0.32 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF GRAVEDIGGER_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.35 -0.32 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 25 maxTorque 30 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF GRAVEDIGGER_RR_WHEEL Solid {
+        translation -0.35 -0.32 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    # ---------------- Horizontal bar spinner ----------------
+    # Bar is 1.2 m long, mounted above the chassis on a vertical axle.
+    # Inertia of a uniform rod about its centre = (1/12) m L^2
+    # => I = (1/12) * 40 * 1.2^2 = 4.8 kg m^2
+    # Motor: 300 N.m stall, 80 rad/s no-load (~760 RPM, tip 48 m/s).
+    # That's still well below real Tombstone's 2500 RPM but the
+    # kinetic energy at full spin is now 0.5 * 4.8 * 80^2 ≈ 15 kJ —
+    # enough to throw the opponent across the arena.
+    DEF GRAVEDIGGER_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 0 1 anchor 0 0 0.13 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 80 maxTorque 300 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF GRAVEDIGGER_WEAPON Solid {
+        translation 0 0 0.13
+        name "weapon_bar"
+        children [
+          # The bar itself — silver-grey hardened steel.
+          Shape {
+            appearance PBRAppearance { baseColor 0.78 0.78 0.80 metalness 0 roughness 1 }
+            geometry Box { size 1.20 0.06 0.04 }
+          }
+          # Central hub disc — yellow-and-black, the rotating mount.
+          Transform {
+            translation 0 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 1.0 0.80 0.05 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.06 radius 0.09 }
+            } ]
+          }
+          Transform {
+            translation 0 0 0.001
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.12 0.12 0.14 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.062 radius 0.04 }
+            } ]
+          }
+          # Two impact teeth at the ends of the bar — bright red/orange
+          # to read against the silver bar at high RPM.
+          Transform {
+            translation 0.55 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 }
+              geometry Box { size 0.10 0.08 0.06 }
+            } ]
+          }
+          Transform {
+            translation -0.55 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 }
+              geometry Box { size 0.10 0.08 0.06 }
+            } ]
+          }
+        ]
+        boundingObject Box { size 1.20 0.06 0.04 }
+        physics Physics { density -1 mass 40.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.90 0.60 0.15 }
+  physics Physics { density -1 mass 70.0 }
+}
+
+# ===========================================================================
+# BITEBOT  —  vertical disc spinner (Bite Force tribute)
+#   Spawns at +X facing west. Disc mounted on horizontal axle at front.
+# ===========================================================================
+DEF BITEBOT Robot {
+  translation 3.0 0 0.30
+  rotation 0 0 1 3.14159265
+  name "bitebot"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "gravedigger" "--strategy" "aggressor" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    # ---------------- Bite Force-style chassis visuals ----------------
+    # Real Bite Force is black with red/orange lightning accents and a
+    # front lifter wedge that scoops opponents into the disc. Compose
+    # multiple primitives to approximate that silhouette.
+    #
+    # Main body — matte black box.
+    Shape {
+      appearance PBRAppearance { baseColor 0.07 0.07 0.09 metalness 0 roughness 1 }
+      geometry Box { size 0.74 0.50 0.16 }
+    }
+    # Top deck — slightly raised black cover.
+    Transform {
+      translation 0 0 0.09
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.10 0.10 0.12 metalness 0 roughness 1 }
+        geometry Box { size 0.50 0.42 0.02 }
+      } ]
+    }
+    # Red lightning-bolt stripe down the centerline (top).
+    Transform {
+      translation 0 0 0.10
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.90 0.15 0.10 metalness 0 roughness 1 }
+        geometry Box { size 0.55 0.04 0.005 }
+      } ]
+    }
+    # Red side accent strips along each flank.
+    Transform {
+      translation 0 0.255 0.02
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.90 0.15 0.10 metalness 0 roughness 1 }
+        geometry Box { size 0.70 0.01 0.04 }
+      } ]
+    }
+    Transform {
+      translation 0 -0.255 0.02
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.90 0.15 0.10 metalness 0 roughness 1 }
+        geometry Box { size 0.70 0.01 0.04 }
+      } ]
+    }
+    # Front lifter plate — small angled black scoop sitting just in
+    # front of the disc, the trademark Bite Force "ramp into spinner"
+    # geometry. Rotated -22° about Y so the leading edge sits low to
+    # the floor.
+    Transform {
+      translation 0.32 0 -0.06
+      rotation 0 1 0 -0.38
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.15 0.15 0.17 metalness 0 roughness 1 }
+        geometry Box { size 0.14 0.45 0.04 }
+      } ]
+    }
+    # Side wheel housings.
+    Transform {
+      translation 0.30 0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.18 0.18 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    Transform {
+      translation 0.30 -0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.18 0.18 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    Transform {
+      translation -0.30 0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.18 0.18 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    Transform {
+      translation -0.30 -0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.18 0.18 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    # ---------------- 4 wheels ----------------
+    DEF BITEBOT_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.30 0.30 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF BITEBOT_FL_WHEEL Solid {
+        translation 0.30 0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BITEBOT_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.30 -0.30 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF BITEBOT_FR_WHEEL Solid {
+        translation 0.30 -0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BITEBOT_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.30 0.30 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF BITEBOT_RL_WHEEL Solid {
+        translation -0.30 0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF BITEBOT_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.30 -0.30 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF BITEBOT_RR_WHEEL Solid {
+        translation -0.30 -0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    # ---------------- Vertical disc spinner ----------------
+    # Disc radius 0.20 m, thickness 0.04, mass 10 kg.
+    # Inertia: I = (1/2) * 10 * 0.20^2 = 0.20 kg m^2
+    # Motor: 100 N.m stall, 120 rad/s no-load (~1150 RPM, tip 24 m/s).
+    # KE at full spin = 0.5 * 0.20 * 120^2 ≈ 1.4 kJ — about 3-4 m/s
+    # delta-v on a 110 kg opponent per clean tooth strike, enough to
+    # send wedges flipping.
+    DEF BITEBOT_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.42 0 0.0 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 120 maxTorque 100 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF BITEBOT_WEAPON Solid {
+        translation 0.42 0 0.0
+        rotation 1 0 0 1.5708
+        name "weapon_disc"
+        children [
+          # Disc body — Bite Force's actual disc is bright orange/red.
+          Shape {
+            appearance PBRAppearance { baseColor 0.95 0.30 0.05 metalness 0 roughness 1 }
+            geometry Cylinder { height 0.04 radius 0.20 }
+          }
+          # Black hub plate so the disc reads as a wheel, not a slab.
+          Transform {
+            translation 0 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.12 0.12 0.14 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.045 radius 0.06 }
+            } ]
+          }
+          # Four hardened-steel impact teeth at 0/90/180/270 degrees on
+          # the disc edge (silver-grey, the actual cutting surfaces).
+          Solid {
+            translation 0.18 0 0
+            name "tooth_a"
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 }
+              geometry Box { size 0.05 0.04 0.05 }
+            } ]
+          }
+          Solid {
+            translation -0.18 0 0
+            name "tooth_b"
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 }
+              geometry Box { size 0.05 0.04 0.05 }
+            } ]
+          }
+          Solid {
+            translation 0 0 0.18
+            name "tooth_c"
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 }
+              geometry Box { size 0.05 0.04 0.05 }
+            } ]
+          }
+          Solid {
+            translation 0 0 -0.18
+            name "tooth_d"
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.70 0.70 0.72 metalness 0 roughness 1 }
+              geometry Box { size 0.05 0.04 0.05 }
+            } ]
+          }
+        ]
+        boundingObject Cylinder { height 0.04 radius 0.20 }
+        physics Physics { density -1 mass 10.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.80 0.55 0.18 }
+  physics Physics { density -1 mass 80.0 }
+}
+
+# Damage + match director. HP and thresholds scaled for the heavier
+# chassis (~70-80 kg vs the standard BattleBot's 10 kg).
+DEF DIRECTOR Robot {
+  name "damage_director"
+  translation 0 0 8
+  controller "battlebot_damage_director"
+  customData "{\"fighters\": [\"gravedigger\", \"bitebot\"], \"arena_size\": 8.0, \"fail_wheels\": 3, \"contact_gate_m\": 1.6, \"timer_s\": 240.0, \"output\": \"_scratch/gravedigger_vs_biteforce.json\", \"hp\": {\"chassis\": 250.0, \"wheel\": 14.0, \"weapon\": 35.0}, \"impulse_threshold_J\": {\"chassis\": 35.0, \"wheel\": 0.8, \"weapon\": 8.0}}"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}
+
+DEF TRACKER Robot {
+  name "duel_tracker"
+  translation 0 0 7
+  controller "duel_tracker"
+  customData "{\"fighters\": [\"GRAVEDIGGER\", \"BITEBOT\"]}"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}

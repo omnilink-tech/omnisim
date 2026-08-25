@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Also run after branch switches so checking out a branch that lacks a
+# robot dir purges this clone's leftover build debris under it.
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+python "$ROOT/scripts/dev/clean_orphans.py"

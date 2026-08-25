@@ -1,0 +1,99 @@
+#OMNISIM R2025a utf8
+# Omni Quest — Milestone 1: outdoor GPS waypoint navigation.
+#
+# A Clearpath Husky drives a 20 m square patrol, navigating ONLY from its
+# GPS (WGS-84) + InertialUnit. Controller: controllers/omni_quest_nav.
+#
+# Datum: WorldInfo.gpsReference below MUST match REF_LAT/REF_LON/REF_ALT in
+# the controller. The four visual posts sit at the route's ENU coordinates
+# (20,0) (20,20) (0,20) (0,0) — keep them in sync with ROUTE_ENU.
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Grass.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  gpsCoordinateSystem "WGS84"
+  gpsReference 40.67 -73.94 0
+  contactProperties [
+    ContactProperties { material1 "default" material2 "default" maxContactJoints 50 }
+  ]
+}
+Viewpoint {
+  orientation -0.33 0.34 0.88 1.66
+  position 10 -22 26
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight { direction -0.5 0.4 -0.6 color 0.85 0.88 1.0 intensity 1.4 ambientIntensity 0.0 castShadows FALSE }
+
+# Open grass field (infinite collision plane, 200 m visual tile).
+DEF GROUND Solid {
+  name "ground"
+  children [
+    Shape {
+      appearance Grass { textureTransform TextureTransform { scale 40 40 } }
+      geometry DEF GROUND_GEOM Plane { size 200 200 }
+    }
+  ]
+  boundingObject USE GROUND_GEOM
+  locked TRUE
+}
+
+# Husky spawned at the datum origin (0,0), facing East (+x) toward wp0.
+# Bare URDFRobot (device nodes don't mount cleanly as URDFRobot children —
+# they mis-bind the controller). The controller models GPS + heading on the
+# supervisor pose; M3 adds a real Camera via a husky_eye-style sidecar.
+DEF HUSKY URDFRobot {
+  url "../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 0 0.15
+  rotation 0 0 1 0
+  name "husky"
+  supervisor TRUE
+  controller "omni_quest_nav"
+}
+
+# --- Waypoint posts (visual only — NO boundingObject, so the Husky never
+#     snags on them). Colours: wp0 amber, wp1 green, wp2 blue, wp3 white. ---
+DEF WP0 Solid {
+  translation 20 0 0.5
+  name "wp0_east_gate"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.98 0.65 0.10 roughness 0.4 metalness 0 }
+      geometry Cylinder { height 1.0 radius 0.08 }
+    }
+  ]
+}
+DEF WP1 Solid {
+  translation 20 20 0.5
+  name "wp1_ne_corner"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.10 0.85 0.20 roughness 0.4 metalness 0 }
+      geometry Cylinder { height 1.0 radius 0.08 }
+    }
+  ]
+}
+DEF WP2 Solid {
+  translation 0 20 0.5
+  name "wp2_north_post"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.10 0.30 0.95 roughness 0.4 metalness 0 }
+      geometry Cylinder { height 1.0 radius 0.08 }
+    }
+  ]
+}
+DEF WP3 Solid {
+  translation 0 0 0.5
+  name "wp3_home"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.95 0.95 0.95 roughness 0.4 metalness 0 }
+      geometry Cylinder { height 1.0 radius 0.08 }
+    }
+  ]
+}

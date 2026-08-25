@@ -1,0 +1,14 @@
+# External ROS 2 sources this workspace builds alongside omnisim_ros2.
+#
+# simulation_interfaces is the ros-simulation standard OmniSim implements. It has
+# no Debian package for Humble, so it is built from source here. Pinned to the
+# 2.1.0 release tag: the message definitions are the API contract, and an
+# unpinned clone would silently change what our GetSimulatorFeatures answers mean.
+#
+# Fetch with:   vcs import src < deps.repos
+# (sudo apt install python3-vcstool, or use scripts/bootstrap.sh which does it all)
+repositories:
+  simulation_interfaces:
+    type: git
+    url: https://github.com/ros-simulation/simulation_interfaces.git
+    version: 2.1.0

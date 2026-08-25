@@ -1,0 +1,82 @@
+Environment cubemap for the icon-studio dev tool.
+
+Status: RESOLVED. The unprovable set was removed rather than documented.
+================================================================================
+
+CONTENTS
+--------
+studio_{back,bottom,front,left,right,top}.{hdr,png}     12 files.
+    PNG 512x512 (323-3,402 unique colours per face), HDR 256x256 flat RGBE.
+
+    USED BY: scripts/icon_studio/worlds/icon_studio.omniworld:225-258
+             (the six Background *Url faces and the six *IrradianceUrl faces)
+
+    License: Apache License, Version 2.0 — Copyright 1996-2024 Cyberbotics Ltd.
+    https://www.apache.org/licenses/LICENSE-2.0
+
+    Evidence for that election:
+
+    1. There is no photographic or third-party content in them. 323 to 3,402
+       unique colours across a 512x512 face is a smooth synthetic gradient — a
+       neutral soft-box studio environment of the kind a renderer or a short
+       script emits. There is no plausible third-party claim in a colour ramp.
+       (For contrast, the photographic set removed below carried 31,466-188,990
+       unique colours per face.)
+    2. They carry no metadata: the HDRs have a bare two-line Radiance header
+       (`#?RADIANCE` / `FORMAT=32-bit_rle_rgbe`), the PNGs have no tEXt/iTXt/
+       zTXt chunks. No author, no date, no software tag, no source URL.
+    3. They entered this repository in the initial Webots import, commit
+       0db6a18a74ba16fa2c10f744423405d153b87c7a (2026-04-11), and have not been
+       modified since. Upstream is https://github.com/cyberbotics/webots,
+       Apache-2.0; see the "Derivation" section of the repository-root NOTICE.
+
+    This directory is NOT shipped in the binary distribution (scripts/packaging/
+    files_core.txt includes only `scripts/` and `scripts/preferences_cleaner`),
+    but it IS published to the public GitHub repository, so it is redistributed
+    and needs this record.
+
+================================================================================
+REMOVED 2026-08-22 — san_giuseppe_bridge_4k_{...}.{hdr,png}, 12 files, ~7.6 MB
+================================================================================
+
+Those twelve files were photographic (31,466-188,990 unique colours per face),
+carried no metadata of any kind, and had no in-tree origin record. Their
+filename stem matches an HDRI published by Poly Haven —
+https://polyhaven.com/a/san_giuseppe_bridge, captured by Greg Zaal — and Poly
+Haven's licence page states, verbatim (fetched 2026-08-22,
+https://polyhaven.com/license):
+
+    "You can use our assets for any purpose, including commercial work."
+    "You do not need to give credit or attribution when using them (although
+     it is appreciated)."
+    "You can redistribute them, share them around, include them when sharing
+     your own work, or even in a product you sell."
+
+with the licence identified as CC0 and no carve-outs listed.
+
+THAT DID NOT SETTLE IT, and this is the point worth keeping. A filename is not
+a chain of title. Our files were 1024px cube FACES; Poly Haven ships one
+equirectangular panorama. Ours were therefore a derived, re-projected,
+downscaled re-encode, so no byte or hash comparison could connect them, and
+nothing in the derived files carried the original's identity forward. An
+identically-named capture from another source, or a same-place capture by
+another photographer, would produce the same filename. If they WERE the Poly
+Haven asset there was nothing to fix; the risk was that they were not, and that
+risk could not be retired from inside this tree.
+
+So they were deleted instead. icon_studio.omniworld now points at the synthetic
+set above, which was already sitting unreferenced in this directory as the
+obvious drop-in. Verified after the swap: the world loads with 0 errors and the
+engine logs no texture diagnostic for any of the twelve faces
+(`python -m omnisim run-headless scripts/icon_studio/worlds/icon_studio.omniworld
+--until-finalized --fail-on-warning`). The remaining warning in that run is the
+`icon_creator` controller exiting without its `objects.json` PROTO inputs, which
+is a property of running a GUI dev tool headless and is unrelated to lighting.
+
+This is a developer icon-rendering rig, so the backdrop was a preference and
+never a requirement. If a photographic environment is wanted again, download a
+CC0 HDRI yourself, re-project it with scripts/image_tools/, and record the
+download URL and date here — that record is the thing that was missing.
+
+================================================================================
+See docs/developer/asset-provenance.md for the tree-wide media ledger.

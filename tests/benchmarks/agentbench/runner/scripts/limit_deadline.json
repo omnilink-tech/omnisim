@@ -1,0 +1,24 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "limit_deadline",
+  "description": "Trips the wall-clock deadline: each model call sleeps, so the run runs out of time rather than turns.",
+  "turns": [
+    {
+      "text": "thinking slowly",
+      "tool_calls": [
+        {
+          "name": "list_dir",
+          "arguments": {
+            "path": "."
+          }
+        }
+      ],
+      "sleep_s": 0.35,
+      "usage": {
+        "tokens_in": 1000,
+        "tokens_out": 20
+      },
+      "repeat": 60
+    }
+  ]
+}

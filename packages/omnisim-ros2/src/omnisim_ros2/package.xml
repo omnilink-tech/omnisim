@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>omnisim_ros2</name>
+  <version>0.1.0</version>
+  <description>
+    ROS 2 support for the OmniSim robotics simulator, implemented as a sidecar over
+    OmniSim's HTTP/JSON surface. Provides the ros-simulation/simulation_interfaces
+    standard (services + the SimulateSteps action) on top of the OmniSim World
+    Harness, plus a live robot surface: /clock, /tf, JointState, and cmd_vel.
+    The OmniSim engine itself carries no ROS dependency.
+  </description>
+
+  <maintainer email="info@omnilink-agents.com">OmniLink</maintainer>
+  <license file="LICENSE">Apache-2.0</license>
+
+  <url type="repository">https://github.com/omnilink-tech/omnisim</url>
+  <url type="bugtracker">https://github.com/omnilink-tech/omnisim/issues</url>
+
+  <depend>rclpy</depend>
+  <depend>simulation_interfaces</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>rosgraph_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2_ros</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

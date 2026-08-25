@@ -1,0 +1,42 @@
+{
+  "schema": 2,
+  "name": "box_delivery_classic",
+  "title": "Box delivery (classic baseline): walk -> stand -> pick -> carry -> place -> walk -> stand",
+  "class": "humanoid",
+  "robot": "g1",
+  "status": "verified",
+  "summary": "The stable box-delivery demo (owner's working baseline). The G1 walks to the cart, stands, PICKS the real 1.5 kg box, CARRIES it along its natural arc to the second cart, PLACES it (real contact physics), walks on, stands. BATON walk<->stand<->carry element-wise blend + crane-yaw steering + the real ODE box (harness_rig moves it off the mode file). Verified 0 falls.",
+  "profile": "g1_shadow_deploy",
+  "world": "projects/policies/worlds/g1_walk_puppet.omniworld",
+  "primary": "g1_walk",
+  "skills": [
+    "g1_carry_box",
+    "g1_stand_rl"
+  ],
+  "arbiter": {
+    "kind": "course",
+    "value": "walkto,4.0,-0.25;stand,3;carryto,8.2,-3.3;stand,5;walkto,9.6,-4.1;stand,0"
+  },
+  "_handover_note": "BATON_COLD_HIDDEN is now DERIVED from skill attractors (resolve_handover): the stand->carry and stand->walk edges enter locomotion after a stand -> cold. See `skill_lib.py handover box_delivery`.",
+  "env": {
+    "BATON_MORPH_TICKS": "30",
+    "BATON_MODE_FILE": "$MODEF"
+  },
+  "init_mode_file": true,
+  "props": [
+    "real 1.5 kg ODE box (DEF CARRY_BOX)",
+    "DELIVERY_CART / DELIVERY_CART_B",
+    "harness_rig moves the box off BATON_MODE_FILE"
+  ],
+  "duration_default": 220,
+  "gui_default": "gui",
+  "verification": {
+    "date": "2026-07-08",
+    "engine": "Newton/mujoco_warp",
+    "support": "G1 lambda=0.9 weight-bearing balance harness; not free-standing",
+    "result": "0 falls, 7/7 switches, 3 arrivals, ends standing on the weight-bearing balance harness",
+    "commit": "eb067d02"
+  },
+  "reproduces": "projects/policies/demos/run_box_delivery_classic.sh",
+  "memory": "project_baton_policy_switching"
+}

@@ -1,0 +1,131 @@
+<?xml version="1.0"?>
+<!--
+Robotiq 3-Finger Gripper — 3 fingers with 3 phalanges each, plus a
+palm-spread DOF that pivots fingers A and B between pinch / parallel /
+wide modes. Total 11 DOFs; modelled here as a kinematic skeleton (one
+revolute proximal joint per finger driving the cascading distal links
+via mimic). For accurate grasp planning, override the joint-coupling
+ratios with a controller-side model.
+
+Joints emitted (driven):
+  ${prefix}_finger_a_joint_1   revolute   finger A proximal
+  ${prefix}_finger_b_joint_1   revolute   finger B proximal
+  ${prefix}_finger_c_joint_1   revolute   finger C proximal
+  ${prefix}_palm_finger_a_joint revolute  finger A spread
+  ${prefix}_palm_finger_b_joint revolute  finger B spread
+The medial + distal links cascade via simple fixed/mimic joints.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="robotiq_3f_finger" params="prefix base_link spread_offset_y">
+    <!-- Spread joint (palm pivot for fingers A + B) -->
+    <link name="${prefix}_palm_link"/>
+    <joint name="${prefix}_palm_joint" type="revolute">
+      <parent link="${base_link}"/>
+      <child link="${prefix}_palm_link"/>
+      <origin xyz="0.045 ${spread_offset_y} 0.085" rpy="0 0 0"/>
+      <axis xyz="1 0 0"/>
+      <limit lower="-0.192" upper="0.192" effort="10" velocity="1.0"/>
+    </joint>
+    <!-- Proximal -->
+    <link name="${prefix}_proximal_link">
+      <visual>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry><box size="0.018 0.022 0.057"/></geometry>
+        <material name="${prefix}_dark"><color rgba="0.16 0.16 0.16 1.0"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry><box size="0.018 0.022 0.057"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <mass value="0.030"/>
+        <inertia ixx="9.0e-6" ixy="0" ixz="0" iyy="9.5e-6" iyz="0" izz="2.5e-6"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint_1" type="revolute">
+      <parent link="${prefix}_palm_link"/>
+      <child link="${prefix}_proximal_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="0" upper="1.222" effort="10" velocity="1.0"/>
+    </joint>
+    <!-- Medial -->
+    <link name="${prefix}_medial_link">
+      <visual>
+        <origin xyz="0 0 0.018" rpy="0 0 0"/>
+        <geometry><box size="0.016 0.020 0.040"/></geometry>
+        <material name="${prefix}_dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.018" rpy="0 0 0"/>
+        <geometry><box size="0.016 0.020 0.040"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.018" rpy="0 0 0"/>
+        <mass value="0.020"/>
+        <inertia ixx="4.0e-6" ixy="0" ixz="0" iyy="4.2e-6" iyz="0" izz="1.4e-6"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint_2" type="revolute">
+      <parent link="${prefix}_proximal_link"/>
+      <child link="${prefix}_medial_link"/>
+      <origin xyz="0 0 0.057" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="0" upper="1.571" effort="10" velocity="1.0"/>
+      <mimic joint="${prefix}_joint_1" multiplier="0.7" offset="0"/>
+    </joint>
+    <!-- Distal -->
+    <link name="${prefix}_distal_link">
+      <visual>
+        <origin xyz="0 0 0.013" rpy="0 0 0"/>
+        <geometry><box size="0.014 0.018 0.030"/></geometry>
+        <material name="${prefix}_dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.013" rpy="0 0 0"/>
+        <geometry><box size="0.014 0.018 0.030"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.013" rpy="0 0 0"/>
+        <mass value="0.012"/>
+        <inertia ixx="1.6e-6" ixy="0" ixz="0" iyy="1.7e-6" iyz="0" izz="6.3e-7"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint_3" type="revolute">
+      <parent link="${prefix}_medial_link"/>
+      <child link="${prefix}_distal_link"/>
+      <origin xyz="0 0 0.040" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-1.222" upper="0" effort="10" velocity="1.0"/>
+      <mimic joint="${prefix}_joint_1" multiplier="-0.55" offset="0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="robotiq_3f" params="parent_link prefix:=robotiq_3f *origin">
+    <link name="${prefix}_base_link">
+      <visual>
+        <origin xyz="0 0 0.040" rpy="0 0 0"/>
+        <geometry><cylinder length="0.085" radius="0.075"/></geometry>
+        <material name="${prefix}_dark"><color rgba="0.16 0.16 0.16 1.0"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.040" rpy="0 0 0"/>
+        <geometry><cylinder length="0.085" radius="0.075"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.040" rpy="0 0 0"/>
+        <mass value="2.3"/>
+        <inertia ixx="6.5e-3" ixy="0" ixz="0" iyy="6.5e-3" iyz="0" izz="6.5e-3"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_base_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+    <xacro:robotiq_3f_finger prefix="${prefix}_finger_a" base_link="${prefix}_base_link" spread_offset_y="0.025"/>
+    <xacro:robotiq_3f_finger prefix="${prefix}_finger_b" base_link="${prefix}_base_link" spread_offset_y="-0.025"/>
+    <xacro:robotiq_3f_finger prefix="${prefix}_finger_c" base_link="${prefix}_base_link" spread_offset_y="0"/>
+  </xacro:macro>
+</robot>

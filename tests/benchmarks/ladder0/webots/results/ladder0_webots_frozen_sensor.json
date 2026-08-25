@@ -1,0 +1,106 @@
+{
+  "arm": "webots",
+  "engine": "upstream Webots R2025a",
+  "generated_utc": "2026-08-12T19:37:18Z",
+  "fault": "frozen_sensor",
+  "rows": [
+    {
+      "rung": 5,
+      "sim": "webots",
+      "fault": "frozen_sensor",
+      "title": "distance sensor swept toward a wall",
+      "measured": {
+        "steps": 1188.0,
+        "sim_time_end": 4.752,
+        "exit_code": 0.0,
+        "n_samples": 1188,
+        "range_static": 2.9,
+        "range_final": 2.9000000000000004,
+        "sweep_span": 2.0,
+        "sweep_end_x": 2.0,
+        "range_residual": 2.0000000000000004,
+        "range_span": 8.881784197001252e-16
+      },
+      "checks": [
+        {
+          "name": "range_static",
+          "measured": 2.9,
+          "expected": 2.9,
+          "tol": 0.002,
+          "unit": "m",
+          "rel": false,
+          "error": 0.0,
+          "margin": 0.002,
+          "ok": true,
+          "why": "with the carrier parked at x=0.00 m the sensor sits at x=0.10 m and the wall's near face at x=3.00 m, so the ray is 2.90 m long -- pure geometry, no dynamics in it",
+          "key": "range_static"
+        },
+        {
+          "name": "range_final",
+          "measured": 2.9000000000000004,
+          "expected": 0.8999999999999999,
+          "tol": 0.002,
+          "unit": "m",
+          "rel": false,
+          "error": 2.0000000000000004,
+          "margin": -1.9980000000000004,
+          "ok": false,
+          "why": "after sweeping 2.00 m the same geometry gives 0.90 m.  THE READING MUST CHANGE: a sensor frozen at its t=0 value passes range_static and fails only here",
+          "key": "range_final"
+        },
+        {
+          "name": "range_tracks",
+          "measured": 2.0000000000000004,
+          "expected": 0.0,
+          "tol": 0.002,
+          "unit": "m",
+          "rel": false,
+          "error": 2.0000000000000004,
+          "margin": -1.9980000000000004,
+          "ok": false,
+          "why": "max over the WHOLE run of |reading - (wall face - sensor x)|, the sensor read against the pose recorded on the same step.  A windowed check sees two instants; this sees every one, which is what a sensor that stops updating needs",
+          "key": "range_residual"
+        },
+        {
+          "name": "sweep_span",
+          "measured": 2.0,
+          "expected": 2.0,
+          "tol": 0.002,
+          "unit": "m",
+          "rel": false,
+          "error": 0.0,
+          "margin": 0.002,
+          "ok": true,
+          "why": "the carrier's own peak-to-peak x.  It separates 'the sensor is frozen' from 'the scene is frozen' -- without it a world that never moved would be reported as a dead sensor",
+          "key": "sweep_span"
+        }
+      ],
+      "wall": {
+        "startup_s": 2.7593941688537598,
+        "total_s": 3.291379690170288,
+        "step_s": 0.2914550304412842
+      },
+      "passed": false,
+      "meta": {
+        "sim": "webots",
+        "rung": 5,
+        "fault": "frozen_sensor",
+        "engine": "upstream Webots R2025a",
+        "webots_home": "/opt/upstream-webots/R2025a",
+        "port": 1604,
+        "error": null,
+        "exit_code": 0,
+        "timed_out": false,
+        "proc_t0": 1786563441.9323897,
+        "proc_t1": 1786563445.2237694,
+        "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung5_frozen_sensor.wbt",
+        "cmd": "wsl.exe -e bash /mnt/o/omnisim/tests/benchmarks/ladder0/webots/run_cell.sh 5 frozen_sensor /mnt/o/omnisim/tests/benchmarks/ladder0/webots/results/rung5_frozen_sensor /mnt/o/omnisim/tests/benchmarks/ladder0/webots/worlds/rung5_frozen_sensor.wbt 240 1604",
+        "engine_version": "R2025a",
+        "engine_sha256_16": "c12c65e8680b579d",
+        "engine_complaints": [
+          "WARNING: It is not recommended to run Webots as root."
+        ]
+      }
+    }
+  ]
+}

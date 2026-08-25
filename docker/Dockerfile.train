@@ -1,0 +1,191 @@
+# OmniSim GPU training image — Newton (mujoco_warp) physics, ready to train.
+#
+# Builds OmniSim from source on CUDA + Ubuntu 22.04 and installs the GPU stack so
+# the in-engine RL trainers run with no further setup. Published to GHCR by
+# .github/workflows/train-image.yml.
+#
+#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v8.1.0 bash
+#   # inside:
+#   xvfb-run -a bash projects/policies/training/run_quad_walk_rl.sh 600 mytag train headless
+#
+# WHY THE BASE IMAGE IS UBUNTU 22.04 AND NOT AN ML IMAGE
+# ------------------------------------------------------
+# This is a correctness decision, not a taste one.
+#
+# OmniSim embeds CPython: the engine `import warp` / `import newton` from the
+# interpreter its BINARY LINKS. Separately, Python *controllers* are spawned as
+# whatever `python3` is on PATH. Popular ML base images (pytorch, etc.) ship
+# their own Python 3.11 on PATH while the engine links the distro's 3.10 — so
+# there are TWO interpreters, `pip install` feeds the wrong one, and the failure
+# is SILENT: an ONNX deploy controller that cannot import onnxruntime falls back
+# to a zero-residual baseline, prints one warning, and STILL EXITS 0. You get a
+# clean "PASS" from a policy that never loaded.
+#
+# Ubuntu 22.04's system python IS 3.10 — the one the engine links. One
+# interpreter, one install, and that entire class of bug cannot occur here.
+#
+# WHAT IS BAKED
+# -------------
+# The environment (apt deps, Qt, the GPU wheels) and the engine, built from a
+# tagged release. Nothing else: mount or copy your own worlds, controllers and
+# policies in at runtime. Keeping volatile files out of the image is what keeps
+# the (multi-GB) layer cache useful.
+
+# The CUDA base MUST match the torch wheel's CUDA build (we install cu128, so this
+# is 12.8). This is not cosmetic: a CUDA *devel* base puts its own libcudart on the
+# loader path, and torch's libc10_cuda then resolves against THAT instead of the
+# runtime bundled in the wheel. Pair cu128 wheels with a 12.4 base and every
+# `import torch` dies with:
+#     libc10_cuda.so: undefined symbol: cudaGetDriverEntryPointByVersion,
+#                     version libcudart.so.12
+# The image still BUILDS fine (no GPU on the builder) and only fails on the GPU
+# box — which is precisely why the image is verified end-to-end on a pod.
+ARG CUDA_TAG=12.8.1-devel-ubuntu22.04
+FROM nvidia/cuda:${CUDA_TAG}
+
+ARG OMNISIM_TAG=v8.1.0
+ARG REPO_URL=https://github.com/omnilink-tech/omnisim.git
+ARG GPU_VERIFY=0
+ARG JOBS=8
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    OMNISIM_HOME=/opt/omnisim \
+    WEBOTS_HOME=/opt/omnisim \
+    LD_LIBRARY_PATH=/opt/omnisim/lib/webots \
+    QT_QPA_PLATFORM=xcb \
+    WEBOTS_TMPDIR=/tmp \
+    LIBGL_ALWAYS_SOFTWARE=1 \
+    OMNISIM_REQUIRE_NEWTON=1 \
+    PYTHONUNBUFFERED=1 \
+    # Network filesystems are commonly root_squash, where chown is forbidden even
+    # for root. GNU tar as root defaults to --same-owner, so extracting the
+    # dependency archives dies with "Cannot change ownership".
+    TAR_OPTIONS=--no-same-owner
+
+# ---------------------------------------------------------------------------
+# 1. apt. This list is deliberately IDENTICAL to scripts/install/linux_bootstrap.sh
+#    — the one Linux recipe that is actually proven. Do not "improve" it here; a
+#    second, parallel dependency list is a thing that silently drifts.
+#
+#    Note what is NOT here: any qt6-* package. The build FETCHES Qt 6.5.3 itself,
+#    so apt-installing Qt is not merely redundant, it is wrong (the names differ
+#    across Ubuntu releases and `qt6-websockets-dev` does not exist on 22.04).
+#
+#    libdbus IS here and is NOT in the bootstrap's list — the vendored libQt6DBus
+#    needs it AT LINK TIME, and the build dies after ~6 minutes of compiling with
+#    "undefined reference to dbus_message_*@LIBDBUS_1_3". The bootstrap gets away
+#    without it only because ML base images happen to ship libdbus already; on a
+#    minimal CUDA base they do not. This is a real hole in that list, not a
+#    Docker quirk.
+#
+#    The XCB runtime libs ARE required even headless: the engine still creates a
+#    Qt/XCB context under --no-rendering, and a partial set makes it die with an
+#    EMPTY log while the launcher still exits 0.
+# ---------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential make git wget curl unzip zip pkg-config ca-certificates rsync \
+        openssh-server openssh-client \
+        cmake swig libglu1-mesa-dev libglib2.0-dev libfreeimage3 libfreetype-dev \
+        libxml2-dev libboost-dev libssh-gcrypt-dev libzip-dev libreadline-dev \
+        libopenal-dev libssl-dev libgl1-mesa-dev libxi-dev libxrandr-dev pbzip2 \
+        libdbus-1-dev libdbus-1-3 \
+        python3 python3-pip python3-dev python-is-python3 \
+        xvfb x11-utils \
+        libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
+        libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxkbcommon-x11-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Enforce the single-interpreter invariant at BUILD time. If a future base image
+# reintroduces a second Python, fail here rather than silently resurrect the
+# zero-residual-deploy bug on someone's GPU.
+RUN test "$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')" = "3.10" \
+    || (echo "FATAL: system python is not 3.10, but the engine links libpython3.10." \
+        && echo "Two interpreters => ONNX deploys silently run a zero-residual baseline." \
+        && exit 1)
+
+# ---------------------------------------------------------------------------
+# 2. The GPU stack. One interpreter, so one install serves both the engine's
+#    embedded CPython and the python3 that spawns controllers.
+#
+#    ALL FOUR physics packages are PINNED (they used to be unpinned except
+#    mujoco, so an image rebuild silently picked up whatever PyPI had that day).
+#
+#    ⚠ mj_fullM's signature CHANGED between the old pin and this one, and the
+#    flip is now LIVE rather than hypothetical:
+#        mujoco 3.8.1  : mj_fullM(m, dst, M)      <- M is d.qM, a sparse array
+#        mujoco 3.11.0 : mj_fullM(m, d, dst)      <- takes MjData, dst goes last
+#    Any caller still using the 3.8.1 form raises TypeError on 3.11.0. The
+#    convention assert below deliberately exercises the 3.11.0 form, so this
+#    image fails to BUILD rather than failing mid-run on a paid GPU.
+# ---------------------------------------------------------------------------
+RUN python3 -m pip install --no-cache-dir --upgrade pip \
+    && python3 -m pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu128 \
+    && python3 -m pip install --no-cache-dir \
+        'warp-lang==1.16.0' 'newton==1.5.0' 'mujoco==3.11.0' 'mujoco-warp==3.11.0' \
+        numpy scipy onnx onnxscript onnxruntime
+
+# Assert the CONVENTION, not the version string. Versions drift; behaviour is
+# what actually breaks. This is the call shape every in-repo caller must use on
+# the pinned mujoco 3.11.0: mj_fullM(model, data, dst) — NOT the 3.8.1
+# mj_fullM(model, dst, d.qM), which raises TypeError here.
+RUN python3 - <<'PY'
+import numpy as np, mujoco
+m = mujoco.MjModel.from_xml_string(
+    "<mujoco><worldbody><body><joint type='slide'/><geom size='.1'/></body></worldbody></mujoco>")
+d = mujoco.MjData(m)
+mujoco.mj_fullM(m, d, np.zeros((m.nv, m.nv)))   # TypeError on an incompatible mujoco
+print("mj_fullM convention OK on mujoco", mujoco.__version__)
+PY
+
+# ---------------------------------------------------------------------------
+# 3. The engine, from a tagged release.
+# ---------------------------------------------------------------------------
+RUN git clone --depth 1 --branch "${OMNISIM_TAG}" "${REPO_URL}" "${OMNISIM_HOME}" \
+    && cd "${OMNISIM_HOME}" \
+    && rm -rf src/glm src/stb \
+    && git clone -q --depth 1 --branch 1.0.1 https://github.com/g-truc/glm.git src/glm \
+    && git clone -q --depth 1 -b patch-1 https://github.com/omichel/stb.git src/stb
+
+# `make release` fetches Qt 6.5.3 on its own — there is no header-mirroring step
+# to do here, and adding one only invents a second way for the build to be wrong.
+RUN cd "${OMNISIM_HOME}" && make -j"${JOBS}" release \
+    && test -x "${OMNISIM_HOME}/bin/omnisim-bin"
+
+# The engine must link the interpreter the wheels went into. Verify it from the
+# ELF rather than assume — this is the invariant the whole image rests on.
+RUN ldd "${OMNISIM_HOME}/bin/omnisim-bin" | grep -q 'libpython3\.10' \
+    || (echo "FATAL: omnisim-bin does not link libpython3.10 — wheels are in the wrong python" && exit 1)
+
+# ---------------------------------------------------------------------------
+# 4. Optional GPU verification + warp kernel prewarm. Needs a GPU at BUILD time,
+#    so it is opt-in (CI runners have none).
+#
+#    It runs a REAL headless world and asserts the Newton verdict SIDECAR — the
+#    only race-free proof that Newton actually DROVE the simulation. ("imports
+#    OK" proves the runtime loaded, never that it drove anything.) It also bakes
+#    the warp kernel cache, whose cold compile otherwise costs minutes on every
+#    first run.
+# ---------------------------------------------------------------------------
+RUN if [ "${GPU_VERIFY}" = "1" ]; then \
+      cd "${OMNISIM_HOME}" && \
+      export OMNISIM_LOG_PATH="${OMNISIM_HOME}/build_smoke.txt" && \
+      xvfb-run -a python3 -m omnisim run-headless \
+        projects/samples/demos/worlds/showcase/warehouse_husky.wbt --duration 45 && \
+      test -f "$OMNISIM_LOG_PATH.newton.json" \
+        || (echo "FATAL: no Newton sidecar — ODE drove it, or it never reached finalize" && exit 1) && \
+      ! grep -q '"degraded": *true' "$OMNISIM_LOG_PATH.newton.json" \
+        || (echo "FATAL: Newton degraded to an XPBD/FAILED solver" && exit 1) && \
+      cat "$OMNISIM_LOG_PATH.newton.json" && rm -f "$OMNISIM_LOG_PATH"; \
+    else \
+      echo "GPU_VERIFY=0 — Newton assertion and warp prewarm skipped (no GPU on this builder)."; \
+    fi
+
+WORKDIR /opt/omnisim
+
+LABEL org.opencontainers.image.source="https://github.com/omnilink-tech/omnisim" \
+      org.opencontainers.image.description="OmniSim in-engine RL training environment (Newton/mujoco_warp, CUDA)" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
+# Hosts that inject a PUBLIC_KEY env var expect sshd; otherwise this is a no-op
+# and you just get a shell.
+CMD ["/bin/bash", "-lc", "if [ -n \"$PUBLIC_KEY\" ]; then mkdir -p ~/.ssh && echo \"$PUBLIC_KEY\" >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys && (service ssh start || /usr/sbin/sshd) && sleep infinity; else exec bash; fi"]

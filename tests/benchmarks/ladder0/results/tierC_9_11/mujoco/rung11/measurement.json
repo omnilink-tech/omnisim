@@ -1,0 +1,371 @@
+{
+ "steps": null,
+ "sim_time_end": null,
+ "exit_code": 0.0,
+ "n_samples": 0,
+ "runs_seen": [
+  "n1",
+  "n16",
+  "n4",
+  "n8"
+ ],
+ "distance_worst": 0.002482091071198539,
+ "wheel_omega_worst": 0.0022553987133746567,
+ "lateral_worst": 0.0006281371390350898,
+ "ride_worst": 0.00012058038276574479,
+ "roll_overrun_worst": 0.00016247536925662054,
+ "separation_shortfall": 2.137921765266171e-05,
+ "robots_seen": 29.0,
+ "per_n": {
+  "n1": {
+   "n": 1,
+   "robots_measured": 1,
+   "min_separation": null,
+   "worst": {
+    "distance_worst": 0.0004817131462107882,
+    "wheel_omega_worst": 0.000809601870728871,
+    "lateral_worst": 3.28133568083731e-05,
+    "ride_worst": 6.801676349710295e-05,
+    "roll_overrun_worst": 0.0
+   },
+   "per_robot": {
+    "r00": {
+     "omega_cmd": 2.0,
+     "expect_m": 0.8,
+     "distance_m": 0.8003853705169687,
+     "distance_rel_err": 0.0004817131462107882,
+     "lateral_m": 3.28133568083731e-05,
+     "ride_dev_m": 6.801676349710295e-05,
+     "omega_meas": 2.0016192037414577,
+     "roll_overrun": 0.0
+    }
+   }
+  },
+  "n4": {
+   "n": 4,
+   "robots_measured": 4,
+   "min_separation": 1.4999979863851491,
+   "worst": {
+    "distance_worst": 0.0017443364902719471,
+    "wheel_omega_worst": 0.0014971340781549936,
+    "lateral_worst": 0.00014155562154827273,
+    "ride_worst": 9.076421439790927e-05,
+    "roll_overrun_worst": 1.1716858758115123e-05
+   },
+   "per_robot": {
+    "r00": {
+     "omega_cmd": 2.0,
+     "expect_m": 0.8,
+     "distance_m": 0.7986045308077825,
+     "distance_rel_err": -0.0017443364902719471,
+     "lateral_m": 4.862940517380565e-06,
+     "ride_dev_m": 6.108957464923126e-05,
+     "omega_meas": 1.99700573184369,
+     "roll_overrun": 1.1716858758115123e-05
+    },
+    "r01": {
+     "omega_cmd": 3.0,
+     "expect_m": 1.2000000000000002,
+     "distance_m": 1.200097266841485,
+     "distance_rel_err": 8.105570123743502e-05,
+     "lateral_m": 9.238962081825619e-06,
+     "ride_dev_m": 8.541332127054435e-05,
+     "omega_meas": 3.0014111813744417,
+     "roll_overrun": 0.0
+    },
+    "r02": {
+     "omega_cmd": 4.0,
+     "expect_m": 1.6,
+     "distance_m": 1.5995286833472904,
+     "distance_rel_err": -0.0002945729079435744,
+     "lateral_m": 0.00014155562154827273,
+     "ride_dev_m": 9.062071063659083e-05,
+     "omega_meas": 4.000409594752063,
+     "roll_overrun": 0.0
+    },
+    "r03": {
+     "omega_cmd": 5.0,
+     "expect_m": 2.0,
+     "distance_m": 1.9979330816422156,
+     "distance_rel_err": -0.0010334591788921932,
+     "lateral_m": 8.033016134945115e-05,
+     "ride_dev_m": 9.076421439790927e-05,
+     "omega_meas": 4.996055268201639,
+     "roll_overrun": 0.0
+    }
+   },
+   "solo_deviation_m": 0.0023896426199714327
+  },
+  "n8": {
+   "n": 8,
+   "robots_measured": 8,
+   "min_separation": 1.499986811444185,
+   "worst": {
+    "distance_worst": 0.0022625229143158343,
+    "wheel_omega_worst": 0.002029761523001161,
+    "lateral_worst": 0.0004682003156364356,
+    "ride_worst": 9.933879150569869e-05,
+    "roll_overrun_worst": 9.038480848633235e-05
+   },
+   "per_robot": {
+    "r00": {
+     "omega_cmd": 2.0,
+     "expect_m": 0.8,
+     "distance_m": 0.7981899816685474,
+     "distance_rel_err": -0.0022625229143158343,
+     "lateral_m": 3.061448065722061e-06,
+     "ride_dev_m": 5.904755889163393e-05,
+     "omega_meas": 1.9959404769539977,
+     "roll_overrun": 3.2183549305342396e-05
+    },
+    "r01": {
+     "omega_cmd": 3.0,
+     "expect_m": 1.2000000000000002,
+     "distance_m": 1.198430255204172,
+     "distance_rel_err": -0.00130812066319023,
+     "lateral_m": 6.19177964900075e-06,
+     "ride_dev_m": 6.200151275792543e-05,
+     "omega_meas": 2.9967734457093513,
+     "roll_overrun": 7.627299907153606e-05
+    },
+    "r02": {
+     "omega_cmd": 4.0,
+     "expect_m": 1.6,
+     "distance_m": 1.5985672034795615,
+     "distance_rel_err": -0.0008954978252741219,
+     "lateral_m": 3.557274652532527e-05,
+     "ride_dev_m": 6.6295800163374e-05,
+     "omega_meas": 3.9974031369368657,
+     "roll_overrun": 9.038480848633235e-05
+    },
+    "r03": {
+     "omega_cmd": 5.0,
+     "expect_m": 2.0,
+     "distance_m": 1.9987287703780674,
+     "distance_rel_err": -0.0006356148109663007,
+     "lateral_m": 0.0004682003156364356,
+     "ride_dev_m": 8.818989441672365e-05,
+     "omega_meas": 4.998524884013374,
+     "roll_overrun": 3.2122259984834756e-05
+    },
+    "r04": {
+     "omega_cmd": 6.0,
+     "expect_m": 2.4000000000000004,
+     "distance_m": 2.3987866506793183,
+     "distance_rel_err": -0.000505562216950861,
+     "lateral_m": 0.00037050608064936874,
+     "ride_dev_m": 9.742894889552822e-05,
+     "omega_meas": 5.999366021841926,
+     "roll_overrun": 0.0
+    },
+    "r05": {
+     "omega_cmd": 2.0,
+     "expect_m": 0.8,
+     "distance_m": 0.800566960036431,
+     "distance_rel_err": 0.0007087000455387182,
+     "lateral_m": 3.1385930712168886e-06,
+     "ride_dev_m": 7.610472789432166e-05,
+     "omega_meas": 2.0021375451267938,
+     "roll_overrun": 0.0
+    },
+    "r06": {
+     "omega_cmd": 3.0,
+     "expect_m": 1.2000000000000002,
+     "distance_m": 1.200820394369625,
+     "distance_rel_err": 0.0006836619746873143,
+     "lateral_m": 3.055835460674672e-06,
+     "ride_dev_m": 8.701390285859034e-05,
+     "omega_meas": 3.0032751381586547,
+     "roll_overrun": 0.0
+    },
+    "r07": {
+     "omega_cmd": 4.0,
+     "expect_m": 1.6,
+     "distance_m": 1.600690678345127,
+     "distance_rel_err": 0.0004316739657042601,
+     "lateral_m": 7.848204524929514e-05,
+     "ride_dev_m": 9.933879150569869e-05,
+     "omega_meas": 4.003535145596813,
+     "roll_overrun": 2.2514233064541145e-06
+    }
+   },
+   "solo_deviation_m": 0.0029690068069518905
+  },
+  "n16": {
+   "n": 16,
+   "robots_measured": 16,
+   "min_separation": 1.4999786207823473,
+   "worst": {
+    "distance_worst": 0.002482091071198539,
+    "wheel_omega_worst": 0.0022553987133746567,
+    "lateral_worst": 0.0006281371390350898,
+    "ride_worst": 0.00012058038276574479,
+    "roll_overrun_worst": 0.00016247536925662054
+   },
+   "per_robot": {
+    "r00": {
+     "omega_cmd": 2.0,
+     "expect_m": 0.8,
+     "distance_m": 0.7980143271430412,
+     "distance_rel_err": -0.002482091071198539,
+     "lateral_m": 2.401656885808734e-06,
+     "ride_dev_m": 5.801772956515183e-05,
+     "omega_meas": 1.9954892025732507,
+     "roll_overrun": 3.0081928810599123e-05
+    },
+    "r01": {
+     "omega_cmd": 3.0,
+     "expect_m": 1.2000000000000002,
+     "distance_m": 1.1980524464813853,
+     "distance_rel_err": -0.0016229612655123864,
+     "lateral_m": 3.87993763162342e-06,
+     "ride_dev_m": 5.9630644164698765e-05,
+     "omega_meas": 2.995767910471158,
+     "roll_overrun": 6.57084626960458e-05
+    },
+    "r02": {
+     "omega_cmd": 4.0,
+     "expect_m": 1.6,
+     "distance_m": 1.5981135184215385,
+     "distance_rel_err": -0.0011790509865385046,
+     "lateral_m": 2.2312189623008294e-05,
+     "ride_dev_m": 6.172883854671518e-05,
+     "omega_meas": 3.9961160864498626,
+     "roll_overrun": 9.856305785804764e-05
+    },
+    "r03": {
+     "omega_cmd": 5.0,
+     "expect_m": 2.0,
+     "distance_m": 1.9981758661366467,
+     "distance_rel_err": -0.0009120669316766694,
+     "lateral_m": 0.00016914819856594931,
+     "ride_dev_m": 6.431984233479238e-05,
+     "omega_meas": 4.996513248700451,
+     "roll_overrun": 0.00011009798066541343
+    },
+    "r04": {
+     "omega_cmd": 6.0,
+     "expect_m": 2.4000000000000004,
+     "distance_m": 2.3982899827144317,
+     "distance_rel_err": -0.0007125072023202634,
+     "lateral_m": 5.558181626774683e-05,
+     "ride_dev_m": 6.730932850340654e-05,
+     "omega_meas": 5.997193336337034,
+     "roll_overrun": 0.00016247536925662054
+    },
+    "r05": {
+     "omega_cmd": 2.0,
+     "expect_m": 0.8,
+     "distance_m": 0.7987943772896481,
+     "distance_rel_err": -0.0015070283879399515,
+     "lateral_m": 2.6533023524955013e-06,
+     "ride_dev_m": 6.334926045159506e-05,
+     "omega_meas": 1.9974943989116922,
+     "roll_overrun": 3.4127280793105896e-05
+    },
+    "r06": {
+     "omega_cmd": 3.0,
+     "expect_m": 1.2000000000000002,
+     "distance_m": 1.1989202436739754,
+     "distance_rel_err": -0.0008997969383539582,
+     "lateral_m": 2.8692292612930714e-06,
+     "ride_dev_m": 8.424587740729628e-05,
+     "omega_meas": 2.9981141129740383,
+     "roll_overrun": 6.965303558681413e-05
+    },
+    "r07": {
+     "omega_cmd": 4.0,
+     "expect_m": 1.6,
+     "distance_m": 1.599037396544901,
+     "distance_rel_err": -0.0006016271594369571,
+     "lateral_m": 7.407728490560483e-05,
+     "ride_dev_m": 6.93101742140767e-05,
+     "omega_meas": 3.9987776847498533,
+     "roll_overrun": 1.4739401994479095e-06
+    },
+    "r08": {
+     "omega_cmd": 5.0,
+     "expect_m": 2.0,
+     "distance_m": 1.9996873977542808,
+     "distance_rel_err": -0.0001563011228595812,
+     "lateral_m": 0.00014213072517044179,
+     "ride_dev_m": 9.292636789592912e-05,
+     "omega_meas": 5.001306835814062,
+     "roll_overrun": 5.3163577516057714e-05
+    },
+    "r09": {
+     "omega_cmd": 6.0,
+     "expect_m": 2.4000000000000004,
+     "distance_m": 2.3987402101855344,
+     "distance_rel_err": -0.0005249124226941458,
+     "lateral_m": 0.0006281371390350898,
+     "ride_dev_m": 9.946876303479346e-05,
+     "omega_meas": 5.999127260227807,
+     "roll_overrun": 4.69196291261742e-05
+    },
+    "r10": {
+     "omega_cmd": 2.0,
+     "expect_m": 0.8,
+     "distance_m": 0.8006422563576048,
+     "distance_rel_err": 0.0008028204470059142,
+     "lateral_m": 4.1484756434506664e-06,
+     "ride_dev_m": 7.685459163275787e-05,
+     "omega_meas": 2.0023310358528255,
+     "roll_overrun": 0.0
+    },
+    "r11": {
+     "omega_cmd": 3.0,
+     "expect_m": 1.2000000000000002,
+     "distance_m": 1.20076597124821,
+     "distance_rel_err": 0.0006383093735081353,
+     "lateral_m": 2.863553869580926e-06,
+     "ride_dev_m": 8.708905307985848e-05,
+     "omega_meas": 3.0031398955491375,
+     "roll_overrun": 0.0
+    },
+    "r12": {
+     "omega_cmd": 4.0,
+     "expect_m": 1.6,
+     "distance_m": 1.6006493061462532,
+     "distance_rel_err": 0.00040581634140821055,
+     "lateral_m": 3.469691299162747e-05,
+     "ride_dev_m": 9.760469727770893e-05,
+     "omega_meas": 4.003447032859986,
+     "roll_overrun": 1.3837053689513823e-06
+    },
+    "r13": {
+     "omega_cmd": 5.0,
+     "expect_m": 2.0,
+     "distance_m": 2.0004241890070817,
+     "distance_rel_err": 0.00021209450354087167,
+     "lateral_m": 0.00022480360156329482,
+     "ride_dev_m": 0.0001086814248709711,
+     "omega_meas": 5.003559154805426,
+     "roll_overrun": 7.894721106183056e-06
+    },
+    "r14": {
+     "omega_cmd": 6.0,
+     "expect_m": 2.4000000000000004,
+     "distance_m": 2.4000926511897847,
+     "distance_rel_err": 3.8604662410124384e-05,
+     "lateral_m": 0.00015284090463829614,
+     "ride_dev_m": 0.00012058038276574479,
+     "omega_meas": 6.003569066901905,
+     "roll_overrun": 2.712212003364023e-05
+    },
+    "r15": {
+     "omega_cmd": 2.0,
+     "expect_m": 0.8,
+     "distance_m": 0.8006521074843961,
+     "distance_rel_err": 0.0008151343554950452,
+     "lateral_m": 1.1389089582536371e-06,
+     "ride_dev_m": 7.250757702015331e-05,
+     "omega_meas": 2.0023150054641556,
+     "roll_overrun": 0.0
+    }
+   },
+   "solo_deviation_m": 0.003207317230465634
+  }
+ },
+ "solo_deviation_max": 0.003207317230465634
+}

@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "name": "omnisim-policy-block",
+  "description": "Acceptance benchmarks for manifest-packaged Shadowing skills and BATON sequences.",
+  "cases": [
+    {
+      "name": "g1_box_delivery_e2e",
+      "sequence": "box_delivery",
+      "status": "verified",
+      "duration_s": 200,
+      "support": "G1 lambda=0.9 weight-bearing balance harness; not free-standing",
+      "thresholds": {
+        "min_complete_cycles": 1,
+        "min_cycle_pelvis_z_m": 0.70,
+        "max_cycle_duration_s": 180.0,
+        "max_fall_ticks": 0
+      },
+      "required_events": [
+        {
+          "pattern": "PHYS-GRASP -> place_brake",
+          "min_count": 1
+        },
+        {
+          "pattern": "SUCTION PRESS-PLACE released -> course advances",
+          "min_count": 1
+        },
+        {
+          "pattern": "PLACE-ARREST released",
+          "min_count": 1
+        }
+      ],
+      "reference_evidence": {
+        "date": "2026-07-19",
+        "machine_id": "9722d23d12a3",
+        "venue": "RTX 3060 Laptop",
+        "engine": "Newton/mujoco_warp",
+        "result_file": "projects/policies/benchmarks/results/g1_box_delivery_e2e_2026-07-19.json",
+        "result": "PASS: 1 complete 14/14 cycle, 153.7 s, minimum pelvis z 0.720 m, physical release at 0.000 m/s horizontal box speed"
+      }
+    },
+    {
+      "name": "go2_walk_turn_walk_e2e",
+      "sequence": "go2_walk_turn_walk",
+      "status": "candidate",
+      "duration_s": 30,
+      "support": "free-standing quadruped; no harness",
+      "fall_height_m": 0.12,
+      "thresholds": {
+        "min_switches": 2,
+        "min_telemetry_pelvis_z_m": 0.24,
+        "max_abs_roll_rad": 0.25,
+        "max_turn_displacement_m": 0.30,
+        "min_post_turn_displacement_m": 5.0,
+        "min_turn_samples": 4,
+        "max_fall_ticks": 0
+      },
+      "required_events": [
+        {
+          "pattern": "ONNX loaded:",
+          "min_count": 2
+        },
+        {
+          "pattern": "BATON switch #",
+          "min_count": 2
+        }
+      ]
+    }
+  ]
+}

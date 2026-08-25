@@ -1,0 +1,140 @@
+{
+  "arm": "webots",
+  "engine": "upstream Webots R2025a",
+  "generated_utc": "2026-08-12T15:07:31Z",
+  "fault": "slide",
+  "rows": [
+    {
+      "rung": 4,
+      "sim": "webots",
+      "fault": "slide",
+      "title": "wheeled robot, straight line",
+      "measured": {
+        "steps": 1625.0,
+        "sim_time_end": 6.5,
+        "exit_code": 0.0,
+        "n_samples": 1625,
+        "distance": 1.6,
+        "v_body": 0.4,
+        "dx": 1.6,
+        "lateral": 0.0,
+        "wheel_omega": 0.0,
+        "wheel_omega_each": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "wheel_omega_spread": 0.0,
+        "ride_dev": 0.0,
+        "roll_overrun": null
+      },
+      "checks": [
+        {
+          "name": "distance",
+          "measured": 1.6,
+          "expected": 1.6,
+          "tol": 0.05,
+          "unit": "m",
+          "rel": true,
+          "error": 0.0,
+          "margin": 0.05,
+          "ok": true,
+          "why": "d = omega r t for a wheel rolling without slip, measured over a window that starts after the spin-up transient",
+          "key": "distance"
+        },
+        {
+          "name": "wheel_omega",
+          "measured": 0.0,
+          "expected": 4.0,
+          "tol": 0.04,
+          "unit": "rad/s",
+          "rel": false,
+          "error": -4.0,
+          "margin": -3.96,
+          "ok": false,
+          "why": "the wheels must actually TURN at the commanded rate -- read from each wheel's own position sensor",
+          "key": "wheel_omega"
+        },
+        {
+          "name": "rolling_consistency",
+          "measured": null,
+          "expected": 1.0,
+          "tol": 0.03,
+          "unit": "-",
+          "rel": true,
+          "error": null,
+          "margin": null,
+          "ok": false,
+          "why": "v_body / (omega_wheel r) == 1.  THE anti-slide assertion: a chassis that slid the right distance on wheels that never turned passes 'distance' and fails only here",
+          "key": "roll_ratio"
+        },
+        {
+          "name": "roll_overrun",
+          "measured": null,
+          "expected": 0.0,
+          "tol": 0.05,
+          "unit": "-",
+          "rel": false,
+          "error": null,
+          "margin": null,
+          "ok": false,
+          "why": "max over the WHOLE run of (v_body/(omega_wheel r) - 1), clamped at 0.  A wheel can push a body at most omega r and slip only makes it slower, so any excess is unphysical.  This is the check a steady-state window cannot make",
+          "key": "roll_overrun"
+        },
+        {
+          "name": "ride_height",
+          "measured": 0.0,
+          "expected": 0.0,
+          "tol": 0.02,
+          "unit": "m",
+          "rel": false,
+          "error": 0.0,
+          "margin": 0.02,
+          "ok": true,
+          "why": "the axle of a suspensionless rover on flat ground stays at floor_top + wheel_radius; a rover being launched, or one that has driven off the edge, breaks every other number in this rung while leaving them looking plausible",
+          "key": "ride_dev"
+        },
+        {
+          "name": "lateral_drift",
+          "measured": 0.0,
+          "expected": 0.0,
+          "tol": 0.1,
+          "unit": "m",
+          "rel": false,
+          "error": 0.0,
+          "margin": 0.1,
+          "ok": true,
+          "why": "a symmetric robot given identical wheel commands on flat ground travels straight",
+          "key": "lateral"
+        }
+      ],
+      "wall": {
+        "startup_s": 3.0682082176208496,
+        "total_s": 4.259913444519043,
+        "step_s": 0.9315485954284668
+      },
+      "passed": false,
+      "meta": {
+        "sim": "webots",
+        "rung": 4,
+        "fault": "slide",
+        "engine": "upstream Webots R2025a",
+        "webots_home": "/opt/upstream-webots/R2025a",
+        "port": 1604,
+        "error": null,
+        "exit_code": 0,
+        "timed_out": false,
+        "proc_t0": 1786547250.2810652,
+        "proc_t1": 1786547254.5409787,
+        "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung4.wbt",
+        "cmd": "wsl.exe -e bash /mnt/o/omnisim/tests/benchmarks/ladder0/webots/run_cell.sh 4 slide /mnt/o/omnisim/tests/benchmarks/ladder0/webots/results/rung4_slide /mnt/o/omnisim/tests/benchmarks/ladder0/webots/worlds/rung4.wbt 120 1604",
+        "engine_version": "R2025a",
+        "engine_sha256_16": "c12c65e8680b579d",
+        "engine_complaints": [
+          "WARNING: It is not recommended to run Webots as root."
+        ]
+      }
+    }
+  ]
+}

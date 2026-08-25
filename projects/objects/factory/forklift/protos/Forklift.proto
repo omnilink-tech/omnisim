@@ -1,0 +1,293 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/factory/forklift/protos/Forklift.proto
+# keywords: industrial/cart
+# A counterbalance forklift truck built from primitives: chassis and counterweight, driver cage,
+# a two-rail mast carrying a fork carriage, and four wheels. Origin is 0.81 m above the ground,
+# so the truck rests on the floor when placed at `translation x y 0.81`.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/GlossyPaint.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/OldSteel.proto"
+
+PROTO Forklift [
+  field SFVec3f    translation     0 0 0.81
+  field SFRotation rotation        0 0 1 0
+  field SFString   name            "forklift"
+  field SFBool     enablePhysics   TRUE                 # Defines whether the forklift should have physics.
+]
+{
+  %<
+    // The origin sits 0.81 m above the floor: every part is laid out relative to GROUND.
+    const GROUND = -0.81;
+
+    const wheelRadius = 0.25;
+    const wheelWidth = 0.18;
+    const axleZ = GROUND + wheelRadius;
+
+    const chassisTop = GROUND + 0.82;    // = 0.01 in local coordinates
+    const roofZ = GROUND + 2.00;
+
+    const forkY = 0.26;
+    const wheels = [
+      {x:  0.30, y:  0.48},
+      {x:  0.30, y: -0.48},
+      {x: -1.05, y:  0.48},
+      {x: -1.05, y: -0.48}
+    ];
+    const posts = [
+      {x: -0.95, y:  0.48},
+      {x: -0.95, y: -0.48},
+      {x:  0.05, y:  0.48},
+      {x:  0.05, y: -0.48}
+    ];
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "forklift"
+    children [
+      # ---- chassis + counterweight (safety yellow) ----
+      Pose {
+        translation -0.35 0 %<= GROUND + 0.52 >%
+        children [
+          Shape {
+            appearance DEF FL_PAINT GlossyPaint {
+              baseColor 0.92 0.68 0.06
+            }
+            geometry Box {
+              size 1.8 1.05 0.6
+            }
+          }
+        ]
+      }
+      Pose {
+        translation -1.35 0 %<= GROUND + 0.51 >%
+        children [
+          Shape {
+            appearance USE FL_PAINT
+            geometry Box {
+              size 0.3 0.95 0.5
+            }
+          }
+        ]
+      }
+      # ---- driver cage: four posts + a roof ----
+      %< for (let i = 0; i < posts.length; ++i) { >%
+      Pose {
+        translation %<= posts[i].x >% %<= posts[i].y >% %<= chassisTop + 0.575 >%
+        children [
+          %< if (i === 0) { >%
+          DEF FL_POST Shape {
+            appearance DEF FL_STEEL OldSteel {
+              colorOverride 0.55 0.56 0.58
+            }
+            geometry Box {
+              size 0.07 0.07 1.15
+            }
+          }
+          %< } else { >%
+          USE FL_POST
+          %< } >%
+        ]
+      }
+      %< } >%
+      Pose {
+        translation -0.45 0 %<= roofZ >%
+        children [
+          Shape {
+            appearance USE FL_PAINT
+            geometry Box {
+              size 1.25 1.1 0.06
+            }
+          }
+        ]
+      }
+      # ---- seat, backrest and steering column ----
+      Pose {
+        translation -0.72 0 %<= chassisTop + 0.06 >%
+        children [
+          Shape {
+            appearance DEF FL_DARK PBRAppearance {
+              baseColor 0.1 0.1 0.12
+              roughness 0.9
+              metalness 0
+            }
+            geometry Box {
+              size 0.45 0.5 0.12
+            }
+          }
+        ]
+      }
+      Pose {
+        translation -0.97 0 %<= chassisTop + 0.26 >%
+        children [
+          Shape {
+            appearance USE FL_DARK
+            geometry Box {
+              size 0.1 0.5 0.4
+            }
+          }
+        ]
+      }
+      Pose {
+        translation -0.32 0 %<= chassisTop + 0.32 >%
+        rotation 0 1 0 1.1
+        children [
+          Shape {
+            appearance USE FL_DARK
+            geometry Cylinder {
+              radius 0.13
+              height 0.03
+              subdivision 16
+            }
+          }
+        ]
+      }
+      # ---- mast: two vertical rails + a top cross brace ----
+      %< for (let i = 0; i < 2; ++i) {
+           const my = (i === 0 ? 0.34 : -0.34);
+      >%
+      Pose {
+        translation 0.45 %<= my >% %<= GROUND + 0.98 >%
+        children [
+          %< if (i === 0) { >%
+          DEF FL_RAIL Shape {
+            appearance USE FL_STEEL
+            geometry Box {
+              size 0.08 0.08 1.85
+            }
+          }
+          %< } else { >%
+          USE FL_RAIL
+          %< } >%
+        ]
+      }
+      %< } >%
+      Pose {
+        translation 0.45 0 %<= GROUND + 1.86 >%
+        children [
+          Shape {
+            appearance USE FL_STEEL
+            geometry Box {
+              size 0.08 0.76 0.08
+            }
+          }
+        ]
+      }
+      # ---- carriage plate + the two forks ----
+      Pose {
+        translation 0.52 0 %<= GROUND + 0.33 >%
+        children [
+          Shape {
+            appearance BrushedAluminium {
+              colorOverride 0.62 0.63 0.65
+            }
+            geometry Box {
+              size 0.06 0.9 0.45
+            }
+          }
+        ]
+      }
+      %< for (let i = 0; i < 2; ++i) {
+           const fy = (i === 0 ? forkY : -forkY);
+      >%
+      Pose {
+        translation 0.57 %<= fy >% %<= GROUND + 0.16 >%
+        children [
+          %< if (i === 0) { >%
+          DEF FL_FORK_HEEL Shape {
+            appearance USE FL_STEEL
+            geometry Box {
+              size 0.05 0.12 0.32
+            }
+          }
+          %< } else { >%
+          USE FL_FORK_HEEL
+          %< } >%
+        ]
+      }
+      Pose {
+        translation 1.07 %<= fy >% %<= GROUND + 0.025 >%
+        children [
+          %< if (i === 0) { >%
+          DEF FL_FORK_BLADE Shape {
+            appearance USE FL_STEEL
+            geometry Box {
+              size 0.95 0.12 0.05
+            }
+          }
+          %< } else { >%
+          USE FL_FORK_BLADE
+          %< } >%
+        ]
+      }
+      %< } >%
+      # ---- wheels ----
+      %< for (let i = 0; i < wheels.length; ++i) { >%
+      Pose {
+        translation %<= wheels[i].x >% %<= wheels[i].y >% %<= axleZ >%
+        rotation 1 0 0 1.5708
+        children [
+          %< if (i === 0) { >%
+          DEF FL_WHEEL Shape {
+            appearance PBRAppearance {
+              baseColor 0.09 0.09 0.1
+              roughness 0.95
+              metalness 0
+            }
+            geometry Cylinder {
+              radius %<= wheelRadius >%
+              height %<= wheelWidth >%
+              subdivision 24
+            }
+          }
+          %< } else { >%
+          USE FL_WHEEL
+          %< } >%
+        ]
+      }
+      %< } >%
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation -0.5 0 %<= GROUND + 0.5 >%
+          children [
+            Box {
+              size 2.1 1.15 1.0
+            }
+          ]
+        }
+        Pose {
+          translation 0.5 0 %<= GROUND + 0.95 >%
+          children [
+            Box {
+              size 0.2 0.9 1.9
+            }
+          ]
+        }
+        Pose {
+          translation 1.05 0 %<= GROUND + 0.03 >%
+          children [
+            Box {
+              size 1.0 0.65 0.06
+            }
+          ]
+        }
+      ]
+    }
+    %< if (fields.enablePhysics.value) { >%
+    physics Physics {
+      density -1
+      mass 1500
+      centerOfMass [
+        -0.35 0 %<= GROUND + 0.35 >%
+      ]
+    }
+    %< } >%
+  }
+}

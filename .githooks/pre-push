@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+# Local CI: run the smoke world set before pushing.
+# Bypass with: OMNISIM_SKIP_PUSH_CHECK=1 git push
+set -e
+
+if [ "${OMNISIM_SKIP_PUSH_CHECK:-}" = "1" ]; then
+    echo "[pre-push] OMNISIM_SKIP_PUSH_CHECK=1 set — skipping smoke run."
+    exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+# Read all pushed refs from stdin. Skip only if EVERY destination is a
+# scratch/* branch (personal sandbox); otherwise run the smoke check.
+# Also note whether any RENDER-relevant file changed in the pushed range: the render gate (below) needs
+# a GUI window for the wgpu self-check, so we only pop one when render code actually changed.
+all_scratch=1
+any_ref=0
+render_touched=0
+changed_worlds=""
+zero=0000000000000000000000000000000000000000
+render_re='^(src/omnisim/render/|src/omnisim/nodes/OmWgpu|src/omnisim/gui/(OmView3D|OmWgpuView)|scripts/dev/render_oracle)'
+# Worlds the viewpoint gate (below) polices: shipped worlds only. tests/ worlds
+# often use a deliberately odd camera, and _scratch* files are WIP.
+world_re='^(projects|distribution)/.*\.(omniworld|wbt)$'
+while read local_ref local_sha remote_ref remote_sha; do
+    any_ref=1
+    case "${remote_ref:-}" in
+        refs/heads/scratch/*) ;;
+        *) all_scratch=0 ;;
+    esac
+    if [ "$local_sha" = "$zero" ]; then
+        continue  # branch deletion — nothing to render-check
+    fi
+    if [ "$remote_sha" = "$zero" ]; then
+        render_touched=1  # new branch: can't cheaply scope the diff — run the render gate to be safe
+        # For the world diff a full scan is ~14 s, so scope against the trunk
+        # rather than checking every world in the tree.
+        base="$(git merge-base "$local_sha" origin/main 2>/dev/null || true)"
+    elif git diff --name-only "$remote_sha" "$local_sha" 2>/dev/null | grep -Eq "$render_re"; then
+        render_touched=1
+        base="$remote_sha"
+    else
+        base="$remote_sha"
+    fi
+    if [ -n "${base:-}" ]; then
+        for w in $(git diff --name-only --diff-filter=d "$base" "$local_sha" 2>/dev/null \
+                   | grep -E "$world_re" || true); do
+            case "$w" in *_scratch*) continue ;; esac
+            [ -f "$ROOT/$w" ] && changed_worlds="$changed_worlds $w"
+        done
+    fi
+done
+
+if [ "$any_ref" = "1" ] && [ "$all_scratch" = "1" ]; then
+    echo "[pre-push] all destinations are scratch/* — skipping smoke run."
+    exit 0
+fi
+
+# Tier 0 install-coherence preflight -- runs FIRST, fails FAST and CLEAR.
+# This is the one thing the cross-machine determinism tiers cannot check: they
+# ask whether a run BEHAVES the same, but a stale libController (engine HAS the
+# IPC nonce, lib does NOT) makes every controller hang forever in Robot() while
+# the run still exits 0 -- so the Newton gate and smoke run below would either
+# hang or FALSELY PASS, blind to the exact bug that motivated this check (6eea9d76).
+# doctor --strict is ~1s and exits non-zero only on a definitive incoherence
+# (ABI mismatch, missing binary); env landmines stay advisory and do not block.
+echo "[pre-push] Tier 0 install-coherence preflight (doctor --strict)."
+doctor_out="$(cd "$ROOT" && python -m omnisim doctor --strict 2>&1)" || {
+    echo "$doctor_out"
+    echo ""
+    echo "[pre-push] FAILED: install is not coherent enough to run (see above)."
+    echo "[pre-push] An engine/libController ABI mismatch hangs every controller;"
+    echo "[pre-push] rebuild the stale side (e.g. make -C src/controller/c), then push."
+    echo "[pre-push] Bypass with: OMNISIM_SKIP_PUSH_CHECK=1 git push"
+    exit 1
+}
+echo "[pre-push] Install coherent."
+echo ""
+
+# Champion-checkpoint tracking guard. runs/ is gitignored and champions are
+# force-added at milestones (training/README.md); the public release publishes
+# the tracked tree, so every tracked checkpoint must be referenced (by
+# basename) somewhere in the tracked tree — an unreferenced one is training
+# residue that would ship in the snapshot. Reference it (doc/demo/manifest)
+# in the same commit, or `git rm --cached` it.
+# ONE git grep, not one per checkpoint. The old loop ran a full-tree `git grep` for every tracked
+# checkpoint (37 of them = 15.3 s measured 2026-08-24, on EVERY push). `git grep -o` prints the
+# matched basename, so a single pass yields the set of REFERENCED names and anything absent from it
+# is an orphan. Measured: 15.3 s -> 1.7 s, identical verdict. `|| true` because git grep exits 1 on
+# no-match and this script runs under `set -e`.
+ckpt_orphans=""
+ckpt_all="$(git ls-files 'projects/policies/training/runs/*')"
+if [ -n "$ckpt_all" ]; then
+    ckpt_names="$(mktemp)"
+    ckpt_hits="$(mktemp)"
+    printf '%s\n' "$ckpt_all" | sed 's|.*/||' | sort -u > "$ckpt_names"
+    git grep -ohF -f "$ckpt_names" -- ':!projects/policies/training/runs' | sort -u > "$ckpt_hits" || true
+    for f in $ckpt_all; do
+        grep -qxF "${f##*/}" "$ckpt_hits" || ckpt_orphans="$ckpt_orphans $f"
+    done
+    rm -f "$ckpt_names" "$ckpt_hits"
+fi
+if [ -n "$ckpt_orphans" ]; then
+    echo "[pre-push] FAILED: tracked checkpoints under training/runs/ referenced by nothing:"
+    for f in $ckpt_orphans; do echo "[pre-push]   $f"; done
+    echo "[pre-push] Reference each (doc/demo/skill manifest) or 'git rm --cached' it."
+    echo "[pre-push] Bypass with: OMNISIM_SKIP_PUSH_CHECK=1 git push"
+    exit 1
+fi
+
+# Viewpoint framing gate. Every world must open LOOKING AT its subject
+# (docs/developer/viewpoint-convention.md). Nothing enforced this until now and
+# the tree drifted badly: 160 worlds shared one straight-down orientation string
+# pasted onto an oblique eye point, so they opened staring at empty floor metres
+# from the robot. Scoped to the .wbt files actually in the push (a full-tree scan
+# is ~14 s; a handful of worlds is well under a second), and to shipped worlds —
+# tests/ worlds may legitimately use an odd camera. Only a world whose ROBOT is
+# entirely outside the frustum fails; "small in frame" is advisory.
+# Skip just this gate with OMNISIM_SKIP_VIEWPOINT_GATE=1.
+if [ -n "$changed_worlds" ] && [ "${OMNISIM_SKIP_VIEWPOINT_GATE:-}" != "1" ]; then
+    n_worlds=$(echo $changed_worlds | wc -w)
+    echo "[pre-push] Viewpoint framing gate ($n_worlds changed world(s))."
+    vp_rc=0
+    (cd "$ROOT" && PYTHONPATH="src/python${PYTHONPATH:+:$PYTHONPATH}" \
+        python -m omniworld.validation.viewpoint --quiet --fail-on broken \
+        $changed_worlds) || vp_rc=$?
+    if [ "$vp_rc" != "0" ]; then
+        echo ""
+        echo "[pre-push] FAILED: a world opens with its robot out of frame."
+        echo "[pre-push] Run the printed set_viewpoint.py command (add --dry-run first),"
+        echo "[pre-push] or record the world in scripts/dev/viewpoint_targets.json."
+        echo "[pre-push] A deliberately composed scene belongs in EXEMPT_FRAGMENTS in"
+        echo "[pre-push]   src/python/omniworld/validation/viewpoint.py (with a reason)."
+        echo "[pre-push] Bypass: OMNISIM_SKIP_VIEWPOINT_GATE=1 (this gate) /"
+        echo "[pre-push]         OMNISIM_SKIP_PUSH_CHECK=1 (all gates)."
+        exit 1
+    fi
+    echo "[pre-push] Viewpoint framing OK."
+    echo ""
+fi
+
+# Newton physics gate FIRST — Newton is the ONLY backend since src/ode was deleted
+# (commit bdc02139; it became the default at the Stage 3 flip, default-flip-plan.md
+# §4.3). --require-newton makes it assert Newton was ACTUALLY active, now by reading
+# the engine's own `.newton.json` verdict sidecar rather than the old trick of
+# diffing against a forced-ODE run (which would pass vacuously today: a forced run
+# has no physics, so anything that moved "diverges" from it).
+# NOTE the failure mode changed with the deletion: this gate failing no longer means
+# "it fell back to the old backend", it means the run had NO working physics.
+# Reliable: the gate uses --no-rendering + a retry backstop (the §3.5 launch-race fix).
+echo "[pre-push] Running Newton physics gate (physics_oracle.py --gate --require-newton)."
+if ! python "$ROOT/scripts/dev/physics_oracle.py" --gate --require-newton; then
+    echo ""
+    echo "[pre-push] FAILED: Newton physics gate (invariant violation, or Newton not active)."
+    echo "[pre-push] Fix the regression — or, if warp/newton isn't importable in this shell,"
+    echo "[pre-push] push from one where it is — or bypass with:"
+    echo "[pre-push]   OMNISIM_SKIP_PUSH_CHECK=1 git push"
+    exit 1
+fi
+echo "[pre-push] Newton gate passed."
+echo ""
+
+# Render gate (architectural-baseline.md §2 B2/B4) — wgpu render sanity, via render_oracle.py. Runs
+# ONLY when render code changed (it needs a brief GUI window for the wgpu self-check; we don't pop
+# one on every push). Lenient by design: a host whose wgpu-native cannot initialise, or a launch
+# flake, reports UNAVAILABLE and does NOT block (render_oracle.py exits 0); only a real regression
+# fails the push. Skip just this gate with OMNISIM_SKIP_RENDER_GATE=1.
+#
+# ⚠️ THIS GATE WAS DEAD FROM 2026-08-23 TO 2026-08-24 AND SAID "passed" THE WHOLE TIME. It polled the
+# self-check report for `wren-parity-shadowed:`, a marker deleted from the engine with WREN at D1.4
+# (976b9449d). The poll could never succeed, so it burned all 6 attempts x 70 s = 7m02s (measured) on
+# every render-touching push, reported UNAVAILABLE, exited 0, and printed the success line below
+# while asserting nothing. It now grades the markers the CURRENT wgpu self-check emits (draw count,
+# degenerate-transform scan, id-coverage, screenshot non-background pixels) and takes 21 s.
+# Red-capability is provable without an engine: `python scripts/dev/render_oracle.py --self-test`.
+if [ "$render_touched" = "1" ] && [ "${OMNISIM_SKIP_RENDER_GATE:-}" != "1" ]; then
+    echo "[pre-push] Render code changed — running render gate (render_oracle.py: wgpu render sanity)."
+    echo "[pre-push] A wgpu self-check window may appear briefly. Skip with OMNISIM_SKIP_RENDER_GATE=1."
+    # NOTE: the byte-level golden (B2) was keyed to the Franka panda.wbt parity world, which no longer
+    # ships. The gate below is the coverage/sanity check (catches a dropped floor / vanished geometry).
+    # A per-world byte-golden would be tighter, but it must NOT be baked until the screenshot is shown
+    # to be reproducible across runs on the same machine — an unverified golden turns every push into
+    # a coin flip. To bake one after verifying that:
+    #   python scripts/dev/render_oracle.py \
+    #     --world projects/samples/demos/worlds/showcase/warehouse_husky.omniworld \
+    #     --golden docs/developer/wgpu-golden/warehouse_husky_selfcheck.png --update-golden
+    if ! python "$ROOT/scripts/dev/render_oracle.py" \
+            --world projects/samples/demos/worlds/showcase/warehouse_husky.omniworld; then
+        echo ""
+        echo "[pre-push] FAILED: render gate (wgpu render regression — geometry vanished or went degenerate)."
+        echo "[pre-push] Or bypass with OMNISIM_SKIP_RENDER_GATE=1 (render only) / OMNISIM_SKIP_PUSH_CHECK=1 (all)."
+        exit 1
+    fi
+    echo "[pre-push] Render gate passed."
+    echo ""
+fi
+
+echo "[pre-push] Running smoke worlds (set OMNISIM_SKIP_PUSH_CHECK=1 to bypass)."
+echo "[pre-push] Measured 2026-08-24 (machine 9722d23d12a3): 18 s warm for the 4 active worlds."
+echo "[pre-push] A COLD clone is much slower -- the first run also compiles the missing test controllers."
+
+# `|| rc=$?` keeps a non-zero exit from aborting the hook under `set -e`,
+# so the exit-2 diagnosis and bypass hints below actually print.
+rc=0
+python "$ROOT/tests/smoke/run_smoke.py" --nomake || rc=$?
+if [ "$rc" = "2" ]; then
+    # run_smoke.py exit 2 = environment problem (e.g. port 1234 occupied by a
+    # running Webots GUI). Message has already been printed to stderr.
+    echo ""
+    echo "[pre-push] Smoke runner could not start. Bypass with:"
+    echo "[pre-push]   OMNISIM_SKIP_PUSH_CHECK=1 git push"
+    exit 1
+elif [ "$rc" != "0" ]; then
+    echo ""
+    echo "[pre-push] FAILED. Either fix the smoke regression or bypass with:"
+    echo "[pre-push]   OMNISIM_SKIP_PUSH_CHECK=1 git push"
+    exit 1
+fi
+
+echo "[pre-push] Smoke run passed."

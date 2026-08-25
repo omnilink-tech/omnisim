@@ -1,0 +1,106 @@
+#OMNISIM R2025a utf8
+
+# G1 FOOTWORK-TURN stand-alone demo (2026-07-08): the REAL robot (G1_REAL) does the ~90 deg
+# footwork turn (wr_stepturn via the BATON solo-turn context; crane-yaw auto-OFF => wtz=0, pure
+# footwork), beside a translucent GHOST (G1_GHOST) that plays the TURNING reference itself
+# (ghost_turn_180_lut -- a SEQUENCE ghost whose root_lut rotates the base in place). The ghost is
+# the ideal the policy shadows; the visible gap is the tracking + decel-stop (the robot arrests at
+# ~90 while the reference continues). NO box / carts -- just the turn and its ghost.
+# Run: bash projects/policies/demos/run_turn_solo.sh [dur] [gui|headless]
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "G1 footwork turn + turning ghost"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 6.606 -6.332 7.710
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 16 12
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF G1_REAL URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "humanoid_stand_deploy"
+  physicsBackend "newton"
+}
+
+DEF G1_GHOST URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 1.4 0.78
+  name "g1_ghost"
+  supervisor TRUE
+  controller "ghost_hologram"
+  controllerArgs [ "ghost_turn_180_lut.json" "yawlock" ]
+  staticBase TRUE
+  physicsBackend "ode"
+}
+
+DEF HARNESS_RIG Robot {
+  name "harness_rig"
+  supervisor TRUE
+  controller "harness_rig"
+}
+DEF HARNESS_LINE Solid {
+  translation 0 0 1.6
+  name "harness_line"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.80 0.15
+        transparency 0.35
+        roughness 0.6
+        metalness 0
+      }
+      geometry DEF HARNESS_CYL Cylinder {
+        radius 0.012
+        height 1.6
+      }
+    }
+  ]
+}
+DEF HARNESS_HOOK Solid {
+  translation 0 0 2.4
+  name "harness_hook"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.80 0.15
+        transparency 0.1
+        roughness 0.4
+        metalness 0.6
+      }
+      geometry Box { size 0.22 0.22 0.06 }
+    }
+  ]
+}

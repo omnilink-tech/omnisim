@@ -1,0 +1,192 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — OmniArm 6 + Robotiq 2F-140 REAL pick & place (friction only, no weld)
+#
+# ⚠ READ THIS BEFORE EDITING. Almost every "grasp" in this tree is a kinematic
+# weld: the bridge welds the nearest DEF GRASP_* node to the tool and teleports
+# it to the TCP every tick, which would hold with the fingers WIDE OPEN, for
+# ever. This demo deliberately does not use that path. Nothing writes the
+# block's pose; the only thing holding it is contact friction between two
+# Robotiq 2F-140 pads. If the physics stops working, this demo drops the block --
+# which is the entire point of it existing.
+#
+# THE GRIPPER. omniarm6_2f140_grip.urdf: every <visual> is the customer's own CAD
+# (3d_models/2F-140_Assy_Open_20191022.STEP, tessellated by
+# scripts/dev/step_to_urdf.py), and the <collision> is TEN axis-aligned boxes
+# authored to the measured mesh bounds: a gripper-body box on link6, and per jaw
+# two pad halves, a fingertip bracket and the four-bar arm. Primitives, not the
+# CAD: an 11816-triangle hull per jaw would snag on bounding boxes and lock the
+# joints (AGENTS.md), and a flat box is what gives the pads FACE contact.
+#
+# ⚠ newtonCompoundColliders TRUE IS LOAD-BEARING FOR THAT, not decoration.
+# Without it OmSolid.cpp:3041-3067 unwraps a multi-collider link's boundingObject
+# group and registers kids.item(0) ONLY -- the jaws would silently fall back to
+# one pad half each and the gripper body would vanish again. If you ever see the
+# block passing through the fingertips, check this field first.
+#
+# Before this revision the collision was ONE pad box per jaw and nothing else, so
+# the block passed straight through the gripper body, the linkages and the
+# fingertips while the CAD visual drew all three. It also put the pads ON the
+# pick table at the grasp height, which is what made the fingers appear to stall
+# (see the controller docstring -- mu 6 stiction, not a servo defect).
+#
+# THE RECIPE. Inherited wholesale from omniarm6_real_pick_place.omniworld (the 2F-85
+# sibling), which traces to the one OmniSim-native friction grasp on record that
+# survived a MOVING arm (ladder T2, 2026-08-03): 29.704 s hold, 4.242 mm max
+# deviation, 1.214 m of tool travel, 3714 samples. Every field below is
+# load-bearing -- omniarm6_grasp_train.omniworld declares mu and omits the other five,
+# and has never been shown to hold anything.
+#
+#   basicTimeStep 8   a 16 ms tick is too coarse for a squeeze to stay stable
+#   newtonGroundMu 6  friction is global here: one ShapeConfig serves the whole
+#                     world, so the pad cannot be grippier than the floor
+#   Ke/Kd 8000/200    ⚠ THESE ARE A RATIO, NOT A STIFFNESS. Measured on this
+#                     world: the engine derives MuJoCo's solref from the PAIR
+#                     and only the DAMPING RATIO moves -- ke 8000->40000 at
+#                     kd 200 took solref from [0.01, 1.118] to [0.01, 0.5] with
+#                     the timeconst unchanged, and scaling kd with sqrt(ke)
+#                     reproduced the shipped result to 0.01 mm at both. So
+#                     raising Ke alone does not stiffen contact, it UNDER-DAMPS
+#                     it: ke 40000/kd 200 gave 4.97 mm of pad penetration and
+#                     placed the block 11 mm off. Change them together or not
+#                     at all.
+#   elliptic+impratio the pyramidal cone pseudo-slips (181 mm -> 0.6 mm measured)
+#   iterations 150/50 frictional contact that must HOLD, not creep
+#
+# Verify:
+#   python -m omnisim run-headless projects/samples/demos/worlds/flagship/omniarm6_2f140_pick_place.omniworld --duration 60
+#   (the controller writes _2f140_pick_result.json next to itself; PICK_CONTROL_DROP=1
+#    runs the negative control -- same motion, no squeeze, block must stay put)
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "OmniLink — OmniArm 6 + Robotiq 2F-140 real pick & place (friction only)"
+  newtonSolver "mujoco+vbd"
+  newtonStatics TRUE
+  newtonCompoundColliders TRUE
+  newtonGroundMu 6
+  newtonContactKe 8000
+  newtonContactKd 200
+  newtonCone "elliptic"
+  newtonImpratio 100
+  # ⚠ 4, NOT THE ENGINE DEFAULT 3. condim 3 is sliding friction only: the
+  # torsional coefficient newton writes into geom_friction[1] is never read, so
+  # a block pinched between two pads can rotate about the contact normal at
+  # zero cost. MEASURED on the 2F-85 sibling: with the pads centred on the
+  # block, at condim 3 the block rotates inside the gripper during the 0.47 m
+  # carry and levers the pads from 24 mm apart to 41 mm -- it arrives tipped
+  # (z=0.225 instead of 0.245) on three of three runs. At condim 4 the same run
+  # holds 2 contacts per pad the whole way and places the block standing.
+  # ⚠ AND NOT 6 EITHER, TESTED TWICE AGAINST TWO DIFFERENT FAILURE MODES.
+  # condim 6 (which adds rolling friction) was measured on this world against
+  # PENETRATION and came out identical to condim 4 to 0.01 mm and on every
+  # contact count; it was measured again on 2026-08-11 against the block
+  # ROTATING inside the jaws -- a different failure mode, so it deserved its
+  # own test -- and reproduced 13.459 deg of relative rotation BIT-IDENTICALLY,
+  # contact counts and penetration included. A flat-face pinch gives rolling
+  # friction nothing to do. 3 still fails, 6 still adds nothing.
+  # (newtonIterations 400 / newtonLsIterations 100 was bit-identical too, on
+  # the same run: the rotation is contact GEOMETRY, not solver convergence.)
+  newtonCondim 4
+  newtonIterations 150
+  newtonLsIterations 50
+}
+Viewpoint { orientation -0.30 0.13 0.945 2.33 position 1.85 -1.75 1.25 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 4 4 }
+
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_2f140_grip.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_2f140_cloth"
+}
+
+# Pick pedestal, top face at z=0.20
+DEF PICK_TABLE Solid {
+  translation 0.46 0 0.10
+  children [
+    DEF PT_SH Shape {
+      appearance PBRAppearance { baseColor 0.40 0.43 0.48 roughness 1 metalness 0 }
+      geometry Box { size 0.26 0.26 0.20 }
+    }
+  ]
+  name "pick_table"
+  boundingObject USE PT_SH
+}
+
+# Place pedestal, same height, off to the side -- the carry is what makes this
+# a pick and PLACE rather than a lift.
+DEF PLACE_TABLE Solid {
+  translation 0.24 -0.42 0.10
+  children [
+    DEF PL_SH Shape {
+      appearance PBRAppearance { baseColor 0.82 0.68 0.15 roughness 1 metalness 0 }
+      geometry Box { size 0.24 0.24 0.20 }
+    }
+  ]
+  name "place_table"
+  boundingObject USE PL_SH
+}
+
+# THE CLOTH -- a hanging sheet where the rigid block used to stand.
+#
+# ⚠ EVERYTHING ELSE IS THE SHIPPING 2F-140 PICK-AND-PLACE DEMO, UNCHANGED:
+# the real Robotiq 2F-140 (31 STL parts, box finger colliders), the arm, both
+# tables, the whole WorldInfo friction recipe and the controller's motion.
+# Only the grasped object differs, so a failure here is about the CLOTH.
+#
+# ⚠ WHY IT HANGS, AND WHY THE APPROACH IS LATERAL. Parallel jaws close
+# horizontally: on a sheet lying flat they compress it in-plane and slide off,
+# so the fabric must be presented EDGE-ON. But a hanging sheet cannot be
+# reached from ABOVE either -- its support and its own upper half are both in
+# the descent column, and the first attempt drove the gripper straight through
+# the rail (seen in the GUI). The controller therefore slides in along +x at
+# pinch height, where the open jaw straddles the sheet with a clear path.
+#
+# ⚠ RAIL AT 0.62 AND A SIDEWAYS TOOL -- BOTH ARE REQUIRED, NEITHER ALONE WORKS.
+# With the tool pointing DOWN the wrist sits 0.25 m above the pads, so a grasp
+# at 0.251 puts the wrist at ~0.50: level with the old rail and INSIDE the
+# sheet. Raising the rail alone does not help, because the cloth hangs below it
+# and the wrist is still in the fabric. The controller therefore holds the tool
+# HORIZONTAL (SIDE) so the wrist trails behind the pads in +x, and the rail sits
+# at 0.62 above everything. Grasp is mid-sheet at z = 0.350; the sheet spans
+# 0.620 -> 0.280 so the hem hangs free below the pads.
+DEF CLOTH_RAIL Solid {
+  translation 0.46 0 0.620
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.55 0.57 0.60 roughness 0.35 metalness 0.9 }
+      geometry Cylinder { height 0.20 radius 0.006 }
+    }
+  ]
+  rotation 0 1 0 1.5708
+  name "cloth_rail"
+}
+DEF SHEET Cloth {
+  translation 0.41 0 0.620
+  rotation 1 0 0 -1.5708
+  dimX 5
+  dimY 17
+  cellX 0.02
+  cellY 0.02
+  mass 0.001
+  edgeKe 2.0
+  particleRadius 0.01
+  fixLeft FALSE
+  fixRight FALSE
+  fixBottom TRUE
+  fixTop FALSE
+  diffuseColor 0.85 0.25 0.20
+}
+

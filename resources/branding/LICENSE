@@ -1,0 +1,74 @@
+OmniSim and OmniLink Brand Assets — Copyright and Licence
+=========================================================
+
+Copyright 2026 OmniLink. All rights reserved.
+
+THIS DIRECTORY IS NOT COVERED BY THE APACHE LICENSE 2.0.
+
+Everything under resources/branding/ — the OmniSim and OmniLink logos, the
+dot-sphere orb, the wordmarks, the lockups, the glyphs and favicons, and the
+brand palette and trade dress they express — is the copyrighted artwork of
+OmniLink and is EXCLUDED from the Apache-2.0 grant in the repository root
+LICENSE file. No right to reproduce, modify, or redistribute this artwork is
+granted by that licence, by this file, or by your possession of a copy of
+OmniSim.
+
+This is the ordinary arrangement for an open-source project with a protected
+brand — Mozilla, Rust, Docker and the Linux Foundation all reserve their logo
+copyright separately from the licence on their code — and it exists so that a
+fork of OmniSim's code cannot present itself as OmniSim.
+
+TWO DISTINCT RIGHTS, AND WHY BOTH ARE STATED
+--------------------------------------------
+
+  * COPYRIGHT in these files. That is what this notice reserves. It governs
+    copying, modifying and redistributing the artwork itself.
+
+  * TRADEMARK in the marks the artwork depicts. That is governed by the
+    project's Trademark Policy in TRADEMARKS.md at the repository root, and by
+    Apache-2.0 Section 6, which withholds trademark rights from the code grant.
+    It governs using the marks to identify a product or a project.
+
+They are separate, and reserving one does not reserve the other. Apache-2.0
+Section 6 alone would leave a recipient free to copy, alter and republish these
+image files so long as they did not use them AS marks. That is not the intent,
+and this notice is what says so.
+
+WHAT YOU MAY DO ANYWAY
+----------------------
+
+The permissions in TRADEMARKS.md apply here too, and they are deliberately
+generous. In particular you may reproduce these assets UNMODIFIED to refer
+factually to OmniSim or OmniLink — in an article, a talk, a course, a
+compatibility badge, a screenshot, or documentation for something you built on
+OmniSim. You do not need to ask. Read TRADEMARKS.md for the full statement of
+what is permitted, what requires written permission, and how to ask.
+
+What you may not do is alter these files, incorporate them into another
+project's identity, or ship them as the branding of a modified distribution.
+A fork that redistributes modified OmniSim code must rename and rebrand, which
+means replacing everything in this directory with its own artwork — see the
+"What requires written permission" section of TRADEMARKS.md.
+
+EXCEPTIONS INSIDE THIS DIRECTORY
+--------------------------------
+
+Two things here are NOT ours and carry their own terms, which govern instead:
+
+  * resources/branding/omnilink/fonts/Montserrat-*.ttf / *.otf — the Montserrat
+    typeface, SIL Open Font License 1.1. Licence text is in the same directory
+    at LICENSE-Montserrat-OFL-1.1.txt.
+
+  * resources/branding/omnilink/fonts/Hogira-*.otf — a display typeface with no
+    redistribution grant we could establish. These files are NOT part of the
+    public distribution; they are removed by the release deny-list and you
+    should not have them. If you do, they are not licensed to you by us. See
+    the Carve-Out section of the repository root NOTICE file, and
+    resources/branding/omnilink/BRAND.md, which tells a public reader which
+    OFL-licensed family to substitute.
+
+QUESTIONS
+---------
+
+Permission requests and questions about brand use: see the contact section of
+TRADEMARKS.md at the repository root.

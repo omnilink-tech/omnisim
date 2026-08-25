@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>OmniSim Streaming Viewer</title>
+    <link rel="icon" type="image/png" href="omnisim_icon.png">
+    <link type="text/css" rel="stylesheet" href='style.css' />
+  </head>
+
+  <body>
+    <header>
+      <div class="title-container">
+        <h1>OmniSim Streaming Viewer</h1>
+      </div>
+      <div class="connect-container">
+        <div class="grid-item"><p>Connect to:</p></div>
+        <div class="grid-item">
+          <input id="IP-input" type="text" size="40" value="ws://localhost:1234"/>
+          <input id="connect-button" type="button" value="Connect"/>
+        </div>
+        <div class="grid-item"><p>Mode:</p></div>
+        <div class="grid-item">
+          <select id="mode">
+            <option value="w3d">W3D</option>
+            <option value="mjpeg">MJPEG</option>
+          </select>
+        </div>
+        <div class="grid-item"><p>Broadcast:</p></div>
+        <div class="grid-item">
+          <input id="broadcast" type="checkbox"/>
+        </div>
+      </div>
+    </header>
+    <div class="omnisim-view-container">
+      <omnisim-view></omnisim-view>
+    </div>
+    <script type="module" src="resources/web/wwi/OmnisimView.js"></script>
+    <script src="setup_viewer.js"></script>
+  </body>
+</html>

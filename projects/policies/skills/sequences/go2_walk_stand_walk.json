@@ -1,0 +1,46 @@
+{
+  "schema": 2,
+  "name": "go2_walk_stand_walk",
+  "title": "Go2: walk \u2192 stand \u2192 walk (THE QUADRUPED BATON SEQUENCE)",
+  "class": "quadruped",
+  "robot": "go2",
+  "status": "verified",
+  "summary": "The first non-G1 BATON sequence, and the proof that the sequence LAYER generalized along with the arbiter. A Go2 walks under the Shadowing champion, is handed over to a DETERMINISTIC HOLD (go2_stand: policy=None, zero residual \u2014 a quadruped is statically stable and needs no learned stand), then handed back to the walker. Same baton.py that sequences the G1, in a host with no `world`, no torch, no arms and NO CRANE.",
+  "profile": "go2_baton_deploy",
+  "world": "projects/policies/research/worlds/go2_baton_deploy.omniworld",
+  "deploy": {
+    "kind": "world",
+    "launcher": "scripts/dev/run_go2_baton_deploy.sh",
+    "notes": "A `world` deploy, not a `recipe` deploy: the quadruped runs an ONNX controller in its own process, so there is no in-engine recipe pymod to hook. Until 2026-07-13 the sequence layer could only emit the G1 recipe's KEY=VAL bundle for run_walk_rl.sh \u2014 which is exactly why no quadruped BATON demo could be expressed as a sequence, however generic the arbiter driving it was."
+  },
+  "primary": "go2_shadow_walk",
+  "skills": [
+    "go2_stand"
+  ],
+  "arbiter": {
+    "kind": "schedule",
+    "value": "walk:12,stand:6,walk:12"
+  },
+  "env": {
+    "GO2_GHOST_LUT": "projects/policies/ghosts/go2/go2_shadow_ghost_lut.json",
+    "GO2_STAND_LUT": "projects/policies/ghosts/go2/go2_stand_ghost_lut.json",
+    "GO2_POLICY_ONNX": "projects/policies/research/inference/policies/gpu_go2_shadow_main/policy.onnx"
+  },
+  "duration_default": 60,
+  "gui_default": "headless",
+  "verification": {
+    "date": "2026-07-13",
+    "engine": "Newton/mujoco_warp (RunPod RTX 4090)",
+    "support": "free-standing quadruped; no harness",
+    "result": "2 switches, 0 falls. walk gmatch 0.864 / vx_mean +0.418; the settled hold: vx -> 0.00, gmatch 0.991. Launched BOTH ways -- from the hand-written launcher AND from this manifest (skill_lib.py sequence go2_walk_stand_walk) -- and verify-demos proves the assembled env reproduces the launcher key-for-key (26 keys).",
+    "the_bug_this_demo_found": "\u26d4 THE FIRST walk:12 RUN FELL, and it is the reason the support gate exists. BATON's naive quadruped default was `always_ok` -- 'a statically stable trotter has no forbidden hand-over instant'. FALSE, measured: the walk:12 switch landed MID-SWING (phase 0.76), the reference froze to a stance hold while a diagonal pair was airborne, the Go2 tripped and FLIPPED ONTO ITS BACK at t=12.83 s -- and then kept 'walking' inverted, still scoring gmatch 0.92, because a pose metric cannot see that you are upside down. Schedules that switched at walk:10 and walk:8 happened to catch benign phases and survived, which is exactly what phase dependence looks like. FIX: the Go2 host now asks its own gait model for the per-leg swing weights and hands over only in the FOUR-FOOT SUPPORT windows a duty-0.6 trot has twice per cycle (~20% of the cycle). Re-running the IDENTICAL failing schedule: the gate delayed switch #1 by 13 ticks (t=750 -> t=763, phase 0.76 -> 3.11) and the robot did not fall.",
+    "honest_caveats": [
+      "`ONNX loaded:` is asserted by the launcher. A bare ghost replays well enough to look like a policy result (it walks, and scores a near-ceiling gmatch because it IS the ghost) -- a missing policy is FATAL here, never a silent baseline.",
+      "The stand is a HOLD, not a balance controller: it commands the nominal stance and a statically stable quadruped stays up. It is not push-recovery.",
+      "gmatch is a POSE metric and it does NOT know which way is up: the flipped robot scored 0.92 while lying on its back. Never read gmatch without reading roll/bz.",
+      "The later go2_turn skill and go2_walk_turn_walk sequence close the original turn gap; this record remains the walk/stand handover baseline."
+    ]
+  },
+  "reproduces": "scripts/dev/run_go2_baton_deploy.sh",
+  "doc": "docs/developer/policy-switching.md"
+}

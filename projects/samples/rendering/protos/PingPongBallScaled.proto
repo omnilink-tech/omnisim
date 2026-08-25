@@ -1,0 +1,48 @@
+#OMNISIM R2025a utf8
+# license: Apache License 2.0
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/samples/rendering/protos/PingPongBallScaled.proto
+# keywords: samples/rendering
+# A ping pong ball 4 times bigger than a real one.
+# A Sphere primitive plus one in-tree texture; bundles no third-party mesh.
+# See PROVENANCE.md in this directory.
+
+PROTO PingPongBallScaled [
+  field SFVec3f translation 0 0 0
+  field SFRotation rotation 0 0 1 0
+  field SFString name "ping pong ball"
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Shape {
+        appearance PBRAppearance {
+          metalness 0
+          roughness 1
+          # Plain matte white. The decal this used to carry was an upstream
+          # Webots asset under "Licensed for use only with Webots", which cannot
+          # ship in an Apache-2.0 tree; a ping-pong ball is white regardless, and
+          # the PROTO exists to sweep PBR scalars, not to show a logo.
+          baseColor 1 1 1
+        }
+        geometry DEF SPHERE Sphere {
+          radius 0.08
+          subdivision 3
+        }
+      }
+    ]
+    name IS name
+    model "ping pong ball"
+    contactMaterial "ping pong ball material"
+    boundingObject USE SPHERE
+    physics Physics {
+      density 84.0
+      damping Damping {
+        linear 0.05
+        angular 0.1
+      }
+    }
+  }
+}

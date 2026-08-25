@@ -1,0 +1,670 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="omniarm6">
+
+	<link name="link0">
+		<inertial>
+			<origin rpy="0 0 0" xyz="-0.00090289 -3.524e-05 0.0464554" />
+			<mass value="2.002" />
+			<inertia ixx="0.00382661" ixy="-1.191e-05" ixz="-3.816e-05" iyy="0.00386108" iyz="-1.6e-06" izz="0.00485705" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link0_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link0_accent.obj" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<collision>
+			<origin xyz="-0.02 0 0.037" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.12" length="0.075" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link1">
+		<inertial>
+			<origin rpy="0 0 0" xyz="2.496e-05 0.0196556 0.169149" />
+			<mass value="8.256" />
+			<inertia ixx="0.0447417" ixy="-5.18e-06" ixz="3.29e-06" iyy="0.038383" iyz="-0.00805897" izz="0.0211142" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link1_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link1_joint.obj" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<collision>
+			<origin xyz="0 0.01 0.17" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.10" length="0.23" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link2">
+		<inertial>
+			<origin rpy="0 0 0" xyz="-4.02745e-06 0.113023 0.158393" />
+			<mass value="3.9668" />
+			<inertia ixx="0.100126" ixy="1.52983e-07" ixz="4.2228e-06" iyy="0.0997161" iyz="0.00215017" izz="0.00646289" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link2_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link2_accent.obj" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link2_joint.obj" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<collision>
+			<origin xyz="0 0.13 0.185" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.10" length="0.49" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link3">
+		<inertial>
+			<origin rpy="0 -0 0" xyz="-3.51946e-05 0.0177216 0.04073" />
+			<mass value="5.26105" />
+			<inertia ixx="0.0206029" ixy="1.61027e-05" ixz="2.308e-06" iyy="0.016636" iyz="0.00374158" izz="0.010099" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link3_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link3_accent.obj" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<collision>
+			<origin xyz="0 0 0.04" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.10" length="0.20" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link4">
+		<inertial>
+			<origin rpy="0 -0 0" xyz="8.08281e-05 0.044542 0.241911" />
+			<mass value="2.271" />
+			<inertia ixx="0.0342334" ixy="3.365e-06" ixz="-4.11571e-06" iyy="0.0311273" iyz="-0.00818683" izz="0.00522653" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link4_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link4_accent.obj" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link4_joint.obj" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<collision>
+			<origin xyz="0 0.035 0.29" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.10" length="0.35" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link5">
+		<inertial>
+			<origin rpy="0 -0 0" xyz="4.18387e-05 0.0147744 0.0354" />
+			<mass value="2.54629" />
+			<inertia ixx="0.00855547" ixy="4.97317e-06" ixz="6.07841e-06" iyy="0.00582159" iyz="0.00129227" izz="0.00358312" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link5_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link5_accent.obj" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<collision>
+			<origin xyz="0 0 0.04" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.10" length="0.18" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link6">
+		<inertial>
+			<origin rpy="0 -0 0" xyz="-2.51647e-06 0.000204679 0.12067" />
+			<mass value="0.577639" />
+			<inertia ixx="0.00034085" ixy="1.01877e-06" ixz="-1.4781e-07" iyy="0.00038675" iyz="-1.06647e-06" izz="0.000536577" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link6_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link6_joint.obj" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<collision>
+			<origin xyz="0 0 0.083" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.05" length="0.165" />
+			</geometry>
+		</collision>
+		<!-- ⚠ THE GRIPPER BODY LIVES HERE, NOT ON robotiq_2f140_base_link, AND
+		     THAT IS AN ENGINE CONSTRAINT, NOT A STYLE CHOICE. The 2F-140 base
+		     is attached by a FIXED joint, and OmSolid::flushPendingNewtonRegistrations
+		     (OmSolid.cpp:3354-3413) folds a fixed child into its leader body:
+		     the mass rolls up, the joint anchors are re-expressed — and the
+		     child's boundingObject is DROPPED ("Folding also DROPS its
+		     boundingObject entirely", OmSolid.cpp:3380). Measured before this
+		     change: OMNISIM_NEWTON_DUMP_MJMODEL listed 16 geoms and NO gripper
+		     palm, so the 75x85x90 box authored on the base collided with
+		     nothing and a part could enter the gripper body freely.
+		     newtonCompoundColliders does NOT recover it — it recurses within
+		     ONE Solid's boundingObject, never across the merge.
+		     So the same box is declared here, on the leader, shifted by the
+		     fixed joint's 0.1655: 0 0 0.045 + 0.1655 = 0 0 0.2105.
+		     Measured bound of the ten base STLs in this frame:
+		     x[-0.0375,+0.0375] y[-0.0422,+0.0427] z[-0.0036,+0.0898]. -->
+		<collision>
+			<origin xyz="0 0 0.2105" rpy="0 0 0"/>
+			<geometry><box size="0.075 0.085 0.090"/></geometry>
+		</collision>
+	</link>
+
+	<link name="flange">
+	</link>
+
+	<link name="gripper_tcp">
+	</link>
+
+
+	<joint name="joint1" type="revolute">
+		<limit lower="-3.14159" upper="3.14159" effort="194" velocity="3.1415" />
+		<origin rpy="0 0 0" xyz="0 0 0" />
+		<parent link="link0" />
+		<child link="link1" />
+		<axis xyz="0 0 1" />
+	</joint>
+
+	<joint name="joint2" type="revolute">
+		<limit lower="-3.14159" upper="3.14159" effort="194" velocity="3.1415" />
+		<origin rpy="0 0 0" xyz="0 0 0.22" />
+		<parent link="link1" />
+		<child link="link2" />
+		<axis xyz="0 1 0" />
+	</joint>
+
+	<joint name="joint3" type="revolute">
+		<limit lower="-2.61799" upper="2.61799" effort="102" velocity="3.1415" />
+		<origin rpy="0 0 0" xyz="0 0 0.38" />
+		<parent link="link2" />
+		<child link="link3" />
+		<axis xyz="0 1 0" />
+	</joint>
+
+	<joint name="joint4" type="revolute">
+		<limit lower="-6.28319" upper="6.28319" effort="102" velocity="3.1415" />
+		<origin rpy="0 0 0" xyz="0 0 0" />
+		<parent link="link3" />
+		<child link="link4" />
+		<axis xyz="0 0 1" />
+	</joint>
+
+	<joint name="joint5" type="revolute">
+		<limit lower="-3.14159" upper="3.14159" effort="34" velocity="3.4906" />
+		<origin rpy="0 0 0" xyz="0 0 0.42" />
+		<parent link="link4" />
+		<child link="link5" />
+		<axis xyz="0 1 0" />
+	</joint>
+
+	<joint name="joint6" type="revolute">
+		<limit lower="-6.28319" upper="6.28319" effort="34" velocity="3.4906" />
+		<origin rpy="0 0 0" xyz="0 0 0" />
+		<parent link="link5" />
+		<child link="link6" />
+		<axis xyz="0 0 1" />
+	</joint>
+
+	<joint name="link6flange" type="fixed">
+		<origin rpy="0 0 0" xyz="0 0 0.1655" />
+		<parent link="link6" />
+		<child link="flange" />
+	</joint>
+
+	<joint name="flangegripper_tcp" type="fixed">
+		<origin rpy="0 0 0" xyz="0 0 0.0" />
+		<parent link="flange" />
+		<child link="gripper_tcp" />
+	</joint>
+
+	<!-- ===== Robotiq 2F-140 (physics): real prismatic jaws on link6 =====
+
+	 VISUAL = primitive geometry authored in this repository. NOTE, corrected
+	 2026-08-24: this comment used to say the visual was "the supplied CAD
+	 (3d_models/2F-140_Assy_Open_20191022.STEP), tessellated by
+	 scripts/dev/step_to_urdf.py into projects/robots/robotiq/2f140/meshes/".
+	 That is no longer true, and it is wrong in the risky direction: it claims
+	 THIRD-PARTY CAD LINEAGE for geometry that is now entirely ours. The vendor
+	 CAD was never redistributed (it sat in the gitignored 3d_models/), the
+	 meshes/ directory it named does not exist, and projects/robots/robotiq/2f140/
+	 today holds a primitives-only URDF with zero <mesh> tags. Every filename=
+	 reference in THIS file resolves inside projects/robots/omnisim/omniarm6/.
+	 COLLISION = TEN hand-authored,
+	 AXIS-ALIGNED BOXES: the gripper body (declared on link6, see the note
+	 there), and per jaw two pad halves, a fingertip bracket and the four-bar
+	 arm. Primitives rather than the CAD, deliberately:
+	   * a flat box pad gives FACE contact, which is what makes a friction pinch
+	     hold at all;
+	   * AGENTS.md: dense URDF hulls snag on bounding boxes during sweeps and
+	     lock joints, which reads like an IK or motor-PID bug, not a collider one;
+	   * a Cylinder boundingObject is silently substituted by a CAPSULE, and a
+	     Pose ROTATION inside a boundingObject is silently DROPPED by the Newton
+	     shape walker (OmSolid.cpp:3059) — hence boxes, and hence rpy="0 0 0"
+	     on every single one of them.
+	 The CAD jaw is 11816 triangles per side; as a collider that would be all
+	 those failure modes at once. It is visual only here.
+
+	 !! THE WORLD MUST DECLARE WorldInfo.newtonCompoundColliders TRUE. Without
+	 it OmSolid.cpp:3041-3067 unwraps a multi-collision link's boundingObject
+	 group and registers kids.item(0) ONLY: each jaw would silently keep one pad
+	 half and lose the other three boxes. omniarm6_2f140_pick_place.wbt declares it.
+
+	 !! UNTIL 2026-08-11 THE ONLY COLLIDER WAS ONE PAD BOX PER JAW, so a part
+	 passed straight through the gripper body, the linkages and the fingertips
+	 while the visual drew all three. The box counts and the per-band mesh
+	 measurements behind each new box are in the notes on the left jaw.
+
+	 FRAME. The meshes come out of the converter in their CAD-natural frame:
+	 tool axis +Z, jaws spread along +/-X, mounting face at mesh z=0.00362.
+	 Every visual therefore carries rpy="0 0 1.5707963" (a +90 deg yaw putting the
+	 grasp axis on +/-Y, where the 2F-85 file and the arm bridge expect it) and a
+	 translation that (a) drops the mounting face onto the flange plane and
+	 (b) for a jaw, undoes the joint origin and the CAD's fully open pose.
+
+	 !! PAD INNER FACE = |q|, EXACTLY. This is the same invariant that
+	 omniarm6_2f85_grip.urdf relies on, reached by different numbers, so read this
+	 before touching either file.
+	   2F-85 : joint origin y=+/-0.007 and the pad box half-thickness 0.007
+	           CANCEL.
+	   2F-140: joint origin y=+/-0.0095 and half of the measured 0.019 m pad
+	           thickness CANCEL the same way (0.0095 = 0.019/2).
+	 So pad_inner_face_y = 0.0095 + q - 0.0095 = q, at every q, both jaws.
+	 The controller's geometry depends on this: getting it wrong by 7 mm silently
+	 produced a fake, one-sided, interpenetrating "grasp" earlier in this project
+	 (see the omniarm6_real_pick_place docstring). If you change the pad thickness,
+	 change the joint origin in the same edit.
+
+	 !! TWO PRISMATIC JOINTS ARE AN APPROXIMATION. THE REAL 2F-140 IS AN ANGULAR
+	 LINKAGE. On the hardware the jaws are carried by a four-bar: the pads
+	 TRANSLATE AND ROTATE over the stroke, and they are only truly parallel near
+	 MID-stroke, toeing in at the closed end and out at the open end. This model
+	 gives them pure translation, so it is good near mid-stroke and poor at both
+	 extremes; grasp near mid-stroke (the shipped demo uses a 70 mm block,
+	 q=0.035, dead centre of the 0 to 0.070 per-pad stroke). The VISUAL carries
+	 the same approximation: the whole jaw assembly is rigidly translated, so it
+	 is geometrically exact at full open (q=0.070, the pose the CAD was authored
+	 in) and the linkage roots slide inboard as it closes.
+
+	 DATASHEET (Robotiq 2F-140): 140 mm stroke gives +/-0.070 per pad; grip force
+	 10 to 125 N gives effort 125 (the engine builds the servo at ke = effort*10
+	 = 1250 N/m, OmBasicJoint.cpp:127); closing speed 30 to 250 mm/s gives
+	 velocity 0.07 per pad (140 mm/s at the opening); mass 1.025 kg = 0.865 body
+	 plus 2 x 0.080. MEASURED off the CAD: pad inner face at |x| = 0.07 m
+	 exactly (= 140/2), pad face 0.022 x 0.0655 m = 14.32 cm2, pad thickness
+	 0.01916 m, mounting face to pad low end 0.1437 m, overall
+	 0.207 x 0.075 x 0.213 m.
+	 -->
+	<link name="robotiq_2f140_base_link">
+		<visual>
+			<origin xyz="0 0 0.006" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.0375" length="0.012" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.028" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.0425" length="0.032" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.076" rpy="0 0 0" />
+			<geometry>
+				<box size="0.100 0.074 0.064" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.104" rpy="0 0 0" />
+			<geometry>
+				<box size="0.102 0.076 0.008" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.1437" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.016" length="0.116" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+<!-- ⚠ NO <collision> HERE ON PURPOSE. This link is a FIXED child of
+		     link6, and the engine folds it away and DROPS its boundingObject
+		     (OmSolid.cpp:3380) — a box declared here collides with nothing at
+		     all, which is how this gripper shipped with a palm that a part
+		     could fly straight through. The body collider is declared on
+		     link6 instead, at 0 0 0.2105; see the note there. Do not "restore"
+		     it here without first re-measuring OMNISIM_NEWTON_DUMP_MJMODEL. -->
+		<inertial><origin xyz="0 0 0.045" rpy="0 0 0"/><mass value="0.865"/><inertia ixx="1.1047e-3" ixy="0" ixz="0" iyy="9.8934e-4" iyz="0" izz="9.2627e-4"/></inertial>
+	</link>
+	<joint name="robotiq_2f140_joint" type="fixed">
+		<origin rpy="0 0 0" xyz="0 0 0.1655"/>
+		<parent link="link6"/>
+		<child link="robotiq_2f140_base_link"/>
+	</joint>
+
+	<link name="robotiq_2f140_left_finger_link">
+<!-- ===== LEFT JAW COLLISION: FOUR AXIS-ALIGNED BOXES =====
+		 Was ONE pad box, which meant a part could pass straight through the
+		 fingertip bracket and the four-bar arm while the CAD visual said
+		 otherwise. Every box below is inside the measured AABB of this jaw's
+		 own STLs, sliced in 5 mm bands along the jaw (see the numbers per
+		 band). Three engine rules shaped the decomposition — none of them is
+		 negotiable, all three are in src/omnisim:
+		   * MULTIPLE COLLIDERS PER LINK NEED WorldInfo.newtonCompoundColliders
+		     TRUE. Without it OmSolid.cpp:3041-3067 unwraps the group and takes
+		     kids.item(0) ONLY, so boxes 2-4 would silently not exist. The
+		     shipped world declares it.
+		   * A Pose ROTATION INSIDE A boundingObject IS SILENTLY DROPPED
+		     (OmSolid.cpp:3059 accumulates translation only). So every box is
+		     axis-aligned in the link frame and rpy is 0 everywhere. A slanted
+		     linkage is approximated by an upright box, not by a rotated one.
+		   * A CYLINDER IS SILENTLY SUBSTITUTED BY A CAPSULE
+		     (OmSolid.cpp:3090). Boxes only here — a capsule's round flank
+		     would give point contact where the CAD has a flat.
+		 Self-collision cannot be a problem: the whole robot is one collision
+		 component and every intra-robot shape pair is filtered
+		 (OmNewtonBackend.cpp:2538-2601), so these boxes cannot fight each
+		 other, the body, or the other jaw. Verified after the change by
+		 driving the full 0.070 -> -0.030 stroke.
+
+		 Link frame: -y is INBOARD (toward the part), +z runs from the pad's
+		 near end out to the fingertip. -->
+
+		<!-- 1+2. THE PAD, SPLIT IN TWO — MuJoCo Menagerie's robotiq_2f85 trick
+		     ("Broke up collision pads into two pads for more contacts"). The
+		     union is bit-identical to the old single 0.022 x 0.019 x 0.0655
+		     box: two 32.75 mm halves abutting at z=0.03275, same y, same x.
+		     ⚠ THE INVARIANT SURVIVES: both halves have their inner face at
+		     y = -0.0095, which cancels the joint origin's +0.0095, so the pad
+		     inner face is at exactly |q| — the whole controller's geometry
+		     depends on that and it is verified to 0.00 um. -->
+		<visual>
+			<origin xyz="0 0 0.0328" rpy="0 0 0" />
+			<geometry>
+				<box size="0.024 0.021 0.072" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0.00825 -0.015" rpy="0 0 0" />
+			<geometry>
+				<box size="0.030 0.034 0.032" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 -0.01900 -0.038" rpy="0 0 0" />
+			<geometry>
+				<box size="0.020 0.013 0.058" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 -0.04650 -0.060" rpy="0 0 0" />
+			<geometry>
+				<box size="0.037 0.023 0.026" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<collision><origin xyz="0 0 0.016375" rpy="0 0 0"/><geometry><box size="0.022 0.019 0.03275"/></geometry></collision>
+		<collision><origin xyz="0 0 0.049125" rpy="0 0 0"/><geometry><box size="0.022 0.019 0.03275"/></geometry></collision>
+
+		<!-- 3. FINGERTIP BRACKET, the block behind the pad. Mesh bands:
+		     z=-0.030 y[+0.0042,+0.0123] / z=-0.020 y[-0.0075,+0.0190] /
+		     z=-0.015 y[-0.0063,+0.0240] / z=-0.005 y[-0.0111,+0.0184],
+		     x within +/-0.0138 throughout.
+		     ⚠ ITS INNER FACE IS SET BACK 2 mm FROM THE PAD PLANE (-0.0075 vs
+		     the pad's -0.0095) EVEN THOUGH THE MESH REACHES -0.0151 IN ONE
+		     BAND. That band is a screw head; letting a collider stand proud of
+		     the pad would put the bracket on the part BEFORE the rubber, and
+		     every contact assertion in the controller ("both pads on the
+		     block's own grasp faces") would start counting bracket hits as
+		     pinch contacts. Set back, the pad remains the only gripping
+		     surface and the bracket only stops a part entering from above. -->
+		<collision><origin xyz="0 0.00825 -0.015" rpy="0 0 0"/><geometry><box size="0.0276 0.0315 0.030"/></geometry></collision>
+
+		<!-- 4. FOUR-BAR ARM, the slender link running back to the body. Mesh
+		     bands z=-0.050..-0.070 sit at y[-0.056,-0.036], x within +/-0.0175.
+		     The wider knuckle at z=-0.072..-0.098 is deliberately NOT given a
+		     box: it lies entirely inside the body box declared on link6, so it
+		     would add contacts and cost and no geometry. -->
+		<collision><origin xyz="0 -0.0465 -0.060" rpy="0 0 0"/><geometry><box size="0.035 0.021 0.024"/></geometry></collision>
+		<inertial><origin xyz="0 0 0.03275" rpy="0 0 0"/><mass value="0.080"/><inertia ixx="3.1008e-5" ixy="0" ixz="0" iyy="3.1828e-5" iyz="0" izz="5.633e-6"/></inertial>
+	</link>
+	<joint name="robotiq_2f140_finger" type="prismatic">
+		<origin rpy="0 0 0" xyz="0 0.0095 0.1437"/>
+		<parent link="robotiq_2f140_base_link"/>
+		<child link="robotiq_2f140_left_finger_link"/>
+		<axis xyz="0 1 0"/>
+		<!-- upper=0.070 is half the 140 mm stroke, so q IS the half-opening.
+		     lower=-0.030 is a 30 mm overclose, so a squeeze that stalls on the
+		     part saturates the 125 N effort cap instead of parking at zero error. -->
+		<limit lower="-0.030" upper="0.070" effort="125" velocity="0.07"/>
+	</joint>
+
+	<link name="robotiq_2f140_right_finger_link">
+<!-- RIGHT JAW COLLISION: the mirror of the left jaw's four boxes — read
+		     the long note there, it is not repeated. This link's frame is NOT
+		     mirrored (it has the parent's handedness); only the geometry is, so
+		     every y is negated and x/z are untouched. Confirmed against the
+		     meshes: the neg_* jaw's link-frame bound is y[-0.0240,+0.0731],
+		     exactly the mirror of the pos_* jaw's y[-0.0725,+0.0240]. INBOARD
+		     here is +y, so the pad inner face is at +0.0095, which cancels this
+		     joint's -0.0095 origin: inner face at |q| again. -->
+		<visual>
+			<origin xyz="0 0 0.0328" rpy="0 0 0" />
+			<geometry>
+				<box size="0.024 0.021 0.072" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 -0.00825 -0.015" rpy="0 0 0" />
+			<geometry>
+				<box size="0.030 0.034 0.032" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0.01900 -0.038" rpy="0 0 0" />
+			<geometry>
+				<box size="0.020 0.013 0.058" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0.04650 -0.060" rpy="0 0 0" />
+			<geometry>
+				<box size="0.037 0.023 0.026" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<collision><origin xyz="0 0 0.016375" rpy="0 0 0"/><geometry><box size="0.022 0.019 0.03275"/></geometry></collision>
+		<collision><origin xyz="0 0 0.049125" rpy="0 0 0"/><geometry><box size="0.022 0.019 0.03275"/></geometry></collision>
+		<collision><origin xyz="0 -0.00825 -0.015" rpy="0 0 0"/><geometry><box size="0.0276 0.0315 0.030"/></geometry></collision>
+		<collision><origin xyz="0 0.0465 -0.060" rpy="0 0 0"/><geometry><box size="0.035 0.021 0.024"/></geometry></collision>
+		<inertial><origin xyz="0 0 0.03275" rpy="0 0 0"/><mass value="0.080"/><inertia ixx="3.1008e-5" ixy="0" ixz="0" iyy="3.1828e-5" iyz="0" izz="5.633e-6"/></inertial>
+	</link>
+	<joint name="robotiq_2f140_finger_mirror" type="prismatic">
+		<origin rpy="0 0 0" xyz="0 -0.0095 0.1437"/>
+		<parent link="robotiq_2f140_base_link"/>
+		<child link="robotiq_2f140_right_finger_link"/>
+		<axis xyz="0 -1 0"/>
+		<!-- upper=0.070 is half the 140 mm stroke, so q IS the half-opening.
+		     lower=-0.030 is a 30 mm overclose, so a squeeze that stalls on the
+		     part saturates the 125 N effort cap instead of parking at zero error. -->
+		<limit lower="-0.030" upper="0.070" effort="125" velocity="0.07"/>
+	</joint>
+
+</robot>

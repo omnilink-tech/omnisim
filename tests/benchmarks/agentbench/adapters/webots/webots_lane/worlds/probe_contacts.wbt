@@ -1,0 +1,190 @@
+#VRML_SIM R2025a utf8
+# BRING-UP PROBE (not a benchmark world): the R1 scene with the robot
+# pointed at OBSTACLE_1 and a Supervisor that prints, per step, the contact
+# points reported by the ROBOT and by each OBSTACLE. It answers the one
+# undocumented question the recorder's contact fix rests on: does a Solid
+# with NO Physics node answer getContactPoints()? (It does.)
+#
+# Derived from r1_lidar_nav.wbt -- see that file for the world's own notes.
+#
+# The SPEC 7.1 gate needs a known-good solution that PASSES, on THIS arm, or an
+# R1 pass rate measured here means nothing. This is that world; the driver is
+# controllers/r1_oracle/, the do-nothing control is controllers/r1_null/, and
+# adapters/webots/test_r1_discriminates_webots.py runs both through the
+# unmodified graders.r1_core.
+#
+# Built from UPSTREAM assets only, and deliberately from the SAME pieces
+# Cyberbotics' own lidar-navigation sample uses (projects/robots/adept/pioneer3/
+# worlds/pioneer3at.wbt): a Pioneer 3-AT carrying a SickLms291 at the mount
+# upstream itself chose, "translation 0.136 0 0.35". Upstream ships no Husky
+# (webots-control-baseline.md sec. 4), and the Pioneer 3-AT is the analogue this
+# arm already uses.
+#
+# Three numbers here were MEASURED rather than assumed, by
+# controllers/r1_probe_lidar (BRINGUP.md sec. 5):
+#   * the SickLms291 fan is 181 samples over 180 deg with an 80 m max range, so
+#     it clears the task's stated LiDAR minima (>= 180 deg / >= 180 samples /
+#     >= 5 m) by construction and not by assertion;
+#   * a resting Pioneer 3-AT is LEVEL (|pitch| = 3e-5 rad), which is what makes
+#     a horizontal fan at 0.46 m stay under a 0.5 m obstacle across a 10 m
+#     arena. The Pioneer 3-DX -- the two-wheel differential-drive sibling -- is
+#     NOT: it rests nose-up by 0.0367 rad on its smaller castor, which lifts the
+#     same fan over the far wall and left 86 of 181 beams reading `inf`;
+#   * mounting lower than upstream's 0.35 puts the robot's OWN CHASSIS in the
+#     fan (0.15-0.18 m returns at 0.31 m, a 0.57 m return at 0.36 m), so the
+#     upstream mount is also the lowest self-clear one.
+#
+# Baseline sec. 5 traps honoured: every EXTERNPROTO resolves from the pre-seeded
+# offline asset cache (trap 1); no rotation angle is anywhere near +/-pi (trap
+# 3). Trap 2 (lidar is GPU-bound) is deliberately NOT avoided here -- R1 IS the
+# lidar task -- and the probe confirmed the device works under
+# `--no-rendering` in xvfb, which is how this arm launches every run.
+#
+# The five obstacles are the task's frozen benchmark_assets/obstacles.json, at
+# the published centres and full extents. The straight line from START (-4, -4)
+# to GOAL (4, 4) passes through OBSTACLE_1, so a robot that does not perceive
+# cannot get there without hitting something.
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/devices/sick/protos/SickLms291.proto"
+
+WorldInfo {
+  info [
+    "AgentBench R1 lidar_nav oracle: a Pioneer 3-AT with a Sick LMS 291 "
+    "navigates from (-4, -4) to (4, 4) around five static box obstacles."
+  ]
+  title "AgentBench R1 lidar_nav (oracle)"
+  basicTimeStep 16
+}
+Viewpoint {
+  orientation 0.35 0.35 -0.87 1.7
+  position -12 -12 11
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 10 10
+  floorTileSize 1 1
+  wallHeight 0.5
+}
+DEF OBSTACLE_1 Solid {
+  translation 0 0 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1.6 1.6 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_1"
+  boundingObject Box {
+    size 1.6 1.6 0.5
+  }
+}
+DEF OBSTACLE_2 Solid {
+  translation -2 -1.4 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1.2 0.8 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_2"
+  boundingObject Box {
+    size 1.2 0.8 0.5
+  }
+}
+DEF OBSTACLE_3 Solid {
+  translation 1.6 0.6 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.8 2 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_3"
+  boundingObject Box {
+    size 0.8 2 0.5
+  }
+}
+DEF OBSTACLE_4 Solid {
+  translation -1.2 2 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 2 0.8 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_4"
+  boundingObject Box {
+    size 2 0.8 0.5
+  }
+}
+DEF OBSTACLE_5 Solid {
+  translation 2.4 -2 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1 1 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_5"
+  boundingObject Box {
+    size 1 1 0.5
+  }
+}
+DEF ROBOT Pioneer3at {
+  translation -2.6 0 0.11
+  rotation 0 0 1 0
+  controller "r1_ram"
+  extensionSlot [
+    SickLms291 {
+      translation 0.136 0 0.35
+      resolution 181
+    }
+    GPS {
+    }
+    InertialUnit {
+    }
+  ]
+}
+
+DEF CONTACT_PROBE Robot {
+  name "contact_probe"
+  controller "r1_probe_contacts"
+  supervisor TRUE
+}

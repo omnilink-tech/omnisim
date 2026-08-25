@@ -1,0 +1,573 @@
+{
+  "arm": "webots",
+  "engine": "upstream Webots R2025a",
+  "generated_utc": "2026-08-13T08:26:26Z",
+  "fault": "none",
+  "rows": [
+    {
+      "rung": 11,
+      "sim": "webots",
+      "fault": "none",
+      "title": "the same rover at N = 1, 4, 8, 16",
+      "measured": {
+        "steps": null,
+        "sim_time_end": null,
+        "exit_code": 0.0,
+        "n_samples": 0,
+        "runs_seen": [
+          "n1",
+          "n16",
+          "n4",
+          "n8"
+        ],
+        "distance_worst": 2.8171909249863347e-14,
+        "wheel_omega_worst": 4.799585322645683e-05,
+        "lateral_worst": 5.914716899368955e-06,
+        "ride_worst": 0.00017412750000500576,
+        "roll_overrun_worst": 0.000824111473518796,
+        "separation_shortfall": 3.895096237549467e-06,
+        "robots_seen": 29.0,
+        "per_n": {
+          "n1": {
+            "n": 1,
+            "robots_measured": 1,
+            "min_separation": null,
+            "worst": {
+              "distance_worst": 2.4424906541753444e-14,
+              "wheel_omega_worst": 5.333282134700745e-06,
+              "lateral_worst": 6.343820541174661e-07,
+              "ride_worst": 0.00017412750000489474,
+              "roll_overrun_worst": 0.0002472869971603675
+            },
+            "per_robot": {
+              "r00": {
+                "omega_cmd": 2.0,
+                "expect_m": 0.8,
+                "distance_m": 0.7999999999999805,
+                "distance_rel_err": -2.4424906541753444e-14,
+                "lateral_m": 6.343820541174661e-07,
+                "ride_dev_m": 0.00017412750000489474,
+                "omega_meas": 1.9999893334357306,
+                "roll_overrun": 0.0002472869971603675
+              }
+            }
+          },
+          "n4": {
+            "n": 4,
+            "robots_measured": 4,
+            "min_separation": 1.499996104903763,
+            "worst": {
+              "distance_worst": 2.5951463200613034e-14,
+              "wheel_omega_worst": 3.3331333476560585e-05,
+              "lateral_worst": 4.5261535621676785e-06,
+              "ride_worst": 0.00017412750000500576,
+              "roll_overrun_worst": 0.0008241114735179078
+            },
+            "per_robot": {
+              "r00": {
+                "omega_cmd": 2.0,
+                "expect_m": 0.8,
+                "distance_m": 0.7999999999999814,
+                "distance_rel_err": -2.3314683517128287e-14,
+                "lateral_m": 6.343820606602435e-07,
+                "ride_dev_m": 0.00017412750000489474,
+                "omega_meas": 1.9999893334357335,
+                "roll_overrun": 0.00024728699716014546
+              },
+              "r01": {
+                "omega_cmd": 3.0,
+                "expect_m": 1.2000000000000002,
+                "distance_m": 1.1999999999999695,
+                "distance_rel_err": -2.5535129566378597e-14,
+                "lateral_m": 3.277389936995334e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 2.999964000777578,
+                "roll_overrun": 0.00034908798034538613
+              },
+              "r02": {
+                "omega_cmd": 4.0,
+                "expect_m": 1.6,
+                "distance_m": 1.5999999999999586,
+                "distance_rel_err": -2.5951463200613034e-14,
+                "lateral_m": 3.5997958500733063e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 3.999914669943313,
+                "roll_overrun": 0.0005225717822892051
+              },
+              "r03": {
+                "omega_cmd": 5.0,
+                "expect_m": 2.0,
+                "distance_m": 1.9999999999999512,
+                "distance_rel_err": -2.4424906541753444e-14,
+                "lateral_m": 4.5261535621676785e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 4.999833343332617,
+                "roll_overrun": 0.0008241114735179078
+              }
+            },
+            "solo_deviation_m": 1.1102230246251565e-15
+          },
+          "n8": {
+            "n": 8,
+            "robots_measured": 8,
+            "min_separation": 1.4999961049037625,
+            "worst": {
+              "distance_worst": 2.8171909249863347e-14,
+              "wheel_omega_worst": 4.799585322601274e-05,
+              "lateral_worst": 5.914716818322674e-06,
+              "ride_worst": 0.00017412750000500576,
+              "roll_overrun_worst": 0.0008241114735179078
+            },
+            "per_robot": {
+              "r00": {
+                "omega_cmd": 2.0,
+                "expect_m": 0.8,
+                "distance_m": 0.7999999999999815,
+                "distance_rel_err": -2.3175905639050143e-14,
+                "lateral_m": 6.34382055331173e-07,
+                "ride_dev_m": 0.00017412750000489474,
+                "omega_meas": 1.9999893334357322,
+                "roll_overrun": 0.0002472869971552605
+              },
+              "r01": {
+                "omega_cmd": 3.0,
+                "expect_m": 1.2000000000000002,
+                "distance_m": 1.1999999999999695,
+                "distance_rel_err": -2.5535129566378597e-14,
+                "lateral_m": 3.277389937661468e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 2.9999640007775765,
+                "roll_overrun": 0.0003490879803438318
+              },
+              "r02": {
+                "omega_cmd": 4.0,
+                "expect_m": 1.6,
+                "distance_m": 1.5999999999999572,
+                "distance_rel_err": -2.67841304690819e-14,
+                "lateral_m": 3.599795856956689e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 3.9999146699433146,
+                "roll_overrun": 0.000522571782288983
+              },
+              "r03": {
+                "omega_cmd": 5.0,
+                "expect_m": 2.0,
+                "distance_m": 1.9999999999999496,
+                "distance_rel_err": -2.5202062658991053e-14,
+                "lateral_m": 4.526153543626954e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 4.999833343332613,
+                "roll_overrun": 0.0008241114735179078
+              },
+              "r04": {
+                "omega_cmd": 6.0,
+                "expect_m": 2.4000000000000004,
+                "distance_m": 2.399999999999935,
+                "distance_rel_err": -2.7200464103316332e-14,
+                "lateral_m": 5.914716818322674e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 5.999712024880644,
+                "roll_overrun": 0.00012000759624131163
+              },
+              "r05": {
+                "omega_cmd": 2.0,
+                "expect_m": 0.8,
+                "distance_m": 0.7999999999999807,
+                "distance_rel_err": -2.4147350785597155e-14,
+                "lateral_m": 6.343820602161543e-07,
+                "ride_dev_m": 0.00017412750000489474,
+                "omega_meas": 1.999989333435733,
+                "roll_overrun": 0.0002472869971603675
+              },
+              "r06": {
+                "omega_cmd": 3.0,
+                "expect_m": 1.2000000000000002,
+                "distance_m": 1.199999999999969,
+                "distance_rel_err": -2.5905203907920314e-14,
+                "lateral_m": 3.277389937661468e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 2.9999640007775783,
+                "roll_overrun": 0.0003490879803431657
+              },
+              "r07": {
+                "omega_cmd": 4.0,
+                "expect_m": 1.6,
+                "distance_m": 1.599999999999955,
+                "distance_rel_err": -2.8171909249863347e-14,
+                "lateral_m": 3.5997958240940875e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 3.9999146699433163,
+                "roll_overrun": 0.0005225717822883169
+              }
+            },
+            "solo_deviation_m": 1.6653345369377348e-15
+          },
+          "n16": {
+            "n": 16,
+            "robots_measured": 16,
+            "min_separation": 1.4999961049037625,
+            "worst": {
+              "distance_worst": 2.8171909249863347e-14,
+              "wheel_omega_worst": 4.799585322645683e-05,
+              "lateral_worst": 5.914716899368955e-06,
+              "ride_worst": 0.00017412750000500576,
+              "roll_overrun_worst": 0.000824111473518796
+            },
+            "per_robot": {
+              "r00": {
+                "omega_cmd": 2.0,
+                "expect_m": 0.8,
+                "distance_m": 0.7999999999999818,
+                "distance_rel_err": -2.275957200481571e-14,
+                "lateral_m": 6.343820704302061e-07,
+                "ride_dev_m": 0.00017412750000489474,
+                "omega_meas": 1.9999893334357295,
+                "roll_overrun": 0.0002472869971568148
+              },
+              "r01": {
+                "omega_cmd": 3.0,
+                "expect_m": 1.2000000000000002,
+                "distance_m": 1.1999999999999709,
+                "distance_rel_err": -2.442490654175344e-14,
+                "lateral_m": 3.2773899363292003e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 2.9999640007775765,
+                "roll_overrun": 0.00034908798034405386
+              },
+              "r02": {
+                "omega_cmd": 4.0,
+                "expect_m": 1.6,
+                "distance_m": 1.59999999999996,
+                "distance_rel_err": -2.5118795932144167e-14,
+                "lateral_m": 3.5997958836020416e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 3.999914669943319,
+                "roll_overrun": 0.0005225717822876508
+              },
+              "r03": {
+                "omega_cmd": 5.0,
+                "expect_m": 2.0,
+                "distance_m": 1.9999999999999507,
+                "distance_rel_err": -2.4646951146678475e-14,
+                "lateral_m": 4.5261535284168986e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 4.999833343332618,
+                "roll_overrun": 0.0008241114735176858
+              },
+              "r04": {
+                "omega_cmd": 6.0,
+                "expect_m": 2.4000000000000004,
+                "distance_m": 2.3999999999999373,
+                "distance_rel_err": -2.6275278249462034e-14,
+                "lateral_m": 5.914716759924943e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 5.999712024880643,
+                "roll_overrun": 0.0001200075962406455
+              },
+              "r05": {
+                "omega_cmd": 2.0,
+                "expect_m": 0.8,
+                "distance_m": 0.7999999999999815,
+                "distance_rel_err": -2.3175905639050143e-14,
+                "lateral_m": 6.343820593279759e-07,
+                "ride_dev_m": 0.00017412750000489474,
+                "omega_meas": 1.9999893334357337,
+                "roll_overrun": 0.0002472869971603675
+              },
+              "r06": {
+                "omega_cmd": 3.0,
+                "expect_m": 1.2000000000000002,
+                "distance_m": 1.1999999999999695,
+                "distance_rel_err": -2.5535129566378597e-14,
+                "lateral_m": 3.277389937661468e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 2.9999640007775783,
+                "roll_overrun": 0.0003490879803431657
+              },
+              "r07": {
+                "omega_cmd": 4.0,
+                "expect_m": 1.6,
+                "distance_m": 1.599999999999958,
+                "distance_rel_err": -2.6367796834847468e-14,
+                "lateral_m": 3.5997958527378415e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 3.9999146699433137,
+                "roll_overrun": 0.0005225717822892051
+              },
+              "r08": {
+                "omega_cmd": 5.0,
+                "expect_m": 2.0,
+                "distance_m": 1.9999999999999505,
+                "distance_rel_err": -2.475797344914099e-14,
+                "lateral_m": 4.52615354151753e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 4.999833343332617,
+                "roll_overrun": 0.000824111473518796
+              },
+              "r09": {
+                "omega_cmd": 6.0,
+                "expect_m": 2.4000000000000004,
+                "distance_m": 2.399999999999935,
+                "distance_rel_err": -2.7200464103316332e-14,
+                "lateral_m": 5.914716819876986e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 5.999712024880641,
+                "roll_overrun": 0.00012000759624108959
+              },
+              "r10": {
+                "omega_cmd": 2.0,
+                "expect_m": 0.8,
+                "distance_m": 0.7999999999999815,
+                "distance_rel_err": -2.3175905639050143e-14,
+                "lateral_m": 6.343820633247788e-07,
+                "ride_dev_m": 0.00017412750000489474,
+                "omega_meas": 1.9999893334357335,
+                "roll_overrun": 0.00024728699716014546
+              },
+              "r11": {
+                "omega_cmd": 3.0,
+                "expect_m": 1.2000000000000002,
+                "distance_m": 1.19999999999997,
+                "distance_rel_err": -2.5165055224836877e-14,
+                "lateral_m": 3.277389935441022e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 2.999964000777576,
+                "roll_overrun": 0.0003490879803458302
+              },
+              "r12": {
+                "omega_cmd": 4.0,
+                "expect_m": 1.6,
+                "distance_m": 1.599999999999955,
+                "distance_rel_err": -2.8171909249863347e-14,
+                "lateral_m": 3.5997958240940875e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 3.9999146699433163,
+                "roll_overrun": 0.0005225717822883169
+              },
+              "r13": {
+                "omega_cmd": 5.0,
+                "expect_m": 2.0,
+                "distance_m": 1.999999999999951,
+                "distance_rel_err": -2.453592884421596e-14,
+                "lateral_m": 4.526153448480841e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 4.999833343332611,
+                "roll_overrun": 0.0008241114735176858
+              },
+              "r14": {
+                "omega_cmd": 6.0,
+                "expect_m": 2.4000000000000004,
+                "distance_m": 2.399999999999938,
+                "distance_rel_err": -2.5905203907920314e-14,
+                "lateral_m": 5.914716899368955e-06,
+                "ride_dev_m": 0.00017412750000500576,
+                "omega_meas": 5.9997120248806475,
+                "roll_overrun": 0.00012000759624219981
+              },
+              "r15": {
+                "omega_cmd": 2.0,
+                "expect_m": 0.8,
+                "distance_m": 0.7999999999999818,
+                "distance_rel_err": -2.275957200481571e-14,
+                "lateral_m": 6.343820704302061e-07,
+                "ride_dev_m": 0.00017412750000489474,
+                "omega_meas": 1.9999893334357295,
+                "roll_overrun": 0.0002472869971568148
+              }
+            },
+            "solo_deviation_m": 1.5543122344752192e-15
+          }
+        },
+        "solo_deviation_max": 1.6653345369377348e-15
+      },
+      "checks": [
+        {
+          "name": "distance_worst",
+          "measured": 2.8171909249863347e-14,
+          "expected": 0.0,
+          "tol": 0.05,
+          "unit": "-",
+          "rel": false,
+          "error": 2.8171909249863347e-14,
+          "margin": 0.04999999999997183,
+          "ok": true,
+          "why": "worst relative error, over every robot of every fleet size (1, 4, 8, 16), of d_i against omega_i r t -- the distance that robot would travel ALONE.  The tolerance is rung 4's and is NOT widened with N: the failure this rung exists to catch is a silently truncated constraint vector, documented at 9% displacement error, so a tolerance that grew with N would be pre-authorised to miss it",
+          "key": "distance_worst"
+        },
+        {
+          "name": "wheel_omega_worst",
+          "measured": 4.799585322645683e-05,
+          "expected": 0.0,
+          "tol": 0.01,
+          "unit": "-",
+          "rel": false,
+          "error": 4.799585322645683e-05,
+          "margin": 0.009952004146773543,
+          "ok": true,
+          "why": "worst relative error of any robot's mean wheel rate against ITS OWN command.  The commands cycle, so an engine that simulates one robot and copies it lands every clone on one target and reds here",
+          "key": "wheel_omega_worst"
+        },
+        {
+          "name": "roll_overrun_worst",
+          "measured": 0.000824111473518796,
+          "expected": 0.0,
+          "tol": 0.05,
+          "unit": "-",
+          "rel": false,
+          "error": 0.000824111473518796,
+          "margin": 0.04917588852648121,
+          "ok": true,
+          "why": "rung 4's one-sided kinematic invariant over the whole fleet and the whole run: no body may outrun its own wheels, at any N",
+          "key": "roll_overrun_worst"
+        },
+        {
+          "name": "ride_worst",
+          "measured": 0.00017412750000500576,
+          "expected": 0.0,
+          "tol": 0.02,
+          "unit": "m",
+          "rel": false,
+          "error": 0.00017412750000500576,
+          "margin": 0.019825872499994995,
+          "ok": true,
+          "why": "worst axle deviation from floor_top + wheel_radius over every robot, every fleet and every sample after the initial settle",
+          "key": "ride_worst"
+        },
+        {
+          "name": "lateral_worst",
+          "measured": 5.914716899368955e-06,
+          "expected": 0.0,
+          "tol": 0.1,
+          "unit": "m",
+          "rel": false,
+          "error": 5.914716899368955e-06,
+          "margin": 0.09999408528310064,
+          "ok": true,
+          "why": "worst |y - y_0| over every robot and every sample: each robot stays in its own lane at every fleet size",
+          "key": "lateral_worst"
+        },
+        {
+          "name": "separation_shortfall",
+          "measured": 3.895096237549467e-06,
+          "expected": 0.0,
+          "tol": 0.1,
+          "unit": "m",
+          "rel": false,
+          "error": 3.895096237549467e-06,
+          "margin": 0.09999610490376246,
+          "ok": true,
+          "why": "max over every fleet of max(0, 1.5 - min pairwise centre distance over the whole run).  All robots start abreast one lane apart and travel at different speeds, so they can only separate.  Asserted GEOMETRICALLY from the poses rather than as a contact count, because this tree has shipped a contact read that returned an empty set for a scene containing 1008 contacts",
+          "key": "separation_shortfall"
+        },
+        {
+          "name": "robots_seen",
+          "measured": 29.0,
+          "expected": 29.0,
+          "tol": 0.0,
+          "unit": "robots",
+          "rel": false,
+          "error": 0.0,
+          "margin": 0.0,
+          "ok": true,
+          "why": "every robot of every fleet was found and measured.  An engine that silently DROPS robots otherwise reports a well-behaved smaller fleet, and every other number in this rung would look fine",
+          "key": "robots_seen"
+        }
+      ],
+      "wall": {
+        "startup_s": 6.058131217956543,
+        "total_s": 88.0451295375824,
+        "step_s": 81.98699831962585
+      },
+      "passed": true,
+      "meta": {
+        "sim": "webots",
+        "rung": 11,
+        "fault": "none",
+        "engine": "upstream Webots R2025a",
+        "webots_home": "/opt/upstream-webots/R2025a",
+        "port": 1604,
+        "error": null,
+        "exit_code": 0,
+        "timed_out": false,
+        "proc_t0": 1786609498.5207262,
+        "proc_t1": 1786609586.5658557,
+        "multi_run": true,
+        "run_tags": [
+          "n1",
+          "n4",
+          "n8",
+          "n16"
+        ],
+        "runs": [
+          {
+            "error": null,
+            "exit_code": 0,
+            "timed_out": false,
+            "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung11_n1.wbt",
+            "engine_version": "R2025a",
+            "engine_sha256_16": "c12c65e8680b579d",
+            "proc_t0": 1786609498.5207262,
+            "proc_t1": 1786609508.2525978,
+            "world_info": {
+              "optimalThreadCount": 1,
+              "randomSeed": 42,
+              "basicTimeStep": 4.0
+            }
+          },
+          {
+            "error": null,
+            "exit_code": 0,
+            "timed_out": false,
+            "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung11_n4.wbt",
+            "engine_version": "R2025a",
+            "engine_sha256_16": "c12c65e8680b579d",
+            "proc_t0": 1786609508.6256955,
+            "proc_t1": 1786609525.1747718,
+            "world_info": {
+              "optimalThreadCount": 1,
+              "randomSeed": 42,
+              "basicTimeStep": 4.0
+            }
+          },
+          {
+            "error": null,
+            "exit_code": 0,
+            "timed_out": false,
+            "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung11_n8.wbt",
+            "engine_version": "R2025a",
+            "engine_sha256_16": "c12c65e8680b579d",
+            "proc_t0": 1786609525.7595189,
+            "proc_t1": 1786609552.0662875,
+            "world_info": {
+              "optimalThreadCount": 1,
+              "randomSeed": 42,
+              "basicTimeStep": 4.0
+            }
+          },
+          {
+            "error": null,
+            "exit_code": 0,
+            "timed_out": false,
+            "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung11_n16.wbt",
+            "engine_version": "R2025a",
+            "engine_sha256_16": "c12c65e8680b579d",
+            "proc_t0": 1786609552.368383,
+            "proc_t1": 1786609586.5658557,
+            "world_info": {
+              "optimalThreadCount": 1,
+              "randomSeed": 42,
+              "basicTimeStep": 4.0
+            }
+          }
+        ],
+        "engine_version": "R2025a",
+        "engine_sha256_16": "c12c65e8680b579d",
+        "world_info": {
+          "optimalThreadCount": 1,
+          "randomSeed": 42,
+          "basicTimeStep": 4.0
+        }
+      }
+    }
+  ]
+}

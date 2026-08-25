@@ -1,0 +1,208 @@
+<?xml version="1.0"?>
+<!--
+  OmniBot - simple differential drive robot
+  Wheels are larger and stick out clearly from the chassis.
+  Caster is small and centered behind.
+-->
+<robot name="omnibot">
+
+  <!-- ============================================================ -->
+  <!-- Materials                                                     -->
+  <!-- ============================================================ -->
+  <material name="dark_blue">
+    <color rgba="0.12 0.18 0.35 1.0"/>
+  </material>
+  <material name="light_blue">
+    <color rgba="0.20 0.30 0.55 1.0"/>
+  </material>
+  <material name="orange">
+    <color rgba="0.90 0.35 0.10 1.0"/>
+  </material>
+  <material name="cyan">
+    <color rgba="0.10 0.80 0.90 1.0"/>
+  </material>
+  <material name="dark_gray">
+    <color rgba="0.15 0.15 0.15 1.0"/>
+  </material>
+  <material name="gray">
+    <color rgba="0.50 0.50 0.50 1.0"/>
+  </material>
+  <material name="red">
+    <color rgba="0.90 0.10 0.10 1.0"/>
+  </material>
+
+  <!-- ============================================================ -->
+  <!-- base_link: chassis                                            -->
+  <!--                                                                -->
+  <!-- The robot's origin is at the wheel-axle height. The chassis    -->
+  <!-- box sits above this plane so the wheels can stick out without  -->
+  <!-- being hidden under the body.                                   -->
+  <!-- ============================================================ -->
+  <link name="base_link">
+    <!-- Main chassis body (above wheel axis) -->
+    <visual>
+      <origin xyz="0 0 0.025" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.18 0.10 0.04"/>
+      </geometry>
+      <material name="dark_blue"/>
+    </visual>
+    <!-- Top deck -->
+    <visual>
+      <origin xyz="0 0 0.055" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.14 0.08 0.012"/>
+      </geometry>
+      <material name="light_blue"/>
+    </visual>
+    <!-- Front bumper -->
+    <visual>
+      <origin xyz="0.085 0 0.022" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.012 0.09 0.025"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <!-- Sensor tower (cylinder pointing UP, axis along Z which is the URDF default) -->
+    <visual>
+      <origin xyz="0.025 0 0.062" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.018" length="0.012"/>
+      </geometry>
+      <material name="dark_gray"/>
+    </visual>
+    <!-- Sensor dome -->
+    <visual>
+      <origin xyz="0.025 0 0.075" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.018"/>
+      </geometry>
+      <material name="cyan"/>
+    </visual>
+    <!-- Rear light -->
+    <visual>
+      <origin xyz="-0.085 0 0.03" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.008 0.05 0.012"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+
+    <!-- Collision: a single box matching the chassis -->
+    <collision>
+      <origin xyz="0 0 0.025" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.18 0.10 0.04"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="-0.02 0 0.015" rpy="0 0 0"/>
+      <mass value="0.4"/>
+    </inertial>
+  </link>
+
+  <!-- ============================================================ -->
+  <!-- Left wheel                                                    -->
+  <!--                                                                -->
+  <!-- URDF cylinders have their axis along Z by default. To make a  -->
+  <!-- wheel that spins around Y (the axle), rotate the visual by    -->
+  <!-- pi/2 around the X axis: rpy="1.5708 0 0".                     -->
+  <!-- ============================================================ -->
+  <link name="left_wheel">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder radius="0.04" length="0.02"/>
+      </geometry>
+      <material name="dark_gray"/>
+    </visual>
+    <!-- Sphere collision for reliable ODE plane contact -->
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.04"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.05"/>
+    </inertial>
+  </link>
+
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel"/>
+    <!-- Wheel sticks out 0.07 from center, axle at robot Z origin -->
+    <origin xyz="0 0.07 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="10" velocity="10"/>
+  </joint>
+
+  <!-- ============================================================ -->
+  <!-- Right wheel                                                   -->
+  <!-- ============================================================ -->
+  <link name="right_wheel">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder radius="0.04" length="0.02"/>
+      </geometry>
+      <material name="dark_gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.04"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.05"/>
+    </inertial>
+  </link>
+
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel"/>
+    <origin xyz="0 -0.07 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="10" velocity="10"/>
+  </joint>
+
+  <!-- ============================================================ -->
+  <!-- Caster (small passive ball at the rear)                       -->
+  <!--                                                                -->
+  <!-- The caster has the same effective ground-contact height as    -->
+  <!-- the wheels (its bottom touches the floor at the same Z).      -->
+  <!-- Since wheel radius = 0.04 and caster radius = 0.012, the      -->
+  <!-- caster center sits at (0.04 - 0.012) = 0.028 below the wheel  -->
+  <!-- axle so its bottom matches.                                    -->
+  <!-- ============================================================ -->
+  <link name="caster">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.012"/>
+      </geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.012"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.005"/>
+    </inertial>
+  </link>
+
+  <joint name="caster_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="caster"/>
+    <origin xyz="-0.07 0 -0.028" rpy="0 0 0"/>
+  </joint>
+
+</robot>

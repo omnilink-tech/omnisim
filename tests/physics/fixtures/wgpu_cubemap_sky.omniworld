@@ -1,0 +1,55 @@
+#OMNISIM R2025a utf8
+
+# Test fixture for wgpu image-cubemap backgrounds (pre-flip worklist gap: "no image
+# backgrounds/cubemaps") and the sky-selection keying fix. A Background carrying the
+# NightSky starfield's six *Url faces and NO atmosphericSky preset, with a sun in the
+# scene: the OLD keying (dome iff a DirectionalLight exists) rendered the procedural
+# blue day dome here; correct output is the starfield. A level viewpoint so most of
+# the frame is sky. Static (no physics).
+
+Viewpoint {
+  orientation 0 0 1 0.5
+  position -3 -1.5 1.2
+}
+Background {
+  skyColor [ 0.012 0.020 0.047 ]
+  backUrl   [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_back.jpg" ]
+  bottomUrl [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_bottom.jpg" ]
+  frontUrl  [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_front.jpg" ]
+  leftUrl   [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_left.jpg" ]
+  rightUrl  [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_right.jpg" ]
+  topUrl    [ "omnisim://projects/objects/backgrounds/textures/night_sky/night_sky_top.jpg" ]
+}
+DEF SUN DirectionalLight {
+  color 1.0 0.95 0.9
+  direction -0.5 -0.4 -0.75
+  intensity 1.5
+  castShadows TRUE
+}
+DEF FLOOR Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.35 0.38
+        roughness 0.95
+        metalness 0.0
+      }
+      geometry Box { size 6 6 0.02 }
+    }
+  ]
+  name "floor"
+}
+DEF BOX Solid {
+  translation 0 0 0.2
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.7 0.45 0.2
+        roughness 0.6
+        metalness 0.0
+      }
+      geometry Box { size 0.4 0.4 0.4 }
+    }
+  ]
+  name "box"
+}

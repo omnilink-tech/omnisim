@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright OmniLink. -->
+<!--
+  This metainfo file provides metadata about OmniSim for Flatpak distribution.
+  It follows the AppStream specification and is required for publishing OmniSim
+  on Flathub.
+  See: https://docs.flathub.org/docs/for-app-authors/metainfo-guidelines
+-->
+<component type="desktop-application">
+  <id>com.omnilink.omnisim</id>
+  <name>OmniSim</name>
+  <project_license>Apache-2.0</project_license>
+  <developer id="com.omnilink">
+    <name>OmniLink</name>
+  </developer>
+  <summary>The simulator built by OmniLink, for OmniLink agents</summary>
+  <description>
+    <p>
+      OmniSim is a robotics simulator designed from the ground up to be driven by AI coding agents. Instead of writing scripts and wiring systems by hand, you describe what you want in natural language and an agent builds the world, the controllers, and the bridges for you.
+    </p>
+    <p>
+      OmniSim is free and open-source, built on top of the Webots simulation engine by Cyberbotics Ltd., and distributed under the Apache License 2.0. It is purpose-built as the simulation environment for the OmniLink agentic AI platform.
+    </p>
+  </description>
+  <metadata_license>CC0-1.0</metadata_license>
+  <launchable type="desktop-id">com.omnilink.omnisim.desktop</launchable>
+  <url type="homepage">https://www.omnilink-agents.com</url>
+  <url type="help">https://github.com/omnilink-tech/omnisim/discussions</url>
+  <url type="bugtracker">https://github.com/omnilink-tech/omnisim/issues</url>
+  <url type="contribute">https://github.com/omnilink-tech/omnisim/blob/main/CONTRIBUTING.md</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Main window</caption>
+      <image>https://raw.githubusercontent.com/omnilink-tech/omnisim/main/docs/guide/images/main_window.png</image>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category>Development</category>
+    <category>Science</category>
+    <category>Robotics</category>
+  </categories>
+  <content_rating type="oars-1.1" />
+  <keywords>
+    <keyword>robot simulator</keyword>
+    <keyword>agentic AI</keyword>
+    <keyword>OmniLink</keyword>
+    <keyword>robot development</keyword>
+    <keyword>open source robotics</keyword>
+    <keyword>simulation software</keyword>
+  </keywords>
+</component>

@@ -1,0 +1,80 @@
+{
+  "name": "omniquad",
+  "urdf_path": "projects/robots/omnisim/omniquad/urdf/omniquad.urdf",
+  "joint_names": [
+    "front_left_hip_x",
+    "front_left_hip_y",
+    "front_left_knee",
+    "front_right_hip_x",
+    "front_right_hip_y",
+    "front_right_knee",
+    "rear_left_hip_x",
+    "rear_left_hip_y",
+    "rear_left_knee",
+    "rear_right_hip_x",
+    "rear_right_hip_y",
+    "rear_right_knee"
+  ],
+  "nominal_pose": [
+    0.3,
+    0.3,
+    -0.6,
+    -0.3,
+    0.3,
+    -0.6,
+    0.3,
+    0.3,
+    -0.6,
+    -0.3,
+    0.3,
+    -0.6
+  ],
+  "joint_limits_lo": [
+    0.001,
+    0.001,
+    -1.2,
+    -0.6,
+    0.001,
+    -1.2,
+    0.001,
+    0.001,
+    -1.2,
+    -0.6,
+    0.001,
+    -1.2
+  ],
+  "joint_limits_hi": [
+    0.6,
+    0.6,
+    -0.01,
+    -0.001,
+    0.6,
+    -0.01,
+    0.6,
+    0.6,
+    -0.01,
+    -0.001,
+    0.6,
+    -0.01
+  ],
+  "action_scale": 0.15,
+  "obs_dim": 49,
+  "spawn_translation": [
+    0.0,
+    0.0,
+    0.7
+  ],
+  "spawn_rotation": [
+    0.0,
+    0.0,
+    1.0,
+    0.0
+  ],
+  "max_episode_steps": 1024,
+  "obs_recipe": "legged_locomotion",
+  "motor_pid": [
+    20.0,
+    0.0,
+    0.3
+  ]
+}

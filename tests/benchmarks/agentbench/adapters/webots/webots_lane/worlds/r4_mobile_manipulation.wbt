@@ -1,0 +1,758 @@
+#VRML_SIM R2025a utf8
+# AgentBench R4 (mobile_manipulation) ORACLE world -- upstream Webots R2025a.
+#
+# SPEC 7.1's gate needs a known-good solution that PASSES on THIS arm, or an R4
+# pass rate measured here means nothing. This is that world; the driver is
+# controllers/r4_oracle/, the do-nothing control is controllers/r4_null/, the
+# blind control is controllers/r4_blind/, and
+# adapters/webots/test_r4_discriminates_webots.py runs all three through the
+# unmodified graders.r4_core.
+#
+# **The robot is authored here from upstream BASE NODES only** -- no PROTO, no
+# EXTERNPROTO, no network fetch. That is deliberate and it is the fairest
+# oracle available: upstream ships no mobile manipulator with a differential
+# base (its youBot is omnidirectional, its TIAGo family arrives over the
+# network), so building one out of HingeJoint / SliderJoint / Box / Cylinder
+# proves the task is expressible from the simulator's own primitives rather
+# than from one convenient asset. Everything an agent needs is in the same
+# node set.
+#
+# Geometry, all in the robot's frame (x forward, y left, z up, origin on the
+# floor under the chassis centre):
+#
+#   chassis   Box 0.50 x 0.36 x 0.16 centred (0, 0, 0.20), mass 30 kg
+#   casters   two spheres r 0.06 at (+/-0.22, 0, 0.06), contactMaterial
+#             "caster" -> coulombFriction 0 against the floor, so a skid-steer
+#             turn is not fighting them
+#   wheels    r 0.10, w 0.05, at (0, +/-0.22, 0.10), hinge axis y,
+#             contactMaterial "wheel" -> coulombFriction 2
+#   lidar     (0.27, 0, 0.30) -- BELOW the 0.5 m obstacle tops and clear of the
+#             chassis (whose front face is at x = 0.25), so no beam sees the
+#             robot itself; 181 samples over 180 deg, 10 m range, one layer
+#   camera    (0.27, 0, 0.38)
+#   arm       shoulder mount (0.10, 0, 0.45); yaw about z, then three pitches
+#             about y with links L2 = 0.38 and L3 = 0.34 and a 0.055 m tool
+#             offset -> 0.775 m of reach from the mount
+#   gripper   two SliderJoint fingers on y, boxes 0.08 x 0.014 x 0.036,
+#             authored open at y = +/-0.048 (an 0.082 m gap for a 0.05 m cube)
+#             and commanded to +/-0.028 (a slider position of -/+0.020), i.e. INTO the cube -- the position
+#             servo then squeezes at its 30 N maxForce and what holds the part
+#             is friction. The fingers are only 0.036 m tall so that gripping
+#             the cube's middle still leaves their lower face 0.014 m clear of
+#             the table top.
+#
+# **The friction recipe is upstream's own, not one we invented.** Its
+# pick-and-place robotbenchmark world
+# (projects/samples/robotbenchmark/pick_and_place/worlds/pick_and_place.wbt)
+# declares exactly `ContactProperties { material2 "box" coulombFriction [10] }`
+# -- material1 left at "default" -- and that is what is copied here as
+# `material2 "cargo" coulombFriction [10]`. It was arrived at by MEASUREMENT
+# and the failures are worth recording, because two of them look like a grasp
+# problem and are not:
+#   * a dedicated "grip"/"cargo" pair at coulombFriction 6 and maxForce 40 N
+#     let the cube creep out of the fingers over ~1.5 s;
+#   * RAISING it to coulombFriction 30 and maxForce 120 N made it WORSE -- the
+#     cube was ejected mid-drive. A very light body (0.05 kg) clamped by a
+#     large force is an ill-conditioned LCP, and more force is the wrong
+#     direction;
+#   * the recipe above (default materials, coulombFriction 10, maxForce 30 N)
+#     holds the part through a 6.85 m drive with two turns.
+#
+# Reach, checked rather than assumed:
+#   pick   base parked 0.75 m from the table centre -> the payload at (0.75, 0,
+#          0.627) is 0.622 m from the mount, inside 0.775
+#   place  base parked 0.70 m from the pad centre -> the release point at
+#          (0.70, 0, 0.165) is 0.615 m from the mount, inside 0.775
+#   and in both cases the chassis front face stops >= 0.10 m short of the
+#   fixture it is reaching into. The nav stage alone was NOT accurate enough
+#   for that -- it stops within 0.12 m of a standoff, which on the first run
+#   left the base 0.85 m from the table with the arm at its singularity and the
+#   grasp missing by 0.055 m -- so the driver closes the last few centimetres
+#   on the MEASURED distance to the fixture (its "creep" stage).
+#
+# The five obstacles are the task's FROZEN benchmark_assets/obstacles.json at
+# the published centres and full extents, and the table, payload and pad are
+# benchmark_assets/scene.json. The straight line from START (-4, -4) to the
+# TABLE (3, 3) passes through 1.014 m of OBSTACLE_1, so a robot that does not
+# perceive cannot get there without hitting something.
+#
+# Baseline sec. 5 traps honoured: zero EXTERNPROTOs, so nothing is fetched and
+# nothing depends on the asset cache; no rotation angle is anywhere near +/-pi.
+# The arena walls are TOP-LEVEL Solids rather than a RectangleArena, for the
+# reason r1_lidar_nav.wbt records: that PROTO's walls are NESTED, the adapter
+# reports them with member_of set, and r4_core.hittable_bodies skips a member
+# body -- so "collided with a WALL" would not be expressible.
+
+WorldInfo {
+  info [
+    "AgentBench R4 mobile_manipulation oracle: a differential-drive mobile "
+    "manipulator navigates from (-4, -4) to a table at (3, 3) with a planar "
+    "LiDAR, grasps a 0.05 m cube, carries it to a delivery pad at (-3, 3.5) "
+    "and releases it there."
+  ]
+  title "AgentBench R4 mobile_manipulation (oracle)"
+  basicTimeStep 16
+  contactProperties [
+    ContactProperties {
+      material1 "caster"
+      material2 "default"
+      coulombFriction [
+        0
+      ]
+    }
+    ContactProperties {
+      material1 "wheel"
+      material2 "default"
+      coulombFriction [
+        2
+      ]
+    }
+    ContactProperties {
+      material2 "cargo"
+      coulombFriction [
+        10
+      ]
+      bounce 0
+    }
+  ]
+}
+Viewpoint {
+  orientation 0.35 0.35 -0.87 1.7
+  position -13 -13 12
+}
+Background {
+  skyColor [
+    0.15 0.18 0.22
+  ]
+}
+DirectionalLight {
+  ambientIntensity 1
+  direction 0.4 0.5 -1
+  intensity 2
+  castShadows FALSE
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.02
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.55 0.58
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 10 10 0.04
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 10 10 0.04
+  }
+}
+DEF WALL_EAST Solid {
+  translation 5.05 0 0.25
+  children [
+    DEF WALL_NS_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.75 0.75 0.72
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.1 10.2 0.5
+      }
+    }
+  ]
+  name "wall_east"
+  boundingObject USE WALL_NS_SHAPE
+}
+DEF WALL_WEST Solid {
+  translation -5.05 0 0.25
+  children [
+    USE WALL_NS_SHAPE
+  ]
+  name "wall_west"
+  boundingObject USE WALL_NS_SHAPE
+}
+DEF WALL_NORTH Solid {
+  translation 0 5.05 0.25
+  children [
+    DEF WALL_EW_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.75 0.75 0.72
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 10.2 0.1 0.5
+      }
+    }
+  ]
+  name "wall_north"
+  boundingObject USE WALL_EW_SHAPE
+}
+DEF WALL_SOUTH Solid {
+  translation 0 -5.05 0.25
+  children [
+    USE WALL_EW_SHAPE
+  ]
+  name "wall_south"
+  boundingObject USE WALL_EW_SHAPE
+}
+DEF OBSTACLE_1 Solid {
+  translation 0.3694 1.2508 0.25
+  children [
+    DEF OBS_APPEARANCE Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1.6 1.6 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_1"
+  boundingObject Box {
+    size 1.6 1.6 0.5
+  }
+}
+DEF OBSTACLE_2 Solid {
+  translation -0.152 -1.8888 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1.2 0.8 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_2"
+  boundingObject Box {
+    size 1.2 0.8 0.5
+  }
+}
+DEF OBSTACLE_3 Solid {
+  translation -0.7663 3.8953 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.8 2 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_3"
+  boundingObject Box {
+    size 0.8 2 0.5
+  }
+}
+DEF OBSTACLE_4 Solid {
+  translation 2.2527 -4.455 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 2 0.8 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_4"
+  boundingObject Box {
+    size 2 0.8 0.5
+  }
+}
+DEF OBSTACLE_5 Solid {
+  translation 4.1758 -0.8524 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1 1 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_5"
+  boundingObject Box {
+    size 1 1 0.5
+  }
+}
+DEF TABLE Solid {
+  translation 3 3 0.3
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.4 0.35
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.8 0.8 0.6
+      }
+    }
+  ]
+  name "table"
+  boundingObject Box {
+    size 0.8 0.8 0.6
+  }
+}
+DEF PAD Solid {
+  translation -3 3.5 0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.15 0.5 0.25
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.6 0.6 0.1
+      }
+    }
+  ]
+  name "pad"
+  boundingObject Box {
+    size 0.6 0.6 0.1
+  }
+}
+DEF PAYLOAD Solid {
+  translation 3 3 0.625
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.9 0.75 0.1
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.05 0.05 0.05
+      }
+    }
+  ]
+  name "payload"
+  contactMaterial "cargo"
+  boundingObject Box {
+    size 0.05 0.05 0.05
+  }
+  physics Physics {
+    density -1
+    mass 0.05
+  }
+}
+DEF ROBOT Robot {
+  translation -4 -4 0
+  rotation 0 0 1 0
+  children [
+    DEF CHASSIS_SHAPE Pose {
+      translation 0 0 0.2
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.2 0.35 0.6
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.5 0.36 0.16
+          }
+        }
+      ]
+    }
+    DEF MAST_SHAPE Pose {
+      translation 0.1 0 0.35
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.3 0.3 0.32
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.12 0.12 0.2
+          }
+        }
+      ]
+    }
+    Lidar {
+      translation 0.27 0 0.3
+      name "lidar"
+      horizontalResolution 181
+      fieldOfView 3.14159
+      verticalFieldOfView 0.01
+      numberOfLayers 1
+      minRange 0.05
+      maxRange 10
+    }
+    Camera {
+      translation 0.27 0 0.38
+      name "camera"
+      width 128
+      height 96
+    }
+    GPS {
+      name "gps"
+    }
+    InertialUnit {
+      name "imu"
+    }
+    DEF LEFT_WHEEL HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0 0.22 0.1
+      }
+      device [
+        RotationalMotor {
+          name "left wheel"
+          maxVelocity 14
+          maxTorque 30
+        }
+        PositionSensor {
+          name "left wheel sensor"
+        }
+      ]
+      endPoint Solid {
+        translation 0 0.22 0.1
+        children [
+          DEF WHEEL_POSE Pose {
+            rotation 1 0 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.1 0.1 0.1
+                  roughness 1
+                  metalness 0
+                }
+                geometry Cylinder {
+                  height 0.05
+                  radius 0.1
+                }
+              }
+            ]
+          }
+        ]
+        name "left wheel"
+        contactMaterial "wheel"
+        boundingObject USE WHEEL_POSE
+        physics Physics {
+          density -1
+          mass 1.5
+        }
+      }
+    }
+    DEF RIGHT_WHEEL HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0 -0.22 0.1
+      }
+      device [
+        RotationalMotor {
+          name "right wheel"
+          maxVelocity 14
+          maxTorque 30
+        }
+        PositionSensor {
+          name "right wheel sensor"
+        }
+      ]
+      endPoint Solid {
+        translation 0 -0.22 0.1
+        children [
+          USE WHEEL_POSE
+        ]
+        name "right wheel"
+        contactMaterial "wheel"
+        boundingObject USE WHEEL_POSE
+        physics Physics {
+          density -1
+          mass 1.5
+        }
+      }
+    }
+    DEF ARM_YAW HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 0 1
+        anchor 0.1 0 0.45
+      }
+      device [
+        RotationalMotor {
+          name "j1"
+          maxVelocity 1.5
+          maxTorque 120
+        }
+        PositionSensor {
+          name "j1 sensor"
+        }
+      ]
+      endPoint Solid {
+        translation 0.1 0 0.45
+        children [
+          DEF SHOULDER_SHAPE Shape {
+            appearance PBRAppearance {
+              baseColor 0.55 0.55 0.58
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.07
+              radius 0.05
+            }
+          }
+          DEF ARM_SHOULDER HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 0 1 0
+              anchor 0 0 0
+            }
+            device [
+              RotationalMotor {
+                name "j2"
+                maxVelocity 1.5
+                maxTorque 120
+              }
+              PositionSensor {
+                name "j2 sensor"
+              }
+            ]
+            endPoint Solid {
+              children [
+                DEF UPPERARM_POSE Pose {
+                  translation 0.19 0 0
+                  rotation 0 1 0 1.5708
+                  children [
+                    Shape {
+                      appearance PBRAppearance {
+                        baseColor 0.8 0.6 0.15
+                        roughness 1
+                        metalness 0
+                      }
+                      geometry Cylinder {
+                        height 0.38
+                        radius 0.028
+                      }
+                    }
+                  ]
+                }
+                DEF ARM_ELBOW HingeJoint {
+                  jointParameters HingeJointParameters {
+                    axis 0 1 0
+                    anchor 0.38 0 0
+                  }
+                  device [
+                    RotationalMotor {
+                      name "j3"
+                      maxVelocity 1.5
+                      maxTorque 120
+                    }
+                    PositionSensor {
+                      name "j3 sensor"
+                    }
+                  ]
+                  endPoint Solid {
+                    translation 0.38 0 0
+                    children [
+                      DEF FOREARM_POSE Pose {
+                        translation 0.17 0 0
+                        rotation 0 1 0 1.5708
+                        children [
+                          Shape {
+                            appearance PBRAppearance {
+                              baseColor 0.8 0.6 0.15
+                              roughness 1
+                              metalness 0
+                            }
+                            geometry Cylinder {
+                              height 0.34
+                              radius 0.024
+                            }
+                          }
+                        ]
+                      }
+                      DEF ARM_WRIST HingeJoint {
+                        jointParameters HingeJointParameters {
+                          axis 0 1 0
+                          anchor 0.34 0 0
+                        }
+                        device [
+                          RotationalMotor {
+                            name "j4"
+                            maxVelocity 1.5
+                            maxTorque 120
+                          }
+                          PositionSensor {
+                            name "j4 sensor"
+                          }
+                        ]
+                        endPoint Solid {
+                          translation 0.34 0 0
+                          children [
+                            DEF PALM_POSE Pose {
+                              children [
+                                Shape {
+                                  appearance PBRAppearance {
+                                    baseColor 0.35 0.35 0.38
+                                    roughness 1
+                                    metalness 0
+                                  }
+                                  geometry Box {
+                                    size 0.03 0.09 0.04
+                                  }
+                                }
+                              ]
+                            }
+                            DEF FINGER_LEFT SliderJoint {
+                              jointParameters JointParameters {
+                                axis 0 1 0
+                                minStop -0.034
+                                maxStop 0.007
+                              }
+                              device [
+                                LinearMotor {
+                                  name "finger left"
+                                  maxForce 30
+                                  maxVelocity 0.08
+                                  minPosition -0.032
+                                  maxPosition 0.005
+                                }
+                                PositionSensor {
+                                  name "finger left sensor"
+                                }
+                              ]
+                              endPoint Solid {
+                                translation 0.055 0.048 0
+                                children [
+                                  DEF FINGER_SHAPE Shape {
+                                    appearance PBRAppearance {
+                                      baseColor 0.1 0.6 0.6
+                                      roughness 1
+                                      metalness 0
+                                    }
+                                    geometry Box {
+                                      size 0.08 0.014 0.036
+                                    }
+                                  }
+                                ]
+                                name "finger left"
+                                boundingObject USE FINGER_SHAPE
+                                physics Physics {
+                                  density -1
+                                  mass 0.08
+                                }
+                              }
+                            }
+                            DEF FINGER_RIGHT SliderJoint {
+                              jointParameters JointParameters {
+                                axis 0 1 0
+                                minStop -0.007
+                                maxStop 0.034
+                              }
+                              device [
+                                LinearMotor {
+                                  name "finger right"
+                                  maxForce 30
+                                  maxVelocity 0.08
+                                  minPosition -0.005
+                                  maxPosition 0.032
+                                }
+                                PositionSensor {
+                                  name "finger right sensor"
+                                }
+                              ]
+                              endPoint Solid {
+                                translation 0.055 -0.048 0
+                                children [
+                                  USE FINGER_SHAPE
+                                ]
+                                name "finger right"
+                                boundingObject USE FINGER_SHAPE
+                                physics Physics {
+                                  density -1
+                                  mass 0.08
+                                }
+                              }
+                            }
+                          ]
+                          name "wrist"
+                          boundingObject USE PALM_POSE
+                          physics Physics {
+                            density -1
+                            mass 0.25
+                          }
+                        }
+                      }
+                    ]
+                    name "forearm"
+                    boundingObject USE FOREARM_POSE
+                    physics Physics {
+                      density -1
+                      mass 0.5
+                    }
+                  }
+                }
+              ]
+              name "upperarm"
+              boundingObject USE UPPERARM_POSE
+              physics Physics {
+                density -1
+                mass 0.7
+              }
+            }
+          }
+        ]
+        name "shoulder"
+        boundingObject USE SHOULDER_SHAPE
+        physics Physics {
+          density -1
+          mass 0.4
+        }
+      }
+    }
+  ]
+  name "mobile manipulator"
+  contactMaterial "caster"
+  boundingObject Group {
+    children [
+      USE CHASSIS_SHAPE
+      Pose {
+        translation 0.22 0 0.06
+        children [
+          Sphere {
+            radius 0.06
+          }
+        ]
+      }
+      Pose {
+        translation -0.22 0 0.06
+        children [
+          Sphere {
+            radius 0.06
+          }
+        ]
+      }
+    ]
+  }
+  physics Physics {
+    density -1
+    mass 30
+    centerOfMass [
+      0 0 0.14
+    ]
+  }
+  controller "r4_oracle"
+}

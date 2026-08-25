@@ -1,0 +1,91 @@
+{
+ "sim": "omnisim",
+ "rung": 3,
+ "title": "one hinge + motor, no load",
+ "checks": [
+  {
+   "name": "omega_driven",
+   "measured": 2.0000000596046448,
+   "expected": 2.0,
+   "tol": 0.02,
+   "unit": "rad/s",
+   "rel": false,
+   "error": 5.960464477539063e-08,
+   "margin": 0.019999940395355225,
+   "ok": true,
+   "why": "an unloaded velocity-controlled joint reaches its command exactly at steady state: no gravity torque about a vertical axis, no damping, no contact",
+   "key": "omega_driven"
+  },
+  {
+   "name": "omega_zero",
+   "measured": 0.0,
+   "expected": 0.0,
+   "tol": 0.01,
+   "unit": "rad/s",
+   "rel": false,
+   "error": 0.0,
+   "margin": 0.01,
+   "ok": true,
+   "why": "commanding zero must PRODUCE zero -- the case a servo that silently ignores its input passes only by accident",
+   "key": "omega_zero"
+  },
+  {
+   "name": "angle_travelled",
+   "measured": 2.0000000596046448,
+   "expected": 2.0,
+   "tol": 0.02,
+   "unit": "rad",
+   "rel": false,
+   "error": 5.960464477539063e-08,
+   "margin": 0.019999940395355225,
+   "ok": true,
+   "why": "integral form of the same claim, read from the joint's own position sensor: theta = omega t",
+   "key": "angle_driven"
+  }
+ ],
+ "timing": {
+  "startup_s": 8.38976001739502,
+  "total_s": 9.915513515472412,
+  "step_s": 0.9374120235443115
+ },
+ "green": true,
+ "meta": {
+  "sim": "omnisim",
+  "rung": 3,
+  "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung3.wbt",
+  "fault": "none",
+  "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.next.exe",
+  "error": null,
+  "exit_code": 0,
+  "timed_out": false,
+  "binary_sha256": "83fb6cd2d9068662",
+  "binary_mtime": "2026-08-12 15:15:09",
+  "proc_t0": 1786547901.035538,
+  "proc_t1": 1786547910.9510515,
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cpu",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "command": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.next.exe O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung3.wbt --batch --mode=fast --no-rendering --minimize --stdout --stderr"
+ },
+ "measurement": {
+  "steps": 750.0,
+  "sim_time_end": 3.0,
+  "exit_code": 0.0,
+  "n_samples": 750,
+  "omega_driven": 2.0000000596046448,
+  "omega_zero": 0.0,
+  "angle_driven": 2.0000000596046448,
+  "angle_total": 2.9992105523124337
+ }
+}

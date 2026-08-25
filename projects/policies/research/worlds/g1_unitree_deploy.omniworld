@@ -1,0 +1,59 @@
+#OMNISIM R2025a utf8
+
+# Deploy world for UNITREE'S OFFICIAL G1 walk policy (unitree_rl_gym pre_train/g1).
+# Uses Unitree's faithful 12-DOF model (g1_12dof_faithful.urdf = their official
+# g1_12dof URDF, full 32kg body, + their 4-sphere-per-foot contact). The
+# g1_unitree_deploy controller runs their motion.pt policy with their exact
+# 47-d obs + torque PD (kp=[100,100,100,150,40,40], kd=[2,2,2,4,2,2], knees-bent
+# default pose). Their MuJoCo model walks 25m/60s; OmniSim's engine is mujoco_warp.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco_warp"
+  newtonSubsteps 2
+  newtonStatics TRUE
+  newtonCompoundColliders TRUE
+  basicTimeStep 2
+  title "Unitree G1 official walk (their algorithm) in OmniSim"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 2.546 -2.710 3.912
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  translation 50 0 0
+  floorSize 120 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/unitree/g1/g1_12dof/g1_12dof_clean.urdf"
+  translation 0 0 0.80
+  name "g1"
+  supervisor TRUE
+  controller "g1_unitree_deploy"
+  physicsBackend "newton"
+}

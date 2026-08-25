@@ -1,0 +1,46 @@
+#OMNISIM R2025a utf8
+# license: Apache License 2.0
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/rocks/protos/TerrainRock.proto.py
+# keywords: exterior/obstacle, terrain
+# Smooth-collision rock for rough-terrain robot demos. Sphere boundingObject so wheels can roll over cleanly; the visual is a slightly less detailed sphere with a configurable color.
+
+PROTO TerrainRock [
+  field SFVec3f    translation 0 0 0  # Is `Solid.translation`.
+  field SFRotation rotation    0 0 1 0  # Is `Solid.rotation`.
+  field SFString   name        "terrain_rock"  # Is `Solid.name`.
+  field SFFloat    radius      0.15  # Sphere radius (visual + bounding). Default ~15 cm — climbable for a Husky.
+  field SFColor    color       0.45 0.4 0.35  # Base color of the rock surface (PBR baseColor).
+  field SFFloat    density     2500  # Physics density in kg/m^3 (granite ~2500).
+  field SFBool     locked      TRUE  # Is `Solid.locked`. Default TRUE — these are terrain features, not props; we don't want a wheeled robot punting them around like billiard balls when the goal is to climb over them. Override to FALSE only if you specifically want loose rocks.
+]
+{
+
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "terrain_rock"
+    children [
+      Shape {
+        appearance PBRAppearance {
+          baseColor IS color
+          roughness 1
+          metalness 0
+        }
+        geometry Sphere {
+          radius IS radius
+          subdivision 3
+        }
+      }
+    ]
+    boundingObject Sphere {
+      radius IS radius
+      subdivision 2
+    }
+    physics Physics {
+      density IS density
+    }
+    locked IS locked
+  }
+}

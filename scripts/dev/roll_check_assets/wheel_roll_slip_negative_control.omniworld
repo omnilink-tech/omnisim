@@ -1,0 +1,319 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+# NEGATIVE CONTROL for the no-slip gate. NOT A TEST -- it is the RED half of
+# `python scripts/dev/roll_check.py --self-test`, which requires this world and
+# tests/physics/worlds/wheel_roll_noslip.omniworld to produce OPPOSITE verdicts. A gate
+# that has only ever been seen to pass is not evidence of anything.
+#
+# GENERATED from tests/physics/worlds/wheel_roll_noslip.omniworld. Do not hand-edit:
+#   python scripts/dev/roll_check.py --regenerate-negative-control
+# The substitution list lives in NEGATIVE_CONTROL_EDITS in that script.
+#
+# ⚠ IT TAKES ALL THREE PHYSICAL EDITS TO MAKE THE ROVER SLIDE, and that is the
+# most useful thing this file records. Measured on this tree with
+# omnisim-bin-fixed.exe, one factor at a time, everything else at the gate
+# world's proven-good values (slip ratio = fraction of body motion NOT accounted
+# for by wheel rotation):
+#
+#   maxTorque 0.4 alone .............................. 0.000  ROLLS
+#   basicTimeStep 16 + no newtonSubsteps alone ....... 0.001  ROLLS
+#   all three together ............................... 0.602  SLIDES
+#
+# So "the motor was under-powered" is only half the story. 0.4 N.m is ample at
+# dt = 8 ms with 4 substeps, and a 16 ms single-substep integration is fine at
+# 12 N.m; the failure is the INTERACTION between them. No stiction/torque
+# formula predicts a dependence on the timestep, which is precisely why the
+# check that catches this is behavioural and never analytic.
+#
+# The fourth substitution is not physical: controller "wheel_roll_noslip" ->
+# "roll_drive", so a stray direct run cannot append a FAILURE line to
+# tests/output.txt and poison the smoke lane's verdict file. roll_check.py swaps
+# EVERY controller to roll_drive anyway, so both worlds are measured under
+# identical drive conditions.
+#
+# IT LIVES HERE, NOT UNDER tests/physics/worlds/, ON PURPOSE: test_suite.py globs
+# `tests/<group>/worlds/*.wbt` and runs everything it finds, so a deliberately
+# broken world placed there would be reported as a failing test forever.
+
+WorldInfo {
+  info [
+    "Asserts that a driven wheel's rotation actually accounts for the chassis's motion -- that the robot ROLLS rather than sliding with locked wheels."
+  ]
+  title "Wheel no-slip consistency"
+  basicTimeStep 16
+  FPS 30
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  newtonRobotColliders TRUE
+  newtonGroundMu 0.9
+}
+Viewpoint {
+  orientation -0.3536 0.3536 0.8660 1.7017
+  position -3.2 -3.4 2.6
+}
+Background {
+  skyColor [
+    0.15 0.2 0.3
+  ]
+}
+DEF SUN DirectionalLight {
+  color 1 0.95 0.85
+  direction 0.4 -0.5 -0.7
+  intensity 2.5
+}
+DEF FLOOR Solid {
+  translation 4 0 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.45 0.48
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 24 6 0.4
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 24 6 0.4
+  }
+}
+DEF ROVER Robot {
+  translation -5 0 0.34
+  rotation 0 0 1 0
+  name "rover"
+  controller "roll_drive"
+  supervisor TRUE
+  children [
+    TestSuiteEmitter {
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.15 0.35 0.8
+        metalness 0
+        roughness 1
+      }
+      geometry Box {
+        size 0.6 0.4 0.18
+      }
+    }
+    DEF FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.22 0.21 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "front_left_wheel_motor"
+          maxVelocity 30
+          maxTorque 0.4
+        }
+        PositionSensor {
+          name "front_left_wheel_sensor"
+        }
+      ]
+      endPoint DEF FL_WHEEL Solid {
+        translation 0.22 0.21 -0.05
+        name "front_left_wheel"
+        children [
+          Pose {
+            rotation 1 0 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.1 0.1 0.1
+                  metalness 0
+                  roughness 1
+                }
+                geometry Cylinder {
+                  height 0.05
+                  radius 0.09
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject Pose {
+          rotation 1 0 0 1.5708
+          children [
+            Cylinder {
+              height 0.05
+              radius 0.09
+            }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 0.6
+        }
+      }
+    }
+    DEF FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.22 -0.21 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "front_right_wheel_motor"
+          maxVelocity 30
+          maxTorque 0.4
+        }
+        PositionSensor {
+          name "front_right_wheel_sensor"
+        }
+      ]
+      endPoint DEF FR_WHEEL Solid {
+        translation 0.22 -0.21 -0.05
+        name "front_right_wheel"
+        children [
+          Pose {
+            rotation 1 0 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.1 0.1 0.1
+                  metalness 0
+                  roughness 1
+                }
+                geometry Cylinder {
+                  height 0.05
+                  radius 0.09
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject Pose {
+          rotation 1 0 0 1.5708
+          children [
+            Cylinder {
+              height 0.05
+              radius 0.09
+            }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 0.6
+        }
+      }
+    }
+    DEF RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor -0.22 0.21 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "rear_left_wheel_motor"
+          maxVelocity 30
+          maxTorque 0.4
+        }
+        PositionSensor {
+          name "rear_left_wheel_sensor"
+        }
+      ]
+      endPoint DEF RL_WHEEL Solid {
+        translation -0.22 0.21 -0.05
+        name "rear_left_wheel"
+        children [
+          Pose {
+            rotation 1 0 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.1 0.1 0.1
+                  metalness 0
+                  roughness 1
+                }
+                geometry Cylinder {
+                  height 0.05
+                  radius 0.09
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject Pose {
+          rotation 1 0 0 1.5708
+          children [
+            Cylinder {
+              height 0.05
+              radius 0.09
+            }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 0.6
+        }
+      }
+    }
+    DEF RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor -0.22 -0.21 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "rear_right_wheel_motor"
+          maxVelocity 30
+          maxTorque 0.4
+        }
+        PositionSensor {
+          name "rear_right_wheel_sensor"
+        }
+      ]
+      endPoint DEF RR_WHEEL Solid {
+        translation -0.22 -0.21 -0.05
+        name "rear_right_wheel"
+        children [
+          Pose {
+            rotation 1 0 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.1 0.1 0.1
+                  metalness 0
+                  roughness 1
+                }
+                geometry Cylinder {
+                  height 0.05
+                  radius 0.09
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject Pose {
+          rotation 1 0 0 1.5708
+          children [
+            Cylinder {
+              height 0.05
+              radius 0.09
+            }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 0.6
+        }
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.6 0.4 0.18
+  }
+  physics Physics {
+    density -1
+    mass 10
+  }
+}
+TestSuiteSupervisor {
+}

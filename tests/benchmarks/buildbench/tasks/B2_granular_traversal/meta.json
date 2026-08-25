@@ -1,0 +1,76 @@
+{
+  "suite": "buildbench/v0.1",
+  "id": "B2_granular_traversal",
+  "title": "graded interaction with granular media",
+  "prompt": "Drive a wheeled robot across a bed of loose granular material to a goal on the far side, or move a stated mass of that material into a target zone, steering from a planar LiDAR. Show the robot reaching the goal, or the material arriving in the zone.",
+  "demonstrates": "two-way interaction between a rigid robot and bulk particulate media -- wheel sinkage, traction loss, and material displaced",
+  "why_this_is_real_work": "Planetary rovers, construction and agricultural machines spend their working lives on loose ground, and terramechanics -- sinkage, slip, and the force it takes to move a mass of material -- is the thing that decides whether such a machine works. A vehicle model on rigid flat ground says nothing about it.",
+  "build_status": "BLOCKED",
+  "blocked_reason": "MEASURED 2026-08-11, machine 9722d23d12a3: the granular subsystem does not support a graded task, on four independent grounds. See SPEC 6.2 and evidence/2026-08-11-granular.md. (1) Particles do not simulate on the shipped binary -- 'GranularGroup is inert: CUDA is not available on this build/box', no CPU fallback. (2) Even with CUDA on, OmGranularGroup::collectColliders skips every Solid whose body() is NULL, and body() is the ODE body, deleted in bdc02139 -- so the collider list is always empty and robots and particles are mutually invisible, in BOTH directions. (3) The reverse force is written into OmSolid::addForceAtPosition, whose body is empty. (4) There is no supervisor API to read particle state, so displaced mass is unmeasurable regardless. The rigid-sphere fallback is not a shortcut either: granular_sand_demo.omniworld does simulate (294 dynamic Newton bodies, grains fall z 1.593 -> 0.048) but its grains escape a +/-1.4 m pit and roll to -80 m, and it contains no robot. NO TASK WAS AUTHORED. Kept registered at BLOCKED rather than deleted (SPEC 7.5).",
+  "depends_on_risks": [
+    "risk_3_granular_graded_task"
+  ],
+  "grading_sketch": "would have been geometric: robot base crosses the bed to the goal, with wheel-hub z measured against the undisturbed bed surface to evidence sinkage; or mass of material inside the target zone, summed from particle state. BOTH channels are unmeasurable today -- there is no particle readback, and no robot-particle interaction to measure.",
+  "claims": {
+    "omnisim": {
+      "sim": "omnisim",
+      "verdict": "NOT_EXPRESSIBLE",
+      "reason": "a GranularGroup node exists and parses, but on the shipped binary it is inert, its robot-collider list is structurally empty since the ODE deletion, its reverse-force target is an empty function, and no API reads particle state",
+      "missing_capability": "granular-to-rigid-body coupling (both directions) and any particle-state readback",
+      "verification_status": "MEASURED",
+      "citations": [
+        {
+          "where": "tests/benchmarks/buildbench/evidence/2026-08-11-granular.md",
+          "says": "the four blockers, with the runs that establish them"
+        },
+        {
+          "where": "src/omnisim/nodes/OmSolid.cpp:4214-4222",
+          "says": "'ODE removed: OmSolid::addForceAtPosition / addTorque are now UNIMPLEMENTED -- ... the granular-group coupling (OmGranularGroup) that call them apply nothing.' The function body is empty."
+        },
+        {
+          "where": "docs/benchmarks/lane4-capability-matrix.md",
+          "says": "object.granular_group is PARTIAL: 'this lane has NO way to read particle state through the supervisor API, so the particles are simulated is UNMEASURED. Not counted as working.'"
+        },
+        {
+          "where": "docs/developer/granular-cuda-plan.md",
+          "says": "'Newton coupling -- now a HARD BREAK on every world' since bdc02139; 'balls no longer push the robot back in any world, and there is no world flag that restores it'"
+        }
+      ],
+      "challenges": [
+        "This is MEASURED on ONE binary (built OMNISIM_WITH_CUDA=OFF) on ONE machine. Blocker 1 is a build-configuration fact and would be lifted by a CUDA build; blockers 2-4 are source facts and would not. A CUDA-ON build should still be run before the verdict is treated as permanent -- it would confirm or refute blocker 2 empirically rather than by reading collectColliders.",
+        "The verdict is about the CURRENT tree. It is a repairable defect, not an architectural impossibility, and must never be quoted as though granular media are beyond the engine."
+      ],
+      "publishable": true
+    },
+    "webots": {
+      "sim": "webots",
+      "verdict": "NOT_EXPRESSIBLE",
+      "reason": "upstream models bulk particulate media only as many individual rigid bodies; there is no granular medium as such",
+      "missing_capability": "a granular / particulate media model",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "'ODE has no granular media' is a claim about a solver, and the interesting question is whether N rigid spheres are an honest formulation of the task. Our own measurement says rigid spheres CAN be stepped in bulk (294 bodies) -- so the verdict may be PARTIAL for both of us, with the real distinction being scale and fidelity rather than expressibility."
+      ],
+      "publishable": false
+    },
+    "mujoco": {
+      "sim": "mujoco",
+      "verdict": "NOT_EXPRESSIBLE",
+      "reason": "declared: no CUDA particle system and no packaged range sensor for the closed-loop half",
+      "missing_capability": "a granular / particulate media model",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "'MuJoCo has no Lidar/Camera device model' is probably FALSE as stated: MuJoCo ships a `rangefinder` sensor and offscreen rendering (mjr_render), and MuJoCo-based embodied-AI stacks routinely produce camera observations. The defensible narrower claim is about a packaged device model plus per-robot controller processes as simulator concepts, not about whether ray casts and pixels can be obtained at all. Until someone cites MuJoCo's own docs either way this stays UNVERIFIED and the broad phrasing is not to be repeated.",
+        "MuJoCo can step large numbers of rigid bodies and is used for deformable and composite objects; whether that reaches 'granular media' is exactly the definitional question above, and it is unresolved for every arm including ours."
+      ],
+      "publishable": false
+    }
+  },
+  "oracle_null_gate": {
+    "omnisim": "NOT RUN",
+    "webots": "NOT RUN",
+    "mujoco": "NOT RUN"
+  }
+}

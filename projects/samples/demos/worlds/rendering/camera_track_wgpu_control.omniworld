@@ -1,0 +1,155 @@
+#OMNISIM R2025a utf8
+
+# THE CONTROL ARM for camera_track_wgpu_smoke.omniworld: byte-for-byte the same world with
+# the `animatedGeometry Shape { ... }` field, and NOTHING else, removed. So the Track keeps
+# its wheels, its motor and its belt PATH and simply has no belt elements to place -- which
+# is exactly what the wgpu renderer produced for the textured world before P2.
+#
+# P2 CONTROL WORLD (docs/developer/wren-deletion-runbook.md) -- a wgpu Camera pointed at a
+# Track whose BELT is animated instanced geometry.
+#
+# WHY IT HAD TO BE AUTHORED. Zero tracked worlds paired a `Camera {` with a `Track {`, so
+# nothing could tell "the belt renders" from "the belt renders in the MAIN VIEW only" --
+# which is exactly the failure P1 found for Cloth and SoftBody, where the fix was appended
+# downstream of collectWorldDraws in OmView3D and every sensor saw nothing. Track and
+# Muscle now go through OmWgpuSceneRenderer::collectDynamicDraws, the single entry point
+# every render path calls, and this world is what MEASURES that rather than asserting it.
+#
+# ⚠ A Track is NOT a deformable. Its belt is N copies of a real OmGeometry placed by
+# per-step model matrices (animateMesh() generates no vertices at all), so what has to be
+# proven here is that the MATRICES are fresh in the sensor's own collect.
+#
+# WHAT THE GATE ASSERTS:
+#   RED       OMNISIM_WGPU_TRACK=0 -> this world's camera image is IDENTICAL to the sibling
+#             control camera_track_wgpu_control.omniworld (the same scene with the
+#             `animatedGeometry` field, and nothing else, removed).
+#   GREEN     default -> the two differ.
+#   ANIMATION default -> the image at two well-separated steps differs, i.e. the belt is
+#             advancing in the SENSOR's image and not merely present in it.
+#
+# The belt elements are bright red against a grey belt body and a grey floor so the pixel
+# diff is unambiguous. Driven by `wgpu_gate_driver --mode ramp` plus the generic wgpu-Camera
+# sampler on the camera rig.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 16
+  coordinateSystem "ENU"
+  title "P2 control -- the same Track with no animatedGeometry"
+  newtonGroundMu 500
+}
+Viewpoint {
+  position -2.0 0 0.8
+  orientation 0 0 1 0
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.36 0.40
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 8 8 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 8 8 0.1
+  }
+}
+DEF CONVEYOR Robot {
+  translation 0 0 0.30
+  children [
+    DEF BELT_TRACK Track {
+      children [
+        DEF WHEEL_FRONT TrackWheel {
+          position 0.25 0
+          radius 0.08
+          children [
+            Pose {
+              rotation 1 0 0 1.5708
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.30 0.30 0.34
+                    roughness 1
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    height 0.06
+                    radius 0.08
+                    subdivision 20
+                  }
+                }
+              ]
+            }
+          ]
+        }
+        DEF WHEEL_BACK TrackWheel {
+          position -0.25 0
+          radius 0.08
+          children [
+            Pose {
+              rotation 1 0 0 1.5708
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.30 0.30 0.34
+                    roughness 1
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    height 0.06
+                    radius 0.08
+                    subdivision 20
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+      device [
+        LinearMotor {
+        }
+      ]
+      geometriesCount 30
+    }
+  ]
+  name "conveyor"
+  controller "wgpu_gate_driver"
+  controllerArgs ["--motor" "linear motor" "--mode" "ramp" "--step" "0.0012"]
+}
+# Camera rig: local +X is forward, identity rotation looks along world +X, i.e. straight at
+# the belt from 1.1 m out at its own height.
+DEF CAM_RIG Robot {
+  translation -1.1 0 0.30
+  children [
+    Camera {
+      name "track_cam"
+      width 96
+      height 72
+      fieldOfView 0.9
+      near 0.05
+      far 20.0
+      renderBackend "wgpu"
+    }
+  ]
+  name "track_cam_rig"
+  controller "camera_cloth_wgpu_smoke"
+  supervisor FALSE
+}

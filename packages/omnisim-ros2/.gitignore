@@ -1,0 +1,7 @@
+# colcon build artefacts
+build/
+install/
+log/
+
+# fetched by deps.repos / scripts/bootstrap.sh -- an upstream repo, not ours
+src/simulation_interfaces/

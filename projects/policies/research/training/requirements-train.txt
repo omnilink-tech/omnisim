@@ -1,0 +1,28 @@
+# OmniSim RL GPU training dependencies (Linux / CUDA, e.g. an H100 box).
+# Pins follow docs/developer/g1-stand-rl-playbook.md (§Prerequisites) and
+# docs/developer/newton-runtime-bundle.md. The G1 trainers are pure Python
+# (no omnisim-bin / Newton / Webots), so this list is the entire footprint.
+#
+# torch: on Linux x86_64 the default PyPI wheel is already a CUDA (cu12x) build,
+#        which is what we want on an H100. If your box needs a specific CUDA,
+#        install it first from the pytorch index, e.g.:
+#          pip install torch --index-url https://download.pytorch.org/whl/cu128
+torch
+
+# NVIDIA Warp — GPU kernels + CUDA-graph capture (bundles its own slim CUDA).
+warp-lang==1.16.0
+
+# Batched GPU MuJoCo. If this exact version is not on PyPI for your platform,
+# replace this line with the source install:
+#   mujoco_warp @ git+https://github.com/google-deepmind/mujoco_warp
+mujoco-warp==3.11.0
+
+# Loads/builds the MJCF, applies domain-randomization edits, name->id lookups.
+mujoco==3.11.0
+
+numpy
+onnx
+# onnxscript: required by recent torch.onnx.export (dynamo path) to actually emit
+# policy.onnx — without it the export is skipped and only policy.pt comes back
+# (the local deploy loads policy.onnx via onnxruntime).
+onnxscript

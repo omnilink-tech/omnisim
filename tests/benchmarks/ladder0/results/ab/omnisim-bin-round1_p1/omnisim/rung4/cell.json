@@ -1,0 +1,135 @@
+{
+ "sim": "omnisim",
+ "rung": 4,
+ "title": "wheeled robot, straight line",
+ "checks": [
+  {
+   "name": "distance",
+   "measured": 1.5986387729644775,
+   "expected": 1.6,
+   "tol": 0.05,
+   "unit": "m",
+   "rel": true,
+   "error": -0.0008507668972015936,
+   "margin": 0.04914923310279841,
+   "ok": true,
+   "why": "d = omega r t for a wheel rolling without slip, measured over a window that starts after the spin-up transient",
+   "key": "distance"
+  },
+  {
+   "name": "wheel_omega",
+   "measured": 3.9999998807907104,
+   "expected": 4.0,
+   "tol": 0.04,
+   "unit": "rad/s",
+   "rel": false,
+   "error": -1.1920928955078125e-07,
+   "margin": 0.03999988079071045,
+   "ok": true,
+   "why": "the wheels must actually TURN at the commanded rate -- read from each wheel's own position sensor",
+   "key": "wheel_omega"
+  },
+  {
+   "name": "rolling_consistency",
+   "measured": 0.9991492628797669,
+   "expected": 1.0,
+   "tol": 0.03,
+   "unit": "-",
+   "rel": true,
+   "error": -0.0008507371202330916,
+   "margin": 0.029149262879766907,
+   "ok": true,
+   "why": "v_body / (omega_wheel r) == 1.  THE anti-slide assertion: a chassis that slid the right distance on wheels that never turned passes 'distance' and fails only here",
+   "key": "roll_ratio"
+  },
+  {
+   "name": "roll_overrun",
+   "measured": 10.770552852251441,
+   "expected": 0.0,
+   "tol": 0.05,
+   "unit": "-",
+   "rel": false,
+   "error": 10.770552852251441,
+   "margin": -10.72055285225144,
+   "ok": false,
+   "why": "max over the WHOLE run of (v_body/(omega_wheel r) - 1), clamped at 0.  A wheel can push a body at most omega r and slip only makes it slower, so any excess is unphysical.  This is the check a steady-state window cannot make",
+   "key": "roll_overrun"
+  },
+  {
+   "name": "ride_height",
+   "measured": 0.037946784496307395,
+   "expected": 0.0,
+   "tol": 0.02,
+   "unit": "m",
+   "rel": false,
+   "error": 0.037946784496307395,
+   "margin": -0.017946784496307395,
+   "ok": false,
+   "why": "the axle of a suspensionless rover on flat ground stays at floor_top + wheel_radius; a rover being launched, or one that has driven off the edge, breaks every other number in this rung while leaving them looking plausible",
+   "key": "ride_dev"
+  },
+  {
+   "name": "lateral_drift",
+   "measured": 6.901685864116715e-15,
+   "expected": 0.0,
+   "tol": 0.1,
+   "unit": "m",
+   "rel": false,
+   "error": 6.901685864116715e-15,
+   "margin": 0.09999999999999311,
+   "ok": true,
+   "why": "a symmetric robot given identical wheel commands on flat ground travels straight",
+   "key": "lateral"
+  }
+ ],
+ "timing": {
+  "startup_s": 12.987274169921875,
+  "total_s": 17.36221432685852,
+  "step_s": 3.8607332706451416
+ },
+ "green": false,
+ "meta": {
+  "sim": "omnisim",
+  "rung": 4,
+  "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung4.wbt",
+  "fault": "none",
+  "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe",
+  "error": null,
+  "exit_code": 0,
+  "timed_out": false,
+  "binary_sha256": "8a6f8bc54194dd58",
+  "binary_mtime": "2026-08-11 22:33:49",
+  "proc_t0": 1786547459.5007226,
+  "proc_t1": 1786547476.862937,
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cpu",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "command": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung4.wbt --batch --mode=fast --no-rendering --minimize --stdout --stderr"
+ },
+ "measurement": {
+  "steps": 1625.0,
+  "sim_time_end": 6.5,
+  "exit_code": 0.0,
+  "n_samples": 1625,
+  "distance": 1.5986387729644775,
+  "v_body": 0.3996596932411194,
+  "dx": 1.5986387729644775,
+  "lateral": 6.901685864116715e-15,
+  "wheel_omega": 3.9999998807907104,
+  "wheel_omega_spread": 6.413459777832031e-05,
+  "roll_ratio": 0.9991492628797669,
+  "ride_dev": 0.037946784496307395,
+  "roll_overrun": 10.770552852251441
+ }
+}

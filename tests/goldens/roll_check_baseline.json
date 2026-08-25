@@ -1,0 +1,1314 @@
+{
+  "measured_on": "2026-08-10",
+  "machine": "LAPTOP-H61DJILS (RTX 3060 laptop, Windows 11)",
+  "binary": "msys64/mingw64/bin/omnisim-bin-fixed.exe",
+  "solver": "newton / MuJoCo (cpu mj_step)",
+  "tolerance": 0.35,
+  "method": "scripts/dev/roll_check.py sweep. The world is never modified: a throwaway sibling .omnisim_roll_<stem>.wbt is written next to it with every controller swapped to the uniform `roll_drive` and a `roll_probe` supervisor appended, then deleted. Wheel spin is read as (omega_wheel - omega_chassis) . axis_world through the supervisor API; body speed is projected on axis_world x up. Medians over a 500-step window after an 80-step settle, restricted to the samples where the robot was actually moving. Verdicts branch on the SIGN of the residual: ROLLING / SLIDING (body outruns the wheels -- the defect) / WHEELSPIN (wheels outrun the body) / REVERSED / IDLE / NO_DATA. Full write-up: docs/developer/roll-check.md.",
+  "worlds": {
+    "projects/languages/cpp/worlds/example.wbt": {
+      "verdict": "SLIDING",
+      "robots": [
+        {
+          "id": "ROBOT1",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -0.0725,
+          "omega_spin_rad_s": 0.0092,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.0002,
+          "slip_ratio": 1.0032,
+          "moving_fraction": 0.734
+        },
+        {
+          "id": "ROBOT2",
+          "verdict": "SLIDING",
+          "v_body_fwd_mps": 0.1376,
+          "omega_spin_rad_s": 0.0021,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.0001,
+          "slip_ratio": 0.9996,
+          "moving_fraction": 0.824
+        },
+        {
+          "id": "ROBOT3",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -0.0598,
+          "omega_spin_rad_s": 0.0034,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.0001,
+          "slip_ratio": 1.0014,
+          "moving_fraction": 0.62
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 12.623 -> 0.138 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/languages/python/worlds/example.wbt": {
+      "verdict": "SLIDING",
+      "robots": [
+        {
+          "id": "ROBOT1",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": -0.0741,
+          "omega_spin_rad_s": -0.005,
+          "radius_m": 0.025,
+          "v_roll_mps": -0.0001,
+          "slip_ratio": 0.9983,
+          "moving_fraction": 0.728
+        },
+        {
+          "id": "ROBOT2",
+          "verdict": "SLIDING",
+          "v_body_fwd_mps": 0.1374,
+          "omega_spin_rad_s": 0.012,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.0003,
+          "slip_ratio": 0.9978,
+          "moving_fraction": 0.828
+        },
+        {
+          "id": "ROBOT3",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -0.0579,
+          "omega_spin_rad_s": 0.0026,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.0001,
+          "slip_ratio": 1.0011,
+          "moving_fraction": 0.63
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 12.623 -> 0.137 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/omni_quest/worlds/city_husky_full.wbt": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "id": "CITY_HUSKY",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.4491,
+          "omega_spin_rad_s": 2.7256,
+          "radius_m": 0.1651,
+          "v_roll_mps": 0.45,
+          "slip_ratio": 0.0021,
+          "moving_fraction": 1.0
+        }
+      ]
+    },
+    "projects/omni_quest/worlds/city_husky_nav.wbt": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "id": "CITY_HUSKY",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.4491,
+          "omega_spin_rad_s": 2.7256,
+          "radius_m": 0.1651,
+          "v_roll_mps": 0.45,
+          "slip_ratio": 0.0021,
+          "moving_fraction": 1.0
+        }
+      ]
+    },
+    "projects/robot_combat/battlebots/worlds/battlebox_duel.wbt": {
+      "verdict": "REVERSED",
+      "robots": [
+        {
+          "id": "RED",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -0.035,
+          "omega_spin_rad_s": 5.0543,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.5149,
+          "slip_ratio": 15.7185,
+          "moving_fraction": 0.532
+        },
+        {
+          "id": "BLUE",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -0.034,
+          "omega_spin_rad_s": 5.015,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.4514,
+          "slip_ratio": 14.2735,
+          "moving_fraction": 0.532
+        }
+      ],
+      "note": "MULTI-ROBOT ARENA -- inconclusive by construction, NOT a world defect. The sweep drives every robot forward at once, so they reach each other and the arena walls inside the window; the body-speed side of the ratio then measures the collision, not the wheels. Every robot's wheels track the commanded rate. The isolated equivalent of this chassis, projects/robot_combat/worlds/tests/drive_test.wbt, measures ROLLING at 0.001 slip. Grading these properly needs a one-robot-at-a-time protocol that does not exist yet."
+    },
+    "projects/robot_combat/battlebots/worlds/gravedigger_vs_biteforce.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "GRAVEDIGGER",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0419,
+          "omega_spin_rad_s": 3.9876,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.3988,
+          "slip_ratio": 8.5264,
+          "moving_fraction": 0.742
+        },
+        {
+          "id": "BITEBOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0359,
+          "omega_spin_rad_s": 4.4257,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.5309,
+          "slip_ratio": 13.7752,
+          "moving_fraction": 0.244
+        }
+      ],
+      "note": "MULTI-ROBOT ARENA -- inconclusive by construction, NOT a world defect. The sweep drives every robot forward at once, so they reach each other and the arena walls inside the window; the body-speed side of the ratio then measures the collision, not the wheels. Every robot's wheels track the commanded rate. The isolated equivalent of this chassis, projects/robot_combat/worlds/tests/drive_test.wbt, measures ROLLING at 0.001 slip. Grading these properly needs a one-robot-at-a-time protocol that does not exist yet."
+    },
+    "projects/robot_combat/battlebots/worlds/huge_vs_bitebot.wbt": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "id": "HUGE",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.5095,
+          "omega_spin_rad_s": 2.2107,
+          "radius_m": 0.3,
+          "v_roll_mps": 0.6632,
+          "slip_ratio": 0.3018,
+          "moving_fraction": 0.94
+        },
+        {
+          "id": "BITEBOT",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.2297,
+          "omega_spin_rad_s": 2.2414,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.2672,
+          "slip_ratio": 0.1633,
+          "moving_fraction": 0.254
+        }
+      ]
+    },
+    "projects/robot_combat/battlebots/worlds/hydra_vs_gravedigger.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "HYDRA",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.5029,
+          "omega_spin_rad_s": 4.4768,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.4477,
+          "slip_ratio": 0.1098,
+          "moving_fraction": 0.048
+        },
+        {
+          "id": "GRAVEDIGGER",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0447,
+          "omega_spin_rad_s": 3.9885,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.3989,
+          "slip_ratio": 7.9139,
+          "moving_fraction": 0.762
+        }
+      ],
+      "note": "MULTI-ROBOT ARENA -- inconclusive by construction, NOT a world defect. The sweep drives every robot forward at once, so they reach each other and the arena walls inside the window; the body-speed side of the ratio then measures the collision, not the wheels. Every robot's wheels track the commanded rate. The isolated equivalent of this chassis, projects/robot_combat/worlds/tests/drive_test.wbt, measures ROLLING at 0.001 slip. Grading these properly needs a one-robot-at-a-time protocol that does not exist yet."
+    },
+    "projects/robot_combat/orc/worlds/orc_forest_war.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "BLUE_WEDGE",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.598,
+          "omega_spin_rad_s": 5.0015,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.5001,
+          "slip_ratio": 0.1637,
+          "moving_fraction": 1.0
+        },
+        {
+          "id": "BLUE_DISC",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.6283,
+          "omega_spin_rad_s": 5.0044,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.5201,
+          "slip_ratio": 0.1722,
+          "moving_fraction": 0.994
+        },
+        {
+          "id": "BLUE_HAMMER",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1801,
+          "omega_spin_rad_s": 4.9928,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.4494,
+          "slip_ratio": 1.4946,
+          "moving_fraction": 0.914
+        },
+        {
+          "id": "RED_BAR",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.046,
+          "omega_spin_rad_s": 4.9266,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.4927,
+          "slip_ratio": 9.7039,
+          "moving_fraction": 0.906
+        },
+        {
+          "id": "RED_FLIPPER",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.5304,
+          "omega_spin_rad_s": 4.9955,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.4496,
+          "slip_ratio": 0.1524,
+          "moving_fraction": 0.986
+        },
+        {
+          "id": "RED_HORIZONTAL",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0544,
+          "omega_spin_rad_s": 5.0018,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.68,
+          "slip_ratio": 11.491,
+          "moving_fraction": 0.418
+        }
+      ],
+      "note": "MULTI-ROBOT ARENA -- inconclusive by construction, NOT a world defect. The sweep drives every robot forward at once, so they reach each other and the arena walls inside the window; the body-speed side of the ratio then measures the collision, not the wheels. Every robot's wheels track the commanded rate. The isolated equivalent of this chassis, projects/robot_combat/worlds/tests/drive_test.wbt, measures ROLLING at 0.001 slip. Grading these properly needs a one-robot-at-a-time protocol that does not exist yet."
+    },
+    "projects/robot_combat/orc/worlds/orc_open_field.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "BLUE_ALPHA",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.2653,
+          "omega_spin_rad_s": 4.7391,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.4739,
+          "slip_ratio": 0.7863,
+          "moving_fraction": 0.686
+        },
+        {
+          "id": "BLUE_BRAVO",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0449,
+          "omega_spin_rad_s": 4.6392,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.4808,
+          "slip_ratio": 9.704,
+          "moving_fraction": 0.182
+        },
+        {
+          "id": "RED_ALPHA",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.2247,
+          "omega_spin_rad_s": 4.7303,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.473,
+          "slip_ratio": 1.1053,
+          "moving_fraction": 0.924
+        },
+        {
+          "id": "RED_BRAVO",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0499,
+          "omega_spin_rad_s": 4.6924,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.4223,
+          "slip_ratio": 7.4561,
+          "moving_fraction": 0.75
+        }
+      ],
+      "note": "MULTI-ROBOT ARENA -- inconclusive by construction, NOT a world defect. The sweep drives every robot forward at once, so they reach each other and the arena walls inside the window; the body-speed side of the ratio then measures the collision, not the wheels. Every robot's wheels track the commanded rate. The isolated equivalent of this chassis, projects/robot_combat/worlds/tests/drive_test.wbt, measures ROLLING at 0.001 slip. Grading these properly needs a one-robot-at-a-time protocol that does not exist yet."
+    },
+    "projects/robot_combat/orc/worlds/orc_queen_defense.wbt": {
+      "verdict": "REVERSED",
+      "robots": [
+        {
+          "id": "BLUE_QUEEN",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.5668,
+          "omega_spin_rad_s": 4.4969,
+          "radius_m": 0.11,
+          "v_roll_mps": 0.4947,
+          "slip_ratio": 0.1273,
+          "moving_fraction": 0.15
+        },
+        {
+          "id": "RED_QUEEN",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.4999,
+          "omega_spin_rad_s": 4.4949,
+          "radius_m": 0.11,
+          "v_roll_mps": 0.4944,
+          "slip_ratio": 0.011,
+          "moving_fraction": 0.212
+        },
+        {
+          "id": "BLUE_ALPHA",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0892,
+          "omega_spin_rad_s": 4.4617,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.4462,
+          "slip_ratio": 4.0014,
+          "moving_fraction": 0.896
+        },
+        {
+          "id": "BLUE_BRAVO",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.5743,
+          "omega_spin_rad_s": 4.4973,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.4675,
+          "slip_ratio": 0.1859,
+          "moving_fraction": 0.982
+        },
+        {
+          "id": "RED_ALPHA",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -0.0597,
+          "omega_spin_rad_s": 4.3804,
+          "radius_m": 0.1,
+          "v_roll_mps": 0.438,
+          "slip_ratio": 8.3368,
+          "moving_fraction": 0.884
+        },
+        {
+          "id": "RED_BRAVO",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.145,
+          "omega_spin_rad_s": 4.498,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.4048,
+          "slip_ratio": 1.7919,
+          "moving_fraction": 0.854
+        }
+      ],
+      "note": "MULTI-ROBOT ARENA -- inconclusive by construction, NOT a world defect. The sweep drives every robot forward at once, so they reach each other and the arena walls inside the window; the body-speed side of the ratio then measures the collision, not the wheels. Every robot's wheels track the commanded rate. The isolated equivalent of this chassis, projects/robot_combat/worlds/tests/drive_test.wbt, measures ROLLING at 0.001 slip. Grading these properly needs a one-robot-at-a-time protocol that does not exist yet."
+    },
+    "projects/robot_combat/worlds/tests/drive_test.wbt": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "id": "FLAP",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.5493,
+          "omega_spin_rad_s": 4.9977,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.4498,
+          "slip_ratio": 0.1811,
+          "moving_fraction": 1.0
+        },
+        {
+          "id": "ROLL",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.4497,
+          "omega_spin_rad_s": 5.0,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.45,
+          "slip_ratio": 0.0006,
+          "moving_fraction": 1.0
+        }
+      ]
+    },
+    "projects/samples/devices/worlds/accelerometer.wbt": {
+      "verdict": "REVERSED",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -9.1109,
+          "omega_spin_rad_s": 10.0,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.25,
+          "slip_ratio": 1.0274,
+          "moving_fraction": 1.0
+        }
+      ],
+      "note": "DELIBERATELY FRICTIONLESS -- the world declares newtonGroundMu 0. A robot that cannot generate traction is the point of the scene, so slip here is authored behaviour, not a defect. Not fixed, on purpose."
+    },
+    "projects/samples/devices/worlds/altimeter.wbt": {
+      "verdict": "SLIDING",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "SLIDING",
+          "v_body_fwd_mps": 2.1431,
+          "omega_spin_rad_s": 10.0,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.25,
+          "slip_ratio": 0.8833,
+          "moving_fraction": 1.0
+        }
+      ],
+      "note": "DELIBERATELY FRICTIONLESS -- the world declares newtonGroundMu 0. A robot that cannot generate traction is the point of the scene, so slip here is authored behaviour, not a defect. Not fixed, on purpose."
+    },
+    "projects/samples/devices/worlds/battery.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.096,
+          "omega_spin_rad_s": 10.013,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2503,
+          "slip_ratio": 1.6081,
+          "moving_fraction": 0.822
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 1.341 -> 0.096 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/bumper.wbt": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "id": "mybot",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.2993,
+          "omega_spin_rad_s": 10.1194,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.253,
+          "slip_ratio": 0.1548,
+          "moving_fraction": 0.85
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)"
+    },
+    "projects/samples/devices/worlds/camera.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0972,
+          "omega_spin_rad_s": 10.0102,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2503,
+          "slip_ratio": 1.5753,
+          "moving_fraction": 0.81
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 4.193 -> 0.097 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/camera_auto_focus.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1052,
+          "omega_spin_rad_s": 10.0092,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2502,
+          "slip_ratio": 1.3779,
+          "moving_fraction": 0.82
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 1.341 -> 0.105 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/camera_motion_blur.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0949,
+          "omega_spin_rad_s": 10.0049,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2501,
+          "slip_ratio": 1.6351,
+          "moving_fraction": 0.81
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.175 -> 0.095 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/camera_noise_mask.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1011,
+          "omega_spin_rad_s": 10.0038,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2501,
+          "slip_ratio": 1.4731,
+          "moving_fraction": 0.81
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 3.909 -> 0.101 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/camera_recognition.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.086,
+          "omega_spin_rad_s": 10.0164,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2504,
+          "slip_ratio": 1.9101,
+          "moving_fraction": 0.82
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 1.102 -> 0.086 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/camera_segmentation.wbt": {
+      "verdict": "REVERSED",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -0.0566,
+          "omega_spin_rad_s": 0.08,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.002,
+          "slip_ratio": 1.0353,
+          "moving_fraction": 0.806
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.000 -> 0.057 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/compass.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "COMPASS_ROBOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1489,
+          "omega_spin_rad_s": 9.9959,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2499,
+          "slip_ratio": 0.6778,
+          "moving_fraction": 0.924
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.265 -> 0.149 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/connector.wbt": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "id": "LIGHT_MYBOT",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.282,
+          "omega_spin_rad_s": 9.9184,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.248,
+          "slip_ratio": 0.1207,
+          "moving_fraction": 1.0
+        },
+        {
+          "id": "HEAVY_MYBOT",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.3041,
+          "omega_spin_rad_s": 10.007,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2502,
+          "slip_ratio": 0.1773,
+          "moving_fraction": 1.0
+        },
+        {
+          "id": "HEAVY_MYBOT",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.3037,
+          "omega_spin_rad_s": 10.0063,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2502,
+          "slip_ratio": 0.1763,
+          "moving_fraction": 1.0
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)"
+    },
+    "projects/samples/devices/worlds/coupled_motors.wbt": {
+      "verdict": "ERROR",
+      "robots": [],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.000 -> 0.000 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/display.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MYBOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1022,
+          "omega_spin_rad_s": 10.0256,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2506,
+          "slip_ratio": 1.4522,
+          "moving_fraction": 0.828
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 1.099 -> 0.102 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/distance_sensor.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1013,
+          "omega_spin_rad_s": 10.0062,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2502,
+          "slip_ratio": 1.4691,
+          "moving_fraction": 0.816
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 1.341 -> 0.101 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/emitter_receiver.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "RECEIVER_BOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.2243,
+          "omega_spin_rad_s": 18.026,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.4507,
+          "slip_ratio": 1.009,
+          "moving_fraction": 0.878
+        },
+        {
+          "id": "EMITTER_BOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.215,
+          "omega_spin_rad_s": 18.0207,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.4505,
+          "slip_ratio": 1.0952,
+          "moving_fraction": 0.838
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.594 -> 0.224 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/encoders.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.102,
+          "omega_spin_rad_s": 10.0147,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2504,
+          "slip_ratio": 1.4552,
+          "moving_fraction": 0.816
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 1.341 -> 0.102 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/force_sensor.wbt": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.3128,
+          "omega_spin_rad_s": 10.098,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2524,
+          "slip_ratio": 0.193,
+          "moving_fraction": 0.864
+        }
+      ]
+    },
+    "projects/samples/devices/worlds/gps.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "GPS_ROBOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0959,
+          "omega_spin_rad_s": 10.0137,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2503,
+          "slip_ratio": 1.6101,
+          "moving_fraction": 0.822
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 3.734 -> 0.096 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/gps_lat_long.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "GPS_ROBOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.099,
+          "omega_spin_rad_s": 10.0006,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.25,
+          "slip_ratio": 1.5252,
+          "moving_fraction": 0.812
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 1.102 -> 0.099 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/imu.wbt": {
+      "verdict": "IDLE",
+      "robots": [
+        {
+          "id": "ROBOT",
+          "verdict": "IDLE",
+          "v_body_fwd_mps": 0.0,
+          "omega_spin_rad_s": -0.0334,
+          "radius_m": 0.04,
+          "v_roll_mps": -0.0013,
+          "slip_ratio": 0.1338,
+          "moving_fraction": 0.0
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.000 -> 0.000 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/inertial_unit.wbt": {
+      "verdict": "IDLE",
+      "robots": [
+        {
+          "id": "ROBOT",
+          "verdict": "IDLE",
+          "v_body_fwd_mps": 0.0,
+          "omega_spin_rad_s": 0.0,
+          "radius_m": 0.04,
+          "v_roll_mps": 0.0,
+          "slip_ratio": 0.0,
+          "moving_fraction": 0.0
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.000 -> 0.000 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/laser_pointer.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "ROBOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1176,
+          "omega_spin_rad_s": 10.0136,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2503,
+          "slip_ratio": 1.1279,
+          "moving_fraction": 0.848
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.183 -> 0.118 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/led.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.106,
+          "omega_spin_rad_s": 10.0308,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2508,
+          "slip_ratio": 1.3656,
+          "moving_fraction": 0.788
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 3.734 -> 0.106 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/lidar.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "ROBOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0326,
+          "omega_spin_rad_s": 6.0319,
+          "radius_m": 0.075,
+          "v_roll_mps": 0.4524,
+          "slip_ratio": 12.883,
+          "moving_fraction": 0.858
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.153 -> 0.033 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/light_sensor.wbt": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "id": "ROBOT",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.3242,
+          "omega_spin_rad_s": 9.9531,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2488,
+          "slip_ratio": 0.2324,
+          "moving_fraction": 0.99
+        }
+      ]
+    },
+    "projects/samples/devices/worlds/pen.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.263,
+          "omega_spin_rad_s": 15.0211,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.3755,
+          "slip_ratio": 0.4277,
+          "moving_fraction": 0.92
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.000 -> 0.263 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/position_sensor.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.2403,
+          "omega_spin_rad_s": 16.0868,
+          "radius_m": 0.028,
+          "v_roll_mps": 0.4504,
+          "slip_ratio": 0.8746,
+          "moving_fraction": 0.948
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 2.121 -> 0.240 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/radar.wbt": {
+      "verdict": "REVERSED",
+      "robots": [
+        {
+          "id": "MyBot1",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -0.0409,
+          "omega_spin_rad_s": 9.979,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2495,
+          "slip_ratio": 7.0947,
+          "moving_fraction": 0.922
+        },
+        {
+          "id": "MyBot2",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.3001,
+          "omega_spin_rad_s": 9.999,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.25,
+          "slip_ratio": 0.1672,
+          "moving_fraction": 0.998
+        },
+        {
+          "id": "MyBot3",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.3042,
+          "omega_spin_rad_s": 9.9958,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2499,
+          "slip_ratio": 0.1785,
+          "moving_fraction": 0.998
+        },
+        {
+          "id": "MyBot4",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.0417,
+          "omega_spin_rad_s": 10.0219,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2505,
+          "slip_ratio": 5.0022,
+          "moving_fraction": 0.892
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 1.341 -> 0.304 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/range_finder.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1064,
+          "omega_spin_rad_s": 10.0151,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2504,
+          "slip_ratio": 1.3531,
+          "moving_fraction": 0.862
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 1.102 -> 0.106 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/receiver_noise.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "RECEIVER_BOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1429,
+          "omega_spin_rad_s": 10.0141,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2504,
+          "slip_ratio": 0.7523,
+          "moving_fraction": 0.88
+        },
+        {
+          "id": "EMITTER_BOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1163,
+          "omega_spin_rad_s": 10.0036,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2501,
+          "slip_ratio": 1.151,
+          "moving_fraction": 0.878
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 8.605 -> 0.143 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/speaker.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "mybot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1324,
+          "omega_spin_rad_s": 9.9823,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2496,
+          "slip_ratio": 0.8842,
+          "moving_fraction": 0.904
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.410 -> 0.132 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/speaker_text_to_speech.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "mybot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1067,
+          "omega_spin_rad_s": 10.0191,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2505,
+          "slip_ratio": 1.3473,
+          "moving_fraction": 0.864
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 3.734 -> 0.107 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/spherical_camera.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "MyBot",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.1114,
+          "omega_spin_rad_s": 10.0055,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.2501,
+          "slip_ratio": 1.245,
+          "moving_fraction": 0.876
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 4.492 -> 0.111 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "projects/samples/devices/worlds/vacuum_gripper.wbt": {
+      "verdict": "IDLE",
+      "robots": [
+        {
+          "id": "ROBOT",
+          "verdict": "IDLE",
+          "v_body_fwd_mps": 0.0,
+          "omega_spin_rad_s": -0.0649,
+          "radius_m": 0.04,
+          "v_roll_mps": -0.0026,
+          "slip_ratio": 0.2595,
+          "moving_fraction": 0.0
+        }
+      ],
+      "fixed": "basicTimeStep <= 8 + newtonSubsteps 4 (2026-08-10)",
+      "note": "FIXED 2026-08-10 (basicTimeStep <= 8 + newtonSubsteps 4) but not yet clean. The fix removed the launch: peak body speed 0.000 -> 0.000 m/s, and the wheels now turn at the commanded rate instead of a garbage one. The residual is the robot creeping against the wall of a very small arena while its wheels keep turning -- WHEELSPIN, not the sliding defect. Re-grading the same samples over the first 1.2 s (before the wall) moves several of these to ROLLING, which is evidence the wheels are fine and the arena is short."
+    },
+    "tests/api/worlds/camera_revert.wbt": {
+      "verdict": "REVERSED",
+      "robots": [
+        {
+          "id": "robot",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": 0.3638,
+          "omega_spin_rad_s": -4.1964,
+          "radius_m": 0.025,
+          "v_roll_mps": -0.1049,
+          "slip_ratio": 1.2884,
+          "moving_fraction": 0.942
+        }
+      ],
+      "note": "LEFT ALONE ON PURPOSE: a tests/ world whose verdicts are goldened against its current timestep. The same basicTimeStep/newtonSubsteps change that fixed the projects/samples/devices family would very likely fix this too, but it can move the numbers the owning test asserts, so it belongs to whoever owns that test, not to this sweep."
+    },
+    "tests/api/worlds/supervisor_restart_controller.wbt": {
+      "verdict": "SLIDING",
+      "robots": [
+        {
+          "id": "MY_BOT",
+          "verdict": "SLIDING",
+          "v_body_fwd_mps": 31.3519,
+          "omega_spin_rad_s": 2.0318,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.0508,
+          "slip_ratio": 0.9984,
+          "moving_fraction": 0.99
+        }
+      ],
+      "note": "LEFT ALONE ON PURPOSE: a tests/ world whose verdicts are goldened against its current timestep. The same basicTimeStep/newtonSubsteps change that fixed the projects/samples/devices family would very likely fix this too, but it can move the numbers the owning test asserts, so it belongs to whoever owns that test, not to this sweep."
+    },
+    "tests/api/worlds/supervisor_restart_controller_display.wbt": {
+      "verdict": "SLIDING",
+      "robots": [
+        {
+          "id": "MYBOT",
+          "verdict": "SLIDING",
+          "v_body_fwd_mps": 33.2455,
+          "omega_spin_rad_s": 2.3723,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.0593,
+          "slip_ratio": 0.9982,
+          "moving_fraction": 0.986
+        }
+      ],
+      "note": "LEFT ALONE ON PURPOSE: a tests/ world whose verdicts are goldened against its current timestep. The same basicTimeStep/newtonSubsteps change that fixed the projects/samples/devices family would very likely fix this too, but it can move the numbers the owning test asserts, so it belongs to whoever owns that test, not to this sweep."
+    },
+    "tests/api/worlds/supervisor_set_position_of_dynamic_object.wbt": {
+      "verdict": "REVERSED",
+      "robots": [
+        {
+          "id": "robot",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -0.0363,
+          "omega_spin_rad_s": 7.7255,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.1931,
+          "slip_ratio": 6.3135,
+          "moving_fraction": 0.7
+        }
+      ],
+      "note": "DELIBERATELY FRICTIONLESS -- the world declares newtonGroundMu 0. A robot that cannot generate traction is the point of the scene, so slip here is authored behaviour, not a defect. Not fixed, on purpose."
+    },
+    "tests/benchmarks/agentbench/adapters/omnisim/omnisim_lane/worlds/r1_blind.wbt": {
+      "verdict": "REVERSED",
+      "robots": [
+        {
+          "id": "ROVER",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": -0.0434,
+          "omega_spin_rad_s": 5.6365,
+          "radius_m": 0.08,
+          "v_roll_mps": 0.4509,
+          "slip_ratio": 11.3879,
+          "moving_fraction": 0.92
+        }
+      ],
+      "note": "Measured from a COPY in a scratch directory -- this tree is another lane's and roll_check composes a sibling file next to the world, so it was not touched. Obstacle-course arenas: the rover meets a wall or an obstacle inside the window. The wheels themselves are healthy -- r1_probe, the same rover on open ground, measures ROLLING at 0.001 slip, and the wheel rate is the commanded 5.625 rad/s in all five."
+    },
+    "tests/benchmarks/agentbench/adapters/omnisim/omnisim_lane/worlds/r1_drive_probe.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "ROVER",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.3006,
+          "omega_spin_rad_s": 5.625,
+          "radius_m": 0.08,
+          "v_roll_mps": 0.45,
+          "slip_ratio": 0.4968,
+          "moving_fraction": 0.976
+        }
+      ],
+      "note": "Measured from a COPY in a scratch directory -- this tree is another lane's and roll_check composes a sibling file next to the world, so it was not touched. Obstacle-course arenas: the rover meets a wall or an obstacle inside the window. The wheels themselves are healthy -- r1_probe, the same rover on open ground, measures ROLLING at 0.001 slip, and the wheel rate is the commanded 5.625 rad/s in all five."
+    },
+    "tests/benchmarks/agentbench/adapters/omnisim/omnisim_lane/worlds/r1_null.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "ROVER",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.3133,
+          "omega_spin_rad_s": 5.625,
+          "radius_m": 0.08,
+          "v_roll_mps": 0.45,
+          "slip_ratio": 0.4362,
+          "moving_fraction": 0.958
+        }
+      ],
+      "note": "Measured from a COPY in a scratch directory -- this tree is another lane's and roll_check composes a sibling file next to the world, so it was not touched. Obstacle-course arenas: the rover meets a wall or an obstacle inside the window. The wheels themselves are healthy -- r1_probe, the same rover on open ground, measures ROLLING at 0.001 slip, and the wheel rate is the commanded 5.625 rad/s in all five."
+    },
+    "tests/benchmarks/agentbench/adapters/omnisim/omnisim_lane/worlds/r1_oracle.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "ROVER",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": 0.2906,
+          "omega_spin_rad_s": 5.625,
+          "radius_m": 0.08,
+          "v_roll_mps": 0.45,
+          "slip_ratio": 0.5485,
+          "moving_fraction": 0.964
+        }
+      ],
+      "note": "Measured from a COPY in a scratch directory -- this tree is another lane's and roll_check composes a sibling file next to the world, so it was not touched. Obstacle-course arenas: the rover meets a wall or an obstacle inside the window. The wheels themselves are healthy -- r1_probe, the same rover on open ground, measures ROLLING at 0.001 slip, and the wheel rate is the commanded 5.625 rad/s in all five."
+    },
+    "tests/benchmarks/agentbench/adapters/omnisim/omnisim_lane/worlds/r1_probe.wbt": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "id": "ROVER",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.4496,
+          "omega_spin_rad_s": 5.625,
+          "radius_m": 0.08,
+          "v_roll_mps": 0.45,
+          "slip_ratio": 0.001,
+          "moving_fraction": 1.0
+        }
+      ]
+    },
+    "tests/physics/worlds/ball_joint_vs_hinge_joints.wbt": {
+      "verdict": "WHEELSPIN",
+      "robots": [
+        {
+          "id": "HINGE_JOINT_ROBOT",
+          "verdict": "WHEELSPIN",
+          "v_body_fwd_mps": -1.0635,
+          "omega_spin_rad_s": 0.0121,
+          "radius_m": 0.01,
+          "v_roll_mps": -0.0012,
+          "slip_ratio": 0.9988,
+          "moving_fraction": 0.906
+        },
+        {
+          "id": "HINGE_JOINT_ROBOT_KINEMATIC",
+          "verdict": "IDLE",
+          "v_body_fwd_mps": 0.0,
+          "omega_spin_rad_s": 0.0,
+          "radius_m": 0.01,
+          "v_roll_mps": 0.0,
+          "slip_ratio": 0.0,
+          "moving_fraction": 0.0
+        }
+      ],
+      "note": "LEFT ALONE ON PURPOSE: a tests/ world whose verdicts are goldened against its current timestep. The same basicTimeStep/newtonSubsteps change that fixed the projects/samples/devices family would very likely fix this too, but it can move the numbers the owning test asserts, so it belongs to whoever owns that test, not to this sweep."
+    },
+    "tests/physics/worlds/dynamic_distance_sensor_rays.wbt": {
+      "verdict": "SLIDING",
+      "robots": [
+        {
+          "id": "DYNAMIC_ROBOT",
+          "verdict": "SLIDING",
+          "v_body_fwd_mps": 25.2179,
+          "omega_spin_rad_s": 0.0914,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.0023,
+          "slip_ratio": 0.9999,
+          "moving_fraction": 0.892
+        }
+      ],
+      "note": "LEFT ALONE ON PURPOSE: a tests/ world whose verdicts are goldened against its current timestep. The same basicTimeStep/newtonSubsteps change that fixed the projects/samples/devices family would very likely fix this too, but it can move the numbers the owning test asserts, so it belongs to whoever owns that test, not to this sweep."
+    },
+    "tests/physics/worlds/dynamic_light_sensor_rays.wbt": {
+      "verdict": "REVERSED",
+      "robots": [
+        {
+          "id": "DYNAMIC_ROBOT",
+          "verdict": "REVERSED",
+          "v_body_fwd_mps": 25.7569,
+          "omega_spin_rad_s": -5.3555,
+          "radius_m": 0.025,
+          "v_roll_mps": -0.1339,
+          "slip_ratio": 1.0052,
+          "moving_fraction": 0.896
+        }
+      ],
+      "note": "LEFT ALONE ON PURPOSE: a tests/ world whose verdicts are goldened against its current timestep. The same basicTimeStep/newtonSubsteps change that fixed the projects/samples/devices family would very likely fix this too, but it can move the numbers the owning test asserts, so it belongs to whoever owns that test, not to this sweep."
+    },
+    "tests/physics/worlds/dynamic_radar_rays.wbt": {
+      "verdict": "SLIDING",
+      "robots": [
+        {
+          "id": "DYNAMIC_ROBOT",
+          "verdict": "SLIDING",
+          "v_body_fwd_mps": 25.2179,
+          "omega_spin_rad_s": 0.0915,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.0023,
+          "slip_ratio": 0.9999,
+          "moving_fraction": 0.9
+        }
+      ],
+      "note": "LEFT ALONE ON PURPOSE: a tests/ world whose verdicts are goldened against its current timestep. The same basicTimeStep/newtonSubsteps change that fixed the projects/samples/devices family would very likely fix this too, but it can move the numbers the owning test asserts, so it belongs to whoever owns that test, not to this sweep."
+    },
+    "tests/physics/worlds/dynamic_receiver_rays.wbt": {
+      "verdict": "SLIDING",
+      "robots": [
+        {
+          "id": "DYNAMIC_ROBOT",
+          "verdict": "SLIDING",
+          "v_body_fwd_mps": 25.2179,
+          "omega_spin_rad_s": 0.0914,
+          "radius_m": 0.025,
+          "v_roll_mps": 0.0023,
+          "slip_ratio": 0.9999,
+          "moving_fraction": 0.89
+        }
+      ],
+      "note": "LEFT ALONE ON PURPOSE: a tests/ world whose verdicts are goldened against its current timestep. The same basicTimeStep/newtonSubsteps change that fixed the projects/samples/devices family would very likely fix this too, but it can move the numbers the owning test asserts, so it belongs to whoever owns that test, not to this sweep."
+    },
+    "tests/physics/worlds/wheel_roll_noslip.wbt": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "id": "ROVER",
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.4498,
+          "omega_spin_rad_s": 5.0,
+          "radius_m": 0.09,
+          "v_roll_mps": 0.45,
+          "slip_ratio": 0.0004,
+          "moving_fraction": 1.0
+        }
+      ]
+    }
+  }
+}

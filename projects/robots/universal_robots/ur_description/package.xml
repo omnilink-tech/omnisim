@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ur_description</name>
+  <version>4.3.1</version>
+  <description>
+    URDF description for Universal Robots
+  </description>
+
+  <author>Nadia Hammoudeh Garcia</author>
+  <author>Kelsey Hawkins</author>
+  <author>G.A. vd. Hoorn</author>
+  <author>Lovro Ivanov</author>
+  <author>Mathias Ludtke</author>
+  <author>Wim Meeussen</author>
+  <author>Felix Messmer</author>
+  <author>Miguel Prada Sarasola</author>
+  <author>Denis Stogl</author>
+  <author>Andy Zelenak</author>
+  <author>Marvin Grosse Besselmann</author>
+  <author email="schnell@fzi.de">Tristan Schnell</author>
+  <author email="lovro.ivanov@gmail.com">Lovro Ivanov</author>
+  <author email="denis@stoglrobotics.de">Denis Stogl</author>
+  <author email="dipentima@fzi.de">Vincenzo Di Pentima</author>
+
+  <maintainer email="feex@universal-robots.com">Felix Exner</maintainer>
+  <maintainer email="rsk@universal-robots.com">Rune Søe-Knudsen</maintainer>
+  <maintainer email="ros@universal-robots.com">Universal Robots A/S</maintainer>
+
+  <license file="LICENSE">BSD-3-Clause</license>
+  <!-- The UR8LONG, UR15, UR18, UR20 and UR30 meshes constitutes “Graphical Documentation” the use of which is subject to and governed by our “Terms and Conditions for use of Graphical Documentation”, which can be found here: https://www.universal-robots.com/legal/terms-and-conditions/terms_and_conditions_for_use_of_graphical_documentation.txt -->
+  <license file="meshes/ur20/LICENSE.txt">Universal Robots A/S’ Terms and Conditions for Use of Graphical Documentation</license>
+  <!--<license file="meshes/ur8long/LICENSE.txt" source-files="meshes/ur8long/*" type="freeform">Universal Robots A/S’ Terms and Conditions for Use of Graphical Documentation</license>-->
+  <!--<license file="meshes/ur15/LICENSE.txt" source-files="meshes/ur15/*" type="freeform">Universal Robots A/S’ Terms and Conditions for Use of Graphical Documentation</license>-->
+  <!--<license file="meshes/ur18/LICENSE.txt" source-files="meshes/ur18/*" type="freeform">Universal Robots A/S’ Terms and Conditions for Use of Graphical Documentation</license>-->
+  <!--<license file="meshes/ur20/LICENSE.txt" source-files="meshes/ur20/*" type="freeform">Universal Robots A/S’ Terms and Conditions for Use of Graphical Documentation</license>-->
+  <!--<license file="meshes/ur30/LICENSE.txt" source-files="meshes/ur30/*" type="freeform">Universal Robots A/S’ Terms and Conditions for Use of Graphical Documentation</license>-->
+
+  <url type="bugtracker">https://github.com/UniversalRobots/Universal_Robots_ROS2_Description/issues</url>
+  <url type="repository">https://github.com/UniversalRobots/Universal_Robots_ROS2_Description</url>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>urdf</exec_depend>
+  <exec_depend>xacro</exec_depend>
+
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>launch_testing_ament_cmake</test_depend>
+  <test_depend>launch_testing_ros</test_depend>
+  <test_depend>liburdfdom-tools</test_depend>
+  <test_depend>xacro</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

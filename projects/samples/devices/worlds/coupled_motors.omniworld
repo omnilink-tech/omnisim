@@ -1,0 +1,426 @@
+#OMNISIM R2025a utf8
+
+# ---------------------------------------------------------------------------
+# SUBJECT OF THIS SAMPLE: coupled motors (see WorldInfo.title / .info).
+# The two finger motors share the "motor::" name prefix, so a single
+# setPosition() on "motor::left finger" in the controller drives BOTH, and the
+# right-hand one carries multiplier -1 so it mirrors. The gripper is only the
+# vehicle for that lesson.
+#
+# ⛔ DO NOT RE-ADD THE FOUR-BAR PARALLEL-JAW LINKAGE. It was removed on
+# 2026-08-16, and putting it back silently deletes the physics of this ENTIRE
+# world -- not just the gripper.
+#
+# WHAT WAS REMOVED: each finger used to be a four-bar parallelogram -- a
+# motorised crank, a passive rocker (DEF LEFT_PASSIVE / DEF RIGHT_PASSIVE), and
+# a fingertip coupler pinned to both. The second pin was a loop-closing
+# SolidReference:
+#     DEF LEFT_PASSIVE_PIVOT HingeJoint {
+#       ... endPoint SolidReference { solidName "left_gripper" }
+#     }
+# That kept the fingertip parallel to the jaw axis as the finger swung.
+#
+# WHY: Newton/MuJoCo is a TREE-articulation solver. A second joint arriving at a
+# body that already has a joint parent is not a loop to it, it is a malformed
+# articulation, so SolverMuJoCo construction raises before any world is built:
+#     Body 8 has multiple parents in this articulation: 7 and 9.
+# (the flat form of the same defect raises "Multiple joints lead to body N"). No
+# Newton world is built at all, so nothing anywhere in the world falls, collides
+# or actuates, and no .newton.json verdict sidecar is written. Newton is the
+# only physics backend, so there is nothing to degrade to. This world shipped in
+# exactly that state from the ODE deletion (bdc02139) until 2026-08-16; it only
+# became visible when a failed finalize started logging at ERROR (640b4d000).
+#
+# WHAT IT COSTS: each finger is now an OPEN CHAIN -- one motorised HingeJoint
+# carrying a rigidly attached tip -- so the jaw pads PIVOT with the finger
+# instead of staying parallel. The coupled-motor lesson is untouched.
+#
+# ALSO FIXED 2026-08-16: all three motors now declare minPosition/maxPosition.
+# Without them this backend configures a joint motor as a VELOCITY wheel and
+# IGNORES setPosition() -- and every command the controller issues (both
+# coupled_motors.c and coupled_motors.py) is a setPosition(), so the sample
+# would load, finalise and still teach nothing. The two
+# finger limits are deliberately symmetric (-0.5 .. 0.5): a coupled set must
+# have limits that are exact factors of each other, and multiplier -1 swaps min
+# and max, so symmetric ranges are consistent by construction. See
+# docs/reference/motor.md#coupled-motor-limits.
+#
+# WHAT WOULD RESTORE IT: a solver that handles kinematic loops. newton ships
+# SolverKamino, which does; OmniSim drives only SolverMuJoCo and SolverVBD
+# today, so it is not reachable from a world file. Until then, the supported
+# way to model this mechanism is a tree plus a controller driving the dependent
+# joint. Background: docs/reference/solidreference.md.
+# ---------------------------------------------------------------------------
+
+EXTERNPROTO "omnisim://projects/objects/tables/protos/Table.proto"
+EXTERNPROTO "omnisim://projects/objects/gear/protos/Gear.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSubsteps 4
+  # REQUIRED, not cosmetic: each finger's boundingObject is a Group (pivot axle +
+  # jaw pad) because folding the fingertip into the finger merged two bodies'
+  # colliders onto one. The DEFAULT (FALSE) registers only the Group's FIRST
+  # child, which silently dropped the jaw pad -- measured: the pad swept clean
+  # through the red box (pad centre 0.2505,0.4918,0.0052 vs box x[0.235,0.275]
+  # y[0.4775,0.5025] z[0,0.020]) while the finger joint still reached its full
+  # 0.42 rad target, i.e. a jaw that grips nothing and reports no contact.
+  newtonCompoundColliders TRUE
+  info [
+    "Example use of a coupled motors."
+    "Each finger is an OPEN CHAIN: one motorised HingeJoint with a rigidly attached tip."
+    "The original four-bar parallel-jaw linkage was removed on 2026-08-16 -- its passive"
+    "pivot closed a kinematic loop through a SolidReference, and Newton/MuJoCo is a tree"
+    "articulation solver, so it built no physics for the WHOLE world. Do not re-add it."
+    "See the comment at the top of this file and docs/reference/solidreference.md."
+  ]
+  title "Coupled Motors"
+  basicTimeStep 8
+}
+Viewpoint {
+  orientation -0.2515281983443239 0.09335786782070515 0.9633368434528133 2.4548257126872683
+  position 0.3996301408328522 0.3803732989687896 0.13978381699964382
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+Table {
+  translation 0 0 -0.74
+}
+DEF GRIPPER Robot {
+  translation 0.2 0.5 0
+  children [
+    DEF BASE Pose {
+      translation 0.025 0 0
+      rotation 0 0 1 -1.570795
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.933333 0.933333 0.92549
+            baseColorMap ImageTexture {
+              url [
+                "omnisim://projects/default/worlds/textures/roughcast.jpg"
+              ]
+            }
+            roughness 0.5
+          }
+          geometry Box {
+            size 0.12 0.12 0.001
+          }
+        }
+      ]
+    }
+    DEF ROD Pose {
+      translation -0.025 0 0.08
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.729412 0.741176 0.713725
+          }
+          geometry Cylinder {
+            height 0.16
+            radius 0.004
+          }
+        }
+      ]
+    }
+    SliderJoint {
+      jointParameters JointParameters {
+      }
+      device [
+        LinearMotor {
+          maxForce 15
+          minPosition -0.01
+          maxPosition 0.15
+        }
+      ]
+      endPoint Solid {
+        translation 0 0 0.01
+        children [
+          Pose {
+            translation 0 0 -0.004
+            rotation 0.577349935856137 0.5773509358560258 -0.577349935856137 -2.094395
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.180392 0.203922 0.211765
+                }
+                geometry Mesh {
+                  url [
+                    "omnisim://projects/samples/devices/worlds/meshes/support.obj"
+                  ]
+                }
+              }
+            ]
+          }
+          Pose {
+            translation 0 0 0.006
+            rotation 0.577349935856137 0.5773509358560258 -0.577349935856137 -2.094395
+            children [
+              Shape {
+                appearance DEF BLACK PBRAppearance {
+                  baseColor 0.180392 0.203922 0.211765
+                  transparency 0.4
+                }
+                geometry Mesh {
+                  url [
+                    "omnisim://projects/samples/devices/worlds/meshes/support.obj"
+                  ]
+                }
+              }
+            ]
+          }
+          DEF LEFT_ACTUATED HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 0 0 1
+              anchor 0 -0.008 0
+            }
+            device [
+              RotationalMotor {
+                name "motor::left finger"
+                minPosition -0.5
+                maxPosition 0.5
+              }
+            ]
+            endPoint DEF LEFT_FINGER Solid {
+              translation 0 -0.008 0
+              children [
+                Gear {
+                  translation 0 0 0.0025
+                  rotation -0.5773489358556708 0.5773509358554485 -0.5773509358554485 -2.094395
+                  appearance PBRAppearance {
+                    baseColor 0.913725 0.72549 0.431373
+                    roughness 0.5
+                  }
+                  teeth 12
+                  width 0.003
+                  innerRadius 0.0025
+                  pitchRadius 0.0078
+                  toothDepth 0.002
+                  density 0
+                  bodyBoundingObject FALSE
+                }
+                DEF LEFT_ACTUATED_LINKAGE Pose {
+                  translation 0 0 0.001
+                  rotation 0.8673832709970314 -0.35188510993965805 -0.35188510993965805 1.71259
+                  children [
+                    DEF LINKAGE Shape {
+                      appearance DEF METAL_APPEARANCE PBRAppearance {
+                        baseColor 0.729412 0.741176 0.713725
+                        baseColorMap ImageTexture {
+                          url [
+                            "omnisim://projects/default/worlds/textures/metal.jpg"
+                          ]
+                        }
+                        roughness 0.8
+                      }
+                      geometry Mesh {
+                        url [
+                          "omnisim://projects/samples/devices/worlds/meshes/linkage.obj"
+                        ]
+                      }
+                    }
+                  ]
+                }
+                DEF LEFT_ACTUATED_AXLE Shape {
+                  appearance USE METAL_APPEARANCE
+                  geometry DEF LEFT_AXLE Cylinder {
+                    height 0.0125
+                    radius 0.0025
+                  }
+                }
+                Pose {
+                  translation 0.02869 -0.02787 0
+                  children [
+                    USE LEFT_ACTUATED_AXLE
+                  ]
+                }
+                DEF LEFT_TIP Pose {
+                  translation 0.02869 -0.02787 0
+                  rotation 0 0 1 1.5708
+                  children [
+                    Pose {
+                      translation 0 0 -0.006
+                      children [
+                        Pose {
+                          rotation -0.5773502691896258 0.5773502691896258 -0.5773502691896258 2.0944
+                          children [
+                            Shape {
+                              appearance DEF FINGER_APPEARANCE PBRAppearance {
+                                baseColor 0.180392 0.203922 0.211765
+                              }
+                              geometry Mesh {
+                                url [
+                                  "omnisim://projects/samples/devices/worlds/meshes/right_angle.obj"
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+              name "left finger"
+              boundingObject Group {
+                children [
+                  Pose {
+                    children [
+                      USE LEFT_AXLE
+                    ]
+                  }
+                  Pose {
+                    translation 0.04619 -0.02037 -0.001
+                    children [
+                      Box {
+                        size 0.04 0.005 0.01
+                      }
+                    ]
+                  }
+                ]
+              }
+              physics DEF TIP_PHYSICS Physics {
+                density 500
+              }
+            }
+          }
+          DEF RIGHT_ACTUATED HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 0 0 1
+              anchor 0 0.008 0
+            }
+            device [
+              RotationalMotor {
+                name "motor::right finger"
+                minPosition -0.5
+                maxPosition 0.5
+                multiplier -1
+              }
+            ]
+            endPoint DEF RIGHT_FINGER Solid {
+              translation 0 0.008 0
+              children [
+                Pose {
+                  rotation 0 0 1 -0.1309
+                  children [
+                    Gear {
+                      translation 0 0 0.0025
+                      rotation -0.5773489358556708 0.5773509358554485 -0.5773509358554485 -2.094395
+                      appearance PBRAppearance {
+                        baseColor 0.913725 0.72549 0.431373
+                        roughness 0.5
+                      }
+                      teeth 12
+                      width 0.003
+                      innerRadius 0.0025
+                      pitchRadius 0.0078
+                      toothDepth 0.002
+                      density 0
+                      bodyBoundingObject FALSE
+                    }
+                  ]
+                }
+                DEF RIGHT_ACTUATED_LINKAGE Pose {
+                  translation 0 0 0.001
+                  rotation 0.8673809443796324 0.3518879774353601 0.3518879774353601 1.712596
+                  children [
+                    USE LINKAGE
+                  ]
+                }
+                DEF RIGHT_ACTUATED_AXLE Shape {
+                  appearance USE METAL_APPEARANCE
+                  geometry DEF RIGHT_AXLE Cylinder {
+                    height 0.0125
+                    radius 0.0025
+                  }
+                }
+                Pose {
+                  translation 0.02869 0.02787 0
+                  children [
+                    USE RIGHT_ACTUATED_AXLE
+                  ]
+                }
+                DEF RIGHT_TIP Pose {
+                  translation 0.02869 0.02787 0
+                  children [
+                    Pose {
+                      translation 0 0 0.004
+                      rotation -1 0 0 -1.570796
+                      children [
+                        Shape {
+                          appearance USE FINGER_APPEARANCE
+                          geometry Mesh {
+                            url [
+                              "omnisim://projects/samples/devices/worlds/meshes/right_angle.obj"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+              name "right finger"
+              boundingObject Group {
+                children [
+                  Pose {
+                    children [
+                      USE RIGHT_AXLE
+                    ]
+                  }
+                  Pose {
+                    translation 0.04619 0.02037 -0.001
+                    children [
+                      Box {
+                        size 0.04 0.005 0.01
+                      }
+                    ]
+                  }
+                ]
+              }
+              physics USE TIP_PHYSICS
+            }
+          }
+        ]
+        boundingObject Pose {
+          children [
+            Box {
+              size 0.02 0.08 0.012
+            }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 0.01
+        }
+      }
+    }
+  ]
+  controller "coupled_motors"
+}
+# Sized and centred to the jaws, 2026-08-16. It used to be a 25 mm-wide block
+# 10 mm off the gripper centreline, which no closure of this mechanism can grip:
+# the jaws shut to a 10.6 mm gap, so the near jaw reached it first and shoved it
+# across the table (measured y 0.490 -> 0.463 and still moving). 13 mm wide and
+# centred gives ~1.2 mm of bite per pad at the controller's 0.42 rad.
+DEF OBJECT Solid {
+  translation 0.255 0.5 0.006
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.8 0 0
+      }
+      geometry DEF BOX Box {
+        size 0.04 0.013 0.012
+      }
+    }
+  ]
+  boundingObject USE BOX
+  physics Physics {
+    density -1
+    mass 0.2
+  }
+}

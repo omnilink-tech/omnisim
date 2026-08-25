@@ -1,0 +1,9 @@
+# Lane-4 results: the .jsonl rows ARE the evidence and are committed (they
+# carry a machine id and an engine-binary sha256, so a row is meaningful
+# outside the machine that produced it).
+#
+# The work directories are not: they hold per-probe engine logs, console logs,
+# raw recordings and backend-verdict sidecars, which are large, machine-local
+# and regenerated on every run.
+_work/
+_envelope_work/

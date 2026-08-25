@@ -1,0 +1,59 @@
+#OMNISIM R2025a utf8
+
+# Arm-geometry check: a welded (staticBase) full G1 whose controller g1_armhold
+# cycles the ELBOW joint through {0.0, 1.0, 1.5708} while a DEF CAMBOT camera-bot
+# (g1_armshot) photographs each from a 3/4 front-side view -> _scratch/armcheck/.
+# Purpose: SEE which elbow value gives a completely straight arm. Rendering ON.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "G1 elbow geometry check"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.294 -4.571 5.567
+  follow ""
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 12 12
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.80
+  name "g1"
+  supervisor TRUE
+  controller "g1_armhold"
+  physicsBackend "newton"
+  staticBase TRUE
+}
+
+DEF CAMBOT Robot {
+  translation 3.2 -2.4 0.95
+  children [
+    Camera {
+      name "cam"
+      width 1100
+      height 900
+      fieldOfView 0.8
+    }
+  ]
+  name "cambot"
+  controller "g1_armshot"
+  supervisor TRUE
+}

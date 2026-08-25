@@ -1,0 +1,61 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# template language: javascript
+# Test-only floor whose `appearance` is a template field, so that changing it forces the PROTO to regenerate.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Parquetry.proto"
+
+PROTO TestFloor [
+  field SFNode     appearance      Parquetry { type "chequered" }  # Defines the appearance of the floor.
+]
+{
+  # This PROTO exists to exercise ONE engine behaviour: regenerating a template PROTO
+  # when a node-valued template field is edited (converted to base nodes, replaced,
+  # or modified in place).  So it stays deliberately small -- a 1 x 1 m quad in the
+  # z = 0 plane, wound counter-clockwise so its normal is up -- and the only thing it
+  # does with the field is read it inside the template block below.  That read is what
+  # marks 'appearance' as a TEMPLATE field; without it the engine would treat the field
+  # as an ordinary pass-through and would never regenerate.
+  %<
+    const appearance = fields.appearance.value;
+    if (appearance === null)
+      console.error('TestFloor: \'appearance\' is NULL, the floor will be drawn with the default material.');
+
+    const halfSize = 0.5;
+    const tiles = 2.0;   // texture repeats across the quad
+  >%
+  Solid {
+    children [
+      Shape {
+        appearance IS appearance
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+              %<= -halfSize >% %<= -halfSize >% 0
+              %<= halfSize >% %<= -halfSize >% 0
+              %<= halfSize >% %<= halfSize >% 0
+              %<= -halfSize >% %<= halfSize >% 0
+            ]
+          }
+          texCoord TextureCoordinate {
+            point [
+              0 0
+              %<= tiles >% 0
+              %<= tiles >% %<= tiles >%
+              0 %<= tiles >%
+            ]
+          }
+          coordIndex    [ 0 1 2 3 -1 ]
+          texCoordIndex [ 0 1 2 3 -1 ]
+        }
+      }
+    ]
+    name "test floor"
+    model "test floor"
+    boundingObject Plane {
+      size %<= 2.0 * halfSize >% %<= 2.0 * halfSize >%
+    }
+    locked TRUE
+  }
+}

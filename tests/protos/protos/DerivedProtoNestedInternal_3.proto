@@ -1,0 +1,17 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/SlotContainer.proto"
+
+PROTO DerivedProtoNestedInternal_3 [
+  field MFNode sensorsSlot []
+]
+{
+  SlotContainer {
+    slot [
+      Pose {
+        translation -0.5 -0.5 -0.5
+        children IS sensorsSlot
+      }
+    ]
+  }
+}

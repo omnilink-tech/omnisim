@@ -1,0 +1,75 @@
+#VRML_SIM R2025a utf8
+# BRING-UP PROBE (not a benchmark world): one box FRONT-LEFT of a Pioneer 3-AT
+# carrying THREE SickLms291 mounts, to settle four upstream facts the R1
+# oracle depends on by measurement rather than by memory -- which end of
+# getRangeImage() is the LEFT of the fan and at what angle each bin sits,
+# what frame getPointCloud() reports in, how high the mount may sit before
+# the robot's own chassis is in the fan, and whether a Lidar works at all
+# under --no-rendering in xvfb. Results are in BRINGUP.md sec. 5.
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/devices/sick/protos/SickLms291.proto"
+
+WorldInfo {
+  basicTimeStep 16
+}
+Viewpoint {
+  orientation 0.35 0.35 -0.87 1.7
+  position -8 -8 6
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 10 10
+  wallHeight 0.5
+}
+DEF LEFT_BOX Solid {
+  translation 2 1.5 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.9 0.3 0.2
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.5 0.5 0.5
+      }
+    }
+  ]
+  name "LEFT_BOX"
+  boundingObject Box {
+    size 0.5 0.5 0.5
+  }
+}
+DEF ROBOT Pioneer3at {
+  translation 0 0 0.11
+  rotation 0 0 1 0
+  controller "r1_probe_lidar"
+  extensionSlot [
+    SickLms291 {
+      name "lidar_low"
+      translation 0.136 0 0.20
+      resolution 181
+    }
+    SickLms291 {
+      name "lidar_mid"
+      translation 0.136 0 0.25
+      resolution 181
+    }
+    SickLms291 {
+      name "lidar_high"
+      translation 0.136 0 0.35
+      resolution 181
+    }
+    GPS {
+    }
+    InertialUnit {
+    }
+  ]
+}

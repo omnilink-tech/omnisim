@@ -1,0 +1,244 @@
+<?xml version="1.0" ?>
+<!-- A six-axis arm on a fixed pedestal with a two-finger parallel gripper. -->
+<!-- Every link is a primitive: no meshes, no external references, no        -->
+<!-- package:// paths. See ../../../meta.json (container.primitives_only)    -->
+<!-- for why this tier ships primitives where T1 ships meshes.               -->
+<!-- Units: metres, kilograms, radians. Z is up.                             -->
+<robot name="arm">
+
+  <!-- The pedestal. Deliberately heavy and wide (40 kg over a 0.18 m
+       radius, ~70 N.m of tipping resistance against the ~35 N.m the arm
+       produces at full extension) so the arm stands up on its own without
+       needing a fixed-base convention that each simulator spells its own
+       way. Anchoring it is allowed and is not measured. -->
+  <link name="base">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.075"/>
+      <geometry><cylinder length="0.15" radius="0.18"/></geometry>
+      <material name="slate"><color rgba="0.25 0.27 0.30 1"/></material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.075"/>
+      <geometry><cylinder length="0.15" radius="0.18"/></geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.075"/>
+      <mass value="40.0"/>
+      <inertia ixx="0.399" ixy="0" ixz="0" iyy="0.399" iyz="0" izz="0.648"/>
+    </inertial>
+  </link>
+
+  <link name="shoulder">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.05"/>
+      <geometry><cylinder length="0.12" radius="0.07"/></geometry>
+      <material name="steel"><color rgba="0.55 0.57 0.60 1"/></material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.05"/>
+      <geometry><cylinder length="0.12" radius="0.07"/></geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.05"/>
+      <mass value="3.0"/>
+      <inertia ixx="0.00728" ixy="0" ixz="0" iyy="0.00728" iyz="0"
+               izz="0.00735"/>
+    </inertial>
+  </link>
+  <joint name="joint_1" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.15"/>
+    <parent link="base"/>
+    <child link="shoulder"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="150.0" lower="-2.90" upper="2.90" velocity="2.0"/>
+    <dynamics damping="0.10" friction="0.0"/>
+  </joint>
+
+  <link name="upper_arm">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.175"/>
+      <geometry><cylinder length="0.35" radius="0.05"/></geometry>
+      <material name="steel"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.175"/>
+      <geometry><cylinder length="0.35" radius="0.05"/></geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.175"/>
+      <mass value="3.5"/>
+      <inertia ixx="0.0379" ixy="0" ixz="0" iyy="0.0379" iyz="0"
+               izz="0.00438"/>
+    </inertial>
+  </link>
+  <joint name="joint_2" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.10"/>
+    <parent link="shoulder"/>
+    <child link="upper_arm"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="150.0" lower="-2.20" upper="2.20" velocity="2.0"/>
+    <dynamics damping="0.10" friction="0.0"/>
+  </joint>
+
+  <link name="forearm">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.15"/>
+      <geometry><cylinder length="0.30" radius="0.042"/></geometry>
+      <material name="steel"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.15"/>
+      <geometry><cylinder length="0.30" radius="0.042"/></geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.15"/>
+      <mass value="2.2"/>
+      <inertia ixx="0.01747" ixy="0" ixz="0" iyy="0.01747" iyz="0"
+               izz="0.00194"/>
+    </inertial>
+  </link>
+  <joint name="joint_3" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.35"/>
+    <parent link="upper_arm"/>
+    <child link="forearm"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="90.0" lower="-2.60" upper="2.60" velocity="2.5"/>
+    <dynamics damping="0.08" friction="0.0"/>
+  </joint>
+
+  <link name="wrist_1">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.04"/>
+      <geometry><cylinder length="0.08" radius="0.038"/></geometry>
+      <material name="steel"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.04"/>
+      <geometry><cylinder length="0.08" radius="0.038"/></geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.04"/>
+      <mass value="0.8"/>
+      <inertia ixx="0.000715" ixy="0" ixz="0" iyy="0.000715" iyz="0"
+               izz="0.000578"/>
+    </inertial>
+  </link>
+  <joint name="joint_4" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.30"/>
+    <parent link="forearm"/>
+    <child link="wrist_1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="30.0" lower="-2.90" upper="2.90" velocity="3.0"/>
+    <dynamics damping="0.05" friction="0.0"/>
+  </joint>
+
+  <link name="wrist_2">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.035"/>
+      <geometry><cylinder length="0.07" radius="0.036"/></geometry>
+      <material name="steel"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.035"/>
+      <geometry><cylinder length="0.07" radius="0.036"/></geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.035"/>
+      <mass value="0.6"/>
+      <inertia ixx="0.000439" ixy="0" ixz="0" iyy="0.000439" iyz="0"
+               izz="0.000389"/>
+    </inertial>
+  </link>
+  <joint name="joint_5" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.08"/>
+    <parent link="wrist_1"/>
+    <child link="wrist_2"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="30.0" lower="-2.00" upper="2.00" velocity="3.0"/>
+    <dynamics damping="0.05" friction="0.0"/>
+  </joint>
+
+  <!-- The palm. Its own frame is the end effector: the grader measures the
+       object's position in THIS link's frame. -->
+  <link name="tool">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.025"/>
+      <geometry><box size="0.08 0.06 0.05"/></geometry>
+      <material name="graphite"><color rgba="0.15 0.16 0.18 1"/></material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.025"/>
+      <geometry><box size="0.08 0.06 0.05"/></geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.025"/>
+      <mass value="0.5"/>
+      <inertia ixx="0.000254" ixy="0" ixz="0" iyy="0.000371" iyz="0"
+               izz="0.000417"/>
+    </inertial>
+  </link>
+  <joint name="joint_6" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.07"/>
+    <parent link="wrist_2"/>
+    <child link="tool"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="20.0" lower="-3.00" upper="3.00" velocity="3.0"/>
+    <dynamics damping="0.03" friction="0.0"/>
+  </joint>
+
+  <!-- Two fingers, each travelling 0 (open) to 0.035 (closed) toward the
+       centre line. Inner faces are 0.078 m apart open and 0.008 m apart
+       closed. -->
+  <link name="finger_left">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.03"/>
+      <geometry><box size="0.020 0.012 0.060"/></geometry>
+      <material name="graphite"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.03"/>
+      <geometry><box size="0.020 0.012 0.060"/></geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.03"/>
+      <mass value="0.05"/>
+      <inertia ixx="1.67e-05" ixy="0" ixz="0" iyy="1.59e-05" iyz="0"
+               izz="2.60e-06"/>
+    </inertial>
+  </link>
+  <joint name="finger_joint_left" type="prismatic">
+    <origin rpy="0 0 0" xyz="0 0.045 0.05"/>
+    <parent link="tool"/>
+    <child link="finger_left"/>
+    <axis xyz="0 -1 0"/>
+    <limit effort="80.0" lower="0.0" upper="0.035" velocity="0.10"/>
+    <dynamics damping="1.0" friction="0.0"/>
+  </joint>
+
+  <link name="finger_right">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.03"/>
+      <geometry><box size="0.020 0.012 0.060"/></geometry>
+      <material name="graphite"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.03"/>
+      <geometry><box size="0.020 0.012 0.060"/></geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.03"/>
+      <mass value="0.05"/>
+      <inertia ixx="1.67e-05" ixy="0" ixz="0" iyy="1.59e-05" iyz="0"
+               izz="2.60e-06"/>
+    </inertial>
+  </link>
+  <joint name="finger_joint_right" type="prismatic">
+    <origin rpy="0 0 0" xyz="0 -0.045 0.05"/>
+    <parent link="tool"/>
+    <child link="finger_right"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="80.0" lower="0.0" upper="0.035" velocity="0.10"/>
+    <dynamics damping="1.0" friction="0.0"/>
+  </joint>
+
+</robot>

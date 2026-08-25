@@ -1,0 +1,50 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "oracle_b2_webots",
+  "description": "B2 subject_in_frame oracle (webots): read the world, re-aim the authored Viewpoint at the red cylinder with a computed FLU look-at orientation, and commit to the checkable proof numbers (off-axis angle, range). The grader measures the final pose from the LIVE loaded scene and checks the numbers.",
+  "minimality": [
+    "The subject's position is authored in the file, so the look-at orientation is computable without a live read; the deliverable is the final camera pose in the artifact plus the committed numbers. read + write + answer = 2 calls, available on every surface.",
+    "Alternatives (all costlier): OmniSim shell+tools 'frame' verb needs the harness up and the pose persisted back to the file: start harness + load_world + frame + write_file (+ optional kill) = 4-5 calls. Webots bridge: start simulator + get_from_def(Viewpoint has no DEF; field walk from root) + 2x set_sf + world_save + quit >= 6 calls. The one-call framing verb cannot beat a 2-call file path it still has to persist.",
+    "Proof is the committed numeric claim (grader-measured); a screenshot/visible self-check is optional competence excluded symmetrically on every surface."
+  ],
+  "turns": [
+    {
+      "text": "The subject and the camera are both authored in the world file; I can compute the exact look-at orientation and bake it. Reading the file first.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "read_file",
+          "arguments": {
+            "path": "frame_the_cylinder.wbt"
+          }
+        }
+      ]
+    },
+    {
+      "text": "Re-aiming the Viewpoint from (0,0,5) at the red cylinder at (8,8,0.6): FLU look-at gives axis-angle -0.16845545 0.40668743 0.89790205 0.86444318. Writing the edited world.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 2200
+      },
+      "tool_calls": [
+        {
+          "name": "write_file",
+          "arguments": {
+            "path": "frame_the_cylinder.wbt",
+            "content": "#VRML_SIM R2025a utf8\n\n# AgentBench B2 subject_in_frame -- initial state, UPSTREAM WEBOTS R2025a arm.\n#\n# Five static props stand in a 40 x 40 m arena. Exactly ONE of them is a red\n# cylinder; the other four exist so that \"point the camera at the red\n# cylinder\" is a choice rather than the only thing on screen.\n#\n# NOTHING ABOUT THE TASK'S SOLUTION OR ITS GRADING IS DOCUMENTED HERE ON\n# PURPOSE (the C1/C2 rule, 4e5cbdc4): the world must not answer its own task\n# in comments. The task lives in prompt.txt only; the ground truth lives in\n# the grader, which measures the live scene itself. The camera's initial\n# pose (position, aim, field of view) is byte-identical to the OmniSim\n# arm's world, baked with the same FLU look-at math (camera frame is\n# +x forward, +y left, +z up in R2022b-and-later Webots, which this fork\n# inherited). Do not hand-tune the four numbers.\n#\n# One recorded deviation from the OmniSim arm: these props DO carry\n# boundingObject volumes (a measurement-instrument requirement on this arm;\n# nothing dynamic ever touches the props, so the physical setup --\n# positions, sizes, colours, statics -- is unchanged).\n#\n# Local assets only: every EXTERNPROTO resolves from the pre-seeded cache.\n\nEXTERNPROTO \"https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto\"\nEXTERNPROTO \"https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto\"\nEXTERNPROTO \"https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto\"\n\nWorldInfo {\n  basicTimeStep 16\n  title \"AgentBench B2 - point the camera at the red cylinder\"\n}\n\nViewpoint {\n  orientation -0.16845545 0.40668743 0.89790205 0.86444318\n  position 0.000 0.000 5.000\n  fieldOfView 0.785398\n}\n\nTexturedBackground {\n}\nTexturedBackgroundLight {\n}\nRectangleArena {\n  floorSize 40 40\n  wallHeight 0.5\n}\n\n# --- the subject ------------------------------------------------------------\n\nDEF RED_CYLINDER Solid {\n  translation 8 8 0.6\n  name \"red_cylinder\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.85 0.10 0.10\n        roughness 0.7\n        metalness 0\n      }\n      geometry Cylinder {\n        radius 0.35\n        height 1.2\n      }\n    }\n  ]\n  boundingObject Cylinder {\n    radius 0.35\n    height 1.2\n  }\n}\n\n# --- distractors ------------------------------------------------------------\n\nDEF BLUE_CYLINDER Solid {\n  translation -9 4 0.6\n  name \"blue_cylinder\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.10 0.25 0.85\n        roughness 0.7\n        metalness 0\n      }\n      geometry Cylinder {\n        radius 0.35\n        height 1.2\n      }\n    }\n  ]\n  boundingObject Cylinder {\n    radius 0.35\n    height 1.2\n  }\n}\n\nDEF GREEN_CYLINDER Solid {\n  translation -4 -9 0.6\n  name \"green_cylinder\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.12 0.70 0.20\n        roughness 0.7\n        metalness 0\n      }\n      geometry Cylinder {\n        radius 0.35\n        height 1.2\n      }\n    }\n  ]\n  boundingObject Cylinder {\n    radius 0.35\n    height 1.2\n  }\n}\n\nDEF YELLOW_CRATE Solid {\n  translation 9 -7 0.4\n  name \"yellow_crate\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.90 0.75 0.10\n        roughness 0.8\n        metalness 0\n      }\n      geometry Box {\n        size 0.8 0.8 0.8\n      }\n    }\n  ]\n  boundingObject Box {\n    size 0.8 0.8 0.8\n  }\n}\n\nDEF GREY_SPHERE Solid {\n  translation 0 12 0.5\n  name \"grey_sphere\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.55 0.55 0.58\n        roughness 0.5\n        metalness 0.2\n      }\n      geometry Sphere {\n        radius 0.5\n        subdivision 3\n      }\n    }\n  ]\n  boundingObject Sphere {\n    radius 0.5\n  }\n}\n"
+          }
+        }
+      ]
+    },
+    {
+      "text": "Done - the camera now points at the red cylinder and it is in frame, dead centre: off-axis 0.0 deg from the camera axis, at a range of 12.14 m, angular diameter about 6.6 deg, well inside the 45 deg field of view with margin on every side.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 200
+      }
+    }
+  ]
+}

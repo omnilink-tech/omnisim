@@ -1,0 +1,80 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# tags: no3dView
+# keywords: primitive/background
+# OmniSim canonical daylight sky.
+#
+# Part of the standard OmniSim world recipe (see docs/WORLD_RECIPE.md).
+# Pair with OmniSimSun + OmniSimSunMarker — all three together reproduce
+# the Spot demo lighting that is the canonical look across every demo,
+# sample, generated, and RL world in this repo.
+#
+# Defaults match `projects/robots/omnisim/omniquad/worlds/omniquad.omniworld`
+# verbatim. Extend by adding new optional fields with defaults — that is a
+# backward-compatible change. Do not change defaults in place; that would
+# silently re-skin every world that uses the PROTO.
+#
+# ==========================================================================
+# ⭐ `luminosity` IS THE WORLD-WIDE AMBIENT-FILL KNOB. Reach for it FIRST.
+# ==========================================================================
+# The canonical recipe declares `ambientIntensity 0` (OmniSimSun.proto), so
+# scene ambient is exactly (0,0,0) and ALL fill light in an OmniSim world is
+# image-based. Image-based light reaches a surface ONLY through a
+# `PBRAppearance` — a Phong `Appearance` renders hard (0,0,0) on every face
+# the sun does not hit directly.
+#
+# ⚠ IBL FROM THE PROCEDURAL SKY WORKS. Older notes (including
+# docs/developer/cloth-simulation.md as written on 2026-08-15 15:59 and the
+# header of newton_cloth_material.omniworld) say the baked irradiance cube
+# "contributes very close to nothing" under the default `atmosphericSky
+# "earth"`. That was TRUE and was FIXED 85 minutes later by a778b097e; the
+# claim is now stale. RE-MEASURED 2026-08-15 on the build of 17:48 (machine
+# 9722d23d12a3, WREN), canonical recipe `OmniSimSky {} + DEF SUN
+# OmniSimSun {}`, PBR plates at baseColor 0.8 / roughness 0.9 / metalness 0,
+# reading an UNDERSIDE that the sun physically cannot reach:
+#
+#   IBLStrength 1   ->  (131, 131, 131)
+#   IBLStrength 3   ->  (198, 198, 198)
+#   Phong control   ->  (0, 0, 0)      <- the control: Phong cannot receive IBL
+#
+# `luminosity` scales that fill across EVERY PBR material in the world at
+# once, with no per-material edit: OmPbrAppearance.cpp:419-422 hands the
+# shader `backgroundLuminosity * IBLStrength` as one premultiplied float.
+# MEASURED (earth preset, no light node, IBLStrength 1):
+#
+#   luminosity 1 -> plate 64    open-sky patch (136.4, 138.9, 138.7)
+#   luminosity 2 -> plate 87    open-sky patch (136.4, 138.9, 138.7)
+#   luminosity 4 -> plate 117   open-sky patch (136.4, 138.9, 138.7)
+#
+# ⚠ Note the second column: on the ATMOSPHERIC path the visible sky is drawn
+# by sky_apply.frag and is byte-identical at all three values, so raising
+# `luminosity` buys fill for FREE — it does not blow out the sky. Prefer it
+# over adding shadowless `DirectionalLight` fills, which cost a light slot,
+# only reach normals facing them (they contribute exactly 0 to an underside),
+# and — because OmBackground.cpp:654-675 takes the procedural sun from the
+# FIRST DirectionalLight — silently re-aim the sky's sun if declared before
+# `DEF SUN`.
+#
+# ⚠ The cube carries LUMINANCE ONLY. sky_to_cubemap.frag:181 white-balances
+# it to neutral grey, so the fill is achromatic under every preset (Mars
+# fills grey, not rust) even though the visible sky is correctly coloured.
+# Deliberate, and owned by that shader — not something this PROTO can tune.
+
+PROTO OmniSimSky [
+  field MFColor  skyColor       [ 0.15 0.20 0.30 ]   # Daylight blue. Same as spot.omniworld.
+                                                     # ⚠ Only reaches the IBL cube when
+                                                     # atmosphericSky is ""; then it IS the cube
+                                                     # (2x2 uniform, OmBackground.cpp:758-770).
+  field SFString atmosphericSky "earth"              # "earth" | "mars" | "" for cubemap-only.
+  field SFFloat  luminosity     1.0                  # ⭐ Global IBL/ambient-fill multiplier.
+                                                     # See the banner above: scales fill on every
+                                                     # PBR material, leaves the visible sky alone.
+]
+{
+  Background {
+    skyColor       IS skyColor
+    luminosity     IS luminosity
+    atmosphericSky IS atmosphericSky
+  }
+}

@@ -1,0 +1,37 @@
+OmniSim PBR appearance PROTO icons.
+
+Contents
+--------
+68 PNG files, one per PROTO in the parent directory
+`projects/appearances/protos/` -- from `Asphalt.png` to `WornBurlap.png`.
+Each is the preview render the GUI shows for that appearance in the
+Add-Node dialog and the scene-tree icon column.
+
+License
+-------
+Apache License, Version 2.0 -- Copyright 1996-2024 Cyberbotics Ltd.
+https://www.apache.org/licenses/LICENSE-2.0
+
+All 68 files, without exception, on the same basis as the material maps
+recorded in ../textures/LICENSE.txt: they are constituent parts of the
+appearance PROTOs, every one of which declares `# license: Apache License 2.0`.
+
+Evidence
+--------
+All 68 entered this tree in the single squashed upstream import
+`0db6a18a7` (2026-04-11) and none has been modified since -- verified with
+
+    git log --diff-filter=A --format=%h -- projects/appearances/protos/icons/
+
+which returns `0db6a18a7` for every file. They are inherited Webots assets,
+covered by the fork's Apache-2.0 derivation recorded in the repository NOTICE.
+
+Limits
+------
+Upstream never published a per-asset origin record for the appearance
+library, so this states the licence Cyberbotics DECLARED, not an independent
+determination of where each render came from. That declaration is theirs to
+make and it is recorded per PROTO. Cyberbotics carves restricted assets out
+individually -- other Webots assets ship under "Licensed for use only with
+Webots" -- and no file in this directory or in ../textures/ is inside that
+carve-out. See docs/developer/texture-provenance.md for the full derivation.

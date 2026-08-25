@@ -1,0 +1,145 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/solids/protos/SolidTorus.proto
+# keywords: primitive/geometry
+# A Solid torus lying in the XY plane, meshed from the torus surface equation and collided as a ring of spheres threaded along its centre circle.
+# template language: javascript
+
+PROTO SolidTorus [
+  field SFVec3f    translation           0 0 1
+  field SFRotation rotation              0 0 1 0
+  field SFString   name                  "torus"
+  field SFFloat    majorRadius           2                                                                                                             # Defines the major radius of the torus.
+  field SFFloat    minorRadius           1                                                                                                             # Defines the minor radius of the torus.
+  field SFInt32    subdivision           24                                                                                                            # Defines the number of polygons used to represent the torus and so its resolution.
+  field SFString   contactMaterial       "default"                                                                                                     # Is `Solid.contactMaterial`.
+  field SFNode     appearance            PBRAppearance { baseColorMap ImageTexture { url [ "omnisim://projects/default/worlds/textures/tagged_wall.jpg" ] } metalness 0 roughness 0.5 }  # Defines the appearance of the torus.
+  field SFNode     physics               NULL                                                                                                          # Is `Solid.physics`.
+  field SFBool     enableBoundingObject  TRUE                                                                                                          # Defines whether the solid should have a bounding object.
+]
+{
+  %<
+    // ---------------------------------------------------------------------
+    // Parameters.
+    // ---------------------------------------------------------------------
+    let ringRadius = fields.majorRadius.value;
+    if (ringRadius <= 0) {
+      ringRadius = fields.majorRadius.defaultValue;
+      console.error('\'majorRadius\' must be strictly positive. Value reset to ' + ringRadius + '.');
+    }
+
+    let tubeRadius = fields.minorRadius.value;
+    if (tubeRadius <= 0) {
+      tubeRadius = fields.minorRadius.defaultValue;
+      console.error('\'minorRadius\' must be strictly positive. Value reset to ' + tubeRadius + '.');
+    }
+
+    let n = fields.subdivision.value;
+    if (n < 8) {
+      console.error('\'subdivision\' must be greater or equal to 8. Using 8 instead.');
+      n = 8;
+    }
+    if (n > 200)
+      console.log('High value for \'subdivision\'. This can slow down the simulation');
+
+    // ---------------------------------------------------------------------
+    // Sample the torus surface.
+    //
+    //   P(u, v) = ((R + r.cos v).cos u, (R + r.cos v).sin u, r.sin v)
+    //
+    // u sweeps the centre circle (in the XY plane), v sweeps the tube section.
+    // The n x n vertex grid wraps in both directions, so the quad at (i, j)
+    // simply indexes its neighbours modulo n. Walking +u before +v orders each
+    // quad counter-clockwise seen from outside, which is the outward normal.
+    //
+    // The texture coordinates are laid out on an unwrapped (n+1) x (n+1) grid
+    // so the seam where u and v come back round does not squash the last column
+    // of texels back onto the first.
+    // ---------------------------------------------------------------------
+    const TAU = 2 * Math.PI;
+    const ring = [];   // centre-circle direction per u
+    const tube = [];   // tube section offset per v
+    for (let i = 0; i < n; ++i) {
+      const u = TAU * i / n;
+      ring.push({c: Math.cos(u), s: Math.sin(u)});
+    }
+    for (let j = 0; j < n; ++j) {
+      const v = TAU * j / n;
+      tube.push({c: Math.cos(v), s: Math.sin(v)});
+    }
+
+    const surface = [];
+    for (let i = 0; i < n; ++i) {
+      for (let j = 0; j < n; ++j) {
+        const reach = ringRadius + tubeRadius * tube[j].c;
+        surface.push({x: reach * ring[i].c, y: reach * ring[i].s, z: tubeRadius * tube[j].s});
+      }
+    }
+
+    const vertex = function(i, j) { return (i % n) * n + (j % n); };
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Shape {
+        appearance IS appearance
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+              %< for (let k = 0; k < surface.length; ++k) { >%
+                %<= surface[k].x >% %<= surface[k].y >% %<= surface[k].z >%
+              %< } >%
+            ]
+          }
+          texCoord TextureCoordinate {
+            point [
+              %< for (let i = 0; i <= n; ++i) { >%
+                %< for (let j = 0; j <= n; ++j) { >%
+                  %<= i / n >% %<= j / n >%
+                %< } >%
+              %< } >%
+            ]
+          }
+          coordIndex [
+            %< for (let i = 0; i < n; ++i) { >%
+              %< for (let j = 0; j < n; ++j) { >%
+                %<= vertex(i, j) >% %<= vertex(i + 1, j) >% %<= vertex(i + 1, j + 1) >% %<= vertex(i, j + 1) >% -1
+              %< } >%
+            %< } >%
+          ]
+          texCoordIndex [
+            %< for (let i = 0; i < n; ++i) { >%
+              %< for (let j = 0; j < n; ++j) { >%
+                %<= i * (n + 1) + j >% %<= (i + 1) * (n + 1) + j >% %<= (i + 1) * (n + 1) + j + 1 >% %<= i * (n + 1) + j + 1 >% -1
+              %< } >%
+            %< } >%
+          ]
+          creaseAngle 1.5
+        }
+      }
+    ]
+    name IS name
+    model "torus"
+    contactMaterial IS contactMaterial
+    %< if (fields.enableBoundingObject.value) { >%
+    boundingObject Group { # spheres of the tube radius threaded along the centre circle
+      children [
+        %< for (let i = 0; i < n; ++i) { >%
+        Pose {
+          translation %<= ringRadius * ring[i].c >% %<= ringRadius * ring[i].s >% 0
+          children [
+            Sphere {
+              radius %<= tubeRadius >%
+              subdivision 2
+            }
+          ]
+        }
+        %< } >%
+      ]
+    }
+    %< } >%
+    physics IS physics
+  }
+}

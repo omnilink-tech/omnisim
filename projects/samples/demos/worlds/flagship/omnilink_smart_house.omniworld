@@ -1,0 +1,923 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — Smart House
+# A single-floor 10 x 8 m house (living_room / kitchen / bedroom / hallway)
+# wired as a smart-home HUB: the `smart_house` Robot runs the
+# `smart_house_bridge` supervisor controller, which serves the Haven hub
+# HTTP contract on 127.0.0.1:8766 (lights, appliances, thermostat, lock,
+# blinds, security, sensors, energy, scenarios).
+#
+# Everything the bridge actuates is DEF-addressed:
+#   PL_* PointLights + MAT_* fixture materials   (6 light devices)
+#   MAT_OVEN_IND / MAT_TV_SCREEN / MAT_COFFEE_IND / MAT_HEATER_IND
+#   FRONT_DOOR (kinematic hinged leaf, rotation = aperture)
+#   BLINDS_LIVING (panel teleported into / out of the window reveal)
+#   RESIDENT (kinematic capsule, teleported by the scenario engine)
+#   MAT_HUB_SCREEN (wall tablet status colour)
+# Decorative props follow the kinematic-props rule: no boundingObject.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Window.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Grass.proto"
+EXTERNPROTO "omnisim://projects/objects/tables/protos/Table.proto"
+EXTERNPROTO "omnisim://projects/objects/chairs/protos/Chair.proto"
+EXTERNPROTO "omnisim://projects/objects/bedroom/protos/Bed.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — Smart House"
+  newtonCompoundColliders TRUE
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 23.121 -24.613 22.430
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# ── Ground ────────────────────────────────────────────────────────────
+Floor {
+  name "lawn"
+  size 26 22
+  appearance Grass { }
+}
+Floor {
+  translation 0 0 0.012
+  name "house floor"
+  size 10.3 8.3
+}
+
+# ── Exterior walls (footprint x -5..5, y -4..4, height 2.4) ──────────
+# North wall (two windows punched through it)
+Wall {
+  translation -4.05 4 0
+  rotation 0 0 1 1.5708
+  name "north wall west"
+  size 0.15 1.9 2.4
+}
+Window {
+  translation -2.5 4 0
+  rotation 0 0 1 1.5708
+  name "living window"
+  size 0.15 1.2 2.4
+}
+Wall {
+  translation 0 4 0
+  rotation 0 0 1 1.5708
+  name "north wall centre"
+  size 0.15 3.8 2.4
+}
+Window {
+  translation 2.5 4 0
+  rotation 0 0 1 1.5708
+  name "kitchen window"
+  size 0.15 1.2 2.4
+}
+Wall {
+  translation 4.05 4 0
+  rotation 0 0 1 1.5708
+  name "north wall east"
+  size 0.15 1.9 2.4
+}
+# South wall (front-door opening at x -3..-2)
+Wall {
+  translation -4 -4 0
+  rotation 0 0 1 1.5708
+  name "south wall west"
+  size 0.15 2 2.4
+}
+Wall {
+  translation -2.5 -4 2
+  rotation 0 0 1 1.5708
+  name "front door lintel"
+  size 0.15 1 0.4
+}
+Wall {
+  translation 1.5 -4 0
+  rotation 0 0 1 1.5708
+  name "south wall east"
+  size 0.15 7 2.4
+}
+# East / west walls
+Wall {
+  translation -5 0 0
+  name "west wall"
+  size 0.15 8.3 2.4
+}
+Wall {
+  translation 5 0 0
+  name "east wall"
+  size 0.15 8.3 2.4
+}
+
+# ── Interior walls ────────────────────────────────────────────────────
+# East-west wall along y=0 (doorway hallway<->living at x -3..-2)
+Wall {
+  translation -4 0 0
+  rotation 0 0 1 1.5708
+  name "mid wall west"
+  size 0.15 2 2.4
+}
+Wall {
+  translation 1.5 0 0
+  rotation 0 0 1 1.5708
+  name "mid wall east"
+  size 0.15 7 2.4
+}
+# North-south spine along x=0 (doorway hallway<->bedroom at y -2.5..-1.5,
+# open-plan living<->kitchen opening at y 1..3)
+Wall {
+  translation 0 -3.25 0
+  name "spine wall south"
+  size 0.15 1.5 2.4
+}
+Wall {
+  translation 0 -0.25 0
+  name "spine wall middle"
+  size 0.15 2.5 2.4
+}
+Wall {
+  translation 0 3.5 0
+  name "spine wall north"
+  size 0.15 1 2.4
+}
+
+# ── Front door: kinematic hinged leaf, hinge at the west jamb ─────────
+# The bridge writes rotation [0 0 1 theta]: 0 = closed, 1.45 = open
+# (swings north into the hallway). Kinematic on purpose — nothing
+# dynamic drives through it, and the aperture is measured by reading
+# this rotation back.
+DEF FRONT_DOOR Solid {
+  translation -2.98 -4 0
+  rotation 0 0 1 0
+  name "front door leaf"
+  children [
+    Pose {
+      translation 0.48 0 1
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.42 0.26 0.14
+            roughness 0.65
+            metalness 0
+          }
+          geometry Box {
+            size 0.94 0.06 1.94
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0.84 -0.06 1
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.75 0.72 0.65
+            roughness 0.3
+            metalness 1
+          }
+          geometry Sphere {
+            radius 0.035
+          }
+        }
+      ]
+    }
+  ]
+}
+
+# ── Living-room blinds panel ──────────────────────────────────────────
+# Closed: parent z = 0 (panel covers the window reveal, z 0.67..2.17).
+# Open: parent z = -4 (panel parked below the lawn, invisible).
+# Authored OPEN — the default house state.
+DEF BLINDS_LIVING Solid {
+  translation -2.5 3.86 -4
+  name "living blinds"
+  children [
+    Pose {
+      translation 0 0 1.42
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.93 0.9 0.82
+            roughness 0.9
+            metalness 0
+          }
+          geometry Box {
+            size 1.14 0.03 1.5
+          }
+        }
+      ]
+    }
+  ]
+}
+
+# ── Lights: 6 devices = fixture Solid (DEF'd emissive MAT_*) + PL_* ──
+DEF LIGHT_LIVING_CEILING Solid {
+  translation -2.5 2 0
+  name "living ceiling light"
+  children [
+    Pose {
+      translation 0 0 2.33
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.85 0.85
+            roughness 0.4
+            metalness 0.4
+          }
+          geometry Cylinder {
+            height 0.14
+            radius 0.012
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 2.23
+      children [
+        Shape {
+          appearance DEF MAT_LIVING_CEILING PBRAppearance {
+            baseColor 0.95 0.93 0.85
+            emissiveColor 0 0 0
+            roughness 0.5
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.06
+            radius 0.16
+          }
+        }
+      ]
+    }
+    DEF PL_LIVING_CEILING PointLight {
+      attenuation 0 0 1
+      intensity 0
+      location 0 0 2.1
+      on FALSE
+      castShadows FALSE
+      radius 9
+    }
+  ]
+}
+DEF LIGHT_KITCHEN_CEILING Solid {
+  translation 2.5 2.2 0
+  name "kitchen ceiling light"
+  children [
+    Pose {
+      translation 0 0 2.33
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.85 0.85
+            roughness 0.4
+            metalness 0.4
+          }
+          geometry Cylinder {
+            height 0.14
+            radius 0.012
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 2.23
+      children [
+        Shape {
+          appearance DEF MAT_KITCHEN_CEILING PBRAppearance {
+            baseColor 0.95 0.93 0.85
+            emissiveColor 0 0 0
+            roughness 0.5
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.06
+            radius 0.16
+          }
+        }
+      ]
+    }
+    DEF PL_KITCHEN_CEILING PointLight {
+      attenuation 0 0 1
+      intensity 0
+      location 0 0 2.1
+      on FALSE
+      castShadows FALSE
+      radius 9
+    }
+  ]
+}
+DEF LIGHT_BEDROOM_CEILING Solid {
+  translation 2 -2.2 0
+  name "bedroom ceiling light"
+  children [
+    Pose {
+      translation 0 0 2.33
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.85 0.85
+            roughness 0.4
+            metalness 0.4
+          }
+          geometry Cylinder {
+            height 0.14
+            radius 0.012
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 2.23
+      children [
+        Shape {
+          appearance DEF MAT_BEDROOM_CEILING PBRAppearance {
+            baseColor 0.95 0.93 0.85
+            emissiveColor 0 0 0
+            roughness 0.5
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.06
+            radius 0.16
+          }
+        }
+      ]
+    }
+    DEF PL_BEDROOM_CEILING PointLight {
+      attenuation 0 0 1
+      intensity 0
+      location 0 0 2.1
+      on FALSE
+      castShadows FALSE
+      radius 9
+    }
+  ]
+}
+DEF LIGHT_HALLWAY Solid {
+  translation -2.5 -2 0
+  name "hallway light"
+  children [
+    Pose {
+      translation 0 0 2.33
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.85 0.85 0.85
+            roughness 0.4
+            metalness 0.4
+          }
+          geometry Cylinder {
+            height 0.14
+            radius 0.012
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 2.23
+      children [
+        Shape {
+          appearance DEF MAT_HALLWAY PBRAppearance {
+            baseColor 0.95 0.93 0.85
+            emissiveColor 0 0 0
+            roughness 0.5
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.06
+            radius 0.16
+          }
+        }
+      ]
+    }
+    DEF PL_HALLWAY PointLight {
+      attenuation 0 0 1
+      intensity 0
+      location 0 0 2.1
+      on FALSE
+      castShadows FALSE
+      radius 8
+    }
+  ]
+}
+DEF LIGHT_LIVING_LAMP Solid {
+  translation -4.5 3.5 0
+  name "living floor lamp"
+  children [
+    Pose {
+      translation 0 0 0.02
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.2 0.2 0.22
+            roughness 0.6
+            metalness 0.3
+          }
+          geometry Cylinder {
+            height 0.04
+            radius 0.14
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 0.65
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.2 0.2 0.22
+            roughness 0.6
+            metalness 0.3
+          }
+          geometry Cylinder {
+            height 1.26
+            radius 0.018
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 1.38
+      children [
+        Shape {
+          appearance DEF MAT_LIVING_LAMP PBRAppearance {
+            baseColor 0.93 0.88 0.75
+            emissiveColor 0 0 0
+            roughness 0.8
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.26
+            radius 0.13
+          }
+        }
+      ]
+    }
+    DEF PL_LIVING_LAMP PointLight {
+      attenuation 0 0 1
+      intensity 0
+      location 0 0 1.45
+      on FALSE
+      castShadows FALSE
+      radius 6
+    }
+  ]
+}
+DEF LIGHT_BEDROOM_LAMP Solid {
+  translation 1.2 -3.5 0
+  name "bedroom floor lamp"
+  children [
+    Pose {
+      translation 0 0 0.02
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.2 0.2 0.22
+            roughness 0.6
+            metalness 0.3
+          }
+          geometry Cylinder {
+            height 0.04
+            radius 0.14
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 0.65
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.2 0.2 0.22
+            roughness 0.6
+            metalness 0.3
+          }
+          geometry Cylinder {
+            height 1.26
+            radius 0.018
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 1.38
+      children [
+        Shape {
+          appearance DEF MAT_BEDROOM_LAMP PBRAppearance {
+            baseColor 0.93 0.88 0.75
+            emissiveColor 0 0 0
+            roughness 0.8
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.26
+            radius 0.13
+          }
+        }
+      ]
+    }
+    DEF PL_BEDROOM_LAMP PointLight {
+      attenuation 0 0 1
+      intensity 0
+      location 0 0 1.45
+      on FALSE
+      castShadows FALSE
+      radius 6
+    }
+  ]
+}
+
+# ── Kitchen appliances (inline Solids; indicator materials DEF'd) ─────
+DEF KITCHEN_COUNTER Solid {
+  translation 4.55 1.4 0
+  name "kitchen counter"
+  children [
+    Pose {
+      translation 0 0 0.44
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.82 0.8 0.76
+            roughness 0.5
+            metalness 0
+          }
+          geometry Box {
+            size 0.55 2.4 0.88
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 0.9
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.35 0.33 0.3
+            roughness 0.25
+            metalness 0.2
+          }
+          geometry Box {
+            size 0.6 2.5 0.04
+          }
+        }
+      ]
+    }
+  ]
+}
+DEF OVEN Solid {
+  translation 4.55 2.9 0
+  name "oven"
+  children [
+    Pose {
+      translation 0 0 0.45
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.25 0.25 0.27
+            roughness 0.35
+            metalness 0.6
+          }
+          geometry Box {
+            size 0.6 0.6 0.9
+          }
+        }
+      ]
+    }
+    Pose {
+      translation -0.305 0 0.4
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.1 0.1 0.11
+            roughness 0.2
+            metalness 0.3
+          }
+          geometry Box {
+            size 0.012 0.5 0.55
+          }
+        }
+      ]
+    }
+    Pose {
+      translation -0.305 0 0.78
+      children [
+        Shape {
+          appearance DEF MAT_OVEN_IND PBRAppearance {
+            baseColor 0.2 0.05 0.02
+            emissiveColor 0 0 0
+            roughness 0.4
+            metalness 0
+          }
+          geometry Box {
+            size 0.012 0.3 0.05
+          }
+        }
+      ]
+    }
+  ]
+}
+DEF COFFEE_MAKER Solid {
+  translation 4.55 0.7 0.92
+  name "coffee maker"
+  children [
+    Pose {
+      translation 0 0 0.17
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.15 0.15 0.16
+            roughness 0.4
+            metalness 0.5
+          }
+          geometry Box {
+            size 0.24 0.24 0.34
+          }
+        }
+      ]
+    }
+    Pose {
+      translation -0.125 0 0.28
+      children [
+        Shape {
+          appearance DEF MAT_COFFEE_IND PBRAppearance {
+            baseColor 0.15 0.1 0.02
+            emissiveColor 0 0 0
+            roughness 0.4
+            metalness 0
+          }
+          geometry Box {
+            size 0.012 0.06 0.03
+          }
+        }
+      ]
+    }
+  ]
+}
+
+# ── Living room: TV against the west wall ─────────────────────────────
+DEF TV Solid {
+  translation -4.7 1.6 0
+  name "tv"
+  children [
+    Pose {
+      translation 0 0 0.25
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.3 0.25 0.2
+            roughness 0.6
+            metalness 0
+          }
+          geometry Box {
+            size 0.42 1.5 0.5
+          }
+        }
+      ]
+    }
+    Pose {
+      translation -0.12 0 1.05
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.08 0.08 0.09
+            roughness 0.3
+            metalness 0.4
+          }
+          geometry Box {
+            size 0.06 1.55 0.85
+          }
+        }
+      ]
+    }
+    Pose {
+      translation -0.085 0 1.05
+      children [
+        Shape {
+          appearance DEF MAT_TV_SCREEN PBRAppearance {
+            baseColor 0.04 0.04 0.05
+            emissiveColor 0 0 0
+            roughness 0.15
+            metalness 0.1
+          }
+          geometry Box {
+            size 0.012 1.42 0.74
+          }
+        }
+      ]
+    }
+  ]
+}
+
+# ── Hallway: radiator (the hvac.heater visual) ────────────────────────
+DEF HEATER Solid {
+  translation -0.8 -3.85 0
+  name "heater radiator"
+  children [
+    Pose {
+      translation 0 0 0.4
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.92 0.92 0.9
+            roughness 0.55
+            metalness 0.1
+          }
+          geometry Box {
+            size 0.9 0.09 0.55
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0.38 -0.055 0.62
+      children [
+        Shape {
+          appearance DEF MAT_HEATER_IND PBRAppearance {
+            baseColor 0.2 0.06 0.02
+            emissiveColor 0 0 0
+            roughness 0.4
+            metalness 0
+          }
+          geometry Box {
+            size 0.05 0.012 0.03
+          }
+        }
+      ]
+    }
+  ]
+}
+
+# ── Furniture (real protos; static, they keep their own colliders) ────
+Table {
+  translation -3.4 1.6 0
+  name "coffee table"
+  size 1 0.6 0.42
+}
+Chair {
+  translation -2.7 1 0
+  rotation 0 0 1 2.4
+  name "living chair 1"
+  color 0.55 0.35 0.25
+}
+Chair {
+  translation -2.7 2.3 0
+  rotation 0 0 1 3.5
+  name "living chair 2"
+  color 0.55 0.35 0.25
+}
+Table {
+  translation 1.8 1.6 0
+  name "kitchen table"
+  size 0.9 1.4 0.74
+}
+Chair {
+  translation 1.1 1.3 0
+  rotation 0 0 1 0
+  name "kitchen chair 1"
+  color 0.85 0.82 0.75
+}
+Chair {
+  translation 2.5 1.9 0
+  rotation 0 0 1 3.14159
+  name "kitchen chair 2"
+  color 0.85 0.82 0.75
+}
+Bed {
+  translation 3.7 -2.6 0
+  rotation 0 0 1 3.14159
+  name "bed"
+}
+DEF NIGHTSTAND Solid {
+  translation 4.6 -1.5 0
+  name "nightstand"
+  children [
+    Pose {
+      translation 0 0 0.25
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.5 0.36 0.24
+            roughness 0.7
+            metalness 0
+          }
+          geometry Box {
+            size 0.4 0.4 0.5
+          }
+        }
+      ]
+    }
+  ]
+}
+
+# ── A real dynamic body: the book on the bed ──────────────────────────
+# The one Newton dynamic body in the house — it settles on the bed's
+# collider, which keeps the world honest under --fail-on-runaway.
+DEF BOOK Solid {
+  translation 3.2 -2.9 0.75
+  name "book"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.7 0.2 0.15
+        roughness 0.8
+        metalness 0
+      }
+      geometry Box {
+        size 0.19 0.13 0.035
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.19 0.13 0.035
+  }
+  physics Physics {
+    density -1
+    mass 0.4
+  }
+}
+
+# ── The resident (kinematic capsule, teleported by the scenario) ─────
+DEF RESIDENT Solid {
+  translation -3 2.5 0
+  name "resident"
+  children [
+    Pose {
+      translation 0 0 0.71
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.95 0.5 0.12
+            roughness 0.7
+            metalness 0
+          }
+          geometry Capsule {
+            height 0.95
+            radius 0.21
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 1.52
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.96 0.8 0.62
+            roughness 0.7
+            metalness 0
+          }
+          geometry Sphere {
+            radius 0.14
+          }
+        }
+      ]
+    }
+  ]
+}
+
+# ── The hub: wall tablet + the bridge controller ──────────────────────
+DEF SMART_HOUSE Robot {
+  translation -0.09 -3.2 0
+  name "smart_house"
+  supervisor TRUE
+  controller "smart_house_bridge"
+  controllerArgs [ "--robot" "smart_house" "--port" "8766" ]
+  children [
+    Pose {
+      translation -0.015 0 1.4
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.12 0.12 0.13
+            roughness 0.4
+            metalness 0.3
+          }
+          geometry Box {
+            size 0.03 0.3 0.22
+          }
+        }
+      ]
+    }
+    Pose {
+      translation -0.033 0 1.4
+      children [
+        Shape {
+          appearance DEF MAT_HUB_SCREEN PBRAppearance {
+            baseColor 0.05 0.08 0.09
+            emissiveColor 0 0.06 0.08
+            roughness 0.2
+            metalness 0
+          }
+          geometry Box {
+            size 0.008 0.24 0.16
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,738 @@
+OmniSim
+Copyright 2026 OmniLink
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this software except in compliance with the License. You may obtain a
+copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations
+under the License.
+
+================================================================================
+If you redistribute OmniSim, this is what you must carry
+================================================================================
+
+Apache-2.0 Section 4 puts four obligations on anyone who redistributes this
+work, in source or binary form, modified or not. In this project they come to:
+
+  1. Ship this NOTICE file, or reproduce its contents in the documentation or
+     display that your distribution provides. Section 4(d). You may add your own
+     attribution alongside it; you may not remove ours.
+  2. Ship a copy of the Apache-2.0 licence itself (the LICENSE file). 4(a).
+  3. Keep the copyright, patent, trademark and attribution notices that are
+     already in the source files you carry. 4(c). In this tree that matters
+     more than usual: the per-file headers ARE the Section 4(b) record of what
+     was modified — see the Derivation section below.
+  4. State prominently that you changed the files, if you changed them. 4(b).
+
+Two things that Apache-2.0 does NOT give you, and that this file therefore
+states plainly rather than leaving you to infer:
+
+  * The BRAND is not licensed. The OmniSim and OmniLink names, the dot-sphere
+    orb and the artwork under resources/branding/ are reserved — as copyright
+    by resources/branding/LICENSE and Carve-Out item 5, and as trademarks by
+    TRADEMARKS.md. A fork that redistributes modified code must rename and
+    rebrand. Everything else about forking is welcome and always will be.
+  * Some components are not ours to sublicense. The Carve-Out section near the
+    end of this file lists every component whose terms are narrower than
+    Apache-2.0. Read it before you ship. THIRD_PARTY_NOTICES.md carries the
+    reasoning and the evidence; this file carries the obligations.
+
+================================================================================
+Derivation
+================================================================================
+
+OmniSim is a derivative work of Webots, the open-source robot simulator
+developed by Cyberbotics Ltd. (https://github.com/cyberbotics/webots),
+released under the Apache License, Version 2.0.
+
+    Copyright 1996-2024 Cyberbotics Ltd.
+
+Substantial portions of the source tree under src/, projects/, resources/,
+docs/, include/, lib/, and Contents/ originate from Webots. Files that
+retain their original Cyberbotics copyright headers remain copyright of
+Cyberbotics Ltd.; modifications to those files and all newly added files
+in this distribution are copyright of OmniLink and contributors, and are
+likewise licensed under the Apache License, Version 2.0.
+
+NOTICE OF MODIFICATION (Apache License 2.0, Section 4(b))
+---------------------------------------------------------
+Files in this distribution that originate from Webots HAVE BEEN MODIFIED by
+OmniLink. Modified files carry a modification notice in their header, of the
+form:
+
+    Modifications copyright 2026 OmniLink, licensed under the
+    Apache License, Version 2.0.
+
+Those per-file headers ARE the notice Section 4(b) requires, and they are the
+record that travels with the artifact you received: every modified file states,
+in the file itself, that it carries prominent notice of modification. Do not
+look for a commit-by-commit changelog in a release: public releases are
+published as a single squashed snapshot per version, so the release history is
+per-version (see CHANGELOG.md), not per-change.
+
+OmniSim is not a redistribution of Webots: it is a substantially modified
+derivative work with different physics defaults, a different renderer path, a
+different controller runtime, and large bodies of newly authored code that have
+no upstream counterpart.
+
+OmniSim is not affiliated with, endorsed by, or sponsored by Cyberbotics Ltd.
+"Webots" and "Cyberbotics" are trademarks of Cyberbotics Ltd. The Apache
+License, Version 2.0 grants no rights in those marks (Section 6), and OmniLink
+claims none; they are used here only to state, factually, what OmniSim is
+derived from.
+
+================================================================================
+Bundled and Vendored Third-Party Components
+================================================================================
+
+This distribution includes or links against the following third-party
+software. Each component remains subject to its own license; see the
+referenced upstream sources for full license texts.
+
+The complete third-party inventory — robot models, vendored code, simulation
+assets, fonts, icons, reference data, and the carve-out for material not
+covered by the Apache-2.0 grant — is in THIRD_PARTY_NOTICES.md.
+
+- GLAD (OpenGL loader), generated v0.1.28 (2019-01-24)
+    https://github.com/Dav1dde/glad
+    The generator is MIT, Copyright (c) 2013-2018 David Herberth (that is the
+    copyright line in glad's LICENSE at tag v0.1.28, the version that produced
+    src/glad/glad.c and include/glad/glad.h). glad's author elects Public
+    Domain, WTFPL or CC0 for the code the generator EMITS, while the Khronos
+    OpenGL XML registry it derives from is Apache-2.0, Copyright (c) 2013-2018
+    The Khronos Group Inc.; whether that reaches through into generated output
+    is not authoritatively settled and neither party will assert it. OmniSim
+    takes the conservative reading and honours both notices. Generated with
+    --omit-khrplatform, so no Khronos khrplatform.h is shipped and its separate
+    notice does not arise. Full record, with the verbatim MIT text and the
+    evidence: src/glad/LICENSE (and include/glad/LICENSE, which points at it).
+
+- GLM (OpenGL Mathematics)
+    https://github.com/g-truc/glm
+    The Happy Bunny License or MIT License. License text: src/glm/copying.txt
+    (a git submodule — run `git submodule update --init` to fetch it).
+
+- stb single-file public-domain libraries
+    https://github.com/nothings/stb
+    Public domain (or MIT, at user's option). License text: src/stb/LICENSE
+    (a git submodule).
+
+- SipHash (from google/highwayhash)
+    https://github.com/google/highwayhash
+    Apache License, Version 2.0.
+    Copyright 2015-2017 Google Inc. All Rights Reserved.
+    The portable SipHash implementation by Jan Wassenberg and Jyrki
+    Alakuijala, vendored at src/omnisim/external/siphash/ and compiled into
+    the engine binary (the triangle-mesh and renderer caches key off it).
+    License text: src/omnisim/external/siphash/LICENSE. Provenance is recorded
+    in the component's own src/omnisim/external/siphash/Readme.md ("github
+    master as of 2017.04.24").
+
+- Open Asset Import Library (Assimp)
+    https://github.com/assimp/assimp
+    BSD 3-Clause License.
+
+- Object Oriented Input System (OIS)
+    https://github.com/wgois/OIS
+    zlib/libpng License.
+
+- Pico (text-to-speech) — NO LONGER PRESENT
+    SVOX Pico
+    Apache License, Version 2.0.
+
+- OpenVR
+    https://github.com/ValveSoftware/openvr
+    BSD 3-Clause License. Fetched into dependencies/ at build time; see the
+    upstream LICENSE.
+
+- WREN (Webots RENderer) — the engine source is gone; assets and one
+  prebuilt web build remain
+    Copyright 1996-2024 Cyberbotics Ltd. Apache License, Version 2.0.
+    resources/wren/ (licence text at resources/wren/LICENSE). WREN was
+    Cyberbotics' own OpenGL renderer, inherited with the Webots derivation
+    above. Its source was DELETED on 2026-08-23 when wgpu-native became
+    OmniSim's only renderer. Two things still ship: ten Cyberbotics-authored
+    gizmo meshes and overlay textures, still read by the current wgpu GUI; and
+    resources/web/wwi/wrenjs.{js,wasm,data}, a prebuilt WebAssembly build of
+    WREN fetched from Cyberbotics' own R2025a distribution, which the --stream
+    browser viewer still renders through. The .data file additionally carries
+    84 of Cyberbotics' WREN GLSL shaders, which no longer exist as source in
+    this tree. Both keep their Apache-2.0 attribution for as long as they ship;
+    the full record is resources/web/wwi/LICENSE-wrenjs.txt. This is NOT the
+    wren-lang scripting language, which has never been present in this tree.
+
+- Qt 6
+    https://www.qt.io/
+    GNU Lesser General Public License, version 3 (LGPL-3.0). OmniSim links
+    Qt 6 dynamically; official binary distributions bundle the unmodified
+    Qt 6 shared libraries. Qt 6 remains copyright of The Qt Company Ltd. and
+    contributors. Users may relink OmniSim against a modified Qt 6 by
+    replacing those shared libraries, as LGPL-3.0 requires.
+
+- FreeType
+    https://freetype.org/
+    The FreeType License (BSD-style) or GPLv2 (dual-licensed); used here
+    under the FreeType License.
+
+- OpenAL Soft
+    https://openal-soft.org/
+    GNU Lesser General Public License, version 2.1 (LGPL-2.1). Linked
+    dynamically; the unmodified shared library is bundled and replaceable.
+
+- wgpu-native (gfx-rs)
+    https://github.com/gfx-rs/wgpu-native
+    MIT License or Apache License 2.0 (dual-licensed). Shipped in official
+    binaries as wgpu_native.dll / omnisim_wgpu; compiled to an inert stub in
+    a plain source build.
+
+Vendored JavaScript / WebAssembly dependencies of the web viewer
+(resources/web/wwi/dependencies/). Each file's own header is the source of the
+attribution below. Three of them — ansi_up, Quaternion.js and assimpjs — also
+ship a separate licence text alongside the code, in
+resources/web/wwi/dependencies/ (LICENSE-ansi_up.txt, LICENSE-quaternion.txt,
+LICENSE-assimpjs.txt); the rest carry their notice inline in the file itself.
+A fourth, wrenjs.{js,wasm,data}, ships one in the parent directory
+(resources/web/wwi/LICENSE-wrenjs.txt) because those files live there rather
+than under dependencies/.
+
+- ansi_up.js
+    https://github.com/drudru/ansi_up
+    MIT License, as declared in the file's header ("author : Dru Nelson /
+    license : MIT"). The header carries no copyright line; see upstream.
+
+- glm-js.min.js
+    http://humbletim.github.io/glm-js
+    MIT License. Copyright (c) 2015-2016 humbletim. Full MIT text is embedded
+    in the file's own header comment.
+
+- quaternion.min.js
+    Quaternion.js v1.2.1. MIT License.
+    Copyright (c) 2021, Robert Eisele (robert@xarg.org).
+
+- libtess.min.js
+    Copyright 2000, Silicon Graphics, Inc. All Rights Reserved.
+    Copyright 2015, Google Inc. All Rights Reserved.
+    Permissive MIT-style license with an SGI FreeB attribution requirement:
+    the copyright notice "including the dates of first publication and either
+    this permission notice or a reference to http://oss.sgi.com/projects/FreeB/
+    shall be included in all copies or substantial portions of the Software."
+    Derived from the OpenGL Sample Implementation, Version 1.2.1 (released
+    26 January 2000), Copyright (c) 1991-2000 Silicon Graphics, Inc. The
+    verbatim license text is embedded in the file's own header comment.
+
+- assimpjs.js and assimpjs.wasm
+    MIT License, Copyright (c) 2021 Viktor Kovacs, plus the two components
+    linked into them (below). Licence text: resources/web/wwi/dependencies/
+    LICENSE-assimpjs.txt.
+    ⚠ These files are cyberbotics/assimpjs, a FORK of kovacsv/assimpjs — not
+    upstream assimpjs. Established by sha256: both match cyberbotics/assimpjs
+    at main, path dist/, exactly, and no kovacsv/assimpjs release matches
+    either size (all ten ship a 3.9-4.2 MB .wasm against our 2.44 MB, because
+    the fork disables most importers). The fork's LICENSE.md is upstream's
+    unchanged, so Viktor Kovacs is the sole named holder; Cyberbotics added no
+    copyright line of their own.
+    assimpjs.wasm additionally contains a compiled Open Asset Import Library
+    (Assimp) v5.2.3 — established by submodule SHA, not inferred — which is
+    BSD 3-Clause, Copyright (c) 2006-2022 assimp team (see the Assimp entry
+    above). Both files also contain Emscripten's own runtime library, which is
+    dual-licensed MIT and University of Illinois/NCSA Open Source License,
+    Copyright (c) 2010-2014 Emscripten authors. Neither file carries any
+    embedded licence header or copyright notice, so all three notices are
+    supplied by the sidecar named above.
+
+- wrenjs.js, wrenjs.wasm, wrenjs.data (resources/web/wwi/, not dependencies/)
+    A prebuilt WebAssembly build of Cyberbotics' WREN renderer, fetched from
+    https://cyberbotics.com/wwi/R2025a/ and vendored so the --stream viewer
+    does not load it from cyberbotics.com at runtime. Three separately-licensed
+    layers, none of which was previously named in this file: WREN itself
+    (Apache-2.0, Copyright 1996-2024 Cyberbotics Ltd.; evidenced by 325 _wr_*
+    exports); 84 WREN GLSL shaders bundled inside wrenjs.data (same licence);
+    and Emscripten's own runtime library (MIT / University of Illinois-NCSA
+    dual, Copyright (c) 2010-2014 Emscripten authors). Licence text:
+    resources/web/wwi/LICENSE-wrenjs.txt.
+
+Newton physics runtime (bundled by default in release builds; `make release`
+sets BUNDLE_NEWTON=1, which vendors the following into the binary tree —
+exact versions pinned in scripts/packaging/newton_runtime_pins.py):
+
+- Newton (Linux Foundation / NVIDIA / Google DeepMind / Disney Research)
+    https://github.com/newton-physics/newton
+    Apache License, Version 2.0.
+
+- NVIDIA Warp (warp-lang)
+    https://github.com/NVIDIA/warp
+    Apache License, Version 2.0.
+
+- MuJoCo Warp (mujoco-warp) and MuJoCo (Google DeepMind)
+    https://github.com/google-deepmind/mujoco_warp
+    Apache License, Version 2.0.
+
+- OpenUSD / usd-core (Pixar)
+    https://github.com/PixarAnimationStudios/OpenUSD
+    Apache License, Version 2.0 (modified; see the upstream LICENSE.txt).
+
+- CPython (embedded interpreter for the Newton runtime)
+    https://www.python.org/
+    Python Software Foundation License, Version 2.
+
+The Windows distribution additionally bundles a subset of the MSYS2 /
+MinGW-w64 runtime under msys64/. Those binaries remain subject to their
+respective upstream licenses (MIT, BSD, LGPL, GPL with runtime-library
+exceptions, etc.); see the upstream MSYS2 packages for individual terms.
+
+Historical
+----------
+The Open Dynamics Engine (ODE), together with the libccd and OPCODE components
+that were bundled inside it, WAS REMOVED from this distribution on 2026-08-08:
+src/ode/ and include/ode/ were deleted, and Newton is now the only physics
+backend. Nothing here links or ships ODE, libccd or OPCODE, and the paths that
+carried their license texts no longer exist. Releases up to and including that
+date did ship ODE under its BSD option; a redistributor holding one of those
+releases should rely on the NOTICE file that accompanied it, not on this one.
+
+================================================================================
+Third-Party Robot Models
+================================================================================
+
+OmniSim redistributes robot descriptions (URDF/MJCF) and 3D meshes originating
+from third parties. Each remains subject to its upstream license and to the
+rights of the manufacturer whose product it depicts. Redistribution here does
+not imply any endorsement by, or affiliation with, those manufacturers, and the
+Apache License 2.0 granted over OmniSim's own source code does NOT purport to
+grant any rights in third-party robot geometry.
+
+- Clearpath Robotics — Husky, Jackal
+    From husky_description / jackal_description.
+    Copyright (c) 2015, 2021 Clearpath Robotics, Inc. BSD 3-Clause License.
+    License texts: projects/robots/clearpath/*/LICENSE.upstream.
+
+- Husarion — ROSbot, ROSbot XL
+    From https://github.com/husarion/rosbot_ros (rosbot_description).
+    Apache License, Version 2.0.
+    License text: projects/robots/husarion/rosbot_description/LICENSE.upstream.
+
+- ROBOTIS — TurtleBot3 (Burger, Waffle, Waffle Pi)
+    From https://github.com/ROBOTIS-GIT/turtlebot3 (turtlebot3_description).
+    Apache License, Version 2.0.
+    License text: projects/robots/robotis/turtlebot3_description/LICENSE.upstream.
+
+- Unitree Robotics — G1, H1, Go2, B2
+    From https://github.com/unitreerobotics/unitree_ros
+    (g1_description / h1_description / go2_description / b2_description).
+    BSD 3-Clause License.
+    Copyright (c) 2016-2022 HangZhou YuShu TECHNOLOGY CO.,LTD.
+    ("Unitree Robotics"). All rights reserved.
+    License text: projects/robots/unitree/LICENSE.upstream.
+
+- OmniQuad (kinematic skeleton) — from Clearpath Robotics' spot_description
+    From https://github.com/clearpathrobotics/spot_ros (spot_description).
+    BSD 3-Clause License.
+    Copyright (c) 2021, Clearpath Robotics Inc.
+                  2022, Oxford Robotics Institute. All rights reserved.
+    License text: projects/robots/omnisim/omniquad/LICENSE.upstream.
+
+    ⚠️ WHAT THIS COVERS, AND WHAT WAS REMOVED (2026-08-22).
+    This package no longer ships ANY third-party geometry. All 13 visual
+    meshes, the 9 mesh colliders and the texture were DELETED and replaced
+    with primitive solids authored in this repository and emitted by
+    scripts/dev/gen_omnisim_robot_visuals.py. The package contains zero
+    binary asset files.
+
+    Why they had to go: an earlier revision of this notice asserted the
+    geometry was "Blender-modelled ... NOT an export from a mechanical CAD
+    package". THAT WAS WRONG, and the files refuted it — every one of the 13
+    named its geometry object
+        02-042137-001-A00 TOP LEVEL DEFEATURED - NOT FOR PRODUCTION.<nnn>
+    a manufacturer part number with a CAD release annotation, carrying
+    Blender's DUPLICATE suffix (.008, .020, ...). One imported CAD assembly
+    split into 13 files, not 13 modelled parts; Blender was the exporter, not
+    the author of the shape, and "Blender User" is Blender's default author
+    string, which names nobody. A licensor can only license what it owns, so
+    the BSD-3 grant could not convey rights in a shape Clearpath did not
+    author.
+
+    The BSD-3 notice above is RETAINED because the grant validly covers what
+    Clearpath and the Oxford Robotics Institute DID author and this package
+    still uses: the kinematic skeleton — link topology, joint origins, axes
+    and limits — carried over unchanged so that existing worlds and trained
+    policies remain valid. Clause 1 requires that notice to travel with it.
+
+    Substituting the colliders was verified, not assumed: with the policy,
+    world and engine held constant and only the URDF swapped, the
+    velocity-conditioned walk is BITWISE identical over ~11,000 steps
+    (max |delta pos| = 0.00000000 m, 24.601 m travelled in both arms).
+    Evidence: docs/developer/spot-provenance-research.md.
+
+    "Spot" and "Boston Dynamics" are trademarks of Boston Dynamics, Inc. This
+    package no longer models that machine and does not use those marks.
+
+- Universal Robots — UR3e, UR5e, UR10e
+    From https://github.com/UniversalRobots/Universal_Robots_ROS2_Description
+    (ur_description, version 4.3.1). BSD 3-Clause License, as declared by
+    upstream's own package.xml (<license file="LICENSE">BSD-3-Clause</license>).
+    ⚠️ NO COPYRIGHT HOLDER OR YEAR IS ASSERTED, and none is known: upstream's
+    LICENSE file carries the BSD-3 terms with NO "Copyright (c) ..." line above
+    them, so BSD-3 clause 1 has no notice to retain. Nothing in this tree
+    establishes one — package.xml names Universal Robots A/S only as a
+    MAINTAINER, alongside sixteen author entries from several organisations;
+    the xacro-generated URDFs carry no header; and the meshes record only
+    Blender's default "Blender User" author string. The gap, and every scrap of
+    evidence weighed, is written into the top of the license file itself.
+    NOTE: upstream places only the UR8LONG / UR15 / UR18 / UR20 / UR30 meshes
+    under Universal Robots A/S' "Terms and Conditions for Use of Graphical
+    Documentation". OmniSim ships NONE of those families — only ur3e, ur5e and
+    ur10e, which are covered by the BSD-3 license.
+    License text: projects/robots/universal_robots/ur_description/LICENSE.upstream.
+
+- Franka Emika / Franka Robotics — Panda (and Panda Hand)
+    From https://github.com/frankaemika/franka_ros (franka_description).
+    Apache License, Version 2.0.
+    Copyright 2023 Franka Robotics GmbH.
+    The license covers the package including its meshes; upstream declares no
+    mesh-specific or product-scoped carve-out.
+    License text: projects/robots/franka_emika/LICENSE.upstream (the package is
+    currently held from the public snapshot pending inertials, so the model and
+    these files are absent from public distributions).
+    Upstream attribution notice (reproduced as required by Apache-2.0 Section
+    4(d)): projects/robots/franka_emika/NOTICE.upstream.
+
+- DJI — Mavic 2 Pro
+    Kinematic URDF authored for OmniSim from primitive geometry; no DJI CAD or
+    mesh data is redistributed. "DJI" and "Mavic" are trademarks of SZ DJI
+    Technology Co., Ltd., used here only to identify the modelled aircraft.
+
+All robot and product names, and the trade dress of the robots depicted, are
+the trademarks of their respective owners. The manufacturer names above are
+used descriptively, to identify the machine each model depicts; they do not
+indicate any endorsement, sponsorship or approval by those manufacturers.
+
+================================================================================
+Third-Party Simulation Assets (PROTO models, textures, fonts, icons)
+================================================================================
+
+Assets inherited from Webots are NOT uniformly Apache-2.0. Each PROTO file
+declares its own license on its `# license:` header line.
+
+Counts below were MEASURED on 2026-08-22 by reading the first `# license:`
+line of every tracked *.proto file (`git ls-files '*.proto'`); re-derive them
+the same way rather than trusting this paragraph. Recounted 2026-08-24: the
+tree holds 452 tracked PROTOs in all — 259 under projects/, 1 under resources/,
+and 192 test fixtures under tests/.
+
+Of the 259 PROTOs under projects/ — the shipped asset library:
+
+- 106 PROTOs: "Copyright 2026 OmniLink. Apache 2.0." These are the object
+    models OmniSim authored to replace the upstream asset library.
+- 77 PROTOs: "Apache License 2.0".
+- 66 PROTOs: "Creative Commons Attribution 4.0 International License." —
+    under projects/objects/buildings/ (25), street_furniture/ (21), garden/
+    (12), trees/ (6) and traffic/ (2). NOTE: none of these files carries an
+    explicit copyright line of its own; they are attributed to Cyberbotics
+    Ltd. on the strength of the Webots derivation recorded above, not on the
+    strength of a per-file notice.
+- 8 PROTOs: "Apache-2.0" — the construction-site and stage demo models under
+    projects/samples/demos/protos/, authored for OmniSim.
+- 2 PROTOs: "Creative Commons Attribution 3.0 United States License (original
+    model by Andrew Kator & Jennifer Legaz)"
+    (projects/objects/traffic/protos/StreetLight.proto,
+    ControlledStreetLight.proto).
+- 0 PROTOs: no `# license:` header. Every PROTO under projects/ now declares
+    one (recounted 2026-08-22); the four sky/sun PROTOs and the two rendering
+    samples that previously lacked a header were OmniSim-authored and have
+    been given the OmniLink Apache-2.0 line.
+
+Outside projects/: resources/templates/protos/template.proto (the new-PROTO
+skeleton) carries no header, and of the 192 test fixtures under tests/, 2
+declare "Copyright 2026 OmniLink. Apache 2.0." and 190 carry no header. The
+test fixtures are OmniSim- and Webots-authored scaffolding, not redistributed
+third-party assets.
+
+VERIFIED 2026-08-22: ZERO PROTO files in this tree declare "Licensed for use
+only with Webots" or name Webots on a `# license:` line at all. Every PROTO
+carrying that former Cyberbotics assets-license text has been removed or
+re-authored.
+
+A note on the re-authored PROTOs, in the interest of accuracy. The PROTOs listed
+above as authored for OmniSim were written to be DROP-IN REPLACEMENTS for their
+upstream counterparts, so that existing `.wbt` worlds keep loading. That
+compatibility requirement was met by RETAINING THE UPSTREAM FIELD INTERFACE —
+the field names, their types, their default values, their ordering, and in
+places the upstream inline field comments and `hiddenField` deprecation blocks
+that document it. The node bodies below the interface were re-authored, but the
+interface itself is upstream's design, inherited for compatibility, and a small
+number of the simplest PROTOs remain close to upstream throughout. Their headers
+assert OmniLink copyright over the file; that assertion should be read as
+covering OmniLink's own authorship, not as a claim over the upstream field
+vocabulary those files deliberately preserve. Cyberbotics' copyright in the
+Webots PROTO interface design is acknowledged, and the whole set is Apache-2.0
+either way, so nothing about a downstream user's rights turns on this — but a
+redistributor comparing the files to upstream should not be surprised by the
+resemblance.
+
+Fonts. Four directories ship font files; each is listed with the license text
+that travels with it. Where a font declares its own license in its OpenType
+`name` table, that declaration is the source of the attribution below.
+
+Engine fonts (resources/fonts/, mirrored as .woff2 for the web viewer in
+resources/web/wwi/fonts/, which carries its own copies of the same texts):
+- Liberation Sans / Serif / Mono — SIL Open Font License 1.1. License text:
+    resources/fonts/LICENSE-Liberation-OFL-1.1.txt.
+- DejaVu Sans / Serif / Sans Mono — DejaVu Fonts License (Bitstream Vera
+    derivative). License text: resources/fonts/LICENSE-DejaVu.txt.
+- Raleway — SIL Open Font License 1.1. Copyright (c) 2010 Matt McInerney,
+    2011 Pablo Impallari, 2011 Rodrigo Fuenzalida, with Reserved Font Name
+    Raleway. License text: resources/fonts/SIL-Open-Font-License.txt.
+- Code2000 / Code2001 / Code2002 — Copyright 1998-2008 James Kass (1998-2005
+    for Code2002). These are the glyph fallback chain. Code2000 declares itself
+    SHAREWARE requiring per-user registration; Code2001 and Code2002 declare
+    "may be freely distributed. All rights reserved." NOT INCLUDED IN THE
+    PUBLIC SNAPSHOT — neither the .ttf files nor their .woff2 conversions are
+    redistributed. See the carve-out below.
+
+Documentation webfonts (docs/css/fonts/, loaded by docs/css/omnisim-doc.css):
+- Roboto and Roboto Mono — Apache License, Version 2.0, as declared in the
+    fonts' own metadata. Copyright 2011 Google Inc. (2015 for Roboto Mono).
+    All Rights Reserved. "Roboto" is a trademark of Google. License text:
+    docs/css/fonts/LICENSE-Roboto-Apache-2.0.txt.
+- Raleway Thin — SIL Open Font License 1.1. Copyright (c) 2010-2013 Matt
+    McInerney, Pablo Impallari, Rodrigo Fuenzalida, with Reserved Font Name
+    "Raleway". License text: docs/css/fonts/LICENSE-Raleway-OFL-1.1.txt.
+
+Brand fonts (resources/branding/omnilink/fonts/):
+- Montserrat (Light / Regular / Medium / SemiBold / Bold) — SIL Open Font
+    License 1.1. Copyright 2011 The Montserrat Project Authors
+    (https://github.com/JulietaUla/Montserrat), with Reserved Font Name
+    "Montserrat"; designed by Julieta Ulanovsky. License text:
+    resources/branding/omnilink/fonts/LICENSE-Montserrat-OFL-1.1.txt.
+- The OmniLink display face is NOT REDISTRIBUTED. No license grant accompanies
+    it: the files carry no copyright, license or vendor record in their own
+    OpenType metadata and no terms were ever filed with them. It is excluded
+    from the public snapshot, so its files are absent from public
+    distributions. See resources/branding/omnilink/BRAND.md.
+
+Icons (resources/icons/):
+- Google Material Symbols — Apache License 2.0.
+    https://github.com/google/material-design-icons
+- The viewpoint glyphs, the small UI primitives and the splitter grips are
+    OmniSim original artwork (Apache-2.0). See resources/icons/*/license.txt.
+
+Reference-motion data (projects/policies/):
+- The G1/H1 "ghost" reference trajectories under
+    projects/policies/ghosts/g1/ have mixed provenance; each LUT
+    records its origin in its `source` field. Those synthesized by OmniSim's
+    own tooling are covered by the repository's Apache-2.0 terms. See the
+    carve-out below.
+- Several of those LUTs were recorded by running Unitree's pretrained walk
+    policy inside OmniSim. The recorded trajectory is OmniSim's own measurement,
+    but the policy that produced it is Unitree's — see the next section.
+
+Benchmark reference data (tests/benchmarks/):
+- DAIR cube-toss dataset — 550 recorded tosses of an acrylic cube onto a wooden
+    table (AprilTag/TagSLAM tracked at 148 Hz), plus the cube's URDF, vendored
+    at tests/benchmarks/omnibench/lane1r/data/ and replayed by OmniBench lane 1R.
+    From https://github.com/DAIRLab/dair_pll.
+    BSD 3-Clause License.
+    Copyright (c) 2022, Dynamic Autonomy and Intelligent Robotics Lab.
+    All rights reserved.
+    License text: tests/benchmarks/omnibench/lane1r/data/LICENSE.
+    This is third-party MEASURED DATA, redistributed unmodified; it is NOT
+    OmniLink's work and is NOT covered by the Apache-2.0 grant in LICENSE. BSD-3
+    clause 1 requires the copyright notice, the conditions and the disclaimer to
+    be retained — the LICENSE file above, plus this entry, are that material.
+    The dataset accompanies Acosta, Yang & Posa, "Validating Robotics Simulators
+    on Real-World Impacts", RA-L 2022 (arXiv:2110.00541), whose published
+    per-simulator baselines lane 1R compares against.
+
+================================================================================
+Third-Party Pretrained Policy Weights
+================================================================================
+
+- Unitree Robotics — pretrained G1 and H1 walk policies
+    From https://github.com/unitreerobotics/unitree_rl_gym
+    (pre_train/g1/motion.pt, pre_train/h1/motion.pt).
+    BSD 3-Clause License.
+    Copyright (c) HangZhou YuShu TECHNOLOGY CO.,LTD. ("Unitree Robotics").
+    All rights reserved.
+    Files:
+        projects/policies/research/controllers/g1_unitree_deploy/motion.pt
+        projects/policies/research/controllers/h1_unitree_deploy/motion.pt
+    License texts (one per directory, each with a provenance note):
+        projects/policies/research/controllers/g1_unitree_deploy/LICENSE.upstream
+        projects/policies/research/controllers/h1_unitree_deploy/LICENSE.upstream
+    These are third-party BINARY artifacts, redistributed unmodified. BSD-3
+    clause 2 requires that a binary redistribution reproduce the copyright
+    notice, the conditions and the disclaimer in the materials accompanying the
+    distribution — the LICENSE.upstream files above, plus this entry, are that
+    material. They are NOT OmniLink's work and are NOT covered by the
+    Apache-2.0 grant in LICENSE.
+    NO COPYRIGHT YEAR IS ASSERTED for these weights: nothing in this tree
+    establishes the year range that unitree_rl_gym's own LICENSE declares, and
+    the 2016-2022 range shown for the Unitree URDFs above comes from a
+    different upstream repository (unitree_ros).
+    ⚠️ UNRESOLVED: unitree_rl_gym's training code descends from legged_gym
+    (ETH Zürich, Robotic Systems Lab) and rsl_rl, whose BSD-3 notices are
+    reported to carry additional ETH Zürich and NVIDIA CORPORATION copyright
+    lines. Whether those notices attach to a trained-weights artifact — as
+    opposed to the training source, which is not redistributed here — has not
+    been determined, and no such copyright line or year is asserted anywhere in
+    this distribution because none could be sourced from it. See the
+    LICENSE.upstream files for the full statement of what is and is not known.
+
+================================================================================
+Carve-Out: Components NOT Covered by the Apache-2.0 Grant
+================================================================================
+
+IMPORTANT NOTICE TO REDISTRIBUTORS AND DOWNSTREAM USERS.
+
+The Apache License 2.0 in LICENSE applies to OmniSim's own source code and to
+the Webots-derived source code it builds on. It does NOT and CANNOT grant
+rights in third-party material that its owners licensed on other terms. The
+following components are known or believed to carry terms that are narrower
+than, or incompatible with, Apache-2.0.
+
+Several of them are EXCLUDED FROM THE PUBLIC SNAPSHOT, and each says so in its
+own entry. They are still listed here for two reasons: this same file ships with
+distributions built from the full development tree, where the files ARE present;
+and a redistributor who obtains the tree by another route needs to know which
+components carry the exclusion. Read each entry's own statement rather than
+assuming a component is or is not in the copy you hold.
+
+1. The Code2000 / Code2001 / Code2002 glyph-fallback fonts — six files, in two
+   formats:
+       resources/fonts/Code2000.ttf, Code2001.ttf, Code2002.ttf
+       resources/web/wwi/fonts/Code2000.woff2, Code2001.woff2, Code2002.woff2
+   No license text accompanies them in any form. Their own OpenType metadata
+   declares, verbatim: Code2000 — "Code2000 is shareware. Users are required to
+   register the font after a reasonable evaluation period by sending $5.00 (US)
+   or equivalent to: James Kass …"; Code2001 and Code2002 — "may be freely
+   distributed. All rights reserved." Copyright 1998-2008 James Kass
+   (1998-2005 for Code2002). Shareware-with-registration is not an Apache-2.0
+   grant, and the .woff2 files are format conversions, i.e. modified versions,
+   for which no permission to modify was granted at all.
+   NOT INCLUDED IN THE PUBLIC SNAPSHOT — all six files are excluded, so this
+   paragraph applies to the development tree and to any distribution that does
+   carry them. They are the glyph fallback chain used for scripts the primary
+   fonts do not cover; the shipped DejaVu faces cover the common cases.
+
+2. The OmniLink display typeface — resources/branding/omnilink/fonts/, three
+   .otf files. No license grant of any kind accompanies these files: they carry
+   no copyright, license, license-URL or vendor record in their own OpenType
+   metadata, and no EULA or written permission is filed with them. Retail
+   display faces are typically licensed for use, not for redistribution.
+   NOT INCLUDED IN THE PUBLIC SNAPSHOT — the files are excluded, so this
+   paragraph applies to the development tree only. Do not add them, or any
+   other retail typeface, to a redistributed tree without a written
+   redistribution grant. resources/branding/omnilink/BRAND.md names the
+   OFL-licensed substitute.
+
+3. (WITHDRAWN 2026-08-24.) This item carved out the assimpjs JavaScript
+   wrapper in resources/web/wwi/dependencies/, on the ground that its terms
+   could not be verified from anything in this tree. They have now been
+   verified, and the item is discharged rather than merely reworded.
+   The upstream was identified by sha256 as cyberbotics/assimpjs — a FORK of
+   kovacsv/assimpjs, which is why matching it against upstream releases had
+   failed: every kovacsv release ships a 3.9-4.2 MB .wasm against our 2.44 MB.
+   The fork carries upstream's LICENSE.md unchanged: MIT, Copyright (c) 2021
+   Viktor Kovacs. The bundled Assimp was pinned to v5.2.3 by submodule SHA, and
+   the Emscripten runtime layer inside both files was named for the first time.
+   All three notices now ship at LICENSE-assimpjs.txt beside the code. Nothing
+   about these two files is unlicensed any more.
+
+4. (WITHDRAWN 2026-08-22.) This item carved out the NASA Valkyrie model
+   under the NASA Open Source Agreement v1.3. The package has been REMOVED
+   from the tree entirely, so there is nothing to carve out and no NOSA
+   obligation attaches to any distribution of OmniSim.
+
+5. resources/branding/ — the OmniSim and OmniLink BRAND ARTWORK. Copyright
+   2026 OmniLink, all rights reserved. The logos, the dot-sphere orb, the
+   wordmarks, lockups, glyphs and favicons under that directory are OmniLink's
+   own copyrighted artwork and are NOT licensed under Apache-2.0. Full terms
+   are in resources/branding/LICENSE.
+
+   This is a COPYRIGHT reservation and it is deliberately separate from the
+   trademark reservation further down this file. Apache-2.0 Section 6 withholds
+   trademark rights, but it withholds nothing about copying an image file; on
+   its own it would leave a recipient free to alter and republish this artwork
+   provided they did not use it AS a mark. That is not the intent, so the
+   copyright is reserved here explicitly. TRADEMARKS.md governs use of the
+   marks; resources/branding/LICENSE governs the files.
+
+   Reproducing the assets UNMODIFIED to refer factually to OmniSim or OmniLink
+   is permitted without asking — see TRADEMARKS.md, which is generous about
+   this on purpose. A fork that redistributes modified OmniSim code must
+   replace this directory with its own artwork.
+
+   Two files inside it are governed by their own terms instead: the Montserrat
+   typeface (SIL OFL 1.1, text alongside it) and the Hogira display faces,
+   which are item 2 above.
+
+
+Historical — robot packages removed from this tree
+--------------------------------------------------
+Nothing below is redistributed. The paths are named because they are GONE;
+requiring them to resolve would require this notice to lie.
+
+- NASA Johnson Space Center — Valkyrie (R5) — REMOVED 2026-08-22
+    Formerly at projects/robots/nasa/valkyrie/, from
+    https://github.com/openhumanoids/val_description under the NASA Open
+    Source Agreement v1.3. The package is GONE from this tree and nothing is
+    redistributed, so no NOSA obligation attaches. It was removed rather than
+    merely held because NOSA v1.3 is not Apache-2.0 compatible (GPL-
+    incompatible, non-relicensable, and Section 3 requires the agreement
+    accompany every redistribution) and because the LICENSE.upstream we
+    carried was an UNFILLED TEMPLATE — every identifying blank, including the
+    name of the government agency, was left as "_____", so it did not even
+    satisfy its own Section 3.
+
+- Agility Robotics — Digit — REMOVED 2026-08-22
+    Formerly at projects/robots/agility/digit/. Its upstream was a third-party
+    Julia package (DigitRobot.jl) carrying no LICENSE on any branch, and
+    Agility Robotics has published no redistribution grant for Digit's
+    URDF or meshes. There was no permission to rely on, so the material was
+    deleted rather than held behind a release deny-list.
+
+Every other third-party robot model in this distribution is redistributed under
+a permissive license (BSD 3-Clause or Apache-2.0) whose verbatim text ships
+beside the geometry. See the Third-Party Robot Models section above for the
+per-robot license and the path to its license file.
+
+Do not assume Apache-2.0 rights in any of the above. If you redistribute
+OmniSim, satisfy yourself that you have the rights you need in each component
+you ship, and check the individual file headers. The full component inventory
+is in THIRD_PARTY_NOTICES.md.
+
+================================================================================
+Trademarks
+================================================================================
+
+"Webots" is a trademark of Cyberbotics Ltd. "OmniSim" and "OmniLink", the
+OmniLink dot-sphere orb mark, the tagline "by OmniLink, for OmniLink agents",
+and the associated brand palette and trade dress are trademarks of OmniLink.
+All other trademarks are the property of their respective owners. Use of any
+trademark herein does not imply endorsement.
+
+Every manufacturer and product name in this distribution — "Husky", "Jackal",
+"Go2", "B2", "G1", "H1", "ROSbot", "TurtleBot", "UR3e"/"UR5e"/
+"UR10e", "Panda", "Mavic", and the names of the companies that make them — is
+used NOMINATIVELY: to identify, factually, the machine that a model depicts or
+that OmniSim supports. No such use indicates endorsement, sponsorship,
+affiliation or approval by the trademark owner. BSD 3-Clause (clause 3) and
+Apache-2.0 (Section 6) both withhold trademark rights, and no license in this
+distribution grants any.
+
+"TurtleBot" is a registered trademark of the Open Source Robotics Foundation
+(OSRF), not of ROBOTIS; ROBOTIS manufactures the TurtleBot3 hardware and holds
+the copyright in the turtlebot3_description package, which is distinct from
+ownership of the mark.
+
+The Apache License 2.0 covers the source code only. It does not grant any
+rights to use the OmniLink and OmniSim trademarks (Apache 2.0 Section 6). The
+permitted and prohibited uses of those marks — including the rule that forks
+redistributing modified code must rename and rebrand — are set out in the
+project's Trademark Policy at TRADEMARKS.md.

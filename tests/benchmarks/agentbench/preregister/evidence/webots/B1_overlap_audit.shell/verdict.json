@@ -1,0 +1,189 @@
+{
+  "task": "B1_overlap_audit",
+  "outcome": "PASS",
+  "progress": 4,
+  "progress_name": "graded_pass",
+  "assertions": {
+    "B1.1": {
+      "ok": true,
+      "what": "the answer commits to a yes/no verdict",
+      "measured": {
+        "verdict": "yes",
+        "read as": "first committed cue: a bare 'yes' at character 0"
+      },
+      "threshold": "exactly one committed yes/no",
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "a verdict is present",
+          "how_to_fail": "an answer that never says yes or no",
+          "witness": "the agent's final message was captured",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "B1.2": {
+      "ok": true,
+      "what": "the verdict matches the measured scene",
+      "measured": {
+        "verdict": "yes",
+        "measured overlapping pairs": [
+          "robot_one+robot_two"
+        ],
+        "pair clearances (m; negative = interpenetration)": {
+          "robot_one+robot_two": -0.219,
+          "robot_one+robot_three": 3.4925,
+          "robot_four+robot_one": 7.4925,
+          "robot_five+robot_one": 3.6,
+          "robot_one+robot_six": 7.4925,
+          "robot_three+robot_two": 3.3325,
+          "robot_four+robot_two": 7.3325,
+          "robot_five+robot_two": 3.55,
+          "robot_six+robot_two": 7.3325,
+          "robot_four+robot_three": 3.4925,
+          "robot_five+robot_three": 3.6,
+          "robot_six+robot_three": 3.6,
+          "robot_five+robot_four": 3.6,
+          "robot_four+robot_six": 3.6,
+          "robot_five+robot_six": 3.4925
+        }
+      },
+      "threshold": {
+        "verdict": "yes",
+        "overlap floor (m)": 0.05
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "verdict matches measured overlap",
+          "how_to_fail": "a yes/no that contradicts the measured pairwise AABB interpenetration at t=0",
+          "witness": "a world-space AABB for every robot from a frozen t=0 scan",
+          "witness_present": true,
+          "detail": "the grader-owned Supervisor recorder's t=0 scan. The recorder is synchronization TRUE, so the world is genuinely frozen while it walks the scene -- but upstream exposes no bounds API, so each world-space AABB is one the recorder computed itself from the body's boundingObject geometry and pose"
+        }
+      ]
+    },
+    "B1.3": {
+      "ok": true,
+      "what": "a yes answer commits to exactly one named pair",
+      "measured": {
+        "robot names mentioned": [
+          "robot_one",
+          "robot_two"
+        ],
+        "committed pair": "robot_one+robot_two",
+        "read as": "the only two robot names in the answer"
+      },
+      "threshold": "exactly two robot names offered as the pair",
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "one pair is named",
+          "how_to_fail": "a yes answer naming no pair, or blanketing many pairs",
+          "witness": "the roster names are known and the final message was captured",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "B1.4": {
+      "ok": true,
+      "what": "the claimed pair is the measurably overlapping one",
+      "measured": {
+        "claimed pair": "robot_one+robot_two",
+        "measured overlapping pairs": [
+          "robot_one+robot_two"
+        ],
+        "claimed pair clearance (m)": -0.219
+      },
+      "threshold": [
+        "robot_one+robot_two"
+      ],
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "the named pair matches the measurement",
+          "how_to_fail": "naming a pair whose AABBs are measurably clear of each other, or claiming a pair when every pair is clear",
+          "witness": "a world-space AABB for every robot from a frozen t=0 scan",
+          "witness_present": true,
+          "detail": "the grader-owned Supervisor recorder's t=0 scan. The recorder is synchronization TRUE, so the world is genuinely frozen while it walks the scene -- but upstream exposes no bounds API, so each world-space AABB is one the recorder computed itself from the body's boundingObject geometry and pose"
+        }
+      ]
+    }
+  },
+  "n_pass": 4,
+  "n_total": 4,
+  "failed_assertion": null,
+  "failed_assertions": [],
+  "self_verified": true,
+  "attribution": {},
+  "measurements": {
+    "truth": {
+      "names": [
+        "robot_one",
+        "robot_two",
+        "robot_three",
+        "robot_four",
+        "robot_five",
+        "robot_six"
+      ],
+      "n_robots": 6,
+      "measured_all": true,
+      "unmeasured": [],
+      "frozen": true,
+      "pair_clearance_m": {
+        "robot_one+robot_two": -0.219,
+        "robot_one+robot_three": 3.4925,
+        "robot_four+robot_one": 7.4925,
+        "robot_five+robot_one": 3.6,
+        "robot_one+robot_six": 7.4925,
+        "robot_three+robot_two": 3.3325,
+        "robot_four+robot_two": 7.3325,
+        "robot_five+robot_two": 3.55,
+        "robot_six+robot_two": 7.3325,
+        "robot_four+robot_three": 3.4925,
+        "robot_five+robot_three": 3.6,
+        "robot_six+robot_three": 3.6,
+        "robot_five+robot_four": 3.6,
+        "robot_four+robot_six": 3.6,
+        "robot_five+robot_six": 3.4925
+      },
+      "overlapping": [
+        "robot_one+robot_two"
+      ],
+      "ambiguous": []
+    },
+    "answer": "Yes - robot_one and robot_two are overlapping. Measured from the scene and the PROTO's own collision geometry: the Pioneer 3-AT body's boundingObject boxes are 0.197 x 0.2 x 0.402 and 0.264 x 0.2 x 0.332 (a body about 0.5 m long and 0.4 m wide), and the six authored translations give a centre separation of 0.168 m for (robot_one, robot_two) - dx 0.16, dy 0.05 - against 3.84 m for the next-closest pair. The body half-extents exceed the separation on every axis, so their bounding boxes interpenetrate deeply; every one of the other 14 pairs is metres clear."
+  },
+  "artifacts": {},
+  "notes": [
+    "upstream Webots exposes no HTTP/JSON authoring surface, no scene-tree query, no hot reload and no structured load diagnostics (webots-control-baseline.md sec. 6), so there is no live-session pass on this arm. 'the artifact loaded' is evidenced instead by the in-world recorder having enumerated the scene at all.",
+    "upstream Webots has no --duration and no auto-exit: a headless run terminates only when an in-world Supervisor calls simulationQuit(), or when something kills it. 'the run exited cleanly' therefore rests on the recorder's own quit record, not on a wall-clock timeout.",
+    "trajectory rows could not be aligned to the roster by name (6 trajectory bodies, 7 roster bodies); the bundle's body_ids are the recorder's trajectory names and a per-body index is NOT valid across the two inventories.",
+    "4 EXTERNPROTO import(s) in this world are fetched over the network on first load (the R2025a distribution ships zero .proto files; webots-control-baseline.md sec. 5.1). That is against this suite's local-asset-only rule: a network hiccup on a cold cache becomes a benchmark result."
+  ],
+  "basis": {
+    "core-physical": [
+      "B1.2",
+      "B1.4"
+    ],
+    "core-structural": [
+      "B1.1",
+      "B1.3"
+    ]
+  },
+  "vacuous_assertions": {}
+}

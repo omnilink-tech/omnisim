@@ -1,0 +1,714 @@
+{
+  "generated_at": "2026-05-03T12:09:34",
+  "platform": "win32",
+  "records": [
+    {
+      "scenario": "many-robots",
+      "params": {
+        "robots": 5,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\many-robots-005.log",
+      "wall_time_s": 2.767,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 270.216,
+        "prePhysics(ms)": 0.005,
+        "physics(ms)": 0.013,
+        "postPhysics(ms)": 0.013,
+        "mainRendering(ms)": 23.535,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 0.124,
+        "controller:<generic>(ms)": 0.111
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 270.216,
+        "prePhysics(ms)": 2.721,
+        "physics(ms)": 7.615,
+        "postPhysics(ms)": 7.822,
+        "mainRendering(ms)": 23.535,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 74.753,
+        "controller:<generic>(ms)": 67.61
+      },
+      "devices": {},
+      "controllers": {
+        "controller:bench_quit(ms)": 0.124,
+        "controller:<generic>(ms)": 0.111
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "many-robots",
+      "params": {
+        "robots": 25,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\many-robots-025.log",
+      "wall_time_s": 3.824,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 356.806,
+        "prePhysics(ms)": 0.021,
+        "physics(ms)": 0.071,
+        "postPhysics(ms)": 0.153,
+        "mainRendering(ms)": 24.366,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 0.452,
+        "controller:<generic>(ms)": 0.425
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 356.806,
+        "prePhysics(ms)": 12.325,
+        "physics(ms)": 42.831,
+        "postPhysics(ms)": 91.553,
+        "mainRendering(ms)": 24.366,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 271.574,
+        "controller:<generic>(ms)": 265.833
+      },
+      "devices": {},
+      "controllers": {
+        "controller:bench_quit(ms)": 0.452,
+        "controller:<generic>(ms)": 0.425
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "many-robots",
+      "params": {
+        "robots": 50,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\many-robots-050.log",
+      "wall_time_s": 4.914,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 407.808,
+        "prePhysics(ms)": 0.047,
+        "physics(ms)": 0.181,
+        "postPhysics(ms)": 0.353,
+        "mainRendering(ms)": 24.509,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 0.711,
+        "controller:bench_quit(ms)": 0.783
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 407.808,
+        "prePhysics(ms)": 28.354,
+        "physics(ms)": 108.301,
+        "postPhysics(ms)": 212.092,
+        "mainRendering(ms)": 24.509,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 462.584,
+        "controller:bench_quit(ms)": 470.334
+      },
+      "devices": {},
+      "controllers": {
+        "controller:<generic>(ms)": 0.711,
+        "controller:bench_quit(ms)": 0.783
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "many-cameras",
+      "params": {
+        "cameras": 1,
+        "steps": 200,
+        "depth": false
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\many-cameras-001.log",
+      "wall_time_s": 2.71,
+      "returncode": 0,
+      "avg": {
+        "_steps": 200,
+        "loading(ms)": 179.472,
+        "prePhysics(ms)": 0.001,
+        "physics(ms)": 0.002,
+        "postPhysics(ms)": 0.0,
+        "mainRendering(ms)": 25.131,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.043,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "device:front_camera(ms)": 0.166,
+        "controller:bench_quit(ms)": 0.219,
+        "controller:bench_camera(ms)": 0.197
+      },
+      "tot": {
+        "_steps": 200,
+        "loading(ms)": 179.472,
+        "prePhysics(ms)": 0.17,
+        "physics(ms)": 0.392,
+        "postPhysics(ms)": 0.063,
+        "mainRendering(ms)": 25.131,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.043,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "device:front_camera(ms)": 33.382,
+        "controller:bench_quit(ms)": 43.885,
+        "controller:bench_camera(ms)": 39.689
+      },
+      "devices": {
+        "device:front_camera(ms)": 0.166
+      },
+      "controllers": {
+        "controller:bench_quit(ms)": 0.219,
+        "controller:bench_camera(ms)": 0.197
+      },
+      "steps_count": 200,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "many-cameras",
+      "params": {
+        "cameras": 5,
+        "steps": 200,
+        "depth": false
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\many-cameras-005.log",
+      "wall_time_s": 3.608,
+      "returncode": 0,
+      "avg": {
+        "_steps": 200,
+        "loading(ms)": 180.487,
+        "prePhysics(ms)": 0.003,
+        "physics(ms)": 0.004,
+        "postPhysics(ms)": 0.001,
+        "mainRendering(ms)": 24.024,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.018,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "device:front_camera(ms)": 0.202,
+        "controller:bench_camera(ms)": 0.388,
+        "controller:bench_quit(ms)": 0.365
+      },
+      "tot": {
+        "_steps": 200,
+        "loading(ms)": 180.487,
+        "prePhysics(ms)": 0.512,
+        "physics(ms)": 0.834,
+        "postPhysics(ms)": 0.286,
+        "mainRendering(ms)": 24.024,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.089,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "device:front_camera(ms)": 202.455,
+        "controller:bench_camera(ms)": 79.6,
+        "controller:bench_quit(ms)": 73.11
+      },
+      "devices": {
+        "device:front_camera(ms)": 0.202
+      },
+      "controllers": {
+        "controller:bench_camera(ms)": 0.388,
+        "controller:bench_quit(ms)": 0.365
+      },
+      "steps_count": 200,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "many-cameras",
+      "params": {
+        "cameras": 15,
+        "steps": 200,
+        "depth": false
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\many-cameras-015.log",
+      "wall_time_s": 6.978,
+      "returncode": 0,
+      "avg": {
+        "_steps": 200,
+        "loading(ms)": 210.134,
+        "prePhysics(ms)": 0.011,
+        "physics(ms)": 0.011,
+        "postPhysics(ms)": 0.005,
+        "mainRendering(ms)": 24.867,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.025,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "device:front_camera(ms)": 0.294,
+        "controller:bench_camera(ms)": 1.201,
+        "controller:bench_quit(ms)": 1.281
+      },
+      "tot": {
+        "_steps": 200,
+        "loading(ms)": 210.134,
+        "prePhysics(ms)": 2.135,
+        "physics(ms)": 2.1,
+        "postPhysics(ms)": 1.085,
+        "mainRendering(ms)": 24.867,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.369,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "device:front_camera(ms)": 882.183,
+        "controller:bench_camera(ms)": 258.382,
+        "controller:bench_quit(ms)": 256.377
+      },
+      "devices": {
+        "device:front_camera(ms)": 0.294
+      },
+      "controllers": {
+        "controller:bench_camera(ms)": 1.201,
+        "controller:bench_quit(ms)": 1.281
+      },
+      "steps_count": 200,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "multi-instance",
+      "params": {
+        "k": 1,
+        "steps": 600
+      },
+      "log_path": "(see children)",
+      "wall_time_s": 2.957,
+      "returncode": 0,
+      "avg": {
+        "physics(ms)": 0.019,
+        "wall_max_s": 2.957,
+        "wall_sum_s": 2.957,
+        "scaling_efficiency": 1.0,
+        "per_instance_logs_present": 1,
+        "per_instance_logs_expected": 1
+      },
+      "tot": {},
+      "devices": {},
+      "controllers": {},
+      "steps_count": 0,
+      "threads_count": null,
+      "notes": [
+        "shared omnisim_log.txt present after run: False",
+        "per-instance logs present: 1/1",
+        "child i=0 wall=2.957s rc=0"
+      ]
+    },
+    {
+      "scenario": "multi-instance-child",
+      "params": {
+        "k": 1,
+        "instance": 0,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\multi-instance-k1-i0.log",
+      "wall_time_s": 2.957,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 275.073,
+        "prePhysics(ms)": 0.007,
+        "physics(ms)": 0.019,
+        "postPhysics(ms)": 0.023,
+        "mainRendering(ms)": 25.83,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 0.186,
+        "controller:<generic>(ms)": 0.174
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 275.073,
+        "prePhysics(ms)": 3.907,
+        "physics(ms)": 11.671,
+        "postPhysics(ms)": 13.575,
+        "mainRendering(ms)": 25.83,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 112.112,
+        "controller:<generic>(ms)": 106.28
+      },
+      "devices": {},
+      "controllers": {
+        "controller:bench_quit(ms)": 0.186,
+        "controller:<generic>(ms)": 0.174
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "multi-instance",
+      "params": {
+        "k": 2,
+        "steps": 600
+      },
+      "log_path": "(see children)",
+      "wall_time_s": 3.442,
+      "returncode": 0,
+      "avg": {
+        "physics(ms)": 0.024,
+        "wall_max_s": 3.442,
+        "wall_sum_s": 6.698,
+        "scaling_efficiency": 0.946,
+        "per_instance_logs_present": 2,
+        "per_instance_logs_expected": 2
+      },
+      "tot": {},
+      "devices": {},
+      "controllers": {},
+      "steps_count": 0,
+      "threads_count": null,
+      "notes": [
+        "shared omnisim_log.txt present after run: False",
+        "per-instance logs present: 2/2",
+        "child i=0 wall=3.256s rc=0",
+        "child i=1 wall=3.442s rc=0"
+      ]
+    },
+    {
+      "scenario": "multi-instance-child",
+      "params": {
+        "k": 2,
+        "instance": 0,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\multi-instance-k2-i0.log",
+      "wall_time_s": 3.256,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 311.51,
+        "prePhysics(ms)": 0.008,
+        "physics(ms)": 0.024,
+        "postPhysics(ms)": 0.031,
+        "mainRendering(ms)": 29.463,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 0.245,
+        "controller:bench_quit(ms)": 0.263
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 311.51,
+        "prePhysics(ms)": 4.924,
+        "physics(ms)": 14.322,
+        "postPhysics(ms)": 18.301,
+        "mainRendering(ms)": 29.463,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 149.544,
+        "controller:bench_quit(ms)": 158.383
+      },
+      "devices": {},
+      "controllers": {
+        "controller:<generic>(ms)": 0.245,
+        "controller:bench_quit(ms)": 0.263
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "multi-instance-child",
+      "params": {
+        "k": 2,
+        "instance": 1,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\multi-instance-k2-i1.log",
+      "wall_time_s": 3.442,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 355.916,
+        "prePhysics(ms)": 0.008,
+        "physics(ms)": 0.023,
+        "postPhysics(ms)": 0.032,
+        "mainRendering(ms)": 31.297,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 0.245,
+        "controller:bench_quit(ms)": 0.262
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 355.916,
+        "prePhysics(ms)": 4.88,
+        "physics(ms)": 14.097,
+        "postPhysics(ms)": 19.498,
+        "mainRendering(ms)": 31.297,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 149.018,
+        "controller:bench_quit(ms)": 157.649
+      },
+      "devices": {},
+      "controllers": {
+        "controller:<generic>(ms)": 0.245,
+        "controller:bench_quit(ms)": 0.262
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "multi-instance",
+      "params": {
+        "k": 4,
+        "steps": 600
+      },
+      "log_path": "(see children)",
+      "wall_time_s": 4.912,
+      "returncode": 0,
+      "avg": {
+        "physics(ms)": 0.057,
+        "wall_max_s": 4.912,
+        "wall_sum_s": 18.023,
+        "scaling_efficiency": 0.811,
+        "per_instance_logs_present": 4,
+        "per_instance_logs_expected": 4
+      },
+      "tot": {},
+      "devices": {},
+      "controllers": {},
+      "steps_count": 0,
+      "threads_count": null,
+      "notes": [
+        "shared omnisim_log.txt present after run: True",
+        "per-instance logs present: 4/4",
+        "child i=3 wall=3.983s rc=0",
+        "child i=0 wall=4.509s rc=0",
+        "child i=1 wall=4.619s rc=0",
+        "child i=2 wall=4.912s rc=0"
+      ]
+    },
+    {
+      "scenario": "multi-instance-child",
+      "params": {
+        "k": 4,
+        "instance": 3,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\multi-instance-k4-i3.log",
+      "wall_time_s": 3.983,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 341.673,
+        "prePhysics(ms)": 0.02,
+        "physics(ms)": 0.053,
+        "postPhysics(ms)": 0.091,
+        "mainRendering(ms)": 26.246,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 0.37,
+        "controller:<generic>(ms)": 0.333
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 341.673,
+        "prePhysics(ms)": 11.716,
+        "physics(ms)": 31.579,
+        "postPhysics(ms)": 54.313,
+        "mainRendering(ms)": 26.246,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 222.196,
+        "controller:<generic>(ms)": 202.716
+      },
+      "devices": {},
+      "controllers": {
+        "controller:bench_quit(ms)": 0.37,
+        "controller:<generic>(ms)": 0.333
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "multi-instance-child",
+      "params": {
+        "k": 4,
+        "instance": 0,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\multi-instance-k4-i0.log",
+      "wall_time_s": 4.509,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 386.836,
+        "prePhysics(ms)": 0.023,
+        "physics(ms)": 0.059,
+        "postPhysics(ms)": 0.096,
+        "mainRendering(ms)": 31.154,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 0.519,
+        "controller:bench_quit(ms)": 0.544
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 386.836,
+        "prePhysics(ms)": 14.057,
+        "physics(ms)": 35.364,
+        "postPhysics(ms)": 57.603,
+        "mainRendering(ms)": 31.154,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 315.882,
+        "controller:bench_quit(ms)": 326.513
+      },
+      "devices": {},
+      "controllers": {
+        "controller:<generic>(ms)": 0.519,
+        "controller:bench_quit(ms)": 0.544
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "multi-instance-child",
+      "params": {
+        "k": 4,
+        "instance": 1,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\multi-instance-k4-i1.log",
+      "wall_time_s": 4.619,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 436.555,
+        "prePhysics(ms)": 0.025,
+        "physics(ms)": 0.057,
+        "postPhysics(ms)": 0.08,
+        "mainRendering(ms)": 30.52,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 0.55,
+        "controller:<generic>(ms)": 0.523
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 436.555,
+        "prePhysics(ms)": 14.77,
+        "physics(ms)": 34.066,
+        "postPhysics(ms)": 48.001,
+        "mainRendering(ms)": 30.52,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 330.13,
+        "controller:<generic>(ms)": 318.377
+      },
+      "devices": {},
+      "controllers": {
+        "controller:bench_quit(ms)": 0.55,
+        "controller:<generic>(ms)": 0.523
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "multi-instance-child",
+      "params": {
+        "k": 4,
+        "instance": 2,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\multi-instance-k4-i2.log",
+      "wall_time_s": 4.912,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 501.632,
+        "prePhysics(ms)": 0.024,
+        "physics(ms)": 0.058,
+        "postPhysics(ms)": 0.094,
+        "mainRendering(ms)": 41.467,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 0.508,
+        "controller:bench_quit(ms)": 0.527
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 501.632,
+        "prePhysics(ms)": 14.451,
+        "physics(ms)": 34.719,
+        "postPhysics(ms)": 56.527,
+        "mainRendering(ms)": 41.467,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 309.335,
+        "controller:bench_quit(ms)": 316.455
+      },
+      "devices": {},
+      "controllers": {
+        "controller:<generic>(ms)": 0.508,
+        "controller:bench_quit(ms)": 0.527
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    }
+  ]
+}

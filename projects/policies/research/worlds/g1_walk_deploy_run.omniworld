@@ -1,0 +1,76 @@
+#OMNISIM R2025a utf8
+
+# Deploy world for the PPO standing policy from
+# projects/rl/training/train_g1_stand.py.
+#
+# Uses the legs-only G1 URDF (g1_legs_omnisim.urdf) because the full
+# 23-DOF URDF currently hangs Newton's body registration at the arm chain.
+#
+# *** STATUS 2026-06-09: NOT solved -- the stand is MARGINAL. ***
+# An earlier "SOLVED / stands indefinitely (5527 s)" claim here was RETRACTED: that
+# was ONE non-reproducible run. With stiff ke=400/kd=60 + GROUND_MU=2.0 + zero
+# policy, G1 tips FORWARD at ~1.4 s on ~6/7 runs (feet stay planted; the body
+# pitches forward -- friction is NOT the issue). Root cause: the deploy spawns
+# straight-legged and FOLDS into the squat during settle, nudging the CoM forward;
+# the marginal ke=400 ankle can't recover. A gentle controller ramp (G1_RAMP_S)
+# only delays it (~2.0 s). The direct-Newton harness stands reliably at ke=400
+# ONLY because it spawns SEEDED in NOMINAL and uses an ideal ground plane -- the
+# deploy's STATICS floor + fold is the gap. A reliable stand needs an engine fix
+# (seed pose / ground fidelity, rebuild) or RL. See
+# docs/developer/rl-phase-a-validation-log.md (Session 2026-06-09).
+#
+# Required Newton env (all set by the launch script): OMNISIM_NEWTON_STATICS=1
+# OMNISIM_NEWTON_SUBSTEPS=4 OMNISIM_URDF_USE_INERTIA=1 OMNISIM_NEWTON_FORCE_MUJOCO=1
+# OMNISIM_NEWTON_MJWARP=1. STATICS supplies the ground (the RectangleArena floor as
+# a static collider) to the forced-SolverMuJoCo model; without it the world finalises
+# but never steps. Launch from PowerShell, not MSYS2 bash (else warp -> silent ODE).
+# Full journey: docs/developer/rl-phase-a-validation-log.md (Session 2026-06-09).
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 standing PPO deploy"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 2.546 -2.710 3.912
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_legs_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_walk_deploy"
+  physicsBackend "newton"
+}

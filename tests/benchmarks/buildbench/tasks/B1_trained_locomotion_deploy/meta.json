@@ -1,0 +1,57 @@
+{
+  "suite": "buildbench/v0.1",
+  "id": "B1_trained_locomotion_deploy",
+  "title": "trained locomotion policy, deployed on a sensor-guided course",
+  "prompt": "Train a locomotion policy for a legged robot, then use that trained policy to drive the robot through a navigation course whose route is not known in advance, using a planar LiDAR to find the way. Deliver the trained policy, the world, and the controller that runs them, and show the robot completing the course.",
+  "demonstrates": "the full learn-then-deploy loop inside one simulator: batched training, a policy artifact, and that same policy driving a robot that is also consuming a range sensor in closed loop",
+  "why_this_is_real_work": "Learned locomotion is how legged robots are controlled in practice, and a policy that only works in the trainer is not a controller. Closing the loop -- train, deploy, then navigate an unknown route with a range sensor -- is the ordinary shape of a legged-robot deployment, and the step where sim-to-sim and sim-to-real gaps actually show up.",
+  "build_status": "DECLARED",
+  "blocked_reason": "",
+  "depends_on_risks": [
+    "risk_1_sensors_under_batching"
+  ],
+  "grading_sketch": "geometric, from a recorded run: the robot's base reaches the goal within a stated tolerance; no recorded sample lies inside an obstacle; integrated path length exceeds a floor derived from the graded layout; the policy artifact is loaded (assert the load line, never the exit code -- a missing runtime silently runs a zero-residual baseline and exits 0).",
+  "claims": {
+    "omnisim": {
+      "sim": "omnisim",
+      "verdict": "EXPRESSIBLE",
+      "reason": "in-engine batched training exists and trains THROUGH the engine, so train == deploy bit-exact; per-robot controller processes and a LiDAR device both exist",
+      "missing_capability": "",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "This may be wrong about US, not about them (SPEC 6.1 risk 1): it is UNVERIFIED whether Camera devices render at all in the batched mujoco_warp GPU path. If they do not, the sensor half of this task does not exist on OmniSim either and the EXPRESSIBLE verdict is wrong."
+      ],
+      "publishable": false
+    },
+    "webots": {
+      "sim": "webots",
+      "verdict": "NOT_EXPRESSIBLE",
+      "reason": "the deployment half is expressible -- upstream has both a LiDAR device and per-robot controller processes -- but the training half has no path: no GPU-batched parallel-env rollout",
+      "missing_capability": "GPU-batched parallel environments / an in-engine RL rollout path",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "PARTIAL may be the honest verdict rather than NOT_EXPRESSIBLE: an agent could train externally and deploy the resulting policy in a Webots controller, which is a real and common workflow. Whether the task means 'train in this simulator' or 'train somewhere and deploy here' is a specification question this declaration has not settled, and it changes the verdict."
+      ],
+      "publishable": false
+    },
+    "mujoco": {
+      "sim": "mujoco",
+      "verdict": "PARTIAL",
+      "reason": "training is a core strength; the declared gap is a packaged LiDAR/Camera device model and per-robot controller processes",
+      "missing_capability": "a packaged range/camera device model and per-robot controller processes",
+      "verification_status": "UNVERIFIED",
+      "citations": [],
+      "challenges": [
+        "'MuJoCo has no Lidar/Camera device model' is probably FALSE as stated: MuJoCo ships a `rangefinder` sensor and offscreen rendering (mjr_render), and MuJoCo-based embodied-AI stacks routinely produce camera observations. The defensible narrower claim is about a packaged device model plus per-robot controller processes as simulator concepts, not about whether ray casts and pixels can be obtained at all. Until someone cites MuJoCo's own docs either way this stays UNVERIFIED and the broad phrasing is not to be repeated."
+      ],
+      "publishable": false
+    }
+  },
+  "oracle_null_gate": {
+    "omnisim": "NOT RUN",
+    "webots": "NOT RUN",
+    "mujoco": "NOT RUN"
+  }
+}

@@ -1,0 +1,48 @@
+#OMNISIM R2025a utf8
+
+# AgenticSimBench v1 R2 red-fixture base.
+#
+# A real six-axis OMNIARM6 is imported through OmniSim's shipped URDFRobot path,
+# fixed at the origin, and deliberately given no controller. The recorder must
+# still see the robot and its links. Named mutations of this world exercise the
+# six R2 assertions; this base is never a scored model artifact.
+
+WorldInfo {
+  basicTimeStep 16
+  newtonSolver "mujoco"
+  newtonSubsteps 4
+}
+Viewpoint {
+  orientation -0.57735 0.57735 0.57735 2.0944
+  position 1.8 -1.8 1.8
+}
+Background {
+  skyColor [ 0.15 0.17 0.2 ]
+}
+DirectionalLight {
+  ambientIntensity 1
+  direction 0.3 -0.4 -1
+  intensity 2
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    DEF FLOOR_GEO Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.36 0.38
+        roughness 1
+        metalness 0
+      }
+      geometry Box { size 4 4 0.1 }
+    }
+  ]
+  name "floor"
+  boundingObject USE FLOOR_GEO
+}
+DEF ARM URDFRobot {
+  url "__R2_OMNIARM6_URDF__"
+  translation 0 0 0
+  name "arm"
+  staticBase TRUE
+  controller "<none>"
+}

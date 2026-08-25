@@ -1,0 +1,157 @@
+{
+  "task": "B3_measure_and_report",
+  "outcome": "PASS",
+  "progress": 4,
+  "progress_name": "graded_pass",
+  "assertions": {
+    "B3.1": {
+      "ok": true,
+      "what": "a distance is stated at all",
+      "measured": {
+        "unit-tagged numbers": [
+          6.78,
+          0.4,
+          0.4
+        ],
+        "bare numbers": [
+          6.78,
+          6.4,
+          2.2,
+          0.4,
+          0.4
+        ],
+        "scored (m)": 6.78,
+        "chosen by": "the unit-tagged distance closest to a separation cue (1 characters away)"
+      },
+      "threshold": ">= 1 number in the answer",
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "a number is present",
+          "how_to_fail": "an answer with no number in it at all",
+          "witness": "the agent's final message was captured",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "B3.2": {
+      "ok": true,
+      "what": "the stated distance matches the measured one",
+      "measured": {
+        "scored stated (m)": 6.78,
+        "chosen by": "the unit-tagged distance closest to a separation cue (1 characters away)",
+        "other numbers in the answer, not scored": [
+          0.4,
+          0.4
+        ],
+        "measured node-centre (m)": 6.7794,
+        "measured AABB-centre (m)": 6.7794,
+        "error (m)": 0.0006
+      },
+      "threshold": {
+        "error (m)": "<= 0.30"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "distance matches",
+          "how_to_fail": "a stated distance more than 0.30 m from the measured one",
+          "witness": "a measured ground-truth distance from t=0 geometry",
+          "witness_present": true,
+          "detail": "the grader-owned Supervisor recorder's t=0 scan. The recorder is synchronization TRUE, so the world is genuinely frozen while it walks the scene -- but upstream exposes no bounds API, so each world-space AABB is one the recorder computed itself from the body's boundingObject geometry and pose"
+        }
+      ]
+    },
+    "B3.3": {
+      "ok": true,
+      "what": "the answer says which one is taller",
+      "measured": {
+        "named": "husky_plinth"
+      },
+      "threshold": "one of the two robot names",
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "names a body",
+          "how_to_fail": "an answer that names neither body",
+          "witness": "the agent's final message was captured",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "B3.4": {
+      "ok": true,
+      "what": "and it is the right one",
+      "measured": {
+        "named": "husky_plinth",
+        "measured taller": "husky_plinth",
+        "top z (m)": {
+          "husky_ground": 0.402,
+          "husky_plinth": 0.802
+        }
+      },
+      "threshold": "husky_plinth",
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "names the right body",
+          "how_to_fail": "naming the shorter body",
+          "witness": "both bodies have a measured world-space AABB top z at t=0",
+          "witness_present": true,
+          "detail": "the grader-owned Supervisor recorder's t=0 scan. The recorder is synchronization TRUE, so the world is genuinely frozen while it walks the scene -- but upstream exposes no bounds API, so each world-space AABB is one the recorder computed itself from the body's boundingObject geometry and pose"
+        }
+      ]
+    }
+  },
+  "n_pass": 4,
+  "n_total": 4,
+  "failed_assertion": null,
+  "failed_assertions": [],
+  "self_verified": true,
+  "attribution": {},
+  "measurements": {
+    "truth": {
+      "distance_m": 6.779380502671318,
+      "aabb_distance_m": 6.779380502671318,
+      "taller": "husky_plinth",
+      "top_z_m": {
+        "husky_ground": 0.40199999999999997,
+        "husky_plinth": 0.802
+      }
+    },
+    "answer": "The two robots are 6.78 m apart centre to centre (planar offset (6.4, 2.2) plus 0.4 m of height). The taller one is husky_plinth, which stands on the 0.4 m plinth."
+  },
+  "artifacts": {},
+  "notes": [
+    "'taller' is graded as greater world-space AABB top z; both robots are the same Husky model, so only their height above the floor differs (recorded SPEC ambiguity).",
+    "upstream Webots exposes no HTTP/JSON authoring surface, no scene-tree query, no hot reload and no structured load diagnostics (webots-control-baseline.md sec. 6), so there is no live-session pass on this arm. 'the artifact loaded' is evidenced instead by the in-world recorder having enumerated the scene at all.",
+    "upstream Webots has no --duration and no auto-exit: a headless run terminates only when an in-world Supervisor calls simulationQuit(), or when something kills it. 'the run exited cleanly' therefore rests on the recorder's own quit record, not on a wall-clock timeout.",
+    "trajectory rows could not be aligned to the roster by name (2 trajectory bodies, 4 roster bodies); the bundle's body_ids are the recorder's trajectory names and a per-body index is NOT valid across the two inventories.",
+    "4 EXTERNPROTO import(s) in this world are fetched over the network on first load (the R2025a distribution ships zero .proto files; webots-control-baseline.md sec. 5.1). That is against this suite's local-asset-only rule: a network hiccup on a cold cache becomes a benchmark result."
+  ],
+  "basis": {
+    "core-physical": [
+      "B3.2",
+      "B3.4"
+    ],
+    "core-structural": [
+      "B3.1",
+      "B3.3"
+    ]
+  },
+  "vacuous_assertions": {}
+}

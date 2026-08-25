@@ -1,0 +1,10 @@
+#OMNISIM R2025a utf8
+
+PROTO CameraWithCompositor [
+]
+{
+  Camera {
+    name "camera2"
+    compositor "TestSuite2"
+  }
+}

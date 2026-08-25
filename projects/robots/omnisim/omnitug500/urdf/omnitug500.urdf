@@ -1,0 +1,96 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--
+  OmniTug 500 - OmniSim's generic four-wheeled warehouse tug.
+
+  A vendor-neutral AGV prop: 1.259 m long, 0.716 m wide, 0.296 m tall, with
+  the wheel contact plane at z = 0 so it sits flat on a floor at the world
+  origin. It exists so warehouse and fleet demos have a ground courier to
+  drive without depending on any manufacturer's model.
+
+  All geometry is authored here as primitive solids (boxes and cylinders).
+  No mesh, texture or CAD file from any third party is used, and nothing is
+  imported or derived from a vendor product model. The palette is the
+  OmniSim house scheme: cream shell, near-black running gear, mimosa accent.
+
+  Like the prop it replaces, this is VISUAL ONLY: one link, no collision and
+  no inertial geometry, so it is positioned kinematically by its controller
+  and does not participate in contact. Add collision geometry here, or a
+  boundingObject in the world, if a demo needs it to be solid.
+
+  See ../PROVENANCE.md.
+-->
+<robot name="omnitug500">
+
+	<material name="omnisim_shell">
+		<color rgba="0.898 0.894 0.882 1.0" />
+	</material>
+	<material name="omnisim_joint">
+		<color rgba="0.129 0.129 0.137 1.0" />
+	</material>
+	<material name="omnisim_accent">
+		<color rgba="0.965 0.780 0.204 1.0" />
+	</material>
+
+	<link name="base_link">
+
+		<!-- running gear: four wheels on a dark chassis pan -->
+		<visual>
+			<origin xyz="0.420 0.300 0.090" rpy="1.5708 0 0" />
+			<geometry><cylinder radius="0.090" length="0.070" /></geometry>
+			<material name="omnisim_joint"><color rgba="0.129 0.129 0.137 1.0" /></material>
+		</visual>
+		<visual>
+			<origin xyz="0.420 -0.300 0.090" rpy="1.5708 0 0" />
+			<geometry><cylinder radius="0.090" length="0.070" /></geometry>
+			<material name="omnisim_joint"><color rgba="0.129 0.129 0.137 1.0" /></material>
+		</visual>
+		<visual>
+			<origin xyz="-0.420 0.300 0.090" rpy="1.5708 0 0" />
+			<geometry><cylinder radius="0.090" length="0.070" /></geometry>
+			<material name="omnisim_joint"><color rgba="0.129 0.129 0.137 1.0" /></material>
+		</visual>
+		<visual>
+			<origin xyz="-0.420 -0.300 0.090" rpy="1.5708 0 0" />
+			<geometry><cylinder radius="0.090" length="0.070" /></geometry>
+			<material name="omnisim_joint"><color rgba="0.129 0.129 0.137 1.0" /></material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.130" rpy="0 0 0" />
+			<geometry><box size="1.150 0.640 0.120" /></geometry>
+			<material name="omnisim_joint"><color rgba="0.129 0.129 0.137 1.0" /></material>
+		</visual>
+
+		<!-- deck -->
+		<visual>
+			<origin xyz="0 0 0.2175" rpy="0 0 0" />
+			<geometry><box size="1.259 0.716 0.055" /></geometry>
+			<material name="omnisim_shell"><color rgba="0.898 0.894 0.882 1.0" /></material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.2510" rpy="0 0 0" />
+			<geometry><box size="1.259 0.716 0.012" /></geometry>
+			<material name="omnisim_accent"><color rgba="0.965 0.780 0.204 1.0" /></material>
+		</visual>
+
+		<!-- bumpers -->
+		<visual>
+			<origin xyz="0.612 0 0.150" rpy="0 0 0" />
+			<geometry><box size="0.050 0.700 0.090" /></geometry>
+			<material name="omnisim_accent"><color rgba="0.965 0.780 0.204 1.0" /></material>
+		</visual>
+		<visual>
+			<origin xyz="-0.612 0 0.150" rpy="0 0 0" />
+			<geometry><box size="0.050 0.700 0.090" /></geometry>
+			<material name="omnisim_accent"><color rgba="0.965 0.780 0.204 1.0" /></material>
+		</visual>
+
+		<!-- sensor puck, top face flush with the 0.296 m overall height -->
+		<visual>
+			<origin xyz="0.500 0 0.2765" rpy="0 0 0" />
+			<geometry><cylinder radius="0.055" length="0.039" /></geometry>
+			<material name="omnisim_joint"><color rgba="0.129 0.129 0.137 1.0" /></material>
+		</visual>
+
+	</link>
+
+</robot>

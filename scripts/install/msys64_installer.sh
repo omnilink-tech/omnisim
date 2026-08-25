@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# exit when any command fails
+set -e
+
+# Usage: msys64_installer.sh [--all]
+# Options:
+# --all: install all the optional dependencies
+
+declare -a BASE_PACKAGES=(
+  "make"                              # Makefile
+  "mingw-w64-x86_64-gcc"              # C/C++ compiler
+  "tar"                               # OmniSim dependencies
+  "unzip"                             # OmniSim dependencies
+  "zip"                               # robotbenchmark square path
+  "mingw-w64-x86_64-qt6-base"         # OmniSim
+  "mingw-w64-x86_64-qt6-declarative"  # OmniSim
+  "mingw-w64-x86_64-qt6-tools"        # OmniSim (provides moc; lrelease/lupdate unused since i18n removed)
+  "mingw-w64-x86_64-qt6-websockets"   # OmniSim
+  "mingw-w64-x86_64-libzip"           # OmniSim
+  "mingw-w64-x86_64-woff2"            # OmniSim
+  "mingw-w64-x86_64-minizip"          # OmniSim (assimp)
+  "mingw-w64-x86_64-zlib"             # OmniSim (assimp)
+  "liblzma"                           # OmniSim
+  "mingw-w64-x86_64-ffmpeg"           # OmniSim movies
+  "mingw-w64-x86_64-dlfcn"            # dependency of ffmpeg
+  "mingw-w64-x86_64-python"           # python controllers and scripts
+  "mingw-w64-x86_64-ca-certificates"  # CA certs needed to run tests/test_suite.py 
+)
+
+declare -a OPTIONAL_PACKAGES=(
+  "git"                         # Distribution script (check_submodules_update.sh)
+  "pacman-contrib"              # Distribution script (pactree)
+  "swig"                        # Python and Java API wrappers
+  "mingw-w64-x86_64-boost"      # to recompile ROS controller
+  "mingw-w64-x86_64-python-pip" # Useful for advanced python usage
+)
+
+declare -a DEVELOPMENT_PACKAGES=(
+  "mingw-w64-x86_64-clang"    # coding style tests
+  "mingw-w64-x86_64-cppcheck" # coding style tests
+  "mingw-w64-x86_64-gdb"      # debugging
+  "diffutils"                 # cmp and diff utilities
+)
+
+if [ "$1" == "--dev" ]; then
+  declare -a PACKAGES=("${BASE_PACKAGES[@]}" "${OPTIONAL_PACKAGES[@]}" "${DEVELOPMENT_PACKAGES[@]}")
+elif [ "$1" == "--all" ]; then
+  declare -a PACKAGES=("${BASE_PACKAGES[@]}" "${OPTIONAL_PACKAGES[@]}")
+else
+  declare -a PACKAGES=("${BASE_PACKAGES[@]}")
+fi
+
+for i in "${PACKAGES[@]}"
+do
+  if ! pacman -Q $i 2> /dev/null
+  then
+    echo Installing $i
+    pacman -S --noconfirm $i
+    pacman -Scc --noconfirm
+  else
+    echo Skipping $i \(already installed\)
+  fi
+done
+
+script_name=$0
+script_full_path=$(dirname "$0")
+$script_full_path/qt_windows_installer.sh

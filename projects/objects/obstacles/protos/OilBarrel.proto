@@ -1,0 +1,112 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/obstacles/protos/OilBarrel.proto
+# keywords: industrial/container
+# A resizable steel drum: a rusted cylinder banded by two rolling hoops, with a filler cap
+# on the lid. Static scenery by default; give it a `physics` node to let robots knock it over.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/RustyMetal.proto"
+
+PROTO OilBarrel [
+  field SFVec3f    translation         0 0 0.44
+  field SFRotation rotation            0 0 1 0
+  field SFString   name                "oil barrel"
+  field SFFloat    height              0.88          # Defines the height of the barrel.
+  field SFFloat    radius              0.305         # Defines the radius of the barrel.
+  field SFNode     physics             NULL          # Is `Solid.physics`.
+]
+{
+  %<
+    const wantHeight = fields.height.value;
+    const wantRadius = fields.radius.value;
+    const height = wantHeight > 0 ? wantHeight : fields.height.defaultValue;
+    const radius = wantRadius > 0 ? wantRadius : fields.radius.defaultValue;
+    if (height !== wantHeight || radius !== wantRadius)
+      console.error('OilBarrel: \'height\' and \'radius\' must be strictly positive. Reset to (' + height + ', ' + radius + ').');
+
+    // Rolling hoops: the raised ribs a drum rests on when it is tipped onto its side.
+    // Set a third of the way in from each end and standing slightly proud of the wall,
+    // which is what visually separates a drum from a plain cylinder.
+    const hoopOffset = height / 6;
+    const hoopHeight = 0.05 * height;
+    const hoopRadius = 1.02 * radius;
+
+    // Filler cap, off-centre on the lid like the real thing.
+    const capRadius = 0.11 * radius;
+    const capHeight = 0.02 * height;
+    const capZ = 0.5 * height;
+    const capOffset = 0.55 * radius;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    recognitionColors [
+      0.4 0.1 0.1
+    ]
+    children [
+      # Barrel wall and ends.
+      Shape {
+        appearance RustyMetal {
+          rustLevel 1
+          colorOverride 0.62 0.30 0.22
+          textureTransform TextureTransform {
+            scale 3 2
+          }
+        }
+        geometry Cylinder {
+          height %<= height >%
+          radius %<= radius >%
+          subdivision 32
+        }
+      }
+      # The two rolling hoops.
+      %< for (let i = -1; i <= 1; i += 2) { >%
+      Pose {
+        translation 0 0 %<= i * hoopOffset >%
+        children [
+          Shape {
+            appearance RustyMetal {
+              rustLevel 2
+              colorOverride 0.50 0.25 0.19
+              textureTransform TextureTransform {
+                scale 3 1
+              }
+            }
+            geometry Cylinder {
+              height %<= hoopHeight >%
+              radius %<= hoopRadius >%
+              subdivision 32
+            }
+          }
+        ]
+      }
+      %< } >%
+      # Filler cap on the lid.
+      Pose {
+        translation %<= capOffset >% 0 %<= capZ >%
+        children [
+          Shape {
+            appearance RustyMetal {
+              rustLevel 2
+              colorOverride 0.45 0.42 0.40
+            }
+            geometry Cylinder {
+              height %<= capHeight >%
+              radius %<= capRadius >%
+              subdivision 16
+            }
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "oil barrel"
+    boundingObject Cylinder {
+      height IS height
+      radius IS radius
+    }
+    physics IS physics
+  }
+}

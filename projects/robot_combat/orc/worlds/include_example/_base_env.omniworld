@@ -1,0 +1,30 @@
+#OMNISIM R2025a utf8
+
+# Tiny reusable environment fragment used by include_example.wbt.
+# Demonstrates the OmniSim `#include` directive: an included file
+# carries only the asset declarations + scene fragment it contributes,
+# without WorldInfo / Viewpoint (those live in the including world).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 30 30
+  tileSize 1.0 1.0
+  appearance PBRAppearance {
+    baseColor 0.22 0.22 0.24
+    metalness 0
+    roughness 1
+  }
+}

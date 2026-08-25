@@ -1,0 +1,55 @@
+{
+  "schema": 2,
+  "name": "go2_stand",
+  "title": "Go2 stand (deterministic hold on the nominal stance -- NO learned policy)",
+  "class": "quadruped",
+  "robots": ["go2"],
+  "kind": "deterministic",
+  "method": "deterministic-overlay",
+  "status": "verified",
+  "motion_class": "static",
+  "summary": "The second specialist a quadruped BATON sequence needs, and the cheapest skill in the library: a Go2 standing is a DETERMINISTIC HOLD on its nominal stance. Four feet on the ground is statically stable, so the specialist that holds it needs no policy at all -- in BATON it is registered with an empty checkpoint (policy=None), contributes a ZERO residual, and tracks its ghost exactly. Contrast the G1's stand_rl, which is a *trained* specialist riding a weight-bearing crane: a biped is not statically stable, and that difference is precisely what a policy-switching LIBRARY must not care about.",
+
+  "ghost": {
+    "lut": "projects/policies/ghosts/go2/go2_stand_ghost_lut.json",
+    "format": "json lut (nb=64 bins, 12 joints, constant leg track, vx=0, zero feedforward)",
+    "provenance": "constructed-feasible: the Go2's OWN gait model standing_pose(body_height=0.30) held constant over 64 bins. Not designed, not recorded -- READ from the model the deploy already uses. Achievable by construction: it is the pose the robot settles into under its deploy PD before the gait clock ever starts.",
+    "builder": "projects/policies/research/shadowing/build_go2_stand_ghost.py",
+    "validator": "WARN (stamped into the lut, 2026-07-13). All model-aware gates PASS against the REAL go2.urdf (T0.model-coverage, position-limits, velocity-limits) and provenance is constructed-feasible. The single WARN is T0.leg-symmetry, which is a CATEGORY ARTIFACT, not a defect: it correlates a phase-mirrored waveform, and a constant hold has zero variance, so the correlation is undefined (amp ratio 0.00). The G1's own stand ghost (ghost_stand_v1) stamps WARN for exactly the same reason. The honest fix is to make the cyclic gates n/a for motion_class=static, as they already are for sequence -- not to massage this ghost.",
+    "shape_parity": "SAME robot, SAME joint names/order, SAME nb=64 as go2_shadow_ghost_lut.json -- REQUIRED, because BATON blends the two element-wise."
+  },
+
+  "policy": {
+    "checkpoint": null,
+    "arch": "none -- a deterministic hold",
+    "action": {"dim": 12, "space": "legs", "decode": "ghost(stance) + 0 (zero residual)"}
+  },
+
+  "baton": {
+    "blend": "cyclic",
+    "mode": "stand",
+    "attractor": "hold",
+    "specialist_entry": "stand||<lut>|0   (the EMPTY checkpoint field is what makes it a hold)",
+    "notes": "A legal BATON leg with no policy behind it. This is what let the quadruped BATON demo exist without training anything."
+  },
+
+  "deploy": {
+    "run": "world",
+    "world": "projects/policies/research/worlds/go2_baton_deploy.omniworld",
+    "controller": "projects/policies/research/controllers/go2_baton_deploy/go2_baton_deploy.py",
+    "launcher": "scripts/dev/run_go2_baton_deploy.sh",
+    "notes": "Runs as the `stand` leg of the walk -> stand -> walk BATON sequence. The world is IDENTICAL in scene and physics to go2_shadow_deploy.omniworld; only the controller line differs."
+  },
+
+  "verification": {
+    "date": "2026-07-13",
+    "engine": "Newton/mujoco_warp",
+    "result": "See the go2_baton demo. Offline (no engine): the settled hold applies EXACTLY zero residual and tracks the stance ghost exactly; the morph crossfades over BATON_MORPH_TICKS.",
+    "honest_caveats": [
+      "This is a HOLD, not a balance controller. It does not reject pushes, it does not recover from a shove -- it commands the nominal stance and a statically stable quadruped stays up. Do not describe it as push-recovery.",
+      "It is only 'verified' as a BATON leg (the handover works and the robot does not fall). It has not been exam'd standalone under disturbance."
+    ]
+  },
+  "doc": "docs/developer/policy-switching.md",
+  "related": ["go2_shadow_walk", "go2_walk", "g1_stand_rl"]
+}

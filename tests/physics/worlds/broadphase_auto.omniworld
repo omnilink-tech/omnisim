@@ -1,0 +1,87 @@
+#OMNISIM R2025a utf8
+
+# Smoke world for §8.4 of rendering-roadmap.md (landed).
+# Exercises the broadphase "auto" mode (WbWorldInfo::resolveBroadphaseChoice):
+# top-level Solids span >500m on the X axis, so the auto resolver should
+# pick "quadtree" and WbOdeContext should switch the collision space from
+# the default dSimpleSpace to dQuadTreeSpace before any geom registers.
+#
+# Visual verification: load this world headless and confirm it loads
+# without error. Programmatic verification: a controller can read
+# WbOdeContext::space()'s class via dGeomGetClass to confirm the type.
+
+WorldInfo {
+  basicTimeStep 16
+  broadphase "auto"
+}
+Viewpoint {
+  position 0 -50 50
+  orientation 1 0 0 -0.7
+}
+DirectionalLight {
+  direction 0 0.5 -1
+  intensity 2
+}
+
+# Top-level Solids spread >500m on X. Five spheres at x = -300, -100, 0, 100, 600
+# gives a span of 900m -- well past the 500m threshold for quadtree selection.
+Solid {
+  translation -300 0 1
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.8 0.2 0.2 } }
+      geometry Sphere { radius 0.5 }
+    }
+  ]
+  name "anchor_west"
+  boundingObject Sphere { radius 0.5 }
+  physics Physics { mass 1 }
+}
+Solid {
+  translation -100 0 1
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.8 0.5 0.2 } }
+      geometry Sphere { radius 0.5 }
+    }
+  ]
+  name "anchor_inner_west"
+  boundingObject Sphere { radius 0.5 }
+  physics Physics { mass 1 }
+}
+Solid {
+  translation 0 0 1
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.5 0.8 0.2 } }
+      geometry Sphere { radius 0.5 }
+    }
+  ]
+  name "anchor_center"
+  boundingObject Sphere { radius 0.5 }
+  physics Physics { mass 1 }
+}
+Solid {
+  translation 100 0 1
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.2 0.8 0.5 } }
+      geometry Sphere { radius 0.5 }
+    }
+  ]
+  name "anchor_inner_east"
+  boundingObject Sphere { radius 0.5 }
+  physics Physics { mass 1 }
+}
+Solid {
+  translation 600 0 1
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.2 0.2 0.8 } }
+      geometry Sphere { radius 0.5 }
+    }
+  ]
+  name "anchor_east"
+  boundingObject Sphere { radius 0.5 }
+  physics Physics { mass 1 }
+}

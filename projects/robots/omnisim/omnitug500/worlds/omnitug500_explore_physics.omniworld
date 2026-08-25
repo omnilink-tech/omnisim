@@ -1,0 +1,140 @@
+#OMNISIM R2025a utf8
+
+# OmniTug 500 - autonomous EXPLORE & MAP with REAL PHYSICS COLLISION.
+#
+# Same nav stack as omnitug500_explore.omniworld, but the rover is now a DYNAMIC Newton
+# body (a chassis boundingObject + Physics) and every wall/obstacle is a STATIC
+# Newton collider (boundingObject, no Physics, with WorldInfo.newtonStatics).
+# The omnitug500_explore controller runs in --physics mode: it commands the chassis
+# velocity (diff-drive) instead of teleporting the pose, and reads the resulting
+# pose back from physics -- so if the avoidance ever fails, the wall PHYSICALLY
+# stops the rover instead of letting it pass through.
+#
+#   python scripts/dev/headless_runner.py \
+#      projects/robots/omnisim/omnitug500/worlds/omnitug500_explore_physics.omniworld --gui --duration 180
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniTug 500 - Explore & Map (physics collision)"
+  newtonSolver "mujoco"
+  newtonSubsteps 4
+  newtonStatics TRUE          # walls/obstacles (boundingObject, no Physics) collide
+  newtonRobotColliders TRUE   # give the rover chassis a REAL collider (else it's a
+                              # 1mm placeholder and the rover phases through walls)
+  contactProperties [
+    # low floor friction so a finite drive force can slide the wheel-less chassis;
+    # vertical walls still stop it regardless of friction.
+    ContactProperties { material1 "default" material2 "default" coulombFriction [ 0.25 ] bounce 0 }
+  ]
+  info [ "OMNITUG500 explores an unknown two-room space; rover is a dynamic Newton body." ]
+  # translation_audit: ContactProperties.coulombFriction is an ODE-path field the
+  # Newton backend does not read; this declares the same friction where it is read.
+  newtonGroundMu 0.25
+}
+
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position -0.036 -7.219 3.958
+  exposure 1.0
+}
+
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# --- Floor (static collider) ----------------------------------------------
+DEF FLOOR Solid {
+  translation 0 0 -0.02
+  physicsBackend "newton"
+  children [
+    DEF FLOOR_SH Shape {
+      appearance PBRAppearance { baseColor 0.22 0.23 0.25 roughness 0.9 metalness 0 }
+      geometry Box { size 13 11 0.04 }
+    }
+  ]
+  name "floor"
+  boundingObject USE FLOOR_SH
+}
+
+# --- Outer walls (static colliders) ----------------------------------------
+DEF WALL_N Solid { translation 0 5 0.5 physicsBackend "newton" children [ DEF WN_SH Shape { appearance PBRAppearance { baseColor 0.78 0.76 0.72 roughness 0.95 } geometry Box { size 12.4 0.2 1.0 } } ] name "wall_n" boundingObject USE WN_SH }
+DEF WALL_S Solid { translation 0 -5 0.5 physicsBackend "newton" children [ DEF WS_SH Shape { appearance PBRAppearance { baseColor 0.78 0.76 0.72 roughness 0.95 } geometry Box { size 12.4 0.2 1.0 } } ] name "wall_s" boundingObject USE WS_SH }
+DEF WALL_E Solid { translation 6 0 0.5 physicsBackend "newton" children [ DEF WE_SH Shape { appearance PBRAppearance { baseColor 0.74 0.72 0.69 roughness 0.95 } geometry Box { size 0.2 10 1.0 } } ] name "wall_e" boundingObject USE WE_SH }
+DEF WALL_W Solid { translation -6 0 0.5 physicsBackend "newton" children [ DEF WW_SH Shape { appearance PBRAppearance { baseColor 0.74 0.72 0.69 roughness 0.95 } geometry Box { size 0.2 10 1.0 } } ] name "wall_w" boundingObject USE WW_SH }
+
+# --- Internal divider with doorway -----------------------------------------
+DEF DIV_S Solid { translation 0 -2.95 0.5 physicsBackend "newton" children [ DEF DS_SH Shape { appearance PBRAppearance { baseColor 0.7 0.68 0.64 roughness 0.95 } geometry Box { size 0.2 4.1 1.0 } } ] name "div_s" boundingObject USE DS_SH }
+DEF DIV_N Solid { translation 0 2.95 0.5 physicsBackend "newton" children [ DEF DN_SH Shape { appearance PBRAppearance { baseColor 0.7 0.68 0.64 roughness 0.95 } geometry Box { size 0.2 4.1 1.0 } } ] name "div_n" boundingObject USE DN_SH }
+
+# --- Alcove L-wall ---------------------------------------------------------
+DEF ALCOVE Solid { translation 4.25 1.5 0.5 physicsBackend "newton" children [ DEF AL_SH Shape { appearance PBRAppearance { baseColor 0.7 0.68 0.64 roughness 0.95 } geometry Box { size 3.5 0.2 1.0 } } ] name "alcove" boundingObject USE AL_SH }
+
+# --- Obstacles (static colliders) ------------------------------------------
+DEF OBST_L1 Solid { translation -3.5 2.0 0.4 physicsBackend "newton" children [ DEF L1_SH Shape { appearance PBRAppearance { baseColor 0.85 0.3 0.1 roughness 0.7 } geometry Box { size 0.7 0.7 0.8 } } ] name "box_l1" boundingObject USE L1_SH }
+DEF OBST_L2 Solid { translation -2.5 -2.5 0.4 physicsBackend "newton" children [ DEF L2_SH Shape { appearance PBRAppearance { baseColor 0.55 0.45 0.3 roughness 0.85 } geometry Box { size 0.5 1.8 0.8 } } ] name "shelf_l2" boundingObject USE L2_SH }
+DEF OBST_R1 Solid { translation 3.2 -2.8 0.4 physicsBackend "newton" children [ DEF R1_SH Shape { appearance PBRAppearance { baseColor 0.2 0.4 0.85 roughness 0.7 } geometry Box { size 0.7 0.7 0.8 } } ] name "box_r1" boundingObject USE R1_SH }
+DEF OBST_R2 Solid { translation 1.3 3.5 0.45 physicsBackend "newton" children [ DEF R2_SH Shape { appearance PBRAppearance { baseColor 0.15 0.6 0.35 roughness 0.7 } geometry Cylinder { radius 0.25 height 0.9 } } ] name "pillar_r2" boundingObject USE R2_SH }
+DEF OBST_R3 Solid { translation 4.6 -1.0 0.4 physicsBackend "newton" children [ DEF R3_SH Shape { appearance PBRAppearance { baseColor 0.7 0.65 0.15 roughness 0.7 } geometry Box { size 0.6 0.6 0.8 } } ] name "box_r3" boundingObject USE R3_SH }
+
+# --- The OMNITUG500 rover (visual body), slaved to the physics chassis -----------
+DEF OMNITUG500 URDFRobot {
+  url "../urdf/omnitug500.urdf"
+  translation -4 -3 0
+  rotation 0 0 1 0
+  name "OMNITUG500"
+  controller "<none>"
+}
+
+# --- Physics chassis carrying the scanners; driven by velocity commands ------
+DEF SCANNERS Robot {
+  translation -4 -3 0.02
+  rotation 0 0 1 0
+  name "OMNITUG500_scanners"
+  controller "omnitug500_explore"
+  controllerArgs [ "--physics" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  boundingObject Pose { translation 0 0 0.15 children [ Box { size 0.70 1.24 0.27 } ] }
+  physics Physics { density -1 mass 40 centerOfMass [ 0 0 0.10 ] }
+  children [
+    DEF SCAN_FR Lidar {
+      translation 0.290 0.537 0.131
+      rotation 0 0 1 0.7854
+      name "scanner_front_right"
+      horizontalResolution 512
+      fieldOfView 3.1
+      verticalFieldOfView 0.02
+      numberOfLayers 1
+      near 0.05
+      minRange 0.06
+      maxRange 5.0
+      type "fixed"
+    }
+    DEF SCAN_RL Lidar {
+      translation -0.290 -0.536 0.131
+      rotation 0 0 1 3.9270
+      name "scanner_rear_left"
+      horizontalResolution 512
+      fieldOfView 3.1
+      verticalFieldOfView 0.02
+      numberOfLayers 1
+      near 0.05
+      minRange 0.06
+      maxRange 5.0
+      type "fixed"
+    }
+  ]
+}
+
+# --- Fixed overhead camera --------------------------------------------------
+DEF CEILING_CAM Robot {
+  translation 0 0 12
+  rotation -0.5774 0.5774 0.5774 2.0944
+  name "ceiling_cam"
+  controller "omnitug500_explore_cam"
+  children [ Camera { name "cam" width 1200 height 1000 fieldOfView 1.15 } ]
+}

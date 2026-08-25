@@ -1,0 +1,57 @@
+#OMNISIM R2025a utf8
+
+# Lane E1 (P5) smoke world: camera_wgpu_scene_smoke + `noise 0.05` on the wgpu Camera. On
+# WREN the noise is the color_noise.frag post-process (per-channel additive gaussian, sigma
+# in normalised channel units, clamp to [0,1]); on the wgpu arm it is the CPU port
+# (OmAbstractCamera::applyWgpuColorPostFx) on the final BGRA bytes.
+#
+# The controller samples the flat centre region of the cyan box face and asserts a
+# per-channel spatial standard deviation consistent with sigma = 0.05 * 255 ~ 12.75 bytes.
+# RED-CAPABLE: with the port absent (or OMNISIM_WGPU_SENSOR_POSTFX=0) the face is flat-lit
+# and the per-channel std collapses to ~0-2 bytes -> FAIL.
+
+WorldInfo {
+  info [
+    "Lane E1 smoke -- wgpu Camera applies the authored per-channel gaussian noise"
+  ]
+  title "Lane E1 wgpu Camera noise smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 64
+      height 48
+      fieldOfView 0.8
+      near 0.05
+      far 10.0
+      noise 0.05
+      renderBackend "wgpu"
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "camera_wgpu_noise_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

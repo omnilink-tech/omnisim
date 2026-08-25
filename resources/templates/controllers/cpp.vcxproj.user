@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- OmniSim install root. OMNISIM_HOME is canonical; WEBOTS_HOME is the legacy
+       fallback so a pre-rebrand environment still resolves. Defined here as well as
+       in the .vcxproj because MSBuild may evaluate this file independently; the
+       Condition guards make the redefinition a no-op when it is already set. -->
+  <PropertyGroup Label="OmniSimHome">
+    <OmniSimHome Condition="'$(OmniSimHome)' == ''">$(OMNISIM_HOME)</OmniSimHome>
+    <OmniSimHome Condition="'$(OmniSimHome)' == ''">$(WEBOTS_HOME)</OmniSimHome>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerEnvironment>PATH=$(OmniSimHome)/lib/controller;%PATH%</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+</Project>

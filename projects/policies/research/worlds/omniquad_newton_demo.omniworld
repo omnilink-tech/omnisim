@@ -1,0 +1,76 @@
+#OMNISIM R2025a utf8
+
+# OmniQuad + Newton physics demo.
+#
+# Same OmniQuad URDFRobot the RL deploy world ships, but routed through the
+# Newton physics backend (XPBD primary, MuJoCo CPU fallback) instead of
+# ODE. Validates the deferred-topology articulation fix landed in
+# WbNewtonBackend's helper module (the previous eager-FREE-joint logic
+# rejected OmniQuad's leaf-first joint feed with "Body N has multiple
+# parents").
+#
+# The standard omniquad_rl_deploy controller drives the joints via
+# wb_motor_set_position; the Newton-side bridge in
+# WbBasicJoint::pushNewtonMotorTargets converts that position target
+# into a PD velocity command (kp*(target - current)) so Newton's
+# velocity actuator can actually track it.
+#
+# On OMNISIM_WITH_NEWTON=OFF builds, the registry transparently falls
+# through to ODE -- the world is then identical to the deploy world
+# minus the supervisor flag.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "OmniQuad Newton demo"
+  info [
+    "OmniQuad quadruped driven by the RL deploy policy under Newton physics."
+    "Watch the WbNewtonBackend log lines for chassis + leg-segment Solid"
+    "registrations (13 bodies) and the 12 motorized hinge joints, then"
+    "the per-tick motor target_vel chain that drives the trained policy."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.624 -4.923 5.476
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# Draggable sun marker — the sun_marker supervisor reads this Solid's
+# translation each step and pipes it into the DirectionalLight.direction,
+# so dragging the marker in the 3D viewport orbits the sun live. The
+# atmospheric sky auto-rebakes on DL direction change. Press V to hide.
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad.urdf"
+  translation 0 0 0.70
+  name "omniquad"
+  supervisor TRUE
+  controller "omniquad_rl_deploy"
+  physicsBackend "newton"
+}

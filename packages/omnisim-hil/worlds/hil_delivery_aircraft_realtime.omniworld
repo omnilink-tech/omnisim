@@ -1,0 +1,313 @@
+#OMNISIM R2025a utf8
+
+# Hardware-in-the-loop delivery aircraft.
+#
+# A 1.4 m span fixed-wing UAV. OmniSim has no aerodynamics -- Fluid and
+# ImmersionProperties went out with the ODE deletion -- so every aerodynamic
+# force on this airframe is computed by packages/omnisim-hil/omnisim_hil/aero.py
+# and applied through Supervisor.addForceWithOffset, which routes to Newton's
+# body_f via OmSolid::applyExternalForceNewton. Without that controller running,
+# this aircraft is a brick.
+#
+# basicTimeStep is deliberately an INTEGER. Real-time pacing is a QTimer whose
+# interval is start(int), so a fractional basicTimeStep truncates and the world
+# runs faster than wall clock with nothing detecting it -- which for a
+# hardware-in-the-loop rig is a silent lie to the hardware.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 20
+  FPS 60
+  coordinateSystem "ENU"
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  newtonRobotColliders TRUE
+  newtonGroundMu 0.8
+  title "OmniSim HIL - delivery aircraft (real-time, 50 Hz)"
+}
+Viewpoint {
+  position -75 -28 52
+  orientation 0.26 -0.29 -0.92 1.68
+  follow "delivery_aircraft"
+  followType "Tracking Shot"
+  followSmoothness 0.35
+  far 4000
+}
+
+OmniSimSky { }
+DEF SUN        OmniSimSun       { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+DEF GROUND Solid {
+  translation 0 0 -0.5
+  name "ground"
+  children [
+    DEF GROUND_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.32 0.40 0.26
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 900 900 1
+      }
+    }
+  ]
+  boundingObject USE GROUND_SHAPE
+}
+
+DEF RUNWAY Solid {
+  translation 0 0 0.005
+  name "runway"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.22 0.22 0.24
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 120 8 0.01
+      }
+    }
+  ]
+}
+
+DEF DEPOT Solid {
+  translation 0 0 1.5
+  name "depot"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.72 0.25
+        roughness 0.7
+        metalness 0.1
+      }
+      geometry Box {
+        size 8 8 3
+      }
+    }
+  ]
+}
+
+DEF DELIVERY_ZONE_A Solid {
+  translation 140 60 0.05
+  name "delivery_zone_a"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.90 0.30 0.20
+        roughness 0.8
+        metalness 0
+        emissiveColor 0.25 0.05 0.02
+      }
+      geometry Cylinder {
+        height 0.1
+        radius 6
+      }
+    }
+  ]
+}
+
+DEF DELIVERY_ZONE_B Solid {
+  translation -120 150 0.05
+  name "delivery_zone_b"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.25 0.55 0.90
+        roughness 0.8
+        metalness 0
+        emissiveColor 0.02 0.08 0.25
+      }
+      geometry Cylinder {
+        height 0.1
+        radius 6
+      }
+    }
+  ]
+}
+
+DEF AIRCRAFT Robot {
+  translation -60 0 45
+  rotation 0 0 1 0
+  name "delivery_aircraft"
+  controller "hil_aircraft"
+  controllerArgs [
+    "--mavlink-port" "14560"
+    "--launch-speed" "17.0"
+  ]
+  supervisor TRUE
+  children [
+    DEF FUSELAGE Shape {
+      appearance PBRAppearance {
+        baseColor 0.92 0.92 0.94
+        roughness 0.45
+        metalness 0.1
+      }
+      geometry Box {
+        size 0.95 0.085 0.10
+      }
+    }
+    DEF NOSE Solid {
+      translation 0.52 0 0
+      name "nose"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.15 0.16 0.20
+            roughness 0.4
+            metalness 0.2
+          }
+          geometry Sphere {
+            radius 0.055
+            subdivision 2
+          }
+        }
+      ]
+    }
+    DEF WING Solid {
+      translation 0 0 0.058
+      name "wing"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.90 0.90 0.92
+            roughness 0.45
+            metalness 0.1
+          }
+          geometry Box {
+            size 0.22 1.40 0.014
+          }
+        }
+      ]
+    }
+    DEF WING_STRIPE Solid {
+      translation -0.085 0 0.066
+      name "wing_stripe"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.95 0.65 0.12
+            roughness 0.5
+            metalness 0
+            emissiveColor 0.20 0.13 0.01
+          }
+          geometry Box {
+            size 0.035 1.40 0.004
+          }
+        }
+      ]
+    }
+    DEF HTAIL Solid {
+      translation -0.55 0 0.03
+      name "htail"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.90 0.90 0.92
+            roughness 0.45
+            metalness 0.1
+          }
+          geometry Box {
+            size 0.13 0.46 0.008
+          }
+        }
+      ]
+    }
+    DEF VTAIL Solid {
+      translation -0.55 0 0.145
+      name "vtail"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.95 0.65 0.12
+            roughness 0.5
+            metalness 0
+          }
+          geometry Box {
+            size 0.15 0.008 0.22
+          }
+        }
+      ]
+    }
+    DEF PAYLOAD_POD Solid {
+      translation 0.04 0 -0.075
+      name "payload_pod"
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.20 0.22 0.26
+            roughness 0.7
+            metalness 0.05
+          }
+          geometry Box {
+            size 0.30 0.10 0.06
+          }
+        }
+      ]
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 1 0 0
+        anchor -0.66 0 0.03
+      }
+      device [
+        RotationalMotor {
+          name "prop_motor"
+          maxVelocity 1400
+          maxTorque 4
+        }
+      ]
+      endPoint DEF PROPELLER Solid {
+        translation -0.66 0 0.03
+        name "propeller"
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.12 0.12 0.14
+              roughness 0.6
+              metalness 0.2
+            }
+            geometry Box {
+              size 0.012 0.25 0.022
+            }
+          }
+        ]
+        physics Physics {
+          density -1
+          mass 0.02
+        }
+      }
+    }
+    InertialUnit {
+      name "imu"
+    }
+    Gyro {
+      name "gyro"
+    }
+    Accelerometer {
+      name "accelerometer"
+    }
+    GPS {
+      name "gps"
+    }
+  ]
+  boundingObject Box {
+    size 0.95 0.30 0.12
+  }
+  physics Physics {
+    density -1
+    mass 2.5
+    centerOfMass [
+      0 0 0
+    ]
+    inertiaMatrix [
+      0.09 0.12 0.18
+      0 0 0
+    ]
+  }
+}

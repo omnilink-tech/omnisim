@@ -1,0 +1,236 @@
+# Cloth — a rectangular patch of simulated fabric, driven by newton's SolverVBD.
+#
+# ⚠ A Cloth ONLY simulates under a WorldInfo.newtonSolver value that builds a
+# SolverVBD, and there are exactly two:
+#
+#   newtonSolver "mujoco+vbd"   THE DEFAULT CHOICE. SolverMuJoCo keeps every
+#                               rigid body and joint; SolverVBD owns only the
+#                               particles; SolverCoupledProxy exchanges them
+#                               over one Model. Keeps MuJoCo's joint features
+#                               and friction cone, keeps every mj_model-backed
+#                               device, and is the only path offering per-body
+#                               control of what the fabric can see
+#                               (Solid.newtonClothCoupling).
+#
+#   newtonSolver "vbd"          ONE SolverVBD owns rigid bodies AND particles.
+#                               Reach for it when a rigid body must GRIP the
+#                               fabric: only here are the pad and the particle
+#                               relaxed in the same sweep, where a coupled
+#                               proxy always pinches against a one-step-stale
+#                               jaw. The price is the whole MuJoCo feature set
+#                               (no mj_model, no raycast devices, no welds, no
+#                               TouchSensor, no contact readback, and five
+#                               joint features newton drops in silence). Read
+#                               that field's own note before choosing it.
+#
+# In any world declaring a purely rigid value the node still parses, still
+# RENDERS at its authored rest pose (so the patch can be placed and framed in
+# the editor), but registers no particles and never moves — and says so, once,
+# with a warning naming the field. That warning is the only thing separating
+# "misconfigured" from "the physics is broken", so it is worth reading rather
+# than a bare silent freeze.
+#
+# Geometry. The patch is a grid of dimX x dimY CELLS — so (dimX + 1) x (dimY + 1)
+# particles — spanning dimX*cellX by dimY*cellY metres in its own local frame,
+# lying flat in local Z = 0 with its (0, 0) corner at `translation`. `rotation`
+# turns the whole patch, so a vertical curtain is a rotated patch, not a
+# different node.
+#
+# Pinning. fixLeft / fixRight are the low / high ends of the patch's LOCAL X
+# axis, fixBottom / fixTop the low / high ends of its LOCAL Y axis. None of them
+# is a world up/down claim — a patch rotated to hang vertically still pins along
+# its own axes. A pinned edge's particles get zero mass and stop integrating, so
+# the patch hangs from them.
+#
+# Self-contact (do the fabric's own particles collide with each other?) is a
+# WORLD setting, not a per-Cloth one -- it is a SolverVBD parameter and there is
+# one solver. WorldInfo.newtonClothSelfContact: -1 unset (the runtime default,
+# ON), 0 off, 1 on. ⚠ DRAPING wants ON and GRASPING wants OFF, and the gap is
+# 24x on a pinch (-22.11 mm tracking on vs -0.92 mm off): fabric gathered
+# between two pads self-collides and pushes itself back out of the jaws. Read
+# that field's note before authoring a world where something GRIPS this node.
+#
+# Rendering is engine-owned (as for GranularGroup): the simulated particle
+# positions are streamed into a WREN dynamic mesh every frame, so there is no
+# Shape / IndexedFaceSet child to author and none is accepted.
+#
+# Normals are recomputed every frame from the simulated positions and are never
+# stale. They are ANGLE-weighted (each face normal weighted by the interior angle
+# it subtends at the vertex), not the customary area-weighted — because a solver
+# changes triangle AREAS every step, so an area-weighted normal is a function of
+# the local strain and its shading swims across exactly the folds you want to
+# look at. There is nothing to author here; it is recorded because it is the
+# reason cloth shading is steady rather than shimmering.
+#
+# ⚠ MESH RESOLUTION IS AN AUTHORING DECISION AND IT SHOWS. Smooth per-vertex
+# normals interpolate ACROSS a triangle, so they can only be as smooth as the
+# triangle is small relative to the fold. Measured on the shipped 616-vertex
+# T-shirt, the garment's own surface is genuinely crumpled at roughly 4 cm — the
+# scale of its own triangles — and the result reads as hard-edged shading shards
+# rather than fabric. Prefer the 2394-vertex / 4674-triangle `tshirt_hi.obj`
+# beside it for anything the camera gets close to; there is no resolution ceiling
+# in this node (the index buffer is 32-bit and the per-frame cost is linear in
+# triangles), and the nearest limit anywhere is WREN's 65,535-vertex cutoff for
+# shadow CASTING, ~27x above the hi-res shirt.
+#
+# FRAMING. A Cloth has no Shape/geometry children, so the harness supervisor's
+# bounds walk — which works by reading geometry fields — finds nothing to measure
+# and `GET /scene/tree?bounds=1` reports `bounds: null`, which is what makes
+# `POST /scene/frame {"def": "SHEET"}` fail with SUBJECT_BOUNDS_NOT_FOUND. The
+# node itself now measures the world-space box around its CURRENT, deformed
+# surface (OmCloth::worldBounds / worldCenterAndRadius), so the engine-side half
+# of that answer exists; until the supervisor is taught to ask for it, a cloth
+# world's Viewpoint still has to be authored by hand.
+
+Cloth {
+  field SFVec3f    translation     0 0 1     # world position of the patch's local (0, 0) corner (MESH: of the mesh's own origin)
+  field SFRotation rotation        0 0 1 0   # world orientation of the patch (axis x/y/z + angle in rad)
+  # ⚠ `url` SELECTS A SECOND, MUTUALLY EXCLUSIVE MODE: MESH CLOTH (a garment).
+  #
+  # Leave it empty and this is the rectangular patch the rest of this file
+  # describes. Set it to a mesh file OmniSim can load (assimp: obj, stl, dae,
+  # ply, glTF, ... -- NOT usd) and the geometry comes entirely from that file:
+  # one particle per mesh vertex, one FEM triangle per face, and the bending
+  # elements DERIVED from mesh adjacency, so a garment needs no edge list.
+  #
+  # What is IGNORED in mesh mode, each with its own parse warning if you set it:
+  # dimX, dimY, cellX, cellY (the mesh supplies the geometry), `mass` (use
+  # `density` -- the unit is different, see below), and all four fix* pins.
+  #
+  # ⚠ THERE IS NO PINNING FOR A MESH CLOTH. fixLeft/Right/Bottom/Top name the
+  # edges of a rectangular lattice and a garment has none; newton's mesh entry
+  # point offers no equivalent and this node does not invent one. A mesh cloth
+  # is FREE and must be held up by rigid geometry -- drape it over something.
+  # (fixTop defaults to TRUE, so a mesh Cloth warns about it unless you clear
+  # it.)
+  #
+  # The mesh is CLEANED at load -- duplicate vertices welded, degenerate and
+  # duplicate triangles dropped, orphan vertices dropped -- and the counts are
+  # reported as a warning when any of it was needed. That is not tidiness: all
+  # three are silent in newton and damaging in the world. An ORPHAN VERTEX keeps
+  # mass 0.0, which newton reads as infinite inverse mass, so it becomes an
+  # immovable nail holding the fabric in mid-air; an UNWELDED DUPLICATE (what a
+  # UV-split seam exports as) leaves two unrelated particles, so the garment has
+  # no stretch and no bending across that seam and splits open there.
+  #
+  # A ready-made T-shirt ships at
+  # projects/samples/demos/worlds/physics/meshes/tshirt.obj (616 vertices, 1157
+  # triangles, 0.664 m^2), generated from newton's own unisex_shirt.usd by
+  # scripts/dev/usd_to_cloth_obj.py. ⚠ A HIGHER-RESOLUTION VERSION SITS BESIDE
+  # IT — tshirt_hi.obj, 2394 vertices / 4674 triangles — and it is the one to
+  # reach for whenever the camera is close enough to see the fabric: at 616
+  # vertices the triangles are ~4 cm, the same scale as the garment's own
+  # creases, and smooth shading across them reads as hard-edged shards instead
+  # of cloth. The cost is linear (4x the particles, 4x the triangles) and there
+  # is no ceiling in the node.
+  #
+  # ⚠ NEITHER SHIPPED ASSET HAS SPLIT VERTICES: both carry exactly one position
+  # and one UV per vertex (616/616 and 2394/2394), so the position weld below is
+  # a no-op on them and there is no seam to shade across. An asset exported WITH
+  # UV splits is welded anyway — the weld is mandatory for the physics — so the
+  # renderer's index buffer always addresses welded positions and a seam can
+  # never become a permanent lighting crease.
+  field MFString   url             []        # mesh file for MESH mode; empty = the grid patch below
+  field SFFloat    density         0.3       # MESH only: mass per unit AREA (kg/m^2), NOT per particle. 0.3 = light cotton jersey; the shipped T-shirt lands at 0.199 kg
+  field SFFloat    meshScale       1         # MESH only: multiplies the mesh's own coordinates BEFORE rotation and translation (upstream's order). Use it for an asset authored in cm (0.01)
+  # MESH only. Pins every vertex within this many metres of the mesh's MAXIMUM
+  # LOCAL Z, measured in the mesh's own frame before meshScale/rotation/
+  # translation. 0 = unpinned. On a garment authored as worn, that band is the
+  # shoulders and neck, so a shirt hangs as it would on a hanger.
+  #
+  # ⚠ IN PRACTICE A MESH CLOTH NEEDS THIS, and the reason is measured rather
+  # than stylistic: UNPINNED CLOTH RESTING ON A STATIC BODY SINKS THROUGH IT on
+  # the current solver. A 616-particle shirt dropped on a static box passed
+  # through and kept falling; so did a matched 196-particle GRID sheet from the
+  # same height onto the same box, faster (z = -1.20 by 8.4 s against the
+  # shirt's -0.42 at 5.4 s). The defect is the existing cloth-vs-statics path,
+  # not mesh authoring -- the grid patch above has it too, and the shipped grid
+  # drape world only looks fine because its sheet is PINNED and merely brushes
+  # the box. Until that is fixed, hang a garment; do not rest it on something.
+  field SFFloat    pinTopBand      0         # MESH only: pin vertices within this distance (m) of max local Z. 0 = unpinned
+  field SFInt32    dimX            20        # cells along local X (>= 1). Particles along X = dimX + 1
+  field SFInt32    dimY            20        # cells along local Y (>= 1). Particles along Y = dimY + 1
+  field SFFloat    cellX           0.05      # cell size along local X (m); total width = dimX * cellX
+  field SFFloat    cellY           0.05      # cell size along local Y (m); total depth = dimY * cellY
+  field SFFloat    mass            0.001     # PER-PARTICLE mass (kg). Default 21x21 particles => ~0.44 kg total
+  # Stiffnesses. 0 = "leave it to the runtime" on all four, the same convention
+  # the WorldInfo newton* fields use. What the runtime then does differs per
+  # field: triKe and edgeKe have flat defaults (1e5 and 0.01), while triKa and
+  # triKd are DERIVED from triKe (ka = ke, kd = 1e-2 * ke) using the ratios
+  # newton's own coupled-solver example uses. ⚠ Consequence of 0 meaning unset:
+  # a genuinely zero stiffness cannot be authored here — set a tiny value.
+  field SFFloat    particleRadius  0         # per-particle collision thickness (m). 0 => 0.01
+  field SFFloat    triKe           0         # triangle stretch stiffness. 0 => 1e5. Raise for a stiffer, less stretchy fabric
+  field SFFloat    triKa           0         # triangle area-preservation stiffness. 0 => derived from triKe
+  field SFFloat    triKd           0         # triangle damping. 0 => derived from triKe. Raise to kill jitter/ringing
+  field SFFloat    edgeKe          0         # bending stiffness across edges. 0 => 0.01. Raise for canvas, lower for silk
+  field SFBool     fixLeft         FALSE     # pin the local -X edge
+  field SFBool     fixRight        FALSE     # pin the local +X edge
+  field SFBool     fixBottom       FALSE     # pin the local -Y edge
+  field SFBool     fixTop          TRUE      # pin the local +Y edge, so the default patch hangs and droops instead of dropping flat
+  field SFColor    diffuseColor    0.8 0.2 0.2   # engine-owned phong diffuse colour, used ONLY when `appearance` is NULL
+  # ⚠ THE FIELD THAT MAKES A Cloth RENDER LIKE THE REST OF THE SCENE.
+  #
+  # Leave it NULL and the node keeps its original engine-owned Phong material
+  # driven by `diffuseColor` above -- unchanged, so no existing world moves.
+  # Set it to the SAME `PBRAppearance` (or legacy `Appearance`) node any Shape
+  # takes and the fabric goes through the identical WREN material path every
+  # Solid uses: baseColorMap, roughnessMap, metalnessMap, normalMap,
+  # occlusionMap, emissiveColorMap, textureTransform, and the sky's image-based
+  # lighting. `diffuseColor` is then IGNORED (the appearance carries the colour).
+  #
+  # ⚠ WHY THIS IS NOT COSMETIC. The canonical world recipe declares
+  # `ambientIntensity 0` (projects/objects/lights/protos/OmniSimSun.proto), so
+  # ALL fill light in an OmniSim world is image-based and reaches a surface only
+  # through a PBR material. A Phong Cloth therefore renders EXACTLY (0,0,0) on
+  # every square millimetre the sun does not hit directly, which on a draped
+  # garment is most of it. That -- not mesh resolution -- is the single biggest
+  # reason a Phong cloth looks unlike everything around it.
+  #
+  # ⚠ BACK FACES. Fabric is a zero-thickness surface and half of a draped one is
+  # seen from behind, so face culling is off and a back face is currently shaded
+  # with the FRONT face's normal. That is a measured choice, not an oversight:
+  # the textbook normal flip made a pinned horizontal sheet 39.9% pure black seen
+  # from below (from 0.0%), because a correctly-unlit back face has no ambient to
+  # fall into under `ambientIntensity 0`. The real fix is two-sided lighting in
+  # the PBR shader with an ambient term behind it, gated per material; a
+  # PBRAppearance Cloth asks for that bit as soon as the renderer offers it, and
+  # a legacy Appearance (Phong) keeps today's behaviour either way.
+  #
+  # UVs. A grid patch is parameterised over its own (dimX, dimY) lattice, so a
+  # texture tiles across it directly. A MESH cloth uses the UV set the asset
+  # carries; only when the file has none does it fall back to a planar XY
+  # projection of the rest pose, which is a placeholder and will look like one
+  # on anything but a flat sheet. ⚠ Positions are welded before simulating (see
+  # `url`), so a vertex split ONLY by a UV seam collapses to one particle and
+  # keeps the FIRST of its UVs -- one texel column of smear along each seam, in
+  # exchange for a garment that does not tear open there. Author seams where a
+  # real garment has them and it does not show.
+  field SFNode     appearance      NULL          # Appearance | PBRAppearance. NULL => the legacy phong `diffuseColor` above
+  # This defaulted to FALSE for a while because TRUE crashed the engine with an
+  # access violation (0xC0000005) on the GL driver's own worker thread. That is
+  # FIXED (src/wren/DynamicMesh.cpp::updateGlShadow) and the default is TRUE
+  # again; the mechanism is recorded here because the symptom pointed nowhere
+  # near the cause.
+  #
+  # WrDynamicMesh keeps a SECOND vertex array for the shadow pass (mShadowCoords,
+  # two vec4 per vertex), and addCoord() only mirrors into it once the mesh has
+  # a ShadowVolumeCaster attached — which happens in Renderable, i.e. only once
+  # the Renderable exists. OmCloth fills the mesh BEFORE it builds its
+  # Renderable, so mShadowCoords stayed empty, its "dirty" flag stayed false, and
+  # the shadow VBO was never given a data store at all. The silhouette pass still
+  # computed real indices from the index buffer, so glDrawElements ran against a
+  # buffer with no storage and the driver dereferenced NULL + index * 16 —
+  # measured on the drape world as a faulting read at 0x23e0 == 574 * 16, index
+  # 574 of 578 = 2 x 289 particles, in JIT'd driver code (hence "no loaded
+  # module") with no OmniSim frame on the stack. updateGlShadow() now re-derives
+  # mShadowCoords whenever it does not match the coords, so the ordering is a
+  # supported one for any node, not just this one.
+  #
+  # ⚠ NOTE FOR ANYONE READING AN OLDER COMMENT: the material's STENCIL programs
+  # are NOT what crashed. OmCloth sets them (as OmMuscle does) so the patch takes
+  # part in the per-light stencil pass — without them it renders through
+  # Scene::renderStencilWithoutProgram, unlit by the shadow-aware path, but it
+  # does not fault.
+  field SFBool     castShadows     TRUE      # whether the patch casts a shadow (silhouette is recomputed per light per frame)
+}

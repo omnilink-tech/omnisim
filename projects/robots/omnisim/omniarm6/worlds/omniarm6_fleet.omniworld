@@ -1,0 +1,179 @@
+#OMNISIM R2025a utf8
+
+# OmniArm 6 fleet showcase.
+# A 4 x 4 grid of OmniArm 6 cobots, each on its own brushed-aluminium pedestal,
+# all running the same omniarm6_wave controller. Each arm picks up a per-instance
+# phase offset from the trailing digits of its name (omniarm6_0 .. omniarm6_15) so
+# the fleet rolls a wave across the grid instead of moving in lockstep.
+#
+# Layout (top-down, +X east, +Y north, 1.5 m grid spacing):
+#
+#   y=+2.25   12  13  14  15
+#   y=+0.75    8   9  10  11
+#   y=-0.75    4   5   6   7
+#   y=-2.25    0   1   2   3
+#               x=-2.25 -0.75 +0.75 +2.25
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniArm 6 Fleet"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 13.813 -14.704 13.527
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 8 8
+  tileSize 8 8
+  appearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+DEF PEDESTAL_0  Solid { translation -2.25 -2.25 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_0"  boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_1  Solid { translation -0.75 -2.25 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_1"  boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_2  Solid { translation  0.75 -2.25 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_2"  boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_3  Solid { translation  2.25 -2.25 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_3"  boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_4  Solid { translation -2.25 -0.75 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_4"  boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_5  Solid { translation -0.75 -0.75 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_5"  boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_6  Solid { translation  0.75 -0.75 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_6"  boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_7  Solid { translation  2.25 -0.75 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_7"  boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_8  Solid { translation -2.25  0.75 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_8"  boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_9  Solid { translation -0.75  0.75 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_9"  boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_10 Solid { translation  0.75  0.75 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_10" boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_11 Solid { translation  2.25  0.75 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_11" boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_12 Solid { translation -2.25  2.25 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_12" boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_13 Solid { translation -0.75  2.25 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_13" boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_14 Solid { translation  0.75  2.25 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_14" boundingObject Box { size 0.4 0.4 0.15 } }
+DEF PEDESTAL_15 Solid { translation  2.25  2.25 0.075 children [ Shape { appearance BrushedAluminium {} geometry Box { size 0.4 0.4 0.15 } } ] name "pedestal_15" boundingObject Box { size 0.4 0.4 0.15 } }
+
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation -2.25 -2.25 0.155
+  name "omniarm6_0"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation -0.75 -2.25 0.155
+  name "omniarm6_1"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation  0.75 -2.25 0.155
+  name "omniarm6_2"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation  2.25 -2.25 0.155
+  name "omniarm6_3"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation -2.25 -0.75 0.155
+  name "omniarm6_4"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation -0.75 -0.75 0.155
+  name "omniarm6_5"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation  0.75 -0.75 0.155
+  name "omniarm6_6"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation  2.25 -0.75 0.155
+  name "omniarm6_7"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation -2.25  0.75 0.155
+  name "omniarm6_8"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation -0.75  0.75 0.155
+  name "omniarm6_9"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation  0.75  0.75 0.155
+  name "omniarm6_10"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation  2.25  0.75 0.155
+  name "omniarm6_11"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation -2.25  2.25 0.155
+  name "omniarm6_12"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation -0.75  2.25 0.155
+  name "omniarm6_13"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation  0.75  2.25 0.155
+  name "omniarm6_14"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}
+URDFRobot {
+  url "../omniarm6.urdf"
+  translation  2.25  2.25 0.155
+  name "omniarm6_15"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}

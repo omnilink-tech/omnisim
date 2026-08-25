@@ -1,0 +1,96 @@
+// Copyright 1996-2024 Cyberbotics Ltd.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Modifications copyright 2026 OmniLink, licensed under the Apache License, Version 2.0.
+
+#ifndef OM_GUI_APPLICATION_HPP
+#define OM_GUI_APPLICATION_HPP
+
+//
+// Description: OmniSim main gui application
+//
+
+#include <QtWidgets/QApplication>
+
+#include "OmSimulationState.hpp"
+
+class OmApplication;
+class OmMainWindow;
+class OmSplashScreen;
+class OmTcpServer;
+class OmSingleTaskApplication;
+
+class OmGuiApplication : public QApplication {
+  Q_OBJECT
+
+public:
+  OmGuiApplication(int &argc, char **argv);
+  virtual ~OmGuiApplication();
+
+  int exec();
+  void restart();
+  static void setWindowsDarkMode(QWidget *);
+
+  enum Task { NORMAL, SYSINFO, HELP, VERSION, UPDATE_WORLD, INVALID_LOGIN, FAILURE, QUIT, CONVERT };
+  OmApplication *application() const { return mApplication; };
+
+protected:
+#ifdef __APPLE__
+  virtual bool event(QEvent *event) override;
+#endif
+  void timerEvent(QTimerEvent *event) override;
+
+private:
+  OmApplication *mApplication;
+  OmSplashScreen *mSplash;
+  bool mShouldMinimize;         // main window should be minimized on start
+  bool mShouldRunBackground;    // main window must never be shown (no taskbar entry)
+  bool mShouldStartFullscreen;  // main window should be fullscreen on start
+  QString mStartWorldName;
+  OmSimulationState::Mode mStartupMode;
+  OmMainWindow *mMainWindow;
+  // No-window headless mode (core-evolution-plan.md, Phase Q1 first slice; opt-in via
+  // OMNISIM_NO_WINDOW=1): the entire GUI layer (OmMainWindow -> OmSimulationView ->
+  // OmView3D, docks/actions/toolbars) is skipped and this bare, never-shown OmWrenWindow
+  // (a QWindow) carries the WREN GL context instead -- nodes still finalize
+  // (createWrenObjects) and camera sensors still render. Deliberately NOT a OmView3D:
+  // that subclass wires ~60 OmActionManager actions and the interactive-view machinery,
+  // which crashes without the widget tree. NULL on the normal desktop path.
+  bool mNoWindowMode;  // OMNISIM_NO_WINDOW or OMNISIM_NO_GL: setupNoWindow() ran, mMainWindow stays NULL
+  bool mShouldDoRendering;
+  QString mThemeLoaded;
+  char mStream;
+  int mHeartbeat;
+
+  Task mTask;
+  QStringList mTaskArguments;
+
+  OmTcpServer *mTcpServer;
+
+  void commandLineError(const QString &message, bool fatal = true);
+  void parseArguments();
+  void showHelp();
+  void showSysInfo();
+  bool setup();
+  bool setupNoWindow();
+  void setSplashMessage(const QString &);
+  void closeSplashScreenIfNeeded();
+  OmSimulationState::Mode startupModeFromPreferences() const;
+  bool renderingFromPreferences() const;
+  void loadInitialWorld();
+  void updateStyleSheet();
+  const OmSingleTaskApplication *taskExecutor();
+};
+
+#endif

@@ -1,0 +1,212 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/plants/protos/BunchOfSunFlowers.proto
+# keywords: interior/plant
+# A bunch of sunflowers in a terracotta pot: three green stems, each carrying a leaf tuft and an alpha-cut sunflower head made of crossed billboards. The origin sits on the floor, under the pot.
+
+PROTO BunchOfSunFlowers [
+  field SFVec3f    translation            0 0 0
+  field SFRotation rotation               0 0 1 0
+  field SFString   name                   "bunch of sunflowers"
+  field MFString   flowerTextureUrl       "textures/bunch_of_sun_flowers_flower.png"          # Defines the textures used for the flowers.
+  field MFString   leavesTextureUrl       "textures/bunch_of_sun_flowers_leaves.png"          # Defines the textures used for the leaves.
+  field SFNode     physics                NULL                                                # Is `Solid.physics`.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      # ------------------------------------------------------------------ pot
+      Pose {
+        translation 0 0 0.09
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.72 0.36 0.24
+              roughness 0.9
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.11
+              height 0.18
+              subdivision 20
+            }
+          }
+        ]
+      }
+      Pose {
+        translation 0 0 0.185
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.17 0.12 0.08
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.1
+              height 0.02
+              subdivision 16
+            }
+          }
+        ]
+      }
+      # --------------------------------------------------------- sunflower #1
+      Pose {
+        translation 0 0 0.19
+        children [
+          DEF SUNFLOWER Group {
+            children [
+              Pose {
+                translation 0 0 0.21
+                children [
+                  Shape {
+                    appearance PBRAppearance {
+                      baseColor 0.26 0.44 0.16
+                      roughness 1
+                      metalness 0
+                    }
+                    geometry Cylinder {
+                      radius 0.008
+                      height 0.42
+                      subdivision 8
+                    }
+                  }
+                ]
+              }
+              # leaf tuft, half-way up the stem
+              Pose {
+                translation 0 0 0.24
+                children [
+                  DEF SUNFLOWER_LEAVES Shape {
+                    appearance PBRAppearance {
+                      baseColorMap ImageTexture {
+                        url IS leavesTextureUrl
+                        repeatS FALSE
+                        repeatT FALSE
+                      }
+                      roughness 1
+                      metalness 0
+                    }
+                    geometry IndexedFaceSet {
+                      coord Coordinate {
+                        point [
+                          -0.13 0 -0.1
+                          0.13 0 -0.1
+                          0.13 0 0.1
+                          -0.13 0 0.1
+                        ]
+                      }
+                      texCoord TextureCoordinate {
+                        point [
+                          0 0
+                          1 0
+                          1 1
+                          0 1
+                        ]
+                      }
+                      coordIndex [
+                        0 1 2 3 -1
+                      ]
+                      texCoordIndex [
+                        0 1 2 3 -1
+                      ]
+                    }
+                  }
+                ]
+              }
+              Pose {
+                translation 0 0 0.24
+                rotation 0 0 1 1.5708
+                children [
+                  USE SUNFLOWER_LEAVES
+                ]
+              }
+              # flower head, on top of the stem
+              Pose {
+                translation 0 0 0.44
+                children [
+                  DEF SUNFLOWER_HEAD Shape {
+                    appearance PBRAppearance {
+                      baseColorMap ImageTexture {
+                        url IS flowerTextureUrl
+                        repeatS FALSE
+                        repeatT FALSE
+                      }
+                      roughness 1
+                      metalness 0
+                    }
+                    geometry IndexedFaceSet {
+                      coord Coordinate {
+                        point [
+                          -0.09 0 -0.09
+                          0.09 0 -0.09
+                          0.09 0 0.09
+                          -0.09 0 0.09
+                        ]
+                      }
+                      texCoord TextureCoordinate {
+                        point [
+                          0 0
+                          1 0
+                          1 1
+                          0 1
+                        ]
+                      }
+                      coordIndex [
+                        0 1 2 3 -1
+                      ]
+                      texCoordIndex [
+                        0 1 2 3 -1
+                      ]
+                    }
+                  }
+                ]
+              }
+              Pose {
+                translation 0 0 0.44
+                rotation 0 0 1 1.5708
+                children [
+                  USE SUNFLOWER_HEAD
+                ]
+              }
+            ]
+          }
+        ]
+      }
+      # --------------------------------------------------------- sunflower #2
+      Pose {
+        translation 0.045 0.03 0.185
+        rotation 0.342 -0.9397 0 0.16
+        children [
+          USE SUNFLOWER
+        ]
+      }
+      # --------------------------------------------------------- sunflower #3
+      Pose {
+        translation -0.05 -0.02 0.185
+        rotation -0.2955 0.9553 0 0.2
+        children [
+          USE SUNFLOWER
+        ]
+      }
+    ]
+    name IS name
+    model "bunch of sunflowers"
+    recognitionColors [
+      0.95 0.77 0.15
+    ]
+    boundingObject Pose {
+      translation 0 0 0.09
+      children [
+        Cylinder {
+          radius 0.11
+          height 0.18
+        }
+      ]
+    }
+    physics IS physics
+  }
+}

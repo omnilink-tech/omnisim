@@ -1,0 +1,155 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — OmniArm 6 REAL pick & place (friction only, no weld)
+#
+# ⚠ READ THIS BEFORE EDITING. Almost every "grasp" in this tree is a kinematic
+# weld: the bridge welds the nearest DEF GRASP_* node to the tool and teleports
+# it to the TCP every tick, which would hold with the fingers WIDE OPEN, for
+# ever. This demo deliberately does not use that path. Nothing writes the
+# block's pose; the only thing holding it is contact friction between two
+# Robotiq 2F-85 pads. If the physics stops working, this demo drops the block --
+# which is the entire point of it existing.
+#
+# THE RECIPE. Reproduced from the one OmniSim-native friction grasp on record
+# that survived a MOVING arm (ladder T2, 2026-08-03): 29.704 s hold, 4.242 mm
+# max deviation, 1.214 m of tool travel, 3714 samples. Every field below is
+# load-bearing -- omniarm6_grasp_train.omniworld declares mu and omits the other five,
+# and has never been shown to hold anything.
+#
+#   basicTimeStep 8   a 16 ms tick is too coarse for a squeeze to stay stable
+#   newtonGroundMu 6  friction is global here: one ShapeConfig serves the whole
+#                     world, so the pad cannot be grippier than the floor
+#   Ke/Kd 8000/200    firm contact: soft contact lets the pads sink and squirt
+#   elliptic+impratio the pyramidal cone pseudo-slips (181 mm -> 0.6 mm measured)
+#   iterations 150/50 frictional contact that must HOLD, not creep
+#
+# Verify:
+#   python -m omnisim run-headless projects/samples/demos/worlds/flagship/omniarm6_real_pick_place.omniworld --duration 45
+#   (the controller writes _real_pick_result.json next to itself; PICK_CONTROL_DROP=1
+#    runs the negative control -- same motion, no squeeze, block must stay put)
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "OmniLink — OmniArm 6 picks up a CLOTH (friction only)"
+  newtonSolver "mujoco+vbd"
+  newtonStatics TRUE
+  newtonCompoundColliders TRUE
+  newtonGroundMu 6
+  newtonContactKe 8000
+  newtonContactKd 200
+  newtonCone "elliptic"
+  newtonImpratio 100
+  # ⚠ 4, NOT THE ENGINE DEFAULT 3. condim 3 is sliding friction only: the
+  # torsional coefficient newton writes into geom_friction[1] is never read, so
+  # a block pinched between two pads can rotate about the contact normal at
+  # zero cost. MEASURED here: with the pads centred on the block, at condim 3
+  # the block rotates inside the gripper during the 0.47 m carry and levers the
+  # pads from 24 mm apart to 41 mm -- it arrives tipped (z=0.225 instead of
+  # 0.245) on three of three runs. At condim 4 the same run holds 2 contacts
+  # per pad the whole way and places the block standing. It also helps the
+  # off-centre grasp: carry contacts 2/2 -> 3/3, peak pad penetration
+  # 1.12 -> 0.96 mm.
+  newtonCondim 4
+  newtonIterations 150
+  newtonLsIterations 50
+}
+Viewpoint { orientation -0.30 0.13 0.945 2.33 position 1.85 -1.75 1.25 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 4 4 }
+
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_2f85_grip.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_cloth_pick"
+}
+
+# Pick pedestal, top face at z=0.20
+DEF PICK_TABLE Solid {
+  translation 0.46 0 0.10
+  children [
+    DEF PT_SH Shape {
+      appearance PBRAppearance { baseColor 0.40 0.43 0.48 roughness 1 metalness 0 }
+      geometry Box { size 0.26 0.26 0.20 }
+    }
+  ]
+  name "pick_table"
+  boundingObject USE PT_SH
+}
+
+# Place pedestal, same height, off to the side -- the carry is what makes this
+# a pick and PLACE rather than a lift.
+DEF PLACE_TABLE Solid {
+  translation 0.24 -0.42 0.10
+  children [
+    DEF PL_SH Shape {
+      appearance PBRAppearance { baseColor 0.82 0.68 0.15 roughness 1 metalness 0 }
+      geometry Box { size 0.24 0.24 0.20 }
+    }
+  ]
+  name "place_table"
+  boundingObject USE PL_SH
+}
+
+# THE CLOTH, hung exactly where the block used to stand.
+#
+# ⚠ THIS IS THE WHOLE POINT OF THE FILE: the arm, the tables, the WorldInfo and
+# the controller motion are the SHIPPING pick-and-place demo, unchanged. Only
+# the thing being grasped is different. That demo is the one OmniArm 6 grasp on
+# record that survives a moving arm (ladder T2: 29.704 s hold, 1.214 m of tool
+# travel), so anything that fails here is about the CLOTH, not about the arm --
+# which is not true of a demo written from scratch.
+#
+# ⚠ A FLAT SHEET CANNOT BE PINCHED. Parallel jaws close horizontally, so on a
+# horizontal sheet they compress it in-plane and slide off. The fabric has to
+# be presented EDGE-ON, which is what hanging it does. It hangs in the x-z
+# plane at y = 0 so the pads -- which separate along world y -- close across
+# it, exactly as they closed across the block's +/-y faces.
+#
+# Geometry is chosen so the UNCHANGED grasp pose still lands mid-fabric:
+#   grasp point            (0.46, 0, 0.245)   <- untouched from the rigid demo
+#   cloth spans x          0.41 .. 0.51
+#   cloth hangs z          0.33 -> 0.21       (clear of the 0.20 table top)
+# so 0.245 is 35 mm up from the free hem, with pad (50 mm tall) fully on cloth.
+#
+# ⚠ The pin fields are named in the patch's LOCAL axes. `rotation 1 0 0 -1.5708`
+# maps local +Y to world -Z, so the edge to pin -- physically the TOP -- is the
+# local -Y one: fixBottom. fixTop would pin the free hem and nothing could lift.
+DEF CLOTH_RAIL Solid {
+  translation 0.46 0 0.335
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.55 0.57 0.60 roughness 0.35 metalness 0.9 }
+      geometry Cylinder { height 0.18 radius 0.006 }
+    }
+  ]
+  rotation 0 1 0 1.5708
+  name "cloth_rail"
+}
+DEF SHEET Cloth {
+  translation 0.41 0 0.335
+  rotation 1 0 0 -1.5708
+  dimX 5
+  dimY 6
+  cellX 0.02
+  cellY 0.02
+  mass 0.001
+  edgeKe 2.0
+  particleRadius 0.01
+  fixLeft FALSE
+  fixRight FALSE
+  fixBottom TRUE
+  fixTop FALSE
+  diffuseColor 0.85 0.25 0.20
+}
+

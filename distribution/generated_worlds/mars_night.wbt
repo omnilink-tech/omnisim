@@ -1,0 +1,180 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://projects/objects/rocks/protos/Rock.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/UnevenTerrain.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/SandyGround.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+# Interactive time-of-day playground for the Mars atmospheric sky,
+# with a cinematic test scene (rust-coloured ground plane, scatter of
+# rocks, three reference spheres: chrome / matte-white / matte-rust
+# to read direct light + sky IBL).  The `sun_control` supervisor
+# drives sun direction, viewpoint exposure, and the Earth/Mars
+# atmosphere preset live via keyboard.
+#
+# Keys (also printed on-screen, toggle with H):
+#   arrows : sun azimuth / elevation  (shift = coarse)
+#   [ ]    : exposure
+#   E / M  : Earth / Mars atmosphere
+#   1..4   : midnight / sunrise / noon / sunset presets
+#   R      : reset to starting sun position
+#
+# Compare against docs/developer/atmospheric-sky-preview.html.
+
+WorldInfo {
+  basicTimeStep 16
+  title "atmospheric sky playground — Mars"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DEF VIEW Viewpoint {
+  orientation -0.06 0.06 0.996 1.5708
+  position 0 -3 1.7
+  bloomThreshold 10.0
+  ambientOcclusionRadius 2.0
+  exposure 2.0
+  far 800
+}
+
+# Mars-tone exponential haze — muted dust loading that softens
+# distant terrain.  visibilityRange tuned so 60–80m foreground reads
+# cleanly while horizon (~100m+) blends into the sky colour.
+Fog {
+  color 0.62 0.40 0.27
+  visibilityRange 180
+  fogType "EXPONENTIAL"
+}
+
+# Cinematic Perlin-noise terrain.  300×300m footprint with 8m of
+# vertical relief produces visible rolling dunes / low hills past
+# the foreground props.  flatCenter keeps the inner 25% flat so the
+# pre-placed spheres + rocks sit on level ground.  SandyGround
+# texture multiplied by a Mars-rust colour override.
+UnevenTerrain {
+  name "mars_terrain"
+  size 300 300 8
+  xDimension 200
+  yDimension 200
+  flatCenter TRUE
+  perlinNOctaves 4
+  randomSeed 7
+  appearance PBRAppearance {
+    baseColor 0.45 0.27 0.17
+    roughness 0.95
+    metalness 0.0
+  }
+}
+
+# Three reference spheres at y=4m (≈7m in front of the camera).
+# Chrome catches sky reflection (IBL specular test).  Matte white
+# catches sky irradiance colour (IBL diffuse test).  Matte rust
+# blends with the ground but shows sun direction via shading.
+DEF CHROME Solid {
+  translation 1.5 4 0.35
+  name "chrome_ball"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.85 0.85
+        metalness 1.0
+        roughness 0.05
+      }
+      geometry Sphere {
+        radius 0.35
+        subdivision 3
+      }
+    }
+  ]
+}
+DEF WHITE Solid {
+  translation 0 4 0.35
+  name "white_ball"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.95 0.92
+        metalness 0.0
+        roughness 0.85
+      }
+      geometry Sphere {
+        radius 0.35
+        subdivision 3
+      }
+    }
+  ]
+}
+DEF RUST Solid {
+  translation -1.5 4 0.35
+  name "rust_ball"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.18 0.08
+        metalness 0.0
+        roughness 0.7
+      }
+      geometry Sphere {
+        radius 0.35
+        subdivision 3
+      }
+    }
+  ]
+}
+
+# Scattered rocks for foreground/midground texture and to break up
+# the horizon line.  Sized to look natural at the chosen camera
+# position.  No physics — purely visual.
+Rock {
+  translation 3.2 5.5 0
+  scale 4
+  color 0.7 0.45 0.3
+}
+Rock {
+  translation -2.8 6.5 0
+  rotation 0 0 1 1.3
+  scale 6
+  type "flat"
+  color 0.65 0.4 0.25
+}
+Rock {
+  translation 0.5 9 0
+  rotation 0 0 1 2.1
+  scale 9
+  color 0.6 0.4 0.25
+}
+Rock {
+  translation -4.3 4.2 0
+  rotation 0 0 1 0.5
+  scale 3
+  color 0.7 0.45 0.3
+}
+Rock {
+  translation 5.0 3.2 0
+  rotation 0 0 1 -0.8
+  scale 5
+  type "flat"
+  color 0.55 0.35 0.2
+}
+Rock {
+  translation -1.2 13 0
+  scale 12
+  color 0.55 0.35 0.2
+}
+Rock {
+  translation 6.5 11 0
+  rotation 0 0 1 1.9
+  scale 10
+  type "flat"
+  color 0.5 0.32 0.18
+}
+
+Robot {
+  name "sun_controller"
+  controller "sun_control"
+  supervisor TRUE
+  children [
+  ]
+}

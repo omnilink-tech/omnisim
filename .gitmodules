@@ -1,0 +1,7 @@
+[submodule "src/glm"]
+	path = src/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "src/stb"]
+	path = src/stb
+	url = https://github.com/omichel/stb.git
+	branch = patch-1

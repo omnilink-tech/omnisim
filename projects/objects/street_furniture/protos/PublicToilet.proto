@@ -1,0 +1,224 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/street_furniture/protos/PublicToilet.proto
+# keywords: exterior/street furniture
+# A resizable self-cleaning public-toilet kiosk built from primitives: a soft-cornered cabin with
+# a door on one end, a back-lit display panel on the rear face, and an advertising board on the front.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/objects/advertising_board/protos/AdvertisingBoard.proto"
+
+PROTO PublicToilet [
+  field SFVec3f     translation         0 0 0
+  field SFRotation  rotation            0 0 1 0
+  field SFString    name                "public toilet"
+  field SFFloat     height              3.2                              # Defines the height of the toilet.
+  field SFFloat     length              2.1                              # Defines the length of the toilet.
+  field SFFloat     width               3.5                              # Defines the width of the toilet.
+  field MFString    backDisplayTexture  "omnisim://projects/default/worlds/textures/omnisim_billboard.png"  # Defines the texture used on the back display.
+  field SFBool      backDisplayLight    FALSE                            # Defines whether the back display should have emissive color.
+  field MFNode      frontDisplay        [                                # Defines the content of the front display.
+    AdvertisingBoard {
+      translation 0 0.1 -0.55
+      frontTexture ["omnisim://projects/default/worlds/textures/omnisim_billboard.png"]
+      backTexture []
+      displayBackLight FALSE
+      displayWidth 0.9
+      displayHeight 0.9
+      frameThickness 0.1
+    }
+  ]
+]
+{
+  %<
+    function r6(v) {
+      return Math.round(v * 1e6) / 1e6;
+    }
+
+    const h = Math.max(0.5, fields.height.value);       // total height, roof included
+    const l = Math.max(0.5, fields.length.value);       // x -- depth of the cabin
+    const w = Math.max(0.5, fields.width.value);        // y -- width of the cabin
+    const lit = fields.backDisplayLight.value;
+
+    const plinth = 0.06;
+    const roof = 0.16;
+    const cabin = h - plinth - roof;                    // wall height
+    const cabinZ = plinth + 0.5 * cabin;
+    const cornerR = Math.min(0.14, 0.1 * Math.min(l, w));
+
+    const doorW = Math.min(0.95, 0.55 * w);
+    const doorH = Math.min(2.1, 0.78 * cabin);
+    const dispW = 0.7 * l;
+    const dispH = 0.45 * cabin;
+    const dispZ = plinth + 0.62 * cabin;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "public toilet"
+    children [
+      # --- plinth -------------------------------------------------------------
+      DEF PLINTH Pose {
+        translation 0 0 %<= r6(0.5 * plinth) >%
+        children [
+          Shape {
+            appearance DEF TOILET_PLINTH PBRAppearance {
+              baseColor 0.28 0.29 0.3
+              roughness 0.8
+              metalness 0
+            }
+            geometry Box {
+              size %<= r6(l + 0.08) >% %<= r6(w + 0.08) >% %<= r6(plinth) >%
+            }
+          }
+        ]
+      }
+      # --- cabin --------------------------------------------------------------
+      DEF CABIN Pose {
+        translation 0 0 %<= r6(cabinZ) >%
+        children [
+          Shape {
+            appearance DEF TOILET_SHELL PBRAppearance {
+              baseColor 0.72 0.74 0.75
+              roughness 0.45
+              metalness 0.35
+            }
+            geometry Box {
+              size %<= r6(l) >% %<= r6(w) >% %<= r6(cabin) >%
+            }
+          }
+        ]
+      }
+      # --- soft corners --------------------------------------------------------
+      DEF CORNER_PP Pose {
+        translation %<= r6(0.5 * l) >% %<= r6(0.5 * w) >% %<= r6(cabinZ) >%
+        children [
+          DEF TOILET_CORNER Shape {
+            appearance USE TOILET_SHELL
+            geometry Cylinder {
+              radius %<= r6(cornerR) >%
+              height %<= r6(cabin) >%
+              subdivision 16
+            }
+          }
+        ]
+      }
+      DEF CORNER_PM Pose {
+        translation %<= r6(0.5 * l) >% %<= r6(-0.5 * w) >% %<= r6(cabinZ) >%
+        children [
+          USE TOILET_CORNER
+        ]
+      }
+      DEF CORNER_MP Pose {
+        translation %<= r6(-0.5 * l) >% %<= r6(0.5 * w) >% %<= r6(cabinZ) >%
+        children [
+          USE TOILET_CORNER
+        ]
+      }
+      DEF CORNER_MM Pose {
+        translation %<= r6(-0.5 * l) >% %<= r6(-0.5 * w) >% %<= r6(cabinZ) >%
+        children [
+          USE TOILET_CORNER
+        ]
+      }
+      # --- roof ---------------------------------------------------------------
+      DEF ROOF Pose {
+        translation 0 0 %<= r6(h - 0.5 * roof) >%
+        children [
+          Shape {
+            appearance USE TOILET_PLINTH
+            geometry Box {
+              size %<= r6(l + 2.0 * cornerR + 0.1) >% %<= r6(w + 2.0 * cornerR + 0.1) >% %<= r6(roof) >%
+            }
+          }
+        ]
+      }
+      # --- door on the +x end --------------------------------------------------
+      DEF DOOR Pose {
+        translation %<= r6(0.5 * l + 0.02) >% 0 %<= r6(plinth + 0.5 * doorH + 0.05) >%
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.16 0.32 0.4
+              roughness 0.3
+              metalness 0.5
+            }
+            geometry Box {
+              size 0.04 %<= r6(doorW) >% %<= r6(doorH) >%
+            }
+          }
+        ]
+      }
+      DEF DOOR_HANDLE Pose {
+        translation %<= r6(0.5 * l + 0.06) >% %<= r6(0.35 * doorW) >% %<= r6(plinth + 0.5 * doorH) >%
+        rotation 1 0 0 1.5708
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.75 0.76 0.78
+              roughness 0.3
+              metalness 0.9
+            }
+            geometry Cylinder {
+              radius 0.02
+              height 0.16
+              subdivision 10
+            }
+          }
+        ]
+      }
+      # --- back display on the -y face -----------------------------------------
+      DEF BACK_DISPLAY_FRAME Pose {
+        translation 0 %<= r6(-0.5 * w - 0.03) >% %<= r6(dispZ) >%
+        children [
+          Shape {
+            appearance USE TOILET_PLINTH
+            geometry Box {
+              size %<= r6(dispW + 0.12) >% 0.06 %<= r6(dispH + 0.12) >%
+            }
+          }
+        ]
+      }
+      DEF BACK_DISPLAY Pose {
+        translation 0 %<= r6(-0.5 * w - 0.07) >% %<= r6(dispZ) >%
+        rotation 1 0 0 1.5708
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColorMap ImageTexture {
+                url IS backDisplayTexture
+              }
+            %< if (lit) { >%
+              emissiveColor 1 1 1
+              emissiveColorMap ImageTexture {
+                url IS backDisplayTexture
+              }
+              emissiveIntensity 0.9
+            %< } >%
+              roughness 0.3
+              metalness 0
+            }
+            geometry Plane {
+              size %<= r6(dispW) >% %<= r6(dispH) >%
+            }
+          }
+        ]
+      }
+      # --- front display on the +y face ----------------------------------------
+      DEF FRONT_DISPLAY Pose {
+        translation 0 %<= r6(0.5 * w) >% %<= r6(dispZ + 0.55) >%
+        children IS frontDisplay
+      }
+    ]
+    boundingObject Pose {
+      translation 0 0 %<= r6(0.5 * h) >%
+      children [
+        Box {
+          size %<= r6(l + 2.0 * cornerR) >% %<= r6(w + 2.0 * cornerR) >% %<= r6(h) >%
+        }
+      ]
+    }
+  }
+}

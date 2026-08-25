@@ -1,0 +1,17 @@
+# When a character is not found in the font chosen by the user
+# (c.f. wb_display_set_font()), then the following TTF font list is used as a
+# fallback until a valid character is found.
+#
+# Each name resolves to <name>.ttf in this directory
+# (src/omnisim/nodes/utils/WbDisplayFont.cpp), and a name whose file is absent
+# is skipped, so the chain degrades rather than failing.
+#
+# This list named Code2000 / Code2001 / Code2002 until 2026-07-26. Those three
+# faces shipped with no licence text of any kind -- NOTICE recorded their terms
+# as "unverified" -- so they could not honestly be redistributed under
+# Apache-2.0. DejaVu covers a wide Unicode range, is already here, and carries
+# its licence beside it (LICENSE-DejaVu.txt).
+
+DejaVuSans
+DejaVuSerif
+DejaVuSansMono

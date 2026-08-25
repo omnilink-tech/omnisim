@@ -1,0 +1,11 @@
+# results/ is gitignored except committed campaign summaries
+# (SPEC.md): only jsonl rows, summary.md and MANIFEST.json are
+# committable; recordings/logs/worlds stay local.
+*
+!*/
+!.gitignore
+!*.jsonl
+!summary.md
+!MANIFEST.json
+recordings/
+logs/

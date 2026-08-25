@@ -1,0 +1,18 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/BoxShape.proto"
+
+PROTO NestedBoxShape [
+  field SFVec3f translation 0 0 0
+  field SFVec3f boxSize 1 1 1
+]
+{
+  Pose {
+    translation IS translation
+    children [
+      BoxShape {
+        size IS boxSize
+      }
+    ]
+  }
+}

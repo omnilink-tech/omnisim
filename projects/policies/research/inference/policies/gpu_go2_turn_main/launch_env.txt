@@ -1,0 +1,7 @@
+LAUNCH_ENV tag=go2_turn_cert (SHADOWING turn-in-place, WZ_FIXED upgrade) 2026-07-17
+  lineage: r2 walker -> zero-hook turn (95.5%) -> +400 iters (97.5%) -> WZ_FIXED cert arm (seed 2)
+  in-engine eval: never_fell 99.2% | vx -0.003 m/s (true turn-in-place) | CERTIFIED >= 99% bar
+  trained with QUAD_WZ_FIXED=0.5895 QUAD_YAW=-1.0 (policy SEES the yaw target; deploy feeds it
+  via the baton host's morph-blended wz_meas hook, commit 5b64a27d)
+  ghost: projects/policies/ghosts/go2/go2_turn_ghost_lut.json (validator PASS, builder 4/4)
+  remaining for `verified`: the live BATON walk->turn->walk exam

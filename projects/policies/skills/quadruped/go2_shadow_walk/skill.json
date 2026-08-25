@@ -1,0 +1,77 @@
+{
+  "schema": 2,
+  "name": "go2_shadow_walk",
+  "title": "Go2 walk (SHADOWING: certified ghost + corridor + GHOST-FF)",
+  "class": "quadruped",
+  "robots": [
+    "go2"
+  ],
+  "kind": "rl",
+  "method": "shadowing",
+  "status": "verified",
+  "motion_class": "cyclic",
+  "summary": "The Unitree Go2 walks by SHADOWING a certified achievable ghost -- the same method the G1 flagship uses, now carried onto a quadruped. This is the skill that makes the quads' `method: shadowing` label TRUE: it has a real stored ghost lut, a recorded gate verdict, and a corridor-bounded residual, where the legacy `go2_walk` skill has a generated trot retarget and no validator. Head-to-head on the live deploy ruler (3x240 s per side, interleaved, same pod/world/physics): 0.429 vs 0.381 m/s (+12.6%), lateral drift 0.05 vs 0.26 m (5x straighter), 0 falls on both sides.",
+  "ghost": {
+    "lut": "projects/policies/ghosts/go2/go2_shadow_ghost_lut.json",
+    "format": "json lut (nb=64 bins, 12 joints, freq 1.8 Hz, vx 0.3775)",
+    "provenance": "recorded/achieved (doctrine class 1a) -- the LEGACY champion's OWN achieved gait, rolled deterministically on the deploy-matched MJCF (kp=250/kv=6, 16 ms x 8 substeps), steady segment phase-folded at 64 bins and harmonic-smoothed. The incumbent, certified.",
+    "builder": "projects/policies/research/shadowing/build_go2_shadow_ghost.py",
+    "validator": "PASS (stamped into the lut, 2026-07-13: all 8 gates ok against the REAL go2.urdf). Until then this read 'ghost_validator.py's T0 limit check reads the G1 URDF and is VACUOUS for a quad' -- and it was: an unregistered robot skipped every model-aware gate and still printed PASS. The registry now knows the Go2, the validator FAILS CLOSED when it does not know a robot, and it pairs mirror joints by name (FL<->FR), so the lut no longer has to carry fake humanoid joint aliases to be checked. The builder's own binding gates remain in the lut's `gates` key: lut_replay (the folded lut + its feedforward, tracked by the bare deploy-grade PD with NO crane, WALKS: 0.382 m/s, peak torque 0.976 of limit), construction_reroll (3.94 m, no fall), support_fwp_certificate_replay (base_frac95 0.0743).",
+    "corridor_law": "ghost peak |ctrl - q| = 0.217 rad at kp=250, which EXCEEDS the 0.15 corridor -- so the reference is untrackable by corridor alone BY CONSTRUCTION. GHOST_FF=1 is therefore MANDATORY for this skill: the declared feedforward shifts the corridor centre and the 0.15 residual only has to supply corrections. Training and deploy both set it."
+  },
+  "policy": {
+    "checkpoint": "projects/policies/research/inference/policies/gpu_go2_shadow_main/policy.onnx",
+    "arch": "residual-ppo (corridor-bounded around the ghost)",
+    "obs": {
+      "family": "quad_go2",
+      "dim": 48,
+      "notes": "UNCHANGED from the legacy trainer -- the ghost enters via the clock, the corridor and the reward, not via new obs."
+    },
+    "action": {
+      "dim": 12,
+      "space": "legs",
+      "decode": "ghost(phase) + a * QUAD_RES_SCALE (+ ghost feedforward)"
+    },
+    "warmstart": "gpu_go2_walk_main/warmstart.pt -- DISCLOSURE: the champion is FINE-TUNED FROM THE LEGACY CHAMPION'S WEIGHTS under the ghost corridor, not trained from scratch. The head-to-head is therefore an honest comparison of the two DEPLOYED POLICIES, and an honest demonstration that Shadowing UPGRADES an incumbent -- it is NOT a from-scratch method-vs-method comparison."
+  },
+  "baton": {
+    "blend": "cyclic",
+    "mode": "walk",
+    "attractor": "locomotion",
+    "notes": "Phase-clocked and periodic, so it is a legal BATON leg. A quad BATON sequence (walk -> turn -> walk) additionally needs a go2_turn skill, which does not exist yet."
+  },
+  "train": {
+    "trainer": "projects/policies/training/quad_walk_recipe.py",
+    "launcher": "projects/policies/training/run_quad_walk_rl.sh",
+    "status": "in-engine (train == deploy bit-exact)",
+    "env": "QUAD_GHOST=<lut> QUAD_GHOST_FF=1 QUAD_W_GMATCH=2.0 QUAD_RES_SCALE=0.15 QUAD_ENVS=16384 QUAD_FAST_RESET=1 MPC_NJMAX=64 MPC_NCONMAX=64 QUAD_ITERS=400",
+    "notes": "Ghost mode is strictly opt-in: with QUAD_GHOST unset the trainer returns the unmodified legacy env class, so legacy training is byte-identical. Trained on the 5.92x fast path: RunPod RTX 4090, QUAD_ENVS=16384 + QUAD_FAST_RESET=1 + MPC_NJMAX/NCONMAX=64 (the `env` field above). Measured throughput for THAT EXACT CONFIG is 727,583 env-steps/s cumulative over a full 400-iteration run (the 783,582 peak is a single windowed sample at it=40; the 5.92x is vs the 132,362 same-window baseline at QUAD_ENVS=4096) (measured on the training pod; the run record is held with the ops tree and is not part of the public snapshot). Unit: one env-step = one 16 ms CONTROL step = 8 physics substeps; do not compare it to a raw physics-step rate. The rate is a property of (GPU, K, flags), NOT of this skill: the same in-engine trainer measures 10,228 env-steps/s at K=256 on a laptop RTX 3060 (OmniBench lane-2 tier C, docs/benchmarks/omnibench-2026-07-24.md). An earlier version of this note read '~780k env-steps/s' with no batch or machine attached."
+  },
+  "deploy": {
+    "run": "world",
+    "world": "projects/policies/research/worlds/go2_shadow_deploy.omniworld",
+    "controller": "projects/policies/research/controllers/go2_shadow_deploy/go2_shadow_deploy.py",
+    "launcher": "scripts/dev/run_go2_shadow_deploy.sh",
+    "notes": "Identical scene/physics to go2_walk_deploy.omniworld -- ONLY the controller line differs, which is what makes the head-to-head fair. No harness: quads carry no crane."
+  },
+  "verification": {
+    "date": "2026-07-12",
+    "engine": "Newton/mujoco_warp (sidecar clean: backend=newton, degraded=false)",
+    "venue": "RunPod RTX 4090, interleaved S/L, 3x240 s wall per side (~1600 s sim each)",
+    "result": "SHADOWING 0.429 m/s / 0 falls / |y|max 0.05 m / gmatch 0.864 vs LEGACY 0.381 m/s / 0 falls / |y|max 0.26 m. Speed +12.6%, drift 5x better, durability tied (neither ever fell).",
+    "honest_caveats": [
+      "Deploy is DETERMINISTIC: the 3 runs per side are reproducibility checks, not independent samples (shadow scored 0.429 m/s on every single run). Distances differ only in how much sim time the wall window bought.",
+      "Legacy reproduced its own documented Table A record (87.5 m / 0.380 m/s vs documented 86.7 m / 0.379) -- the baseline was NOT handicapped.",
+      "Trade-off: shadow rides ~2 cm lower (body_z 0.272 vs 0.292) and rolls slightly more (|roll| 0.095 vs 0.069 mean).",
+      "The champion is warm-started from the legacy champion (see policy.warmstart)."
+    ],
+    "voided_first_attempt": "An earlier exam produced a MUCH larger apparent win (640 m vs 411 m) and was INVALID: onnxruntime was missing from the controller interpreter, so BOTH sides silently ran with ZERO residual and exited 0. See docs + the fail-loud fix in the deploy controllers."
+  },
+  "doc": "docs/developer/shadowing.md",
+  "memory": "reference_controller_python_onnx_silent_zero_residual",
+  "related": [
+    "go2_walk",
+    "omniquad_walk",
+    "g1_walk"
+  ]
+}

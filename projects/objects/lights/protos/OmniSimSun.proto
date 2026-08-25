@@ -1,0 +1,36 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# tags: no3dView
+# keywords: primitive/light
+# OmniSim canonical daylight sun (DirectionalLight half of the recipe).
+#
+# Part of the standard OmniSim world recipe (see docs/WORLD_RECIPE.md).
+# Pair with OmniSimSky + OmniSimSunMarker — all three together reproduce
+# the Spot demo lighting that is the canonical look across every demo,
+# sample, generated, and RL world in this repo.
+#
+# Instantiation MUST be `DEF SUN OmniSimSun { ... }` at world level, so the
+# sun_marker supervisor (driven by OmniSimSunMarker) can find it via
+# getFromDef("SUN") and drive its `direction` live from the marker's pose.
+#
+# Defaults match `projects/robots/omnisim/omniquad/worlds/omniquad.omniworld`
+# verbatim. Extend by adding new optional fields with defaults — that is a
+# backward-compatible change.
+
+PROTO OmniSimSun [
+  field SFColor color            1.0 0.95 0.85     # Warm sunlight. Same as spot.omniworld.
+  field SFVec3f direction        -0.5 -0.5 -0.3    # Initial; the sun_marker controller overwrites every step.
+  field SFFloat intensity        2.5
+  field SFFloat ambientIntensity 0
+  field SFBool  castShadows      TRUE
+]
+{
+  DirectionalLight {
+    color            IS color
+    direction        IS direction
+    intensity        IS intensity
+    ambientIntensity IS ambientIntensity
+    castShadows      IS castShadows
+  }
+}

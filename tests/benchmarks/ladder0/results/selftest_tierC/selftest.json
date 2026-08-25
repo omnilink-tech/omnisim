@@ -1,0 +1,1750 @@
+{
+ "cases": [
+  {
+   "rung": 0,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "3 checks green on the ideal measurement"
+  },
+  {
+   "rung": 0,
+   "target": "steps_completed",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "steps=251 vs 250 +/-0 -> RED"
+  },
+  {
+   "rung": 0,
+   "target": "steps_completed",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 0,
+   "target": "exit_code",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "exit_code=1 vs 0 +/-0 -> RED"
+  },
+  {
+   "rung": 0,
+   "target": "exit_code",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 0,
+   "target": "finite_clock",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "sim_time_end=1.0088 vs 1 +/-0.008 -> RED"
+  },
+  {
+   "rung": 0,
+   "target": "finite_clock",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 0,
+   "target": "finite_clock",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 1,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "3 checks green on the ideal measurement"
+  },
+  {
+   "rung": 1,
+   "target": "rest_z",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "rest_z=0.6055 vs 0.6 +/-0.005 -> RED"
+  },
+  {
+   "rung": 1,
+   "target": "rest_z",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 1,
+   "target": "rest_z",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 1,
+   "target": "contact_penetration",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "penetration=0.0011 vs 0 +/-0.001 -> RED"
+  },
+  {
+   "rung": 1,
+   "target": "contact_penetration",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 1,
+   "target": "contact_penetration",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 1,
+   "target": "z_drift",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "z_drift=0.0055 vs 0 +/-0.005 -> RED"
+  },
+  {
+   "rung": 1,
+   "target": "z_drift",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 1,
+   "target": "z_drift",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "4 checks green on the ideal measurement"
+  },
+  {
+   "rung": 2,
+   "target": "spawn_z",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "spawn_z=1.622 vs 1.6 +/-0.02 -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "spawn_z",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "spawn_z",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "fall_interval",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "fall_interval=0.174755 vs 0.165955 +/-0.008 -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "fall_interval",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "fall_interval",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "fall_time_abs",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "fall_time_abs=0.469124 vs 0.451524 +/-0.016 -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "fall_time_abs",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "fall_time_abs",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "rest_z",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "rest_z=0.6055 vs 0.6 +/-0.005 -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "rest_z",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 2,
+   "target": "rest_z",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 3,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "3 checks green on the ideal measurement"
+  },
+  {
+   "rung": 3,
+   "target": "omega_driven",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "omega_driven=2.022 vs 2 +/-0.02 -> RED"
+  },
+  {
+   "rung": 3,
+   "target": "omega_driven",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 3,
+   "target": "omega_driven",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 3,
+   "target": "omega_zero",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "omega_zero=0.011 vs 0 +/-0.01 -> RED"
+  },
+  {
+   "rung": 3,
+   "target": "omega_zero",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 3,
+   "target": "omega_zero",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 3,
+   "target": "angle_travelled",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "angle_driven=2.022 vs 2 +/-0.02 -> RED"
+  },
+  {
+   "rung": 3,
+   "target": "angle_travelled",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 3,
+   "target": "angle_travelled",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "6 checks green on the ideal measurement"
+  },
+  {
+   "rung": 4,
+   "target": "distance",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "distance=1.688 vs 1.6 +/-0.05 -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "distance",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "distance",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "wheel_omega",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "wheel_omega=4.044 vs 4 +/-0.04 -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "wheel_omega",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "wheel_omega",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "rolling_consistency",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "roll_ratio=1.033 vs 1 +/-0.03 -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "rolling_consistency",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "rolling_consistency",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "roll_overrun",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "roll_overrun=0.055 vs 0 +/-0.05 -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "roll_overrun",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "roll_overrun",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "ride_height",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "ride_dev=0.022 vs 0 +/-0.02 -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "ride_height",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "ride_height",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "lateral_drift",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "lateral=0.11 vs 0 +/-0.1 -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "lateral_drift",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 4,
+   "target": "lateral_drift",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "4 checks green on the ideal measurement"
+  },
+  {
+   "rung": 5,
+   "target": "range_static",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "range_static=2.9022 vs 2.9 +/-0.002 -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "range_static",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "range_static",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "range_final",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "range_final=0.9022 vs 0.9 +/-0.002 -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "range_final",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "range_final",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "range_tracks",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "range_residual=0.0022 vs 0 +/-0.002 -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "range_tracks",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "range_tracks",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "sweep_span",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "sweep_span=2.0022 vs 2 +/-0.002 -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "sweep_span",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 5,
+   "target": "sweep_span",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "6 checks green on the ideal measurement"
+  },
+  {
+   "rung": 6,
+   "target": "stop_gap",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "stop_gap=0.501463 vs 0.485368 +/-0.0146324 -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "stop_gap",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "stop_gap",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "min_gap",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "min_gap=0.501463 vs 0.485368 +/-0.0146324 -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "min_gap",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "min_gap",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "trigger_reading",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "trigger_reading=0.50228 vs 0.4992 +/-0.0028 -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "trigger_reading",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "trigger_reading",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "sensor_agrees",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "range_residual=0.0022 vs 0 +/-0.002 -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "sensor_agrees",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "sensor_agrees",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "stop_creep",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "stop_creep=0.0055 vs 0 +/-0.005 -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "stop_creep",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "stop_creep",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "wheel_stop",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "wheel_stop=0.011 vs 0 +/-0.01 -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "wheel_stop",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 6,
+   "target": "wheel_stop",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "6 checks green on the ideal measurement"
+  },
+  {
+   "rung": 7,
+   "target": "distance_worst",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "distance_worst=0.055 vs 0 +/-0.05 -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "distance_worst",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "distance_worst",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "wheel_omega_worst",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "wheel_omega_worst=0.011 vs 0 +/-0.01 -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "wheel_omega_worst",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "wheel_omega_worst",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "min_separation",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "min_separation=1.61 vs 1.5 +/-0.1 -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "min_separation",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "min_separation",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "lateral_worst",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "lateral_worst=0.11 vs 0 +/-0.1 -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "lateral_worst",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "lateral_worst",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "roll_overrun_worst",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "roll_overrun_worst=0.055 vs 0 +/-0.05 -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "roll_overrun_worst",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "roll_overrun_worst",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "ride_worst",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "ride_worst=0.022 vs 0 +/-0.02 -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "ride_worst",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 7,
+   "target": "ride_worst",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "6 checks green on the ideal measurement"
+  },
+  {
+   "rung": 8,
+   "target": "part_rest_z",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "part_rest_z=0.7355 vs 0.73 +/-0.005 -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "part_rest_z",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "part_rest_z",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "carry_rel",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "carry_rel=0.011 vs 0 +/-0.01 -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "carry_rel",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "carry_rel",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "lift_height",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "lift_height=0.891 vs 0.88 +/-0.01 -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "lift_height",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "lift_height",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "place_x",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "place_x=0.461 vs 0.45 +/-0.01 -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "place_x",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "place_x",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "hold_clearance",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "hold_clearance=0.161 vs 0.15 +/-0.01 -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "hold_clearance",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "hold_clearance",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "part_speed_max",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "part_speed_max=0.495 vs 0 +/-0.45 -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "part_speed_max",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 8,
+   "target": "part_speed_max",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "5 checks green on the ideal measurement"
+  },
+  {
+   "rung": 9,
+   "target": "repeat_delta",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "repeat_delta=1 vs 0 +/-0 -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "repeat_delta",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "repeat_length",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "repeat_length=1 vs 0 +/-0 -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "repeat_length",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "sensitivity_shortfall",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "sensitivity_shortfall=1 vs 0 +/-0 -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "sensitivity_shortfall",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "fall_interval",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "fall_interval=0.156621 vs 0.147821 +/-0.008 -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "fall_interval",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "fall_interval",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "distinct_processes",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "distinct_processes=4 vs 3 +/-0 -> RED"
+  },
+  {
+   "rung": 9,
+   "target": "distinct_processes",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "7 checks green on the ideal measurement"
+  },
+  {
+   "rung": 11,
+   "target": "distance_worst",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "distance_worst=0.055 vs 0 +/-0.05 -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "distance_worst",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "distance_worst",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "wheel_omega_worst",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "wheel_omega_worst=0.011 vs 0 +/-0.01 -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "wheel_omega_worst",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "wheel_omega_worst",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "roll_overrun_worst",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "roll_overrun_worst=0.055 vs 0 +/-0.05 -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "roll_overrun_worst",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "roll_overrun_worst",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "ride_worst",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "ride_worst=0.022 vs 0 +/-0.02 -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "ride_worst",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "ride_worst",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "lateral_worst",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "lateral_worst=0.11 vs 0 +/-0.1 -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "lateral_worst",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "lateral_worst",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "separation_shortfall",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "separation_shortfall=0.11 vs 0 +/-0.1 -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "separation_shortfall",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "separation_shortfall",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "robots_seen",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "robots_seen=30 vs 29 +/-0 -> RED"
+  },
+  {
+   "rung": 11,
+   "target": "robots_seen",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "(all)",
+   "kind": "baseline-green",
+   "ok": true,
+   "detail": "5 checks green on the ideal measurement"
+  },
+  {
+   "rung": 18,
+   "target": "real_pos_err",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "real_pos_err=39.49 vs 0 +/-35.9 -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "real_pos_err",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "real_pos_err",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "real_rot_err",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "real_rot_err=47.41 vs 0 +/-43.1 -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "real_rot_err",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "real_rot_err",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "tunnel_depth",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "tunnel_depth=0.0011 vs 0 +/-0.001 -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "tunnel_depth",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "tunnel_depth",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "replay_ic_fidelity",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "ic_shortfall=0.011 vs 0 +/-0.01 -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "replay_ic_fidelity",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "replay_ic_fidelity",
+   "kind": "boundary",
+   "ok": true,
+   "detail": "99.9%% of tol -> GREEN, 110%% -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "tosses_unscored",
+   "kind": "mutation",
+   "ok": true,
+   "detail": "tosses_missing=1 vs 0 +/-0 -> RED"
+  },
+  {
+   "rung": 18,
+   "target": "tosses_unscored",
+   "kind": "none-is-red",
+   "ok": true,
+   "detail": "unmeasured -> RED"
+  },
+  {
+   "rung": 0,
+   "target": "steps_completed",
+   "kind": "live",
+   "fault": "short_run",
+   "ok": true,
+   "detail": "steps_completed=125 vs 250 +/-0 -> RED",
+   "masked": [],
+   "measurement": {
+    "steps": 125.0,
+    "sim_time_end": 0.5,
+    "exit_code": 0.0,
+    "n_samples": 0
+   }
+  },
+  {
+   "rung": 1,
+   "target": "rest_z",
+   "kind": "live",
+   "fault": "no_floor",
+   "ok": true,
+   "detail": "rest_z=-14.5597 vs 0.6 +/-0.005 -> RED",
+   "masked": [],
+   "measurement": {
+    "steps": 500.0,
+    "sim_time_end": 2.0,
+    "exit_code": 0.0,
+    "n_samples": 501,
+    "rest_z": -14.559720584324428,
+    "z_drift": 8.593560218811035,
+    "spawn_z": 0.6,
+    "min_z": -19.059240341186523,
+    "final_z": -19.059240341186523,
+    "penetration": 15.159720584324427,
+    "penetration_mm": 15159.720584324426
+   }
+  },
+  {
+   "rung": 2,
+   "target": "fall_interval",
+   "kind": "live",
+   "fault": "half_gravity",
+   "ok": true,
+   "detail": "fall_interval=0.234697 vs 0.165955 +/-0.008 -> RED; spawn_z stayed GREEN (1.6)",
+   "masked": [],
+   "measurement": {
+    "steps": 750.0,
+    "sim_time_end": 3.0,
+    "exit_code": 0.0,
+    "n_samples": 751,
+    "rest_z": 0.5999455451965332,
+    "z_drift": 0.0,
+    "spawn_z": 1.6,
+    "min_z": 0.5779449343681335,
+    "final_z": 0.5999455451965332,
+    "penetration": 5.445480346677467e-05,
+    "penetration_mm": 0.05445480346677467,
+    "t_gate_hi": 0.40185504421584556,
+    "t_gate_lo": 0.6365524977690015,
+    "fall_interval": 0.2346974535531559,
+    "fall_time_abs": 0.6365524977690015
+   }
+  },
+  {
+   "rung": 3,
+   "target": "omega_zero",
+   "kind": "live",
+   "fault": "ignore_zero",
+   "ok": true,
+   "detail": "omega_zero=2 vs 0 +/-0.01 -> RED; omega_driven stayed GREEN (2)",
+   "masked": [],
+   "measurement": {
+    "steps": 750.0,
+    "sim_time_end": 3.0,
+    "exit_code": 0.0,
+    "n_samples": 750,
+    "omega_driven": 2.0000001192092896,
+    "omega_zero": 2.0,
+    "angle_driven": 2.0000001192092896,
+    "angle_total": 5.988000102806836
+   }
+  },
+  {
+   "rung": 4,
+   "target": "rolling_consistency",
+   "kind": "live",
+   "fault": "slide",
+   "ok": true,
+   "detail": "rolling_consistency=None vs 1 +/-0.03 -> RED; distance stayed GREEN (1.6)",
+   "masked": [],
+   "measurement": {
+    "steps": 1625.0,
+    "sim_time_end": 6.5,
+    "exit_code": 0.0,
+    "n_samples": 1625,
+    "distance": 1.6000000834465027,
+    "v_body": 0.40000002086162567,
+    "dx": 1.6000000834465027,
+    "lateral": 0.0,
+    "wheel_omega": 0.0,
+    "wheel_omega_spread": 0.0,
+    "ride_dev": 0.00015691518783567115,
+    "roll_overrun": null
+   }
+  },
+  {
+   "rung": 5,
+   "target": "range_final",
+   "kind": "live",
+   "fault": "no_sweep",
+   "ok": true,
+   "detail": "range_final=2.9 vs 0.9 +/-0.002 -> RED; range_static stayed GREEN (2.9); range_tracks stayed GREEN (9.68575e-08)",
+   "masked": [],
+   "measurement": {
+    "steps": 1188.0,
+    "sim_time_end": 4.752,
+    "exit_code": 0.0,
+    "n_samples": 1188,
+    "range_static": 2.899999903142452,
+    "range_final": 2.899999903142452,
+    "sweep_span": 0.0,
+    "sweep_end_x": 0.0,
+    "range_residual": 9.685754776000977e-08,
+    "range_span": 0.0
+   }
+  },
+  {
+   "rung": 5,
+   "target": "range_static",
+   "kind": "live",
+   "fault": "wall_shifted",
+   "ok": true,
+   "detail": "range_static=3.05 vs 2.9 +/-0.002 -> RED; sweep_span stayed GREEN (2)",
+   "masked": [],
+   "measurement": {
+    "steps": 1188.0,
+    "sim_time_end": 4.752,
+    "exit_code": 0.0,
+    "n_samples": 1188,
+    "range_static": 3.0499999985098833,
+    "range_final": 1.0499999985098838,
+    "sweep_span": 2.0,
+    "sweep_end_x": 2.0,
+    "range_residual": 0.14999999850988432,
+    "range_span": 1.9999999999999996
+   }
+  },
+  {
+   "rung": 6,
+   "target": "stop_gap",
+   "kind": "live",
+   "fault": "no_stop",
+   "ok": true,
+   "detail": "stop_gap=-0.0386363 vs 0.485368 +/-0.0146324 -> RED; trigger_reading stayed GREEN (0.49939)",
+   "masked": [],
+   "measurement": {
+    "steps": 2000.0,
+    "sim_time_end": 8.0,
+    "exit_code": 0.0,
+    "n_samples": 2000,
+    "min_gap": -0.07156807899475082,
+    "start_gap": 2.68,
+    "stop_gap": -0.038636250590897966,
+    "stop_creep": 0.05053424835205078,
+    "trigger_reading": 0.49938996165990845,
+    "trigger_t": 5.492,
+    "range_residual": 0.2930555036881459,
+    "wheel_stop": 2.986421585083008
+   }
+  },
+  {
+   "rung": 6,
+   "target": "min_gap",
+   "kind": "live",
+   "fault": "bounce",
+   "ok": true,
+   "detail": "min_gap=0.299561 vs 0.485368 +/-0.0146324 -> RED; stop_gap stayed GREEN (0.485367); wheel_stop stayed GREEN (0); stop_creep stayed GREEN (0)",
+   "masked": [],
+   "measurement": {
+    "steps": 2000.0,
+    "sim_time_end": 8.0,
+    "exit_code": 0.0,
+    "n_samples": 2000,
+    "min_gap": 0.2995609569549562,
+    "start_gap": 2.68,
+    "stop_gap": 0.4853674697875978,
+    "stop_creep": 0.0,
+    "trigger_reading": 0.49938996165990845,
+    "trigger_t": 5.492,
+    "range_residual": 2.762895344066152e-06,
+    "wheel_stop": 0.0
+   }
+  },
+  {
+   "rung": 7,
+   "target": "distance_worst",
+   "kind": "live",
+   "fault": "stalled_robot",
+   "ok": true,
+   "detail": "distance_worst=1 vs 0 +/-0.05 -> RED; min_separation stayed GREEN (1.5); lateral_worst stayed GREEN (5.73296e-17)",
+   "masked": [],
+   "measurement": {
+    "steps": 1625.0,
+    "sim_time_end": 6.5,
+    "exit_code": 0.0,
+    "n_samples": 1625,
+    "distance_worst": 1.0,
+    "wheel_omega_worst": 1.0,
+    "lateral_worst": 5.73296317073393e-17,
+    "ride_worst": 0.0001718163490295188,
+    "roll_overrun_worst": 0.031928151740364674,
+    "n_robots_seen": 5,
+    "min_separation": 1.5,
+    "min_clearance": 1.0
+   }
+  },
+  {
+   "rung": 7,
+   "target": "min_separation",
+   "kind": "live",
+   "fault": "lane_offset",
+   "ok": true,
+   "detail": "min_separation=1 vs 1.5 +/-0.1 -> RED; distance_worst stayed GREEN (0.000855051); wheel_omega_worst stayed GREEN (4.9167e-08)",
+   "masked": [],
+   "measurement": {
+    "steps": 1625.0,
+    "sim_time_end": 6.5,
+    "exit_code": 0.0,
+    "n_samples": 1625,
+    "distance_worst": 0.0008550509810448248,
+    "wheel_omega_worst": 4.916699625212573e-08,
+    "lateral_worst": 0.0,
+    "ride_worst": 0.0001718163490295188,
+    "roll_overrun_worst": 0.031928151740364674,
+    "n_robots_seen": 5,
+    "min_separation": 1.0,
+    "min_clearance": 0.5
+   }
+  },
+  {
+   "rung": 8,
+   "target": "lift_height",
+   "kind": "live",
+   "fault": "no_grip",
+   "ok": true,
+   "detail": "lift_height=0.729892 vs 0.88 +/-0.01 -> RED; part_rest_z stayed GREEN (0.729892); part_speed_max stayed GREEN (0.00157331)",
+   "masked": [],
+   "measurement": {
+    "steps": 1875.0,
+    "sim_time_end": 7.5,
+    "exit_code": 0.0,
+    "n_samples": 1875,
+    "part_rest_z": 0.7298922538757324,
+    "lift_height": 0.7298922538757324,
+    "hold_clearance": -0.00010774612426756036,
+    "part_final_z": 0.7298922538757324,
+    "place_x": 0.0,
+    "part_final_x": 0.0,
+    "carry_rel": 0.47400724974468705,
+    "carry_rel_final": 0.4740045336088576,
+    "part_speed_max": 0.0015733142693837483
+   }
+  },
+  {
+   "rung": 8,
+   "target": "place_x",
+   "kind": "live",
+   "fault": "no_traverse",
+   "ok": true,
+   "detail": "place_x=3.06903e-21 vs 0.45 +/-0.01 -> RED; lift_height stayed GREEN (0.876889); carry_rel stayed GREEN (0.00255877); hold_clearance stayed GREEN (0.144945)",
+   "masked": [],
+   "measurement": {
+    "steps": 1875.0,
+    "sim_time_end": 7.5,
+    "exit_code": 0.0,
+    "n_samples": 1875,
+    "part_rest_z": 0.7298922538757324,
+    "lift_height": 0.8768891704034996,
+    "hold_clearance": 0.14494468688964846,
+    "part_final_z": 0.8767046928405762,
+    "place_x": 3.0690338569382464e-21,
+    "part_final_x": 3.1780921330173046e-21,
+    "carry_rel": 0.002558767795562744,
+    "carry_rel_final": 0.0011371374130249026,
+    "part_speed_max": 0.09963785608609509
+   }
+  },
+  {
+   "rung": 8,
+   "target": "part_speed_max",
+   "kind": "live",
+   "fault": "drop_mid_carry",
+   "ok": true,
+   "detail": "part_speed_max=1.48959 vs 0 +/-0.45 -> RED; part_rest_z stayed GREEN (0.729892)",
+   "masked": [],
+   "measurement": {
+    "steps": 1875.0,
+    "sim_time_end": 7.5,
+    "exit_code": 0.0,
+    "n_samples": 1875,
+    "part_rest_z": 0.7298922538757324,
+    "lift_height": 0.7298922538757324,
+    "hold_clearance": -0.012412469387054426,
+    "part_final_z": 0.7298922538757324,
+    "place_x": 2.725382055796291e-14,
+    "part_final_x": 2.7252609145615204e-14,
+    "carry_rel": 0.4740072497446612,
+    "carry_rel_final": 0.4740045336088317,
+    "part_speed_max": 1.4895896116892484
+   }
+  },
+  {
+   "rung": 9,
+   "target": "repeat_delta",
+   "kind": "live",
+   "fault": "seed_nudge",
+   "ok": true,
+   "detail": "repeat_delta=0.0228295 vs 0 +/-0 -> RED; sensitivity_shortfall stayed GREEN (0); fall_interval stayed GREEN (0.147685)",
+   "masked": [],
+   "measurement": {
+    "steps": null,
+    "sim_time_end": null,
+    "exit_code": 0.0,
+    "n_samples": 0,
+    "distinct_processes": 3.0,
+    "repeat_delta": 0.02282947301864624,
+    "repeat_delta_where": "drop.z@112",
+    "repeat_length": 0.0,
+    "sensitivity_max_sep": 0.1455090045928955,
+    "sensitivity_where": "drop.x@113",
+    "amplification": 145509.0045928955,
+    "sensitivity_shortfall": 0.0,
+    "t_gate_hi": 0.19993416497363947,
+    "t_gate_lo": 0.34761953750580404,
+    "fall_interval": 0.14768537253216457,
+    "drop_final_z": 0.599892258644104
+   }
+  },
+  {
+   "rung": 9,
+   "target": "fall_interval,sensitivity_shortfall",
+   "kind": "live",
+   "fault": "frozen",
+   "ok": true,
+   "detail": "fall_interval=None vs 0.147821 +/-0.008 -> RED; sensitivity_shortfall=9 vs 0 +/-0 -> RED; repeat_delta stayed GREEN (0)",
+   "masked": [],
+   "measurement": {
+    "steps": null,
+    "sim_time_end": null,
+    "exit_code": 0.0,
+    "n_samples": 0,
+    "distinct_processes": 3.0,
+    "repeat_delta": 0.0,
+    "repeat_delta_where": "drop.x@0",
+    "repeat_length": 0.0,
+    "sensitivity_max_sep": 1.0000000000287557e-06,
+    "sensitivity_where": "drop.x@0",
+    "amplification": 1.0000000000287557,
+    "sensitivity_shortfall": 8.999999999971244,
+    "t_gate_hi": null,
+    "t_gate_lo": null,
+    "drop_final_z": 1.6
+   }
+  },
+  {
+   "rung": 9,
+   "target": "repeat_length",
+   "kind": "live",
+   "fault": "short_b",
+   "ok": true,
+   "detail": "repeat_length=1000 vs 0 +/-0 -> RED; fall_interval stayed GREEN (0.147685)",
+   "masked": [],
+   "measurement": {
+    "steps": null,
+    "sim_time_end": null,
+    "exit_code": 0.0,
+    "n_samples": 0,
+    "distinct_processes": 3.0,
+    "repeat_delta": 0.0,
+    "repeat_delta_where": "drop.x@0",
+    "repeat_length": 1000.0,
+    "sensitivity_max_sep": 0.1455090045928955,
+    "sensitivity_where": "drop.x@113",
+    "amplification": 145509.0045928955,
+    "sensitivity_shortfall": 0.0,
+    "t_gate_hi": 0.19993416497363947,
+    "t_gate_lo": 0.34761953750580404,
+    "fall_interval": 0.14768537253216457,
+    "drop_final_z": 0.599892258644104
+   }
+  },
+  {
+   "rung": 11,
+   "target": "distance_worst",
+   "kind": "live",
+   "fault": "stalled_robot",
+   "ok": true,
+   "detail": "distance_worst=1 vs 0 +/-0.05 -> RED; separation_shortfall stayed GREEN (0); lateral_worst stayed GREEN (1.86172e-17)",
+   "masked": [],
+   "measurement": {
+    "steps": null,
+    "sim_time_end": null,
+    "exit_code": 0.0,
+    "n_samples": 0,
+    "distance_worst": 1.0,
+    "wheel_omega_worst": 1.0,
+    "lateral_worst": 1.8617234878600617e-17,
+    "ride_worst": 0.0001718163490295188,
+    "roll_overrun_worst": 0.029813194674880972,
+    "separation_shortfall": 0.0,
+    "robots_seen": 29.0,
+    "solo_deviation_max": 0.0
+   }
+  },
+  {
+   "rung": 11,
+   "target": "separation_shortfall",
+   "kind": "live",
+   "fault": "lane_offset",
+   "ok": true,
+   "detail": "separation_shortfall=0.5 vs 0 +/-0.1 -> RED; distance_worst stayed GREEN (0.000855051); wheel_omega_worst stayed GREEN (4.9167e-08)",
+   "masked": [],
+   "measurement": {
+    "steps": null,
+    "sim_time_end": null,
+    "exit_code": 0.0,
+    "n_samples": 0,
+    "distance_worst": 0.0008550509810448248,
+    "wheel_omega_worst": 4.916699691825954e-08,
+    "lateral_worst": 1.8617234878600617e-17,
+    "ride_worst": 0.0001718163490295188,
+    "roll_overrun_worst": 0.029813194674880972,
+    "separation_shortfall": 0.49999999962537145,
+    "robots_seen": 29.0,
+    "solo_deviation_max": 0.0
+   }
+  }
+ ],
+ "detector_validation": {
+  "0": {
+   "status": "VALIDATED",
+   "ran": 1,
+   "declared": 1
+  },
+  "1": {
+   "status": "VALIDATED",
+   "ran": 1,
+   "declared": 1
+  },
+  "2": {
+   "status": "VALIDATED",
+   "ran": 1,
+   "declared": 1
+  },
+  "3": {
+   "status": "VALIDATED",
+   "ran": 1,
+   "declared": 1
+  },
+  "4": {
+   "status": "VALIDATED",
+   "ran": 1,
+   "declared": 1
+  },
+  "5": {
+   "status": "VALIDATED",
+   "ran": 2,
+   "declared": 2
+  },
+  "6": {
+   "status": "VALIDATED",
+   "ran": 2,
+   "declared": 2
+  },
+  "7": {
+   "status": "VALIDATED",
+   "ran": 2,
+   "declared": 2
+  },
+  "8": {
+   "status": "VALIDATED",
+   "ran": 3,
+   "declared": 3
+  },
+  "9": {
+   "status": "VALIDATED",
+   "ran": 3,
+   "declared": 3
+  },
+  "11": {
+   "status": "VALIDATED",
+   "ran": 2,
+   "declared": 2
+  },
+  "18": {
+   "status": "UNVALIDATED",
+   "ran": 0,
+   "declared": 3,
+   "why": "the battery was not run here"
+  }
+ }
+}

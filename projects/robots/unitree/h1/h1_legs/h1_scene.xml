@@ -1,0 +1,12 @@
+<mujoco model="h1_scene">
+  <include file="h1.xml"/>
+  <statistic center="0 0 1.0" extent="1.8"/>
+  <asset>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge"
+             rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+  <worldbody>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+  </worldbody>
+</mujoco>

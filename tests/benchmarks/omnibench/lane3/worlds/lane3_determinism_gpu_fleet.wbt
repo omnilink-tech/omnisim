@@ -1,0 +1,148 @@
+#OMNISIM R2025a utf8
+
+# Ten Huskies on a random walk. Built for the AgentBench A1 prompt:
+# "Build me a scene with 10 Huskies in it and let them move randomly, and
+#  show me proof they actually moved."
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 32
+  title "Ten Huskies, random walk"
+  # A skid-steer pivot scrubs all four wheels sideways at once. XPBD's soft
+  # positional contact has no bounded lateral slip, so the wheels jam and the
+  # Huskies never leave their spawn. SolverMuJoCo slips correctly.
+  # GPU path: SolverMuJoCo on mujoco_warp, with the constraint buffers
+  # raised because ten 4WD robots peak at nefc=320 rows (32 per robot)
+  # and the built-in cap is 256. This is the scene that can actually
+  # expose GPU nondeterminism -- many contacts accumulated per step.
+  newtonSolver "mujoco_warp"
+  newtonNjmax 512
+  newtonNconmax 512
+  # Arena walls have to be Newton collision surfaces or the Huskies drive out
+  # of the world.
+  newtonStatics TRUE
+  # Even sub-step count: the CUDA-graph replay is disabled on an odd one.
+  newtonSubsteps 6
+}
+Viewpoint {
+  orientation 0.000000 1.000000 0.000000 1.570796
+  position 0.000 0.000 90.000
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 60 60
+  wallHeight 0.6
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+URDFRobot {
+  url "../../../../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 12.0000 0.0000 0.2
+  rotation 0 0 1 -0.47852
+  name "husky_0"
+  controller "husky_random"
+  supervisor TRUE
+}
+
+URDFRobot {
+  url "../../../../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 9.7082 7.0534 0.2
+  rotation 0 0 1 0.86287
+  name "husky_1"
+  controller "husky_random"
+  supervisor TRUE
+}
+
+URDFRobot {
+  url "../../../../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 3.7082 11.4127 0.2
+  rotation 0 0 1 1.42231
+  name "husky_2"
+  controller "husky_random"
+  supervisor TRUE
+}
+
+URDFRobot {
+  url "../../../../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -3.7082 11.4127 0.2
+  rotation 0 0 1 2.38366
+  name "husky_3"
+  controller "husky_random"
+  supervisor TRUE
+}
+
+URDFRobot {
+  url "../../../../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -9.7082 7.0534 0.2
+  rotation 0 0 1 2.75875
+  name "husky_4"
+  controller "husky_random"
+  supervisor TRUE
+}
+
+URDFRobot {
+  url "../../../../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -12.0000 0.0000 0.2
+  rotation 0 0 1 2.75996
+  name "husky_5"
+  controller "husky_random"
+  supervisor TRUE
+}
+
+URDFRobot {
+  url "../../../../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -9.7082 -7.0534 0.2
+  rotation 0 0 1 3.49098
+  name "husky_6"
+  controller "husky_random"
+  supervisor TRUE
+}
+
+URDFRobot {
+  url "../../../../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -3.7082 -11.4127 0.2
+  rotation 0 0 1 3.87451
+  name "husky_7"
+  controller "husky_random"
+  supervisor TRUE
+}
+
+URDFRobot {
+  url "../../../../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 3.7082 -11.4127 0.2
+  rotation 0 0 1 4.85433
+  name "husky_8"
+  controller "husky_random"
+  supervisor TRUE
+}
+
+URDFRobot {
+  url "../../../../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 9.7082 -7.0534 0.2
+  rotation 0 0 1 6.24684
+  name "husky_9"
+  controller "husky_random"
+  supervisor TRUE
+}
+# The lane-3 recorder, required by determinism.py: it samples every tracked
+# body's pose+velocity per step at %.17g and writes run.csv into
+# $OMNIBENCH_L3_OUT_DIR. Without it the harness sees "empty CSV", retries, and
+# reports nothing -- which is exactly what happened on the first attempt at
+# this world.
+DEF LANE3_RECORDER Robot {
+  name "lane3_recorder"
+  controller "lane3_recorder"
+  supervisor TRUE
+  children [
+  ]
+}

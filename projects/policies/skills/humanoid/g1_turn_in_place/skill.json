@@ -1,0 +1,85 @@
+{
+  "schema": 2,
+  "name": "g1_turn_in_place",
+  "title": "Natural 90 deg step-around turn (four footfalls, no yaw rope)",
+  "class": "humanoid",
+  "robots": [
+    "g1"
+  ],
+  "kind": "rl",
+  "method": "shadowing",
+  "status": "experimental",
+  "motion_class": "sequence",
+  "summary": "A purpose-designed 90 degree humanoid step-around: two 45 degree increments, each made by right then left swing, for four deliberate footfalls total. Minimum-jerk pelvis/foot yaw, smooth COM transfer, subtle waist lead and arm counter-swing replace the old six-step calibrated staircase. Yaw torque remains zero. It is a 153-dim whole-body sequence and therefore runs through BATON's solo context swap.",
+  "ghost": {
+    "lut": "projects/policies/ghosts/g1/ghost_turn_natural90_closed_lut.json",
+    "provenance": "constructed-feasible",
+    "validator": "WARN",
+    "preview_world": "projects/policies/worlds/g1_step_turn_preview.omniworld",
+    "owner_signoff": "2026-07-07",
+    "notes": "build_step_turn_ghost.py --motion-profile natural --inc 2: exact stance closure, 0/108 infeasible dynamics frames, 0.21 torque ratio, 0.01 speed ratio. Validator WARNs only because a sequence has no recorded edit baseline."
+  },
+  "policy": {
+    "checkpoint": "projects/policies/training/runs/wr_turn_natural90.pt",
+    "arch": "lstm",
+    "hidden": 256,
+    "obs": {
+      "family": "whole_body_seq",
+      "ref_obs_k": 3,
+      "ref_obs_wb": true,
+      "dim": 153
+    },
+    "action": {
+      "dim": 23,
+      "space": "whole_body",
+      "decode": "ghost(seq_phase) + residual*GHOST_RESIDUAL"
+    }
+  },
+  "baton": {
+    "blend": "solo_swap",
+    "mode": "turn",
+    "nb": 108,
+    "vx": "0",
+    "attractor": "locomotion",
+    "handover_in": "cold",
+    "notes": "solo_swap: _wr_turn_swap replaces every world._wr_* deploy field with the turner's context for the turn segment; blend + warm loop are skipped while in the turn; cold-hidden both ways. Continuous-turn + decel-stop (TURN_TO_DEG/TURN_DECEL_DEG) arrests the spin. Reliability is fragile in-sequence (the open wall)."
+  },
+  "train": {
+    "trainer": "projects.policies.training.g1_walk_recipe:g1_walk_recipe_step",
+    "launcher": "projects/policies/training/run_walk_rl.sh",
+    "recipe_env": {
+      "GHOST_SEQ": "1",
+      "GHOST_LUT_JSON": "projects/policies/ghosts/g1/ghost_turn_natural90_closed_lut.json",
+      "OMNISIM_FOOT_TORSION": "0.25",
+      "REF_OBS_WB": "1",
+      "SEQ_RSI": "1",
+      "W_TRACK_ANG": "5"
+    },
+    "status": "reconstructed",
+    "notes": "Trained on a RunPod RTX A4500 (cloud venue); 0.22 rad corridor passes the ankle-CoP authority gate. Foot torsion must match train/deploy."
+  },
+  "deploy": {
+    "solo_swap_env": {
+      "BATON_TURN_CKPT": "projects/policies/training/runs/wr_turn_natural90.pt",
+      "BATON_TURN_LUT": "projects/policies/ghosts/g1/ghost_turn_natural90_closed_lut.json",
+      "BATON_TURN_REF_WB": "1",
+      "OMNISIM_FOOT_TORSION": "0.25",
+      "TURN_TO_DEG": "90",
+      "TURN_TARGET_STOP": "1",
+      "BATON_TURN_SETTLE_TICKS": "120",
+      "HEADING_TARGET": "0.0",
+      "HARNESS_FY_HEADING": "1"
+    }
+  },
+  "verification": {
+    "date": "2026-07-18",
+    "engine": "Newton/mujoco_warp",
+    "support": "G1 lambda=0.9 weight-bearing balance harness; zero yaw torque; not free-standing",
+    "result": "The natural four-footfall checkpoint and feasible ghost are packaged, but this new default has no end-to-end certification yet. The 86-90 deg solo and 90.6-95.6 deg 3/3 sequence results belong to the older wr_stepturn/wr_turn90 assets explicitly pinned by turn_solo and walk_turn_walk; they are not evidence for this natural checkpoint."
+  },
+  "doc": "docs/developer/step-turn-method.md",
+  "memory": "project_baton_policy_switching",
+  "related": [
+    "g1_walk"
+  ]
+}

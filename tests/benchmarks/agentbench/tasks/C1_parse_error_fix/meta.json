@@ -1,0 +1,52 @@
+{
+  "id": "C1_parse_error_fix",
+  "tier": "debug",
+  "flagship": false,
+  "prompt_file": "prompt.txt",
+  "grader": "agentbench.graders.c1",
+  "par_s": 480,
+  "timeout_s": 1440,
+  "repeats_default": 1,
+  "stresses": "structured diagnostics; error-message quality; repairing the scene rather than amputating it",
+  "initial_state": "a world text that does not parse; the header names the symptom only (4e5cbdc4 rule: the prompt and the file never name the defects)",
+  "initial_files": [
+    "parse_error.wbt"
+  ],
+  "reference_roster": "reference_roster.json",
+  "phases": {
+    "harness": {
+      "enabled": false
+    },
+    "standalone": {
+      "settle_s": 0.0,
+      "duration_s": 5.0,
+      "contact_steps": 0,
+      "solids": [
+        "floor",
+        "pallet_a",
+        "pallet_b"
+      ],
+      "note": "the graded window is load + inventory + finite stepping; contacts are not the question here, so no contact scan is requested"
+    }
+  },
+  "constants": {
+    "MIN_RECORDED_S": 4.0,
+    "MAX_ABS_COORD_M": 1000.0,
+    "EXPECTED_BODIES": [
+      "floor",
+      "pallet_a",
+      "pallet_b",
+      "probe_bot"
+    ],
+    "ROBOT_NAME": "probe_bot"
+  },
+  "budget": {
+    "rule": "timeout_s = min(3 x par_s, TASK_HARD_CEILING_S)",
+    "hard_ceiling_s": 2700,
+    "truncated_by_ceiling": false,
+    "ratio_to_par": 3.0,
+    "runs_per_cell": 1,
+    "variance_measured": false,
+    "note": "the full 3x-par rule applies under the 2700 s (45 min) ceiling. ONE run per (task, arm): a single observation is an OUTCOME, never a rate -- pass@1 and a confidence interval are undefined at n = 1 (SPEC 3.5)."
+  }
+}

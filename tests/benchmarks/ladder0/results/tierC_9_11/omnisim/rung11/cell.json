@@ -1,0 +1,251 @@
+{
+ "sim": "omnisim",
+ "rung": 11,
+ "title": "the same rover at N = 1, 4, 8, 16",
+ "checks": [
+  {
+   "name": "distance_worst",
+   "measured": 0.0008550509810448248,
+   "expected": 0.0,
+   "tol": 0.05,
+   "unit": "-",
+   "rel": false,
+   "error": 0.0008550509810448248,
+   "margin": 0.04914494901895518,
+   "ok": true,
+   "why": "worst relative error, over every robot of every fleet size (1, 4, 8, 16), of d_i against omega_i r t -- the distance that robot would travel ALONE.  The tolerance is rung 4's and is NOT widened with N: the failure this rung exists to catch is a silently truncated constraint vector, documented at 9% displacement error, so a tolerance that grew with N would be pre-authorised to miss it",
+   "key": "distance_worst"
+  },
+  {
+   "name": "wheel_omega_worst",
+   "measured": 4.916699691825954e-08,
+   "expected": 0.0,
+   "tol": 0.01,
+   "unit": "-",
+   "rel": false,
+   "error": 4.916699691825954e-08,
+   "margin": 0.009999950833003082,
+   "ok": true,
+   "why": "worst relative error of any robot's mean wheel rate against ITS OWN command.  The commands cycle, so an engine that simulates one robot and copies it lands every clone on one target and reds here",
+   "key": "wheel_omega_worst"
+  },
+  {
+   "name": "roll_overrun_worst",
+   "measured": 0.029813194674880972,
+   "expected": 0.0,
+   "tol": 0.05,
+   "unit": "-",
+   "rel": false,
+   "error": 0.029813194674880972,
+   "margin": 0.02018680532511903,
+   "ok": true,
+   "why": "rung 4's one-sided kinematic invariant over the whole fleet and the whole run: no body may outrun its own wheels, at any N",
+   "key": "roll_overrun_worst"
+  },
+  {
+   "name": "ride_worst",
+   "measured": 0.0001718163490295188,
+   "expected": 0.0,
+   "tol": 0.02,
+   "unit": "m",
+   "rel": false,
+   "error": 0.0001718163490295188,
+   "margin": 0.01982818365097048,
+   "ok": true,
+   "why": "worst axle deviation from floor_top + wheel_radius over every robot, every fleet and every sample after the initial settle",
+   "key": "ride_worst"
+  },
+  {
+   "name": "lateral_worst",
+   "measured": 1.8617234878600617e-17,
+   "expected": 0.0,
+   "tol": 0.1,
+   "unit": "m",
+   "rel": false,
+   "error": 1.8617234878600617e-17,
+   "margin": 0.09999999999999999,
+   "ok": true,
+   "why": "worst |y - y_0| over every robot and every sample: each robot stays in its own lane at every fleet size",
+   "key": "lateral_worst"
+  },
+  {
+   "name": "separation_shortfall",
+   "measured": 0.0,
+   "expected": 0.0,
+   "tol": 0.1,
+   "unit": "m",
+   "rel": false,
+   "error": 0.0,
+   "margin": 0.1,
+   "ok": true,
+   "why": "max over every fleet of max(0, 1.5 - min pairwise centre distance over the whole run).  All robots start abreast one lane apart and travel at different speeds, so they can only separate.  Asserted GEOMETRICALLY from the poses rather than as a contact count, because this tree has shipped a contact read that returned an empty set for a scene containing 1008 contacts",
+   "key": "separation_shortfall"
+  },
+  {
+   "name": "robots_seen",
+   "measured": 29.0,
+   "expected": 29.0,
+   "tol": 0.0,
+   "unit": "robots",
+   "rel": false,
+   "error": 0.0,
+   "margin": 0.0,
+   "ok": true,
+   "why": "every robot of every fleet was found and measured.  An engine that silently DROPS robots otherwise reports a well-behaved smaller fleet, and every other number in this rung would look fine",
+   "key": "robots_seen"
+  }
+ ],
+ "timing": {
+  "startup_s": 5.310340881347656,
+  "total_s": 43.77678680419922,
+  "step_s": 38.46644592285156
+ },
+ "meta": {
+  "sim": "omnisim",
+  "rung": 11,
+  "fault": "none",
+  "error": null,
+  "exit_code": 0,
+  "timed_out": false,
+  "multi_run": true,
+  "run_tags": [
+   "n1",
+   "n4",
+   "n8",
+   "n16"
+  ],
+  "binary": "o:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "cbd80861c9f0d314",
+  "binary_mtime": "2026-08-13 10:34:49",
+  "runs": [
+   {
+    "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung11_n1.wbt",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "binary_sha256": "cbd80861c9f0d314",
+    "binary_mtime": "2026-08-13 10:34:49",
+    "proc_t0": 1786611266.0917385,
+    "proc_t1": 1786611273.270954,
+    "newton": {
+     "backend": "newton",
+     "degraded": false,
+     "finalised": true,
+     "runtime": {
+      "device": "cpu",
+      "mujoco": "3.8.1",
+      "mujoco_warp": "3.8.0.3",
+      "newton": "1.2.0",
+      "warp": "1.13.0"
+     },
+     "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+     "present": true
+    }
+   },
+   {
+    "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung11_n4.wbt",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "binary_sha256": "cbd80861c9f0d314",
+    "binary_mtime": "2026-08-13 10:34:49",
+    "proc_t0": 1786611273.2936916,
+    "proc_t1": 1786611282.3440871,
+    "newton": {
+     "backend": "newton",
+     "degraded": false,
+     "finalised": true,
+     "runtime": {
+      "device": "cpu",
+      "mujoco": "3.8.1",
+      "mujoco_warp": "3.8.0.3",
+      "newton": "1.2.0",
+      "warp": "1.13.0"
+     },
+     "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+     "present": true
+    }
+   },
+   {
+    "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung11_n8.wbt",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "binary_sha256": "cbd80861c9f0d314",
+    "binary_mtime": "2026-08-13 10:34:49",
+    "proc_t0": 1786611282.4060864,
+    "proc_t1": 1786611293.5563643,
+    "newton": {
+     "backend": "newton",
+     "degraded": false,
+     "finalised": true,
+     "runtime": {
+      "device": "cpu",
+      "mujoco": "3.8.1",
+      "mujoco_warp": "3.8.0.3",
+      "newton": "1.2.0",
+      "warp": "1.13.0"
+     },
+     "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+     "present": true
+    }
+   },
+   {
+    "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung11_n16.wbt",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "binary_sha256": "cbd80861c9f0d314",
+    "binary_mtime": "2026-08-13 10:34:49",
+    "proc_t0": 1786611293.6004438,
+    "proc_t1": 1786611309.8685253,
+    "newton": {
+     "backend": "newton",
+     "degraded": false,
+     "finalised": true,
+     "runtime": {
+      "device": "cpu",
+      "mujoco": "3.8.1",
+      "mujoco_warp": "3.8.0.3",
+      "newton": "1.2.0",
+      "warp": "1.13.0"
+     },
+     "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+     "present": true
+    }
+   }
+  ],
+  "proc_t0": 1786611266.0917385,
+  "proc_t1": 1786611309.8685253,
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cpu",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+   "present": true
+  }
+ },
+ "measurement": {
+  "steps": null,
+  "sim_time_end": null,
+  "exit_code": 0.0,
+  "n_samples": 0,
+  "distance_worst": 0.0008550509810448248,
+  "wheel_omega_worst": 4.916699691825954e-08,
+  "lateral_worst": 1.8617234878600617e-17,
+  "ride_worst": 0.0001718163490295188,
+  "roll_overrun_worst": 0.029813194674880972,
+  "separation_shortfall": 0.0,
+  "robots_seen": 29.0,
+  "solo_deviation_max": 0.0
+ },
+ "verdict": "PASS",
+ "green": true
+}

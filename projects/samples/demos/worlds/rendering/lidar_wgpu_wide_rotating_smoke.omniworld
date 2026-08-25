@@ -1,0 +1,66 @@
+#OMNISIM R2025a utf8
+
+# R5l smoke world: a WIDE-FOV (fov 2.0 rad -> 2 sub-frustums) MULTI-LAYER (7)
+# ROTATING Lidar with a cyan box on the FRONT-RIGHT (-y) and offset UP (z=0.25).
+# This is the last Lidar config to reach wgpu: it composes the R5g multi-frustum
+# azimuth stitch with the R5j/R5k rotating window. The box sits inside one
+# sub-frustum's azimuth span so the stitch + the rotating placement + the
+# per-layer elevation must all hold together.
+#
+# Geometry: box centre (1.0, -0.4, 0.25), size 0.6. Azimuth centre
+# atan2(-0.4,1.0) = -0.381 rad (right of forward); elevation centre
+# atan2(0.25,1.0) = +0.245 rad (above the sensor axis). With fov 2.0 the window
+# is wide; the box's -0.381 azimuth lands right-of-centre in the 360 buffer.
+#
+# Companion to docs/developer/engine-migration-plan.md R5 WbLidar rotating spec.
+
+WorldInfo {
+  info [
+    "R5l smoke -- wgpu wide-FOV multi-layer rotating Lidar"
+  ]
+  title "R5l wgpu wide rotating Lidar smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 360
+      fieldOfView 2.0
+      verticalFieldOfView 0.8
+      numberOfLayers 7
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      type "rotating"
+      defaultFrequency 1
+      rotatingHead Solid {
+        name "lidar_head"
+      }
+    }
+    DEF UR_BOX Solid {
+      translation 1.0 -0.4 0.25
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "upper right box"
+    }
+  ]
+  controller "lidar_wgpu_wide_rotating_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

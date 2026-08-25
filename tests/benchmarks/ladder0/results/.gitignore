@@ -1,0 +1,25 @@
+# Raw sample streams are large (~240 KB per rung-4 cell) and are reproducible
+# by re-running the ladder; the REDUCED evidence -- cell.json (measurement +
+# every check with its measured/expected/tolerance/margin), ladder.json (the
+# campaign) and selftest.json -- is what a reader needs and is committed.
+samples.json
+samples.json.trace
+samples.json.error
+console.log
+engine.log
+engine.log.newton.json
+newton_solver.log
+_run_webots.sh
+# Rung 18 records one replayed trajectory per toss, 50 per cell.  Same rule:
+# the reduction is in cell.json / measurement.json and the raw stream is
+# reproducible from the vendored recording.
+*.npz
+*.npz.phase.txt
+*.npz.traceback.txt
+unused_samples.json
+# Rung 9's replica documents: 26 bodies x 3 coords x 400 samples, written as
+# exact float64 repr because the rung's whole claim is bitwise identity.  Same
+# rule as samples.json -- raw stream out, reduction in.
+run_a.json
+run_b.json
+run_c.json

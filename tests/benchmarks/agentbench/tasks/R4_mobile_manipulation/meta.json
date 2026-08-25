@@ -1,0 +1,212 @@
+{
+  "id": "R4_mobile_manipulation",
+  "tier": "robotics",
+  "flagship": false,
+  "prompt_file": "prompt.txt",
+  "grader": "agentbench.graders.r4",
+  "par_s": 900,
+  "timeout_s": 2700,
+  "repeats_default": 1,
+  "stresses": "mobile manipulation end to end: sensor-driven navigation of a blocked route, a friction grasp that must SURVIVE a multi-metre transport, and a controlled release. It is the only task in the suite where a contact model is put under load WHILE the body holding it is accelerating -- a grip that holds a static pinch and lets go the moment the base turns fails here and passes R3.",
+  "initial_state": "an empty project plus two FROZEN assets -- benchmark_assets/obstacles.json (the five obstacle sizes and a reference layout) and benchmark_assets/scene.json (the arena, the start pose, and the table / payload / pad geometry). The agent authors the world, the robot, the gripper and the controller.",
+  "initial_files": [
+    "benchmark_assets/obstacles.json",
+    "benchmark_assets/scene.json"
+  ],
+  "deliverable": "the authored world (graded standalone, cold)",
+  "phases": {
+    "harness": {
+      "enabled": false
+    },
+    "standalone": {
+      "settle_s": 0.0,
+      "duration_s": 150.0,
+      "contact_steps": -1,
+      "links": 16,
+      "solids": [
+        "payload",
+        "table",
+        "pad"
+      ],
+      "note": "the WHOLE run is recorded and the trajectory IS the evidence. contact_steps -1 = scan contacts for the whole run, because R4.5 ('nothing was struck') is phrased over the whole drive and a first-N-steps window can only ever witness a collision in the first N steps -- the defect that kept R1 from reaching 6/6 on upstream Webots for a week. links 16 gives the grader per-link tracks so R4.3 can tell an ARTICULATED robot from a rover with six wheels: a wheel's link origin does not translate in the base frame, an arm link's does. The solids list is a CONVENIENCE, not the identity channel: every one of the three bodies is found by GEOMETRY (r4_core.find_payload / find_table / find_pad) and the recorders' name-free t=0 scene scan is what supplies their bounds. The names are requested so that a payload an agent nested inside a group still gets a per-step track; a top-level dynamic body gets one without help.",
+      "duration_rationale": "150 s of simulated time. MEASURED: the oracle finishes its whole sequence at t = 85.8 s (12.7 m drive to the table, pick, 6.85 m transport, place) and the payload is at rest on the pad from t = 89.1 s onwards (measured), so the window is ~1.7x what the known-good solution needs -- room for a slower agent controller without making 'did it finish' unanswerable. The last HOLD_S of the window IS the retention test, so an agent must finish with that much to spare."
+    }
+  },
+  "constants": {
+    "START_XY": [
+      -4.0,
+      -4.0
+    ],
+    "START_YAW_DEG": 0.0,
+    "START_TOL_M": 0.3,
+    "TABLE_XY": [
+      3.0,
+      3.0
+    ],
+    "PAD_XY": [
+      -3.0,
+      3.5
+    ],
+    "ARENA_SIZE_M": 10.0,
+    "ARENA_HALF_M": 5.0,
+    "N_OBSTACLES": 5,
+    "OBSTACLE_POSE_TOL_M": 0.05,
+    "SCENE_TOL_M": 0.03,
+    "PAYLOAD_SIZE_TOL_M": 0.006,
+    "PAYLOAD_START_TOL_M": 0.04,
+    "TABLE_REST_TOL_M": 0.02,
+    "CARRY_CLEARANCE_M": 0.1,
+    "PICK_OVER_TABLE_M": 0.35,
+    "CARRY_MIN_S": 2.0,
+    "CARRY_RADIUS_TOL_M": 0.08,
+    "CARRY_DZ_TOL_M": 0.08,
+    "GRIP_PROXIMITY_M": 0.3,
+    "TRANSPORT_MIN_M": 3.0,
+    "AIRBORNE_MIN_S": 0.5,
+    "RELEASE_NEAR_PAD_M": 1.0,
+    "DELIVERY_TOL_M": 0.25,
+    "PLACE_Z_TOL_M": 0.03,
+    "HOLD_S": 2.0,
+    "HOLD_MIN_SAMPLES": 20,
+    "REST_BAND_M": 0.02,
+    "MAX_BASE_STEP_M": 0.25,
+    "MAX_PAYLOAD_SPEED_MPS": 5.0,
+    "MAX_PAYLOAD_STEP_M": 0.1,
+    "MIN_ROBOT_JOINTS": 6,
+    "MIN_ARTICULATED_LINKS": 3,
+    "ARTICULATION_MIN_M": 0.05,
+    "MIN_MOTION_FOR_CREDIT_M": 3.0,
+    "PICK_APPROACH_M": 1.5,
+    "PLACE_APPROACH_M": 1.5,
+    "LIDAR_MIN_FOV_DEG": 180.0,
+    "LIDAR_MIN_SAMPLES": 180,
+    "LIDAR_MIN_RANGE_M": 5.0,
+    "PLACEMENT_ARENA_INNER_M": 4.9,
+    "PLACEMENT_MIN_GAP_M": 0.1,
+    "PLACEMENT_START_CLEAR_M": 0.6,
+    "PLACEMENT_FIXTURE_CLEAR_M": 1.0,
+    "PLACEMENT_ROUTE_INFLATE_M": 0.7,
+    "PLACEMENT_ROUTE_CELL_M": 0.1,
+    "PLACEMENT_APPROACH_CELL_M": 1.5,
+    "PLACEMENT_MIN_BLOCK_M": 0.3,
+    "PLACEMENT_MAX_ATTEMPTS": 4000
+  },
+  "constants_are_authoritative": "graders/r4_core.py READS this block at import and has no second copy of any threshold; the scene GEOMETRY is read from benchmark_assets/scene.json and the obstacle SIZES from benchmark_assets/obstacles.json, both by the same grader. No number in this task is written down twice.",
+  "budget": {
+    "rule": "timeout_s = min(3 x par_s, TASK_HARD_CEILING_S)",
+    "hard_ceiling_s": 2700,
+    "truncated_by_ceiling": false,
+    "ratio_to_par": 3.0,
+    "runs_per_cell": 1,
+    "variance_measured": false,
+    "note": "par 900 s (15 min) -- the hardest task in the tier: it is R1's navigation plus R3's grasp plus a transport neither of them asks for, from an empty project. 3 x par lands exactly on the 2700 s ceiling, so nothing is truncated. ONE run per (task, arm): a single observation is an OUTCOME, never a rate -- pass@1 and a confidence interval are undefined at n = 1 (SPEC 3.5)."
+  },
+  "grasp_proof": "R4.6 + R4.7 + R4.8 together ARE the grasp evidence, and every clause is GEOMETRIC. The payload rises until its lowest face clears the table top, then holds a contiguous window in which (a) its lowest face is CARRY_CLEARANCE_M above the floor -- above the pad, above anything it could be resting on at that height -- while (b) the DISTANCE from the payload to the robot's base origin stays inside a CARRY_RADIUS_TOL_M band and (c) the base and the payload each travel at least TRANSPORT_MIN_M during it. Nothing that is not being carried satisfies that conjunction: a payload left on an obstacle top keeps its height and loses the radius; one dragged along the floor keeps the radius and loses the height; one that is dropped loses both within a few samples. The radius and the height DIFFERENCE are used rather than a vector offset because the neutral evidence carries positions and no orientations, and both are invariant to the base's yaw -- which changes continuously while it drives. A contact count between gripper and payload would have been weaker (a gripper closed on nothing still reports contacts with the table) and would have been spelled differently in every simulator.",
+  "why_this_is_standard_robotics": "Drive to a part, pick it, carry it, put it down. It is the canonical warehouse job, it is what a mobile manipulator IS, and every primary comparator documents a mobile base, an articulated arm, a gripper and a planar LiDAR. The task was chosen because it is bread-and-butter robotics that every serious simulator claims -- not because any comparator is known to be weak at it. The hard part is a physical property (a friction grasp that survives acceleration) rather than an API gap, so a simulator cannot pass it by having a better verb.",
+  "not_expressible": {
+    "differential_drive": "NOT ASSERTED. The neutral evidence carries a per-body JOINT COUNT and per-link positions; it carries no drive kinematics, so 'differential-drive' cannot be distinguished from skid-steer, Ackermann or mecanum. The prompt asks for it, the grader does not score it, and a robot that satisfies every graded clause with an omnidirectional base is not failed for it.",
+    "actuated_and_revolute": "the joint count does not distinguish motorised from passive, or revolute from prismatic -- the same limit R2 declares. R4.3 therefore asserts 'at least MIN_ROBOT_JOINTS joints on the robot', not 'at least four actuated revolute ARM joints', and adds a SEPARATE behavioural clause (MIN_ARTICULATED_LINKS link bodies that translate in the base frame) which a set of wheels cannot satisfy -- a wheel spins, its link origin does not move relative to the base.",
+    "lidar_and_camera": "NOT ASSERTED as devices. A device inventory is spelled differently in every simulator and a read count is trivially gamed. The sensing evidence is behavioural and is the same argument R1 makes: the straight line from the start to the table is blocked by at least PLACEMENT_MIN_BLOCK_M of obstacle -- re-derived by the grader from the MEASURED scene, not trusted from the asset -- so a robot that does not perceive cannot get there without striking something, and R4.5 fails it if it does.",
+    "start_yaw": "the neutral evidence carries positions and never orientations, so the '0 degrees' in the start pose is unmeasured. R4.5 asserts the start POSITION only and says so.",
+    "gripper_link_identity": "which LINK of the robot is the gripper is not asserted. The carrier is identified as the robot body itself (its base origin is what every arm tracks), and 'the payload tracks the gripper' is measured as 'the payload holds a constant distance from the robot that is carrying it'. Naming a link 'the gripper' would need either a name convention -- the R1 mistake -- or a device query the neutral bundle does not have."
+  },
+  "anti_hardcode": {
+    "the_hole": "obstacles.json publishes exact positions, so a controller could plan a fixed path and cast zero beams. R1 MEASURED this hole rather than hypothesising it (adapters/mujoco/BRINGUP.md sec. 3.5: a memoriser passes 6/6 on the published layout).",
+    "mechanism": "GRADE-TIME PLACEMENT, the same design R1 uses: the obstacle COUNT and SIZES are the published contract, the POSITIONS are drawn at grade time from the benchmark seed under the legality constraints below, and grade() scores the world against THAT layout. r4_core.sample_layout(seed) is pure and deterministic, r4_core.write_graded_layout declares the draw in an r4_graded_layout.json sidecar, and graders/r4.py resolves it (argument, then sidecar, then seed).",
+    "legality_constraints": [
+      "every obstacle footprint lies inside PLACEMENT_ARENA_INNER_M",
+      "obstacles are at least PLACEMENT_MIN_GAP_M apart, surface to surface",
+      "every obstacle clears the START point by PLACEMENT_START_CLEAR_M",
+      "every obstacle clears the TABLE box and the PAD box by PLACEMENT_FIXTURE_CLEAR_M, so a robot can always park within reach of both",
+      "a route inflated by PLACEMENT_ROUTE_INFLATE_M reaches, from the start, a cell within PLACEMENT_APPROACH_CELL_M of the table AND a cell within PLACEMENT_APPROACH_CELL_M of the pad",
+      "the straight START->TABLE line is blocked over at least PLACEMENT_MIN_BLOCK_M of its length -- the sensing proof, as an acceptance criterion rather than a hope"
+    ],
+    "no_fallback": "an illegal draw is RE-SAMPLED, never repaired and never swapped for the published layout. Exhausting PLACEMENT_MAX_ATTEMPTS raises LayoutError.",
+    "published_layout_is_itself_a_legal_draw": "benchmark_assets/obstacles.json ships sample_layout('published'), so the reference layout the agent authors against satisfies every constraint above by construction rather than by inspection.",
+    "injection_step": "NOT WIRED FOR R4 YET, and this is the honest statement of it. R1's injection lives in common/r1_placement.py and is driven from cc_lane/run_cc_cell.run_cell step 6a; R4 has no equivalent, so a cell run today is scored against the PUBLISHED layout and grade() says so on the verdict (layout_source 'published (NO grade-time placement)'). The consequence is stated rather than hidden: on such a row R4.5's collision-freedom is NOT by itself evidence of perception, because a memorised path would also avoid the published boxes. R4's discriminating power on such a row comes from R4.6-R4.8, which no amount of layout memorisation helps with -- a grasp that does not hold is not a planning failure."
+  },
+  "known_hole": "A runtime WELD between the gripper and a payload that remains an independent dynamic body is not distinguishable from a friction grasp in the neutral evidence. R4.9 catches the STRUCTURAL cheats it can see -- a payload that is a LINK of the robot, one nested into the robot's subtree, one with its mass model removed, and any discrete teleport of either body -- and the prompt forbids the rest explicitly. Closing it would need a per-step joint/constraint inventory, which no arm's recorder produces today. Stated here rather than implied to be covered, exactly as R3 states its own.",
+  "instrument_limits": [
+    "a payload the agent authors as a body with no mass model, or nests inside a static group, gets no per-step track on either .wbt arm unless it carries the name scene.json declares (which is why 'payload' is in phases.standalone.solids and why the prompt asks for the names). A payload with no track makes R4.4 onwards unmeasurable, and unmeasured is scored as a FAIL with the reason named, never as a pass.",
+    "on upstream Webots a body bounded only by Mesh { url ... } arrives with NO world-space AABB (the recorder cannot resolve mesh files under upstream's python3). Such a body cannot be matched geometrically and cannot be judged as an obstacle; it is named on the verdict rather than counted either way. OmniSim's geometry helper reads mesh files off disk and has no such gap -- a real asymmetry, published on every run.",
+    "\u26a0 THE DELIVERABLE IS THE WORLD PLUS THE CONTROLLER DIRECTORIES IT NAMES -- NOTHING ELSE. cc_lane collects <world>.wbt and every controllers/<name>/ it references, stages them as a fresh Webots project, and launches THAT. benchmark_assets/ is NOT carried across, so a controller that READS a task asset at run time by a relative path outside its project crashes at startup in grading while working perfectly in the agent's own workspace. MEASURED on R4's first webots cell (2026-08-11): the agent's controller opened '../../benchmark_assets/scene.json' at __init__, died with FileNotFoundError, exited 1, and its robot never moved -- base path length 0.00 m over 150 s -- while the world it authored was otherwise perfect (R4.2 matched all five obstacles, the table and the pad to 0.000 m). This is a property of the LANE and it applies to R1/R2/R3 identically; it is recorded here because R4 is where it was first measured. The prompt asks the agent to build the scene FROM scene.json, not to read it at run time, but nothing tells the agent its controller directory will be relocated."
+  ],
+  "status": "NOT READY FOR A PUBLISHED NUMBER. Built 2026-08-11. The SPEC 7.1 oracle/null gate is GREEN on the upstream-Webots arm and has been run NOWHERE ELSE (see 'gate'), so no cross-simulator R4 comparison exists. The pre-registration does not cover this task yet and test_freeze.py is red because of it (see 'freeze'), which makes any R4 cell run today EXPLORATORY by SPEC 8.4. Grade-time placement is implemented and the grader resolves a declared layout, but no injection step is wired into cc_lane, so a cell is scored against the PUBLISHED layout and the verdict says so.",
+  "gate": {
+    "spec": "SPEC 7.1: an ORACLE must PASS and a NULL must FAIL, per (task, arm)",
+    "status": "GREEN on upstream Webots ONLY; NOT RUN on omnisim or mujoco",
+    "arm": "webots (upstream R2025a, WSL2 Ubuntu-22.04)",
+    "machine": "9722d23d12a3",
+    "date": "2026-08-11",
+    "harness": "adapters/webots/test_r4_discriminates_webots.py",
+    "fixture": "adapters/webots/webots_lane/worlds/r4_mobile_manipulation.wbt -- a differential-drive mobile manipulator authored from upstream BASE NODES only (no PROTO, no EXTERNPROTO, no network fetch), because upstream ships no diff-drive mobile manipulator and building one from the simulator's own primitives is the fairest oracle available",
+    "results": {
+      "r4_oracle": {
+        "outcome": "PASS",
+        "assertions": "9/9",
+        "reproduced": "twice, independently staged; every reported number identical to 4 decimals (upstream ODE is deterministic on this scene)",
+        "headline": "drove 25.07 m with 0 obstacle/wall contacts, lifted the payload off the table, held it through a 6.85 m transport within 0.031 m of a gripper finger link, and left it at rest on the pad at (-2.9997, 3.5034, 0.125) -- the pad rest height to the millimetre"
+      },
+      "r4_null": {
+        "outcome": "FAIL",
+        "assertions": "4/9",
+        "failed": [
+          "R4.3",
+          "R4.5",
+          "R4.6",
+          "R4.7",
+          "R4.8"
+        ],
+        "note": "R4.1/R4.2/R4.4/R4.9 pass, and they should: the run is clean, the scene is intact, the payload is on the table and nothing was teleported are all true of an agent that did nothing. R4.3 fails because its articulation clause is BEHAVIOURAL -- a robot that never moved its arm has no link that translates in the base frame."
+      },
+      "r4_blind": {
+        "outcome": "FAIL",
+        "assertions": "5/9",
+        "failed": [
+          "R4.5",
+          "R4.6",
+          "R4.7",
+          "R4.8"
+        ],
+        "note": "the oracle's control law with the LiDAR read DELETED -- same robot, same planner, same arm, same speeds. It plans the straight line the layout blocks and strikes OBSTACLE_1, which R4.5 counts and NAMES. This is the measurement that says R4.5 can go red on this arm: R1 shipped a collision clause that structurally could not, and every R1 number from that week was uninformative. R4.3 still PASSES here, so the control is controlling for blindness and nothing else."
+      }
+    },
+    "what_the_gate_does_not_cover": "the OmniSim and MuJoCo arms have no R4 fixture and no gate, so R4 is NOT_EXPRESSIBLE-pending there rather than failing, and no cross-simulator R4 comparison exists or may be quoted."
+  },
+  "freeze": {
+    "state": "NOT FROZEN. preregister/test_freeze.py is RED because of this task and it is red for exactly one reason: the manifest has no entry for tasks/R4_mobile_manipulation/{meta.json, prompt.txt, initial/**} or for graders/r4.py and graders/r4_core.py. Every other frozen path re-hashes clean (3 failed / 11 passed / 122 subtests passed, 2026-08-11), so nothing already frozen has drifted.",
+    "consequence": "SPEC 8.4 rule 1: a red freeze test blocks scoring a cell, publishing a number or quoting a grid. Any R4 row produced before the manifest is regenerated is EXPLORATORY and its number may not be published.",
+    "needs_freezing": [
+      "tests/benchmarks/agentbench/tasks/R4_mobile_manipulation/meta.json",
+      "tests/benchmarks/agentbench/tasks/R4_mobile_manipulation/prompt.txt",
+      "tests/benchmarks/agentbench/tasks/R4_mobile_manipulation/initial/benchmark_assets/obstacles.json",
+      "tests/benchmarks/agentbench/tasks/R4_mobile_manipulation/initial/benchmark_assets/scene.json",
+      "tests/benchmarks/agentbench/tasks/R4_mobile_manipulation/initial_webots/benchmark_assets/obstacles.json",
+      "tests/benchmarks/agentbench/tasks/R4_mobile_manipulation/initial_webots/benchmark_assets/scene.json",
+      "tests/benchmarks/agentbench/graders/r4.py",
+      "tests/benchmarks/agentbench/graders/r4_core.py"
+    ],
+    "also_needs_an_amendment": "preregister/oracle_verdicts.json is itself a frozen path, so R4's gate result is recorded HERE (meta.json 'gate') rather than appended to it. Folding it in is an amendment for the freeze owner, per SPEC 8.4 rule 2."
+  },
+  "open_design_questions": {
+    "R4.3_exactly_one_robot": "R4.3 requires EXACTLY ONE robot-class body, following R1.2. MEASURED consequence on the first webots cell: the agent shipped its own debugging supervisor (a Robot named 'scene_recorder', 0 joints, no physics) inside the delivered world alongside its 'warehouse_robot' (9 joints), so the count was 2, no robot could be selected, and R4.5-R4.9 became unmeasurable as well. Two readings, both defensible: the task asks for ONE mobile manipulator and shipping debug scaffolding is a real defect; or the clause should select the robot carrying >= MIN_ROBOT_JOINTS joints and ignore passive extras, which would have picked warehouse_robot unambiguously. NOT CHANGED, deliberately -- the threshold was frozen-by-intent before the cell ran and loosening it after seeing a result is the exact move SPEC 8.2 exists to forbid. It is recorded as the owner's call. Note it would not have changed THIS row's outcome: the controller crashed at startup and the payload never left the table, so the run fails R4.5-R4.8 on measurement either way."
+  },
+  "first_cell": {
+    "what": "the first R4 cell, run to see whether an agent can do this at all",
+    "cell": "tests/benchmarks/agentbench/results/cc_lane/r4_webots_20260811",
+    "sim": "webots (upstream R2025a in WSL2)",
+    "model": "claude-opus-5",
+    "machine": "9722d23d12a3",
+    "utc": "2026-08-11T17:07:38Z..17:55:40Z",
+    "outcome": "FAIL, 3/9, progress artifact_runs, first failing assertion R4.3",
+    "passed": [
+      "R4.1 the run is clean",
+      "R4.2 the specified scene is intact",
+      "R4.4 the payload started at rest on the table"
+    ],
+    "why": "the session used its FULL 2700 s budget and was cut mid-iteration -- the agent's last words were 'Two fixes needed... Let me refactor:', so it never claimed to be done and budget exhaustion is a result, not INVALID (SPEC 2.4). What it had built by then loaded and stepped cleanly and its scene was exact, but the controller crashed at startup in the graded project (see instrument_limits) and the robot never moved.",
+    "not_a_physics_finding": "nothing here says anything about upstream Webots' contact model. The oracle shows the task IS doable on this arm; this row says one agent did not finish it in 45 minutes and lost its run to a packaging trap.",
+    "publishable": false,
+    "publishable_why": "the freeze is red for this task (see 'freeze'), the gate exists on one arm only, and one observation is an OUTCOME and never a rate (SPEC 3.5)."
+  }
+}

@@ -1,0 +1,319 @@
+{
+  "task": "B2_subject_in_frame",
+  "outcome": "PASS",
+  "progress": 4,
+  "progress_name": "graded_pass",
+  "assertions": {
+    "B2.1": {
+      "ok": true,
+      "what": "the camera was aimed somewhere new",
+      "measured": {
+        "aim change (deg)": 21.6889,
+        "camera moved (m)": 19.8806,
+        "scene readable": true
+      },
+      "threshold": {
+        "aim change (deg)": ">= 1.00",
+        "or camera moved (m)": ">= 0.05"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "the camera changed",
+          "how_to_fail": "a camera left exactly where the task shipped it",
+          "witness": "both the initial and the final camera pose were recovered",
+          "witness_present": true,
+          "detail": "initial from the task's shipped world under GET /scene/viewpoint on a per-run private harness instance (engine-resolved forward/up axes; per-axis FOV resolved against the real viewport aspect, read from a rendered frame's pixel size); final from the agent's artifact under GET /scene/viewpoint on a per-run private harness instance (engine-resolved forward/up axes; per-axis FOV resolved against the real viewport aspect, read from a rendered frame's pixel size)"
+        }
+      ]
+    },
+    "B2.2": {
+      "ok": true,
+      "what": "the subject sits inside the frame with angular margin",
+      "measured": {
+        "clearance to nearest frame edge (deg)": 11.7968,
+        "off-axis (deg)": 1.8697,
+        "yaw (deg)": 0.0,
+        "pitch (deg)": -1.8697,
+        "half field of view h/v (deg)": [
+          22.5,
+          13.6665
+        ],
+        "in front of the camera": true,
+        "range (m)": 8.8747,
+        "method": "per-axis frustum test (an up axis was reported)"
+      },
+      "threshold": {
+        "clearance (deg)": ">= 2.00"
+      },
+      "detail": "both angles reported",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "the subject is in frame",
+          "how_to_fail": "a camera whose forward axis is further from the subject centre than its own half field of view",
+          "witness": "a measured camera pose and a measured subject centre",
+          "witness_present": true,
+          "detail": "the agent's artifact under GET /scene/viewpoint on a per-run private harness instance (engine-resolved forward/up axes; per-axis FOV resolved against the real viewport aspect, read from a rendered frame's pixel size)"
+        },
+        {
+          "clause": "the field of view is known",
+          "how_to_fail": "a camera with a field of view so wide that nothing is ever out of frame",
+          "witness": "the camera reported at least one field-of-view angle",
+          "witness_present": true,
+          "detail": "both angles reported"
+        }
+      ]
+    },
+    "B2.3": {
+      "ok": true,
+      "what": "the subject is big enough on screen to be the subject",
+      "measured": {
+        "angular diameter (deg)": 10.0562,
+        "range (m)": 8.8747,
+        "bounding radius (m)": 0.7778
+      },
+      "threshold": {
+        "angular diameter (deg)": ">= 2.00"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "the subject is large enough",
+          "how_to_fail": "a camera aimed correctly from so far away that the subject is a speck",
+          "witness": "the subject has measured world-space bounds, so a radius and a range exist",
+          "witness_present": true,
+          "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+        }
+      ]
+    },
+    "B2.4": {
+      "ok": true,
+      "what": "the subject is the best-centred body in the scene",
+      "measured": {
+        "subject off-axis (deg)": 1.8697,
+        "closest distractor": "green_cylinder",
+        "its off-axis (deg)": 12.1778,
+        "every distractor (deg)": {
+          "blue_cylinder": 23.0456,
+          "green_cylinder": 12.1778,
+          "grey_sphere": 36.1476,
+          "yellow_crate": 31.9165
+        }
+      },
+      "threshold": {
+        "subject off-axis (deg)": "<= the best distractor's + 0.10"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "the subject beats every distractor",
+          "how_to_fail": "a camera aimed at one of the other bodies instead",
+          "witness": "at least one distractor body was found with world-space bounds",
+          "witness_present": true,
+          "detail": "found 4 of 4 named distractors"
+        }
+      ]
+    },
+    "B2.5": {
+      "ok": true,
+      "what": "the answer commits to an in-frame claim backed by a number",
+      "measured": {
+        "claim": "in_frame",
+        "numbers in the answer": 9,
+        "angles (deg)": [
+          1.87,
+          22.5,
+          13.12,
+          11.25,
+          10.06
+        ],
+        "lengths (m)": [
+          8.87
+        ]
+      },
+      "threshold": {
+        "claim": "in_frame",
+        "numbers": ">= 1"
+      },
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "a claim was made",
+          "how_to_fail": "an answer that describes the work but never states, with a number, that the subject ended up in frame",
+          "witness": "the agent's final message was captured",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "B2.6": {
+      "ok": true,
+      "what": "the committed proof agrees with the measured geometry",
+      "measured": {
+        "claim": "in_frame",
+        "measured in frame": true,
+        "stated off-axis (deg)": 1.87,
+        "chosen by": "the value closest to a cue word (1 characters away)",
+        "measured readings (deg)": [
+          1.8697,
+          0.0,
+          1.8697
+        ],
+        "off-axis error (deg)": 0.0003,
+        "stated range (m)": 8.87,
+        "chosen by (range)": "the value closest to a cue word (1 characters away)",
+        "measured range (m)": 8.8747,
+        "range error (m)": 0.0047,
+        "numbers stated but not scored": [
+          14.0,
+          14.0,
+          3.2,
+          22.5,
+          13.12,
+          11.25,
+          10.06
+        ]
+      },
+      "threshold": {
+        "claim": "matches the measured framing",
+        "off-axis error (deg)": "<= 2.00",
+        "range error (m)": "<= 1.00"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "the claim matches the geometry",
+          "how_to_fail": "an answer asserting the subject is in frame while the measured clearance is negative, or an answer that states no conclusion at all",
+          "witness": "a measured clearance from the camera pose",
+          "witness_present": true,
+          "detail": ""
+        },
+        {
+          "clause": "the stated off-axis angle is true",
+          "how_to_fail": "an answer quoting a small, confident off-axis angle it never measured",
+          "witness": "the answer committed to an off-axis angle",
+          "witness_present": true,
+          "detail": "the value closest to a cue word (1 characters away)"
+        },
+        {
+          "clause": "the stated range is true",
+          "how_to_fail": "an answer quoting a range that is not the camera's",
+          "witness": "the answer committed to a camera-to-subject range",
+          "witness_present": true,
+          "detail": "the value closest to a cue word (1 characters away)"
+        }
+      ]
+    }
+  },
+  "n_pass": 6,
+  "n_total": 6,
+  "failed_assertion": null,
+  "failed_assertions": [],
+  "self_verified": false,
+  "attribution": {},
+  "measurements": {
+    "camera_evidence": {
+      "source": "GET /scene/viewpoint on a per-run private harness instance (engine-resolved forward/up axes; per-axis FOV resolved against the real viewport aspect, read from a rendered frame's pixel size)",
+      "error": null,
+      "artifact_parsed": true,
+      "problems": []
+    },
+    "answer": "I aimed the camera at the red cylinder and then measured the result rather than eyeballing it. From the camera at (14.00, 14.00, 3.20) the cylinder's centre is 1.87 degrees off-axis, against a half field of view of 22.50 degrees horizontally and 13.12 degrees vertically, so it clears the nearest frame edge by 11.25 degrees. The camera is 8.87 m from it and it spans 10.06 degrees, so it is in frame and it is the subject of the shot, not a speck in the corner.",
+    "truth": {
+      "distance_m": 8.8747,
+      "offaxis_deg": 1.8697,
+      "yaw_deg": 0.0,
+      "pitch_deg": -1.8697,
+      "clearance_deg": 11.7968,
+      "in_front": true,
+      "method": "per-axis frustum test (an up axis was reported)",
+      "half_fov_h_deg": 22.5,
+      "half_fov_v_deg": 13.6665,
+      "fov_note": "both angles reported",
+      "subject": "red_cylinder",
+      "subject_centre_m": [
+        8.0,
+        8.0,
+        0.6
+      ],
+      "subject_radius_m": 0.7778,
+      "angular_size_deg": 10.0562,
+      "distractor_offaxis_deg": {
+        "blue_cylinder": 23.0456,
+        "green_cylinder": 12.1778,
+        "yellow_crate": 31.9165,
+        "grey_sphere": 36.1476
+      },
+      "aim_change_deg": 21.6889,
+      "camera_move_m": 19.8806
+    },
+    "committed_proof": {
+      "polarity": "in_frame",
+      "offaxis_deg": 1.87,
+      "offaxis_how": "the value closest to a cue word (1 characters away)",
+      "range_m": 8.87,
+      "range_how": "the value closest to a cue word (1 characters away)",
+      "all_angles_deg": [
+        1.87,
+        22.5,
+        13.12,
+        11.25,
+        10.06
+      ],
+      "all_lengths_m": [
+        8.87
+      ],
+      "all_numbers": [
+        14.0,
+        14.0,
+        3.2,
+        1.87,
+        22.5,
+        13.12,
+        11.25,
+        8.87,
+        10.06
+      ]
+    }
+  },
+  "artifacts": {
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\integration_b2\\B2_subject_in_frame.oracle.r0\\trace.jsonl",
+    "engine_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\integration_b2\\B2_subject_in_frame.oracle.r0\\phaseB\\phaseB_engine.log",
+    "recorder_csv": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\integration_b2\\B2_subject_in_frame.oracle.r0\\phaseB\\phaseB.csv"
+  },
+  "notes": [
+    "every threshold here is an angle or a metre computed from the camera pose and the subject's own world-space bounds; no pixel, screenshot or render statistic is read (SPEC 6.2.6)",
+    "the recorder ran to completion and found nothing to record: the world loaded and stepped but contains no trackable robot. That is a FAIL of the artifact, not a broken harness."
+  ],
+  "basis": {
+    "core-physical": [
+      "B2.1",
+      "B2.2",
+      "B2.3",
+      "B2.4",
+      "B2.6"
+    ],
+    "core-structural": [
+      "B2.5"
+    ]
+  },
+  "vacuous_assertions": {}
+}

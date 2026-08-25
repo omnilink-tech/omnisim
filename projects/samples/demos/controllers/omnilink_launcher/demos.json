@@ -1,0 +1,369 @@
+{
+  "$schema_note": "Demo manifest consumed by the OmniSim Launcher Robot Window. To add a new demo: add an entry here AND a row in /DEMOS.md. Paths are relative to the repo root.",
+  "categories": [
+    {
+      "id": "starter",
+      "label": "Starter",
+      "description": "Hello-world demos — start here if you've never opened OmniSim before.",
+      "demos": [
+        {
+          "id": "warehouse_husky",
+          "name": "Warehouse Husky",
+          "world": "projects/samples/demos/worlds/showcase/warehouse_husky.omniworld",
+          "blurb": "The onboarding demo. Husky random-walks a 30 × 18 m warehouse with collision recovery."
+        }
+      ]
+    },
+    {
+      "id": "chat_arms",
+      "label": "Chat · Arms",
+      "description": "Natural-language console for a robot arm: right-click the robot -> Show Robot Window -> type 'home', 'wave hello', 'joint 3 to 1.5'.",
+      "demos": [
+        {
+          "id": "omniarm6",
+          "name": "OmniArm 6",
+          "world": "projects/samples/demos/worlds/chat/omnilink_omniarm6.omniworld",
+          "blurb": "6-axis OmniArm 6 cobot with a natural-language console. Type 'home' or 'wave hello'; the arm holds pose under gravity."
+        },
+        {
+          "id": "omniarm6_2f140",
+          "name": "OmniArm 6 + Robotiq 2F-140 (real grasp)",
+          "world": "projects/samples/demos/worlds/chat/omnilink_omniarm6_2f140.omniworld",
+          "blurb": "Ask it to \"pick up the block\" and \"put it down\" -- and the hold is REAL friction, not the kinematic weld every other chat demo uses. Say \"open the gripper\" mid-carry and the block falls, which is the point."
+        },
+        {
+          "id": "ur5e",
+          "name": "Universal Robots UR5e (with IK)",
+          "world": "projects/samples/demos/worlds/chat/omnilink_ur5e.omniworld",
+          "blurb": "UR5e 6-DOF arm with damped-least-squares IK. Try \"home\", \"wave hello\", \"move to 0.4 0.2 0.4\"."
+        },
+        {
+          "id": "ur3e",
+          "name": "Universal Robots UR3e",
+          "world": "projects/samples/demos/worlds/chat/omnilink_ur3e.omniworld",
+          "blurb": "Compact 6-DOF UR arm. Try \"home\", \"wave hello\", \"joint 3 to 1.5\"."
+        },
+        {
+          "id": "ur10e",
+          "name": "Universal Robots UR10e",
+          "world": "projects/samples/demos/worlds/chat/omnilink_ur10e.omniworld",
+          "blurb": "Long-reach 6-DOF UR arm. Try \"home\", \"wave hello\", \"joint N to V\"."
+        },
+        {
+          "id": "multi_arm",
+          "name": "Three UR5e arms",
+          "world": "projects/samples/demos/worlds/chat/omnilink_multi_arm.omniworld",
+          "blurb": "Three UR5e arms, one chat console each (ports 8765/8766/8767)."
+        }
+      ]
+    },
+    {
+      "id": "chat_mobile",
+      "label": "Chat · Mobile bases",
+      "description": "Natural-language console for wheeled bases. Try \"forward 1 m\", \"turn left 90 degrees\", \"spin\", \"stop\".",
+      "demos": [
+        {
+          "id": "husky",
+          "name": "Clearpath Husky",
+          "world": "projects/samples/demos/worlds/chat/omnilink_husky.omniworld",
+          "blurb": "Skid-steer 4-wheel base."
+        },
+        {
+          "id": "jackal",
+          "name": "Clearpath Jackal",
+          "world": "projects/samples/demos/worlds/chat/omnilink_jackal.omniworld",
+          "blurb": "Smaller Clearpath skid-steer."
+        },
+        {
+          "id": "rosbot",
+          "name": "Husarion Rosbot",
+          "world": "projects/samples/demos/worlds/chat/omnilink_rosbot.omniworld",
+          "blurb": "Husarion Rosbot 2."
+        },
+        {
+          "id": "rosbot_xl",
+          "name": "Husarion Rosbot XL",
+          "world": "projects/samples/demos/worlds/chat/omnilink_rosbot_xl.omniworld",
+          "blurb": "Larger Husarion Rosbot XL."
+        },
+        {
+          "id": "tb3_burger",
+          "name": "TurtleBot3 Burger",
+          "world": "projects/samples/demos/worlds/chat/omnilink_tb3_burger.omniworld",
+          "blurb": "TurtleBot3 Burger — smallest TB3."
+        },
+        {
+          "id": "tb3_waffle",
+          "name": "TurtleBot3 Waffle",
+          "world": "projects/samples/demos/worlds/chat/omnilink_tb3_waffle.omniworld",
+          "blurb": "TurtleBot3 Waffle."
+        },
+        {
+          "id": "tb3_waffle_pi",
+          "name": "TurtleBot3 Waffle Pi",
+          "world": "projects/samples/demos/worlds/chat/omnilink_tb3_waffle_pi.omniworld",
+          "blurb": "TurtleBot3 Waffle Pi."
+        }
+      ]
+    },
+    {
+      "id": "chat_quadruped",
+      "label": "Chat · Quadruped",
+      "description": "Quadruped poses via natural language.",
+      "demos": [
+        {
+          "id": "omniquad",
+          "name": "OmniQuad",
+          "world": "projects/samples/demos/worlds/chat/omnilink_omniquad.omniworld",
+          "blurb": "OmniQuad — poses only. Try \"stand\", \"sit\", \"wave hello\"."
+        }
+      ]
+    },
+    {
+      "id": "chat_aerial",
+      "label": "Chat · Aerial",
+      "description": "Natural-language console for drones. Try \"takeoff\", \"forward 1 m\", \"up 2 m\", \"turn right 90 degrees\", \"land\".",
+      "demos": [
+        {
+          "id": "mavic",
+          "name": "DJI Mavic 2 Pro",
+          "world": "projects/samples/demos/worlds/chat/omnilink_mavic.omniworld",
+          "blurb": "Quadcopter. Takeoff/land + body-frame motion via chat."
+        }
+      ]
+    },
+    {
+      "id": "policies",
+      "label": "G1 skills & BATON sequences",
+      "description": "The flagship G1 robotics demos (walk, carry, turn, climb). RUN THESE FROM A SHELL, NOT THE LAUNCH BUTTON: each needs a large deploy env (engine hook + ghost LUTs + corridors + harness + BATON course) that a bare world load cannot carry — clicking Launch opens the scene but shows a LIFELESS robot. Every blurb below gives the bash one-liner. Catalogue CLI: python projects/policies/skills/skill_lib.py list (15 skills + 6 BATON sequences). HARNESS DISCLOSURE: rows marked CRANED run on a weight-bearing puppet harness (up to 700 N up ~= 2x the 34 kg G1's weight, +/-350 N.m attitude) — a real-footwork but NOT free-standing walk. The stair climb is the exception: HARNESS_KZ=0, the legs do the lifting. Details + honest status: DEMOS.md section 2.",
+      "demos": [
+        {
+          "id": "g1_box_delivery",
+          "name": "G1 box delivery (BATON headliner)",
+          "world": "projects/policies/worlds/g1_walk_puppet.omniworld",
+          "blurb": "RUN: bash projects/policies/demos/run_box_delivery.sh  — G1 walks to cart A, picks a real 1.5 kg box, carries it to cart B, sets it down on real contact, takes a real ~90-deg footwork corner, walks away. 0 falls. CRANED. Corner certified only in the 0->90 deg band."
+        },
+        {
+          "id": "g1_box_delivery_classic",
+          "name": "G1 box delivery — classic",
+          "world": "projects/policies/worlds/g1_walk_puppet.omniworld",
+          "blurb": "RUN: bash projects/policies/demos/run_box_delivery_classic.sh  — the verified baseline delivery: walk, stand, pick the real 1.5 kg box, carry, place, walk on, stand. 0 falls, no corner. CRANED."
+        },
+        {
+          "id": "g1_walk_turn_walk",
+          "name": "G1 walk -> turn -> walk",
+          "world": "projects/policies/worlds/g1_walk_puppet.omniworld",
+          "blurb": "RUN: bash projects/policies/demos/run_walk_turn_walk.sh  — walks ~5 m, turns a real ~90 deg by FOOTWORK (no crane yaw; lands 90.6-95.6 deg actual), then a clean straight leg on the new heading. 3/3, 0 falls. CRANED."
+        },
+        {
+          "id": "g1_turn_solo",
+          "name": "G1 footwork turn (solo)",
+          "world": "projects/policies/worlds/g1_turn_demo.omniworld",
+          "blurb": "RUN: bash projects/policies/demos/run_turn_solo.sh  — the footwork-turn policy by itself: settle to a stand, turn ~90 deg on pure footwork (wtz=0), decel, hold. EXPERIMENTAL per the skill registry. CRANED."
+        },
+        {
+          "id": "g1_climb_stairs_stand",
+          "name": "G1 stair climb + summit stand",
+          "world": "projects/policies/worlds/g1_climb_stairs_demo3.omniworld",
+          "blurb": "RUN: bash projects/policies/demos/run_climb_stairs_stand.sh  — climbs the full 5 treads (3 cm risers) LEGS-ONLY (HARNESS_KZ=0, no vertical assist), then a position-gated BATON handover holds a verified motionless stand on the top landing. CAP: 3 cm is the measured ceiling (4 cm ~= 2 steps, 5 cm ~= 0)."
+        },
+        {
+          "id": "g1_climb_stairs",
+          "name": "G1 stair climb (5 treads @ 3 cm)",
+          "world": "projects/policies/worlds/g1_climb_stairs_demo3.omniworld",
+          "blurb": "RUN: bash projects/policies/demos/run_climb_stairs.sh  — real foot steps up 5 treads, LEGS-ONLY (HARNESS_KZ=0), base z 0.72->0.88. Stairs are NOT solved: 3 cm is the measured ceiling for the stock-foot G1 (4 cm ~= 2 steps, 5 cm ~= 0)."
+        },
+        {
+          "id": "g1_decent_walker",
+          "name": "G1 'decent walker' (flagship walk)",
+          "world": "projects/policies/worlds/g1_walk_puppet.omniworld",
+          "blurb": "RUN: powershell -File projects/policies/worlds/run_g1_decent_walker.ps1  — G1 walks the official Unitree gait beside its ghost hologram (WBMATCH4 0.868). CRANED (visible puppet harness). Long straights still have a residual live fall rate."
+        },
+        {
+          "id": "g1_box_grasp",
+          "name": "G1 box grasp (physics arms)",
+          "world": "projects/policies/worlds/g1_box_grasp.omniworld",
+          "blurb": "RUN: bash projects/policies/demos/run_box_grasp.sh  — EXPERIMENTAL / BLOCKED (the script says so): G1 picks up a real Newton box with its ARMS, zero kinematic writes. Blocked on a warp contact-kernel defect near the cart. The shipping pick-and-place demo is box delivery."
+        }
+      ]
+    },
+    {
+      "id": "omnilink_agents",
+      "label": "OmniLink agents",
+      "description": "Agent-driven demos (the OmniLink agent layer on top of OmniSim). Set OMNI_KEY for full LLM routing; several also run offline.",
+      "demos": [
+        {
+          "id": "husky_maze",
+          "name": "Husky maze — simple",
+          "world": "projects/samples/demos/worlds/flagship/husky_maze.omniworld",
+          "blurb": "Drive to (10, 0). Script or agent."
+        },
+        {
+          "id": "husky_maze_unknown",
+          "name": "Husky maze — unknown",
+          "world": "projects/samples/demos/worlds/flagship/husky_maze_unknown.omniworld",
+          "blurb": "Map gated; lidar wall-follow needed."
+        },
+        {
+          "id": "husky_maze_corners",
+          "name": "Husky maze — corners",
+          "world": "projects/samples/demos/worlds/flagship/husky_maze_corners.omniworld",
+          "blurb": "\"Visit four corners and return\" — agent only."
+        },
+        {
+          "id": "husky_maze_visual",
+          "name": "Husky maze — visual",
+          "world": "projects/samples/demos/worlds/flagship/husky_maze_visual.omniworld",
+          "blurb": "\"Find the red cylinder via camera\" — agent only."
+        },
+        {
+          "id": "husky_maze_blind",
+          "name": "Husky maze — blind",
+          "world": "projects/samples/demos/worlds/flagship/husky_maze_blind.omniworld",
+          "blurb": "No map, no lidar — perception tags from a sidecar."
+        },
+        {
+          "id": "husky_swarm",
+          "name": "Husky swarm",
+          "world": "projects/samples/demos/worlds/flagship/omnilink_husky_swarm.omniworld",
+          "blurb": "40-tool swarm coordinator template controls four Huskies in parallel."
+        },
+        {
+          "id": "smart_house",
+          "name": "Smart house",
+          "world": "projects/samples/demos/worlds/flagship/omnilink_smart_house.omniworld",
+          "blurb": "A physics-backed home run by an OmniLink agent - lights, thermostat, security, energy."
+        }
+      ]
+    },
+    {
+      "id": "showcase",
+      "label": "Showcase",
+      "description": "Self-running visual showcases — sit back and watch, or follow a robot with F5.",
+      "demos": [
+        {
+          "id": "warehouse_omnilink",
+          "name": "OmniLink Warehouse (OmniArm 6 + OmniTug 500 crew)",
+          "world": "projects/samples/demos/worlds/flagship/warehouse_omnilink.omniworld",
+          "blurb": "The flagship production line: a vacuum-gripper OmniArm 6 picks onto trolleys while two OmniTug 500 tugs dispatch and return them."
+        },
+        {
+          "id": "omniarm6_bin_picking",
+          "name": "OmniArm 6 bin picking + colour sort",
+          "world": "projects/samples/demos/worlds/flagship/omniarm6_bin_picking.omniworld",
+          "blurb": "Camera-driven bin picking: the arm empties a randomly-filled bin and sorts the parts by colour."
+        },
+        {
+          "id": "living_city",
+          "name": "The Living City",
+          "world": "projects/samples/demos/worlds/showcase/city_traffic.omniworld",
+          "blurb": "Generator-driven 4x4 city: 48 cars with traffic signals, pedestrians, a bus, day/night cycle. Click a car, then right-click -> Follow Object."
+        }
+      ]
+    },
+    {
+      "id": "physics",
+      "label": "Physics / CUDA / Newton",
+      "description": "Stress tests for the CUDA particle pipeline and the Newton physics integration.",
+      "demos": [
+        {
+          "id": "cuda_particles",
+          "name": "CUDA particles — smoke",
+          "world": "projects/samples/demos/worlds/physics/cuda_particles_smoke_test.omniworld",
+          "blurb": "CUDA particle pool baseline."
+        },
+        {
+          "id": "granular_sand",
+          "name": "Granular sand",
+          "world": "projects/samples/demos/worlds/physics/granular_sand_demo.omniworld",
+          "blurb": "Cohesive granular sand."
+        },
+        {
+          "id": "newton_smoke",
+          "name": "Newton — smoke",
+          "world": "projects/samples/demos/worlds/physics/newton_smoke_test.omniworld",
+          "blurb": "Newton engine baseline."
+        },
+        {
+          "id": "newton_husky",
+          "name": "Newton + Husky",
+          "world": "projects/samples/demos/worlds/physics/newton_husky_smoke_test.omniworld",
+          "blurb": "Newton physics with a Husky."
+        },
+        {
+          "id": "newton_head_on",
+          "name": "Newton — head-on collision",
+          "world": "projects/robot_combat/worlds/tests/newton_husky_head_on.omniworld",
+          "blurb": "Two Huskies, head-on collision under Newton. (See also: projects/robot_combat/)"
+        },
+        {
+          "id": "newton_swarm",
+          "name": "Newton — Husky swarm",
+          "world": "projects/samples/demos/worlds/physics/newton_husky_swarm_drive.omniworld",
+          "blurb": "Multi-Husky swarm under Newton."
+        }
+      ]
+    },
+    {
+      "id": "generated",
+      "label": "Generated worlds",
+      "description": "Procedurally generated scaffolds (omniworld + seeds).",
+      "demos": [
+        {
+          "id": "flat_ground",
+          "name": "Flat ground",
+          "world": "distribution/generated_worlds/flat_ground.wbt",
+          "blurb": "Minimal ground-plane baseline."
+        },
+        {
+          "id": "indoor_apartment",
+          "name": "Indoor apartment",
+          "world": "distribution/generated_worlds/indoor_apartment.wbt",
+          "blurb": "Indoor scattered-object scene."
+        },
+        {
+          "id": "outdoor_desert",
+          "name": "Outdoor desert",
+          "world": "distribution/generated_worlds/outdoor_desert.wbt",
+          "blurb": "Desert dunes."
+        },
+        {
+          "id": "outdoor_forest",
+          "name": "Outdoor forest",
+          "world": "distribution/generated_worlds/outdoor_forest.wbt",
+          "blurb": "Forest outdoor scene."
+        },
+        {
+          "id": "urban_block",
+          "name": "Urban block",
+          "world": "distribution/generated_worlds/urban_block.wbt",
+          "blurb": "City block."
+        },
+        {
+          "id": "warehouse",
+          "name": "Warehouse",
+          "world": "distribution/generated_worlds/warehouse.wbt",
+          "blurb": "Indoor warehouse scaffold."
+        },
+        {
+          "id": "mars",
+          "name": "Mars",
+          "world": "distribution/generated_worlds/mars.wbt",
+          "blurb": "Mars regolith terrain."
+        },
+        {
+          "id": "mars_night",
+          "name": "Mars — night",
+          "world": "distribution/generated_worlds/mars_night.wbt",
+          "blurb": "Mars nightside."
+        },
+        {
+          "id": "earth_night",
+          "name": "Earth — night",
+          "world": "distribution/generated_worlds/earth_night.wbt",
+          "blurb": "Earth nightside background validator."
+        }
+      ]
+    }
+  ]
+}

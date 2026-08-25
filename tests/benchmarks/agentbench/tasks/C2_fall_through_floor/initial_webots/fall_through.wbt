@@ -1,0 +1,73 @@
+#VRML_SIM R2025a utf8
+
+# AgentBench C2 fall_through_floor -- initial state (deliberately broken),
+# UPSTREAM WEBOTS R2025a arm.
+#
+# Symptom: the crate does not stay on the floor.
+#
+# NOTHING ELSE IS DOCUMENTED HERE ON PURPOSE. The answer lives only in the
+# grader, which the agent under test may not read. (This header mirrors the
+# OmniSim arm's initial world, which carries the same non-disclosure.)
+
+WorldInfo {
+  basicTimeStep 16
+  title "AgentBench C2 - the robot falls through the floor"
+}
+Viewpoint {
+  orientation -0.35740674 0.35740674 0.86285621 1.7177716
+  position 6.000 -6.000 4.000
+}
+Background {
+  skyColor [
+    0.55 0.65 0.8
+  ]
+}
+DirectionalLight {
+  direction 0.3 -0.5 -0.8
+  intensity 2.5
+  castShadows FALSE
+}
+
+DEF CRATE_BOT Robot {
+  translation 0 0 1
+  name "crate_bot"
+  controller "<none>"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.55 0.15
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box {
+        size 0.4 0.4 0.4
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.4 0.4 0.4
+  }
+  physics Physics {
+    density -1
+    mass 5
+  }
+}
+
+DEF FLOOR Solid {
+  # GEOMETRY IS LOAD-BEARING -- mirrors the OmniSim arm exactly so the
+  # cross-simulator comparison stays like-for-like. See that file's note.
+  translation 0 0 0.5
+  name "floor"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.47 0.50
+        roughness 0.95
+        metalness 0
+      }
+      geometry Box {
+        size 20 20 0.1
+      }
+    }
+  ]
+}

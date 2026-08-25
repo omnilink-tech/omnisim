@@ -1,0 +1,17 @@
+# OmniSim code owners.
+#
+# Default owner for everything in the repo. Requested for review automatically
+# when a pull request touches a matching path.
+#
+# NOTE ON THE HANDLE: a CODEOWNERS owner must be a GitHub *user*, or a *team*
+# in the form @org/team -- and must have write access to this repository.
+# A bare @org handle is NOT a valid owner: GitHub silently drops the whole
+# rule, so review requests never fire and the failure is invisible.
+# This repo's canonical public home is github.com/omnilink-tech/omnisim, so
+# the owner is the @omnilink-tech account.
+#
+# (The previous value here was `@OmniLink`, which is a real but UNRELATED
+# third-party GitHub organization -- it is not the omnilink-tech account that
+# owns this project. That rule was silently invalid.)
+
+*        @omnilink-tech

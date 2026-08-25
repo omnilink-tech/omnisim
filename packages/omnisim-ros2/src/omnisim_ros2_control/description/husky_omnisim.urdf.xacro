@@ -1,0 +1,133 @@
+<?xml version="1.0"?>
+<!--
+  Clearpath Husky, described for ros2_control against OmniSim.
+
+  This is a PURPOSE-BUILT description, not a copy of
+  projects/robots/clearpath/husky_description/urdf/husky.urdf. The simulated
+  robot's geometry, mass and collision model come from that file, which OmniSim
+  loads directly through its URDFRobot node; nothing here affects the physics.
+  What ros2_control needs is only the kinematic chain (so tf and RViz work) plus
+  the <ros2_control> block, and keeping that in this package means the shared
+  robot asset is never edited to suit a ROS workflow. Link origins and the wheel
+  cylinder are copied verbatim from the real description so the two agree.
+
+  ⚠ wheel_separation is 0.5708, NOT the geometric 0.555 (2 x 0.2775). 0.5708 is
+  2 x the mobile bridge's own half_track_m (_mobile_configs.py: HUSKY), and the
+  bridge is what converts a body twist into wheel speeds. Matching it is what
+  makes the plugin's fold an EXACT inverse of diff_drive_controller's forward
+  kinematics rather than an approximation: the twist that reaches OmniSim is
+  bit-for-bit the one the controller was given. The extra 16 mm is the skid-steer
+  scrub allowance a 4-wheel Husky needs and a 2-wheel differential model does not
+  have a term for.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="husky">
+
+  <xacro:arg name="harness_url" default="http://127.0.0.1:6789"/>
+  <xacro:arg name="bridge_url" default="http://127.0.0.1:8765"/>
+  <xacro:arg name="robot_def" default="HUSKY"/>
+  <xacro:arg name="comms_rate_hz" default="25.0"/>
+
+  <xacro:property name="wheel_radius" value="0.1651"/>
+  <xacro:property name="wheel_length" value="0.1143"/>
+  <xacro:property name="wheel_x" value="0.256"/>
+  <xacro:property name="wheel_y" value="0.2775"/>
+  <xacro:property name="wheel_z" value="0.03282"/>
+
+  <material name="husky_yellow"><color rgba="0.95 0.75 0.05 1.0"/></material>
+  <material name="husky_dark"><color rgba="0.15 0.15 0.15 1.0"/></material>
+
+  <link name="base_footprint"/>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0.06"/>
+      <geometry><box size="0.98 0.57 0.24"/></geometry>
+      <material name="husky_yellow"/>
+    </visual>
+  </link>
+
+  <joint name="base_footprint_joint" type="fixed">
+    <origin xyz="0 0 0.13228"/>
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+  </joint>
+
+  <xacro:macro name="husky_wheel" params="name x y">
+    <link name="${name}_link">
+      <visual>
+        <origin rpy="1.570796 0 0" xyz="0 0 0"/>
+        <geometry><cylinder length="${wheel_length}" radius="${wheel_radius}"/></geometry>
+        <material name="husky_dark"/>
+      </visual>
+    </link>
+    <joint name="${name}" type="continuous">
+      <parent link="base_link"/>
+      <child link="${name}_link"/>
+      <origin xyz="${x} ${y} ${wheel_z}"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:husky_wheel name="front_left_wheel" x="${wheel_x}" y="${wheel_y}"/>
+  <xacro:husky_wheel name="front_right_wheel" x="${wheel_x}" y="${-wheel_y}"/>
+  <xacro:husky_wheel name="rear_left_wheel" x="${-wheel_x}" y="${wheel_y}"/>
+  <xacro:husky_wheel name="rear_right_wheel" x="${-wheel_x}" y="${-wheel_y}"/>
+
+  <ros2_control name="OmniSimHusky" type="system">
+    <hardware>
+      <plugin>omnisim_ros2_control/OmniSimSystem</plugin>
+      <!-- State: GET <harness_url>/robot/<robot_def>/joints -->
+      <param name="harness_url">$(arg harness_url)</param>
+      <param name="robot_def">$(arg robot_def)</param>
+      <!-- Commands: POST <bridge_url>/set_velocity -->
+      <param name="bridge_url">$(arg bridge_url)</param>
+      <param name="command_mode">diff_drive</param>
+      <param name="wheel_radius">${wheel_radius}</param>
+      <param name="wheel_separation">0.5708</param>
+      <!-- ⚠ THE REAL BANDWIDTH. controller_manager's update_rate is NOT this
+           number. read()/write() are lock-and-copy, and one background thread
+           owns the HTTP at comms_rate_hz. See the package README for the
+           measured ceiling on this transport. -->
+      <param name="comms_rate_hz">$(arg comms_rate_hz)</param>
+      <!-- The bridge expires an open-ended velocity command after 12 SIMULATED
+           seconds, and the harness runs at ~13x realtime, so that is under one
+           wall second. Refresh well inside it. -->
+      <param name="command_refresh_s">0.25</param>
+      <param name="diagnostics_period_s">10.0</param>
+    </hardware>
+
+    <!-- ⚠ omnisim_joint is NOT optional here: OmniSim names a joint after its
+         first motor DEVICE, so the URDF joint `front_left_wheel` is reported by
+         GET /robot/HUSKY/joints as `front_left_wheel_motor`. Without the
+         mapping the plugin refuses to activate and prints the names the harness
+         actually reported. -->
+    <joint name="front_left_wheel">
+      <param name="omnisim_joint">front_left_wheel_motor</param>
+      <param name="omnisim_side">left</param>
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="front_right_wheel">
+      <param name="omnisim_joint">front_right_wheel_motor</param>
+      <param name="omnisim_side">right</param>
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rear_left_wheel">
+      <param name="omnisim_joint">rear_left_wheel_motor</param>
+      <param name="omnisim_side">left</param>
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rear_right_wheel">
+      <param name="omnisim_joint">rear_right_wheel_motor</param>
+      <param name="omnisim_side">right</param>
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+</robot>

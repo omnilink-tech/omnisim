@@ -1,0 +1,46 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  defaultDamping DEF TESTE Damping {
+  }
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  position 0 0 10.82
+}
+Background {
+  skyColor [
+    0.901961 1 1
+  ]
+  atmosphericSky "earth"
+}
+DEF TESTA Solid {
+  children [
+    DEF TESTB Shape {
+    }
+  ]
+}
+DEF TESTC Solid {
+  name "solid(1)"
+}
+DEF TESTD Solid {
+  translation 0.1 0 0
+  name "solid(2)"
+}
+DEF TESTF Solid {
+  translation 0.1 0 0
+  name "solid(3)"
+}
+Robot {
+  children [
+    TestSuiteEmitter {
+    }
+  ]
+  controller "supervisor_get_def"
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

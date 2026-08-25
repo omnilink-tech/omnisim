@@ -1,0 +1,19 @@
+{
+  "name": "omnitug500_warehouse",
+  "display_name": "OmniTug 500 Warehouse Courier",
+  "omnilink_agent_name": "OmniTug 500 Warehouse Courier",
+  "world": "projects/robots/omnisim/omnitug500/worlds/omnitug500_courier.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/omnitug500_warehouse/omnitug500_warehouse_agent.py",
+  "agent_port": 51532,
+  "agent_port_env": "OMNITUG500_AGENT_PORT",
+  "bridge_url_env": "OMNITUG500_BRIDGE_URL",
+  "description": "OmniTug 500 AGV running natural-language warehouse pick-and-deliver: an operator (or the agent) names a bay and a dock, the rover A*-routes the aisles, loads the package onto its deck, and delivers it. Multi-stop routes supported.",
+  "tags": [
+    "omnitug500",
+    "warehouse",
+    "logistics",
+    "courier",
+    "first-party"
+  ]
+}

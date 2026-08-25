@@ -1,0 +1,32 @@
+#OMNISIM R2025a utf8
+# license: Apache-2.0
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim
+# keywords: stage/scene/omnilink
+# OmniLinkStage — small uniform arena floor used by every per-robot
+# OmniLink demo. Wraps RectangleArena with the brand-standard dark
+# floor and low walls.
+#
+# DirectionalLight + NightSky stay at world level (Webots disallows
+# DirectionalLight inside Group, and Background-derived nodes are
+# world-level singletons in any case). Demo worlds add one Light + one
+# Background block alongside this stage.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+
+PROTO OmniLinkStage [
+  field SFVec2f floorSize   4 4
+  field SFFloat wallHeight  0.05
+  field SFColor floorColor  0.18 0.20 0.22
+]
+{
+  RectangleArena {
+    floorSize  IS floorSize
+    wallHeight IS wallHeight
+    floorAppearance PBRAppearance {
+      baseColor IS floorColor
+      roughness 0.95
+      metalness 0
+    }
+  }
+}

@@ -1,0 +1,131 @@
+#OMNISIM R2025a utf8
+
+# Newton multi-husky swarm drive (P4 of cuda-newton-physics-plan.md).
+#
+# 8 Husky URDFRobots, each with `physicsBackend "newton"`, all driving
+# forward in straight lines. Spaced 12 m apart in y so they drive
+# in parallel without proximity-induced solver issues.
+#
+# **Why 8 and not 10**: at 10 articulated bodies on Newton 1.1 + XPBD
+# we hit a structural scaling limit -- one or more huskies' wheel
+# actuator targets stop being satisfied (joint_qd settles at ~0.4
+# rad/s instead of the commanded 2.5 rad/s) regardless of spacing,
+# iterations, or angular damping. See scripts/xpbd_probes/probe13
+# for the sweep that pins this down. 8 huskies at 12 m spacing
+# reliably drives all 8 in pure-Python characterization. Inter-husky
+# contact resolution (P5) will need a different approach -- likely
+# Newton's `replicate()` + grouped articulations in a more recent
+# release.
+#
+# **Two SEPARATE walls bite near this robot count -- do not conflate
+# them** (2026-07-26): the one above is an **XPBD** wall (wheel
+# actuator targets stop being satisfied; XPBD has no constraint-buffer
+# concept at all). A second, unrelated wall lives on the **MuJoCo**
+# solver path: `njmax` defaulted to 256 constraint rows, and a 4WD
+# Husky rests on 8 wheel-ground contacts x 4 rows = 32 rows, so ten
+# of them peak at nefc 320 and silently truncate. That one is fixed by
+# `WorldInfo.newtonNjmax` / `newtonNconmax` (commit f449c7cc), which
+# does NOT help XPBD. 256/32 = 8 is a coincidence of magnitude, not
+# the explanation for this file's choice of 8.
+#
+# On NEWTON=OFF builds, each URDFRobot falls back to ODE per the
+# registry's safety net. ODE will be slow but correct.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Newton Husky Swarm (8x)"
+  info [
+    "P4: 8 huskies driving forward simultaneously on Newton XPBD."
+    "Each husky has 5 bodies + 5 joints; 40 bodies + 40 joints total."
+    "Spaced 12 m apart in y; clear of the Newton 1.1 multi-husky"
+    "proximity bug that causes wheel actuator targets to stop being"
+    "satisfied at tighter spacing."
+    "Exit criterion: sustained >=30 fps with full visualization."
+  ]
+}
+Viewpoint {
+  orientation 0.000000 1.000000 0.000000 1.570796
+  position -7.000 0.000 219.484
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 100 100
+  wallHeight 0.5
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 -42 0.3
+  name "husky_0"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 -30 0.3
+  name "husky_1"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 -18 0.3
+  name "husky_2"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 -6 0.3
+  name "husky_3"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 6 0.3
+  name "husky_4"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 18 0.3
+  name "husky_5"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 30 0.3
+  name "husky_6"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -7 42 0.3
+  name "husky_7"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}

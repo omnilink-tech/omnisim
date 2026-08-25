@@ -1,0 +1,183 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/traffic/protos/TrafficCone.proto
+# keywords: exterior/street furniture
+# A road cone: a tapered orange body carrying two reflective collars, moulded onto a square
+# rubber base. Built from stacked frusta, so `scale` resizes it without distorting the taper.
+# template language: javascript
+
+PROTO TrafficCone [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFFloat    scale       1
+  field SFString   name        "traffic cone"
+  field SFNode     physics     NULL            # Is `Solid.physics`.
+]
+{
+  %<
+    const want = fields.scale.value;
+    const s = want > 0 ? want : fields.scale.defaultValue;
+    if (s !== want)
+      console.error('TrafficCone: \'scale\' must be strictly positive. Reset to ' + s + '.');
+
+    const SIDES = 24;    // facets around the cone
+    const BASE_W = 0.5;  // square base, 500 mm across
+    const BASE_H = 0.03; // base slab thickness
+    const TIP_Z = 0.5;   // overall height
+    const FOOT_R = 0.16; // cone radius where it meets the slab
+    const TIP_R = 0.02;  // blunt tip
+
+    // One straight taper from slab to tip; every band boundary just samples that same
+    // line, so the silhouette stays a clean cone whatever the banding.
+    const radiusAt = (z) => FOOT_R + (TIP_R - FOOT_R) * (z - BASE_H) / (TIP_Z - BASE_H);
+
+    // Alternating orange / reflective-white collars, bottom to top.
+    const bands = [
+      {z0: BASE_H, z1: 0.190, white: false},
+      {z0: 0.190,  z1: 0.260, white: true },
+      {z0: 0.260,  z1: 0.330, white: false},
+      {z0: 0.330,  z1: 0.395, white: true },
+      {z0: 0.395,  z1: TIP_Z, white: false}
+    ];
+
+    // Two accumulators: all the orange goes into one mesh and all the white into another,
+    // because a Shape carries exactly one appearance.
+    const orange = {coord: '', index: '', count: 0};
+    const white = {coord: '', index: '', count: 0};
+
+    const ring = (mesh, z, r) => {
+      for (let i = 0; i < SIDES; ++i) {
+        const a = 2 * Math.PI * i / SIDES;
+        mesh.coord += `${s * r * Math.cos(a)} ${s * r * Math.sin(a)} ${s * z}, `;
+      }
+      mesh.count += SIDES;
+    };
+
+    // A band of the cone wall: two rings joined by quads. The winding
+    // (lower_i, lower_j, upper_j, upper_i) has normal theta x z, which points outward.
+    const frustum = (mesh, z0, r0, z1, r1) => {
+      const base = mesh.count;
+      ring(mesh, z0, r0);
+      ring(mesh, z1, r1);
+      for (let i = 0; i < SIDES; ++i) {
+        const j = (i + 1) % SIDES;
+        mesh.index += `${base + i} ${base + j} ${base + SIDES + j} ${base + SIDES + i} -1 `;
+      }
+    };
+
+    // Triangle fan closing the blunt tip.
+    const cap = (mesh, z, r) => {
+      const centre = mesh.count;
+      mesh.coord += `0 0 ${s * z}, `;
+      mesh.count += 1;
+      const rim = mesh.count;
+      ring(mesh, z, r);
+      for (let i = 0; i < SIDES; ++i) {
+        const j = (i + 1) % SIDES;
+        mesh.index += `${centre} ${rim + i} ${rim + j} -1 `;
+      }
+    };
+
+    for (let b = 0; b < bands.length; ++b) {
+      const band = bands[b];
+      const mesh = band.white ? white : orange;
+      frustum(mesh, band.z0, radiusAt(band.z0), band.z1, radiusAt(band.z1));
+    }
+    cap(orange, TIP_Z, TIP_R);
+
+    const slabZ = 0.5 * BASE_H;
+    const bodyZ = 0.5 * (BASE_H + TIP_Z);
+    const bodyH = TIP_Z - BASE_H;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    physics IS physics
+    recognitionColors [
+      0.94 0.54 0.11 1 1 1
+    ]
+    children [
+      # Square rubber base.
+      Pose {
+        translation 0 0 %<= s * slabZ >%
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.11 0.11 0.12
+              roughness 0.9
+              metalness 0
+            }
+            geometry Box {
+              size %<= s * BASE_W >% %<= s * BASE_W >% %<= s * BASE_H >%
+            }
+          }
+        ]
+      }
+      # Orange body: three bands plus the tip cap.
+      Shape {
+        appearance PBRAppearance {
+          baseColor 0.94 0.42 0.07
+          roughness 0.5
+          metalness 0
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+              %<= orange.coord >%
+            ]
+          }
+          coordIndex [
+            %<= orange.index >%
+          ]
+          creaseAngle 1
+        }
+      }
+      # Reflective collars.
+      Shape {
+        appearance PBRAppearance {
+          baseColor 0.93 0.93 0.94
+          roughness 0.3
+          metalness 0
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+              %<= white.coord >%
+            ]
+          }
+          coordIndex [
+            %<= white.index >%
+          ]
+          creaseAngle 1
+        }
+      }
+    ]
+    name IS name
+    model "traffic cone"
+    # A Cone is not a legal bounding geometry, so the body is approximated by a cylinder of
+    # roughly the cone's mid radius: close enough to bump into, cheap to collide against.
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 %<= s * slabZ >%
+          children [
+            Box {
+              size %<= s * BASE_W >% %<= s * BASE_W >% %<= s * BASE_H >%
+            }
+          ]
+        }
+        Pose {
+          translation 0 0 %<= s * bodyZ >%
+          children [
+            Cylinder {
+              height %<= s * bodyH >%
+              radius %<= s * 0.1 >%
+              subdivision 16
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

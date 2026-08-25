@@ -1,0 +1,90 @@
+#OMNISIM R2025a utf8
+
+# G1 deterministic stand + TABLE MANIPULATION (and, with -Throw, cubes thrown
+# from the sides at the same time). The humanoid_stand_deploy controller holds
+# the deterministic squat stand and runs the NEW 'manip' overlay: it reaches
+# with the RIGHT arm (position-only IK) to pick the DEF GRASP_CUBE* off the
+# table, lift/move/place them, while the LEFT arm keeps arm_balance running as
+# the fast balancer. Fingerless rubber hand -> kinematic WELD grasp.
+#   Run: run_humanoid_stand_deploy.ps1 -Robot g1 -Manip [-Throw] [-Gui]
+# Table is LOW (top 0.72 m) + NARROW (0.45 x 0.70) so the arm reaches OVER the
+# top; near edge at x=0.235 clears the squat knees, cubes at x<=0.36 stay inside
+# the ~0.36 m forward reach envelope (all waypoints IK-verified <=1 mm).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/tables/protos/Table.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 deterministic stand -- table manipulation"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.294 -4.571 5.547
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 10
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+# Narrow workbench in front of the robot. Tray top at z=0.78 (a standing-height
+# work surface so the cubes sit INSIDE the arm's reach envelope at the true
+# settled stance: pelvis ~0.763, shoulder ~1.055). Near edge x=0.235 clears the
+# squat knees (~x0.11). A lower table would put the cubes below the 5-DOF arm's
+# downward reach at a knee-clearing forward distance.
+Table {
+  translation 0.46 0 0
+  name "manip_table"
+  size 0.45 0.70 0.78
+  feetSize 0.06 0.06
+}
+
+# Graspable cube ON the table (DEF GRASP_* so the manip weld finds it). 0.07 m box,
+# 0.25 kg, resting on the tray top (center z = 0.78 + 0.035 = 0.815). Position is
+# IK-verified reachable by the right 5-DOF arm to <1 mm, in the stable reach "sweet
+# spot" (the marginal one-arm-reach stand + 5-DOF envelope is ~11x10 cm; see README).
+DEF GRASP_CUBE0 Solid { translation 0.30 -0.16 0.815 physicsBackend "newton" children [ DEF GC0S Shape { appearance PBRAppearance { baseColor 0.20 0.80 0.35 roughness 0.5 metalness 0 } geometry Box { size 0.07 0.07 0.07 } } ] name "grasp_cube0" boundingObject USE GC0S physics Physics { density -1 mass 0.25 } }
+# A second cube sits on the table as a static target/backdrop, OUT of the reach path
+# so picking GRASP_CUBE0 never disturbs it (kept non-DEF-GRASP_ so the weld ignores it).
+DEF TABLE_CUBE1 Solid { translation 0.55 0.22 0.815 physicsBackend "newton" children [ DEF TC1S Shape { appearance PBRAppearance { baseColor 0.95 0.75 0.15 roughness 0.5 metalness 0 } geometry Box { size 0.07 0.07 0.07 } } ] name "table_cube1" boundingObject USE TC1S physics Physics { density -1 mass 0.25 } }
+
+# Thrown cubes (only used with -Throw, Stage 4). Parked in a ring on the floor at
+# r=1.8 m on the SIDES/BACK (NOT the +x front, to avoid the table). The
+# humanoid_stand_deploy supervisor (HSTAND_THROW=1) launches DEF CUBE0..n one at
+# a time at the torso. 0.13 m boxes, 0.5 kg.
+DEF CUBE0 Solid { translation 0.00 1.80 0.07 physicsBackend "newton" children [ DEF C0S Shape { appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube0" boundingObject USE C0S physics Physics { density -1 mass 0.5 } }
+DEF CUBE1 Solid { translation 0.00 -1.80 0.07 physicsBackend "newton" children [ DEF C1S Shape { appearance PBRAppearance { baseColor 0.90 0.45 0.10 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube1" boundingObject USE C1S physics Physics { density -1 mass 0.5 } }
+DEF CUBE2 Solid { translation -1.80 0.00 0.07 physicsBackend "newton" children [ DEF C2S Shape { appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube2" boundingObject USE C2S physics Physics { density -1 mass 0.5 } }
+DEF CUBE3 Solid { translation -1.27 1.27 0.07 physicsBackend "newton" children [ DEF C3S Shape { appearance PBRAppearance { baseColor 0.90 0.45 0.10 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube3" boundingObject USE C3S physics Physics { density -1 mass 0.5 } }
+
+URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "humanoid_stand_deploy"
+  physicsBackend "newton"
+}

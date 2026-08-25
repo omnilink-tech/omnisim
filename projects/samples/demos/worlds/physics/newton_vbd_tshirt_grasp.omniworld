@@ -1,0 +1,568 @@
+#VRML_SIM R2025a utf8
+
+# A FLYING GRIPPER PICKS UP A T-SHIRT. No arm, no IK -- a two-jaw gripper on a
+# prismatic gantry flies to a chosen point on a hanging garment, pinches it, and
+# lifts.
+#
+# This is newton_vbd_cloth_grasp.omniworld with the flat 21x19 patch replaced by
+# an actual garment mesh (newton_cloth_tshirt_hang.omniworld's shirt). The
+# plumbing is deliberately unchanged -- same newtonSolver "vbd", same substeps,
+# same pinch arithmetic, same "measure the pads as Solid poses" instrument --
+# because the question this world asks is only "does that proven pinch survive
+# real garment geometry", and every extra variable makes the answer weaker.
+#
+# ==========================================================================
+# THE ONE REAL DESIGN PROBLEM, AND THE CHOICE MADE
+# ==========================================================================
+# The jaws close along Y. A T-shirt is a flattened TUBE, and this mesh's front
+# and back panels are 0.271 m apart in Y at the hem (measured on the asset:
+# bbox y +/-0.1361). A naive centre grab would try to pinch both panels at once
+# across a gap the gripper cannot even open to.
+#
+# CHOSEN: offset the gripper in Y so only ONE panel lies between the jaws, and
+# grab that panel FULL-FACE low on the torso. Reasons, in order:
+#
+#   1. A single panel of a hanging shirt IS the geometry the proven grasp
+#      works on -- a sheet whose normal points along the jaw closing axis.
+#      Nothing about the pinch has to be re-derived, so a failure here would
+#      be attributable to the garment and not to a new grasp strategy.
+#   2. The asset's particle spacing suits it: median nearest-neighbour spacing
+#      on the front panel is 21.4 mm (p90 34.6), against the 20 mm cells of the
+#      patch the pinch was proven on. Fabric that coarse is gripped particle by
+#      particle, so this is the number that decides whether a pad has anything
+#      to hold -- see the pad-size note further down.
+#   3. It leaves the rest of the garment free to behave like a garment: the
+#      lifted panel drags the hem and the opposite panel after it.
+#
+# REJECTED, with the reason each was rejected rather than a bare list:
+#   * scale the shirt down (meshScale) until the whole tube fits between the
+#     jaws -- works, and makes it a doll's shirt. The demo is "a gripper picks
+#     up a T-shirt", and a 0.32 m garment is not one.
+#   * rotate the shirt so the tube's axis lies along Y -- puts both panels
+#     edge-on to the pads; a pinch then closes on two fabric EDGES with almost
+#     no particle in the footprint.
+#   * grab the hem edge so the pads straddle it -- retained as a SECOND grasp
+#     point rather than the primary one (see TSHIRT_GRASP_PRESET below): a
+#     straddled edge only half-covers the pad, which is what the proven patch
+#     world does and is the weaker of the two.
+#   * pinch the SLEEVE CUFF -- also retained as a preset, and it is the
+#     interesting one: the cuff is a small tube whose opening measures 82 mm
+#     in Y by 28 mm in Z, so the WHOLE sleeve fits inside the 140 mm open gap
+#     and closing gathers both of its walls. Two layers, near a free edge.
+#
+# The grasp point is NOT baked into this file. The controller takes it from
+# TSHIRT_GX / GY / GZ (or a named TSHIRT_GRASP_PRESET), because the gantry's
+# three world-axis DoF can already reach any of them -- so one world serves
+# every grasp point and no comparison is confounded by a world edit.
+#
+# ==========================================================================
+# WHAT CHANGED FROM THE PATCH WORLD, AND WHY -- the complete list
+# ==========================================================================
+#   * the Cloth is a MESH (url + density + pinTopBand) instead of a grid.
+#   * THE PADS ARE BIGGER: 90 x 60 mm instead of 50 x 50. This is the one
+#     change that is about the fabric rather than about bookkeeping, and it is
+#     a consequence of point 2 above. A pinch holds cloth through PARTICLE
+#     contacts, so what matters is how many particles a pad covers, not its
+#     area: the 50 x 50 pad covered 9 particles of the 20 mm patch but only
+#     3-4 of this garment. 90 x 60 restores that to 8 (counted on the rest
+#     mesh at the hem). A garment gripper having broad flat pads is also just
+#     what a garment gripper looks like.
+#   * the jaws rest 70 mm out instead of 53, giving a 140 mm open gap. The
+#     shirt is a bulging tube, not a flat sheet: the far jaw has to fly past
+#     fabric on the way in, and the sleeve preset needs to swallow an 82 mm
+#     cuff whole.
+#   * particleRadius 0.01 (the T-shirt hang world's value) rather than 0.005,
+#     so the pinch arithmetic shifts with it: the jaws close to
+#     pad_half + radius - interference = 0.005 + 0.010 - 0.002 = 0.013 m.
+#     The 2 mm interference is newton's ~0.2 x particle radius guidance.
+#
+# ==========================================================================
+# PARTICLE SELF-CONTACT IS OFF, AND THIS FILE SAYS SO ITSELF.
+# ==========================================================================
+# `newtonClothSelfContact 0` below. Measured at 24x on the patch world
+# (-22.11 mm tracking with self-contact on, -0.92 mm off): fabric gathered
+# inside the jaws self-collides and pushes itself back out of the pinch.
+# Until 2026-08-15 this was reachable ONLY as OMNISIM_CLOTH_SELF_CONTACT=0,
+# so the world could not express the configuration it works in -- and a
+# forgotten variable did not fail, it slipped 24x in silence. The env var
+# still overrides if you want to A/B it without editing the file.
+#
+# HOW A HOLD IS PROVEN. Cloth particles are not scene nodes, so the fabric is
+# read only through the engine's own telemetry:
+#   OMNISIM_CLOTH_TELEMETRY=<path.jsonl> OMNISIM_CLOTH_TELEMETRY_FULL=1
+#   OMNISIM_CLOTH_TELEMETRY_EVERY=1
+# and the controller writes the matching MEASURED pad poses to TSHIRT_GRASP_LOG.
+# The verdict is (rise of the gripped particles) - (rise of the jaws) over the
+# lift, plus the required negative control (TSHIRT_MODE=negative: identical
+# flight path, jaws never close).
+#
+# ==========================================================================
+# ⚠⚠ RE-MEASURE BEFORE QUOTING THE TABLE BELOW. IT WAS PRODUCED ON A MESH THIS
+# WORLD NO LONGER LOADS.
+# ==========================================================================
+# On 2026-08-15 the garment was swapped from `meshes/tshirt.obj` (616 vertices)
+# to `meshes/tshirt_hi.obj` (2394) for rendering reasons -- see the Cloth node.
+# Every row below was measured on the 616-vertex asset and NOT re-run, so the
+# table is HISTORY, dated, and the grasp verdicts (HOLDS / MISSES) are claims
+# about a configuration this file no longer describes.
+#
+# WHAT THE SWAP CHANGES MECHANICALLY, since "it is only a render change" is
+# exactly the assumption that would make this dangerous: a pinch holds cloth
+# through PARTICLE contacts, and the reasoning that sized these pads (point 2
+# above, and the 50x50 -> 90x60 change) is entirely a particle-count argument.
+# Median nearest-neighbour spacing on the front panel was 21.4 mm at 616
+# vertices; at 2394 it is roughly half that, so a 90 x 60 pad now covers on the
+# order of 30 particles where it covered 8. That should make the grasp BETTER,
+# and "should" is the operative word -- it is a prediction from the same
+# arithmetic as the pad-size note, not a measurement. The hem_edge MISS in
+# particular may no longer miss: its stated mechanism is 5 candidate particles
+# spread over 77.9 mm, and 4x the particles is directly aimed at that.
+#
+# The membrane stiffnesses, particleRadius and pinTopBand were deliberately left
+# at the values the table was taken with, so re-running is a clean one-variable
+# comparison rather than a fresh characterisation.
+#
+# ⚠ SEPARATELY AND STILL UNFIXED: this garment CREEPS. Under triKe 500 the
+# 0.635 m shirt elongates until its hem is at the floor -- visible in any render
+# past a couple of seconds of sim, and present before the mesh swap too. The
+# known fix is the triKe 1000000 / triKd 2000 pair that
+# newton_cloth_material.omniworld and newton_cloth_tshirt_hang.omniworld now
+# use, and it was NOT applied here on purpose: triKe is a load-bearing grasp
+# parameter (500/500/0.1 are newton's own gripper-example values) and changing
+# it would move the fabric out from under every grasp preset at once. Fixing the
+# creep here means re-deriving TSHIRT_GRASP_PRESET, which belongs with whoever
+# owns the controller.
+#
+# ==========================================================================
+# MEASURED ON meshes/tshirt.obj (616 v) -- SEE THE BANNER ABOVE, THIS IS
+# HISTORY. RTX 3060 laptop, machine 9722d23d12a3, newton 1.5.0 / warp 1.16.0,
+# OMNISIM_CLOTH_SELF_CONTACT=0, TWO runs per condition (the cloth path is not
+# run-to-run reproducible, so a single run is not a result).
+#
+#   condition          tracking err       slip_max      jaw gap    verdict
+#   front_low          -1.50 / -1.59 mm   4.17/5.14mm   28.4 mm    HOLDS
+#   sleeve             +0.95 / +0.98 mm   5.09/3.94mm   28.1 mm    HOLDS
+#   hem_edge          -47.20 /-57.14 mm  73.4 /85.9mm   26.0 mm    MISSES
+#   NEG-CTRL         -173.06 /-115.07mm 202.9/177.6mm  140.0 mm    (control)
+#
+# tracking err = (rise of the gripped particles) - (rise of the MEASURED jaw
+# midpoint), between 90% through `preload` and 95% through `hold`, over a 250 mm
+# lift. Both instants sit deep inside a static window and the analysis re-runs
+# the number at cloth-telemetry offsets of +/-8 steps to show it is
+# alignment-insensitive (front_low: -1.54 .. -1.41 mm across that sweep).
+#
+# ⚠ READ THE JAW GAP COLUMN -- it is a SECOND, INDEPENDENT instrument and it is
+# the one that explains the failure. It comes from the jaw BODY poses, not from
+# any particle, so it cannot be confounded by how the gripped set was chosen.
+# The jaws are commanded to a 26.00 mm gap; fabric caught in the pinch pushes
+# the PD-driven pads apart from it. Both working grasps read 28.1-28.4 mm, i.e.
+# ~2.2 mm of fabric is genuinely between the pads. hem_edge reads 26.00 mm to
+# the centimetre, on both runs: THE JAWS CLOSED ON NOTHING. That grasp is a
+# MISS, not a slipping grip -- the pads straddle the hem's free edge (so only
+# their upper half has fabric on it) at a place where the tube curves toward the
+# side seam and spreads the 5 candidate particles over 77.9 mm of Y, which a
+# 26 mm pinch cannot gather. It is kept as a preset because a failure with a
+# measured mechanism is more useful than a missing one.
+#
+# ⚠ THE NEGATIVE CONTROL IS NOT CONTACT-FREE, and saying so matters. Its 140 mm
+# open jaws still plough through the garment's side on the way in and drag some
+# fabric upward -- the gripped region rises 77-135 mm of the jaws' 250 mm rather
+# than 0. That is why the control's spread (-115 to -173 mm) is wide. It does
+# not weaken the comparison: the working grasps are two orders of magnitude
+# tighter, and the discriminator below is cleaner still.
+#
+# THE CLEANEST DISCRIMINATOR, because "the fabric rose" alone could in principle
+# be fabric DRAPED over a jaw acting as a ledge: track the gripped region's
+# height RELATIVE TO THE PAD CENTRE for every frame of the lift and hold. Fabric
+# resting on top of a 60 mm pad would sit ~30 mm above its centre. Measured:
+# front_low stays at +1.26 .. +4.30 mm and sleeve at -0.43 .. +0.70 mm across
+# all 275 frames -- pinched at the pad's midline, not perched on it -- while the
+# negative control falls to -117 mm.
+#
+# Also measured, every run: 616 particles registered, 47 pinned, pinned-set
+# drift 0.00e+00 m (identified as the never-moving particles, NOT as "the
+# highest ones" -- the sleeve grasp lifts the cuff ABOVE the shoulder line and
+# breaks that proxy), zero non-finite components, peak soft contacts 462.
+# Wall clock: 6.7 s of sim in ~45 s.
+#
+# ⚠ THE PINNED SHOULDERS ARE WHY THIS IS A TRACKING NUMBER AND NOT A
+# LOAD-BEARING ONE. The shirt hangs from a pinned shoulder band because
+# UNPINNED CLOTH SINKS THROUGH STATIC BODIES on this solver (measured: this
+# same shirt dropped on a 0.6 m box reached z = -0.42), so it cannot be laid on
+# a table and picked up. A pinned band can only stop fabric FALLING, never lift
+# it, so a gripped region that RISES with the jaws still has one explanation --
+# but the grip is not carrying the whole garment's weight, and no number here
+# should be read as if it were.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  # ONE SolverVBD owns the gantry, the jaws AND every cloth particle. On the
+  # coupled path ("mujoco+vbd") the fabric only ever sees a jaw synced from the
+  # previous rigid solve, so a pinch is always resolved against a one-step-stale
+  # pad. Read the field's note in resources/nodes/WorldInfo.wrl before copying
+  # this into a world that also needs sensors, welds or contact readback -- this
+  # path has none of them.
+  newtonSolver "vbd"
+  newtonSubsteps 10
+  newtonStatics TRUE
+  # Shape-side friction; the cloth's particle-side mu defaults to the same value
+  # and newton takes the geometric mean, so pad-fabric friction is 1.0.
+  newtonGroundMu 1
+  # OFF for grasping. See the header: fabric gathered between the pads
+  # self-collides and pushes itself out of the jaws (-22.11 mm on vs
+  # -0.92 mm off). A DRAPING world wants the opposite and should leave this
+  # unset -- the runtime default is ON, because with it off a fold passes
+  # through itself silently. OMNISIM_CLOTH_SELF_CONTACT still overrides.
+  newtonClothSelfContact 0
+}
+Viewpoint {
+  position 1.75 -1.95 1.45
+  orientation -0.222 0.128 0.967 2.31
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+# Top face at z = 0. Only a FAILED grasp ever touches it; it exists so that
+# "the shirt ended up on the floor" is a measurable outcome rather than a fall
+# out of the world.
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.33 0.34 0.38
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 4 4 0.1
+  }
+}
+# The clothes rail. ⚠ DELIBERATELY HAS NO boundingObject -- it is a visual prop.
+# What holds the shirt up is the pinned shoulder band; giving the rail a collider
+# would put a static body back into the fabric's contact path, which is the exact
+# path measured to be unreliable. It is also the house rule for kinematic props.
+DEF RAIL Solid {
+  translation 0 0 1.28
+  rotation 0 1 0 1.5708
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.73 0.75
+        roughness 0.4
+        metalness 1
+      }
+      geometry Cylinder {
+        height 1.6
+        radius 0.012
+      }
+    }
+  ]
+  name "rail"
+}
+# The garment, hung as worn. The OBJ's local +Z is the torso axis and its hem
+# sits at local z = 0, so at translation z = 0.62 the shirt occupies
+# z = 0.62 (hem) .. 1.2546 (shoulders) and the gripper works at a comfortable
+# 0.6-0.9 m off the floor.
+#
+# pinTopBand 0.06 pins the 47 vertices within 6 cm of maximum local Z -- the
+# shoulder line either side of the neck, 0.336 m across -- giving them mass 0 so
+# the shirt hangs from them as it would from a hanger.
+#
+# density is kg per SQUARE METRE, not per particle: 0.3 over 0.664 m^2 is a
+# 0.199 kg shirt, i.e. a real light cotton jersey. That unit is why the mesh's
+# decimation is physically free -- the garment masses the same however finely it
+# is tessellated.
+DEF TSHIRT Cloth {
+  translation 0 0 0.62
+  # ⚠ SWAPPED 2026-08-15: tshirt.obj (616 v / 1157 tri) -> tshirt_hi.obj
+  # (2394 v / 4674 tri). PURELY A RESOLUTION CHANGE -- same asset, same
+  # generator, same local frame (bbox centred on XY, lowest vertex at z = 0),
+  # same `arap-panel` UVs at 6 tiles/m, so the material below is unaffected and
+  # nothing needed re-aiming. Two numbers DO move and both are used above:
+  # max local z 0.6346 -> 0.6448 (so the shoulder line is at 1.2648, not
+  # 1.2546), and the pinTopBand 0.06 set is 134 vertices, not 47.
+  #
+  # WHY: at 616 vertices the triangles are ~3.6 cm and the garment's own creases
+  # are ~4 cm, so smooth per-vertex normals were interpolating across a fold and
+  # the shirt rendered as hard-edged shards rather than fabric. Cloth.wrl says
+  # exactly this and names this asset as the one to reach for "whenever the
+  # camera is close enough to see the fabric", which for a world whose subject
+  # is a gripper closing on a garment is always. Cost is linear: 4x particles,
+  # 4x triangles.
+  url [
+    "meshes/tshirt_hi.obj"
+  ]
+  density 0.3
+  # ⚠ NOTHING BELOW THIS LINE WAS RETUNED FOR THE FINER MESH, DELIBERATELY.
+  # particleRadius, pinTopBand and the four membrane stiffnesses are the exact
+  # values the header's measurement table was produced with, so leaving them
+  # alone keeps the ONE difference between that table and this world a single
+  # named change. See the RE-MEASURE banner in the header before quoting any of
+  # those numbers as current.
+  particleRadius 0.01
+  pinTopBand 0.06
+  # A mesh Cloth is pinned by pinTopBand, never by the grid's edge flags;
+  # fixTop defaults TRUE, so clear it or the node correctly warns it is ignored.
+  fixTop FALSE
+  triKe 500
+  triKa 500
+  triKd 0.1
+  edgeKe 0.001
+  diffuseColor 0.30 0.45 0.85
+  # ⚠ PURELY COSMETIC -- the renderer reads `appearance` and the solver does
+  # not, so no measured number in the header moves because of this block.
+  #
+  # WHAT IT BUYS: 9.42% of the frame was PURE BLACK and is now 0.00% (harness,
+  # 300 basic steps, hero framing, 1900x1080). This was the worst-scoring world
+  # in the deformable set and the reason is structural, not stylistic: the
+  # canonical recipe declares `ambientIntensity 0` (OmniSimSun.proto), so ALL
+  # fill light in an OmniSim world is IMAGE-BASED, and image-based light reaches
+  # a surface ONLY through a PBRAppearance. A Phong garment is therefore exactly
+  # (0,0,0) on every square millimetre the sun does not strike directly -- which
+  # on a hanging tube, seen from one side, was the entire lower half of the
+  # shirt. This world adds no fill light of its own, so there was nothing else
+  # for those faces to fall back on.
+  #
+  # ⚠ textureTransform scale 2 2 MULTIPLIES the scale already baked into the
+  # asset. The OBJ carries `arap-panel` UVs at 6 tiles per metre of surface
+  # (16.7 cm tile); on its own that measurably read as knitted wool rather than
+  # cotton, so this doubles it to 12 tiles/m = an 8.3 cm tile, matching every
+  # other cloth world in this directory. The honest 2 cm design tile was swept
+  # and rejected on evidence -- at 2 cm a thread is 0.42 mm, far under a pixel,
+  # and the mip chain averages the weave away to nothing. See the tile table in
+  # newton_cloth_drape.omniworld. normalMapFactor 0.5 pays for the 4x stretch.
+  #
+  # ⚠ metalness 0 EXPLICITLY (the schema default is 1, and a metal shirt under
+  # ambientIntensity 0 renders near-black -- i.e. it looks exactly like the bug
+  # this block was added to fix).
+  # ⚠ baseColorMap is MULTIPLIED by `baseColor` (pbr.frag:259), not replaced;
+  # the woven set is generated near-neutral so a world can tint it, which is how
+  # the shirt keeps the blue it had as a Phong `diffuseColor`.
+  appearance PBRAppearance {
+    baseColor 0.26 0.40 0.78
+    baseColorMap ImageTexture {
+      url [
+        "textures/woven_cotton_basecolor.png"
+      ]
+    }
+    normalMap ImageTexture {
+      url [
+        "textures/woven_cotton_normal.png"
+      ]
+    }
+    roughnessMap ImageTexture {
+      url [
+        "textures/woven_cotton_roughness.png"
+      ]
+    }
+    occlusionMap ImageTexture {
+      url [
+        "textures/woven_cotton_occlusion.png"
+      ]
+    }
+    metalness 0
+    normalMapFactor 0.5
+    IBLStrength 1.3
+    textureTransform TextureTransform {
+      scale 2 2
+    }
+  }
+}
+# The flying gripper. The root Robot declares NO physics, so it is a STATIC
+# anchor and the gantry hangs off it -- which also keeps the articulation free of
+# a FREE joint, and that matters:
+# ⚠ VBD reads a position target at joint_target_q[q_index] while OmniSim writes
+# it at the qd index. Those coincide for an articulation of 1-DoF joints and
+# DIVERGE the moment a 7-q / 6-qd FREE joint precedes them. Keep newtonSolver
+# "vbd" articulations rooted on a static base until that is fixed.
+#
+# ⚠ maxForce IS NOT A FORCE CEILING HERE. OmniSim turns a position motor's
+# maxForce into the joint's PD stiffness (targetKe = maxForce * 10, targetKd =
+# maxForce * 0.5) and VBD honours those gains while ignoring the effort limit
+# itself. maxForce 10000 on a jaw means ke = 1e5, which is newton's own
+# finger_drive_ke -- it does NOT mean the jaw can push with 10 kN. Read these as
+# stiffnesses, and note the ~50x ratio to the contact stiffness is deliberate.
+#
+# The intermediate links carry 1 mm sphere colliders rather than none: a Newton
+# body with no resolvable boundingObject is given a 12 cm sphere fallback, which
+# here would be a hidden ball swiping through the garment.
+DEF GANTRY Robot {
+  translation 0.75 0 0.70
+  children [
+    DEF GX SliderJoint {
+      jointParameters JointParameters {
+        axis 1 0 0
+      }
+      device [
+        LinearMotor {
+          name "gantry_x"
+          maxForce 5000
+          maxVelocity 5
+          minPosition -1.6
+          maxPosition 0.5
+        }
+      ]
+      endPoint DEF BASE_X Solid {
+        children [
+          DEF GY SliderJoint {
+            jointParameters JointParameters {
+              axis 0 1 0
+            }
+            device [
+              LinearMotor {
+                name "gantry_y"
+                maxForce 5000
+                maxVelocity 5
+                minPosition -0.6
+                maxPosition 0.6
+              }
+            ]
+            endPoint DEF BASE_Y Solid {
+              children [
+                DEF GZ SliderJoint {
+                  jointParameters JointParameters {
+                    axis 0 0 1
+                  }
+                  device [
+                    LinearMotor {
+                      name "gantry_z"
+                      maxForce 5000
+                      maxVelocity 5
+                      minPosition -0.6
+                      maxPosition 0.9
+                    }
+                  ]
+                  endPoint DEF CARRIAGE Solid {
+                    children [
+                      # Jaw joint zero == OPEN. Both jaws take the SAME command
+                      # (how far closed from open) because their axes point at
+                      # each other, which keeps the pinch symmetric by
+                      # construction rather than by two matching sign flips.
+                      DEF JL SliderJoint {
+                        jointParameters JointParameters {
+                          axis 0 1 0
+                        }
+                        device [
+                          LinearMotor {
+                            name "jaw_left"
+                            maxForce 10000
+                            maxVelocity 5
+                            minPosition -0.15
+                            maxPosition 0.08
+                          }
+                        ]
+                        endPoint DEF LEFT_PAD Solid {
+                          translation 0 -0.07 0
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.85 0.3 0.25
+                                roughness 0.8
+                                metalness 0
+                              }
+                              geometry Box {
+                                size 0.09 0.01 0.06
+                              }
+                            }
+                          ]
+                          name "left_pad"
+                          boundingObject Box {
+                            size 0.09 0.01 0.06
+                          }
+                          physics Physics {
+                            density -1
+                            mass 0.025
+                          }
+                        }
+                      }
+                      DEF JR SliderJoint {
+                        jointParameters JointParameters {
+                          axis 0 -1 0
+                        }
+                        device [
+                          LinearMotor {
+                            name "jaw_right"
+                            maxForce 10000
+                            maxVelocity 5
+                            minPosition -0.15
+                            maxPosition 0.08
+                          }
+                        ]
+                        endPoint DEF RIGHT_PAD Solid {
+                          translation 0 0.07 0
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.25 0.35 0.85
+                                roughness 0.8
+                                metalness 0
+                              }
+                              geometry Box {
+                                size 0.09 0.01 0.06
+                              }
+                            }
+                          ]
+                          name "right_pad"
+                          boundingObject Box {
+                            size 0.09 0.01 0.06
+                          }
+                          physics Physics {
+                            density -1
+                            mass 0.025
+                          }
+                        }
+                      }
+                    ]
+                    name "carriage"
+                    boundingObject Sphere {
+                      radius 0.001
+                    }
+                    physics Physics {
+                      density -1
+                      mass 0.01
+                    }
+                  }
+                }
+              ]
+              name "base_y"
+              boundingObject Sphere {
+                radius 0.001
+              }
+              physics Physics {
+                density -1
+                mass 0.01
+              }
+            }
+          }
+        ]
+        name "base_x"
+        boundingObject Sphere {
+          radius 0.001
+        }
+        physics Physics {
+          density -1
+          mass 0.01
+        }
+      }
+    }
+  ]
+  name "gantry"
+  controller "vbd_tshirt_grasp"
+  supervisor TRUE
+}

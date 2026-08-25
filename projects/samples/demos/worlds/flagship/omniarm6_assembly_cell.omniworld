@@ -1,0 +1,123 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — OmniArm 6 ASSEMBLY CELL (two arms: unbin -> handoff -> build)
+# Two OmniArm 6s (LONG suction tools) cooperate to build a product:
+#   * FEEDER (base at origin): empties the parts bin using the UNIVERSAL
+#     depth-only pick stack (universal_cam anchors — no registry) and sets
+#     each part on the HANDOFF PAD.
+#   * BUILDER (base at (1.30, 0), yawed pi): whenever the pad is occupied,
+#     takes the part and stacks it on the FIXTURE — a 4-slab tower.
+# Coordination is stigmergic (pad occupancy), no IPC: the feeder only
+# places when the pad is EMPTY, the builder only picks when it is NOT.
+#
+# Newton + MuJoCo; statics + compound colliders baked into WorldInfo.
+#
+# Headless verify:
+#   ANYPICK_AUTOQUIT=1 python scripts/dev/headless_runner.py \
+#     projects/samples/demos/worlds/flagship/omniarm6_assembly_cell.omniworld --duration 500
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — OmniArm 6 assembly cell (two arms, unbin -> handoff -> build)"
+  newtonSolver "mujoco"
+  newtonStatics TRUE             # bin walls / pad / fixture collide
+  newtonCompoundColliders TRUE   # the movable bin is a multi-box body
+  contactProperties [
+    ContactProperties { material1 "default" material2 "default" coulombFriction [ 3 ] bounce 0 softCFM 0.0003 }
+  ]
+  # translation_audit: ContactProperties.coulombFriction is an ODE-path field the
+  # Newton backend does not read; this declares the same friction where it is read.
+  #
+  # mu 5 is past the contact solver's stable range at basicTimeStep 16 and sank
+  # this world's dynamic bodies through the floor -- measured over a 12 s settle
+  # with the robots removed: 5 of 5 bodies below z=0. mu 3 keeps every part on its
+  # surface and is the value docs/guide/friction-grasp.md measured for a
+  # two-finger pinch, so it is the highest friction this world can actually hold.
+  newtonGroundMu 3
+}
+Viewpoint { orientation -0.278945 0.120681 0.952694 2.359689 position 5.971 -5.696 5.456 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 5 5 }
+
+DEF FEEDER URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_suction_long.urdf"
+  translation 0 0 0
+  name "omniarm6_feeder"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_cell_feeder"
+}
+
+DEF BUILDER URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_suction_long.urdf"
+  translation 1.24 0 0
+  rotation 0 0 1 3.14159
+  name "omniarm6_builder"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_cell_builder"
+}
+
+# ── Top-down DEPTH camera over the parts bin (feeder's eyes) ─────────
+DEF BIN_CAM Robot {
+  translation 0.46 0 1.15
+  children [
+    RangeFinder {
+      name "bin_depth"
+      rotation 0 1 0 1.5708
+      width 160
+      height 160
+      fieldOfView 0.6
+      minRange 0.05
+      maxRange 2.5
+    }
+  ]
+  name "bin_cam"
+  controller "universal_cam"
+}
+
+# ── Parts BIN in front of the feeder (movable body, pinned at home) ──
+DEF MOVABLE_BIN Solid {
+  translation 0.46 0 0.0
+  rotation 0 0 1 0
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.011 children [ DEF BFLOOR_SH Shape { appearance PBRAppearance { baseColor 0.28 0.31 0.36 roughness 0.85 metalness 0.2 } geometry Box { size 0.42 0.42 0.022 } } ] }
+    Transform { translation -0.195 0 0.131 children [ DEF BWW_SH Shape { appearance PBRAppearance { baseColor 0.30 0.33 0.38 roughness 0.8 metalness 0.3 } geometry Box { size 0.03 0.42 0.22 } } ] }
+    Transform { translation 0.195 0 0.131 children [ DEF BWE_SH Shape { appearance PBRAppearance { baseColor 0.30 0.33 0.38 roughness 0.8 metalness 0.3 } geometry Box { size 0.03 0.42 0.22 } } ] }
+    Transform { translation 0 -0.195 0.131 children [ DEF BWS_SH Shape { appearance PBRAppearance { baseColor 0.30 0.33 0.38 roughness 0.8 metalness 0.3 } geometry Box { size 0.42 0.03 0.22 } } ] }
+    Transform { translation 0 0.195 0.131 children [ DEF BWN_SH Shape { appearance PBRAppearance { baseColor 0.30 0.33 0.38 roughness 0.8 metalness 0.3 } geometry Box { size 0.42 0.03 0.22 } } ] }
+  ]
+  name "movable_bin"
+  boundingObject Group { children [
+    Transform { translation 0 0 0.011 children [ Box { size 0.42 0.42 0.022 } ] }
+    Transform { translation -0.195 0 0.131 children [ Box { size 0.03 0.42 0.22 } ] }
+    Transform { translation 0.195 0 0.131 children [ Box { size 0.03 0.42 0.22 } ] }
+    Transform { translation 0 -0.195 0.131 children [ Box { size 0.42 0.03 0.22 } ] }
+    Transform { translation 0 0.195 0.131 children [ Box { size 0.42 0.03 0.22 } ] }
+  ] }
+  physics Physics { density -1 mass 6.0 centerOfMass [ 0 0 0.015 ] }
+}
+
+# ── HANDOFF PAD — between the arms, reachable by both ────────────────
+DEF PAD Solid { translation 0.65 -0.34 0.006 physicsBackend "newton" children [ DEF PAD_SH Shape { appearance PBRAppearance { baseColor 0.20 0.65 0.75 roughness 0.9 metalness 0.1 transparency 0.15 } geometry Box { size 0.16 0.16 0.012 } } ] name "handoff_pad" boundingObject USE PAD_SH }
+
+# ── FIXTURE — the builder's assembly base ────────────────────────────
+DEF FIXTURE Solid { translation 0.84 0.30 0.009 physicsBackend "newton" children [ DEF FIX_SH Shape { appearance PBRAppearance { baseColor 0.55 0.55 0.60 roughness 0.7 metalness 0.4 } geometry Box { size 0.14 0.14 0.018 } } ] name "fixture" boundingObject USE FIX_SH }
+
+# ── PRODUCT PARTS — 4 slabs to become a tower on the fixture ─────────
+# Identical 0.07 x 0.07 x 0.03 slabs: the tower is order-free, so the
+# depth-only unbinning may surface them in ANY order.
+DEF PART_1 Solid { translation 0.40 -0.06 0.055 rotation 0 0 1 0.4 physicsBackend "newton" children [ DEF S1_SH Shape { appearance PBRAppearance { baseColor 0.85 0.30 0.20 roughness 1 metalness 0 } geometry Box { size 0.07 0.07 0.03 } } ] name "slab_1" boundingObject USE S1_SH physics Physics { density -1 mass 0.06 } }
+DEF PART_2 Solid { translation 0.52 -0.05 0.075 rotation 0 0 1 1.2 physicsBackend "newton" children [ DEF S2_SH Shape { appearance PBRAppearance { baseColor 0.95 0.75 0.25 roughness 1 metalness 0 } geometry Box { size 0.07 0.07 0.03 } } ] name "slab_2" boundingObject USE S2_SH physics Physics { density -1 mass 0.06 } }
+DEF PART_3 Solid { translation 0.42 0.06 0.100 rotation 0 0 1 -0.8 physicsBackend "newton" children [ DEF S3_SH Shape { appearance PBRAppearance { baseColor 0.30 0.65 0.35 roughness 1 metalness 0 } geometry Box { size 0.07 0.07 0.03 } } ] name "slab_3" boundingObject USE S3_SH physics Physics { density -1 mass 0.06 } }
+DEF PART_4 Solid { translation 0.51 0.07 0.130 rotation 0 0 1 2.1 physicsBackend "newton" children [ DEF S4_SH Shape { appearance PBRAppearance { baseColor 0.35 0.45 0.85 roughness 1 metalness 0 } geometry Box { size 0.07 0.07 0.03 } } ] name "slab_4" boundingObject USE S4_SH physics Physics { density -1 mass 0.06 } }

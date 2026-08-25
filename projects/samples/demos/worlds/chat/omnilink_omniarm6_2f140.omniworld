@@ -1,0 +1,151 @@
+#VRML_SIM R2025a utf8
+# OmniLink chat demo — OmniArm 6 + Robotiq 2F-140, and the hold is REAL.
+#
+# Right-click the arm -> Show Robot Window, then type. Offline it uses the
+# regex intent router; set OMNI_KEY and it routes through OmniLink to a model.
+#   "pick up the block"      -> a friction pick, proved by contact
+#   "put it down"            -> places it on the yellow table
+#   "open the gripper"       -> the block falls, because nothing else held it
+#
+# ===========================================================================
+# WHY THIS WORLD EXISTS SEPARATELY FROM THE OTHER CHAT DEMOS
+# ===========================================================================
+# Every other arm chat demo in this tree holds parts with a KINEMATIC WELD:
+# act_grasp attaches the nearest DEF GRASP_* node to the tool and teleports it
+# to the TCP every tick. The bridge's own source is blunt about what that is
+# worth -- the hold "would work with the fingers wide open, for ever" -- so the
+# gripper closing is cosmetic and no such demo can demonstrate a grasp.
+#
+# This world runs the same generic bridge with `robotiq_2f140_grip`, whose
+# config sets `assist_weld: False`. The weld is structurally unavailable: the
+# fingers and contact friction are the only thing holding the block. Ask it to
+# open the gripper mid-carry and the block falls, which is the point.
+#
+# It is the conversational sibling of
+# projects/samples/demos/worlds/flagship/omniarm6_2f140_pick_place.omniworld, which
+# proves the same grasp with a scripted controller and a contact census. That
+# demo owns the PROOF; this one owns the CONVERSATION.
+#
+# ⚠ THE TWO ARE NOT EQUIVALENT AND DO NOT CLAIM TO BE. The flagship demo aims
+# with a closed loop on the measured pad mid-plane and lands 0.003 mm; the
+# generic bridge aims open-loop off its own FK and its `tol` is 5e-3, i.e.
+# millimetres of slop against 18 mm of pad-to-table clearance. So this world
+# uses a taller pedestal clearance and a mid-stroke-friendly block, and its
+# grasp is a real one that is ALLOWED TO FAIL. If it drops the part, that is a
+# true report about open-loop aiming, not a bug to paper over with a weld.
+#
+# ===========================================================================
+# THE PHYSICS IS COPIED FROM THE FLAGSHIP WORLD, NOT RE-DERIVED
+# ===========================================================================
+# Every WorldInfo value below was measured on the sibling demo and each one is
+# load-bearing for a pinch that holds. Do not tune them here in isolation:
+#   basicTimeStep 8   a 16 ms tick is too coarse for a squeeze to stay stable
+#   newtonGroundMu 6  friction is GLOBAL here -- one ShapeConfig serves the
+#                     whole world -- and `WorldInfo.contactProperties` is the
+#                     ODE-path declaration, which Newton never reads
+#   ke/kd 8000/200    the engine derives MuJoCo's solref from the PAIR; raising
+#                     ke alone under-damps the contact instead of stiffening it
+#   elliptic+impratio the pyramidal cone pseudo-slips (181 mm -> 0.6 mm)
+#   condim 4          condim 3 is sliding friction only, so a pinched block
+#                     spins about the contact normal at zero cost; 6 adds
+#                     nothing (tested against penetration AND rotation)
+#   statics/compound  the pedestals must collide, and the gripper's ten
+#                     collision boxes must survive the fixed-joint fold
+#
+# Verify:
+#   python -m omnisim run-headless projects/samples/demos/worlds/chat/omnilink_omniarm6_2f140.omniworld --duration 30
+#   then drive it over HTTP on 127.0.0.1:8765 (POST /pick, /place, /get_robot_state)
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "OmniLink — OmniArm 6 + Robotiq 2F-140, talk to it (friction hold, no weld)"
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  newtonCompoundColliders TRUE
+  newtonGroundMu 6
+  newtonContactKe 8000
+  newtonContactKd 200
+  newtonCone "elliptic"
+  newtonImpratio 100
+  newtonCondim 4
+  newtonIterations 150
+  newtonLsIterations 50
+}
+Viewpoint { orientation -0.30 0.13 0.945 2.33 position 1.85 -1.75 1.25 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 4 4 }
+
+# --gripper robotiq_2f140_grip is what makes the hold real (assist_weld False).
+# --drop-zone is in the ARM BASE frame and matches the place pedestal's TOP:
+# the OmniArm 6 config's own drop_zone is (0.30, 0.34, 0.0), i.e. floor height,
+# which would drive the block into the pedestal instead of onto it.
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_2f140_grip.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omnilink_arm_bridge"
+  controllerArgs [ "--robot" "omniarm6" "--gripper" "robotiq_2f140_grip" "--port" "8765" "--drop-zone" "0.24,-0.42,0.20" ]
+  window "omnilink_chat"
+}
+
+# Pick pedestal, top face at z=0.20.
+DEF PICK_TABLE Solid {
+  translation 0.46 0 0.10
+  children [
+    DEF PT_SH Shape {
+      appearance PBRAppearance { baseColor 0.40 0.43 0.48 roughness 1 metalness 0 }
+      geometry Box { size 0.26 0.26 0.20 }
+    }
+  ]
+  name "pick_table"
+  boundingObject USE PT_SH
+}
+
+# Place pedestal — same height, and its TOP is the --drop-zone above.
+DEF PLACE_TABLE Solid {
+  translation 0.24 -0.42 0.10
+  children [
+    DEF PL_SH Shape {
+      appearance PBRAppearance { baseColor 0.82 0.68 0.15 roughness 1 metalness 0 }
+      geometry Box { size 0.24 0.24 0.20 }
+    }
+  ]
+  name "place_table"
+  boundingObject USE PL_SH
+}
+
+# ⚠ DEF GRASP_* IS SAFE HERE, AND ONLY HERE, BECAUSE THE WELD IS OFF.
+# The flagship sibling deliberately does NOT use this prefix: with the weld
+# live, a DEF GRASP_* node is structurally weldable and its hold could be faked
+# by accident. `robotiq_2f140_grip` sets assist_weld False, so _attach_nearest
+# is never reached and the name is just how the bridge's target picker finds
+# the block for "pick up the block". If you ever point this world at a gripper
+# config WITHOUT assist_weld False, this name silently becomes a fake grasp.
+#
+# 70 mm across the grasp axis puts each pad at q = 0.035, dead centre of the
+# 2F-140's 0..0.070 per-pad stroke -- two prismatic joints approximate an
+# angular four-bar, and a four-bar's pads are only truly parallel near
+# mid-stroke. 90 mm tall so the 65.5 mm pads meet it at mid-height while still
+# clearing the table.
+DEF GRASP_BLOCK Solid {
+  translation 0.46 0 0.245
+  children [
+    DEF BLK_SH Shape {
+      appearance PBRAppearance { baseColor 0.85 0.25 0.20 roughness 1 metalness 0 }
+      geometry Box { size 0.07 0.07 0.09 }
+    }
+  ]
+  name "block"
+  boundingObject USE BLK_SH
+  physics Physics { density -1 mass 0.15 }
+}

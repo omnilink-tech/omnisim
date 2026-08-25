@@ -1,0 +1,55 @@
+Sound effects for the `speaker` device sample.
+
+Contents
+--------
+* robot_bip.wav   — played by speaker.c:57 / speaker.py:48
+* robot_sound.wav — played by speaker.c:48 / speaker.py:40
+
+Status: PARTIALLY EVIDENCED — read the limits below before relying on this.
+----------------------------------------------------------------------------
+Working election: Apache License, Version 2.0 — Copyright 1996-2024
+Cyberbotics Ltd. (https://www.apache.org/licenses/LICENSE-2.0), on the same
+basis as the rest of the Webots-inherited tree; see the "Derivation" section of
+the repository-root NOTICE.
+
+What the files themselves say
+-----------------------------
+* robot_bip.wav carries a RIFF LIST/INFO chunk:
+      ICRD = "2012"
+      ISFT = "Lavf57.26.100"            (FFmpeg's libavformat — a re-encode)
+      ITCH = "LAME in FL Studio 9"      (the technician / origination toolchain)
+  It names NO author and NO third-party source. "FL Studio 9" is a digital audio
+  workstation, i.e. the file was *produced*, not sampled from a library — but the
+  tag records a tool, not a person, and cannot by itself identify the author.
+
+* robot_sound.wav carries only an empty ID3v2 `TXXX` "Software" frame. No
+  author, no year, no source, no tool.
+
+* Neither file carries a sampling-library, marketplace, stock-audio or
+  Creative Commons credit of any kind.
+
+Git evidence
+------------
+Both entered this repository in the initial Webots import, commit
+0db6a18a74ba16fa2c10f744423405d153b87c7a ("Initial commit: OmniSim robotics
+simulator", 2026-04-11), and have not been modified since. This repository's
+history is a squashed import, so git cannot corroborate anything earlier.
+
+UNRESOLVED
+----------
+The evidence above establishes that these files came from Webots and that
+nothing in or around them names a third party. It does NOT positively establish
+Cyberbotics authorship the way projects/default/worlds/sounds/ does, because
+neither file carries an artist tag. The election is therefore inferred from the
+upstream repository's blanket Apache-2.0 grant plus the absence of any competing
+claim — which is weaker than a stated one.
+
+What would settle it: a written confirmation from Cyberbotics Ltd. that these
+two audio files are their own work and are covered by the Webots Apache-2.0
+grant. Failing that, the cheap mitigation is replacement — both are decorative
+sample-demo audio with no functional role, so re-recording or substituting a
+CC0 equivalent costs nothing but a commit.
+
+NOTE: tests/api/controllers/speaker/sound.wav is a byte-identical copy of
+robot_bip.wav (md5 bc9dedcbd16684fd94d67024c5f24813). Anything decided here
+applies to that copy too.

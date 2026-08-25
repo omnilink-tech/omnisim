@@ -1,0 +1,58 @@
+{
+  "schema": 2,
+  "name": "g1_walk_backward",
+  "title": "Walk backward (short-stride table retreat)",
+  "class": "humanoid",
+  "robots": ["g1"],
+  "kind": "rl",
+  "method": "shadowing",
+  "status": "experimental",
+  "motion_class": "cyclic",
+  "summary": "A slow, short-stride reverse locomotion skill for clearing work surfaces without an about-face. The reference is solved from alternating world-fixed footholds with the COM transferred over the bearing foot; it is not a reversed video or a negative playback clock.",
+  "ghost": {
+    "lut": "projects/policies/ghosts/g1/ghost_walk_backward64_lut.json",
+    "provenance": "constructed-feasible",
+    "validator": "WARN (all hard gates pass; warning is the conservative zero-bound ankle-roll hardware check and absent recorded baseline)",
+    "notes": "-0.16 m footfalls, 0.52 steps/s, -0.083 m/s. Dynamics: 0/64 infeasible support frames, exact stance closure, torque 0.37 empty / 0.46 carry, speed 0.08 of limits. Carry variant uses the exact physical suction pose."
+  },
+  "policy": {
+    "checkpoint": "projects/policies/training/runs/wr_backward.pt",
+    "arch": "lstm",
+    "hidden": 256,
+    "obs": {"family": "whole_body", "ref_obs_k": 3, "ref_obs_wb": false, "dim": 120},
+    "action": {"dim": 23, "space": "whole_body", "decode": "ghost(phase) + residual*0.22"}
+  },
+  "baton": {
+    "blend": "cyclic",
+    "mode": "back",
+    "nb": 64,
+    "vx": "-0.0833333333",
+    "attractor": "locomotion",
+    "handover_in": "cold",
+    "gate": "double_support",
+    "notes": "Course keyword: backto. The course faces pi radians away from the travel bearing while the signed velocity remains negative."
+  },
+  "train": {
+    "trainer": "projects.policies.training.g1_walk_recipe:g1_walk_recipe_step",
+    "launcher": "projects/policies/training/run_walk_rl.sh",
+    "recipe_env": {
+      "GHOST_LUT_JSON": "projects/policies/ghosts/g1/ghost_walk_backward64_lut.json",
+      "GHOST_RESIDUAL": "0.22",
+      "VX_START": "-0.0833333333",
+      "VX_MAX": "-0.0833333333",
+      "CARRY_PAYLOAD_KG": "0 or 1.0"
+    },
+    "status": "trained",
+    "notes": "Trained in-engine on a RunPod RTX A4500 (cloud venue; the shipped champion runs anywhere)."
+  },
+  "deploy": {
+    "specialist": {"note": "Register both empty and payload variants in BATON_SPECIALISTS; course routing selects back/carryback."},
+    "primary_env": {"GHOST_RESIDUAL": "0.22"}
+  },
+  "verification": {
+    "date": "2026-07-18",
+    "engine": "Newton/mujoco_warp on RunPod RTX A4500",
+    "result": "Update-free batched evaluation: 100% survival, zero falls, late forward-frame velocity -0.52 to -0.607 m/s, and ghost match 0.946-0.955. Full box-demo handover certification remains pending. Runs on the lambda=0.9 weight-bearing balance harness, not free-standing."
+  },
+  "related": ["g1_walk", "g1_carry_box", "g1_turn_in_place"]
+}

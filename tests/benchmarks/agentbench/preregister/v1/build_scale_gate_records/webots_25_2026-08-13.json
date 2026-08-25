@@ -1,0 +1,66 @@
+{
+  "schema": "agenticsimbench/build-scale-live-gate/v1",
+  "suite": "agenticsimbench/v1",
+  "sim": "webots",
+  "level": 25,
+  "measured_utc": "2026-08-13",
+  "outcomes": {
+    "oracle": "PASS",
+    "null": "FAIL"
+  },
+  "oracle": {
+    "assertions_passed": 9,
+    "assertions_total": 9,
+    "robot_count": 25,
+    "controller_instances": 25,
+    "minimum_clearance_m": 1.6,
+    "moving_robots": 25,
+    "minimum_net_displacement_m": 8.73838383727507,
+    "minimum_path_length_m": 8.738383837286392,
+    "unique_robot_collision_pairs": 0,
+    "maximum_speed_m_s": 1.568059207465106,
+    "clean_replay_passes": 1,
+    "primary_wall_s": 19.475,
+    "clean_replay_wall_s": 18.503
+  },
+  "null": {
+    "failed_assertions": [
+      "BS.5",
+      "BS.9"
+    ],
+    "moving_robots": 0,
+    "primary_wall_s": 17.191,
+    "clean_replay_wall_s": 18.152
+  },
+  "environment": {
+    "machine": "LAPTOP-H61DJILS",
+    "host_os": "Windows-11-10.0.26200-SP0",
+    "engine": "/opt/upstream-webots/R2025a/webots-bin",
+    "engine_sha256": "c12c65e8680b579d0f33c34be452f100a302bdecc6d9344becf356db4a675a1",
+    "solver": "ode",
+    "runtime": {
+      "webots_version": "R2025a"
+    }
+  },
+  "source_commit": "0fcfb8c73035e93f8d863756083a1a31a560c2d5",
+  "source_sha256": {
+    "preregister/v1/build_scale_spec.json": "4249e823bbf9fee5ca72b19a6489758f14588dc540939902fc5d8a8e45627a55",
+    "preregister/v1/build_scale_core.py": "e83a7897fe1f058d46d3842e1b9c6ebb50162069a164cdc25cd0031bbd7abd67",
+    "adapters/webots/build_scale.py": "35f09bf00692969ba937c208869019daf1b207bb572a1e42911a0d80be74a947",
+    "adapters/webots/evidence.py": "660e705a2f8333aa9033483ac99fbb49fa8806e7b66e28de80c1d506f8de8853",
+    "adapters/webots/launcher.py": "9accfeebbab4f1bf418133f497c5d39367c2ddcf22e478c735ba0e7106bcc7fe",
+    "adapters/webots/task_support.py": "5715982bc6b5c9e9554a2e8f42120816955f40bd12dfc46e100ca609d8d67e75",
+    "adapters/webots/webots_lane/controllers/agentbench_webots_recorder/agentbench_webots_recorder.py": "976f0451b2a9b2ad229e9e17907d4cf64f2edd8ab8ebe7b8829167852e70d690",
+    "adapters/webots/build_scale_lane/controllers/build_scale_drive/build_scale_drive.py": "fc6f6d85959f77402a84321ebac64b7b66a2a6af9a6fd79cd31889e5a5367bcb",
+    "adapters/webots/build_scale_lane/controllers/build_scale_idle/build_scale_idle.py": "5299122dace700283711de4843dbaf02678439f2196b8d77ef8be3ee85e99381",
+    "adapters/webots/build_scale_lane/worlds/build_scale_25.wbt": "d5cd92ea518659e72bbea15bd9a95d2d9c23a47104502bff2c076f73c3a6cbdd",
+    "adapters/webots/build_scale_lane/worlds/build_scale_25_null.wbt": "f0524cac4bdffd44286895ea571f2830a75f58a016099df938ce1afd2952869f"
+  },
+  "run_evidence_sha256": {
+    "preregister/v1/build_scale_gate_records/evidence/webots_25_2026-08-13.oracle.verdict.json": "06fda5e00f2400f64030757c1e4ecd1547a94f0383b70c080ac0c6a220f4d515",
+    "preregister/v1/build_scale_gate_records/evidence/webots_25_2026-08-13.oracle.facts.json": "3dc6e8afdb4b6bde2c1c50fd04f692bd97a9170785591640b6e898bbdf537f06",
+    "preregister/v1/build_scale_gate_records/evidence/webots_25_2026-08-13.null.verdict.json": "941bcb5ed70f783be5d37c43cea31736f7c3e110925b05a494e9e3d3e3dd3d59",
+    "preregister/v1/build_scale_gate_records/evidence/webots_25_2026-08-13.null.facts.json": "20ee7d62294d7d95959d7e0ba76d00ae269566c98823d8f0855179c3540433c2"
+  },
+  "claim_scope": "Live BuildScale discriminator gate only; this is not a scored coding-agent result or comparative win."
+}

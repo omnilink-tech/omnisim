@@ -1,0 +1,91 @@
+<!--
+  AgentBench MuJoCo lane - R1 INSTRUMENT PROBE.
+
+  NOT an R1 solution and NOT an oracle: this scene exists to prove that the
+  three things R1's sim-neutral core needs are readable on the MuJoCo arm.
+
+    1. the FIVE benchmark obstacles, at the exact positions and full extents
+       benchmark_assets/obstacles.json publishes, written the way MJCF actually
+       writes static scenery (bare <geom> on <worldbody>), so R1.3's
+       match-by-GEOMETRY can be run against real measured world AABBs;
+    2. a robot trajectory from the declared start pose;
+    3. a robot-vs-obstacle CONTACT that genuinely occurs -- the falsifier R1.5
+       needs. The driver beside this file steers at the goal and nothing else,
+       so it drives straight into OBSTACLE_1, which the straight START->GOAL
+       line is blocked by. A collision-free result that could not have failed
+       is not a result.
+
+  The obstacle geoms carry the published OBSTACLE_n names, but nothing in the
+  grading path depends on that: R1.3 matches by position and footprint, and
+  this arm's t=0 scan bounds EVERY body and world geom without being handed a
+  name list. The names are here so the fixture is legible, not so it is
+  findable.
+-->
+<mujoco model="agentbench_r1_probe">
+  <option timestep="0.002" integrator="implicitfast"/>
+  <compiler autolimits="true" angle="degree"/>
+
+  <default>
+    <geom friction="1.0 0.005 0.0001"/>
+  </default>
+
+  <worldbody>
+    <light pos="0 0 6" dir="0 0 -1"/>
+    <camera name="arena" pos="0 -12 9" xyaxes="1 0 0 0 0.6 0.8" fovy="55"
+            resolution="1280 720"/>
+
+    <geom name="floor" type="plane" size="5 5 0.1" rgba="0.35 0.4 0.45 1"/>
+
+    <geom name="wall_south" type="box" pos="0 -5 0.25" size="5 0.1 0.25"
+          rgba="0.75 0.75 0.75 1"/>
+    <geom name="wall_north" type="box" pos="0 5 0.25" size="5 0.1 0.25"
+          rgba="0.75 0.75 0.75 1"/>
+    <geom name="wall_west" type="box" pos="-5 0 0.25" size="0.1 5 0.25"
+          rgba="0.75 0.75 0.75 1"/>
+    <geom name="wall_east" type="box" pos="5 0 0.25" size="0.1 5 0.25"
+          rgba="0.75 0.75 0.75 1"/>
+
+    <!-- benchmark_assets/obstacles.json: centres, and HALF extents here
+         because MJCF box size is a half-length while the asset publishes the
+         full extent. -->
+    <geom name="OBSTACLE_1" type="box" pos="0 0 0.25" size="0.8 0.8 0.25"
+          rgba="0.8 0.4 0.25 1"/>
+    <geom name="OBSTACLE_2" type="box" pos="-2 -1.4 0.25" size="0.6 0.4 0.25"
+          rgba="0.8 0.4 0.25 1"/>
+    <geom name="OBSTACLE_3" type="box" pos="1.6 0.6 0.25" size="0.4 1.0 0.25"
+          rgba="0.8 0.4 0.25 1"/>
+    <geom name="OBSTACLE_4" type="box" pos="-1.2 2 0.25" size="1.0 0.4 0.25"
+          rgba="0.8 0.4 0.25 1"/>
+    <geom name="OBSTACLE_5" type="box" pos="2.4 -2 0.25" size="0.5 0.5 0.25"
+          rgba="0.8 0.4 0.25 1"/>
+
+    <body name="rover" pos="-4 -4 0.15" euler="0 0 45">
+      <freejoint/>
+      <geom name="chassis" type="box" size="0.25 0.16 0.06" mass="6"/>
+      <geom name="caster" type="sphere" pos="0.22 0 -0.09" size="0.055"
+            mass="0.2" friction="0.02 0.005 0.0001"/>
+      <site name="lidar_origin" pos="0.26 0 0.06" zaxis="1 0 0" size="0.01"/>
+      <body name="wheel_left" pos="-0.1 0.19 -0.02">
+        <joint name="wheel_left_joint" type="hinge" axis="0 1 0"/>
+        <geom name="tyre_left" type="cylinder" size="0.13 0.04"
+              quat="0.7071068 0.7071068 0 0" mass="0.8"/>
+      </body>
+      <body name="wheel_right" pos="-0.1 -0.19 -0.02">
+        <joint name="wheel_right_joint" type="hinge" axis="0 1 0"/>
+        <geom name="tyre_right" type="cylinder" size="0.13 0.04"
+              quat="0.7071068 0.7071068 0 0" mass="0.8"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <rangefinder name="lidar_forward" site="lidar_origin"/>
+  </sensor>
+
+  <actuator>
+    <velocity name="left_motor" joint="wheel_left_joint" kv="18"
+              ctrlrange="-25 25"/>
+    <velocity name="right_motor" joint="wheel_right_joint" kv="18"
+              ctrlrange="-25 25"/>
+  </actuator>
+</mujoco>

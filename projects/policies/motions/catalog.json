@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "name": "omnisim-motion-ir",
+  "description": "Task-space motion intent. Robot anatomy belongs only in each skill binding.",
+  "motions": {
+    "balance_two_legs": {
+      "schema": 1, "domain": "balance", "time_model": "static",
+      "control_axes": ["roll", "pitch", "yaw"], "contact_model": "stable-support",
+      "payload": "none", "constraints": ["maintain-support"]
+    },
+    "g1_arm_motion": {
+      "schema": 1, "domain": "manipulation", "time_model": "finite",
+      "control_axes": [], "contact_model": "maintain-base-support",
+      "payload": "optional", "constraints": ["base-stable", "joint-limits"]
+    },
+    "g1_carry_backward": {
+      "schema": 1, "domain": "transport", "time_model": "cyclic",
+      "control_axes": ["forward", "lateral", "yaw"], "contact_model": "periodic-support",
+      "payload": "held-object", "constraints": ["support-safe-handover", "payload-stable", "negative-forward-command"]
+    },
+    "g1_carry_box": {
+      "schema": 1, "domain": "transport", "time_model": "cyclic",
+      "control_axes": ["forward", "lateral", "yaw"], "contact_model": "periodic-support",
+      "payload": "held-object", "constraints": ["support-safe-handover", "payload-stable"]
+    },
+    "g1_climb_stairs": {
+      "schema": 1, "domain": "terrain", "time_model": "finite",
+      "control_axes": ["forward", "vertical", "pitch"], "contact_model": "terrain-contact-sequence",
+      "payload": "none", "constraints": ["riser-within-validated-envelope", "support-safe-handover"]
+    },
+    "g1_stand_rl": {
+      "schema": 1, "domain": "balance", "time_model": "static",
+      "control_axes": ["roll", "pitch", "yaw"], "contact_model": "stable-support",
+      "payload": "optional", "constraints": ["zero-commanded-velocity", "maintain-support"]
+    },
+    "g1_turn_in_place": {
+      "schema": 1, "domain": "locomotion", "time_model": "finite",
+      "control_axes": ["yaw"], "contact_model": "alternating-support",
+      "payload": "optional", "constraints": ["support-safe-handover", "bounded-translation", "bounded-foot-slip"]
+    },
+    "g1_walk": {
+      "schema": 1, "domain": "locomotion", "time_model": "cyclic",
+      "control_axes": ["forward", "lateral", "yaw"], "contact_model": "periodic-support",
+      "payload": "optional", "constraints": ["support-safe-handover"]
+    },
+    "g1_walk_backward": {
+      "schema": 1, "domain": "locomotion", "time_model": "cyclic",
+      "control_axes": ["forward", "lateral", "yaw"], "contact_model": "periodic-support",
+      "payload": "optional", "constraints": ["support-safe-handover", "negative-forward-command"]
+    },
+    "h1_walk": {
+      "schema": 1, "domain": "locomotion", "time_model": "cyclic",
+      "control_axes": ["forward", "lateral", "yaw"], "contact_model": "periodic-support",
+      "payload": "optional", "constraints": ["support-safe-handover"]
+    },
+    "go2_shadow_walk": {
+      "schema": 1, "domain": "locomotion", "time_model": "cyclic",
+      "control_axes": ["forward", "lateral", "yaw"], "contact_model": "gait-model-support-window",
+      "payload": "optional", "constraints": ["host-injected-support-gate"]
+    },
+    "go2_stand": {
+      "schema": 1, "domain": "balance", "time_model": "static",
+      "control_axes": ["roll", "pitch", "yaw"], "contact_model": "stable-support",
+      "payload": "optional", "constraints": ["zero-residual-hold", "maintain-support"]
+    },
+    "go2_turn": {
+      "schema": 1, "domain": "locomotion", "time_model": "cyclic",
+      "control_axes": ["yaw"], "contact_model": "gait-model-support-window",
+      "payload": "optional", "constraints": ["host-injected-support-gate", "bounded-translation"]
+    },
+    "go2_walk": {
+      "schema": 1, "domain": "locomotion", "time_model": "cyclic",
+      "control_axes": ["forward", "lateral", "yaw"], "contact_model": "gait-model-support-window",
+      "payload": "optional", "constraints": ["host-injected-support-gate"]
+    },
+    "omniquad_walk": {
+      "schema": 1, "domain": "locomotion", "time_model": "cyclic",
+      "control_axes": ["forward", "lateral", "yaw"], "contact_model": "gait-model-support-window",
+      "payload": "optional", "constraints": ["host-injected-support-gate"]
+    }
+  }
+}

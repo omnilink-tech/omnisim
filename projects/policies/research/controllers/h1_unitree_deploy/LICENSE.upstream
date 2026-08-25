@@ -1,0 +1,104 @@
+BSD 3-Clause License
+
+Copyright (c) HangZhou YuShu TECHNOLOGY CO.,LTD. ("Unitree Robotics")
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the copyright holder nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+================================================================================
+PROVENANCE NOTE — added by OmniLink; NOT part of the license text above
+================================================================================
+
+WHAT THIS FILE COVERS
+
+  motion.pt        139,345 bytes
+                   sha256 44a0fbceb81f3877833ae9a398d039bea1759cb0d3c8188181013885f70589eb
+
+  This is Unitree Robotics' pre-trained H1 walk policy checkpoint, taken from
+  their `unitree_rl_gym` project (`pre_train/h1/motion.pt`). It is a
+  third-party binary artifact redistributed here unmodified; it is NOT
+  OmniLink's work and is NOT covered by the Apache-2.0 grant in this
+  repository's LICENSE file.
+
+  In-tree evidence for that identification: the docstring of
+  h1_unitree_deploy.py in this directory — "OmniSim deploy of UNITREE'S
+  OFFICIAL H1 walk policy (unitree_rl_gym)" — and the control constants that
+  script reproduces from Unitree's own deploy_mujoco.py / h1.yaml (per-joint
+  kp/kd cited as "Unitree's h1.yaml", action scale 0.25, 41-d observation
+  layout, control_decimation=10, Unitree's actuator joint order).
+
+  BSD 3-Clause clause 2 is why this file exists: a redistribution in binary
+  form must reproduce the copyright notice, the list of conditions and the
+  disclaimer "in the documentation and/or other materials provided with the
+  distribution". This file is that material, and NOTICE +
+  THIRD_PARTY_NOTICES.md carry the same attribution.
+
+ABOUT THE LICENSE TEXT ABOVE
+
+  `unitree_rl_gym` is published by Unitree Robotics under the BSD 3-Clause
+  License. Upstream's own LICENSE file is NOT vendored into this repository,
+  so the text above is the standard BSD 3-Clause template — byte-identical to
+  the copy at projects/robots/unitree/LICENSE.upstream that accompanies
+  Unitree's URDF packages in this tree — with the copyright holder named from
+  that same in-tree evidence.
+
+  NO COPYRIGHT YEAR IS ASSERTED. The Unitree URDF packages in this tree carry
+  "Copyright (c) 2016-2022", but that range comes from `unitree_ros`, a
+  different upstream repository, and nothing in this tree establishes the year
+  range that `unitree_rl_gym`'s own LICENSE declares. Rather than invent one,
+  the notice above is dated-open. A maintainer who wants a byte-exact
+  reproduction should copy upstream's LICENSE file over this one, keeping this
+  provenance note.
+
+UNRESOLVED — REQUIRES A MAINTAINER DECISION (do not assume it is settled)
+
+  `unitree_rl_gym`'s TRAINING code descends from `legged_gym` (ETH Zürich,
+  Robotic Systems Lab) and `rsl_rl`, whose BSD-3 notices are commonly reported
+  to carry ETH Zürich and NVIDIA CORPORATION copyright lines in addition to the
+  publisher's.
+
+  Whether those notices attach to a TRAINED-WEIGHTS artifact — as opposed to
+  the training source, none of which is redistributed here — has NOT been
+  determined, and could not be determined from any evidence in this tree. No
+  ETH Zürich or NVIDIA copyright line, and no year, is asserted above, because
+  none could be sourced from this repository.
+
+  If those notices do apply, this file is INCOMPLETE and needs their copyright
+  lines added verbatim from upstream's LICENSE files. Treat this as an open
+  item, not a closed one.
+
+RELATED FILE IN THIS DIRECTORY
+
+  h1_bc_walk.pt    139,330 bytes
+                   sha256 e41fe2d73be752ee38a9128b39a702178c83272c46757b0899386bdb1b0fe254
+
+  Provenance not established in-tree. Its file size is within 15 bytes of
+  motion.pt and it is a TorchScript policy of the same shape, which is
+  consistent with a re-traced or behaviour-cloned copy of motion.pt. If it is
+  derived from motion.pt then it is a derivative work of Unitree's weights and
+  travels under the notice above. A maintainer should confirm how it was
+  produced and record the answer here.

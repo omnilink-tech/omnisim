@@ -1,0 +1,28 @@
+{
+ "steps": null,
+ "sim_time_end": null,
+ "exit_code": 0.0,
+ "n_samples": 0,
+ "runs_seen": [
+  "a",
+  "b",
+  "c"
+ ],
+ "distinct_processes": 3.0,
+ "process_ids": [
+  "(463, 1786611318.0981524)",
+  "(547, 1786611321.4478877)",
+  "(626, 1786611324.833965)"
+ ],
+ "repeat_delta": 0.0,
+ "repeat_delta_where": "drop.x@0",
+ "repeat_length": 0.0,
+ "sensitivity_max_sep": 0.00020161064636292636,
+ "sensitivity_where": "drop.y@64",
+ "amplification": 201.61064636292636,
+ "sensitivity_shortfall": 0.0,
+ "t_gate_hi": 0.1999341658171936,
+ "t_gate_lo": 0.3476195440644983,
+ "fall_interval": 0.1476853782473047,
+ "drop_final_z": 0.5999509499999999
+}

@@ -1,0 +1,80 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — OmniArm 6 PHYSICS pick & place
+# The OmniArm 6 carries a real Robotiq 2F-85 (prismatic finger joints with
+# collision, merged onto link6 of omniarm6_2f85.urdf). The omniarm6_pickplace_demo
+# controller drives a top-down 6-DOF approach, CLOSES THE FINGERS ON THE CUBE
+# (contact friction holds it -- no kinematic weld), lifts, carries, and places
+# it on the drop zone. It reads the cube's pose and logs PASS/FAIL.
+#
+# High contact friction + small softCFM keep the grip stable.
+#
+# Runs on the NEWTON backend with the MuJoCo solver (WorldInfo.newtonSolver
+# "mujoco"). A friction pinch grasp needs persistent static-friction contact,
+# which XPBD's per-step positional contact structurally cannot hold -- the cube
+# slips on the vertical lift. SolverMuJoCo (CPU) provides that robust contact,
+# and with it the OmniArm 6 grasps, lifts (~0.26 m), carries, and places the cube
+# under Newton end-to-end. The arm + gripper are pinned "newton" so the whole
+# coupled multibody resolves to one solver.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — OmniArm 6 physics pick & place"
+  newtonSolver "mujoco"
+  # ⚠ The contactProperties block below is an ODE-path node and is IGNORED on
+  # the Newton backend this world runs on -- its coulombFriction 5 was never in
+  # effect and the grasp was running at the default mu of 1.0. The Newton
+  # fields are the ones that work. See docs/guide/friction-grasp.md.
+  newtonGroundMu 3
+  newtonContactKe 8000
+  newtonContactKd 200
+  newtonCone "elliptic"
+  newtonImpratio 100
+  newtonIterations 150
+  newtonLsIterations 50
+  physicsDisableTime 0
+  contactProperties [
+    ContactProperties { material1 "default" material2 "default" coulombFriction [ 5 ] bounce 0 softCFM 0.0003 }
+  ]
+}
+Viewpoint { orientation -0.278945 0.120681 0.952694 2.359689 position 3.303 -3.516 3.540 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 4 4 }
+
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_2f85.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_pickplace_demo"
+}
+
+DEF GRASP_CUBE_A Solid {
+  translation 0.46 0.0 0.025
+  physicsBackend "newton"
+  children [
+    DEF CUBE_A_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.90 0.25 0.20 roughness 1 metalness 0 }
+      geometry Box { size 0.05 0.05 0.05 }
+    }
+  ]
+  name "cube_a"
+  boundingObject USE CUBE_A_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+DEF DROP_ZONE Solid {
+  translation 0.30 0.34 0.001
+  children [
+    Shape { appearance PBRAppearance { baseColor 0.95 0.85 0.20 roughness 1 metalness 0 transparency 0.4 } geometry Box { size 0.16 0.16 0.002 } }
+  ]
+  name "drop_zone"
+}

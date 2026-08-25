@@ -1,0 +1,170 @@
+{
+  "schema": "agentbench/tool_set/v1",
+  "tool_set": "shell",
+  "description": "The cross-simulator baseline: a POSIX shell plus file read/write/list. Byte-identical for every simulator; nothing simulator-specific may appear in these definitions (SPEC 4.1).",
+  "n_tools": 4,
+  "tools": [
+    {
+      "name": "run_shell",
+      "description": "Run a shell command and return its exit code, stdout and stderr. The working directory defaults to your working directory; pass `cwd` to run elsewhere. The command runs to completion (or is killed at the timeout); there is no interactive terminal, so never run anything that waits for input.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "the command line to execute"
+          },
+          "cwd": {
+            "type": "string",
+            "description": "directory to run in (default: your working directory)"
+          },
+          "timeout_s": {
+            "type": "number",
+            "description": "kill the command after this many seconds"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      }
+    },
+    {
+      "name": "read_file",
+      "description": "Read a text file and return its contents with line numbers. Use `start_line` and `max_lines` to page through a large file.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "file to read; relative paths resolve against your working directory"
+          },
+          "start_line": {
+            "type": "integer",
+            "description": "1-based first line to return"
+          },
+          "max_lines": {
+            "type": "integer",
+            "description": "how many lines to return"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "write_file",
+      "description": "Write text to a file, creating parent directories and overwriting any existing file. Writes are only permitted inside your working directory.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "file to write; relative paths resolve against your working directory"
+          },
+          "content": {
+            "type": "string",
+            "description": "the full contents to write"
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "list_dir",
+      "description": "List the entries of a directory, with sizes. Pass `recursive` to walk the whole tree.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "directory to list (default: your working directory)"
+          },
+          "recursive": {
+            "type": "boolean",
+            "description": "walk subdirectories too"
+          },
+          "max_entries": {
+            "type": "integer",
+            "description": "cap on returned entries"
+          }
+        }
+      }
+    }
+  ],
+  "tool_sources": {
+    "run_shell": "agentbench/shell/v1",
+    "read_file": "agentbench/shell/v1",
+    "write_file": "agentbench/shell/v1",
+    "list_dir": "agentbench/shell/v1"
+  },
+  "tools_sha256": "5edc977e1a20c458ac11f7d28099efcda57cbd7b0b16d9b866be948d0e25f586",
+  "env_policy": {
+    "mode": "allowlist",
+    "allow": [
+      "APPDATA",
+      "COMSPEC",
+      "ComSpec",
+      "DISPLAY",
+      "HOME",
+      "HOMEDRIVE",
+      "HOMEPATH",
+      "LANG",
+      "LC_ALL",
+      "LD_LIBRARY_PATH",
+      "LOCALAPPDATA",
+      "LOGNAME",
+      "NUMBER_OF_PROCESSORS",
+      "PATH",
+      "PATHEXT",
+      "PROCESSOR_ARCHITECTURE",
+      "SHELL",
+      "SYSTEMROOT",
+      "SystemRoot",
+      "TEMP",
+      "TERM",
+      "TMP",
+      "TMPDIR",
+      "TZ",
+      "USER",
+      "USERPROFILE",
+      "WINDIR",
+      "XAUTHORITY",
+      "windir"
+    ],
+    "deny_prefixes": [
+      "AGENTBENCH_",
+      "ANTHROPIC_",
+      "AWS_",
+      "GH_TOKEN",
+      "GITHUB_TOKEN",
+      "GOOGLE_",
+      "OMNILINK_",
+      "OMNI_KEY",
+      "OPENAI_",
+      "PYTHONHASHSEED"
+    ],
+    "injected": [
+      "OMNISIM_HOME",
+      "WEBOTS_HOME",
+      "OMNISIM_LOG_PATH",
+      "OMNISIM_HARNESS_PORT",
+      "OMNISIM_SUPERVISOR_PORT",
+      "OMNISIM_HARNESS_URL"
+    ],
+    "notes": [
+      "PYTHONHASHSEED is deliberately NOT set: husky_random seeds from hash(name), so pinning it would change the task's difficulty.",
+      "ANTHROPIC_* / AGENTBENCH_* are stripped: the agent must not reach the model API or an external artifact."
+    ]
+  },
+  "notes": [
+    "Tool DEFINITIONS are frozen across simulators; tool IMPLEMENTATIONS may differ (shell binary, container) and are deliberately excluded from tools_sha256.",
+    "Working directory is the run's scratch dir. Writes are confined to it; reads of the benchmark's own package are refused.",
+    "run_shell cannot be path-confined on a bare host: commands and results are scanned and any hit on the benchmark package is flagged leak_suspect in the trace. Full enforcement needs the per-run container from SPEC 4.3.",
+    "The model sees at most 20000 characters of a result; the trace keeps the whole thing."
+  ],
+  "manifest_sha256": "fcabed2cf4f746f1210cc07213727c8d02ac4aba1812f85a71a9baaed3d11508"
+}

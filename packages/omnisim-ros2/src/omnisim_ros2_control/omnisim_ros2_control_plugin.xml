@@ -1,0 +1,15 @@
+<library path="omnisim_ros2_control">
+  <class name="omnisim_ros2_control/OmniSimSystem"
+         type="omnisim_ros2_control::OmniSimSystem"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ros2_control SystemInterface for OmniSim. Reads joint state from the World
+      Harness (GET /robot/&lt;def&gt;/joints) and writes commands to the robot's own
+      bridge (POST /set_velocity for a differential-drive base; for an arm, the
+      streaming POST /servo_joint_positions when the bridge advertises
+      capabilities.servo, else the goal verb POST /set_joint_positions). HTTP
+      runs on its own thread at
+      comms_rate_hz, so read()/write() never block the controller manager.
+    </description>
+  </class>
+</library>

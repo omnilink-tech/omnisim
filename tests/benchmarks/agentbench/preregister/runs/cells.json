@@ -1,0 +1,674 @@
+{
+  "cells": [
+    {
+      "task": "B1_overlap_audit",
+      "sim": "omnisim",
+      "condition": "shell",
+      "script": "oracle_b1_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "assertions": {
+        "B1.1": true,
+        "B1.2": true,
+        "B1.3": true,
+        "B1.4": true
+      },
+      "self_verified": true,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B1_overlap_audit.shell",
+      "row_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B1_overlap_audit.shell\\rows.jsonl",
+      "driver_wall_s": 14.3,
+      "runner_rc": 0,
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B1_overlap_audit.shell"
+    },
+    {
+      "task": "B1_overlap_audit",
+      "sim": "omnisim",
+      "condition": "shell+tools",
+      "script": "oracle_b1_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "assertions": {
+        "B1.1": true,
+        "B1.2": true,
+        "B1.3": true,
+        "B1.4": true
+      },
+      "self_verified": true,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B1_overlap_audit.shell_tools",
+      "row_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B1_overlap_audit.shell_tools\\rows.jsonl",
+      "driver_wall_s": 10.2,
+      "runner_rc": 0,
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B1_overlap_audit.shell_tools"
+    },
+    {
+      "task": "B1_overlap_audit",
+      "sim": "webots",
+      "condition": "shell",
+      "script": "oracle_b1_webots.json",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "tool_set": "shell",
+      "tools_sha256": "5edc977e1a20c458ac11f7d28099efcda57cbd7b0b16d9b866be948d0e25f586",
+      "manifest_sha256": "fcabed2cf4f746f1210cc07213727c8d02ac4aba1812f85a71a9baaed3d11508",
+      "self_verified": true,
+      "initial_files": [
+        "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell\\scratch\\six_pioneers.wbt"
+      ],
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell",
+      "t_agent_s": 7.1,
+      "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell\\scratch\\six_pioneers.wbt",
+      "launch": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 24.294,
+        "attempts_used": 1
+      },
+      "aabb_probe": {
+        "ok": true,
+        "exit_code": 0
+      },
+      "aabb_merged_bodies": [
+        "robot_one",
+        "robot_two",
+        "robot_three",
+        "robot_four",
+        "robot_five",
+        "robot_six"
+      ],
+      "outcome": "PASS",
+      "failed_assertion": null,
+      "assertions": {
+        "B1.1": true,
+        "B1.2": true,
+        "B1.3": true,
+        "B1.4": true
+      },
+      "verdict_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell\\verdict.json",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B1_overlap_audit.shell"
+    },
+    {
+      "task": "B1_overlap_audit",
+      "sim": "webots",
+      "condition": "shell+tools",
+      "script": "oracle_b1_webots.json",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "tool_set": "shell_plus_tools",
+      "tools_sha256": "a624c7f4a42205322f54b1574cddecdd9022f2888aae99c1b1c69d794c2895ca",
+      "manifest_sha256": "00219b2bd161f880595e9b0e65668cba7152c0d4c3ea597f242c1160c5dae1f1",
+      "self_verified": true,
+      "initial_files": [
+        "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools\\scratch\\six_pioneers.wbt"
+      ],
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools",
+      "t_agent_s": 2.4,
+      "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools\\scratch\\six_pioneers.wbt",
+      "launch": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 22.624,
+        "attempts_used": 1
+      },
+      "aabb_probe": {
+        "ok": true,
+        "exit_code": 0
+      },
+      "aabb_merged_bodies": [
+        "robot_one",
+        "robot_two",
+        "robot_three",
+        "robot_four",
+        "robot_five",
+        "robot_six"
+      ],
+      "outcome": "PASS",
+      "failed_assertion": null,
+      "assertions": {
+        "B1.1": true,
+        "B1.2": true,
+        "B1.3": true,
+        "B1.4": true
+      },
+      "verdict_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools\\verdict.json",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B1_overlap_audit.shell_tools"
+    },
+    {
+      "task": "B2_subject_in_frame",
+      "sim": "omnisim",
+      "condition": "shell",
+      "script": "oracle_b2_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "assertions": {
+        "B2.1": true,
+        "B2.2": true,
+        "B2.3": true,
+        "B2.4": true,
+        "B2.5": true,
+        "B2.6": true
+      },
+      "self_verified": false,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B2_subject_in_frame.shell",
+      "row_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B2_subject_in_frame.shell\\rows.jsonl",
+      "driver_wall_s": 27.2,
+      "runner_rc": 0,
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B2_subject_in_frame.shell"
+    },
+    {
+      "task": "B2_subject_in_frame",
+      "sim": "omnisim",
+      "condition": "shell+tools",
+      "script": "oracle_b2_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "assertions": {
+        "B2.1": true,
+        "B2.2": true,
+        "B2.3": true,
+        "B2.4": true,
+        "B2.5": true,
+        "B2.6": true
+      },
+      "self_verified": false,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B2_subject_in_frame.shell_tools",
+      "row_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B2_subject_in_frame.shell_tools\\rows.jsonl",
+      "driver_wall_s": 29.9,
+      "runner_rc": 0,
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B2_subject_in_frame.shell_tools"
+    },
+    {
+      "task": "B2_subject_in_frame",
+      "sim": "webots",
+      "condition": "shell",
+      "script": "oracle_b2_webots.json",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "tool_set": "shell",
+      "tools_sha256": "5edc977e1a20c458ac11f7d28099efcda57cbd7b0b16d9b866be948d0e25f586",
+      "manifest_sha256": "fcabed2cf4f746f1210cc07213727c8d02ac4aba1812f85a71a9baaed3d11508",
+      "self_verified": false,
+      "initial_files": [
+        "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell\\scratch\\frame_the_cylinder.wbt"
+      ],
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell",
+      "t_agent_s": 1.1,
+      "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell\\scratch\\frame_the_cylinder.wbt",
+      "launch": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 3.988,
+        "attempts_used": 1
+      },
+      "aabb_probe": {
+        "ok": true,
+        "exit_code": 0
+      },
+      "aabb_merged_bodies": [
+        "red_cylinder",
+        "blue_cylinder",
+        "green_cylinder",
+        "yellow_crate",
+        "grey_sphere"
+      ],
+      "outcome": "PASS",
+      "failed_assertion": null,
+      "assertions": {
+        "B2.1": true,
+        "B2.2": true,
+        "B2.3": true,
+        "B2.4": true,
+        "B2.5": true,
+        "B2.6": true
+      },
+      "verdict_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell\\verdict.json",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B2_subject_in_frame.shell"
+    },
+    {
+      "task": "B2_subject_in_frame",
+      "sim": "webots",
+      "condition": "shell+tools",
+      "script": "oracle_b2_webots.json",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "tool_set": "shell_plus_tools",
+      "tools_sha256": "a624c7f4a42205322f54b1574cddecdd9022f2888aae99c1b1c69d794c2895ca",
+      "manifest_sha256": "00219b2bd161f880595e9b0e65668cba7152c0d4c3ea597f242c1160c5dae1f1",
+      "self_verified": false,
+      "initial_files": [
+        "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools\\scratch\\frame_the_cylinder.wbt"
+      ],
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools",
+      "t_agent_s": 1.1,
+      "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools\\scratch\\frame_the_cylinder.wbt",
+      "launch": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 3.759,
+        "attempts_used": 1
+      },
+      "aabb_probe": {
+        "ok": true,
+        "exit_code": 0
+      },
+      "aabb_merged_bodies": [
+        "red_cylinder",
+        "blue_cylinder",
+        "green_cylinder",
+        "yellow_crate",
+        "grey_sphere"
+      ],
+      "outcome": "PASS",
+      "failed_assertion": null,
+      "assertions": {
+        "B2.1": true,
+        "B2.2": true,
+        "B2.3": true,
+        "B2.4": true,
+        "B2.5": true,
+        "B2.6": true
+      },
+      "verdict_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools\\verdict.json",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B2_subject_in_frame.shell_tools"
+    },
+    {
+      "task": "B3_measure_and_report",
+      "sim": "omnisim",
+      "condition": "shell",
+      "script": "oracle_b3_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 1,
+      "turns": 1,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "assertions": {
+        "B3.1": true,
+        "B3.2": true,
+        "B3.3": true,
+        "B3.4": true
+      },
+      "self_verified": true,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B3_measure_and_report.shell",
+      "row_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B3_measure_and_report.shell\\rows.jsonl",
+      "driver_wall_s": 10.1,
+      "runner_rc": 0,
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B3_measure_and_report.shell"
+    },
+    {
+      "task": "B3_measure_and_report",
+      "sim": "omnisim",
+      "condition": "shell+tools",
+      "script": "oracle_b3_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 1,
+      "turns": 1,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "assertions": {
+        "B3.1": true,
+        "B3.2": true,
+        "B3.3": true,
+        "B3.4": true
+      },
+      "self_verified": true,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B3_measure_and_report.shell_tools",
+      "row_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B3_measure_and_report.shell_tools\\rows.jsonl",
+      "driver_wall_s": 10.3,
+      "runner_rc": 0,
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B3_measure_and_report.shell_tools"
+    },
+    {
+      "task": "B3_measure_and_report",
+      "sim": "webots",
+      "condition": "shell",
+      "script": "oracle_b3_webots.json",
+      "tool_calls": 1,
+      "turns": 1,
+      "stop_reason": "model_stopped",
+      "tool_set": "shell",
+      "tools_sha256": "5edc977e1a20c458ac11f7d28099efcda57cbd7b0b16d9b866be948d0e25f586",
+      "manifest_sha256": "fcabed2cf4f746f1210cc07213727c8d02ac4aba1812f85a71a9baaed3d11508",
+      "self_verified": true,
+      "initial_files": [
+        "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell\\scratch\\two_pioneers.wbt"
+      ],
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell",
+      "t_agent_s": 1.1,
+      "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell\\scratch\\two_pioneers.wbt",
+      "launch": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 4.691,
+        "attempts_used": 1
+      },
+      "aabb_probe": {
+        "ok": true,
+        "exit_code": 0
+      },
+      "aabb_merged_bodies": [
+        "plinth",
+        "husky_ground",
+        "husky_plinth"
+      ],
+      "outcome": "PASS",
+      "failed_assertion": null,
+      "assertions": {
+        "B3.1": true,
+        "B3.2": true,
+        "B3.3": true,
+        "B3.4": true
+      },
+      "verdict_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell\\verdict.json",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B3_measure_and_report.shell"
+    },
+    {
+      "task": "B3_measure_and_report",
+      "sim": "webots",
+      "condition": "shell+tools",
+      "script": "oracle_b3_webots.json",
+      "tool_calls": 1,
+      "turns": 1,
+      "stop_reason": "model_stopped",
+      "tool_set": "shell_plus_tools",
+      "tools_sha256": "a624c7f4a42205322f54b1574cddecdd9022f2888aae99c1b1c69d794c2895ca",
+      "manifest_sha256": "00219b2bd161f880595e9b0e65668cba7152c0d4c3ea597f242c1160c5dae1f1",
+      "self_verified": true,
+      "initial_files": [
+        "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools\\scratch\\two_pioneers.wbt"
+      ],
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools",
+      "t_agent_s": 1.1,
+      "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools\\scratch\\two_pioneers.wbt",
+      "launch": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 4.827,
+        "attempts_used": 1
+      },
+      "aabb_probe": {
+        "ok": true,
+        "exit_code": 0
+      },
+      "aabb_merged_bodies": [
+        "plinth",
+        "husky_ground",
+        "husky_plinth"
+      ],
+      "outcome": "PASS",
+      "failed_assertion": null,
+      "assertions": {
+        "B3.1": true,
+        "B3.2": true,
+        "B3.3": true,
+        "B3.4": true
+      },
+      "verdict_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools\\verdict.json",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B3_measure_and_report.shell_tools"
+    },
+    {
+      "task": "C1_parse_error_fix",
+      "sim": "omnisim",
+      "condition": "shell",
+      "script": "oracle_c1_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "assertions": {
+        "C1.1": true,
+        "C1.2": true,
+        "C1.3": true
+      },
+      "self_verified": true,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C1_parse_error_fix.shell",
+      "row_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C1_parse_error_fix.shell\\rows.jsonl",
+      "driver_wall_s": 14.6,
+      "runner_rc": 0,
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\C1_parse_error_fix.shell"
+    },
+    {
+      "task": "C1_parse_error_fix",
+      "sim": "omnisim",
+      "condition": "shell+tools",
+      "script": "oracle_c1_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "assertions": {
+        "C1.1": true,
+        "C1.2": true,
+        "C1.3": true
+      },
+      "self_verified": true,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C1_parse_error_fix.shell_tools",
+      "row_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C1_parse_error_fix.shell_tools\\rows.jsonl",
+      "driver_wall_s": 14.3,
+      "runner_rc": 0,
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\C1_parse_error_fix.shell_tools"
+    },
+    {
+      "task": "C1_parse_error_fix",
+      "sim": "webots",
+      "condition": "shell",
+      "script": "oracle_c1_webots.json",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "tool_set": "shell",
+      "tools_sha256": "5edc977e1a20c458ac11f7d28099efcda57cbd7b0b16d9b866be948d0e25f586",
+      "manifest_sha256": "fcabed2cf4f746f1210cc07213727c8d02ac4aba1812f85a71a9baaed3d11508",
+      "self_verified": true,
+      "initial_files": [
+        "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\scratch\\parse_error.wbt"
+      ],
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell",
+      "t_agent_s": 26.9,
+      "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\scratch\\parse_error.wbt",
+      "launch": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 2.387,
+        "attempts_used": 1
+      },
+      "aabb_merged_bodies": [],
+      "outcome": "PASS",
+      "failed_assertion": null,
+      "assertions": {
+        "C1.1": true,
+        "C1.2": true,
+        "C1.3": true
+      },
+      "verdict_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell\\verdict.json",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\C1_parse_error_fix.shell"
+    },
+    {
+      "task": "C1_parse_error_fix",
+      "sim": "webots",
+      "condition": "shell+tools",
+      "script": "oracle_c1_webots.json",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "tool_set": "shell_plus_tools",
+      "tools_sha256": "a624c7f4a42205322f54b1574cddecdd9022f2888aae99c1b1c69d794c2895ca",
+      "manifest_sha256": "00219b2bd161f880595e9b0e65668cba7152c0d4c3ea597f242c1160c5dae1f1",
+      "self_verified": true,
+      "initial_files": [
+        "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools\\scratch\\parse_error.wbt"
+      ],
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools",
+      "t_agent_s": 26.8,
+      "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools\\scratch\\parse_error.wbt",
+      "launch": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 4.562,
+        "attempts_used": 1
+      },
+      "aabb_merged_bodies": [],
+      "outcome": "PASS",
+      "failed_assertion": null,
+      "assertions": {
+        "C1.1": true,
+        "C1.2": true,
+        "C1.3": true
+      },
+      "verdict_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools\\verdict.json",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\C1_parse_error_fix.shell_tools"
+    },
+    {
+      "task": "C2_fall_through_floor",
+      "sim": "omnisim",
+      "condition": "shell",
+      "script": "oracle_c2_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "assertions": {
+        "C2.1": true,
+        "C2.2": true,
+        "C2.3": true,
+        "C2.4": true,
+        "C2.5": true
+      },
+      "self_verified": true,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C2_fall_through_floor.shell",
+      "row_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C2_fall_through_floor.shell\\rows.jsonl",
+      "driver_wall_s": 20.2,
+      "runner_rc": 0,
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\C2_fall_through_floor.shell"
+    },
+    {
+      "task": "C2_fall_through_floor",
+      "sim": "omnisim",
+      "condition": "shell+tools",
+      "script": "oracle_c2_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "assertions": {
+        "C2.1": true,
+        "C2.2": true,
+        "C2.3": true,
+        "C2.4": true,
+        "C2.5": true
+      },
+      "self_verified": true,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C2_fall_through_floor.shell_tools",
+      "row_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C2_fall_through_floor.shell_tools\\rows.jsonl",
+      "driver_wall_s": 19.4,
+      "runner_rc": 0,
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\C2_fall_through_floor.shell_tools"
+    },
+    {
+      "task": "C2_fall_through_floor",
+      "sim": "webots",
+      "condition": "shell",
+      "script": "oracle_c2_webots.json",
+      "tool_calls": 5,
+      "turns": 5,
+      "stop_reason": "model_stopped",
+      "tool_set": "shell",
+      "tools_sha256": "5edc977e1a20c458ac11f7d28099efcda57cbd7b0b16d9b866be948d0e25f586",
+      "manifest_sha256": "fcabed2cf4f746f1210cc07213727c8d02ac4aba1812f85a71a9baaed3d11508",
+      "self_verified": true,
+      "initial_files": [
+        "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell\\scratch\\fall_through.wbt"
+      ],
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell",
+      "t_agent_s": 7.3,
+      "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell\\scratch\\fall_through.wbt",
+      "launch": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 3.45,
+        "attempts_used": 1
+      },
+      "aabb_probe": {
+        "ok": true,
+        "exit_code": 0
+      },
+      "aabb_merged_bodies": [
+        "crate_bot",
+        "floor"
+      ],
+      "outcome": "PASS",
+      "failed_assertion": null,
+      "assertions": {
+        "C2.1": true,
+        "C2.2": true,
+        "C2.3": true,
+        "C2.4": true,
+        "C2.5": true
+      },
+      "verdict_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell\\verdict.json",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\C2_fall_through_floor.shell"
+    },
+    {
+      "task": "C2_fall_through_floor",
+      "sim": "webots",
+      "condition": "shell+tools",
+      "script": "oracle_c2_webots.json",
+      "tool_calls": 5,
+      "turns": 5,
+      "stop_reason": "model_stopped",
+      "tool_set": "shell_plus_tools",
+      "tools_sha256": "a624c7f4a42205322f54b1574cddecdd9022f2888aae99c1b1c69d794c2895ca",
+      "manifest_sha256": "00219b2bd161f880595e9b0e65668cba7152c0d4c3ea597f242c1160c5dae1f1",
+      "self_verified": true,
+      "initial_files": [
+        "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\scratch\\fall_through.wbt"
+      ],
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools",
+      "t_agent_s": 4.6,
+      "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\scratch\\fall_through.wbt",
+      "launch": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 2.475,
+        "attempts_used": 1
+      },
+      "aabb_probe": {
+        "ok": true,
+        "exit_code": 0
+      },
+      "aabb_merged_bodies": [
+        "crate_bot",
+        "floor"
+      ],
+      "outcome": "PASS",
+      "failed_assertion": null,
+      "assertions": {
+        "C2.1": true,
+        "C2.2": true,
+        "C2.3": true,
+        "C2.4": true,
+        "C2.5": true
+      },
+      "verdict_file": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\verdict.json",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\C2_fall_through_floor.shell_tools"
+    }
+  ]
+}

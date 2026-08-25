@@ -1,0 +1,77 @@
+{
+ "sim": "omnisim",
+ "rung": 0,
+ "title": "empty world loads, steps, exits clean",
+ "checks": [
+  {
+   "name": "steps_completed",
+   "measured": 250.0,
+   "expected": 250.0,
+   "tol": 0.0,
+   "unit": "steps",
+   "rel": false,
+   "error": 0.0,
+   "margin": 0.0,
+   "ok": true,
+   "why": "the controller must complete every step it asked for; a run that exits 0 having stepped zero times is the stale-libController signature, and it looks identical to a pass",
+   "key": "steps"
+  },
+  {
+   "name": "exit_code",
+   "measured": 0.0,
+   "expected": 0.0,
+   "tol": 0.0,
+   "unit": "rc",
+   "rel": false,
+   "error": 0.0,
+   "margin": 0.0,
+   "ok": true,
+   "why": "a clean exit is part of the rung",
+   "key": "exit_code"
+  },
+  {
+   "name": "finite_clock",
+   "measured": 1.0,
+   "expected": 1.0,
+   "tol": 0.008,
+   "unit": "s",
+   "rel": false,
+   "error": 0.0,
+   "margin": 0.008,
+   "ok": true,
+   "why": "the simulated clock must advance by steps x dt",
+   "key": "sim_time_end"
+  }
+ ],
+ "timing": {
+  "startup_s": 9.678522109985352,
+  "total_s": 10.152126789093018,
+  "step_s": 0.1887378692626953
+ },
+ "green": true,
+ "meta": {
+  "sim": "omnisim",
+  "rung": 0,
+  "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung0.wbt",
+  "fault": "none",
+  "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe",
+  "error": null,
+  "exit_code": 0,
+  "timed_out": false,
+  "binary_sha256": "8a6f8bc54194dd58",
+  "binary_mtime": "2026-08-11 22:33:49",
+  "proc_t0": 1786547408.4095175,
+  "proc_t1": 1786547418.5616443,
+  "newton": {
+   "present": false
+  },
+  "command": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung0.wbt --batch --mode=fast --no-rendering --minimize --stdout --stderr",
+  "note": "no .newton.json verdict sidecar: Newton did not finalize this world (expected: rung 0 has no dynamic body)"
+ },
+ "measurement": {
+  "steps": 250.0,
+  "sim_time_end": 1.0,
+  "exit_code": 0.0,
+  "n_samples": 0
+ }
+}

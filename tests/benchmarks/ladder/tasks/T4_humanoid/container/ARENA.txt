@@ -1,0 +1,35 @@
+ARENA REQUIREMENT -- what the world you build has to offer.
+
+    The floor must give the robot AT LEAST 15 METRES of unobstructed straight
+    run, in the direction it will travel, from wherever it starts.
+
+That is the only requirement this file states, and it is a requirement on the
+WORLD, not on the robot and not on how you drive it.
+
+WHY IT IS STATED RATHER THAN LEFT TO YOU
+    Ten metres of walking inside a twelve-metre room is a run that the room
+    ends. A robot pressed against a wall keeps moving its legs, its position
+    stops changing, and a reading taken over that stretch says the walk fell
+    apart when in fact it ran out of floor. The two are different findings
+    about different things, and only one of them is about the robot.
+
+    So the world is asked for half again as much floor as the distance, and
+    the run is measured knowing where the edges are.
+
+WHAT HAPPENS IF THE WORLD IS SMALLER THAN THIS
+    Nothing is hidden and nothing is silently rescued. The extent of the free
+    walking region is read from the world you built, printed beside this
+    requirement, and if the region is smaller than the distance asked for then
+    the record says the distance could not have been covered in a region that
+    size -- which is a statement about the world, not about the robot's
+    walking.
+
+    A run that ends with the robot at the edge of the region is recorded as
+    having been ended by the world rather than by the robot, whether or not
+    the robot was still moving when it got there.
+
+WHAT THIS FILE DOES NOT SAY
+    Nothing about the surface beyond the fact that it is flat and level, which
+    the task sentence already says. No size, no shape, no origin, no walls, no
+    lighting, no starting pose. Fifteen metres of floor in front of the robot
+    is the whole constraint; everything else about the world is yours.

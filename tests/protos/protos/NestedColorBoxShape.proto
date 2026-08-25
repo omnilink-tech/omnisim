@@ -1,0 +1,16 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/ColorBoxShape.proto"
+
+PROTO NestedColorBoxShape [
+  field SFColor color 0.2 0.2 0.2
+]
+{
+  Group {
+    children [
+      ColorBoxShape {
+        faceColor IS color
+      }
+    ]
+  }
+}

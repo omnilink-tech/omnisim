@@ -1,0 +1,64 @@
+#OMNISIM R2025a utf8
+
+# T1.1 HDR-source smoke world: a box with BLACK baseColor and a BRIGHT BLUE
+# emissive (emissiveColor 0 0 1 x emissiveIntensity 4 = effective 0,0,4). The
+# box fills the frame (centre x=1.0, size 0.6 -> front face 0.7 m, same framing
+# as camera_wgpu_scene_smoke) so the centre pixel is the box face.
+#
+# Purpose: prove the emissive HDR source reaches the AgX tonemap (kSolidLitAgX).
+#   - baseColor is black, so the Lambertian diffuse term contributes ~0; the
+#     ONLY light is the emissive. Without the emissive wiring the centre pixel
+#     would be ~black; with it, the box face carries the emissive colour.
+#   - With OMNISIM_CAMERA_AGX=1 the 4x blue is HDR (>1), so AgX COMPRESSES it:
+#     the blue desaturates toward white (R and G lift above 0) rather than
+#     clipping to pure blue. That desaturation is AgX doing its actual job on
+#     genuine HDR input - the whole point of this increment.
+#
+# See engine-migration-plan.md S8.1 T1.1. Companion to camera_wgpu_golden.omniworld.
+
+WorldInfo {
+  info [
+    "T1.1 emissive HDR source - black box, bright blue emissive, AgX compresses"
+  ]
+  title "wgpu emissive HDR smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 64
+      height 48
+      fieldOfView 0.8
+      near 0.05
+      far 10.0
+      renderBackend "wgpu"
+    }
+    DEF EMISSIVE_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 0 0
+            emissiveColor 0 0 1
+            emissiveIntensity 4
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "emissive box"
+    }
+  ]
+  controller "camera_wgpu_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

@@ -1,0 +1,59 @@
+{
+  "title": "OmniQuad — trained to walk",
+  "slug": "omniquad_hero_30s",
+  "world": "projects/policies/research/worlds/omniquad_rl_deploy.omniworld",
+  "subject": "omniquad",
+  "look": "teal_orange",
+  "aspect_ratios": ["16:9", "9:16", "1:1"],
+  "brand": {"title_card": true, "end_slate": true, "watermark": false},
+  "fps": 30,
+  "world_settle_steps": 80,
+  "shots": [
+    {
+      "beat": "establish",
+      "duration_s": 5,
+      "shot": "establish",
+      "lens": "24mm",
+      "params": {"azimuth_deg": 40, "elevation_deg": 22, "frame": "establish"}
+    },
+    {
+      "beat": "reveal",
+      "duration_s": 4,
+      "shot": "push_in",
+      "lens": "35mm",
+      "params": {"start_frame": "establish", "end_frame": "ms",
+                 "azimuth_deg": 25, "elevation_deg": 10}
+    },
+    {
+      "beat": "action",
+      "duration_s": 7,
+      "shot": "tracking_side",
+      "lens": "50mm",
+      "params": {"side": "left", "distance_chardim": 3.2,
+                 "height_chardim": 0.7, "travel_chardim": 4.0}
+    },
+    {
+      "beat": "hero",
+      "duration_s": 4,
+      "shot": "beauty",
+      "lens": "85mm",
+      "params": {"azimuth_deg": -25, "elevation_deg": 6}
+    },
+    {
+      "beat": "perspective",
+      "duration_s": 5,
+      "shot": "orbit",
+      "lens": "35mm",
+      "params": {"sweep_deg": 100, "start_azimuth_deg": 30,
+                 "radius_chardim": 3.5, "height_chardim": 1.0}
+    },
+    {
+      "beat": "resolve",
+      "duration_s": 5,
+      "shot": "pull_out",
+      "lens": "28mm",
+      "params": {"start_frame": "ms", "end_frame": "establish",
+                 "azimuth_deg": -30, "elevation_deg": 24}
+    }
+  ]
+}

@@ -1,0 +1,516 @@
+#OMNISIM R2025a utf8
+
+# Hydra vs Gravedigger — flipper vs bar-spinner tribute matchup.
+#
+# HYDRA       (Hydra tribute)      pneumatic-style front flipper arm
+# GRAVEDIGGER (Tombstone tribute)  horizontal bar spinner
+#
+# Real-bot inspiration: the famous Hydra vs Tombstone matches. Hydra
+# has no spinning weapon (nothing to break), it's just a heavy armored
+# bot with a front lifting arm that fires up with massive impulse from
+# a compressed-CO2 tank. Tombstone has the bar.
+#
+# Spec sheet (publicly-known approximations):
+#
+#   Hydra (flipper)
+#     mass            ~108 kg
+#     wheel base       0.85 x 0.55 x 0.22 m
+#     flipper arm     0.45 m long, 8 kg, hinge axis lateral, anchor
+#                     at front-bottom of chassis
+#     arm travel       -0.1 to +1.4 rad (~85 deg sweep upward)
+#     motor stall T    ~1000 N.m (pneumatic-equivalent)
+#     no-load omega    ~40 rad/s (tip speed ~18 m/s at full velocity)
+#     KE at full       ~430 J (enough to throw a 100 kg opponent
+#                     ~1-2 m straight up — Hydra's signature)
+#
+#   Gravedigger        (see gravedigger_vs_biteforce.omniworld for full spec)
+
+EXTERNPROTO "omnisim://projects/robot_combat/battlebots/protos/BattleBox.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 4
+  title "Hydra vs Gravedigger — Flipper vs Bar Spinner"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.9 ]
+      bounce 0.05
+      bounceVelocity 0.5
+    }
+  ]
+  # Newton combat config. MuJoCo solver REQUIRED -- the default XPBD solver structurally
+  # cannot drive a multi-wheel rover (lateral left/right wheel pairs lock; proven in pure
+  # Python via scripts/dev/wheel_model_diff.py). MuJoCo + ODE drive them; MuJoCo also gives
+  # the robust frictional contact combat ramming needs.
+  newtonSolver "mujoco"
+  # Register arena walls as collision surfaces, else bots drive through them:
+  newtonStatics TRUE
+  # Give each bot's chassis Box a real collider so ramming registers chassis contacts
+  # (without it a Robot wrapper gets a 1 mm placeholder and bots phase through each other):
+  newtonRobotColliders TRUE
+  # 4 sub-steps keep high closing-speed ram impacts from diverging XPBD to NaN:
+  newtonSubsteps 4
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 14
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+BattleBox {
+  enableKillsaw TRUE
+  enablePushers TRUE
+  enableScrews TRUE
+}
+
+# ===========================================================================
+# HYDRA — pneumatic-style flipper. Spawns at +X facing west.
+# ===========================================================================
+DEF HYDRA Robot {
+  translation 3.0 0 0.30
+  rotation 0 0 1 3.14159265
+  name "hydra"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "gravedigger" "--strategy" "aggressor" "--weapon-mode" "pulse" "--pulse-range" "1.2" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    # ---------------- Hydra-style chassis visuals ----------------
+    # Real Hydra is dark navy with yellow accents and a low aggressive
+    # profile. Composed from several primitives.
+    #
+    # Main body — dark navy box.
+    Shape {
+      appearance PBRAppearance { baseColor 0.05 0.10 0.30 metalness 0 roughness 1 }
+      geometry Box { size 0.78 0.50 0.18 }
+    }
+    # Top deck — lighter navy panel.
+    Transform {
+      translation 0 0 0.10
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.10 0.18 0.45 metalness 0 roughness 1 }
+        geometry Box { size 0.55 0.42 0.02 }
+      } ]
+    }
+    # Yellow stripe down centerline (Hydra's signature accent).
+    Transform {
+      translation 0 0 0.11
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.82 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.55 0.06 0.005 }
+      } ]
+    }
+    # Yellow side accent strips.
+    Transform {
+      translation 0 0.255 0.02
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.82 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.70 0.01 0.04 }
+      } ]
+    }
+    Transform {
+      translation 0 -0.255 0.02
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.82 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.70 0.01 0.04 }
+      } ]
+    }
+    # Side wheel housings.
+    Transform {
+      translation 0.30 0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.12 0.12 0.14 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    Transform {
+      translation 0.30 -0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.12 0.12 0.14 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    Transform {
+      translation -0.30 0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.12 0.12 0.14 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    Transform {
+      translation -0.30 -0.27 -0.04
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.12 0.12 0.14 metalness 0 roughness 1 }
+        geometry Box { size 0.20 0.04 0.16 }
+      } ]
+    }
+    # ---------------- 4 wheels ----------------
+    DEF HYDRA_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.30 0.30 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF HYDRA_FL_WHEEL Solid {
+        translation 0.30 0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF HYDRA_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.30 -0.30 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF HYDRA_FR_WHEEL Solid {
+        translation 0.30 -0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF HYDRA_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.30 0.30 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF HYDRA_RL_WHEEL Solid {
+        translation -0.30 0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF HYDRA_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.30 -0.30 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 28 maxTorque 28 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF HYDRA_RR_WHEEL Solid {
+        translation -0.30 -0.30 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    # ---------------- Pneumatic-style flipper arm ----------------
+    # Arm anchored at front-bottom of chassis. Rotates about lateral
+    # (Y) axis from -0.1 rad (down, parked) to +1.4 rad (up, fired,
+    # ~80 degrees from horizontal).
+    #
+    # Motor is wildly over-spec compared to an electric motor —
+    # maxTorque 1000 N.m and maxVelocity 40 rad/s — because it
+    # approximates a CO2-driven pneumatic ram that delivers all of its
+    # impulse in ~50 ms. With arm inertia I = (1/3) m L^2 = 0.54 kg m^2
+    # and 1000 N.m of torque, alpha = 1851 rad/s^2: full 1.5 rad sweep
+    # in ~40 ms — that's the right ballpark for a real flipper.
+    DEF HYDRA_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.30 0 -0.06
+        minStop -0.1
+        maxStop 1.4
+      }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 40 maxTorque 1000 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF HYDRA_WEAPON Solid {
+        translation 0.30 0 -0.06
+        name "weapon_flipper_arm"
+        children [
+          # The arm — yellow scoop blade sticking forward.
+          Transform {
+            translation 0.22 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 1.0 0.82 0.05 metalness 0 roughness 1 }
+              geometry Box { size 0.45 0.40 0.04 }
+            } ]
+          }
+          # Yellow lift-tip at the leading edge.
+          Transform {
+            translation 0.42 0 -0.005
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.90 0.65 0.05 metalness 0 roughness 1 }
+              geometry Box { size 0.05 0.40 0.06 }
+            } ]
+          }
+        ]
+        boundingObject Transform {
+          translation 0.22 0 0
+          children [ Box { size 0.45 0.40 0.04 } ]
+        }
+        physics Physics { density -1 mass 8.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.78 0.50 0.18 }
+  physics Physics { density -1 mass 75.0 }
+}
+
+# ===========================================================================
+# GRAVEDIGGER  —  horizontal bar spinner (Tombstone tribute)
+#   Same bot as in gravedigger_vs_biteforce.omniworld.
+# ===========================================================================
+DEF GRAVEDIGGER Robot {
+  translation -3.0 0 0.35
+  rotation 0 0 1 0
+  name "gravedigger"
+  controller "battlebot_brain"
+  controllerArgs [ "--opponent" "hydra" "--strategy" "aggressor" ]
+  supervisor TRUE
+  physicsBackend "newton"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.06 0.06 0.08 metalness 0 roughness 1 }
+      geometry Box { size 0.82 0.54 0.13 }
+    }
+    Transform {
+      translation 0 0 0.08
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.12 0.12 0.14 metalness 0 roughness 1 }
+        geometry Box { size 0.55 0.45 0.02 }
+      } ]
+    }
+    Transform {
+      translation 0.38 0.20 -0.02
+      rotation 0 0 1 0.49
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.80 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.10 0.06 }
+      } ]
+    }
+    Transform {
+      translation 0.38 -0.20 -0.02
+      rotation 0 0 1 -0.49
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.80 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.10 0.06 }
+      } ]
+    }
+    Transform {
+      translation 0 0.275 0
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.80 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.78 0.01 0.06 }
+      } ]
+    }
+    Transform {
+      translation 0 -0.275 0
+      children [ Shape {
+        appearance PBRAppearance { baseColor 1.0 0.80 0.05 metalness 0 roughness 1 }
+        geometry Box { size 0.78 0.01 0.06 }
+      } ]
+    }
+    Transform {
+      translation 0.35 0.30 -0.05
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.20 0.20 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.04 0.18 }
+      } ]
+    }
+    Transform {
+      translation 0.35 -0.30 -0.05
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.20 0.20 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.04 0.18 }
+      } ]
+    }
+    Transform {
+      translation -0.35 0.30 -0.05
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.20 0.20 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.04 0.18 }
+      } ]
+    }
+    Transform {
+      translation -0.35 -0.30 -0.05
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.20 0.20 0.20 metalness 0 roughness 1 }
+        geometry Box { size 0.22 0.04 0.18 }
+      } ]
+    }
+    DEF GRAVEDIGGER_FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.35 0.32 -0.05 }
+      device [
+        RotationalMotor { name "front_left_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint DEF GRAVEDIGGER_FL_WHEEL Solid {
+        translation 0.35 0.32 -0.05
+        rotation 1 0 0 1.5708
+        name "front_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF GRAVEDIGGER_FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor 0.35 -0.32 -0.05 }
+      device [
+        RotationalMotor { name "front_right_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint DEF GRAVEDIGGER_FR_WHEEL Solid {
+        translation 0.35 -0.32 -0.05
+        rotation 1 0 0 1.5708
+        name "front_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF GRAVEDIGGER_RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.35 0.32 -0.05 }
+      device [
+        RotationalMotor { name "rear_left_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint DEF GRAVEDIGGER_RL_WHEEL Solid {
+        translation -0.35 0.32 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_left_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF GRAVEDIGGER_RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0 anchor -0.35 -0.32 -0.05 }
+      device [
+        RotationalMotor { name "rear_right_wheel_motor" maxVelocity 30 maxTorque 30 }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint DEF GRAVEDIGGER_RR_WHEEL Solid {
+        translation -0.35 -0.32 -0.05
+        rotation 1 0 0 1.5708
+        name "rear_right_wheel"
+        children [ Shape {
+          appearance PBRAppearance { baseColor 0.08 0.08 0.08 metalness 0 roughness 1 }
+          geometry Cylinder { height 0.06 radius 0.10 }
+        } ]
+        boundingObject Cylinder { height 0.06 radius 0.10 }
+        physics Physics { density -1 mass 2.0 }
+      }
+    }
+    DEF GRAVEDIGGER_WEAPON_JOINT HingeJoint {
+      jointParameters HingeJointParameters { axis 0 0 1 anchor 0 0 0.13 }
+      device [
+        RotationalMotor { name "weapon_motor" maxVelocity 80 maxTorque 300 }
+        PositionSensor { name "weapon_sensor" }
+      ]
+      endPoint DEF GRAVEDIGGER_WEAPON Solid {
+        translation 0 0 0.13
+        name "weapon_bar"
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.78 0.78 0.80 metalness 0 roughness 1 }
+            geometry Box { size 1.20 0.06 0.04 }
+          }
+          Transform {
+            translation 0 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 1.0 0.80 0.05 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.06 radius 0.09 }
+            } ]
+          }
+          Transform {
+            translation 0 0 0.001
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.12 0.12 0.14 metalness 0 roughness 1 }
+              geometry Cylinder { height 0.062 radius 0.04 }
+            } ]
+          }
+          Transform {
+            translation 0.55 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 }
+              geometry Box { size 0.10 0.08 0.06 }
+            } ]
+          }
+          Transform {
+            translation -0.55 0 0
+            children [ Shape {
+              appearance PBRAppearance { baseColor 0.95 0.20 0.05 metalness 0 roughness 1 }
+              geometry Box { size 0.10 0.08 0.06 }
+            } ]
+          }
+        ]
+        boundingObject Box { size 1.20 0.06 0.04 }
+        physics Physics { density -1 mass 40.0 }
+      }
+    }
+  ]
+  boundingObject Box { size 0.90 0.60 0.15 }
+  physics Physics { density -1 mass 70.0 }
+}
+
+DEF DIRECTOR Robot {
+  name "damage_director"
+  translation 0 0 8
+  controller "battlebot_damage_director"
+  customData "{\"fighters\": [\"hydra\", \"gravedigger\"], \"arena_size\": 8.0, \"fail_wheels\": 3, \"contact_gate_m\": 1.6, \"timer_s\": 240.0, \"output\": \"_scratch/hydra_vs_gravedigger.json\", \"hp\": {\"chassis\": 250.0, \"wheel\": 14.0, \"weapon\": 35.0}, \"impulse_threshold_J\": {\"chassis\": 35.0, \"wheel\": 0.8, \"weapon\": 8.0}}"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}
+
+DEF TRACKER Robot {
+  name "duel_tracker"
+  translation 0 0 7
+  controller "duel_tracker"
+  customData "{\"fighters\": [\"HYDRA\", \"GRAVEDIGGER\"]}"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}

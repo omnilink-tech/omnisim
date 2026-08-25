@@ -1,0 +1,207 @@
+﻿<mujoco model="MuJoCo Model">
+  <compiler angle="radian"/>
+
+  <option gravity="0 0 -9.81" integrator="implicitfast">
+    <flag multiccd="disable"/>
+  </option>
+
+  <worldbody>
+    <geom name="ground_plane_0" size="5 5 5" type="plane" contype="2" conaffinity="2147483645" friction="2 0.005 0.0001" solref="0.02" rgba="0 0.3 0.6 1"/>
+    <body name="pelvis" pos="0 0 0.78">
+      <inertial pos="0 0 0" quat="1 0 -0.000399148 0" mass="3.814" diaginertia="0.010549 0.0093089 0.0079184"/>
+      <joint name="root_free" type="free"/>
+      <geom name="shape_1_1" size="0.001" contype="4" conaffinity="2147483643" friction="1 0.005 0.0001" solref="0.02"/>
+      <body name="left_hip_pitch_link" pos="0 0.064452 -0.1027">
+        <inertial pos="0 0 0" quat="0.954862 0.293964 0.0302556 0.030122" mass="1.35" diaginertia="0.00181517 0.00153422 0.00116212"/>
+        <joint name="left_hip_pitch_joint" pos="0 0 0" axis="0 1 0" solreflimit="-10000 -100" limited="true" range="-2.5307 2.8798" actuatorfrclimited="true" actuatorfrcrange="-88 88"/>
+        <geom name="shape_2_2" size="0.0412784 0.0494054 0.0585823" pos="-0.00103767 0.0494054 -0.0214614" type="box" contype="4" conaffinity="2147483643" friction="1 0.005 0.0001" solref="0.02"/>
+        <body name="left_hip_roll_link" pos="0 0.052 -0.030465">
+          <inertial pos="0 0 0" quat="0.977808 -1.97146e-05 0.205576 -0.0403793" mass="1.52" diaginertia="0.00254986 0.00241169 0.00148755"/>
+          <joint name="left_hip_roll_joint" pos="0 0 0" axis="0.984744 0 0.17401" solreflimit="-10000 -100" limited="true" range="-0.5236 2.9671" actuatorfrclimited="true" actuatorfrcrange="-88 88"/>
+          <geom name="shape_3_3" size="0.0532396 0.0489454 0.0853044" pos="0.0269208 -0.000171173 -0.0388197" type="box" contype="8" conaffinity="2147483639" friction="1 0.005 0.0001" solref="0.02"/>
+          <body name="left_hip_yaw_link" pos="0.025001 0 -0.12412">
+            <inertial pos="0 0 0" quat="0.600598 0.15832 0.223482 0.751181" mass="1.702" diaginertia="0.00776166 0.00717575 0.00160139"/>
+            <joint name="left_hip_yaw_joint" pos="0 0 0" axis="0 0 1" solreflimit="-10000 -100" limited="true" range="-2.7576 2.7576" actuatorfrclimited="true" actuatorfrcrange="-88 88"/>
+            <geom name="shape_4_4" size="0.089817 0.0443413 0.113115" pos="-0.0374323 -0.00104196 -0.113115" type="box" contype="8" conaffinity="2147483639" friction="1 0.005 0.0001" solref="0.02"/>
+            <body name="left_knee_link" pos="-0.078273 0.0021489 -0.17734">
+              <inertial pos="0 0 0" quat="0.923417 -0.0327698 0.0158246 0.382068" mass="1.932" diaginertia="0.0113804 0.0112778 0.00146458"/>
+              <joint name="left_knee_joint" pos="0 0 0" axis="0 1 0" solreflimit="-10000 -100" limited="true" range="-0.087267 2.8798" actuatorfrclimited="true" actuatorfrcrange="-139 139"/>
+              <geom name="shape_5_5" size="0.0519081 0.0358496 0.177561" pos="0.0120115 -3.68617e-05 -0.137512" type="box" contype="16" conaffinity="2147483631" friction="1 0.005 0.0001" solref="0.02"/>
+              <body name="left_ankle_pitch_link" pos="0 -9.4445e-05 -0.30001">
+                <inertial pos="0 0 0" mass="0.074" diaginertia="0.0006956 0.0012358 0.0006956"/>
+                <joint name="left_ankle_pitch_joint" pos="0 0 0" axis="0 1 0" solreflimit="-10000 -100" limited="true" range="-0.87267 0.5236" actuatorfrclimited="true" actuatorfrcrange="-35 35"/>
+                <geom name="shape_6_6" size="0.018 0.00650001 0.0187239" pos="-0.00649999 5.78223e-05 -0.00583397" type="box" contype="16" conaffinity="2147483631" friction="1 0.005 0.0001" solref="0.02"/>
+                <body name="left_ankle_roll_link" pos="0 0 -0.017558">
+                  <inertial pos="0 0 0" quat="-0.000481092 0.728482 -0.000618967 0.685065" mass="0.608" diaginertia="0.00167218 0.0016161 0.000217621"/>
+                  <joint name="left_ankle_roll_joint" pos="0 0 0" axis="1 0 0" solreflimit="-10000 -100" limited="true" range="-0.2618 0.2618" actuatorfrclimited="true" actuatorfrcrange="-35 35"/>
+                  <geom name="shape_7_7" size="0.085 0.03 0.006" pos="0.035 0 -0.03" type="box" contype="32" conaffinity="2147483615" friction="1 0.005 0.0001" solref="0.02"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="right_hip_pitch_link" pos="0 -0.064452 -0.1027">
+        <inertial pos="0 0 0" quat="0.954862 -0.293964 0.0302556 -0.030122" mass="1.35" diaginertia="0.00181517 0.00153422 0.00116212"/>
+        <joint name="right_hip_pitch_joint" pos="0 0 0" axis="0 1 0" solreflimit="-10000 -100" limited="true" range="-2.5307 2.8798" actuatorfrclimited="true" actuatorfrcrange="-88 88"/>
+        <geom name="shape_8_8" size="0.0412784 0.0494054 0.0585819" pos="-0.00103767 -0.0494054 -0.0214618" type="box" contype="64" conaffinity="2147483583" friction="1 0.005 0.0001" solref="0.02"/>
+        <body name="right_hip_roll_link" pos="0 -0.052 -0.030465">
+          <inertial pos="0 0 0" quat="0.977808 1.97146e-05 0.205576 0.0403793" mass="1.52" diaginertia="0.00254986 0.00241169 0.00148755"/>
+          <joint name="right_hip_roll_joint" pos="0 0 0" axis="0.984744 0 0.17401" solreflimit="-10000 -100" limited="true" range="-2.9671 0.5236" actuatorfrclimited="true" actuatorfrcrange="-88 88"/>
+          <geom name="shape_9_9" size="0.0532396 0.0489454 0.0853044" pos="0.0269208 0.000171173 -0.0388197" type="box" contype="64" conaffinity="2147483583" friction="1 0.005 0.0001" solref="0.02"/>
+          <body name="right_hip_yaw_link" pos="0.025001 0 -0.12412">
+            <inertial pos="0 0 0" quat="0.751181 0.223482 0.15832 0.600598" mass="1.702" diaginertia="0.00776166 0.00717575 0.00160139"/>
+            <joint name="right_hip_yaw_joint" pos="0 0 0" axis="0 0 1" solreflimit="-10000 -100" limited="true" range="-2.7576 2.7576" actuatorfrclimited="true" actuatorfrcrange="-88 88"/>
+            <geom name="shape_10_10" size="0.089817 0.0443413 0.113115" pos="-0.0374323 0.00104196 -0.113115" type="box" contype="128" conaffinity="2147483519" friction="1 0.005 0.0001" solref="0.02"/>
+            <body name="right_knee_link" pos="-0.078273 -0.0021489 -0.17734">
+              <inertial pos="0 0 0" quat="0.923438 0.0345276 0.0116334 -0.382014" mass="1.932" diaginertia="0.011374 0.0112843 0.00146452"/>
+              <joint name="right_knee_joint" pos="0 0 0" axis="0 1 0" solreflimit="-10000 -100" limited="true" range="-0.087267 2.8798" actuatorfrclimited="true" actuatorfrcrange="-139 139"/>
+              <geom name="shape_11_11" size="0.0519081 0.035848 0.177561" pos="0.0120115 3.48222e-05 -0.137512" type="box" contype="128" conaffinity="2147483519" friction="1 0.005 0.0001" solref="0.02"/>
+              <body name="right_ankle_pitch_link" pos="0 9.4445e-05 -0.30001">
+                <inertial pos="0 0 0" mass="0.074" diaginertia="0.0006956 0.0012358 0.0006956"/>
+                <joint name="right_ankle_pitch_joint" pos="0 0 0" axis="0 1 0" solreflimit="-10000 -100" limited="true" range="-0.87267 0.5236" actuatorfrclimited="true" actuatorfrcrange="-35 35"/>
+                <geom name="shape_12_12" size="0.018 0.00650001 0.0187239" pos="-0.00649999 -5.78223e-05 -0.00583397" type="box" contype="256" conaffinity="2147483391" friction="1 0.005 0.0001" solref="0.02"/>
+                <body name="right_ankle_roll_link" pos="0 0 -0.017558">
+                  <inertial pos="0 0 0" quat="0.000481092 0.728482 0.000618967 0.685065" mass="0.608" diaginertia="0.00167218 0.0016161 0.000217621"/>
+                  <joint name="right_ankle_roll_joint" pos="0 0 0" axis="1 0 0" solreflimit="-10000 -100" limited="true" range="-0.2618 0.2618" actuatorfrclimited="true" actuatorfrcrange="-35 35"/>
+                  <geom name="shape_13_13" size="0.085 0.03 0.006" pos="0.035 0 -0.03" type="box" contype="256" conaffinity="2147483391" friction="1 0.005 0.0001" solref="0.02"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="torso_link" pos="-0.0039635 0 0.054">
+        <inertial pos="0 0 0" quat="0.999683 0.00171655 0.0248299 -0.00373138" mass="9.844" diaginertia="0.065762 0.0535348 0.0307215"/>
+        <joint name="waist_yaw_joint" pos="0 0 0" axis="0 0 1" solreflimit="-10000 -100" limited="true" range="-2.618 2.618" actuatorfrclimited="true" actuatorfrcrange="-88 88"/>
+        <geom name="shape_14_14" size="0.0751349 0.107714 0.155151" pos="0.00849202 8.23289e-07 0.145212" type="box" contype="32768" conaffinity="2147450879" friction="1 0.005 0.0001" solref="0.02"/>
+        <body name="left_shoulder_pitch_link" pos="0.0039563 0.10022 0.23778">
+          <inertial pos="0 0 0" quat="0.654152 0.0130459 -0.326267 0.68225" mass="0.718" diaginertia="0.000465864 0.000432842 0.000406394"/>
+          <joint name="left_shoulder_pitch_joint" pos="0 0 0" axis="0.000199314 0.961246 0.275692" solreflimit="-10000 -100" limited="true" range="-3.0892 2.6704" actuatorfrclimited="true" actuatorfrcrange="-25 25"/>
+          <geom name="shape_15_15" size="0.03" pos="0 0.04 -0.01" contype="512" conaffinity="2147483135" friction="1 0.005 0.0001" solref="0.02"/>
+          <body name="left_shoulder_roll_link" pos="0 0.038 -0.013831">
+            <inertial pos="0 0 0" quat="0.701256 -0.0196223 -0.00710317 0.712604" mass="0.643" diaginertia="0.000691311 0.000618011 0.000388977"/>
+            <joint name="left_shoulder_roll_joint" pos="0 0 0" axis="1 0 0" solreflimit="-10000 -100" limited="true" range="-1.5882 2.2515" actuatorfrclimited="true" actuatorfrcrange="-25 25"/>
+            <geom name="shape_16_16" size="0.03" pos="-0.004 0.006 -0.053" contype="512" conaffinity="2147483135" friction="1 0.005 0.0001" solref="0.02"/>
+            <body name="left_shoulder_yaw_link" pos="0 0.00624 -0.1032">
+              <inertial pos="0 0 0" quat="0.716879 -0.0964829 -0.0679942 0.687134" mass="0.734" diaginertia="0.00106187 0.00103217 0.000400661"/>
+              <joint name="left_shoulder_yaw_joint" pos="0 0 0" axis="0 0 1" solreflimit="-10000 -100" limited="true" range="-2.618 2.618" actuatorfrclimited="true" actuatorfrcrange="-25 25"/>
+              <geom name="shape_17_17" size="0.0405928 0.0372594 0.0726355" pos="0.00778206 -0.00415307 -0.0410614" type="box" contype="1024" conaffinity="2147482623" friction="1 0.005 0.0001" solref="0.02"/>
+              <body name="left_elbow_link" pos="0.015783 0 -0.080518">
+                <inertial pos="0 0 0" quat="0.541765 0.636132 0.388821 0.388129" mass="0.6" diaginertia="0.000443035 0.000421612 0.000259353"/>
+                <joint name="left_elbow_joint" pos="0 0 0" axis="0 1 0" solreflimit="-10000 -100" limited="true" range="-1.0472 2.0944" actuatorfrclimited="true" actuatorfrcrange="-25 25"/>
+                <geom name="shape_18_18" size="0.0648876 0.0330162 0.0376027" pos="0.0351125 0.00176092 -0.00782758" type="box" contype="1024" conaffinity="2147482623" friction="1 0.005 0.0001" solref="0.02"/>
+                <body name="left_wrist_roll_rubber_hand" pos="0.1 0.00188791 -0.01">
+                  <inertial pos="0 0 0" quat="0.494051 0.504265 0.48416 0.516932" mass="0.356929" diaginertia="0.00200292 0.00194259 0.000195232"/>
+                  <joint name="left_wrist_roll_joint" pos="0 0 0" axis="1 0 0" solreflimit="-10000 -100" limited="true" range="-1.97222 1.97222" actuatorfrclimited="true" actuatorfrcrange="-25 25"/>
+                  <geom name="shape_19_19" size="0.126609 0.0361836 0.0532413" pos="0.126707 -0.00622354 0.0117148" type="box" contype="2048" conaffinity="2147481599" friction="1 0.005 0.0001" solref="0.02"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="right_shoulder_pitch_link" pos="0.0039563 -0.10021 0.23778">
+          <inertial pos="0 0 0" quat="0.68225 -0.326267 0.0130459 0.654152" mass="0.718" diaginertia="0.000465864 0.000432842 0.000406394"/>
+          <joint name="right_shoulder_pitch_joint" pos="0 0 0" axis="-0.000199314 0.961246 -0.275692" solreflimit="-10000 -100" limited="true" range="-3.0892 2.6704" actuatorfrclimited="true" actuatorfrcrange="-25 25"/>
+          <geom name="shape_20_20" size="0.03" pos="0 -0.04 -0.01" contype="4096" conaffinity="2147479551" friction="1 0.005 0.0001" solref="0.02"/>
+          <body name="right_shoulder_roll_link" pos="0 -0.038 -0.013831">
+            <inertial pos="0 0 0" quat="0.712604 -0.00710317 -0.0196223 0.701256" mass="0.643" diaginertia="0.000691311 0.000618011 0.000388977"/>
+            <joint name="right_shoulder_roll_joint" pos="0 0 0" axis="1 0 0" solreflimit="-10000 -100" limited="true" range="-2.2515 1.5882" actuatorfrclimited="true" actuatorfrcrange="-25 25"/>
+            <geom name="shape_21_21" size="0.03" pos="-0.004 -0.006 -0.053" contype="4096" conaffinity="2147479551" friction="1 0.005 0.0001" solref="0.02"/>
+            <body name="right_shoulder_yaw_link" pos="0 -0.00624 -0.1032">
+              <inertial pos="0 0 0" quat="0.687134 -0.0679942 -0.0964829 0.716879" mass="0.734" diaginertia="0.00106187 0.00103217 0.000400661"/>
+              <joint name="right_shoulder_yaw_joint" pos="0 0 0" axis="0 0 1" solreflimit="-10000 -100" limited="true" range="-2.618 2.618" actuatorfrclimited="true" actuatorfrcrange="-25 25"/>
+              <geom name="shape_22_22" size="0.0405928 0.0372594 0.0726355" pos="0.00778206 0.00415307 -0.0410614" type="box" contype="8192" conaffinity="2147475455" friction="1 0.005 0.0001" solref="0.02"/>
+              <body name="right_elbow_link" pos="0.015783 0 -0.080518">
+                <inertial pos="0 0 0" quat="0.388129 0.388821 0.636132 0.541765" mass="0.6" diaginertia="0.000443035 0.000421612 0.000259353"/>
+                <joint name="right_elbow_joint" pos="0 0 0" axis="0 1 0" solreflimit="-10000 -100" limited="true" range="-1.0472 2.0944" actuatorfrclimited="true" actuatorfrcrange="-25 25"/>
+                <geom name="shape_23_23" size="0.0648876 0.0330162 0.0376027" pos="0.0351125 -0.00176092 -0.00782758" type="box" contype="8192" conaffinity="2147475455" friction="1 0.005 0.0001" solref="0.02"/>
+                <body name="right_wrist_roll_rubber_hand" pos="0.1 -0.00188791 -0.01">
+                  <inertial pos="0 0 0" quat="0.516932 0.48416 0.504265 0.494051" mass="0.356929" diaginertia="0.00200292 0.00194259 0.000195232"/>
+                  <joint name="right_wrist_roll_joint" pos="0 0 0" axis="1 0 0" solreflimit="-10000 -100" limited="true" range="-1.97222 1.97222" actuatorfrclimited="true" actuatorfrcrange="-25 25"/>
+                  <geom name="shape_24_24" size="0.126609 0.0361836 0.0532413" pos="0.126707 0.00622354 0.0117148" type="box" contype="16384" conaffinity="2147467263" friction="1 0.005 0.0001" solref="0.02"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <contact>
+    <exclude body1="pelvis" body2="left_hip_pitch_link"/>
+    <exclude body1="pelvis" body2="right_hip_pitch_link"/>
+    <exclude body1="pelvis" body2="torso_link"/>
+    <exclude body1="left_hip_pitch_link" body2="left_hip_roll_link"/>
+    <exclude body1="left_hip_roll_link" body2="left_hip_yaw_link"/>
+    <exclude body1="left_hip_yaw_link" body2="left_knee_link"/>
+    <exclude body1="left_knee_link" body2="left_ankle_pitch_link"/>
+    <exclude body1="left_ankle_pitch_link" body2="left_ankle_roll_link"/>
+    <exclude body1="right_hip_pitch_link" body2="right_hip_roll_link"/>
+    <exclude body1="right_hip_roll_link" body2="right_hip_yaw_link"/>
+    <exclude body1="right_hip_yaw_link" body2="right_knee_link"/>
+    <exclude body1="right_knee_link" body2="right_ankle_pitch_link"/>
+    <exclude body1="right_ankle_pitch_link" body2="right_ankle_roll_link"/>
+    <exclude body1="torso_link" body2="left_shoulder_pitch_link"/>
+    <exclude body1="torso_link" body2="right_shoulder_pitch_link"/>
+    <exclude body1="left_shoulder_pitch_link" body2="left_shoulder_roll_link"/>
+    <exclude body1="left_shoulder_roll_link" body2="left_shoulder_yaw_link"/>
+    <exclude body1="left_shoulder_yaw_link" body2="left_elbow_link"/>
+    <exclude body1="left_elbow_link" body2="left_wrist_roll_rubber_hand"/>
+    <exclude body1="right_shoulder_pitch_link" body2="right_shoulder_roll_link"/>
+    <exclude body1="right_shoulder_roll_link" body2="right_shoulder_yaw_link"/>
+    <exclude body1="right_shoulder_yaw_link" body2="right_elbow_link"/>
+    <exclude body1="right_elbow_link" body2="right_wrist_roll_rubber_hand"/>
+  </contact>
+
+  <actuator>
+    <general name="left_hip_pitch_joint_pos" joint="left_hip_pitch_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_hip_pitch_joint_vel" joint="left_hip_pitch_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="left_hip_roll_joint_pos" joint="left_hip_roll_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_hip_roll_joint_vel" joint="left_hip_roll_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="left_hip_yaw_joint_pos" joint="left_hip_yaw_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_hip_yaw_joint_vel" joint="left_hip_yaw_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="left_knee_joint_pos" joint="left_knee_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_knee_joint_vel" joint="left_knee_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="left_ankle_pitch_joint_pos" joint="left_ankle_pitch_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_ankle_pitch_joint_vel" joint="left_ankle_pitch_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="left_ankle_roll_joint_pos" joint="left_ankle_roll_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_ankle_roll_joint_vel" joint="left_ankle_roll_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_hip_pitch_joint_pos" joint="right_hip_pitch_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_hip_pitch_joint_vel" joint="right_hip_pitch_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_hip_roll_joint_pos" joint="right_hip_roll_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_hip_roll_joint_vel" joint="right_hip_roll_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_hip_yaw_joint_pos" joint="right_hip_yaw_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_hip_yaw_joint_vel" joint="right_hip_yaw_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_knee_joint_pos" joint="right_knee_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_knee_joint_vel" joint="right_knee_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_ankle_pitch_joint_pos" joint="right_ankle_pitch_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_ankle_pitch_joint_vel" joint="right_ankle_pitch_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_ankle_roll_joint_pos" joint="right_ankle_roll_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_ankle_roll_joint_vel" joint="right_ankle_roll_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="waist_yaw_joint_pos" joint="waist_yaw_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="waist_yaw_joint_vel" joint="waist_yaw_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="left_shoulder_pitch_joint_pos" joint="left_shoulder_pitch_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_shoulder_pitch_joint_vel" joint="left_shoulder_pitch_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="left_shoulder_roll_joint_pos" joint="left_shoulder_roll_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_shoulder_roll_joint_vel" joint="left_shoulder_roll_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="left_shoulder_yaw_joint_pos" joint="left_shoulder_yaw_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_shoulder_yaw_joint_vel" joint="left_shoulder_yaw_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="left_elbow_joint_pos" joint="left_elbow_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_elbow_joint_vel" joint="left_elbow_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="left_wrist_roll_joint_pos" joint="left_wrist_roll_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="left_wrist_roll_joint_vel" joint="left_wrist_roll_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_shoulder_pitch_joint_pos" joint="right_shoulder_pitch_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_shoulder_pitch_joint_vel" joint="right_shoulder_pitch_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_shoulder_roll_joint_pos" joint="right_shoulder_roll_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_shoulder_roll_joint_vel" joint="right_shoulder_roll_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_shoulder_yaw_joint_pos" joint="right_shoulder_yaw_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_shoulder_yaw_joint_vel" joint="right_shoulder_yaw_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_elbow_joint_pos" joint="right_elbow_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_elbow_joint_vel" joint="right_elbow_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+    <general name="right_wrist_roll_joint_pos" joint="right_wrist_roll_joint" biastype="affine" gainprm="200" biasprm="0 -200"/>
+    <general name="right_wrist_roll_joint_vel" joint="right_wrist_roll_joint" biastype="affine" gainprm="10" biasprm="0 0 -10"/>
+  </actuator>
+</mujoco>
+

@@ -1,0 +1,515 @@
+{
+ "stamp": "20260812_171309",
+ "cells": [
+  {
+   "sim": "omnisim",
+   "rung": 0,
+   "title": "empty world loads, steps, exits clean",
+   "checks": [
+    {
+     "name": "steps_completed",
+     "measured": 250.0,
+     "expected": 250.0,
+     "tol": 0.0,
+     "unit": "steps",
+     "rel": false,
+     "error": 0.0,
+     "margin": 0.0,
+     "ok": true,
+     "why": "the controller must complete every step it asked for; a run that exits 0 having stepped zero times is the stale-libController signature, and it looks identical to a pass",
+     "key": "steps"
+    },
+    {
+     "name": "exit_code",
+     "measured": 0.0,
+     "expected": 0.0,
+     "tol": 0.0,
+     "unit": "rc",
+     "rel": false,
+     "error": 0.0,
+     "margin": 0.0,
+     "ok": true,
+     "why": "a clean exit is part of the rung",
+     "key": "exit_code"
+    },
+    {
+     "name": "finite_clock",
+     "measured": 1.0,
+     "expected": 1.0,
+     "tol": 0.008,
+     "unit": "s",
+     "rel": false,
+     "error": 0.0,
+     "margin": 0.008,
+     "ok": true,
+     "why": "the simulated clock must advance by steps x dt",
+     "key": "sim_time_end"
+    }
+   ],
+   "timing": {
+    "startup_s": 8.536059856414795,
+    "total_s": 9.067350387573242,
+    "step_s": 0.19071078300476074
+   },
+   "green": true,
+   "meta": {
+    "sim": "omnisim",
+    "rung": 0,
+    "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung0.wbt",
+    "fault": "none",
+    "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "binary_sha256": "8a6f8bc54194dd58",
+    "binary_mtime": "2026-08-11 22:33:49",
+    "proc_t0": 1786547589.05407,
+    "proc_t1": 1786547598.1214204,
+    "newton": {
+     "present": false
+    },
+    "command": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung0.wbt --batch --mode=fast --no-rendering --minimize --stdout --stderr",
+    "note": "no .newton.json verdict sidecar: Newton did not finalize this world (expected: rung 0 has no dynamic body)"
+   },
+   "measurement": {
+    "steps": 250.0,
+    "sim_time_end": 1.0,
+    "exit_code": 0.0,
+    "n_samples": 0
+   }
+  },
+  {
+   "sim": "omnisim",
+   "rung": 1,
+   "title": "box resting on a floor",
+   "checks": [
+    {
+     "name": "rest_z",
+     "measured": 0.599892258644104,
+     "expected": 0.6,
+     "tol": 0.005,
+     "unit": "m",
+     "rel": false,
+     "error": -0.00010774135589597389,
+     "margin": 0.004892258644104026,
+     "ok": true,
+     "why": "a box of half-height 0.100 m resting on a floor whose top is at z=0.500 m has its centre at z=0.600 m; contact compliance may sink it by up to g*tau^2 ~ 4 mm",
+     "key": "rest_z"
+    },
+    {
+     "name": "contact_penetration",
+     "measured": 0.00010774135589597389,
+     "expected": 0.0,
+     "tol": 0.001,
+     "unit": "m",
+     "rel": false,
+     "error": 0.00010774135589597389,
+     "margin": 0.0008922586441040261,
+     "ok": true,
+     "why": "how far the box sank INTO the floor.  Failing this while rest_z passes means the contact is softer than the solver's own defaults imply -- a different claim from 'the body is on the wrong surface'",
+     "key": "penetration"
+    },
+    {
+     "name": "z_drift",
+     "measured": 0.0,
+     "expected": 0.0,
+     "tol": 0.005,
+     "unit": "m",
+     "rel": false,
+     "error": 0.0,
+     "margin": 0.005,
+     "ok": true,
+     "why": "a body at rest must stay at rest: peak-to-peak z over the settle window is zero for a body in equilibrium",
+     "key": "z_drift"
+    }
+   ],
+   "timing": {
+    "startup_s": 9.985923290252686,
+    "total_s": 11.31829023361206,
+    "step_s": 0.898637056350708
+   },
+   "green": true,
+   "meta": {
+    "sim": "omnisim",
+    "rung": 1,
+    "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung1.wbt",
+    "fault": "none",
+    "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "binary_sha256": "8a6f8bc54194dd58",
+    "binary_mtime": "2026-08-11 22:33:49",
+    "proc_t0": 1786547598.1566358,
+    "proc_t1": 1786547609.474926,
+    "newton": {
+     "backend": "newton",
+     "degraded": false,
+     "finalised": true,
+     "runtime": {
+      "device": "cpu",
+      "mujoco": "3.8.1",
+      "mujoco_warp": "3.8.0.3",
+      "newton": "1.2.0",
+      "warp": "1.13.0"
+     },
+     "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+     "present": true
+    },
+    "command": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung1.wbt --batch --mode=fast --no-rendering --minimize --stdout --stderr"
+   },
+   "measurement": {
+    "steps": 500.0,
+    "sim_time_end": 2.0,
+    "exit_code": 0.0,
+    "n_samples": 501,
+    "rest_z": 0.599892258644104,
+    "z_drift": 0.0,
+    "spawn_z": 0.6,
+    "min_z": 0.59968101978302,
+    "final_z": 0.599892258644104,
+    "penetration": 0.00010774135589597389,
+    "penetration_mm": 0.10774135589597389
+   }
+  },
+  {
+   "sim": "omnisim",
+   "rung": 2,
+   "title": "box dropped from height",
+   "checks": [
+    {
+     "name": "spawn_z",
+     "measured": 1.6,
+     "expected": 1.6,
+     "tol": 0.02,
+     "unit": "m",
+     "rel": false,
+     "error": 0.0,
+     "margin": 0.02,
+     "ok": true,
+     "why": "the first pose the controller observes must be the pose the world authored (z=1.60 m)",
+     "key": "spawn_z"
+    },
+    {
+     "name": "fall_interval",
+     "measured": 0.16595093785116471,
+     "expected": 0.16595501640031796,
+     "tol": 0.008,
+     "unit": "s",
+     "rel": false,
+     "error": -4.078549153241351e-06,
+     "margin": 0.007995921450846759,
+     "ok": true,
+     "why": "free fall from rest at z=1.60 m: the interval between crossing z=1.20 m and z=0.60 m is sqrt(2(z0-z2)/g)-sqrt(2(z0-z1)/g); clock-shift invariant",
+     "key": "fall_interval"
+    },
+    {
+     "name": "fall_time_abs",
+     "measured": 0.4495238872328771,
+     "expected": 0.4515236409857309,
+     "tol": 0.016,
+     "unit": "s",
+     "rel": false,
+     "error": -0.0019997537528537723,
+     "margin": 0.014000246247146228,
+     "ok": true,
+     "why": "absolute time from the controller's t=0 to first contact, sqrt(2d/g) for d=1.00 m; a shifted clock shows up here and NOT in fall_interval, which is how the two separate",
+     "key": "fall_time_abs"
+    },
+    {
+     "name": "rest_z",
+     "measured": 0.599892258644104,
+     "expected": 0.6,
+     "tol": 0.005,
+     "unit": "m",
+     "rel": false,
+     "error": -0.00010774135589597389,
+     "margin": 0.004892258644104026,
+     "ok": true,
+     "why": "after the drop the box must come to rest at the same analytic height as rung 1",
+     "key": "rest_z"
+    }
+   ],
+   "timing": {
+    "startup_s": 10.531130313873291,
+    "total_s": 12.302963256835938,
+    "step_s": 1.3486602306365967
+   },
+   "green": true,
+   "meta": {
+    "sim": "omnisim",
+    "rung": 2,
+    "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung2.wbt",
+    "fault": "none",
+    "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "binary_sha256": "8a6f8bc54194dd58",
+    "binary_mtime": "2026-08-11 22:33:49",
+    "proc_t0": 1786547609.5166574,
+    "proc_t1": 1786547621.8196206,
+    "newton": {
+     "backend": "newton",
+     "degraded": false,
+     "finalised": true,
+     "runtime": {
+      "device": "cpu",
+      "mujoco": "3.8.1",
+      "mujoco_warp": "3.8.0.3",
+      "newton": "1.2.0",
+      "warp": "1.13.0"
+     },
+     "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+     "present": true
+    },
+    "command": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung2.wbt --batch --mode=fast --no-rendering --minimize --stdout --stderr"
+   },
+   "measurement": {
+    "steps": 750.0,
+    "sim_time_end": 3.0,
+    "exit_code": 0.0,
+    "n_samples": 751,
+    "rest_z": 0.599892258644104,
+    "z_drift": 0.0,
+    "spawn_z": 1.6,
+    "min_z": 0.5723752379417419,
+    "final_z": 0.599892258644104,
+    "penetration": 0.00010774135589597389,
+    "penetration_mm": 0.10774135589597389,
+    "t_gate_hi": 0.2835729493817124,
+    "t_gate_lo": 0.4495238872328771,
+    "fall_interval": 0.16595093785116471,
+    "fall_time_abs": 0.4495238872328771
+   }
+  },
+  {
+   "sim": "omnisim",
+   "rung": 3,
+   "title": "one hinge + motor, no load",
+   "checks": [
+    {
+     "name": "omega_driven",
+     "measured": 2.0000000596046448,
+     "expected": 2.0,
+     "tol": 0.02,
+     "unit": "rad/s",
+     "rel": false,
+     "error": 5.960464477539063e-08,
+     "margin": 0.019999940395355225,
+     "ok": true,
+     "why": "an unloaded velocity-controlled joint reaches its command exactly at steady state: no gravity torque about a vertical axis, no damping, no contact",
+     "key": "omega_driven"
+    },
+    {
+     "name": "omega_zero",
+     "measured": 0.0,
+     "expected": 0.0,
+     "tol": 0.01,
+     "unit": "rad/s",
+     "rel": false,
+     "error": 0.0,
+     "margin": 0.01,
+     "ok": true,
+     "why": "commanding zero must PRODUCE zero -- the case a servo that silently ignores its input passes only by accident",
+     "key": "omega_zero"
+    },
+    {
+     "name": "angle_travelled",
+     "measured": 2.0000000596046448,
+     "expected": 2.0,
+     "tol": 0.02,
+     "unit": "rad",
+     "rel": false,
+     "error": 5.960464477539063e-08,
+     "margin": 0.019999940395355225,
+     "ok": true,
+     "why": "integral form of the same claim, read from the joint's own position sensor: theta = omega t",
+     "key": "angle_driven"
+    }
+   ],
+   "timing": {
+    "startup_s": 11.282717227935791,
+    "total_s": 13.247200965881348,
+    "step_s": 1.5390872955322266
+   },
+   "green": true,
+   "meta": {
+    "sim": "omnisim",
+    "rung": 3,
+    "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung3.wbt",
+    "fault": "none",
+    "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "binary_sha256": "8a6f8bc54194dd58",
+    "binary_mtime": "2026-08-11 22:33:49",
+    "proc_t0": 1786547621.8634038,
+    "proc_t1": 1786547635.1106048,
+    "newton": {
+     "backend": "newton",
+     "degraded": false,
+     "finalised": true,
+     "runtime": {
+      "device": "cpu",
+      "mujoco": "3.8.1",
+      "mujoco_warp": "3.8.0.3",
+      "newton": "1.2.0",
+      "warp": "1.13.0"
+     },
+     "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+     "present": true
+    },
+    "command": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung3.wbt --batch --mode=fast --no-rendering --minimize --stdout --stderr"
+   },
+   "measurement": {
+    "steps": 750.0,
+    "sim_time_end": 3.0,
+    "exit_code": 0.0,
+    "n_samples": 750,
+    "omega_driven": 2.0000000596046448,
+    "omega_zero": 0.0,
+    "angle_driven": 2.0000000596046448,
+    "angle_total": 2.9992105523124337
+   }
+  },
+  {
+   "sim": "omnisim",
+   "rung": 4,
+   "title": "wheeled robot, straight line",
+   "checks": [
+    {
+     "name": "distance",
+     "measured": 1.5986387729644775,
+     "expected": 1.6,
+     "tol": 0.05,
+     "unit": "m",
+     "rel": true,
+     "error": -0.0008507668972015936,
+     "margin": 0.04914923310279841,
+     "ok": true,
+     "why": "d = omega r t for a wheel rolling without slip, measured over a window that starts after the spin-up transient",
+     "key": "distance"
+    },
+    {
+     "name": "wheel_omega",
+     "measured": 3.9999998807907104,
+     "expected": 4.0,
+     "tol": 0.04,
+     "unit": "rad/s",
+     "rel": false,
+     "error": -1.1920928955078125e-07,
+     "margin": 0.03999988079071045,
+     "ok": true,
+     "why": "the wheels must actually TURN at the commanded rate -- read from each wheel's own position sensor",
+     "key": "wheel_omega"
+    },
+    {
+     "name": "rolling_consistency",
+     "measured": 0.9991492628797669,
+     "expected": 1.0,
+     "tol": 0.03,
+     "unit": "-",
+     "rel": true,
+     "error": -0.0008507371202330916,
+     "margin": 0.029149262879766907,
+     "ok": true,
+     "why": "v_body / (omega_wheel r) == 1.  THE anti-slide assertion: a chassis that slid the right distance on wheels that never turned passes 'distance' and fails only here",
+     "key": "roll_ratio"
+    },
+    {
+     "name": "roll_overrun",
+     "measured": 10.770552852251441,
+     "expected": 0.0,
+     "tol": 0.05,
+     "unit": "-",
+     "rel": false,
+     "error": 10.770552852251441,
+     "margin": -10.72055285225144,
+     "ok": false,
+     "why": "max over the WHOLE run of (v_body/(omega_wheel r) - 1), clamped at 0.  A wheel can push a body at most omega r and slip only makes it slower, so any excess is unphysical.  This is the check a steady-state window cannot make",
+     "key": "roll_overrun"
+    },
+    {
+     "name": "ride_height",
+     "measured": 0.037946784496307395,
+     "expected": 0.0,
+     "tol": 0.02,
+     "unit": "m",
+     "rel": false,
+     "error": 0.037946784496307395,
+     "margin": -0.017946784496307395,
+     "ok": false,
+     "why": "the axle of a suspensionless rover on flat ground stays at floor_top + wheel_radius; a rover being launched, or one that has driven off the edge, breaks every other number in this rung while leaving them looking plausible",
+     "key": "ride_dev"
+    },
+    {
+     "name": "lateral_drift",
+     "measured": 6.901685864116715e-15,
+     "expected": 0.0,
+     "tol": 0.1,
+     "unit": "m",
+     "rel": false,
+     "error": 6.901685864116715e-15,
+     "margin": 0.09999999999999311,
+     "ok": true,
+     "why": "a symmetric robot given identical wheel commands on flat ground travels straight",
+     "key": "lateral"
+    }
+   ],
+   "timing": {
+    "startup_s": 11.009864807128906,
+    "total_s": 13.89765477180481,
+    "step_s": 2.364856243133545
+   },
+   "green": false,
+   "meta": {
+    "sim": "omnisim",
+    "rung": 4,
+    "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung4.wbt",
+    "fault": "none",
+    "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe",
+    "error": null,
+    "exit_code": 0,
+    "timed_out": false,
+    "binary_sha256": "8a6f8bc54194dd58",
+    "binary_mtime": "2026-08-11 22:33:49",
+    "proc_t0": 1786547635.1444178,
+    "proc_t1": 1786547649.0420725,
+    "newton": {
+     "backend": "newton",
+     "degraded": false,
+     "finalised": true,
+     "runtime": {
+      "device": "cpu",
+      "mujoco": "3.8.1",
+      "mujoco_warp": "3.8.0.3",
+      "newton": "1.2.0",
+      "warp": "1.13.0"
+     },
+     "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+     "present": true
+    },
+    "command": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-round1.exe O:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\rung4.wbt --batch --mode=fast --no-rendering --minimize --stdout --stderr"
+   },
+   "measurement": {
+    "steps": 1625.0,
+    "sim_time_end": 6.5,
+    "exit_code": 0.0,
+    "n_samples": 1625,
+    "distance": 1.5986387729644775,
+    "v_body": 0.3996596932411194,
+    "dx": 1.5986387729644775,
+    "lateral": 6.901685864116715e-15,
+    "wheel_omega": 3.9999998807907104,
+    "wheel_omega_spread": 6.413459777832031e-05,
+    "roll_ratio": 0.9991492628797669,
+    "ride_dev": 0.037946784496307395,
+    "roll_overrun": 10.770552852251441
+   }
+  }
+ ],
+ "absent": [],
+ "contract": "tests/benchmarks/ladder0/rungs.py"
+}

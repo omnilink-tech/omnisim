@@ -1,0 +1,59 @@
+{
+  "final_message": "Fixed. The world had two defects: pallet_a's Solid block was never closed (missing brace), and pallet_b was declared with the undefined node type 'Soild' instead of Solid. Both repaired in place; the verification run above loads the full scene - floor, probe_bot, pallet_a, pallet_b - with no parse errors.",
+  "stop_reason": "model_stopped",
+  "stop_detail": "end_turn",
+  "self_verified": true,
+  "usd": null,
+  "tool_set": "shell_plus_tools",
+  "tools_sha256": "a624c7f4a42205322f54b1574cddecdd9022f2888aae99c1b1c69d794c2895ca",
+  "manifest_sha256": "00219b2bd161f880595e9b0e65668cba7152c0d4c3ea597f242c1160c5dae1f1",
+  "system_prompt_sha": "19759dc6c55d0b1e16f5584911dbf05b81d51427ca3c3c681878e4071fb736ef",
+  "system_full_sha": "09c72494b1fcf526817a743e1f6bbc1187c0ce0add507b7aaf1dc5af1e744179",
+  "backend": {
+    "backend": "scripted",
+    "model": "scripted:oracle_c1_webots",
+    "temperature": null,
+    "script": "O:\\omnisim\\tests\\benchmarks\\agentbench\\runner\\scripts\\oracle_c1_webots.json",
+    "script_name": "oracle_c1_webots",
+    "script_turns": 4,
+    "usage_is_synthetic": true
+  },
+  "sandbox": {
+    "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools",
+    "scratch_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools\\scratch",
+    "repo": "O:\\omnisim",
+    "harness_port": 7100,
+    "supervisor_port": 7101,
+    "log_path": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools\\agent_engine.log",
+    "shell": [
+      "C:\\Program Files\\Git\\usr\\bin\\bash.EXE",
+      "-lc"
+    ],
+    "shell_source": "which:C:\\Program Files\\Git\\usr\\bin\\bash.EXE",
+    "read_deny": [],
+    "deviations": []
+  },
+  "deviations": [],
+  "artifacts": {
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools\\trace.jsonl",
+    "tool_set_manifest": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools\\tool_set.shell_plus_tools.json",
+    "leak_suspect_tool_calls": 0,
+    "tokens_cache_write": null,
+    "system_prompt": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools\\system_prompt.txt"
+  },
+  "error": null,
+  "port_survivors": [],
+  "metrics": {
+    "turns": 3,
+    "model_calls": 4,
+    "tool_calls": 3,
+    "tokens_in": 16000,
+    "tokens_out": 2820,
+    "tokens_cache_read": null,
+    "tokens_cache_write": null,
+    "elapsed_s": 26.329,
+    "stop_reason": "model_stopped",
+    "stop_detail": "end_turn"
+  },
+  "hit_budget": false
+}

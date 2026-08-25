@@ -1,0 +1,27 @@
+# The Background node defines the background used for rendering the 3D world.
+
+Background {
+  w3dField MFColor  skyColor [ 0 0 0 ]
+
+  field    MFString backUrl             []
+  field    MFString bottomUrl           []
+  field    MFString frontUrl            []
+  field    MFString leftUrl             []
+  field    MFString rightUrl            []
+  field    MFString topUrl              []
+
+  field    MFString backIrradianceUrl   []
+  field    MFString bottomIrradianceUrl []
+  field    MFString frontIrradianceUrl  []
+  field    MFString leftIrradianceUrl   []
+  field    MFString rightIrradianceUrl  []
+  field    MFString topIrradianceUrl    []
+
+  w3dField SFFloat  luminosity          1
+
+  # When set to "earth" or "mars", swaps the cubemap skybox for a
+  # Hillaire 2020 procedural atmospheric sky.  See T1.3 in
+  # docs/developer/rendering-roadmap.md.  Default ""
+  # leaves the cubemap path untouched.
+  field    SFString atmosphericSky      ""
+}

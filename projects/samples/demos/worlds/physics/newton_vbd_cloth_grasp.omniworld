@@ -1,0 +1,443 @@
+#VRML_SIM R2025a utf8
+
+# A GRIPPER HOLDING CLOTH. No arm, no IK -- a two-jaw gripper on a flying
+# prismatic gantry closes on a hanging sheet and lifts it.
+#
+# ⚠ THIS WORLD EXISTS TO EXERCISE ONE FIELD: WorldInfo.newtonSolver "vbd".
+# It is the first world in the tree where a rigid body and a cloth particle are
+# solved by the SAME solver in the SAME sweep. Everything else about it is
+# ordinary; that one line is the point.
+#
+# WHY NOT "mujoco+vbd", WHICH IS THE CLOTH DEFAULT. On the coupled path the
+# cloth lives on SolverVBD and the rigid world on SolverMuJoCo, exchanged by a
+# SolverCoupledProxy. The fabric therefore only ever sees a jaw whose pose was
+# synced from the PREVIOUS rigid solve, so a pinch is always resolved against a
+# one-step-stale pad. newton's own cloth-grasp example
+# (examples/vbd/example_vbd_gripper_soft_grid.py) puts gripper AND grid on one
+# SolverVBD for exactly that reason, and it is the only configuration in the
+# package where a rigid gripper lifts a soft mesh. Before newtonSolver "vbd"
+# existed, that configuration could not be written as an OmniSim world at all:
+# the single-SolverVBD branch in the runtime was reachable only by a world with
+# literally zero rigid bodies.
+#
+# WHAT IT COSTS, because it is not free and the log will tell you so at load:
+# there is no mj_model on this path, so raycast-backed devices, Connector /
+# VacuumGripper welds, TouchSensor and the MuJoCo contact readback are gone;
+# rigid contact is AVBD rather than MuJoCo's friction cone; and newton silently
+# ignores joint armature, joint friction, effort limits, velocity limits and
+# target_mode. The engine logs one line per feature THIS world actually uses.
+#
+# ⚠ CONSEQUENCE FOR THE MOTORS BELOW, and it looks like a mistake if you do not
+# know it: maxForce here is NOT a force ceiling. OmniSim turns a position
+# motor's maxForce into the joint's PD stiffness (targetKe = maxForce * 10,
+# targetKd = maxForce * 0.5), and VBD honours those gains while ignoring the
+# effort limit itself. So maxForce 10000 on a jaw means "ke = 1e5", which is
+# newton's own finger_drive_ke from the example -- it does not mean the jaw can
+# push with 10 kN. Read these numbers as stiffnesses.
+#
+# THE SCENE. A 0.40 x 0.36 m sheet (20 x 18 cells at 20 mm, 399 particles,
+# 0.10 kg total) hangs in the world X-Z plane, pinned along its top edge at
+# z = 0.90. The gripper starts 0.30 m to the +X side at the grasp height,
+# flies in along -X, closes on the sheet face, and lifts 0.25 m.
+#
+# HOW A HOLD IS PROVEN, and why the pinned top edge does not confound it. The
+# measurement is (rise of the gripped region) - (rise of the jaws) over the
+# lift. A pinned edge can only ever prevent the fabric from FALLING; it cannot
+# lift the fabric. So a gripped region that rises WITH the jaws has only one
+# available explanation. The negative control (VBD_GRASP_NEGATIVE=1: identical
+# flight path, jaws never close) makes that concrete -- there the sheet stays
+# hanging while the jaws rise, and the same number reads about -0.25 m.
+# ⚠ Stated plainly rather than dressed up: this does NOT prove the grip carries
+# the sheet's whole weight the way an unpin would. OmniSim's Cloth has no
+# runtime unpin, so that half of the standalone proof is not reproduced here.
+# By the end of the lift the grip point sits ~10 mm ABOVE the pinned edge, so
+# the fabric is draped over the jaws and much of the sheet does hang from them,
+# but "much" is not "all" and the number below is a TRACKING number, not a
+# load-bearing one.
+#
+# MEASURING IT. The cloth has no supervisor accessor -- particles are not scene
+# nodes -- so the fabric is read through the engine's own telemetry:
+#   OMNISIM_CLOTH_TELEMETRY=<path.jsonl> OMNISIM_CLOTH_TELEMETRY_FULL=1
+#   OMNISIM_CLOTH_TELEMETRY_EVERY=1
+# and the controller writes the matching pad poses to VBD_GRASP_LOG.
+#
+# ==========================================================================
+# PARTICLE SELF-CONTACT IS OFF HERE (`newtonClothSelfContact 0`), OR THE GRIP
+# SLIPS 24x. The world says so itself -- it was env-var-ONLY until 2026-08-15,
+# and a forgotten variable did not fail, it slipped, silently.
+# ==========================================================================
+# THIS IS THE ONE THING TO KNOW ABOUT THIS WORLD, and it is a genuine collision
+# between two defaults that are each individually right.
+#
+# `particle_enable_self_contact` is ON by default in OmniSim (env
+# OMNISIM_CLOTH_SELF_CONTACT), and correctly so: newton's default is OFF, and
+# with it OFF a fold passes straight through itself, which is wrong for the
+# draping sheet that is cloth's normal case. But a PINCH is the opposite case.
+# Fabric gathered inside the jaws self-collides, and that self-collision pushes
+# the fabric back out of the pinch. newton's own gripper example does not enable
+# it, and the standalone reproduction this world is based on did not either.
+#
+# MEASURED HERE, same world, same binary, same machine (RTX 3060 laptop,
+# newton 1.5.0 / warp 1.16.0 / cuda:0), one run per row, n=1:
+#
+#   run                              tracking err   slip max   held_min_z
+#   self-contact ON  (the default)     -22.11 mm    37.89 mm     0.7305
+#   self-contact OFF                    -0.92 mm     2.76 mm     0.7378
+#   NEG-CTRL, self-contact OFF        -249.67 mm   249.81 mm     0.5397
+#
+# tracking err = (rise of the gripped 9-particle region) - (rise of the measured
+# jaw midpoint) between the end of `preload` and the end of `hold`, over a
+# ~250 mm lift. Both instants sit deep inside a static window, and the analysis
+# re-runs the number at cloth-telemetry offsets of +/-8 steps to show it is
+# alignment-insensitive (-0.93 .. -0.91 mm across that sweep).
+# held_min_z = lowest particle at the end of the hold; the floor top is z = 0.
+# The negative control's sheet never leaves its rest pose (0.5397..0.9000) while
+# the jaws rise 250 mm -- so the 248.64 mm the fabric DOES rise in the grasping
+# case is attributable to the pinch and to nothing else in the scene.
+# Peak per-body soft contacts was 467 against the 2048 buffer, i.e. no overflow
+# -- but well past newton's own 256 default, which this runtime already raises.
+#
+# ✅ FIXED 2026-08-15: `newtonClothSelfContact 0` in WorldInfo below. Until
+# then there was no world FIELD for this, only the env var, so opening this
+# demo in the GUI with nothing set ran the -22 mm row above -- still a hold,
+# still a lift, just a visibly sloppier one, with nothing to say why. The env
+# var still overrides (env > field > default), so the ON row remains
+# reproducible without editing the file.
+#
+# ⚠ CLOTH IS A GPU WORKLOAD and this world is denser than newton_cloth_drape
+# (399 particles vs 289, plus a 5-DoF articulation in the same solver). It
+# finalizes on CUDA by design -- see the model-device note in the runtime.
+# Wall clock, this machine: ~6.95 s of sim time takes ~35 s.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  # THE FIELD THIS WORLD IS FOR. One SolverVBD owns the gantry, the jaws and
+  # every cloth particle. Read the field's note in resources/nodes/WorldInfo.wrl
+  # before copying this into a world that also needs sensors or welds.
+  newtonSolver "vbd"
+  # 8 ms / 10 = 800 us substeps. newton's gripper example runs 833 us (60 fps /
+  # 20) and its fragility notes measure the pinch degrading GRACEFULLY rather
+  # than cliffing as this coarsens: 20 substeps gave -0.18 mm tracking and 4
+  # gave -2.69 mm, still a hold. So this is a quality knob, not a cliff.
+  newtonSubsteps 10
+  # Without this the floor Solid below is not a collider, and the failure case
+  # (a dropped sheet) would fall through the world instead of landing.
+  newtonStatics TRUE
+  # Sets the shape-side friction. The cloth's particle-side mu defaults to this
+  # same value, and newton takes the GEOMETRIC MEAN of the two, so the effective
+  # pad-fabric friction is 1.0 -- newton's own example value for this grasp.
+  newtonGroundMu 1
+  # OFF because this world PINCHES. See the header: the 24x is measured here.
+  # A draping world wants the opposite and should leave this unset (the
+  # runtime default is ON). OMNISIM_CLOTH_SELF_CONTACT still overrides.
+  newtonClothSelfContact 0
+}
+Viewpoint {
+  position 1.817 -1.934 2.419
+  orientation -0.278945 0.120681 0.952694 2.359689
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+# Top face at z = 0. Only ever touched by a FAILED grasp -- it is the thing that
+# makes "the sheet is on the floor" a measurable outcome rather than a fall
+# through the world.
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.33 0.34 0.38
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 3 3 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 3 3 0.1
+  }
+}
+# 21 x 19 = 399 particles. mass is PER PARTICLE (see Cloth.wrl), so 0.10 kg over
+# the whole sheet is 0.10 / 399 = 2.506e-4 each. That is 0.69 kg/m^2 -- a towel.
+# ⚠ Sheet mass was never swept in the standalone proof this world reproduces;
+# it is the single most obvious way to break the grasp and it is untested.
+#
+# The patch is authored flat in its own local Z = 0 plane and stood up by the
+# rotation: +90 deg about X maps local (x, y, 0) -> world (x, 0, y), so the
+# sheet spans world X and Z with its normal along Y -- which is the axis the
+# jaws close along, as a parallel-jaw pinch on a sheet requires. fixTop pins the
+# local +Y edge, which that rotation has made the world TOP edge at z = 0.90.
+DEF SHEET Cloth {
+  translation -0.2 0 0.54
+  rotation 1 0 0 1.5707963
+  dimX 20
+  dimY 18
+  cellX 0.02
+  cellY 0.02
+  mass 0.000250627
+  # 5 mm collision shell, well under half the 20 mm cell so self-collision does
+  # not fight the mesh. It is also half of the pinch geometry: the jaws close to
+  # (pad_half_thickness + particleRadius - 2 mm), so this value sets where the
+  # pads have to stop.
+  particleRadius 0.005
+  # Membrane stretch / area / damping and near-zero bending, so the sheet drapes
+  # like fabric instead of behaving like a plate. triKe/triKa/triKd are newton's
+  # example values; edgeKe 1e-3 is a deliberate "let it drape" choice.
+  triKe 500
+  triKa 500
+  triKd 0.1
+  edgeKe 0.001
+  fixTop TRUE
+  diffuseColor 0.85 0.52 0.22
+  # ⚠ PURELY COSMETIC -- NOT ONE PHYSICAL FIELD IS TOUCHED BY THIS BLOCK, so
+  # every measured number in the header above still stands. `appearance` is read
+  # by the renderer and nothing else; the particles do not know it is here.
+  #
+  # ⚠ WHAT IT BUYS: the sheet was 6.43% of the frame PURE BLACK and is now
+  # 0.00% (harness, 300 basic steps, the framing below, 1900x1080). The
+  # canonical recipe declares `ambientIntensity 0` (OmniSimSun.proto), so ALL
+  # fill light in an OmniSim world is image-based, and image-based light reaches
+  # a surface ONLY through a PBRAppearance. This sheet stands in the X-Z plane
+  # with its normal along Y, i.e. edge-on to a sun aimed (-0.5, -0.5, -0.3), so
+  # under Phong one whole face of it rendered at exactly (0,0,0) -- and, because
+  # a back face is shaded with the FRONT face's normal, the boundary between the
+  # two came out as a hard per-triangle sawtooth rather than a shaded falloff.
+  # A world whose entire subject is a sheet of fabric could not afford that.
+  #
+  # THE MAPS. `woven_cotton_*` from scripts/dev/gen_surface_textures.py: plain
+  # 1/1 weave, 48 threads per 2 cm design tile.
+  #   ⚠ baseColorMap is MULTIPLIED by `baseColor` (pbr.frag:259), not replaced.
+  #     The woven set is generated near-neutral (0.82 0.815 0.80 linear) exactly
+  #     so a world can tint it here, which is how this sheet keeps the tan it
+  #     had as a Phong `diffuseColor`.
+  #   ⚠ metalness 0 EXPLICITLY. The schema default is 1.
+  #   ⚠ THE TILE IS 8 CM, matching every other cloth world in this directory so
+  #     the four read as the same bolt of fabric: `scale 5 4.5` over 0.40 x 0.36
+  #     m is 8.0 x 8.0 cm. That is 4x the map's 2 cm design size, and the
+  #     honest 2 cm was swept and rejected on evidence -- see the tile table in
+  #     newton_cloth_drape.omniworld, where a 2 cm tile renders COMPLETELY FLAT
+  #     because a 0.42 mm thread is far under one pixel at demo framing.
+  #   ⚠ normalMapFactor 0.5 pays for that 4x stretch (the map's median tilt is
+  #     48.6 deg, aggressive even unstretched).
+  #   The normal map's green channel is DOWN (-Y / "DirectX"), which is what
+  #   this engine's v-increases-downward texture upload requires. Never
+  #   substitute a stock OpenGL/+Y map: every thread would light as a groove.
+  appearance PBRAppearance {
+    baseColor 0.80 0.46 0.18
+    baseColorMap ImageTexture {
+      url [
+        "textures/woven_cotton_basecolor.png"
+      ]
+    }
+    normalMap ImageTexture {
+      url [
+        "textures/woven_cotton_normal.png"
+      ]
+    }
+    roughnessMap ImageTexture {
+      url [
+        "textures/woven_cotton_roughness.png"
+      ]
+    }
+    occlusionMap ImageTexture {
+      url [
+        "textures/woven_cotton_occlusion.png"
+      ]
+    }
+    metalness 0
+    normalMapFactor 0.5
+    IBLStrength 1.3
+    textureTransform TextureTransform {
+      scale 5 4.5
+    }
+  }
+}
+# The flying gripper. The root Robot declares NO physics, so it is a STATIC
+# anchor and the gantry hangs off it -- which also keeps the articulation free
+# of a FREE joint, and that matters more than it looks:
+# ⚠ VBD reads a position target at joint_target_q[q_index] while OmniSim writes
+# it at the qd index. Those coincide for an articulation of 1-DoF joints and
+# DIVERGE the moment a 7-q / 6-qd FREE joint precedes them in the model. Keep
+# newtonSolver "vbd" articulations rooted on a static base until that is fixed.
+#
+# Three world-axis prismatic DoF carry two jaws that slide along +/-Y. The
+# intermediate links carry 1 mm sphere colliders rather than none: a Newton body
+# with no resolvable boundingObject is given a 12 cm sphere as a fallback, which
+# here would be a hidden ball swiping through the sheet.
+DEF GANTRY Robot {
+  translation 0.3 0 0.66
+  children [
+    DEF GX SliderJoint {
+      jointParameters JointParameters {
+        axis 1 0 0
+      }
+      device [
+        LinearMotor {
+          name "gantry_x"
+          maxForce 5000
+          maxVelocity 5
+          minPosition -1
+          maxPosition 1
+        }
+      ]
+      endPoint DEF BASE_X Solid {
+        children [
+          DEF GY SliderJoint {
+            jointParameters JointParameters {
+              axis 0 1 0
+            }
+            device [
+              LinearMotor {
+                name "gantry_y"
+                maxForce 5000
+                maxVelocity 5
+                minPosition -1
+                maxPosition 1
+              }
+            ]
+            endPoint DEF BASE_Y Solid {
+              children [
+                DEF GZ SliderJoint {
+                  jointParameters JointParameters {
+                    axis 0 0 1
+                  }
+                  device [
+                    LinearMotor {
+                      name "gantry_z"
+                      maxForce 5000
+                      maxVelocity 5
+                      minPosition -1
+                      maxPosition 1
+                    }
+                  ]
+                  endPoint DEF CARRIAGE Solid {
+                    children [
+                      # Jaw joint zero == OPEN. Both jaws take the SAME command
+                      # (how far closed from open) because their axes point at
+                      # each other, which keeps the pinch symmetric by
+                      # construction instead of by two matching sign flips.
+                      DEF JL SliderJoint {
+                        jointParameters JointParameters {
+                          axis 0 1 0
+                        }
+                        device [
+                          LinearMotor {
+                            name "jaw_left"
+                            maxForce 10000
+                            maxVelocity 5
+                            minPosition -0.14
+                            maxPosition 0.05
+                          }
+                        ]
+                        endPoint DEF LEFT_PAD Solid {
+                          translation 0 -0.053 0
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.85 0.3 0.25
+                                roughness 0.8
+                                metalness 0
+                              }
+                              geometry Box {
+                                size 0.05 0.01 0.05
+                              }
+                            }
+                          ]
+                          name "left_pad"
+                          boundingObject Box {
+                            size 0.05 0.01 0.05
+                          }
+                          physics Physics {
+                            density -1
+                            mass 0.025
+                          }
+                        }
+                      }
+                      DEF JR SliderJoint {
+                        jointParameters JointParameters {
+                          axis 0 -1 0
+                        }
+                        device [
+                          LinearMotor {
+                            name "jaw_right"
+                            maxForce 10000
+                            maxVelocity 5
+                            minPosition -0.14
+                            maxPosition 0.05
+                          }
+                        ]
+                        endPoint DEF RIGHT_PAD Solid {
+                          translation 0 0.053 0
+                          children [
+                            Shape {
+                              appearance PBRAppearance {
+                                baseColor 0.25 0.35 0.85
+                                roughness 0.8
+                                metalness 0
+                              }
+                              geometry Box {
+                                size 0.05 0.01 0.05
+                              }
+                            }
+                          ]
+                          name "right_pad"
+                          boundingObject Box {
+                            size 0.05 0.01 0.05
+                          }
+                          physics Physics {
+                            density -1
+                            mass 0.025
+                          }
+                        }
+                      }
+                    ]
+                    name "carriage"
+                    boundingObject Sphere {
+                      radius 0.001
+                    }
+                    physics Physics {
+                      density -1
+                      mass 0.01
+                    }
+                  }
+                }
+              ]
+              name "base_y"
+              boundingObject Sphere {
+                radius 0.001
+              }
+              physics Physics {
+                density -1
+                mass 0.01
+              }
+            }
+          }
+        ]
+        name "base_x"
+        boundingObject Sphere {
+          radius 0.001
+        }
+        physics Physics {
+          density -1
+          mass 0.01
+        }
+      }
+    }
+  ]
+  name "gantry"
+  controller "vbd_cloth_grasp"
+  supervisor TRUE
+}

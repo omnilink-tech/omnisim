@@ -1,0 +1,15 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/traffic/protos/TrafficLightStandardLampGeometry.proto
+# keywords: traffic/sign
+# The default lamp bulb of a TrafficLight: a plain sphere, sized for a 200 mm signal head.
+
+PROTO TrafficLightStandardLampGeometry [
+]
+{
+  Sphere {
+    radius 0.1
+    subdivision 3
+  }
+}

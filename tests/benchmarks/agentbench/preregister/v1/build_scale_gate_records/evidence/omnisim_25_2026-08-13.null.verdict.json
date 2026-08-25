@@ -1,0 +1,315 @@
+{
+  "task": "BuildScale_25",
+  "outcome": "FAIL",
+  "progress": 3,
+  "progress_name": "artifact_runs",
+  "assertions": {
+    "BS.1": {
+      "ok": true,
+      "what": "portable artifact loads, reaches the requested duration, exits cleanly, and identifies the simulator backend",
+      "measured": {
+        "live_load_ok": true,
+        "exit_code": 0,
+        "timed_out": false,
+        "error_lines": 0,
+        "driver_completed": true,
+        "backend": "newton"
+      },
+      "threshold": "load true; clean exit; driver completed; attributed backend",
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "<log>.newton.json sidecar"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "clean attributable run",
+          "how_to_fail": "load failure, simulator error, timeout, short run, or missing backend identity",
+          "witness": "simulator log, recorder completion flag, and backend citation",
+          "witness_present": true,
+          "detail": "the per-run engine log at $OMNISIM_LOG_PATH plus the process exit code from the headless launch"
+        }
+      ]
+    },
+    "BS.2": {
+      "ok": true,
+      "what": "the live scene contains exactly the requested number of distinct robot-class bodies",
+      "measured": {
+        "robot bodies": 25,
+        "distinct ids": 25,
+        "distinct names": 25
+      },
+      "threshold": 25,
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "exact distinct count",
+          "how_to_fail": "one robot missing, duplicated, or replaced by a non-robot body",
+          "witness": "a frozen inventory of every live body",
+          "witness_present": true,
+          "detail": "the grader-owned recorder's roster, enumerated by node type + name at t=0"
+        }
+      ]
+    },
+    "BS.3": {
+      "ok": true,
+      "what": "every robot has its own attributed runtime controller instance, every instance started, and the controllers contain no forbidden world-pose mutation path",
+      "measured": {
+        "robots with channel": 25,
+        "distinct channels": 25,
+        "runtime controller instances started": 25,
+        "forbidden world-pose mutation calls": []
+      },
+      "threshold": 25,
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "live Robot controller fields + per-name 'Starting controller' engine-log counts; OmniSim controller instances use isolated robot-keyed IPC endpoints; collected controller source and Robot supervisor fields scanned for world-pose mutation"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "independent addressability",
+          "how_to_fail": "two robots share a channel or one robot's controller instance did not start, or a controller can write world poses",
+          "witness": "per-robot runtime instance ids, process-start evidence, and an adapter-owned source scan",
+          "witness_present": true,
+          "detail": null
+        }
+      ]
+    },
+    "BS.4": {
+      "ok": true,
+      "what": "initial interpenetration is absent: robots are separated by at least 0.05 m at t=0 and have no robot-robot contact in the first 10 steps",
+      "measured": {
+        "minimum AABB clearance (m)": 1.74,
+        "worst pair": [
+          4,
+          5
+        ],
+        "missing bounds": 0,
+        "initial robot collision pairs": 0
+      },
+      "threshold": {
+        "clearance_m": 0.05,
+        "collision_pairs": 0,
+        "steps": 10
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "AABB separation",
+          "how_to_fail": "two initial robot AABBs overlap or are closer than the margin",
+          "witness": "frozen world-space AABBs for all robots",
+          "witness_present": true,
+          "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+        },
+        {
+          "clause": "initial contacts",
+          "how_to_fail": "a named robot-robot contact occurs",
+          "witness": "a contact channel proven able to name two distinct bodies",
+          "witness_present": true,
+          "detail": "contacts of any kind: 2080; naming two distinct bodies: 40"
+        }
+      ]
+    },
+    "BS.5": {
+      "ok": false,
+      "what": "at least 90% of robots move at least 1.0 m net and travel at least 2.0 m during the 20 s window",
+      "measured": {
+        "moving robots": 0,
+        "moving fraction": 0.0,
+        "minimum net displacement (m)": 0.0,
+        "minimum path length (m)": 0.0,
+        "recorded window (s)": 20.0
+      },
+      "threshold": {
+        "moving robots": 23,
+        "net displacement_m": 1.0,
+        "path_length_m": 2.0,
+        "window_s": 20.0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "movement fraction",
+          "how_to_fail": "more than 10% of robots remain stationary or only jitter in place",
+          "witness": ">=2 pose samples for every robot over the full window",
+          "witness_present": true,
+          "detail": "the grader-owned recorder: every tracked body's world pose sampled once per basic timestep, %.17g CSV"
+        }
+      ]
+    },
+    "BS.6": {
+      "ok": true,
+      "what": "runaway is absent: all recorded poses are finite; no robot travels more than 25 m from its start or drops more than 0.5 m",
+      "measured": {
+        "all poses finite": true,
+        "maximum xy distance from start (m)": 1.077964377636848e-18,
+        "maximum z drop from start (m)": 0.0
+      },
+      "threshold": {
+        "maximum_xy_m": 25.0,
+        "maximum_z_drop_m": 0.5
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "runaway bound",
+          "how_to_fail": "a NaN/Inf pose, a robot leaving the 25 m envelope, or a 0.5 m fall",
+          "witness": "full-window pose samples for every robot",
+          "witness_present": true,
+          "detail": "the grader-owned recorder: every tracked body's world pose sampled once per basic timestep, %.17g CSV"
+        }
+      ]
+    },
+    "BS.7": {
+      "ok": true,
+      "what": "unique robot-robot collision pairs over the full window do not exceed floor(0.02 * requested robots)",
+      "measured": {
+        "unique robot collision pairs": 0,
+        "contact window (s)": 20.0
+      },
+      "threshold": {
+        "maximum pairs": 0,
+        "window_s": 20.0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "collision bound",
+          "how_to_fail": "more unique robot pairs collide than the level permits",
+          "witness": "full-window contacts able to name two distinct bodies",
+          "witness_present": true,
+          "detail": "contacts of any kind: 500200; naming two distinct bodies: 40"
+        }
+      ]
+    },
+    "BS.8": {
+      "ok": true,
+      "what": "teleportation is absent: no single sampled step exceeds 0.25 m and no measured speed exceeds 5.0 m/s at a sample period no larger than 0.1 s",
+      "measured": {
+        "maximum sample period (s)": 0.008000000000002672,
+        "maximum single-sample step (m)": 3.8174036302501306e-20,
+        "maximum speed (m/s)": 4.771754537812659e-18
+      },
+      "threshold": {
+        "sample_period_s": 0.1,
+        "step_m": 0.25,
+        "speed_m_s": 5.0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "teleport bound",
+          "how_to_fail": "one robot jumps farther or faster than the physical bound",
+          "witness": "pose samples no more than 0.1 s apart",
+          "witness_present": true,
+          "detail": "the grader-owned recorder: every tracked body's world pose sampled once per basic timestep, %.17g CSV"
+        }
+      ]
+    },
+    "BS.9": {
+      "ok": false,
+      "what": "the collected artifact has no missing or absolute host dependencies and passes at least one clean-directory replay",
+      "measured": {
+        "artifact files": 4,
+        "missing dependencies": [],
+        "absolute host dependencies": [],
+        "clean replay attempts": 1,
+        "clean replay passes": 0,
+        "clean replay verdicts": [
+          "FAIL"
+        ]
+      },
+      "threshold": {
+        "missing": 0,
+        "absolute": 0,
+        "replay_attempts": 1,
+        "replay_passes": 1
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "dependency scan + grader-owned clean-directory project replay"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "clean replay",
+          "how_to_fail": "an asset is missing, resolves through an absolute authoring-machine path, or the clean replay fails",
+          "witness": "dependency scan plus a grader-owned clean-directory replay",
+          "witness_present": true,
+          "detail": null
+        }
+      ]
+    }
+  },
+  "n_pass": 7,
+  "n_total": 9,
+  "failed_assertion": "BS.5",
+  "failed_assertions": [
+    "BS.5",
+    "BS.9"
+  ],
+  "self_verified": false,
+  "attribution": {
+    "backend": "newton",
+    "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+    "degraded": false,
+    "finalised": true,
+    "source": "<log>.newton.json sidecar"
+  },
+  "measurements": {
+    "requested_robots": 25,
+    "provenance": {
+      "sim": "omnisim",
+      "adapter": "agentbench.adapters.omnisim.build_scale",
+      "roster": "the grader-owned recorder's roster, enumerated by node type + name at t=0",
+      "t0": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)",
+      "trajectory": "the grader-owned recorder: every tracked body's world pose sampled once per basic timestep, %.17g CSV",
+      "controls": "live Robot controller fields + per-name 'Starting controller' engine-log counts; OmniSim controller instances use isolated robot-keyed IPC endpoints; collected controller source and Robot supervisor fields scanned for world-pose mutation",
+      "portability": "dependency scan + grader-owned clean-directory project replay"
+    }
+  },
+  "artifacts": {
+    "artifact": "tests\\benchmarks\\agentbench\\adapters\\omnisim\\build_scale_lane\\worlds\\build_scale_25_null.wbt"
+  },
+  "notes": [],
+  "basis": {
+    "core-physical": [
+      "BS.4",
+      "BS.5",
+      "BS.6",
+      "BS.7",
+      "BS.8"
+    ],
+    "core-structural": [
+      "BS.2"
+    ],
+    "mixed": [
+      "BS.1",
+      "BS.3",
+      "BS.9"
+    ]
+  },
+  "vacuous_assertions": {}
+}

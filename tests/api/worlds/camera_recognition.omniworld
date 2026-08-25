@@ -1,0 +1,390 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.3074938875608354 0.2750310715566039 0.910936561342858 2.8786438900116975
+  position 2.6344856848646105 0.6855002675947949 3.8564265835256384
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  ambientIntensity 1
+  direction -0.4 0.2 0
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+Solid {
+  translation -3.49077 3.43016 -2.72278
+  rotation 0.6457879227325559 0.5398879322844559 0.5398879322844559 1.36968
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.756863 0.207843 0.207843
+        }
+      }
+      geometry DEF SPHERE Sphere {
+        radius 0.5
+      }
+    }
+  ]
+  model "visible sphere"
+  boundingObject USE SPHERE
+  recognitionColors [
+    0.756863 0.207843 0.207843
+  ]
+}
+Solid {
+  translation -3.097374 2.8409796 -1.0675441
+  rotation 0.6457879227325559 0.5398879322844559 0.5398879322844559 1.36968
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.756863 0.207843 0.207843
+        }
+      }
+      geometry DEF SPHERE Sphere {
+        radius 0.2
+      }
+    }
+  ]
+  name "solid(1)"
+  model "visible sphere without BO"
+  recognitionColors [
+    0.756863 0.207843 0.207843
+  ]
+}
+Solid {
+  translation -4.56863 2.3982827 -2.5180082
+  rotation 0.6457879227325559 0.5398879322844559 0.5398879322844559 1.36968
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0 0 1
+        }
+      }
+      geometry DEF SPHERE Sphere {
+        radius 0.5
+      }
+    }
+  ]
+  name "solid(2)"
+  model "sphere too far"
+  boundingObject USE SPHERE
+  recognitionColors [
+    0.756863 0.207843 0.207843
+  ]
+}
+Solid {
+  translation -5.1704021 1.2596087 -2.1223729
+  rotation 0.6457879227325559 0.5398879322844559 0.5398879322844559 1.36968
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0 0 1
+        }
+      }
+      geometry DEF SPHERE Sphere {
+        radius 0.3
+      }
+    }
+  ]
+  name "solid(3)"
+  model "sphere too far"
+  boundingObject USE SPHERE
+  recognitionColors [
+    0 0 1
+  ]
+}
+Solid {
+  translation -1.18677 0.580711 -1.17566
+  rotation 0.5570847927878169 -0.04975668224899714 0.8289636941483792 2.51922
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.756863 0.207843 0.207843
+        }
+      }
+      geometry DEF BOX Box {
+        size 0.9 0.9 0.1
+      }
+    }
+  ]
+  name "solid(4)"
+  model "visible box"
+  boundingObject USE BOX
+  recognitionColors [
+    0.756863 0.207843 0.207843
+  ]
+}
+DEF GREEN_BOX Solid {
+  translation -1.75237 0.860367 -1.47877
+  rotation 0.6457879227325559 0.5398879322844559 0.5398879322844559 1.36968
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0 1 0
+        }
+      }
+      geometry DEF BOX Box {
+        size 0.9 0.1 0.1
+      }
+    }
+  ]
+  name "solid(5)"
+  model "occluded box"
+  boundingObject USE BOX
+  recognitionColors [
+    0 1 0
+    1 0 1
+  ]
+}
+Solid {
+  translation -3.1216271 1.773431 -1.1296883
+  rotation 0.6457879227325559 0.5398879322844559 0.5398879322844559 1.36968
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0 0 1
+        }
+      }
+      geometry DEF BOX Box {
+        size 0.9 0.1 0.1
+      }
+    }
+    Solid {
+      translation -0.4 -0.5 0
+      rotation 0 0 1 1.5708003
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 1 0 0
+            }
+          }
+          geometry DEF BOX Box {
+            size 0.9 0.1 0.1
+          }
+        }
+      ]
+      model "sub solid"
+      boundingObject USE BOX
+      recognitionColors [
+        1 0 0
+      ]
+    }
+  ]
+  name "solid(6)"
+  boundingObject USE BOX
+}
+Solid {
+  translation -3.7763137 0.23806185 -1.2091656
+  rotation 0.5570847927878169 -0.04975668224899714 0.8289636941483792 2.51922
+  children [
+    DEF CAPSULE Pose {
+      rotation 1 0 0 -1.57079632679
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0.756863 0.207843 0.207843
+            }
+          }
+          geometry Capsule {
+            height 1
+            radius 0.05
+          }
+        }
+      ]
+    }
+  ]
+  name "solid(7)"
+  model "visible capsule"
+  boundingObject USE CAPSULE
+  recognitionColors [
+    0.756863 0.207843 0.207843
+  ]
+}
+Solid {
+  translation -3.8150432 1.5186302 -0.83295513
+  rotation 0.6457879227325559 0.5398879322844559 0.5398879322844559 1.36968
+  children [
+    DEF SHAPE1 Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 1 0 0
+        }
+      }
+      geometry DEF BOX Box {
+        size 0.9 0.1 0.1
+      }
+    }
+    DEF SHAPE2 Pose {
+      translation -0.4 -0.5 0
+      rotation 0 0 1 1.5708003
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 1 0 0
+            }
+          }
+          geometry DEF BOX Box {
+            size 0.9 0.1 0.1
+          }
+        }
+      ]
+    }
+  ]
+  name "solid(8)"
+  model "composed solid"
+  boundingObject Group {
+    children [
+      USE SHAPE1
+      USE SHAPE2
+    ]
+  }
+  recognitionColors [
+    1 0 0
+  ]
+}
+Solid {
+  translation -3.49351 0.0982299 -1.05761
+  rotation -0.6457879227325559 -0.5398879322844559 -0.5398879322844559 4.91351
+  children [
+    DEF CAPSULE Pose {
+      rotation 1 0 0 -1.57079632679
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor 0 0 1
+            }
+          }
+          geometry Capsule {
+            height 1
+            radius 0.05
+          }
+        }
+      ]
+    }
+  ]
+  name "solid(9)"
+  model "invisible capsule"
+  boundingObject USE CAPSULE
+  recognitionColors [
+    0 0 1
+  ]
+}
+Solid {
+  translation -1.0 1.6 -2.25
+  rotation 0.599079 0.531234 0.599078 -2.82327
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.756863 0.207843 0.207843
+        }
+      }
+      geometry DEF BOX Box {
+        size 0.9 1.9 0.1
+      }
+    }
+  ]
+  name "solid(10)"
+  model "perpendicular box"
+  boundingObject USE BOX
+  recognitionColors [
+    0.756863 0.207843 0.207843
+  ]
+}
+Robot {
+  translation -0.116489 0.196931 -0.132093
+  rotation 0.6457879227325559 0.5398879322844559 0.5398879322844559 1.36968
+  children [
+    Camera {
+      rotation -0.5773502691896256 0.5773502691896261 0.5773502691896256 2.09439
+      width 256
+      height 256
+      recognition DEF RECOGNITION Recognition {
+        maxRange 5
+        occlusion 0
+        segmentation TRUE
+      }
+    }
+    Camera {
+      translation 0 -0.9 -2.72
+      rotation -0.5773502691896256 0.5773502691896261 0.5773502691896256 2.09439
+      name "spherical"
+      fieldOfView 6.28
+      width 256
+      height 256
+      projection "spherical"
+      recognition Recognition {
+        maxRange 5
+        occlusion 2
+        segmentation TRUE
+      }
+    }
+    Camera {
+      translation 0 -0.9 -2.72
+      rotation -0.5773502691896256 0.5773502691896261 0.5773502691896256 2.09439
+      name "cylindrical"
+      fieldOfView 3
+      width 256
+      height 256
+      projection "cylindrical"
+      recognition Recognition {
+        maxRange 5
+        occlusion 2
+        segmentation TRUE
+      }
+    }
+    TestSuiteEmitter {
+    }
+  ]
+  controller "camera_recognition"
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

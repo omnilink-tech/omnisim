@@ -1,0 +1,115 @@
+{
+  "primary": {
+    "run_dir": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\primary",
+    "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\adapters\\webots\\build_scale_lane\\worlds\\build_scale_10.wbt",
+    "files": {
+      "trajectory": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\primary\\trajectory.json",
+      "roster": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\primary\\roster.json",
+      "contacts": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\primary\\contacts.json",
+      "completion": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\primary\\completion.json",
+      "process": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\primary\\process.json",
+      "console": "['O:\\\\omnisim\\\\.agentbench-webots-buildscale-10-v3\\\\primary\\\\stdout.log', 'O:\\\\omnisim\\\\.agentbench-webots-buildscale-10-v3\\\\primary\\\\stderr.log']",
+      "perf": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\primary\\perf.txt"
+    },
+    "missing": {},
+    "parse_errors": {},
+    "trajectory": {
+      "n_bodies": 10,
+      "n_samples": 1251,
+      "dt_s": 0.016
+    },
+    "roster_bodies": 10,
+    "contacts": {
+      "supported": true,
+      "steps": 1250,
+      "total_observed": 99040,
+      "distinct_named": 0,
+      "error": null
+    },
+    "completion": {
+      "complete": true,
+      "quit_called": true,
+      "recorded_s": 20.0,
+      "steps": 1250,
+      "dt_s": 0.016,
+      "world": "/tmp/agentbench_webots/build_scale_10_23d07685/project/worlds/build_scale_10.wbt",
+      "coordinate_system": "ENU"
+    },
+    "process": {
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_s": 11.363,
+      "attempts_used": 1,
+      "perf_log": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\primary\\perf.txt",
+      "webots_version": "R2025a",
+      "command": "WEBOTS_HOME=/opt/upstream-webots/R2025a timeout 900 xvfb-run -a /opt/upstream-webots/R2025a/webots --batch --mode=fast --no-rendering --minimize --stdout --stderr --log-performance=\"/tmp/agentbench_webots/build_scale_10_23d07685/out/perf.txt\",1250 --port=1506 \"/tmp/agentbench_webots/build_scale_10_23d07685/project/worlds/build_scale_10.wbt\"",
+      "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\adapters\\webots\\build_scale_lane\\worlds\\build_scale_10.wbt"
+    },
+    "console_chars": 1454,
+    "perf_log": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\primary\\perf.txt",
+    "perf_bytes": 1064
+  },
+  "clean_replay": {
+    "run_dir": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_run",
+    "world": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_project\\worlds\\build_scale_10.wbt",
+    "files": {
+      "trajectory": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_run\\trajectory.json",
+      "roster": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_run\\roster.json",
+      "contacts": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_run\\contacts.json",
+      "completion": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_run\\completion.json",
+      "process": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_run\\process.json",
+      "console": "['O:\\\\omnisim\\\\.agentbench-webots-buildscale-10-v3\\\\clean_run\\\\stdout.log', 'O:\\\\omnisim\\\\.agentbench-webots-buildscale-10-v3\\\\clean_run\\\\stderr.log']",
+      "perf": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_run\\perf.txt"
+    },
+    "missing": {},
+    "parse_errors": {},
+    "trajectory": {
+      "n_bodies": 10,
+      "n_samples": 1251,
+      "dt_s": 0.016
+    },
+    "roster_bodies": 10,
+    "contacts": {
+      "supported": true,
+      "steps": 1250,
+      "total_observed": 99040,
+      "distinct_named": 0,
+      "error": null
+    },
+    "completion": {
+      "complete": true,
+      "quit_called": true,
+      "recorded_s": 20.0,
+      "steps": 1250,
+      "dt_s": 0.016,
+      "world": "/tmp/agentbench_webots/build_scale_10_ad300ed5/project/worlds/build_scale_10.wbt",
+      "coordinate_system": "ENU"
+    },
+    "process": {
+      "exit_code": 0,
+      "timed_out": false,
+      "wall_s": 11.88,
+      "attempts_used": 1,
+      "perf_log": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_run\\perf.txt",
+      "webots_version": "R2025a",
+      "command": "WEBOTS_HOME=/opt/upstream-webots/R2025a timeout 900 xvfb-run -a /opt/upstream-webots/R2025a/webots --batch --mode=fast --no-rendering --minimize --stdout --stderr --log-performance=\"/tmp/agentbench_webots/build_scale_10_ad300ed5/out/perf.txt\",1250 --port=1507 \"/tmp/agentbench_webots/build_scale_10_ad300ed5/project/worlds/build_scale_10.wbt\"",
+      "world": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_project\\worlds\\build_scale_10.wbt"
+    },
+    "console_chars": 1454,
+    "perf_log": "O:\\omnisim\\.agentbench-webots-buildscale-10-v3\\clean_run\\perf.txt",
+    "perf_bytes": 1064
+  },
+  "clean_replay_failed_assertions": [],
+  "clean_replay_error": null,
+  "source_audit": {
+    "root": "O:\\omnisim\\tests\\benchmarks\\agentbench\\adapters\\webots\\build_scale_lane",
+    "blocks": [],
+    "artifact_files": [
+      "controllers/build_scale_drive/build_scale_drive.py",
+      "worlds/build_scale_10.wbt"
+    ],
+    "missing": [],
+    "absolute": [],
+    "forbidden": []
+  }
+}

@@ -1,0 +1,275 @@
+#OMNISIM R2025a utf8
+
+# A T-SHIRT THAT IS SUPPOSED TO LOOK REAL.
+#
+# This world exists for ONE reason: to be the reference for what fabric should
+# look like in OmniSim. It is not a grasp rig and not a physics probe -- there
+# is no robot, no controller and nothing to measure. If a shading or cloth
+# change makes this world look worse, the change is wrong.
+#
+# WHY A SEPARATE WORLD. The existing t-shirt worlds are TEST RIGS: their job is
+# to prove a gripper closes on fabric, so they are lit and framed for legibility,
+# not for looks, and their cloth is coarse because solver cost matters when a
+# controller has to run for 45 s. Trying to make one world do both is how you get
+# a demo that is bad at both. This one is allowed to be slow.
+#
+# WHAT MAKES CLOTH READ AS CLOTH, in the order the effects actually matter:
+#
+#   1. GEOMETRY. Wrinkles ARE geometry. No shader creates a fold that is not in
+#      the mesh, so the vertex count is the ceiling on realism and everything
+#      below is polish under that ceiling.
+#   2. AMBIENT FILL. With `ambientIntensity 0` on every light -- the canonical
+#      recipe -- a Phong surface renders literal (0,0,0) wherever the sun does
+#      not reach, which on a draped garment is most of it. PBR + sky IBL is what
+#      fixes that, and `OmniSimSky.luminosity` is the free knob: it premultiplies
+#      IBLStrength while the visible sky stays byte-identical, so fill costs no
+#      exposure.
+#   3. A SHEEN LOBE. GGX assumes microfacets that are perfect mirrors and
+#      structurally cannot produce fabric's grazing-angle rim at ANY roughness --
+#      turn roughness up and you get clay, not cotton. The Charlie lobe
+#      (Estevez & Kulla 2017, as standardised by KHR_materials_sheen) is what
+#      makes the silhouette brighter than the interior, which is the single
+#      strongest "this is fabric" cue.
+#   4. WEAVE AT THE RIGHT SCALE. The woven_cotton maps carry 48 threads per tile
+#      at an intended 2 cm tile. A t-shirt is ~0.5 m across, so it wants ~25
+#      repeats. At `scale 2 2` you get two tiles across the whole garment, each
+#      thread lands at ~5 mm, and it reads as bubble wrap. See the note on the
+#      textureTransform below.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  newtonSolver "mujoco+vbd"
+  newtonSubsteps 4
+  newtonStatics TRUE
+  newtonGroundMu 1
+  # ⚠ SELF-CONTACT OFF, AND THIS IS THE SINGLE MOST EXPENSIVE FIELD IN THE FILE.
+  # Measured on this world at 37,650 particles (RTX 3060 laptop, CUDA VBD),
+  # 100 timed steps after a 40-step warm-up:
+  #
+  #   substeps 8 + selfContact 1   1079.16 ms/step     <- what it cost ON
+  #   substeps 4 + selfContact 0     62.33 ms/step     <- 17.3x cheaper
+  #   ...same on the 9.5k md mesh    18.86 ms/step
+  #
+  # 17x, at IDENTICAL visual resolution -- the mesh, the material and the
+  # lighting are untouched between those two rows. So this is the first knob to
+  # reach for when a cloth world is too slow, not the mesh.
+  #
+  # What it costs: nothing stops one fold passing through the fold beneath it.
+  # On a garment hanging from a rail the drape is mostly parallel vertical folds
+  # under tension, so the failure is rare and shallow. Turn it back ON for
+  # anything that CRUMPLES -- a shirt dropped in a heap, or a gripper bunching
+  # fabric -- where layers genuinely stack, and expect the cost above.
+  newtonClothSelfContact 0
+
+  # ⚠ THERMAL NOTE, because it is not a tuning problem. At basicTimeStep 8 ms,
+  # real time needs <= 8 ms/step; the cheapest config measured here is 18.86 and
+  # this one is 62.3. A simulator that cannot reach real time NEVER idles, so it
+  # pins the GPU for as long as it is open -- 87 C on this machine, regardless of
+  # how much the solver is optimised, because a cheaper step just means more
+  # steps per second at the same 100% utilisation. For a beauty shot, SETTLE THEN
+  # PAUSE: a paused garment costs nothing. Optimisation buys quality per frame
+  # here, not a cooler machine.
+}
+
+Viewpoint {
+  # Slightly below shoulder height, close in, looking up at the drape. Cloth
+  # reads best when you can see the folds edge-on against a bright background
+  # rather than looking down on them.
+  # 1.745 m out, just below the garment's mid-height, looking slightly up at the
+  # drape. NOT baked with set_viewpoint.py: that tool frames whole SCENES and put
+  # the camera 8.6 m back (5.7x the requested radius), which is right for a
+  # warehouse and useless for one garment. Axis-angle computed from OmniSim's
+  # default forward (+X) to the look direction.
+  position 1.150 -1.300 1.660
+  orientation 0.000000 0.137153 0.990550 2.290337
+}
+
+# CANONICAL LIGHTING RECIPE -- do not hand-roll Background/DirectionalLight here.
+# luminosity is doing real work: it is the global ambient-fill lever (it
+# premultiplies IBLStrength in OmPbrAppearance), and the sky itself renders
+# byte-identically at any value because the atmospheric path draws it in
+# sky_apply.frag. So this brightens the SHADOWED side of the garment without
+# blowing out the background.
+OmniSimSky {
+  luminosity 3.2
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+
+# A large, mid-value, fully-rough floor. Two jobs: it is the only bounce surface
+# in the scene, and it keeps the frame from being garment-on-void. Kept matte
+# (roughness 1, metalness 0) so it never competes with the fabric for attention.
+DEF FLOOR Solid {
+  translation 0 0 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.42 0.41 0.39
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 8 8 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 8 8 0.1
+  }
+}
+
+# A vertical backdrop, well behind the garment. Gives the silhouette something
+# to read against and catches the sun, which is what lets the sheen rim show.
+DEF BACKDROP Solid {
+  translation 0 1.5 1.5
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.56 0.58
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 8 0.06 3
+      }
+    }
+  ]
+  name "backdrop"
+  boundingObject Box {
+    size 8 0.06 3
+  }
+}
+
+DEF RAIL Solid {
+  translation 0 0 1.96
+  rotation 0 1 0 1.5708
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.73 0.75
+        roughness 0.35
+        metalness 1
+      }
+      geometry Cylinder {
+        height 1.6
+        radius 0.012
+      }
+    }
+  ]
+  name "rail"
+}
+
+DEF TSHIRT Cloth {
+  translation 0 0 1.30
+  # ⚠ THE MESH IS THE CEILING ON HOW GOOD THIS CAN LOOK, and it is why this
+  # world uses the dense asset. A fold cannot be finer than the triangles
+  # carrying it:
+  #
+  #     tshirt.obj        616 v /  1157 tri   mean edge 39 mm
+  #     tshirt_hi.obj    2394 v /  4674 tri   mean edge 19.6 mm   <- the test rigs
+  #     tshirt_uhd.obj  37650 v / 74848 tri   mean edge  4.63 mm  <- this
+  #
+  # 4.63 mm IS the wrinkle wavelength; there is no other way to get it. Generated
+  # by scripts/dev/subdivide_garment.py (2 Loop levels), which also repaired two
+  # ~1.5 cm tears in the source at the left shoulder and under the front neckline
+  # -- tshirt_hi reports 7 boundary loops where a t-shirt has 4.
+  url [
+    "meshes/tshirt_uhd.obj"
+  ]
+  density 0.3
+  # ⚠ SCALED TO THE MESH, NOT COPIED FROM THE TEST RIGS. particleRadius is a
+  # collision THICKNESS, so it has to stay under the vertex spacing: 0.01 was
+  # 0.51x the spacing on tshirt_hi but would be 2.2x it here, i.e. every
+  # particle's sphere swallowing its neighbours, and the sheet would read as
+  # ~20 mm thick and behave like cardboard. Half the mean edge (4.63 mm) is the
+  # rule of thumb.
+  particleRadius 0.0023
+  pinTopBand 0.06
+  fixTop FALSE
+  # ⚠ STRETCH STIFFNESS IS RESOLUTION-DEPENDENT -- this is NOT a value you can
+  # copy from the test rigs. triKe acts per TRIANGLE, and subdividing twice made
+  # each triangle ~1/16 the area, so the same number no longer holds the garment
+  # up: at 1e6 the shirt hung as a TUNIC, elongating to roughly 2x its length
+  # under its own 0.2 kg. The source mesh is 0.647 m wide x 0.643 m tall -- very
+  # nearly square -- so any render where the shirt is markedly taller than wide
+  # is showing stretch, not drape.
+  triKe 20000000
+  triKd 4000
+  # Bending stays LOW on purpose. Stretch resistance is what stops the garment
+  # elongating; bending resistance is what would stop it folding, and fine folds
+  # are the entire point of the dense mesh.
+  edgeKe 0.001
+  diffuseColor 0.30 0.45 0.85
+  appearance PBRAppearance {
+    # The woven_cotton baseColor map is deliberately NEUTRAL, and baseColorMap is
+    # MULTIPLIED by baseColor rather than replacing it, so the garment's colour is
+    # set here.
+    baseColor 0.24 0.37 0.72
+    baseColorMap ImageTexture {
+      url [
+        "textures/woven_cotton_basecolor.png"
+      ]
+    }
+    normalMap ImageTexture {
+      url [
+        "textures/woven_cotton_normal.png"
+      ]
+    }
+    roughnessMap ImageTexture {
+      url [
+        "textures/woven_cotton_roughness.png"
+      ]
+    }
+    occlusionMap ImageTexture {
+      url [
+        "textures/woven_cotton_occlusion.png"
+      ]
+    }
+    # ⚠ metalness DEFAULTS TO 1 in this schema. A fabric left at the default is a
+    # sheet of metal. Always state it.
+    metalness 0
+    # Weave strength. The map's median tilt is 48.6 degrees, so full strength
+    # reads as rope; but 0.35 against a fine tiling washed the texture out
+    # entirely and the fabric came back looking like silk. 0.5 is the balance.
+    normalMapFactor 0.5
+    IBLStrength 1.5
+
+    # --- fabric shading (Charlie sheen + wrapped diffuse + thin-sheet transmission) ---
+    # sheenColor is left at its sqrt(baseColor) derivation by giving it a light
+    # neutral: cotton's sheen is close to white because the fibre ends scatter
+    # achromatically, even on a dyed cloth.
+    sheen 0.55
+    sheenColor 0.85 0.87 0.92
+    sheenRoughness 0.32
+    # Wrapped diffuse softens the terminator so the garment stops looking like a
+    # rigid shell where the light falls off.
+    diffuseWrap 0.35
+    # Cotton is thin enough to pass a little light. Kept subtle -- this is a
+    # jersey t-shirt, not a curtain.
+    transmissionColor 0.16 0.20 0.30
+    transmissionPower 10
+    transmissionThickness 0.45
+    # A deforming wrinkled mesh is the worst case for specular aliasing, and
+    # because the geometry changes every frame it CRAWLS rather than sparkles.
+    specularAntiAliasing 0.18
+
+    # ⚠ TILING -- both extremes have been rendered and both are wrong.
+    # 48 threads/tile at a 2 cm intended tile:
+    #   scale  2  -> tile lands at ~27 cm, threads ~5 mm, reads as BUBBLE WRAP
+    #   scale 24  -> threads go sub-pixel, texture vanishes, reads as SILK
+    # 14 keeps the weave legible up close without resolving individual threads
+    # at demo distance. Tune this against a close-up, not a wide shot.
+    textureTransform TextureTransform {
+      scale 14 14
+    }
+  }
+}

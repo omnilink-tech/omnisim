@@ -1,0 +1,27 @@
+#OMNISIM R2025a utf8
+
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "flat_ground (omniworld stub)"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 16.515 -17.581 15.450
+  bloomThreshold -1.0
+  ambientOcclusionRadius 0
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+  luminosity 0.95
+  castShadows FALSE
+}
+RectangleArena {
+  floorSize 10 10
+  wallHeight 0.05
+}

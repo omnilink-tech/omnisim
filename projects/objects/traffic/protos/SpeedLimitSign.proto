@@ -1,0 +1,126 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/traffic/protos/SpeedLimitSign.proto
+# keywords: traffic/sign
+# A round speed-limit sign: a SignPole carrying a white disc with a red rim and a dark numeral
+# block, all built from primitives so no sign artwork is needed. Any board listed in `signBoards`
+# replaces that built-in panel.
+# template language: javascript
+
+EXTERNPROTO "SignPole.proto"
+EXTERNPROTO "SpeedLimitPanel.proto"
+
+PROTO SpeedLimitSign [
+  field SFVec3f    translation  0 0 0
+  field SFRotation rotation     0 0 1 0
+  field SFString   name         "speed limit"
+  field SFFloat    height       2                                               # Defines the height of the sign.
+  field SFFloat    radius       0.03                                            # Defines the radius of the sign pole.
+  field SFColor    color        0.576471 0.576471 0.576471                      # Defines the color of the sign.
+  field MFNode     signBoards   [ SpeedLimitPanel { translation 0.023 0 0 } ]  # Defines the boards.
+]
+{
+  %<
+    // The built-in panel is drawn from primitives. It is used whenever `signBoards` is left at
+    // its default; anything else the caller passes is forwarded to the SignPole untouched.
+    const boards = fields.signBoards.value;
+    let builtin = true;
+    if (boards == null || boards.length !== 1 || boards[0].node_name !== 'SpeedLimitPanel')
+      builtin = false;
+  >%
+  SignPole {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    height IS height
+    radius IS radius
+    color IS color
+  %< if (!builtin) { >%
+    signBoards IS signBoards
+  %< } else { >%
+    signBoards [
+      DEF SPEED_LIMIT_PANEL Pose {
+        translation 0.023 0 0
+        children [
+          # mounting bracket back to the pole
+          DEF PANEL_BRACKET Pose {
+            translation -0.02 0 0
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.35 0.36 0.38
+                  roughness 0.5
+                  metalness 0.7
+                }
+                geometry Box {
+                  size 0.04 0.06 0.16
+                }
+              }
+            ]
+          }
+          # red disc -- its visible rim becomes the red ring of the sign
+          DEF PANEL_RIM Pose {
+            rotation 0 1 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.72 0.06 0.08
+                  roughness 0.55
+                  metalness 0
+                }
+                geometry Cylinder {
+                  radius 0.3
+                  height 0.03
+                  subdivision 32
+                }
+              }
+            ]
+          }
+          # white face, slightly proud of the red disc
+          DEF PANEL_FACE Pose {
+            translation 0.018 0 0
+            rotation 0 1 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.93 0.93 0.91
+                  roughness 0.6
+                  metalness 0
+                }
+                geometry Cylinder {
+                  radius 0.24
+                  height 0.008
+                  subdivision 32
+                }
+              }
+            ]
+          }
+          # numeral block -- two dark bars standing in for the digits
+          DEF PANEL_DIGIT_LEFT Pose {
+            translation 0.025 0.06 0
+            children [
+              DEF PANEL_DIGIT Shape {
+                appearance PBRAppearance {
+                  baseColor 0.09 0.09 0.1
+                  roughness 0.7
+                  metalness 0
+                }
+                geometry Box {
+                  size 0.006 0.08 0.16
+                }
+              }
+            ]
+          }
+          DEF PANEL_DIGIT_RIGHT Pose {
+            translation 0.025 -0.06 0
+            children [
+              USE PANEL_DIGIT
+            ]
+          }
+        ]
+      }
+    ]
+  %< } >%
+  }
+}

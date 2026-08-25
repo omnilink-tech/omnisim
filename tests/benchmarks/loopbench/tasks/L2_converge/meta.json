@@ -1,0 +1,78 @@
+{
+  "id": "L2_converge",
+  "rung": "L2",
+  "tier": "loopbench",
+  "outcome": "an agent iterates a wheeled robot's control to a numeric target it cannot hit first try",
+  "prompt_file": "prompt.txt",
+  "grader": "loopbench.graders.l2",
+  "status": "PRE-FREEZE. Nothing here is a result. The pilot is n=1 and exploratory (loopbench-plan.md section 5).",
+  "scoring_class": "exploratory",
+  "repeats_default": 1,
+  "achieved_rule": "reached at least once (solved_at_least_once); never quotable as a pass rate at n=1",
+  "par_s": 1800,
+  "timeout_s": 5400,
+  "container": {
+    "description_dir": "container/husky_description",
+    "shared_with": "T1_arrive -- the SAME three description files, deliberately. L2 is not a harder scene, it is a tighter target plus a loop. Reusing T1's container means the ladder's achievability floor already covers the asset, so an L2 failure cannot be the robot's fault.",
+    "authored_here": false,
+    "shared_from": "T1_arrive",
+    "files": [
+      "husky_description/urdf/husky.urdf",
+      "husky_description/meshes/base_link.dae",
+      "husky_description/meshes/bumper.dae",
+      "husky_description/meshes/top_chassis.dae",
+      "husky_description/meshes/top_plate.dae",
+      "husky_description/meshes/top_plate.stl",
+      "husky_description/meshes/user_rail.dae",
+      "husky_description/meshes/wheel.dae",
+      "husky_description/LICENSE.upstream"
+    ]
+  },
+  "robot": {
+    "declared_name": "husky",
+    "mass_kg_declared": null,
+    "note": "The name the robot description declares. Resolution is the ladder's: the declared name first, then a unique mass match."
+  },
+  "waypoint": {
+    "frame": "start_relative",
+    "offset_m": [
+      0.0,
+      5.0
+    ],
+    "north": "+y in the world's horizontal plane",
+    "resolution_rule": "goal_xy = the graded body's horizontal position at the FIRST recorded sample + offset_m, exactly as T1 resolves it."
+  },
+  "constants": {
+    "ARRIVE_TOL_M": 0.05,
+    "SETTLE_DEADLINE_S": 9.0,
+    "SETTLED_SPEED_MPS": 0.05,
+    "MIN_LOOP_CYCLES": 2,
+    "MAX_STEP_JUMP_M": 0.5,
+    "MAX_SAMPLE_DT_S": 0.05,
+    "MIN_GOAL_DISTANCE_M": 0.25
+  },
+  "constants_note": "ARRIVE_TOL_M and SETTLE_DEADLINE_S are set from a MEASURED sweep on the omnisim column (2026-08-02, machine 9722d23d12a3, ODE), recorded in loopbench-l2-calibration.md: the obvious first attempt returns 0.0997 m / 13.57 s and fails BOTH clauses, while a tuned control returns 0.0495 m / 8.08 s and clears both. The deadline is 9.0 s rather than 8.0 s so the demonstrated solution has ~0.9 s of margin and the rung measures iteration rather than luck. Six cold runs of the tuned control returned those two numbers to four decimals, so the margin is not noise. FROZEN: a threshold that moves after measurement is worthless whichever way it moves.",
+  "phases": {
+    "harness": {
+      "enabled": false,
+      "why": "L2 is graded from the standalone cold re-run plus the session transcript. The agent may use any live surface it likes to close its loop -- that is the point of the rung -- but the VERDICT never comes from the agent's own session."
+    },
+    "standalone": {
+      "settle_s": 0.5,
+      "duration_s": 30.0,
+      "contact_stride": 10,
+      "surfaces": [
+        "ground",
+        "floor",
+        "terrain"
+      ]
+    }
+  },
+  "expectation": {
+    "omnisim": "achievable; the target was demonstrated by a scripted control before this file was written",
+    "mujoco": "achievable; MuJoCo can drive this URDF and measure its own state directly",
+    "discriminator": "NOT whether the target is hit -- both columns should manage that -- but what the loop COSTS: how many tool calls, how much wall clock, and how many lines of glue the column needed before an agent could measure its own result at all.",
+    "pre_registered_risk": "If both columns close the loop with comparable cost, L2 is NOT_DISCRIMINATING and is cut (loopbench-plan.md section 5, outcome 5). That is a live possibility: MuJoCo in-process state access is a genuinely strong way to close a loop."
+  },
+  "cost_class": "CPU minutes. No GPU. Tokens only."
+}

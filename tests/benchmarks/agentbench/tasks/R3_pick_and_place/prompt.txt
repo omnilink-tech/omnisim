@@ -1,0 +1,11 @@
+Build a robotic pick-and-place simulation using the benchmark arm asset.
+
+Requirements:
+- Place a table with top surface at z=0.75 m.
+- Place a 0.05 m cube at (0.45, 0.00, 0.80) m in the robot base frame.
+- Place a target bin centered at (0.30, 0.35, 0.80) m with an open top.
+- Equip the arm with a functional grasping mechanism supported by the simulator.
+- Pick up the cube, move it through free space, place it inside the target bin, release it, and retract the end effector.
+- The cube must remain inside the bin for at least 2 simulated seconds after release.
+
+Do not teleport the cube or directly overwrite its pose after simulation begins. Execute the full task before submitting.

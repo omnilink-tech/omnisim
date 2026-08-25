@@ -1,0 +1,52 @@
+Roboto and Roboto Mono
+
+Copyright 2011 Google Inc. All Rights Reserved.        (Roboto)
+Copyright 2015 Google Inc. All Rights Reserved.        (Roboto Mono)
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use these files except in compliance with the License. You may obtain a copy
+of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+The complete, verbatim Apache License 2.0 text ships with this distribution at
+the repository root as `LICENSE`.
+
+Applies to, in this directory:
+    Roboto-Regular.ttf        (internal family name: "Roboto Light")
+    Roboto-Italic.ttf
+    Roboto-Bold.ttf
+    Roboto-BoldItalic.ttf
+    Roboto-Mono.ttf
+
+These are the webfonts the documentation stylesheet (docs/css/omnisim-doc.css)
+loads via @font-face.
+
+--------------------------------------------------------------------------------
+Provenance note (added by OmniLink; not part of the license above)
+
+Every value above is read from the fonts' own OpenType `name` table, not
+assumed:
+
+    name ID 0  (copyright)   "Copyright 2011 Google Inc. All Rights Reserved."
+                             ("Copyright 2015 …" for Roboto-Mono.ttf)
+    name ID 13 (license)     "Licensed under the Apache License, Version 2.0"
+    name ID 14 (license URL) "http://www.apache.org/licenses/LICENSE-2.0"
+    name ID 7  (trademark)   "Roboto is a trademark of Google."
+                             ("Roboto Mono is a trademark of Google.")
+    name ID 5  (version)     "Version 2.137; 2017"  (Roboto)
+                             "Version 2.000985; 2015"  (Roboto Mono)
+
+This matters because Google Fonts has released Roboto under more than one
+license over time; the Apache-2.0 election recorded above is the one these
+specific files declare. Do not carry it forward to a newer Roboto drop without
+re-reading that font's own name table.
+
+"Roboto" is a trademark of Google. Apache-2.0 §6 grants no trademark rights,
+and none is claimed here; the name is used only to identify the typeface.

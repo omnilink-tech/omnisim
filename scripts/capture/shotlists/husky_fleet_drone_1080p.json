@@ -1,0 +1,29 @@
+{
+  "world": "projects/samples/demos/worlds/showcase/husky_fleet_arena.omniworld",
+  "resolution": [1920, 1080],
+  "fov": 0.785398,
+  "load_wait_s": 90.0,
+  "shots": [
+    {
+      "name": "husky_fleet_drone_1080p",
+      "output": "husky_fleet_drone_1080p.mp4",
+      "duration_s": 30.0,
+      "fps": 30,
+      "codec": "h264",
+      "crf": 8,
+      "preset": "veryslow",
+      "ease": "linear",
+      "warmup_steps": 80,
+      "playback_speed": 0.5,
+      "path_keyframes": [
+        {"t":  0.0, "position": [-14.0,   0.0, 11.0], "target": [0, 0, 0.5]},
+        {"t":  5.0, "position": [ -9.9,  -9.9, 11.0], "target": [0, 0, 0.5]},
+        {"t": 10.0, "position": [  0.0, -14.0, 11.0], "target": [0, 0, 0.5]},
+        {"t": 15.0, "position": [  9.9,  -9.9, 11.0], "target": [0, 0, 0.5]},
+        {"t": 20.0, "position": [ 14.0,   0.0, 11.0], "target": [0, 0, 0.5]},
+        {"t": 25.0, "position": [  9.9,   9.9, 11.0], "target": [0, 0, 0.5]},
+        {"t": 30.0, "position": [  0.0,  14.0, 11.0], "target": [0, 0, 0.5]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "world": "projects/policies/research/worlds/omniquad_rl_deploy.omniworld",
+  "resolution": [1920, 1080],
+  "fov": 0.785398,
+  "load_wait_s": 60.0,
+  "shots": [
+    {
+      "name": "omniquad_walk_dolly",
+      "output": "marketing_2026_05_15/V1_omniquad_walk_dolly.mp4",
+      "duration_s": 8.0,
+      "fps": 30,
+      "codec": "h264",
+      "crf": 18,
+      "preset": "medium",
+      "ease": "smoothstep",
+      "warmup_steps": 80,
+      "playback_speed": 1.0,
+      "path_keyframes": [
+        {"t": 0.0, "position": [-2.5, -2.5, 0.95], "target": [0, 0, 0.45]},
+        {"t": 4.0, "position": [ 0.5, -2.8, 0.95], "target": [1.0, 0, 0.45]},
+        {"t": 8.0, "position": [ 3.5, -2.5, 0.95], "target": [2.5, 0, 0.45]}
+      ]
+    }
+  ]
+}

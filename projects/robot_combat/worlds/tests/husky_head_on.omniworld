@@ -1,0 +1,108 @@
+#OMNISIM R2025a utf8
+
+# Husky head-on collision test — two huskies driving toward each other
+# from opposite ends of a long arena, hitting head-on at different
+# speeds. Used to validate that the damage system reads "realistic"
+# under symmetric and asymmetric impacts: matching speeds should split
+# damage roughly evenly across both front bumpers; mismatched speeds
+# should bias damage to whichever robot delivered more momentum.
+#
+# Only one husky (named "husky") is tracked by the harness_supervisor's
+# damage tracker — the other ("husky_b") is the unmonitored attacker.
+# The damage gating still applies to whichever is named "husky".
+#
+# See docs/developer/damage-system-plan.md.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky Head-On Collision Test"
+  info [
+    "Two huskies on a long arena drive toward each other and collide"
+    "head-on. Speeds set via each robot's customData base_velocity_rad_s."
+    "Inelastic chassis-on-chassis contact (bounce 0.0) so the kinetic"
+    "energy goes into impulse-J s on the chassis bodies instead of"
+    "elastic rebound — making a head-on read like a car crash."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.8 ]
+      bounce 0.3
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 18
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+# Long, wide arena so the huskies have ~18 m of runway each to ramp
+# up to commanded speed before a clean head-on at the centreline.
+RectangleArena {
+  floorSize 40 10
+  wallHeight 0.5
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# Husky 1 (tracked). Faces +X, drives east at full base_velocity_rad_s.
+# Starts at the west end with ~18 m of runway to accelerate to ~7-8 m/s.
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -18 0 0.1
+  name "husky"
+  supervisor TRUE
+  controller "drive_forward"
+  controllerArgs [ "50" ]
+}
+
+# Husky 2 (attacker). Faces -X (rotation 180 deg about Z), drives west
+# at 30 % wheel scaling so the closing speed is asymmetric — the heavier
+# damage should land on whichever bumper delivered more momentum. Scaling
+# applied through customData written by the supervisor's behavior-gate
+# pass; we have no way to plumb a per-husky scale from world to
+# controller without trips through customData (which only the supervisor
+# writes — the world-file-set initial value gets truncated by OmniSim's
+# VRML SFString parser when it contains \" escapes).
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 18 0 0.1
+  rotation 0 0 1 3.14159265
+  name "husky_b"
+  supervisor TRUE
+  controller "drive_forward"
+  controllerArgs [ "30" ]
+}
+
+# Harness supervisor — tracks `husky` (name set via DAMAGE_ROBOT_NAME
+# default). No inject schedule; we want pure organic damage from the
+# head-on impact.
+Robot {
+  name "harness_supervisor"
+  translation 0 0 12.5
+  controller "harness_supervisor"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}

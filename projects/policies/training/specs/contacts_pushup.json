@@ -1,0 +1,89 @@
+{
+ "mu": 1.0,
+ "swing_tol": 0.012,
+ "terrain": {
+  "type": "flat",
+  "z": 0.0
+ },
+ "toe_pitch": 1.2000000000000002,
+ "toe_pitch_top": 1.35,
+ "toe_pitch_low": 1.05,
+ "contacts": [
+  {
+   "name": "hand_L",
+   "body": "left_wrist_roll_rubber_hand",
+   "half": [
+    0.06,
+    0.03
+   ],
+   "patch": [
+    0.1267,
+    -0.0062,
+    -0.0418
+   ]
+  },
+  {
+   "name": "hand_R",
+   "body": "right_wrist_roll_rubber_hand",
+   "half": [
+    0.06,
+    0.03
+   ],
+   "patch": [
+    0.1267,
+    0.0062,
+    -0.0418
+   ]
+  },
+  {
+   "name": "toe_L",
+   "body": "left_ankle_roll_link",
+   "half": [
+    0.004,
+    0.03
+   ],
+   "patch": [
+    0.12,
+    0.0,
+    -0.036
+   ],
+   "axes": [
+    [
+     0.3623577544766734,
+     0.0,
+     0.9320390859672264
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "name": "toe_R",
+   "body": "right_ankle_roll_link",
+   "half": [
+    0.004,
+    0.03
+   ],
+   "patch": [
+    0.12,
+    0.0,
+    -0.036
+   ],
+   "axes": [
+    [
+     0.3623577544766734,
+     0.0,
+     0.9320390859672264
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ]
+   ]
+  }
+ ]
+}

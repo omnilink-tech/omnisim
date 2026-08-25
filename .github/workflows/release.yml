@@ -1,0 +1,101 @@
+name: Release
+
+# The public beta ships one platform that this project can currently certify:
+# Windows 10/11 with the Newton runtime bundled. Linux remains a verified
+# source build. macOS physics is unverified, so publishing either as a generic
+# binary would turn an explicit README limitation into a misleading download.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)build, for example v8.1.0'
+        required: true
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build and publish verified Windows package
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: false
+
+      - name: Install build and packaging tools
+        shell: powershell
+        run: choco install innosetup --no-progress -y
+
+      - name: Build OmniSim and bundle Newton
+        run: |
+          export OMNISIM_HOME="$GITHUB_WORKSPACE"
+          export PATH="$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH"
+          export PYTHON_HOME="$(cygpath -u "$(python.exe -c 'import sys; print(sys.prefix)')")"
+          ./scripts/install/msys64_installer.sh --all
+          # Stage the runtime exactly once below so the binary-level check is
+          # part of the same operation that creates the files we package.
+          make release -j4 BUNDLE_NEWTON=0
+          python.exe scripts/packaging/bundle_newton_runtime.py \
+            --cpython-home "$(python.exe -c 'import sys; print(sys.prefix)')" \
+            --verify --verify-binary
+
+      - name: Build physics-capable installer
+        env:
+          OMNISIM_REQUIRE_NEWTON_BUNDLE: '1'
+          INNO_SETUP_HOME: /c/Program Files (x86)/Inno Setup 6
+        run: |
+          export OMNISIM_HOME="$GITHUB_WORKSPACE"
+          export PATH="$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH"
+          export PYTHON_HOME="$(cygpath -u "$(python.exe -c 'import sys; print(sys.prefix)')")"
+          make distrib -j4
+
+      - name: List release asset
+        run: ls -lh distribution/*.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omnisim-windows
+          path: distribution/*.exe
+          if-no-files-found: error
+
+      - name: Resolve release tag
+        id: tag
+        shell: bash
+        run: |
+          if [[ -n "${{ github.event.inputs.tag }}" ]]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: OmniSim ${{ steps.tag.outputs.name }}
+          generate_release_notes: true
+          prerelease: ${{ contains(steps.tag.outputs.name, '-') }}
+          files: distribution/*.exe
+          fail_on_unmatched_files: true

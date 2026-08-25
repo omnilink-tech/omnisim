@@ -1,0 +1,194 @@
+{
+  "generated_at": "2026-05-03T12:47:00",
+  "platform": "win32",
+  "records": [
+    {
+      "scenario": "noisy-controllers",
+      "params": {
+        "robots": 10,
+        "bytes_per_step": 256,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\noisy-r10-b000256.log",
+      "wall_time_s": 9.222,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 176.323,
+        "prePhysics(ms)": 0.004,
+        "physics(ms)": 0.006,
+        "postPhysics(ms)": 0.002,
+        "mainRendering(ms)": 23.979,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 0.376,
+        "controller:bench_noisy(ms)": 0.374
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 176.323,
+        "prePhysics(ms)": 2.461,
+        "physics(ms)": 3.461,
+        "postPhysics(ms)": 1.251,
+        "mainRendering(ms)": 23.979,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 226.194,
+        "controller:bench_noisy(ms)": 228.415
+      },
+      "devices": {},
+      "controllers": {
+        "controller:bench_quit(ms)": 0.376,
+        "controller:bench_noisy(ms)": 0.374
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "noisy-controllers",
+      "params": {
+        "robots": 10,
+        "bytes_per_step": 1024,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\noisy-r10-b001024.log",
+      "wall_time_s": 14.228,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 179.904,
+        "prePhysics(ms)": 0.004,
+        "physics(ms)": 0.006,
+        "postPhysics(ms)": 0.002,
+        "mainRendering(ms)": 24.598,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:bench_noisy(ms)": 0.409,
+        "controller:bench_quit(ms)": 0.408
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 179.904,
+        "prePhysics(ms)": 2.574,
+        "physics(ms)": 3.639,
+        "postPhysics(ms)": 1.352,
+        "mainRendering(ms)": 24.598,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:bench_noisy(ms)": 249.522,
+        "controller:bench_quit(ms)": 245.064
+      },
+      "devices": {},
+      "controllers": {
+        "controller:bench_noisy(ms)": 0.409,
+        "controller:bench_quit(ms)": 0.408
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "noisy-controllers",
+      "params": {
+        "robots": 10,
+        "bytes_per_step": 4096,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\noisy-r10-b004096.log",
+      "wall_time_s": 36.391,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 184.752,
+        "prePhysics(ms)": 0.005,
+        "physics(ms)": 0.006,
+        "postPhysics(ms)": 0.003,
+        "mainRendering(ms)": 24.119,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:bench_noisy(ms)": 0.577,
+        "controller:bench_quit(ms)": 0.58
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 184.752,
+        "prePhysics(ms)": 3.008,
+        "physics(ms)": 3.857,
+        "postPhysics(ms)": 1.576,
+        "mainRendering(ms)": 24.119,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:bench_noisy(ms)": 352.553,
+        "controller:bench_quit(ms)": 348.105
+      },
+      "devices": {},
+      "controllers": {
+        "controller:bench_noisy(ms)": 0.577,
+        "controller:bench_quit(ms)": 0.58
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "noisy-controllers",
+      "params": {
+        "robots": 10,
+        "bytes_per_step": 16384,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\noisy-r10-b016384.log",
+      "wall_time_s": 143.171,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 204.549,
+        "prePhysics(ms)": 0.005,
+        "physics(ms)": 0.006,
+        "postPhysics(ms)": 0.002,
+        "mainRendering(ms)": 25.002,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 1.09,
+        "controller:bench_noisy(ms)": 1.108
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 204.549,
+        "prePhysics(ms)": 2.774,
+        "physics(ms)": 3.75,
+        "postPhysics(ms)": 1.465,
+        "mainRendering(ms)": 25.002,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 654.202,
+        "controller:bench_noisy(ms)": 675.974
+      },
+      "devices": {},
+      "controllers": {
+        "controller:bench_quit(ms)": 1.09,
+        "controller:bench_noisy(ms)": 1.108
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    }
+  ]
+}

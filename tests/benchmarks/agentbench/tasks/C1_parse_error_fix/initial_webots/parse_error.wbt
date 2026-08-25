@@ -1,0 +1,107 @@
+#VRML_SIM R2025a utf8
+
+# AgentBench C1 parse_error_fix -- initial state (deliberately broken),
+# UPSTREAM WEBOTS R2025a arm.
+#
+# Symptom: this world will not load.
+#
+# NOTHING ELSE IS DOCUMENTED HERE ON PURPOSE. The answer lives only in the
+# grader, which the agent under test may not read. (This header mirrors the
+# OmniSim arm's initial world, which carries the same non-disclosure.)
+
+WorldInfo {
+  basicTimeStep 16
+  title "AgentBench C1 - this world will not load"
+}
+Viewpoint {
+  orientation -0.35740674 0.35740674 0.86285621 1.7177716
+  position 7.000 -7.000 4.500
+}
+Background {
+  skyColor [
+    0.55 0.65 0.8
+  ]
+}
+DirectionalLight {
+  direction 0.3 -0.5 -0.8
+  intensity 2.5
+  castShadows FALSE
+}
+
+DEF FLOOR Solid {
+  translation 0 0 0
+  name "floor"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.47 0.50
+        roughness 0.95
+        metalness 0
+      }
+      geometry Box {
+        size 20 20 0.1
+      }
+    }
+  ]
+  boundingObject Box {
+    size 20 20 0.1
+  }
+}
+
+DEF PROBE_BOT Robot {
+  translation 0 0 0.5
+  name "probe_bot"
+  controller "<none>"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.55 0.15
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box {
+        size 0.4 0.4 0.4
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.4 0.4 0.4
+  }
+  physics Physics {
+    density -1
+    mass 5
+  }
+}
+
+DEF PALLET_A Solid {
+  translation 2.5 1.5 0.11
+  name "pallet_a"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.40 0.22
+        roughness 0.85
+        metalness 0
+      }
+      geometry Box {
+        size 1.2 0.8 0.12
+      }
+    }
+  ]
+
+DEF PALLET_B Soild {
+  translation -2.5 1.5 0.11
+  name "pallet_b"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.45 0.60
+        roughness 0.85
+        metalness 0
+      }
+      geometry Box {
+        size 0.8 1.2 0.12
+      }
+    }
+  ]
+}

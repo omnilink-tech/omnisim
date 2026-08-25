@@ -1,0 +1,82 @@
+# Build the OmniSim GPU training image and publish it to GHCR.
+#
+# The image bakes the environment (apt deps, Qt, torch/warp/newton/mujoco) and an
+# OmniSim built from a tagged release, so a GPU box can train immediately instead
+# of spending ~10 minutes reinstalling the identical stack every time.
+#
+# Trigger manually:  gh workflow run train-image.yml -f omnisim_tag=v8.1.0
+name: train-image
+
+on:
+  # Rebuild whenever the recipe itself changes -- the image must never drift from
+  # the Dockerfile that is supposed to describe it.
+  push:
+    branches: [main]
+    paths:
+      - "docker/Dockerfile.train"
+      - ".github/workflows/train-image.yml"
+  workflow_dispatch:
+    inputs:
+      omnisim_tag:
+        description: "Release tag to build the engine from"
+        required: true
+        default: "v8.1.0"
+
+concurrency:
+  group: train-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      # `inputs` is EMPTY on a push trigger -- only workflow_dispatch populates it.
+      # Without this fallback the tag renders as "omnisim-train:" and buildx dies
+      # with "invalid reference format". Resolve it once, here, for both triggers.
+      OMNISIM_TAG: ${{ inputs.omnisim_tag || 'v8.1.0' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # A CUDA devel base plus torch plus a from-source build does not fit in the
+      # runner's default free space; the build dies on ENOSPC partway through
+      # `make`. Reclaim the preinstalled toolchains we do not use.
+      - name: Reclaim disk
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo docker image prune -af || true
+          df -h / | tail -1
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.train
+          push: true
+          # GPU_VERIFY stays 0: GitHub runners have no GPU, so the Newton
+          # assertion and the warp prewarm cannot run here. Run them on the GPU
+          # box that pulls the image — nothing ships unverified, it is verified
+          # where a GPU actually exists.
+          build-args: |
+            OMNISIM_TAG=${{ env.OMNISIM_TAG }}
+            GPU_VERIFY=0
+            JOBS=4
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/omnisim-train:${{ env.OMNISIM_TAG }}
+            ghcr.io/${{ github.repository_owner }}/omnisim-train:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

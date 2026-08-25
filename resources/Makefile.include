@@ -1,0 +1,648 @@
+# Copyright 1996-2024 Cyberbotics Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Modifications copyright 2026 OmniLink, licensed under the Apache License, Version 2.0.
+
+### Generic Makefile.include for OmniSim controllers, robot
+### window libraries, remote control libraries and other libraries
+### to be used with GNU make
+###
+### Platforms: Windows, macOS, Linux
+### Languages: C, C++
+###
+### Authors: Olivier Michel, Yvan Bourquin, Fabien Rohrer
+###          Edmund Ronald, Sergei Poskriakov
+###
+###-----------------------------------------------------------------------------
+###
+### This file is meant to be included from the Makefile files located in the
+### OmniSim projects subdirectories. It is possible to set a number of variables
+### to customize the build process, i.e., add source files, compilation flags,
+### include paths, libraries, etc. These variables should be set in your local
+### Makefile just before including this Makefile.include. This Makefile.include
+### should never be modified.
+###
+### Here is a description of the variables you may set in your local Makefile:
+###
+### ---- C Sources ----
+### if your program uses several C source files:
+### C_SOURCES = my_plugin.c my_clever_algo.c my_graphics.c
+###
+### ---- C++ Sources ----
+### if your program uses several C++ source files:
+### CXX_SOURCES = my_plugin.cc my_clever_algo.cpp my_graphics.c++
+###
+### ---- Compilation options ----
+### if special compilation flags are necessary:
+### CFLAGS = -Wno-unused-result
+###
+### ---- Linked libraries ----
+### if your program needs additional libraries:
+### INCLUDE = -I"/my_library_path/include"
+### LIBRARIES = -L"/path/to/my/library" -lmy_library -lmy_other_library
+###
+### ---- Linking options ----
+### if special linking flags are needed:
+### LFLAGS = -s
+###
+### ---- OmniSim included libraries ----
+### if you want to use the OmniSim C API in your C++ controller program:
+### USE_C_API = true
+###
+### ---- Debug mode ----
+### if you want to display the gcc command line for compilation and link, as
+### well as the rm command details used for cleaning:
+### VERBOSE = 1
+###
+###-----------------------------------------------------------------------------
+
+
+# Legacy alias. WEBOTS_HOME is the pre-rebrand name of the install root and is
+# the one build variable a human may still have exported in a shell profile.
+# Adopt it when only the legacy name is set -- a standalone `make` in a
+# controller directory has no other way to find the install root, and dropping
+# the alias would fail here with a bare "No rule to make target". Named, not
+# silent, so the warning is a migration prompt rather than a mystery.
+ifeq ($(strip $(OMNISIM_HOME)),)
+ ifneq ($(strip $(WEBOTS_HOME)),)
+  OMNISIM_HOME := $(WEBOTS_HOME)
+  $(warning OMNISIM_HOME is not set; falling back to the legacy WEBOTS_HOME ($(WEBOTS_HOME)). Export OMNISIM_HOME instead -- WEBOTS_HOME is deprecated and will stop being read.)
+ endif
+endif
+
+ifneq ($(strip $(OMNISIM_HOME)),)
+ # Check if OMNISIM_HOME contains a trailing path separator and display a warning in this case.
+ PROTECTED_OMNISIM_HOME := $(OMNISIM_HOME:/=)
+ PROTECTED_OMNISIM_HOME := $(PROTECTED_OMNISIM_HOME:\=)
+ ifneq ($(OMNISIM_HOME),$(PROTECTED_OMNISIM_HOME))
+  OMNISIM_HOME := $(PROTECTED_OMNISIM_HOME)
+  $(warning Please remove the trailing path separator from OMNISIM_HOME.)
+ endif
+else
+ # OMNISIM_HOME is a sine qua non condition to run this Makefile.
+ $(error The OMNISIM_HOME environment variable is not defined.)
+endif
+
+# OMNISIM_HOME_PATH is commonly defined in the caller Makefile
+# but as it is not necessary on non-windows OS, it seems safer to reconstruct it there if required
+null :=
+space := $(null) $(null)
+OMNISIM_HOME_PATH ?= $(subst $(space),\ ,$(strip $(subst \,/,$(OMNISIM_HOME))))
+
+###-----------------------------------------------------------------------------
+### OS determination and OS specific commands
+###-----------------------------------------------------------------------------
+
+include $(OMNISIM_HOME_PATH)/resources/Makefile.os.include
+
+###-----------------------------------------------------------------------------
+### Functions
+###-----------------------------------------------------------------------------
+
+ifeq ($(OSTYPE),darwin)
+
+ # Retrieve the relative path of a path according to some base path.
+ # cf. http://stackoverflow.com/a/3344050/2210777
+ #   @param 1 Base path (e.g. "/Users/fabien/develop/webots")
+ #   @param 2 Path  (e.g. "/Users/fabien/develop/webots/projects/robots/e-puck/controllers/e-puck")
+ #   @return The relative path (e.g. "../../../../../")
+ computeRelativePath = $(shell \
+   basedir=$(1); \
+   currentdir=$(2); \
+   if [[ $$currentdir =~ ^$$basedir ]] ; \
+   then \
+     up=; \
+     while ! expr $$basedir : $$currentdir >/dev/null; do \
+       up=../$$up; \
+       currentdir=`dirname $$currentdir`; \
+     done; \
+     relative=$$up`expr $$basedir : $$currentdir'/*\(.*\)'`; \
+     echo $$relative; \
+   else \
+     echo $$currentdir; \
+   fi; \
+ )
+
+ifndef NO_FAT_BINARY
+FAT_BINARY = 1
+endif
+
+endif
+
+###-----------------------------------------------------------------------------
+### Paths
+###-----------------------------------------------------------------------------
+
+# compiler
+ifeq ($(CC),cc)
+ CC = gcc
+endif
+
+# ---- ccache, for every unit that includes this file -------------------------
+# This file is the shared build core: ~296 compile units route through it
+# (qt_utils, the C++ controller lib, every robot-window plugin,
+# and ~287 one-file controllers under projects/ tests/ scripts/). None of them
+# were cached.
+#
+# The top-level Makefile prefixes CC/CXX with ccache and exports them, but that
+# only helps a build STARTED from the top level. A standalone `make` in a
+# controller directory -- the normal way anyone builds one -- got a bare
+# compiler. Worse, the guard above only ever considered CC: CXX is never
+# assigned in this file at all, so it fell through to make's builtin `g++`
+# (verified: origin=default; note MAKEFLAGS += -r below kills builtin RULES but
+# not builtin VARIABLES, so -r does not protect against this).
+#
+# Same shape as src/omnisim/Makefile (commit c858d0d9b), and the same two
+# Windows footguns apply, which is why this is not a one-liner:
+#   * ccache needs BOTH USERPROFILE and LOCALAPPDATA and reports them one at a
+#     time, so fixing only the one in the error message looks like a fix and is
+#     not. msys make launched from anything but cmd.exe inherits NEITHER.
+#   * the optimisation must never be able to FAIL the build, so probe the real
+#     binary with the env it will actually run under and wire it in only when
+#     it genuinely works. A missing or broken ccache leaves a plain compiler.
+# USE_CCACHE=0 opts out. The findstring guard keeps a top-level build (which
+# already prefixed CC) from being prefixed twice.
+OM_CCACHE_HOME := $(OMNISIM_HOME)/.build_tmp
+ifeq ($(strip $(USERPROFILE)),)
+  USERPROFILE := $(OM_CCACHE_HOME)
+endif
+ifeq ($(strip $(LOCALAPPDATA)),)
+  LOCALAPPDATA := $(OM_CCACHE_HOME)
+endif
+export USERPROFILE
+export LOCALAPPDATA
+USE_CCACHE ?= 1
+ifneq ($(USE_CCACHE),0)
+ifeq ($(findstring ccache,$(CC)),)
+OM_CCACHE := $(shell command -v ccache >/dev/null 2>&1 && ccache $(CXX) --version >/dev/null 2>&1 && command -v ccache 2>/dev/null)
+ifneq ($(OM_CCACHE),)
+CC  := $(OM_CCACHE) $(CC)
+CXX := $(OM_CCACHE) $(CXX)
+CCACHE_BASEDIR ?= $(OMNISIM_HOME)
+CCACHE_DIR ?= $(OMNISIM_HOME)/.build_tmp/ccache
+export CCACHE_BASEDIR
+export CCACHE_DIR
+endif
+endif
+endif
+
+# compute the current directory, the CURDIR variable may be already set
+ifndef CURDIR
+ CURDIR = $(shell pwd)
+endif
+
+# compute the name of the controller from its directory (i.e. braiten)
+BAD_NAME = $(basename $(notdir $(CURDIR)))
+
+# this is a hack to work around a problem with spaces in dir names
+NAME = $(word $(words $(BAD_NAME)),$(BAD_NAME))
+
+# compute BUILD_TYPE (either ode, controllers, robot_windows, remote_controls or libraries)
+SPLIT_PATH = $(subst /, ,$(dir $(CURDIR)))
+BUILD_TYPE = $(word $(words $(SPLIT_PATH)),$(SPLIT_PATH))
+
+ifdef VERBOSE
+  SILENT =
+else
+  SILENT = @
+endif
+
+# backward compatibility
+ifdef CC_SOURCES
+ $(warning Please use CXX_SOURCES instead of CC_SOURCES to define the C++ sources)
+endif
+ifdef CPP_SOURCES
+ $(warning Please use CXX_SOURCES instead of CPP_SOURCES to define the C++ sources)
+endif
+CXX_SOURCES += $(CC_SOURCES) $(CPP_SOURCES)
+
+# if the source files were not explicitly defined, we try to find
+# the *.c, *.cc, *.c++, or *.cpp source files.
+ifeq ($(C_SOURCES),)
+ ifeq ($(strip $(CXX_SOURCES)),)
+  C_SOURCES = $(shell ls $(NAME).c 2> /dev/null)
+  CXX_SOURCES = $(shell ls $(NAME).cpp 2> /dev/null)
+  ifeq ($(CXX_SOURCES),)
+   CXX_SOURCES = $(shell ls $(NAME).cc 2> /dev/null)
+   ifeq ($(CXX_SOURCES),)
+    CXX_SOURCES = $(shell ls $(NAME).c++ 2> /dev/null)
+   endif
+  endif
+ endif
+endif
+
+ifneq ($(strip $(CXX_SOURCES)),)
+ USE_CXX = true
+endif
+ifneq ($(strip $(C_SOURCES)),)
+ USE_C = true
+endif
+
+# the objects files result from the C or C++ sources
+SOURCES_DIRECTORIES = $(sort $(dir $(C_SOURCES) $(CXX_SOURCES)))
+OBJECTS_LIST = $(patsubst %.c,%.o, $(patsubst %.cc,%.o, $(patsubst %.c++,%.o, $(patsubst %.cpp,%.o, $(notdir $(C_SOURCES) $(CXX_SOURCES))))))
+
+# automatic flags settings
+ifeq ($(BUILD_TYPE),physics)
+ $(error physics plugins were removed from OmniSim: the WorldInfo.physics C ABI (webots_physics_init/collide/step, include/plugins/physics.h) no longer exists. Port the behaviour into a Supervisor controller instead.)
+endif
+ifeq ($(BUILD_TYPE),controllers)
+ BUILD_EXECUTABLE = true
+else
+ ifdef STATIC_LIBRARY
+  BUILD_STATIC_LIBRARY = true
+ else
+  BUILD_SHARED_LIBRARY = true
+ endif
+endif
+
+# target
+ifneq ($(C_SOURCES)$(CXX_SOURCES),)
+ ifdef BUILD_EXECUTABLE
+  MAIN_TARGET = $(NAME)$(EXE_EXTENSION)
+  X86_64_LINKER = -target x86_64-apple-macos12
+  ARM64_LINKER = -target arm64-apple-macos12
+ else
+  ifdef BUILD_STATIC_LIBRARY
+   MAIN_TARGET ?= $(LIB_PREFIX)$(NAME)$(STATIC_LIB_EXTENSION)
+  else
+   MAIN_TARGET ?= $(LIB_PREFIX)$(NAME)$(SHARED_LIB_EXTENSION)
+   X86_64_LINKER = -target x86_64-apple-macos12
+   ARM64_LINKER = -target arm64-apple-macos12
+  endif
+ endif
+endif
+
+TARGETS += $(MAIN_TARGET) $(EXTRA_TARGETS)
+
+# goal
+SUPPORTED_TARGETS = all release debug profile
+ifeq ($(MAKECMDGOALS),)
+ GOAL = release
+else
+ ifdef MAIN_TARGET
+  ifeq ($(MAKECMDGOALS),$(MAIN_TARGET))
+   GOAL_TMP = true
+  endif
+ endif
+ ifeq ($(MAKECMDGOALS),all)
+  GOAL_TMP = true
+ endif
+
+ ifdef GOAL_TMP
+   GOAL = release
+ else
+  ifneq ($(filter $(SUPPORTED_TARGETS),$(MAKECMDGOALS)),)
+   GOAL = $(MAKECMDGOALS)
+  endif
+ endif
+endif
+
+# build directory
+BUILD_DIR = build
+BUILD_GOAL_DIR = $(BUILD_DIR)/$(GOAL)
+
+ifdef GOAL
+ifdef FAT_BINARY
+ $(shell mkdir $(BUILD_DIR) $(BUILD_GOAL_DIR) $(BUILD_GOAL_DIR)/x86_64 $(BUILD_GOAL_DIR)/arm64 2> /dev/null)
+else
+ $(shell mkdir $(BUILD_DIR) $(BUILD_GOAL_DIR) 2> /dev/null)
+endif
+endif
+
+# files to remove
+FILES_TO_REMOVE += $(MAIN_TARGET_COPY)
+ifdef TARGET_LIB_DIR
+ FILES_TO_REMOVE += $(TARGET_LIB_DIR)/$(MAIN_TARGET)
+endif
+
+###-----------------------------------------------------------------------------
+### Compilation flags
+###-----------------------------------------------------------------------------
+
+# global flags
+INCLUDE += -I.
+WBCFLAGS += -Wall
+
+# goal dependent flags
+ifeq ($(GOAL),debug)
+ WBCFLAGS += -ggdb
+endif
+
+ifeq ($(TREAT_WARNINGS_AS_ERRORS),1)
+CFLAGS += -Werror
+endif
+
+ifeq ($(GOAL),release)
+ # -O3 has the advantage also to prevents a false positive trojan alert from avast and Kapersky antivirus
+ WBCFLAGS += -O3 -DNDEBUG
+ ifneq ($(OSTYPE),darwin)
+  DYNAMIC_LINK_FLAGS += -s
+ endif
+endif
+
+ifeq ($(GOAL),profile)
+ WBCFLAGS += -pg
+ ifneq ($(OSTYPE),darwin)
+  ifndef BUILD_STATIC_LIBRARY
+   LFLAGS += -pg
+  endif
+ endif
+endif
+
+# platform dependent flags
+ifeq ($(OSTYPE),windows)
+ WBCFLAGS += -mwindows -Wl,-subsystem,windows -D_GLIBCXX_USE_CXX11_ABI=1
+endif
+
+ifeq ($(OSTYPE),linux)
+ DYNAMIC_LIBRARIES += -lm
+endif
+
+ifeq ($(OSTYPE),darwin)
+ifdef NO_FAT_BINARY
+ WBCFLAGS += -target $(PROCESSOR)-apple-macos12
+ DYNAMIC_LINK_FLAGS += -target $(PROCESSOR)-apple-macos12
+endif
+ WBCFLAGS += -mmacosx-version-min=$(MACOSX_MIN_SDK_VERSION)
+ DYNAMIC_LINK_FLAGS += -mmacosx-version-min=$(MACOSX_MIN_SDK_VERSION)
+endif
+
+ifdef USE_CXX
+ ifdef BUILD_STATIC_LIBRARY
+  LINKER = ar
+ else
+  LINKER = $(CXX)
+ endif
+ ifndef EXCLUDE_CONTROLLERS
+  DYNAMIC_LIBRARIES += -L"$(OMNISIM_CONTROLLER_LIB_PATH)" -lController
+  ifdef USE_C_API
+   ifeq ($(OSTYPE),darwin)
+    INCLUDE += -I"$(OMNISIM_HOME)/Contents/include/controller/c"
+   else
+    INCLUDE += -I"$(OMNISIM_HOME)/include/controller/c"
+   endif
+  else
+   DYNAMIC_LIBRARIES += -lCppController
+   ifeq ($(OSTYPE),darwin)
+    INCLUDE += -I"$(OMNISIM_HOME)/Contents/include/controller/cpp"
+   else
+    INCLUDE += -I"$(OMNISIM_HOME)/include/controller/cpp"
+   endif
+  endif
+  ifeq ($(OSTYPE),windows)
+   DYNAMIC_LINK_FLAGS += -Wl,--enable-auto-import
+  endif
+ endif
+ ifeq ($(OSTYPE),darwin)
+  WBCXXFLAGS += -stdlib=libc++
+  DYNAMIC_LINK_FLAGS += -stdlib=libc++
+ endif
+else
+ ifdef BUILD_STATIC_LIBRARY
+  LINKER = ar
+ else
+  LINKER = $(CC)
+ endif
+ ifndef EXCLUDE_CONTROLLERS
+  ifeq ($(OSTYPE),darwin)
+   INCLUDE += -I"$(OMNISIM_HOME)/Contents/include/controller/c"
+  else
+   INCLUDE += -I"$(OMNISIM_HOME)/include/controller/c"
+  endif
+  DYNAMIC_LIBRARIES += -L"$(OMNISIM_CONTROLLER_LIB_PATH)" -lController
+ endif
+endif
+
+ifdef BUILD_SHARED_LIBRARY
+ DYNAMIC_LINK_FLAGS += -shared
+ ifeq ($(OSTYPE),linux)
+  WBCFLAGS += -fPIC
+ endif
+ ifeq ($(OSTYPE),darwin)
+  DYNAMIC_LINK_FLAGS += -dynamiclib -compatibility_version 1.0 -current_version 1.0.0
+ endif
+endif
+
+ifdef BUILD_STATIC_LIBRARY
+ ifeq ($(OSTYPE),linux)
+  WBCFLAGS += -fPIC
+ endif
+ STATIC_LINK_FLAGS += rvs
+endif
+
+ifeq ($(OSTYPE),darwin)
+ ifdef OMNISIM_LIBRARY
+  INSTALL_NAME ?= @rpath/Contents/lib/controller/$(MAIN_TARGET)
+  LFLAGS += -Xlinker -rpath -Xlinker @loader_path/.. -install_name $(INSTALL_NAME)
+ else
+  CALLING_MAKEFILE_DIR := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
+  OMNISIM_RELATIVE_PATH = $(call computeRelativePath,"$(OMNISIM_HOME_PATH)","$(CALLING_MAKEFILE_DIR)")
+  ifneq (,$(findstring ..,$(OMNISIM_RELATIVE_PATH)))
+   ifeq ($(TREAT_WARNINGS_AS_ERRORS),1) # this variable is set only if we do a "make distrib"
+    DYNAMIC_LINK_FLAGS += -Xlinker -rpath -Xlinker @loader_path/$(OMNISIM_RELATIVE_PATH)../ # add an additional ../ for the Contents folder
+   else
+    DYNAMIC_LINK_FLAGS += -Xlinker -rpath -Xlinker @loader_path/$(OMNISIM_RELATIVE_PATH)
+   endif
+   ifdef BUILD_SHARED_LIBRARY
+    INSTALL_NAME ?= @rpath$(subst $(OMNISIM_HOME_PATH),,$(CALLING_MAKEFILE_DIR))/$(MAIN_TARGET)
+    DYNAMIC_LINK_FLAGS += -install_name $(INSTALL_NAME)
+   endif
+  endif
+ endif
+endif
+
+
+###-----------------------------------------------------------------------------
+### Makefile setup
+###-----------------------------------------------------------------------------
+
+# clear out all suffixes for implicit rules to speed up Makefile
+.SUFFIXES:
+MAKEFLAGS += -r
+
+# vpath
+vpath %.d $(BUILD_DIR)
+# find source files
+vpath %.c $(SOURCES_DIRECTORIES)
+vpath %.cc $(SOURCES_DIRECTORIES)
+vpath %.c++ $(SOURCES_DIRECTORIES)
+vpath %.cpp $(SOURCES_DIRECTORIES)
+
+# phony
+.PHONY : clean $(SUPPORTED_TARGETS) jar
+
+
+###-----------------------------------------------------------------------------
+### Rules
+###-----------------------------------------------------------------------------
+
+$(SUPPORTED_TARGETS): $(TARGETS)
+
+# we need to be able to execute a make clean inside subdirectories targets (defined as EXTRA_TARGETS)
+clean: $(EXTRA_TARGETS)
+
+### Begin ifdef MAIN_TARGET
+ifdef MAIN_TARGET
+
+MAIN_TARGET_WINDOWS_LIB = $(MAIN_TARGET:.dll=.lib)
+ifdef OMNISIM_LIBRARY
+MAIN_TARGET_COPY = "$(subst $(space),\ ,$(OMNISIM_CONTROLLER_LIB_PATH))/$(MAIN_TARGET)"
+MAIN_TARGET_WINDOWS64_LIB = $(OMNISIM_CONTROLLER_LIB_PATH)/$(MAIN_TARGET_WINDOWS_LIB)
+else
+MAIN_TARGET_COPY ?= $(MAIN_TARGET)
+MAIN_TARGET_WINDOWS64_LIB = $(MAIN_TARGET:.dll=.lib)
+endif
+ifeq ($(OSTYPE),windows)
+DYNAMIC_LINK_FLAGS += -Wl,--out-implib,$(MAIN_TARGET_WINDOWS64_LIB)
+FILES_TO_REMOVE += $(MAIN_TARGET_WINDOWS64_LIB)
+endif
+
+###-----------------------------------------------------------------------------
+### Rule for the top-level binary
+###-----------------------------------------------------------------------------
+
+ifdef BUILD_STATIC_LIBRARY
+ LFLAGS += $(STATIC_LINK_FLAGS)
+ ifndef VERBOSE
+  AR_SUPPRESS_OUTPUT = > /dev/null 2>&1
+ endif
+else
+ LIBRARIES += $(DYNAMIC_LIBRARIES)
+ LFLAGS += $(DYNAMIC_LINK_FLAGS) -o
+endif
+
+ifdef TARGET_LIB_DIR
+
+$(MAIN_TARGET): $(TARGET_LIB_DIR)/$(MAIN_TARGET)
+
+else
+
+$(MAIN_TARGET): $(BUILD_GOAL_DIR)/$(MAIN_TARGET)
+	@# Even when compiled from Webots with possibly the previous version of the binary
+	@# being executed, it is safe to delete it and copy the new version as a replacement.
+	@# This new version will be executed only when the process restarts.
+	@# Note: this binary may be an executable (e.g., a controller) or shared library (e.g., a robot-window plug-in).
+	@rm -f $(MAIN_TARGET) > /dev/null 2>&1 && echo "# copying to" $(MAIN_TARGET_COPY) && cp $(BUILD_GOAL_DIR)/$(MAIN_TARGET) $(MAIN_TARGET_COPY) > /dev/null 2>&1
+
+endif
+
+###-----------------------------------------------------------------------------
+### Rule to make the executable file from C/C++ objects
+###-----------------------------------------------------------------------------
+
+ifdef FAT_BINARY
+X86_64_OBJECTS = $(addprefix $(BUILD_GOAL_DIR)/x86_64/, $(OBJECTS_LIST))
+ARM64_OBJECTS = $(addprefix $(BUILD_GOAL_DIR)/arm64/, $(OBJECTS_LIST))
+
+$(BUILD_GOAL_DIR)/$(MAIN_TARGET): $(BUILD_GOAL_DIR)/x86_64/$(MAIN_TARGET) $(BUILD_GOAL_DIR)/arm64/$(MAIN_TARGET)
+	@echo "# creating fat" $(notdir $@)
+	$(SILENT)lipo -create -output $@ $(BUILD_GOAL_DIR)/x86_64/$(MAIN_TARGET) $(BUILD_GOAL_DIR)/arm64/$(MAIN_TARGET)
+
+$(TARGET_LIB_DIR)/$(MAIN_TARGET): $(BUILD_GOAL_DIR)/x86_64/$(MAIN_TARGET) $(BUILD_GOAL_DIR)/arm64/$(MAIN_TARGET)
+	@echo "# creating fat" $(notdir $@)
+	$(SILENT)lipo -create -output $@ $(BUILD_GOAL_DIR)/x86_64/$(MAIN_TARGET) $(BUILD_GOAL_DIR)/arm64/$(MAIN_TARGET)
+
+$(BUILD_GOAL_DIR)/x86_64/$(MAIN_TARGET): $(X86_64_OBJECTS) $(LINK_DEPENDENCIES)
+	@echo "# linking" $(notdir $@) "(x86_64)"
+	$(SILENT)$(LINKER) $(X86_64_LINKER) $(LFLAGS) $@ $(X86_64_OBJECTS) $(LIBRARIES) $(AR_SUPPRESS_OUTPUT)
+
+$(BUILD_GOAL_DIR)/arm64/$(MAIN_TARGET): $(ARM64_OBJECTS) $(LINK_DEPENDENCIES)
+	@echo "# linking" $(notdir $@) "(arm64)"
+	$(SILENT)$(LINKER) $(ARM64_LINKER) $(LFLAGS) $@ $(ARM64_OBJECTS) $(LIBRARIES) $(AR_SUPPRESS_OUTPUT)
+
+else
+
+OBJECTS = $(addprefix $(BUILD_GOAL_DIR)/, $(OBJECTS_LIST))
+$(BUILD_GOAL_DIR)/$(MAIN_TARGET): $(OBJECTS) $(LINK_DEPENDENCIES)
+	@echo "# linking" $(notdir $@)
+	$(SILENT)$(LINKER) $(LFLAGS) $@ $(OBJECTS) $(LIBRARIES) $(AR_SUPPRESS_OUTPUT)
+
+$(TARGET_LIB_DIR)/$(MAIN_TARGET): $(OBJECTS) $(LINK_DEPENDENCIES)
+	@echo "# linking" $(notdir $@)
+	$(SILENT)$(LINKER) $(LFLAGS) $@ $(OBJECTS) $(LIBRARIES) $(AR_SUPPRESS_OUTPUT)
+
+endif
+
+endif
+
+### End ifdef MAIN_TARGET
+
+###-----------------------------------------------------------------------------
+### Automatic dependencies
+###-----------------------------------------------------------------------------
+# Generate each dependency file as a side effect of the compilation that creates
+# its object.  The previous standalone `-MM` rules preprocessed every source a
+# second time, almost doubling compiler front-end work and presenting ccache with
+# preprocessing-only calls that it cannot cache.  Both GCC and Clang support
+# these flags.  With `-o path/name.o`, their default dependency output is
+# `path/name.d` and the dependency target is the exact object path, including the
+# architecture subdirectory used by fat macOS builds.
+DEPENDENCY_FLAGS ?= -MMD -MP
+
+# dependencies
+ifdef GOAL
+ DEPENDENCY_NAMES = $(addsuffix .d,$(basename $(notdir $(C_SOURCES) $(CXX_SOURCES))))
+ ifdef FAT_BINARY
+  DEPENDENCIES = $(addprefix $(BUILD_GOAL_DIR)/x86_64/,$(DEPENDENCY_NAMES)) \
+                 $(addprefix $(BUILD_GOAL_DIR)/arm64/,$(DEPENDENCY_NAMES))
+ else
+  DEPENDENCIES = $(addprefix $(BUILD_GOAL_DIR)/,$(DEPENDENCY_NAMES))
+ endif
+ ifneq ($(DEPENDENCIES),)
+  -include $(DEPENDENCIES)
+ endif
+endif
+
+###-----------------------------------------------------------------------------
+### Generic rules to make the object files
+###-----------------------------------------------------------------------------
+$(BUILD_GOAL_DIR)/%.o:%.c
+	@echo "# compiling" $(notdir $<)
+	$(SILENT)$(CC) -c $(DEPENDENCY_FLAGS) $(WBCFLAGS) $(CFLAGS) $(INCLUDE) $< -o $@
+
+$(BUILD_GOAL_DIR)/x86_64/%.o:%.c
+	@echo "# compiling" $(notdir $<) "(x86_64)"
+	$(SILENT)$(CC) -c -target x86_64-apple-macos12 $(DEPENDENCY_FLAGS) $(WBCFLAGS) $(CFLAGS) $(INCLUDE) $< -o $@
+
+$(BUILD_GOAL_DIR)/arm64/%.o:%.c
+	@echo "# compiling" $(notdir $<) "(arm64)"
+	$(SILENT)$(CC) -c -target arm64-apple-macos12 $(DEPENDENCY_FLAGS) $(WBCFLAGS) $(CFLAGS) $(INCLUDE) $< -o $@
+
+$(BUILD_GOAL_DIR)/%.o:%.cc
+	@echo "# compiling" $(notdir $<)
+	$(SILENT)$(CXX) -c $(DEPENDENCY_FLAGS) $(WBCFLAGS) $(WBCXXFLAGS) $(CFLAGS) $(CXXFLAGS) $(INCLUDE) $< -o $@
+
+$(BUILD_GOAL_DIR)/%.o:%.c++
+	@echo "# compiling" $(notdir $<)
+	$(SILENT)$(CXX) -c $(DEPENDENCY_FLAGS) $(WBCFLAGS) $(WBCXXFLAGS) $(CFLAGS) $(CXXFLAGS) $(INCLUDE) $< -o $@
+
+$(BUILD_GOAL_DIR)/%.o:%.cpp
+	@echo "# compiling" $(notdir $<)
+	$(SILENT)$(CXX) -c $(DEPENDENCY_FLAGS) $(WBCFLAGS) $(WBCXXFLAGS) $(CFLAGS) $(CXXFLAGS) $(INCLUDE) $< -o $@
+
+$(BUILD_GOAL_DIR)/x86_64/%.o:%.cpp
+	@echo "# compiling" $(notdir $<) "(x86_64)"
+	$(SILENT)$(CXX) -c -target x86_64-apple-macos12 $(DEPENDENCY_FLAGS) $(WBCFLAGS) $(WBCXXFLAGS) $(CFLAGS) $(CXXFLAGS) $(INCLUDE) $< -o $@
+
+$(BUILD_GOAL_DIR)/arm64/%.o:%.cpp
+	@echo "# compiling" $(notdir $<) "(arm64)"
+	$(SILENT)$(CXX) -c -target arm64-apple-macos12 $(DEPENDENCY_FLAGS) $(WBCFLAGS) $(WBCXXFLAGS) $(CFLAGS) $(CXXFLAGS) $(INCLUDE) $< -o $@
+
+###-----------------------------------------------------------------------------
+### How to clean up the directory
+###-----------------------------------------------------------------------------
+clean:
+	$(SILENT)rm -fr $(FILES_TO_REMOVE) $(BUILD_DIR) > /dev/null 2>&1 || :
+	$(SILENT)rm -d $(EMPTY_DIRECTORIES_TO_REMOVE) > /dev/null 2>&1 || :

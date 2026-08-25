@@ -1,0 +1,63 @@
+{
+  "schema": 2,
+  "name": "g1_arm_motion",
+  "title": "Balance on two legs while moving the arms in 3-D",
+  "class": "humanoid",
+  "robots": [
+    "g1"
+  ],
+  "kind": "deterministic",
+  "method": "deterministic-overlay",
+  "motion_class": "static",
+  "status": "verified",
+  "summary": "The robot holds the deterministic two-leg stand and rides a looping routine of bilateral arm EXERCISES -- lateral raises, arm circles, elbow curls, a marching arm swing, a wave, and a double-biceps flex -- so the arms move freely in 3-D while the legs keep balancing. Composes with -Throw (exercise while taking external cube hits). The hand positions are FK-computed each tick ('aware of its hands') and logged.",
+  "controller": "humanoid_stand_deploy",
+  "spec": "projects/policies/controllers/humanoid_stand_deploy/specs/g1_arm_motion.json",
+  "world": "projects/policies/research/worlds/g1_arm_motion.omniworld",
+  "launcher": "scripts/dev/run_humanoid_stand_deploy.ps1",
+  "launch_flags": [
+    "-Robot",
+    "g1",
+    "-ArmMotion"
+  ],
+  "composable_with": [
+    "-Throw"
+  ],
+  "arbitration": "superposition",
+  "owns_effectors": [
+    "both arms (shoulder pitch/roll/yaw, elbow, wrist) via a superimposed exercise sinusoid"
+  ],
+  "balance_by": [
+    "stiff statically-stable squat (Newton position hold)",
+    "arm_balance (kept LIVE -- the marginal stand needs the arms as its fast balancer; the exercise rides on top)",
+    "reactive ankle lean (disturbance-driven)",
+    "hip auto_trim with a mild D assist",
+    "forward-kinematics CoM-back feedforward (hip + ankle) proportional to how far the hands extend ahead of rest",
+    "a rest dwell between exercises so the stand re-centres"
+  ],
+  "exercises": [
+    "lateral_raise",
+    "arm_circles",
+    "elbow_curls",
+    "arm_swing",
+    "wave",
+    "flex"
+  ],
+  "design_rule": "Motions must be lateral-dominant, fore/aft-CANCELLING (alternating), or distal. BILATERAL FORWARD arm raises topple G1's marginal forward-CoM stand and are excluded -- forward motion is done as an alternating march (arm_swing) and reach is angled out (lateral). See the doc for the full journal.",
+  "success_criteria": {
+    "stands_s": ">=120",
+    "falls": 0,
+    "ends_upright": true,
+    "hands_move_3d": true
+  },
+  "verification": {
+    "date": "2026-06-28",
+    "engine": "Newton/mujoco_warp (cold)",
+    "result": "0 falls over 206 s sim (2+ full loops of all 6 exercises), ends upright (pitch within +/-0.06 rad throughout). With -Throw: 0 falls, 5/8 cube throws scored solid torso HITs and were absorbed while exercising."
+  },
+  "doc": "docs/developer/g1-arm-motion-skill.md",
+  "related": [
+    "balance_two_legs",
+    "manip (one-arm pick/place while standing)"
+  ]
+}

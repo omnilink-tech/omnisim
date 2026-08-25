@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<!--
+  A generic 140 mm two-finger adaptive parallel gripper.
+
+  OmniSim's own model of a 2F-140-class gripper, provided so demos and the
+  arm bridge have a large-stroke parallel gripper to drive. "Robotiq" and
+  "2F-140" are used nominatively, to say which class of hardware this models;
+  this package is not affiliated with or endorsed by Robotiq.
+
+  All geometry is authored in this repository as primitive solids, emitted by
+  scripts/dev/gen_omnisim_robot_visuals.py. It contains no mesh, texture or
+  CAD file from any third party and is not derived from any vendor product
+  model. See ../PROVENANCE.md.
+
+  Visual only: no collision and no inertial geometry, so this standalone
+  package is a kinematic prop. The arm-mounted variant
+  (projects/robots/omnisim/omniarm6/omniarm6_2f140_grip.urdf) carries
+  hand-authored collision boxes on its jaws.
+-->
+<robot name="robotiq_2f140">
+  <link name="base_link">
+		<visual>
+			<origin xyz="0 0 0.006" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.0375" length="0.012" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.028" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.0425" length="0.032" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.076" rpy="0 0 0" />
+			<geometry>
+				<box size="0.100 0.074 0.064" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.104" rpy="0 0 0" />
+			<geometry>
+				<box size="0.102 0.076 0.008" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.1437" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.016" length="0.116" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+	</link>
+  <link name="neg_link">
+		<visual>
+			<origin xyz="0 0 0.0328" rpy="0 0 0" />
+			<geometry>
+				<box size="0.024 0.021 0.072" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0.00825 -0.015" rpy="0 0 0" />
+			<geometry>
+				<box size="0.030 0.034 0.032" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 -0.01900 -0.038" rpy="0 0 0" />
+			<geometry>
+				<box size="0.020 0.013 0.058" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 -0.04650 -0.060" rpy="0 0 0" />
+			<geometry>
+				<box size="0.037 0.023 0.026" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+	</link>
+  <joint name="neg_fixed" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="neg_link"/>
+  </joint>
+  <link name="pos_link">
+		<visual>
+			<origin xyz="0 0 0.0328" rpy="0 0 0" />
+			<geometry>
+				<box size="0.024 0.021 0.072" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 -0.00825 -0.015" rpy="0 0 0" />
+			<geometry>
+				<box size="0.030 0.034 0.032" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0.01900 -0.038" rpy="0 0 0" />
+			<geometry>
+				<box size="0.020 0.013 0.058" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0.04650 -0.060" rpy="0 0 0" />
+			<geometry>
+				<box size="0.037 0.023 0.026" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+	</link>
+  <joint name="pos_fixed" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="pos_link"/>
+  </joint>
+</robot>

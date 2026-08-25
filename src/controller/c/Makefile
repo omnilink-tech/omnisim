@@ -1,0 +1,202 @@
+# Copyright 1996-2024 Cyberbotics Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Modifications copyright 2026 OmniLink, licensed under the Apache License, Version 2.0.
+
+# OMNISIM_HOME is the canonical install-root variable; WEBOTS_HOME is kept as a
+# legacy alias so existing setups keep working. OMNISIM_HOME_PATH is the contract
+# variable owned and consumed by resources/Makefile.include -- it was renamed
+# from WEBOTS_HOME_PATH in the same atomic change as every other caller.
+OMNISIM_ROOT := $(if $(OMNISIM_HOME),$(OMNISIM_HOME),$(WEBOTS_HOME))
+ifeq ($(OMNISIM_ROOT),)
+OMNISIM_HOME_PATH = ../../..
+else
+null :=
+space := $(null) $(null)
+OMNISIM_HOME_PATH?=$(subst $(space),\ ,$(strip $(subst \,/,$(OMNISIM_ROOT))))
+endif
+
+default:
+	@echo "Type one of the following (OSTYPE is \""$(OSTYPE)"\"):"
+	@echo "  make debug                 for debug (with gdb symbols)"
+	@echo "  make profile               for profiling (with gprof information)"
+	@echo "  make release               for finale release"
+	@echo "  make clean                 remove build directory"
+	@echo "  make count-lines           count the lines of code of C controller library"
+
+count-lines:
+	wc -l *.c* *.h*
+
+include $(OMNISIM_HOME_PATH)/resources/Makefile.include
+
+# OMNISIM_DEPENDENCY_PATH is another cross-Makefile contract variable
+# (dependencies/Makefile.* consumes it), renamed from WEBOTS_DEPENDENCY_PATH in
+# the same atomic change. The legacy name is still honoured when set.
+OMNISIM_DEPENDENCY_PATH ?= $(if $(WEBOTS_DEPENDENCY_PATH),$(WEBOTS_DEPENDENCY_PATH),$(OMNISIM_HOME_PATH)/dependencies)
+
+ifeq ($(OSTYPE),darwin)
+LIBCONTROLLER_VERSION := "$(shell cat $(OMNISIM_HOME_PATH)/Contents/Resources/version.txt)"
+else
+LIBCONTROLLER_VERSION := "$(shell cat $(OMNISIM_HOME_PATH)/resources/version.txt)"
+endif
+
+ifeq ($(OSTYPE),darwin)
+CFLAGS      = -mmacosx-version-min=$(MACOSX_MIN_SDK_VERSION) -fpascal-strings -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion -I/Developer/Headers/FlatCarbon -Wall -fno-common -D LIBCONTROLLER_VERSION='$(LIBCONTROLLER_VERSION)'
+INCLUDE     = -I$(OMNISIM_HOME_PATH)/include/controller/c -I$(OMNISIM_HOME_PATH)/include
+LD_FLAGS    = -mmacosx-version-min=$(MACOSX_MIN_SDK_VERSION) -dynamiclib -install_name @rpath/Contents/lib/controller/libController.dylib -compatibility_version 1.0 -current_version 1.0.0
+SHARED_LIBS = -lz
+TARGET      = $(OMNISIM_CONTROLLER_LIB_PATH)/libController.dylib
+# `?=`, not `=`. This assignment sits AFTER the `include` of Makefile.include,
+# so an unconditional `=` overwrites whatever CC that file (or the top-level
+# Makefile, or the environment) resolved -- which silently destroyed ccache for
+# libController even on a full top-level build. It is redundant anyway:
+# Makefile.include already maps the `cc` default to gcc.
+CC          ?= gcc
+endif
+
+ifeq ($(OSTYPE),linux)
+CFLAGS      = -fPIC -Wall -Wno-stringop-truncation -D LIBCONTROLLER_VERSION='$(LIBCONTROLLER_VERSION)'
+INCLUDE     = -I$(OMNISIM_HOME_PATH)/include/controller/c -I$(OMNISIM_HOME_PATH)/include
+LD_FLAGS    = -shared -Wl,-soname,libController.so
+SHARED_LIBS = -lm -lpthread -ldl -lrt
+TARGET      = $(OMNISIM_CONTROLLER_LIB_PATH)/libController.so
+endif
+
+ifeq ($(OSTYPE),windows)
+CFLAGS      = -Wall -mwindows -frandom-seed=0 -D LIBCONTROLLER_VERSION='$(LIBCONTROLLER_VERSION)'
+INCLUDE     = -I$(OMNISIM_HOME_PATH)/include/controller/c -I$(OMNISIM_HOME_PATH)/include -I/mingw64/include
+LD_FLAGS    = -shared -mwindows -Wl,--out-implib,$(OMNISIM_CONTROLLER_LIB_PATH)/Controller.lib
+SHARED_LIBS = -lws2_32
+# See the darwin branch above: `?=` so this cannot clobber the ccache-prefixed
+# CC that Makefile.include or the top-level Makefile already resolved.
+CC          ?= gcc
+TARGET      = $(OMNISIM_CONTROLLER_LIB_PATH)/Controller.dll
+endif
+
+ifeq ($(MAKECMDGOALS),debug)
+CFLAGS += -g
+endif
+
+ifeq ($(TREAT_WARNINGS_AS_ERRORS),1)
+CFLAGS += -Werror
+endif
+
+ifeq ($(MAKECMDGOALS),profile)
+CFLAGS += -pg -O3 -DNDEBUG
+LD_FLAGS += -pg
+endif
+
+OBJDIR = build/$(MAKECMDGOALS)
+ifneq (,$(findstring $(MAKECMDGOALS),debug profile release))
+BUILD_PATH_SETUP := $(shell mkdir -p $(OBJDIR))
+ifeq ($(OSTYPE),darwin)
+BUILD_PATH_SETUP := $(shell mkdir -p $(OBJDIR)/x86_64 $(OBJDIR)/arm64)
+endif
+endif
+
+ifdef EXTCONTROLLER
+CFLAGS += -DEXTCONTROLLER
+endif
+
+ifeq ($(MAKECMDGOALS),release)
+CFLAGS   += -O3 -DNDEBUG
+ifneq ($(OSTYPE),darwin)
+LD_FLAGS += -s
+endif
+endif
+
+vpath %.o $(OBJDIR)
+vpath %.c .
+
+INCLUDE += -isystem $(OMNISIM_HOME_PATH)/src/stb
+
+SOURCES=$(shell ls *.c)
+
+OBJECTS=$(notdir $(SOURCES:.c=.o))
+
+# clear out all suffixes for implicit rules to speed up Makefile
+.SUFFIXES:
+%:: %,v
+%:: RCS/%,v
+%:: RCS/%
+%:: s.%
+%:: SCCS/s.%
+
+ifneq (,$(filter $(MAKECMDGOALS),debug release profile)) # if $(MAKECMDGOALS) is either of those
+-include $(addprefix $(OBJDIR)/,$(notdir $(SOURCES:.c=.d)))
+endif
+
+debug profile release: $(TARGET)
+
+# Windows: MinGW-built controllers dynamically link libgcc/libstdc++/winpthread, whose DLLs live in
+# the toolchain bin (msys64/mingw64/bin) — which OmController REMOVES from the controller PATH. Ship
+# them next to Controller.dll in lib/controller (which IS on every controller's PATH) so controllers
+# load; without this they fail at launch with "libgcc_s_seh-1.dll was not found". No-op off Windows;
+# `|| true` keeps it from ever failing the build.
+ifeq ($(OSTYPE),windows)
+SHIP_RUNTIME_DLLS = cp -f $(OMNISIM_HOME_PATH)/msys64/mingw64/bin/libgcc_s_seh-1.dll $(OMNISIM_HOME_PATH)/msys64/mingw64/bin/libstdc++-6.dll $(OMNISIM_HOME_PATH)/msys64/mingw64/bin/libwinpthread-1.dll $(OMNISIM_CONTROLLER_LIB_PATH)/ 2>/dev/null || true
+else
+SHIP_RUNTIME_DLLS = true
+endif
+
+ifeq ($(OSTYPE),darwin)
+X86_64_OBJECTS = $(addprefix $(OBJDIR)/x86_64/, $(OBJECTS))
+ARM64_OBJECTS = $(addprefix $(OBJDIR)/arm64/, $(OBJECTS))
+
+$(TARGET): $(OBJDIR)/x86_64/libController.dylib $(OBJDIR)/arm64/libController.dylib
+	@echo "# creating fat binary: $$"\(OMNISIM_HOME\)/lib/controller/libController.dylib
+	@lipo -create -output $(TARGET) $(OBJDIR)/x86_64/libController.dylib $(OBJDIR)/arm64/libController.dylib
+	@chmod a-x $@
+	@codesign -s - $@
+
+$(OBJDIR)/x86_64/libController.dylib: $(X86_64_OBJECTS)
+	@echo "# linking "$@" (x86_64)"
+	@$(CC) $(LD_FLAGS) -target x86_64-apple-macos12 -o $@ $(X86_64_OBJECTS) $(SHARED_LIBS)
+	@chmod a-x $@
+
+$(OBJDIR)/arm64/libController.dylib: $(ARM64_OBJECTS)
+	@echo "# linking "$@" (arm64)"
+	@$(CC) $(LD_FLAGS) -target arm64-apple-macos12 -o $@ $(ARM64_OBJECTS) $(SHARED_LIBS)
+	@chmod a-x $@
+
+else
+$(TARGET): $(OBJECTS)
+	@echo "# linking "$@
+	@$(CC) $(LD_FLAGS) -o $(TARGET) $(addprefix $(OBJDIR)/, $(OBJECTS)) $(SHARED_LIBS)
+	@chmod a-x $(TARGET)
+	@$(SHIP_RUNTIME_DLLS)
+endif
+
+$(OBJDIR)/robot.o: $(OMNISIM_HOME_PATH)/resources/version.txt
+
+$(OBJDIR)/%.o:%.c
+	@echo "# compiling "$<
+	@$(CC) -c $(CFLAGS) $(EXTRA_CFLAGS) $(INCLUDE) $< -o $@
+
+$(OBJDIR)/arm64/%o:%c
+	@echo "# compiling "$<" (arm64)"
+	@$(CC) -c -target arm64-apple-macos12 $(CFLAGS) $(EXTRA_CFLAGS) $(INCLUDE) $< -o $(OBJDIR)/arm64/$(notdir $@)
+
+$(OBJDIR)/x86_64/%o:%c
+	@echo "# compiling "$<" (x86_64)"
+	@$(CC) -c -target x86_64-apple-macos12 $(CFLAGS) $(EXTRA_CFLAGS) $(INCLUDE) $< -o $(OBJDIR)/x86_64/$(notdir $@)
+
+$(OBJDIR)/%.d:%.c
+	@echo "# updating "$(notdir $@)
+	@echo $(basename $(OBJDIR)/$(notdir $@)).o: $(basename $@).d > $(OBJDIR)/$(notdir $@)
+	@printf "%s" "$(OBJDIR)/" >> $(OBJDIR)/$(notdir $@)
+	@$(CC) $(CFLAGS) -MM -w $(INCLUDE) $< >> $(OBJDIR)/$(notdir $@)
+
+FILES_TO_REMOVE = $(TARGET)
+FILES_TO_REMOVE += $(OMNISIM_CONTROLLER_LIB_PATH)/Controller.lib

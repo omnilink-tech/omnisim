@@ -1,0 +1,151 @@
+{
+  "schema": "omnisim.install_check.manifest/v1",
+  "owner": "physics-platform",
+  "calibrated_on": null,
+  "last_calibrated_commit": null,
+  "note": "The SOFT tolerance_bands below are hand-authored DEFAULTS (generous). When calibration.json is present (written by `verify-install --calibrate`), the runner overlays its per-host-calibrated bands on top of these. A SOFT miss is DRIFT and never fails the install; HARD metrics (the bit-exact canaries + binary/load liveness) gate the verdict.",
+  "severity_legend": {
+    "HARD": "bit-exact or binary/load liveness; a miss FAILs the demo",
+    "SOFT": "tolerance band; in band -> PASS, in drift_band -> DRIFT, beyond -> FAIL",
+    "INFO": "recorded, never gates"
+  },
+  "demos": [
+    {
+      "id": "empty_startup",
+      "lane": "core",
+      "fast": true,
+      "subsystem": "world parser, core init, headless launch + DLL/PATH resolution",
+      "world": "resources/projects/worlds/empty.omniworld",
+      "run_mode": "headless",
+      "warm_or_cold": "warm",
+      "requires": {"resolved_backend": "any"},
+      "run_args": {"duration_s": 8},
+      "metrics": [
+        {"name": "load_ok", "source": "headless.load_ok", "severity": "HARD", "type": "bool"},
+        {"name": "error_count", "source": "headless.error_count", "severity": "HARD", "type": "scalar"}
+      ],
+      "tolerance_bands": {
+        "load_ok": {"any": {"equals": true}},
+        "error_count": {"any": {"max": 0}}
+      },
+      "pass_predicate": "load_ok AND error_count == 0"
+    },
+    {
+      "id": "omniworld_determinism",
+      "lane": "core",
+      "fast": true,
+      "subsystem": "omniworld PRNG->.wbt byte-determinism (bit-exact canary), VRML parse, asset-locality",
+      "world": {"recipe": "flat_ground", "seed": 7, "params": {}},
+      "run_mode": "generate",
+      "warm_or_cold": "warm",
+      "requires": {"resolved_backend": "any"},
+      "metrics": [
+        {"name": "sha_match", "source": "omniworld.sha_match", "severity": "HARD", "type": "bool"},
+        {"name": "validate_ok", "source": "omniworld.validate_ok", "severity": "HARD", "type": "bool"}
+      ],
+      "tolerance_bands": {
+        "sha_match": {"any": {"equals": true}},
+        "validate_ok": {"any": {"equals": true}}
+      },
+      "pass_predicate": "sha_match AND validate_ok",
+      "comment": "Compares generate-twice-same-process (version-independent), NOT against a checked-in golden hash, so an omniworld library bump that legitimately changes bytes does not false-fail."
+    },
+    {
+      "id": "warehouse_husky",
+      "lane": "core",
+      "fast": false,
+      "subsystem": "URDF importer, Newton/ODE physics, supervisor API, motor/sensor pipeline, WREN render, collision recovery",
+      "world": "projects/samples/demos/worlds/showcase/warehouse_husky.omniworld",
+      "run_mode": "headless",
+      "warm_or_cold": "warm",
+      "requires": {"resolved_backend": "any"},
+      "run_args": {"duration_s": 14},
+      "metrics": [
+        {"name": "load_ok", "source": "headless.load_ok", "severity": "HARD", "type": "bool"},
+        {"name": "error_count", "source": "headless.error_count", "severity": "HARD", "type": "scalar"},
+        {"name": "warning_count", "source": "headless.warning_count", "severity": "SOFT", "type": "scalar"}
+      ],
+      "tolerance_bands": {
+        "load_ok": {"any": {"equals": true}},
+        "error_count": {"any": {"max": 0}},
+        "warning_count": {"any": {"band_max": 60, "drift_max": 200}}
+      },
+      "pass_predicate": "load_ok AND error_count == 0",
+      "comment": "HARD = liveness only (loaded + no errors). Render exposure + free-running motion are covered by the warehouse_render harness demo."
+    },
+    {
+      "id": "newton_husky_smoke_test",
+      "lane": "core",
+      "fast": false,
+      "subsystem": "Newton backend RESOLUTION (did Newton actually drive the world), multi-body dynamics",
+      "world": "projects/samples/demos/worlds/physics/newton_husky_smoke_test.omniworld",
+      "run_mode": "headless",
+      "warm_or_cold": "warm",
+      "requires": {"resolved_backend": "any"},
+      "run_args": {"duration_s": 45},
+      "metrics": [
+        {"name": "load_ok", "source": "headless.load_ok", "severity": "HARD", "type": "bool"},
+        {"name": "error_count", "source": "headless.error_count", "severity": "HARD", "type": "scalar"},
+        {"name": "resolved_solver", "source": "headless.solver", "severity": "INFO", "type": "enum"},
+        {"name": "newton_finalised", "source": "headless.finalised", "severity": "HARD", "type": "bool"}
+      ],
+      "tolerance_bands": {
+        "load_ok": {"any": {"equals": true}},
+        "error_count": {"any": {"max": 0}},
+        "newton_finalised": {"newton": {"equals": true}, "unverified": {"equals": true}, "unknown": {"skip": true}}
+      },
+      "pass_predicate": "load_ok AND error_count == 0 AND newton_finalised",
+      "comment": "CHANGED 2026-08-08. The band used to read {\"ode\": {\"skip\": true}} and the predicate used to pass on resolved_backend == 'ode', because resolved_backend() returned 'ode' for any run with no 'world finalised' line. src/ode was DELETED (bdc02139): there is no supported ODE host any more, so that band made THE ONLY CHECK NAMED AFTER BACKEND RESOLUTION unable to fail on a run where Newton never drove the world -- it SKIPped the HARD metric and reported PASS. resolved_backend() now returns 'unverified' there and this band FAILs it. duration_s raised 20 -> 45 first, because the honest cause of a missing finalise line is usually a too-short run (AGENTS.md: >=15 s locally, >=45 s on slow/virtualized disks) and a false FAIL would be its own lie."
+    },
+    {
+      "id": "husky_maze",
+      "lane": "core",
+      "fast": false,
+      "subsystem": "URDF importer, supervisor position tracking, lidar sensor, wall-follow nav, controller IPC",
+      "world": "projects/samples/demos/worlds/flagship/husky_maze.omniworld",
+      "run_mode": "headless",
+      "warm_or_cold": "warm",
+      "requires": {"resolved_backend": "any"},
+      "run_args": {"duration_s": 14},
+      "metrics": [
+        {"name": "load_ok", "source": "headless.load_ok", "severity": "HARD", "type": "bool"},
+        {"name": "error_count", "source": "headless.error_count", "severity": "HARD", "type": "scalar"},
+        {"name": "warning_count", "source": "headless.warning_count", "severity": "SOFT", "type": "scalar"}
+      ],
+      "tolerance_bands": {
+        "load_ok": {"any": {"equals": true}},
+        "error_count": {"any": {"max": 0}},
+        "warning_count": {"any": {"band_max": 60, "drift_max": 200}}
+      },
+      "pass_predicate": "load_ok AND error_count == 0"
+    },
+    {
+      "id": "warehouse_render",
+      "lane": "core",
+      "fast": false,
+      "subsystem": "validation harness, WREN render exposure, free-running robot motion (supervisor /robots + /world/render_stats)",
+      "world": "projects/samples/demos/worlds/showcase/warehouse_husky.omniworld",
+      "run_mode": "harness",
+      "warm_or_cold": "warm",
+      "requires": {"resolved_backend": "any"},
+      "run_args": {"settle_s": 2.0, "observe_s": 6.0},
+      "metrics": [
+        {"name": "load_ok", "source": "harness.load_ok", "severity": "INFO", "type": "bool"},
+        {"name": "world_errors", "source": "harness.world_errors", "severity": "SOFT", "type": "scalar"},
+        {"name": "displacement_m", "source": "harness.displacement_m", "severity": "SOFT", "type": "scalar"},
+        {"name": "mean_brightness", "source": "harness.mean_brightness", "severity": "SOFT", "type": "scalar"},
+        {"name": "black_pct", "source": "harness.black_pct", "severity": "SOFT", "type": "scalar"},
+        {"name": "saturated_pct", "source": "harness.saturated_pct", "severity": "SOFT", "type": "scalar"}
+      ],
+      "tolerance_bands": {
+        "world_errors": {"any": {"band_max": 0, "drift_max": 3}},
+        "displacement_m": {"any": {"band_min": 2.0, "drift_min": 0.4}},
+        "mean_brightness": {"any": {"expected": 59.0, "abs_tol": 30.0, "drift_abs_tol": 55.0}},
+        "black_pct": {"any": {"band_max": 15.0, "drift_max": 50.0}},
+        "saturated_pct": {"any": {"band_max": 5.0, "drift_max": 25.0}}
+      },
+      "pass_predicate": "all SOFT/INFO; a harness hiccup makes the demo SKIP, never FAIL",
+      "comment": "Bands calibrated from a single dev-box reference run (brightness ~59, displacement ~6 m over a 6 s free-run). Displacement is wall-clock-coarse on purpose (proves the robot is being driven), so the band is generous; harden with N=3 multi-host in CI."
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — OmniArm 6 ANYPICK (mixed-shape bin picking + SHAPE sort)
+# AnyPick generalises the cube-only bin-picking demo to ARBITRARY part shapes:
+# the bin holds a MIX of cubes, capsule tubes (lying + standing) and L-shaped
+# tubes (compound two-box bodies), dumped together. The vacuum cup picks each
+# part on a per-shape, orientation-aware SUCTION ANCHOR (box face centre /
+# capsule end cap / lying-capsule barrel top -- whichever is highest and faces
+# up) and sorts the parts BY SHAPE into three trays: cubes (red), L-tubes
+# (green), tubes (blue). See omniarm6_anypick.py for the algorithm.
+#
+# Newton + MuJoCo solver. Bin + tray walls are real Newton static colliders;
+# the L-tubes and the movable bin are compound multi-box bodies. BOTH are baked
+# into the WorldInfo below (newtonStatics TRUE + newtonCompoundColliders TRUE),
+# so the demo "just works" from launch.bat / the demo launcher / headless with
+# NO env vars -- the OMNISIM_NEWTON_STATICS / OMNISIM_NEWTON_COMPOUND_COLLIDERS
+# env vars still override.
+#
+# Headless verify (no Newton env vars needed):
+#   ANYPICK_AUTOQUIT=1 python scripts/dev/headless_runner.py \
+#     projects/samples/demos/worlds/flagship/omniarm6_anypick.omniworld --duration 900
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — OmniArm 6 AnyPick (mixed shapes, sort by shape)"
+  newtonSolver "mujoco"
+  newtonStatics TRUE             # bin/tray static walls collide (folds OMNISIM_NEWTON_STATICS into the world)
+  newtonCompoundColliders TRUE   # movable bin + L-tube parts are multi-box bodies (folds OMNISIM_NEWTON_COMPOUND_COLLIDERS)
+  contactProperties [
+    ContactProperties { material1 "default" material2 "default" coulombFriction [ 3 ] bounce 0 softCFM 0.0003 }
+  ]
+  # translation_audit: ContactProperties.coulombFriction is an ODE-path field the
+  # Newton backend does not read; this declares the same friction where it is read.
+  #
+  # mu 5 is past the contact solver's stable range at basicTimeStep 16 and sank
+  # this world's dynamic bodies through the floor -- measured over a 12 s settle
+  # with the robots removed: 10 of 13 bodies below z=0. mu 3 keeps every part on its
+  # surface and is the value docs/guide/friction-grasp.md measured for a
+  # two-finger pinch, so it is the highest friction this world can actually hold.
+  newtonGroundMu 3
+}
+Viewpoint { orientation -0.278945 0.120681 0.952694 2.359689 position 3.303 -3.516 3.540 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 4 4 }
+
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_suction_long.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_anypick"
+}
+
+# ── Top-down recognition camera over the bin ────────────────────────
+DEF BIN_CAM Robot {
+  translation 0.46 0 1.15
+  children [
+    Camera {
+      name "bin_camera"
+      rotation 0 1 0 1.5708
+      width 320
+      height 320
+      fieldOfView 0.6
+      recognition Recognition { maxRange 3 occlusion 1 frameColor 0 1 0 frameThickness 2 }
+    }
+  ]
+  name "bin_cam"
+  controller "bin_camera"
+}
+
+# ── The BOX: a movable dynamic bin (floor + 4 walls on ONE free Newton body),
+# pinned at home by the controller during picking. Launch with
+# OMNISIM_NEWTON_COMPOUND_COLLIDERS=1 so every wall + the floor is a collider.
+DEF MOVABLE_BIN Solid {
+  translation 0.46 0 0.0
+  rotation 0 0 1 0
+  physicsBackend "newton"
+  children [
+    Transform { translation 0 0 0.011 children [ DEF BFLOOR_SH Shape { appearance PBRAppearance { baseColor 0.28 0.31 0.36 roughness 0.85 metalness 0.2 } geometry Box { size 0.42 0.42 0.022 } } ] }
+    Transform { translation -0.195 0 0.131 children [ DEF BWW_SH Shape { appearance PBRAppearance { baseColor 0.30 0.33 0.38 roughness 0.8 metalness 0.3 } geometry Box { size 0.03 0.42 0.22 } } ] }
+    Transform { translation 0.195 0 0.131 children [ DEF BWE_SH Shape { appearance PBRAppearance { baseColor 0.30 0.33 0.38 roughness 0.8 metalness 0.3 } geometry Box { size 0.03 0.42 0.22 } } ] }
+    Transform { translation 0 -0.195 0.131 children [ DEF BWS_SH Shape { appearance PBRAppearance { baseColor 0.30 0.33 0.38 roughness 0.8 metalness 0.3 } geometry Box { size 0.42 0.03 0.22 } } ] }
+    Transform { translation 0 0.195 0.131 children [ DEF BWN_SH Shape { appearance PBRAppearance { baseColor 0.30 0.33 0.38 roughness 0.8 metalness 0.3 } geometry Box { size 0.42 0.03 0.22 } } ] }
+  ]
+  name "movable_bin"
+  boundingObject Group { children [
+    Transform { translation 0 0 0.011 children [ Box { size 0.42 0.42 0.022 } ] }
+    Transform { translation -0.195 0 0.131 children [ Box { size 0.03 0.42 0.22 } ] }
+    Transform { translation 0.195 0 0.131 children [ Box { size 0.03 0.42 0.22 } ] }
+    Transform { translation 0 -0.195 0.131 children [ Box { size 0.42 0.03 0.22 } ] }
+    Transform { translation 0 0.195 0.131 children [ Box { size 0.42 0.03 0.22 } ] }
+  ] }
+  physics Physics { density -1 mass 6.0 centerOfMass [ 0 0 0.015 ] }
+}
+
+# ── Output TRAYS — one per shape kind (low collider walls) ──────────
+# CUBES -> red tray (east)
+DEF CUBE_ZONE Solid { translation 0.32 -0.44 0.001 children [ Shape { appearance PBRAppearance { baseColor 0.85 0.18 0.16 roughness 1 metalness 0 transparency 0.35 } geometry Box { size 0.26 0.24 0.002 } } ] name "cube_zone" }
+DEF CUBE_W Solid { translation 0.1825 -0.44 0.025 physicsBackend "newton" children [ DEF CW_S Shape { appearance PBRAppearance { baseColor 0.70 0.20 0.18 roughness 0.8 } geometry Box { size 0.015 0.27 0.05 } } ] name "cube_w" boundingObject USE CW_S }
+DEF CUBE_E Solid { translation 0.4575 -0.44 0.025 physicsBackend "newton" children [ DEF CE_S Shape { appearance PBRAppearance { baseColor 0.70 0.20 0.18 roughness 0.8 } geometry Box { size 0.015 0.27 0.05 } } ] name "cube_e" boundingObject USE CE_S }
+DEF CUBE_S Solid { translation 0.32 -0.5675 0.025 physicsBackend "newton" children [ DEF CS_S Shape { appearance PBRAppearance { baseColor 0.70 0.20 0.18 roughness 0.8 } geometry Box { size 0.29 0.015 0.05 } } ] name "cube_s" boundingObject USE CS_S }
+DEF CUBE_N Solid { translation 0.32 -0.3125 0.025 physicsBackend "newton" children [ DEF CN_S Shape { appearance PBRAppearance { baseColor 0.70 0.20 0.18 roughness 0.8 } geometry Box { size 0.29 0.015 0.05 } } ] name "cube_n" boundingObject USE CN_S }
+# L-TUBES -> green tray (centre; larger, the parts are long)
+DEF LTUBE_ZONE Solid { translation -0.02 -0.44 0.001 children [ Shape { appearance PBRAppearance { baseColor 0.16 0.78 0.30 roughness 1 metalness 0 transparency 0.35 } geometry Box { size 0.30 0.28 0.002 } } ] name "ltube_zone" }
+DEF LTUBE_W Solid { translation -0.1775 -0.44 0.025 physicsBackend "newton" children [ DEF LW_S Shape { appearance PBRAppearance { baseColor 0.14 0.55 0.24 roughness 0.8 } geometry Box { size 0.015 0.31 0.05 } } ] name "ltube_w" boundingObject USE LW_S }
+DEF LTUBE_E Solid { translation 0.1375 -0.44 0.025 physicsBackend "newton" children [ DEF LE_S Shape { appearance PBRAppearance { baseColor 0.14 0.55 0.24 roughness 0.8 } geometry Box { size 0.015 0.31 0.05 } } ] name "ltube_e" boundingObject USE LE_S }
+DEF LTUBE_S Solid { translation -0.02 -0.5875 0.025 physicsBackend "newton" children [ DEF LS_S Shape { appearance PBRAppearance { baseColor 0.14 0.55 0.24 roughness 0.8 } geometry Box { size 0.33 0.015 0.05 } } ] name "ltube_s" boundingObject USE LS_S }
+DEF LTUBE_N Solid { translation -0.02 -0.2925 0.025 physicsBackend "newton" children [ DEF LN_S Shape { appearance PBRAppearance { baseColor 0.14 0.55 0.24 roughness 0.8 } geometry Box { size 0.33 0.015 0.05 } } ] name "ltube_n" boundingObject USE LN_S }
+# TUBES -> blue tray (west)
+DEF TUBE_ZONE Solid { translation -0.36 -0.44 0.001 children [ Shape { appearance PBRAppearance { baseColor 0.16 0.36 0.85 roughness 1 metalness 0 transparency 0.35 } geometry Box { size 0.26 0.24 0.002 } } ] name "tube_zone" }
+DEF TUBE_W Solid { translation -0.4975 -0.44 0.025 physicsBackend "newton" children [ DEF TW_S Shape { appearance PBRAppearance { baseColor 0.18 0.28 0.70 roughness 0.8 } geometry Box { size 0.015 0.27 0.05 } } ] name "tube_w" boundingObject USE TW_S }
+DEF TUBE_E Solid { translation -0.2225 -0.44 0.025 physicsBackend "newton" children [ DEF TE_S Shape { appearance PBRAppearance { baseColor 0.18 0.28 0.70 roughness 0.8 } geometry Box { size 0.015 0.27 0.05 } } ] name "tube_e" boundingObject USE TE_S }
+DEF TUBE_S Solid { translation -0.36 -0.5675 0.025 physicsBackend "newton" children [ DEF TS_S Shape { appearance PBRAppearance { baseColor 0.18 0.28 0.70 roughness 0.8 } geometry Box { size 0.29 0.015 0.05 } } ] name "tube_s" boundingObject USE TS_S }
+DEF TUBE_N Solid { translation -0.36 -0.3125 0.025 physicsBackend "newton" children [ DEF TN_S Shape { appearance PBRAppearance { baseColor 0.18 0.28 0.70 roughness 0.8 } geometry Box { size 0.29 0.015 0.05 } } ] name "tube_n" boundingObject USE TN_S }
+
+# ── Parts — a MIX of shapes dumped into the bin ─────────────────────
+# 4 cubes (red, 0.05 box), 4 tubes (blue, capsule r=0.021 h=0.08, lying and
+# standing) and 4 L-tubes (green, compound: 0.10x0.032x0.032 long limb +
+# 0.032x0.07x0.032 short limb at (-0.034, 0.051)). The Solid `name` encodes
+# the kind ("cube_1", "tube_2", "ltube_3") -- the controller sorts by it; the
+# geometry must match KIND_GEOM in omniarm6_anypick.py.
+DEF PART_1 Solid { translation 0.36 -0.10 0.055 rotation 0 0 1 0.30 physicsBackend "newton" children [ DEF P1_SH Shape { appearance PBRAppearance { baseColor 0.88 0.18 0.16 roughness 1 metalness 0 } geometry Box { size 0.05 0.05 0.05 } } ] name "cube_1" boundingObject USE P1_SH recognitionColors [ 0.88 0.18 0.16 ] physics Physics { density -1 mass 0.06 } }
+DEF PART_2 Solid { translation 0.46 -0.10 0.050 rotation 0 1 0 1.5708 physicsBackend "newton" children [ DEF P2_SH Shape { appearance PBRAppearance { baseColor 0.16 0.36 0.88 roughness 1 metalness 0 } geometry Capsule { height 0.08 radius 0.021 } } ] name "tube_2" boundingObject USE P2_SH recognitionColors [ 0.16 0.36 0.88 ] physics Physics { density -1 mass 0.05 } }
+DEF PART_3 Solid { translation 0.57 -0.09 0.045 rotation 0 0 1 0.70 physicsBackend "newton" children [ Transform { translation 0 0 0 children [ DEF P3A_SH Shape { appearance PBRAppearance { baseColor 0.16 0.78 0.30 roughness 1 metalness 0 } geometry Box { size 0.10 0.032 0.032 } } ] } Transform { translation -0.034 0.051 0 children [ DEF P3B_SH Shape { appearance PBRAppearance { baseColor 0.16 0.78 0.30 roughness 1 metalness 0 } geometry Box { size 0.032 0.07 0.032 } } ] } ] name "ltube_3" boundingObject Group { children [ Transform { translation 0 0 0 children [ Box { size 0.10 0.032 0.032 } ] } Transform { translation -0.034 0.051 0 children [ Box { size 0.032 0.07 0.032 } ] } ] } recognitionColors [ 0.16 0.78 0.30 ] physics Physics { density -1 mass 0.08 } }
+DEF PART_4 Solid { translation 0.36 0.00 0.050 rotation 1 0 0 1.5708 physicsBackend "newton" children [ DEF P4_SH Shape { appearance PBRAppearance { baseColor 0.16 0.36 0.88 roughness 1 metalness 0 } geometry Capsule { height 0.08 radius 0.021 } } ] name "tube_4" boundingObject USE P4_SH recognitionColors [ 0.16 0.36 0.88 ] physics Physics { density -1 mass 0.05 } }
+DEF PART_5 Solid { translation 0.46 0.00 0.055 rotation 0 0 1 0.40 physicsBackend "newton" children [ DEF P5_SH Shape { appearance PBRAppearance { baseColor 0.88 0.18 0.16 roughness 1 metalness 0 } geometry Box { size 0.05 0.05 0.05 } } ] name "cube_5" boundingObject USE P5_SH recognitionColors [ 0.88 0.18 0.16 ] physics Physics { density -1 mass 0.06 } }
+DEF PART_6 Solid { translation 0.56 0.02 0.045 rotation 0 0 1 -1.30 physicsBackend "newton" children [ Transform { translation 0 0 0 children [ DEF P6A_SH Shape { appearance PBRAppearance { baseColor 0.16 0.78 0.30 roughness 1 metalness 0 } geometry Box { size 0.10 0.032 0.032 } } ] } Transform { translation -0.034 0.051 0 children [ DEF P6B_SH Shape { appearance PBRAppearance { baseColor 0.16 0.78 0.30 roughness 1 metalness 0 } geometry Box { size 0.032 0.07 0.032 } } ] } ] name "ltube_6" boundingObject Group { children [ Transform { translation 0 0 0 children [ Box { size 0.10 0.032 0.032 } ] } Transform { translation -0.034 0.051 0 children [ Box { size 0.032 0.07 0.032 } ] } ] } recognitionColors [ 0.16 0.78 0.30 ] physics Physics { density -1 mass 0.08 } }
+DEF PART_7 Solid { translation 0.36 0.10 0.055 rotation 0 0 1 0.90 physicsBackend "newton" children [ DEF P7_SH Shape { appearance PBRAppearance { baseColor 0.88 0.18 0.16 roughness 1 metalness 0 } geometry Box { size 0.05 0.05 0.05 } } ] name "cube_7" boundingObject USE P7_SH recognitionColors [ 0.88 0.18 0.16 ] physics Physics { density -1 mass 0.06 } }
+DEF PART_8 Solid { translation 0.46 0.10 0.090 rotation 0 0 1 0 physicsBackend "newton" children [ DEF P8_SH Shape { appearance PBRAppearance { baseColor 0.16 0.36 0.88 roughness 1 metalness 0 } geometry Capsule { height 0.08 radius 0.021 } } ] name "tube_8" boundingObject USE P8_SH recognitionColors [ 0.16 0.36 0.88 ] physics Physics { density -1 mass 0.05 } }
+DEF PART_9 Solid { translation 0.41 -0.05 0.140 rotation 0 0 1 2.10 physicsBackend "newton" children [ Transform { translation 0 0 0 children [ DEF P9A_SH Shape { appearance PBRAppearance { baseColor 0.16 0.78 0.30 roughness 1 metalness 0 } geometry Box { size 0.10 0.032 0.032 } } ] } Transform { translation -0.034 0.051 0 children [ DEF P9B_SH Shape { appearance PBRAppearance { baseColor 0.16 0.78 0.30 roughness 1 metalness 0 } geometry Box { size 0.032 0.07 0.032 } } ] } ] name "ltube_9" boundingObject Group { children [ Transform { translation 0 0 0 children [ Box { size 0.10 0.032 0.032 } ] } Transform { translation -0.034 0.051 0 children [ Box { size 0.032 0.07 0.032 } ] } ] } recognitionColors [ 0.16 0.78 0.30 ] physics Physics { density -1 mass 0.08 } }
+DEF PART_10 Solid { translation 0.52 -0.04 0.130 rotation 0 0 1 1.10 physicsBackend "newton" children [ DEF P10_SH Shape { appearance PBRAppearance { baseColor 0.88 0.18 0.16 roughness 1 metalness 0 } geometry Box { size 0.05 0.05 0.05 } } ] name "cube_10" boundingObject USE P10_SH recognitionColors [ 0.88 0.18 0.16 ] physics Physics { density -1 mass 0.06 } }
+DEF PART_11 Solid { translation 0.45 0.05 0.130 rotation 0 1 0 1.5708 physicsBackend "newton" children [ DEF P11_SH Shape { appearance PBRAppearance { baseColor 0.16 0.36 0.88 roughness 1 metalness 0 } geometry Capsule { height 0.08 radius 0.021 } } ] name "tube_11" boundingObject USE P11_SH recognitionColors [ 0.16 0.36 0.88 ] physics Physics { density -1 mass 0.05 } }
+DEF PART_12 Solid { translation 0.52 0.07 0.160 rotation 0 0 1 0.30 physicsBackend "newton" children [ Transform { translation 0 0 0 children [ DEF P12A_SH Shape { appearance PBRAppearance { baseColor 0.16 0.78 0.30 roughness 1 metalness 0 } geometry Box { size 0.10 0.032 0.032 } } ] } Transform { translation -0.034 0.051 0 children [ DEF P12B_SH Shape { appearance PBRAppearance { baseColor 0.16 0.78 0.30 roughness 1 metalness 0 } geometry Box { size 0.032 0.07 0.032 } } ] } ] name "ltube_12" boundingObject Group { children [ Transform { translation 0 0 0 children [ Box { size 0.10 0.032 0.032 } ] } Transform { translation -0.034 0.051 0 children [ Box { size 0.032 0.07 0.032 } ] } ] } recognitionColors [ 0.16 0.78 0.30 ] physics Physics { density -1 mass 0.08 } }

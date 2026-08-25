@@ -1,0 +1,632 @@
+#OMNISIM R2025a utf8
+
+# BEAUTY BENCH v2 — the agreed small render-quality benchmark scene (2026-08-19; dressed the
+# same evening: window frames, half-open door, chimney, hedge, flowers, rug, path lantern).
+# One compact house lot that exercises every renderer feature in a single frame:
+#   - PBR full map sets (CorrodedMetal barrel, BrushedAluminium mailbox, Copper sphere)
+#   - flat PBR + textured appearances w/ TextureTransform tiling (bricks, plaster,
+#     parquet, concrete, stone/slate pavement, grass)
+#   - transparency (two window panes + a patio glass panel, in sun and in shade)
+#   - multi-light (sun + warm interior PointLight + porch SpotLight)
+#   - emissive (door strip + lamp bulb — HDR bloom sources)
+#   - GTAO (room corners, furniture contact, plinth/barrel bases)
+#   - sun shadows (tree, roof overhang, furniture through the window)
+# ⚠ RECIPE DEVIATION, deliberate: no SUN_MARKER / sun_marker supervisor — the
+# benchmark's light must be IDENTICAL between runs, and the marker's day-night
+# cycle moves the sun every step. The sun below is the canonical OmniSimSun with
+# a fixed authored direction.
+# Static scene, no controllers, no physics — a pure LOOK benchmark.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Grass.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RedBricks.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Plaster.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/FormedConcrete.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/PaintedWood.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedSteel.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Copper.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Marble.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/CorrodedMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/OsbWood.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Pavement.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Oak.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Pine.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Sassafras.proto"
+EXTERNPROTO "omnisim://projects/objects/garden/protos/PicketFence.proto"
+EXTERNPROTO "omnisim://projects/objects/garden/protos/Wheelbarrow.proto"
+EXTERNPROTO "omnisim://projects/objects/garden/protos/WateringCan.proto"
+
+WorldInfo {
+  newtonCompoundColliders TRUE
+  basicTimeStep 16
+  FPS 30
+  title "Beauty Bench"
+  info [
+    "The standing render-quality benchmark: a small house lot exercising PBR maps,"
+    "transparency, multi-light, emissive, GTAO, shadows and tiled textures in one frame."
+  ]
+}
+Viewpoint {
+  orientation 0 0.329 0.945 0.735
+  position -10.5 -9.5 4.4
+  exposure 1.0
+}
+OmniSimSky { }
+DEF SUN OmniSimSun {
+  # Sun in the front-right sky: the front brick wall is lit, the left plaster wall falls into
+  # shade-side modeling, and every cast shadow rakes toward back-left where the hero camera
+  # actually SEES it (tree onto the roof/patio, house onto its left lawn, props onto the path).
+  direction -0.6 0.35 -0.42
+}
+
+# ---------------- ground + hardscape ----------------
+DEF LAWN Solid {
+  children [
+    Shape {
+      appearance Grass {
+        textureTransform TextureTransform { scale 10 10 }
+      }
+      geometry Box { size 24 24 0.04 }
+    }
+  ]
+  name "lawn"
+}
+DEF PATH Solid {
+  translation -1.4 -5.55 0.03
+  children [
+    Shape {
+      appearance Pavement {
+        type "slate"
+        textureTransform TextureTransform { scale 1 3 }
+      }
+      geometry Box { size 1.1 6.1 0.05 }
+    }
+  ]
+  name "path"
+}
+DEF PATIO Solid {
+  translation 1.8 -3.8 0.03
+  children [
+    Shape {
+      appearance Pavement {
+        type "braun square stone"
+        textureTransform TextureTransform { scale 2.4 2 }
+      }
+      geometry Box { size 3.2 2.6 0.05 }
+    }
+  ]
+  name "patio"
+}
+# glass patio panel (transparency in direct sun)
+DEF PATIO_GLASS Solid {
+  translation 3.35 -3.8 0.62
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.78 0.82
+        transparency 0.55
+        roughness 0.08
+        metalness 0
+      }
+      geometry Box { size 0.04 2.4 1.1 }
+    }
+  ]
+  name "patio glass panel"
+}
+
+# ---------------- house shell ----------------
+DEF FOUNDATION Solid {
+  translation 0 0 0.06
+  children [
+    Shape {
+      appearance FormedConcrete {
+        textureTransform TextureTransform { scale 3 2.5 }
+      }
+      geometry Box { size 6.5 5.5 0.12 }
+    }
+  ]
+  name "foundation"
+}
+DEF FLOOR_PARQUET Solid {
+  translation 0 0 0.145
+  children [
+    Shape {
+      appearance Parquetry {
+        textureTransform TextureTransform { scale 3 2.5 }
+      }
+      geometry Box { size 6.2 5.2 0.05 }
+    }
+  ]
+  name "parquet floor"
+}
+# back wall (y = +2.5), full
+DEF WALL_BACK Solid {
+  translation 0 2.5 1.37
+  children [
+    Shape {
+      appearance RedBricks {
+        textureTransform TextureTransform { scale 4 1.6 }
+      }
+      geometry Box { size 6.0 0.15 2.5 }
+    }
+  ]
+  name "wall back"
+}
+# right wall (x = +3), full
+DEF WALL_RIGHT Solid {
+  translation 3.0 0 1.37
+  children [
+    Shape {
+      appearance RedBricks {
+        textureTransform TextureTransform { scale 3.4 1.6 }
+      }
+      geometry Box { size 0.15 5.15 2.5 }
+    }
+  ]
+  name "wall right"
+}
+# left wall (x = -3) with a window: segments + sill + lintel + glass
+DEF WALL_LEFT_A Solid {
+  translation -3.0 -2.0 1.37
+  children [
+    Shape {
+      appearance Plaster {
+        textureTransform TextureTransform { scale 0.8 1.6 }
+      }
+      geometry Box { size 0.15 1.15 2.5 }
+    }
+  ]
+  name "wall left a"
+}
+DEF WALL_LEFT_B Solid {
+  translation -3.0 1.5 1.37
+  children [
+    Shape {
+      appearance Plaster {
+        textureTransform TextureTransform { scale 1.4 1.6 }
+      }
+      geometry Box { size 0.15 2.15 2.5 }
+    }
+  ]
+  name "wall left b"
+}
+DEF WALL_LEFT_SILL Solid {
+  translation -3.0 -0.45 0.56
+  children [
+    Shape {
+      appearance Plaster {
+        textureTransform TextureTransform { scale 1.2 0.6 }
+      }
+      geometry Box { size 0.15 1.95 0.88 }
+    }
+  ]
+  name "wall left sill"
+}
+DEF WALL_LEFT_LINTEL Solid {
+  translation -3.0 -0.45 2.36
+  children [
+    Shape {
+      appearance Plaster {
+        textureTransform TextureTransform { scale 1.2 0.4 }
+      }
+      geometry Box { size 0.15 1.95 0.52 }
+    }
+  ]
+  name "wall left lintel"
+}
+DEF WINDOW_LEFT Solid {
+  translation -3.0 -0.45 1.55
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.62 0.78 0.86
+        transparency 0.62
+        roughness 0.05
+        metalness 0
+      }
+      geometry Box { size 0.03 1.95 1.1 }
+    }
+  ]
+  name "window left"
+}
+# front wall (y = -2.5): brick segments + door opening + big window
+DEF WALL_FRONT_A Solid {
+  translation -2.45 -2.5 1.37
+  children [
+    Shape {
+      appearance RedBricks {
+        textureTransform TextureTransform { scale 0.8 1.6 }
+      }
+      geometry Box { size 1.1 0.15 2.5 }
+    }
+  ]
+  name "wall front a"
+}
+DEF DOOR_LINTEL Solid {
+  translation -1.4 -2.5 2.36
+  children [
+    Shape {
+      appearance RedBricks {
+        textureTransform TextureTransform { scale 0.7 0.4 }
+      }
+      geometry Box { size 1.0 0.15 0.52 }
+    }
+  ]
+  name "door lintel"
+}
+DEF WALL_FRONT_B Solid {
+  translation -0.65 -2.5 1.37
+  children [
+    Shape {
+      appearance RedBricks {
+        textureTransform TextureTransform { scale 0.4 1.6 }
+      }
+      geometry Box { size 0.5 0.15 2.5 }
+    }
+  ]
+  name "wall front b"
+}
+DEF WINDOW_FRONT_SILL Solid {
+  translation 0.5 -2.5 0.56
+  children [
+    Shape {
+      appearance RedBricks {
+        textureTransform TextureTransform { scale 1.2 0.6 }
+      }
+      geometry Box { size 1.8 0.15 0.88 }
+    }
+  ]
+  name "window front sill"
+}
+DEF WINDOW_FRONT_LINTEL Solid {
+  translation 0.5 -2.5 2.36
+  children [
+    Shape {
+      appearance RedBricks {
+        textureTransform TextureTransform { scale 1.2 0.4 }
+      }
+      geometry Box { size 1.8 0.15 0.52 }
+    }
+  ]
+  name "window front lintel"
+}
+DEF WINDOW_FRONT Solid {
+  translation 0.5 -2.5 1.55
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.62 0.78 0.86
+        transparency 0.62
+        roughness 0.05
+        metalness 0
+      }
+      geometry Box { size 1.8 0.03 1.1 }
+    }
+  ]
+  name "window front"
+}
+DEF WALL_FRONT_C Solid {
+  translation 2.2 -2.5 1.37
+  children [
+    Shape {
+      appearance RedBricks {
+        textureTransform TextureTransform { scale 1.1 1.6 }
+      }
+      geometry Box { size 1.6 0.15 2.5 }
+    }
+  ]
+  name "wall front c"
+}
+# flat roof slab with overhang
+DEF ROOF Solid {
+  translation 0 0 2.71
+  children [
+    Shape {
+      appearance FormedConcrete {
+        textureTransform TextureTransform { scale 3.4 3 }
+      }
+      geometry Box { size 6.9 5.9 0.18 }
+    }
+  ]
+  name "roof"
+}
+
+# ---------------- interior ----------------
+DEF TABLE_TOP Solid {
+  translation 0.7 0.4 0.75
+  children [
+    Shape {
+      appearance PaintedWood {
+        textureTransform TextureTransform { scale 1.2 0.7 }
+      }
+      geometry Box { size 1.2 0.7 0.06 }
+    }
+  ]
+  name "table top"
+}
+DEF TABLE_LEG1 Solid { translation 0.18 0.12 0.45 children [ Shape { appearance BrushedSteel { } geometry Cylinder { radius 0.03 height 0.6 } } ] name "table leg 1" }
+DEF TABLE_LEG2 Solid { translation 1.22 0.12 0.45 children [ Shape { appearance BrushedSteel { } geometry Cylinder { radius 0.03 height 0.6 } } ] name "table leg 2" }
+DEF TABLE_LEG3 Solid { translation 0.18 0.68 0.45 children [ Shape { appearance BrushedSteel { } geometry Cylinder { radius 0.03 height 0.6 } } ] name "table leg 3" }
+DEF TABLE_LEG4 Solid { translation 1.22 0.68 0.45 children [ Shape { appearance BrushedSteel { } geometry Cylinder { radius 0.03 height 0.6 } } ] name "table leg 4" }
+DEF SOFA_SEAT Solid {
+  translation -1.6 1.6 0.42
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.55 0.09 0.11 roughness 0.4 metalness 0 }
+      geometry Box { size 1.5 0.6 0.5 }
+    }
+  ]
+  name "sofa seat"
+}
+DEF SOFA_BACK Solid {
+  translation -1.6 1.93 0.95
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.5 0.08 0.1 roughness 0.45 metalness 0 }
+      geometry Box { size 1.5 0.16 0.6 }
+    }
+  ]
+  name "sofa back"
+}
+# floor lamp: copper pole + emissive bulb, next to the warm point light
+DEF LAMP_POLE Solid {
+  translation 1.9 1.7 0.95
+  children [ Shape { appearance Copper { } geometry Cylinder { radius 0.03 height 1.6 } } ]
+  name "lamp pole"
+}
+DEF LAMP_BULB Solid {
+  translation 1.9 1.7 1.82
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
+        emissiveColor 1 0.72 0.45
+        emissiveIntensity 6
+      }
+      geometry Sphere { radius 0.09 subdivision 3 }
+    }
+  ]
+  name "lamp bulb"
+}
+DEF INTERIOR_LIGHT PointLight {
+  location 1.9 1.7 1.82
+  color 1 0.72 0.45
+  intensity 2.5
+  attenuation 0 0 1
+  radius 9
+  castShadows FALSE
+}
+
+# ---------------- entrance details ----------------
+DEF DOOR_STRIP Solid {
+  translation -0.94 -2.56 1.35
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+        roughness 1
+        metalness 0
+        emissiveColor 1 0.5 0.2
+        emissiveIntensity 8
+      }
+      geometry Box { size 0.05 0.02 1.4 }
+    }
+  ]
+  name "door strip"
+}
+DEF PORCH_SPOT SpotLight {
+  location -1.4 -2.85 2.5
+  direction 0 -0.25 -1
+  color 1 0.9 0.7
+  intensity 4
+  beamWidth 0.5
+  cutOffAngle 0.85
+  attenuation 0 0 1
+  radius 8
+  castShadows FALSE
+}
+
+# ---------------- garden props ----------------
+DEF SCULPTURE_PLINTH Solid {
+  translation -4.6 -3.4 0.31
+  children [
+    Shape {
+      appearance Marble { textureTransform TextureTransform { scale 1 1 } }
+      geometry Box { size 0.55 0.55 0.55 }
+    }
+  ]
+  name "sculpture plinth"
+}
+DEF SCULPTURE Solid {
+  translation -4.6 -3.4 0.93
+  children [ Shape { appearance Copper { } geometry Sphere { radius 0.34 subdivision 3 } } ]
+  name "copper sculpture"
+}
+DEF BARREL Solid {
+  translation 2.4 -4.6 0.505
+  children [ Shape { appearance CorrodedMetal { } geometry Cylinder { radius 0.3 height 0.9 } } ]
+  name "barrel"
+}
+DEF MAILBOX_POST Solid {
+  translation -2.55 -9.05 0.52
+  children [ Shape { appearance OsbWood { } geometry Box { size 0.08 0.08 1.0 } } ]
+  name "mailbox post"
+}
+DEF MAILBOX Solid {
+  translation -2.55 -9.05 1.16
+  children [ Shape { appearance BrushedAluminium { } geometry Box { size 0.36 0.22 0.26 } } ]
+  name "mailbox"
+}
+# v3 content pass: the primitive sphere-trees are gone — the mesh-tree library (alpha-cutout
+# leaf cards) replaces them. Oak behind-right rising over the roofline, Pine behind-left.
+DEF TREE_OAK Oak {
+  translation 7.2 3.2 0
+  rotation 0 0 1 0.6
+  enableBoundingObject FALSE
+}
+DEF FRAME_FRONT_T Solid { translation 0.5 -2.52 2.13 children [ Shape { appearance PBRAppearance { baseColor 0.16 0.12 0.09 roughness 0.4 metalness 0.6 } geometry Box { size 1.9 0.06 0.07 } } ] name "frame front top" }
+DEF FRAME_FRONT_B Solid { translation 0.5 -2.52 0.97 children [ Shape { appearance PBRAppearance { baseColor 0.16 0.12 0.09 roughness 0.4 metalness 0.6 } geometry Box { size 1.9 0.06 0.07 } } ] name "frame front bottom" }
+DEF FRAME_FRONT_L Solid { translation -0.42 -2.52 1.55 children [ Shape { appearance PBRAppearance { baseColor 0.16 0.12 0.09 roughness 0.4 metalness 0.6 } geometry Box { size 0.07 0.06 1.25 } } ] name "frame front left" }
+DEF FRAME_FRONT_R Solid { translation 1.42 -2.52 1.55 children [ Shape { appearance PBRAppearance { baseColor 0.16 0.12 0.09 roughness 0.4 metalness 0.6 } geometry Box { size 0.07 0.06 1.25 } } ] name "frame front right" }
+DEF FRAME_LEFT_T Solid { translation -3.02 -0.45 2.13 children [ Shape { appearance PBRAppearance { baseColor 0.16 0.12 0.09 roughness 0.4 metalness 0.6 } geometry Box { size 0.06 2.05 0.07 } } ] name "frame left top" }
+DEF FRAME_LEFT_B Solid { translation -3.02 -0.45 0.97 children [ Shape { appearance PBRAppearance { baseColor 0.16 0.12 0.09 roughness 0.4 metalness 0.6 } geometry Box { size 0.06 2.05 0.07 } } ] name "frame left bottom" }
+# half-open painted-wood door, hinged at the left jamb, with a steel handle
+DEF DOOR Solid {
+  translation -1.88 -2.5 1.11
+  rotation 0 0 1 1.15
+  children [
+    Pose {
+      translation 0.48 0 0
+      children [
+        Shape {
+          appearance PaintedWood { colorOverride 0.45 0.26 0.15 textureTransform TextureTransform { scale 1 2 } }
+          geometry Box { size 0.96 0.05 1.94 }
+        }
+      ]
+    }
+    Pose {
+      translation 0.86 -0.06 0
+      children [ Shape { appearance BrushedSteel { } geometry Sphere { radius 0.035 subdivision 2 } } ]
+    }
+  ]
+  name "door"
+}
+# chimney breaking the flat roofline
+DEF CHIMNEY Solid { translation 1.7 1.3 3.17 children [ Shape { appearance RedBricks { textureTransform TextureTransform { scale 0.6 0.8 } } geometry Box { size 0.55 0.55 0.95 } } ] name "chimney" }
+DEF CHIMNEY_CAP Solid { translation 1.7 1.3 3.68 children [ Shape { appearance PBRAppearance { baseColor 0.25 0.25 0.27 roughness 0.7 metalness 0.1 } geometry Box { size 0.68 0.68 0.08 } } ] name "chimney cap" }
+# low hedge along the path's left side
+DEF HEDGE_1 Solid {
+  translation -2.25 -3.50 0
+  children [
+    Pose { translation -0.03 -0.53 0.23 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.0 0.7 } } geometry Sphere { radius 0.23 subdivision 3 } } ] }
+    Pose { translation -0.04 -0.27 0.22 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.0 0.7 } } geometry Sphere { radius 0.22 subdivision 3 } } ] }
+    Pose { translation -0.04 -0.03 0.22 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.5 0.5 } } geometry Sphere { radius 0.21 subdivision 3 } } ] }
+    Pose { translation 0.01 0.24 0.24 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.3 0.7 } } geometry Sphere { radius 0.26 subdivision 3 } } ] }
+    Pose { translation -0.05 0.55 0.24 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.2 0.6 } } geometry Sphere { radius 0.25 subdivision 3 } } ] }
+  ]
+  name "hedge 1"
+}
+DEF HEDGE_2 Solid {
+  translation -2.25 -4.80 0
+  children [
+    Pose { translation -0.02 -0.54 0.23 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.1 0.7 } } geometry Sphere { radius 0.25 subdivision 3 } } ] }
+    Pose { translation -0.01 -0.25 0.22 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.0 0.5 } } geometry Sphere { radius 0.22 subdivision 3 } } ] }
+    Pose { translation 0.02 -0.02 0.22 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.2 0.7 } } geometry Sphere { radius 0.21 subdivision 3 } } ] }
+    Pose { translation -0.02 0.26 0.23 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.4 0.6 } } geometry Sphere { radius 0.24 subdivision 3 } } ] }
+    Pose { translation 0.00 0.52 0.24 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.4 0.6 } } geometry Sphere { radius 0.25 subdivision 3 } } ] }
+  ]
+  name "hedge 2"
+}
+DEF HEDGE_3 Solid {
+  translation -2.25 -6.10 0
+  children [
+    Pose { translation -0.04 -0.49 0.22 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.5 0.6 } } geometry Sphere { radius 0.21 subdivision 3 } } ] }
+    Pose { translation -0.05 -0.26 0.23 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.5 0.7 } } geometry Sphere { radius 0.23 subdivision 3 } } ] }
+    Pose { translation -0.02 0.02 0.23 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.4 0.7 } } geometry Sphere { radius 0.24 subdivision 3 } } ] }
+    Pose { translation 0.03 0.26 0.24 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.3 0.8 } } geometry Sphere { radius 0.26 subdivision 3 } } ] }
+    Pose { translation 0.02 0.49 0.23 children [ Shape { appearance Grass { type "mossy" textureTransform TextureTransform { scale 1.6 0.8 } } geometry Sphere { radius 0.23 subdivision 3 } } ] }
+  ]
+  name "hedge 3"
+}
+# flower bed under the front window: stems + coloured heads
+DEF FLOWER_S1 Solid { translation 0.1 -2.85 0.14 children [ Shape { appearance PBRAppearance { baseColor 0.15 0.4 0.12 roughness 0.9 metalness 0 } geometry Cylinder { radius 0.015 height 0.24 } } ] name "flower stem 1" }
+DEF FLOWER_H1 Solid { translation 0.1 -2.85 0.29 children [ Shape { appearance PBRAppearance { baseColor 0.85 0.15 0.2 roughness 0.6 metalness 0 } geometry Sphere { radius 0.05 subdivision 2 } } ] name "flower 1" }
+DEF FLOWER_S2 Solid { translation 0.45 -2.9 0.13 children [ Shape { appearance PBRAppearance { baseColor 0.15 0.4 0.12 roughness 0.9 metalness 0 } geometry Cylinder { radius 0.015 height 0.22 } } ] name "flower stem 2" }
+DEF FLOWER_H2 Solid { translation 0.45 -2.9 0.27 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.8 0.2 roughness 0.6 metalness 0 } geometry Sphere { radius 0.045 subdivision 2 } } ] name "flower 2" }
+DEF FLOWER_S3 Solid { translation 0.8 -2.84 0.14 children [ Shape { appearance PBRAppearance { baseColor 0.15 0.4 0.12 roughness 0.9 metalness 0 } geometry Cylinder { radius 0.015 height 0.24 } } ] name "flower stem 3" }
+DEF FLOWER_H3 Solid { translation 0.8 -2.84 0.29 children [ Shape { appearance PBRAppearance { baseColor 0.95 0.95 0.9 roughness 0.6 metalness 0 } geometry Sphere { radius 0.05 subdivision 2 } } ] name "flower 3" }
+DEF FLOWER_S4 Solid { translation 1.15 -2.9 0.13 children [ Shape { appearance PBRAppearance { baseColor 0.15 0.4 0.12 roughness 0.9 metalness 0 } geometry Cylinder { radius 0.015 height 0.22 } } ] name "flower stem 4" }
+DEF FLOWER_H4 Solid { translation 1.15 -2.9 0.27 children [ Shape { appearance PBRAppearance { baseColor 0.75 0.3 0.85 roughness 0.6 metalness 0 } geometry Sphere { radius 0.045 subdivision 2 } } ] name "flower 4" }
+# deep-red rug on the parquet, visible through the door
+DEF RUG Solid { translation -0.4 0.6 0.175 children [ Shape { appearance PBRAppearance { baseColor 0.42 0.1 0.12 roughness 0.98 metalness 0 } geometry Box { size 1.7 1.2 0.012 } } ] name "rug" }
+# path lantern: post + warm emissive head (a second night-light beside the door strip)
+DEF LANTERN_POST Solid { translation -0.75 -5.9 0.32 children [ Shape { appearance PBRAppearance { baseColor 0.14 0.14 0.16 roughness 0.5 metalness 0.7 } geometry Cylinder { radius 0.025 height 0.64 } } ] name "lantern post" }
+DEF LANTERN_HEAD Solid { translation -0.75 -5.9 0.71 children [ Shape { appearance PBRAppearance { baseColor 0 0 0 roughness 1 metalness 0 emissiveColor 1 0.65 0.3 emissiveIntensity 7 } geometry Box { size 0.11 0.11 0.13 } } ] name "lantern head" }
+DEF LANTERN_CAP Solid { translation -0.75 -5.9 0.795 children [ Shape { appearance PBRAppearance { baseColor 0.14 0.14 0.16 roughness 0.5 metalness 0.7 } geometry Box { size 0.15 0.15 0.03 } } ] name "lantern cap" }
+# second, smaller tree behind-left for depth
+DEF TREE_PINE Pine {
+  translation -7.0 4.5 0
+  rotation 0 0 1 2.1
+  enableBoundingObject FALSE
+}
+
+# v4 content pass: real garden assets + near-camera grass clumps (alpha-cutout cards).
+# v4.2: the fence line fronts the lot at y=-8.6 with a gate on the path. It was at -8.0,
+# but its own shadow band (1 m pickets, 31-deg sun -> ~0.8 m NW) covered the patrol
+# rover's front lane at y=-7.15, so the rover crossed the front with its shadow merged
+# into the fence's; at -8.6 the lane rides a sunlit strip and the moving shadow reads.
+# PicketFence segments extend along LOCAL -Y; rotation z=+90 deg turns that into +X,
+# so each run's origin is its west end. West run x -7.4..-2.3, east run x -0.5..6.3.
+DEF FENCE_W PicketFence {
+  translation -7.4 -8.6 0.02
+  rotation 0 0 1 1.5708
+  numberOfSegments 3
+  enableBoundingObject FALSE
+}
+DEF FENCE_E PicketFence {
+  translation -0.5 -8.6 0.02
+  rotation 0 0 1 1.5708
+  name "picket fence east"
+  numberOfSegments 4
+  enableBoundingObject FALSE
+}
+DEF TREE_SASSAFRAS Sassafras {
+  translation 8.0 7.5 0
+  rotation 0 0 1 1.2
+  enableBoundingObject FALSE
+}
+DEF WHEELBARROW Wheelbarrow {
+  translation -4.6 -6.1 0.02
+  rotation 0 0 1 0.5
+}
+DEF WATERING_CAN WateringCan {
+  translation 1.5 -3.1 0.055
+  rotation 0 0 1 -0.7
+}
+DEF GRASS_0 Solid { translation -2.70 -3.05 0.005 rotation 0 0 1 2.99 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.48 0 0, 0.48 0 0, 0.48 0 0.30, -0.48 0 0.30, 0 -0.48 0, 0 0.48 0, 0 0.48 0.30, 0 -0.48 0.30 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 0" }
+DEF GRASS_1 Solid { translation 2.00 -6.35 0.005 rotation 0 0 1 0.33 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.30 0 0, 0.30 0 0, 0.30 0 0.19, -0.30 0 0.19, 0 -0.30 0, 0 0.30 0, 0 0.30 0.19, 0 -0.30 0.19 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 1" }
+DEF GRASS_2 Solid { translation -2.85 -5.00 0.005 rotation 0 0 1 0.53 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.38 0 0, 0.38 0 0, 0.38 0 0.23, -0.38 0 0.23, 0 -0.38 0, 0 0.38 0, 0 0.38 0.23, 0 -0.38 0.23 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 2" }
+DEF GRASS_3 Solid { translation 0.30 -6.20 0.005 rotation 0 0 1 2.55 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.38 0 0, 0.38 0 0, 0.38 0 0.24, -0.38 0 0.24, 0 -0.38 0, 0 0.38 0, 0 0.38 0.24, 0 -0.38 0.24 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 3" }
+DEF GRASS_4 Solid { translation -3.10 -6.30 0.005 rotation 0 0 1 1.32 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.31 0 0, 0.31 0 0, 0.31 0 0.19, -0.31 0 0.19, 0 -0.31 0, 0 0.31 0, 0 0.31 0.19, 0 -0.31 0.19 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 4" }
+DEF GRASS_5 Solid { translation 0.54 -5.54 0.005 rotation 0 0 1 1.40 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.47 0 0, 0.47 0 0, 0.47 0 0.29, -0.47 0 0.29, 0 -0.47 0, 0 0.47 0, 0 0.47 0.29, 0 -0.47 0.29 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 5" }
+DEF GRASS_6 Solid { translation -4.20 -6.40 0.005 rotation 0 0 1 2.80 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.33 0 0, 0.33 0 0, 0.33 0 0.21, -0.33 0 0.21, 0 -0.33 0, 0 0.33 0, 0 0.33 0.21, 0 -0.33 0.21 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 6" }
+DEF GRASS_7 Solid { translation 0.95 -5.69 0.005 rotation 0 0 1 2.81 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.45 0 0, 0.45 0 0, 0.45 0 0.28, -0.45 0 0.28, 0 -0.45 0, 0 0.45 0, 0 0.45 0.28, 0 -0.45 0.28 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 7" }
+DEF GRASS_8 Solid { translation -2.90 -4.10 0.005 rotation 0 0 1 1.30 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.42 0 0, 0.42 0 0, 0.42 0 0.26, -0.42 0 0.26, 0 -0.42 0, 0 0.42 0, 0 0.42 0.26, 0 -0.42 0.26 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 8" }
+DEF GRASS_9 Solid { translation 7.00 -6.00 0.005 rotation 0 0 1 2.61 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.42 0 0, 0.42 0 0, 0.42 0 0.26, -0.42 0 0.26, 0 -0.42 0, 0 0.42 0, 0 0.42 0.26, 0 -0.42 0.26 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 9" }
+DEF GRASS_10 Solid { translation -0.30 -4.55 0.005 rotation 0 0 1 0.75 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.41 0 0, 0.41 0 0, 0.41 0 0.25, -0.41 0 0.25, 0 -0.41 0, 0 0.41 0, 0 0.41 0.25, 0 -0.41 0.25 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 10" }
+DEF GRASS_11 Solid { translation 0.91 -4.83 0.005 rotation 0 0 1 1.29 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.32 0 0, 0.32 0 0, 0.32 0 0.20, -0.32 0 0.20, 0 -0.32 0, 0 0.32 0, 0 0.32 0.20, 0 -0.32 0.20 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 11" }
+DEF GRASS_12 Solid { translation -0.25 -6.35 0.005 rotation 0 0 1 1.75 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.44 0 0, 0.44 0 0, 0.44 0 0.27, -0.44 0 0.27, 0 -0.44 0, 0 0.44 0, 0 0.44 0.27, 0 -0.44 0.27 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 12" }
+DEF GRASS_13 Solid { translation 1.00 -5.91 0.005 rotation 0 0 1 2.60 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.38 0 0, 0.38 0 0, 0.38 0 0.24, -0.38 0 0.24, 0 -0.38 0, 0 0.38 0, 0 0.38 0.24, 0 -0.38 0.24 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 13" }
+DEF GRASS_14 Solid { translation -3.30 -4.60 0.005 rotation 0 0 1 1.98 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.27 0 0, 0.27 0 0, 0.27 0 0.17, -0.27 0 0.17, 0 -0.27 0, 0 0.27 0, 0 0.27 0.17, 0 -0.27 0.17 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 14" }
+DEF GRASS_15 Solid { translation -6.90 -6.20 0.005 rotation 0 0 1 1.76 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.33 0 0, 0.33 0 0, 0.33 0 0.20, -0.33 0 0.20, 0 -0.33 0, 0 0.33 0, 0 0.33 0.20, 0 -0.33 0.20 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 15" }
+DEF GRASS_16 Solid { translation -0.28 -3.60 0.005 rotation 0 0 1 0.78 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.45 0 0, 0.45 0 0, 0.45 0 0.28, -0.45 0 0.28, 0 -0.45 0, 0 0.45 0, 0 0.45 0.28, 0 -0.45 0.28 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 16" }
+DEF GRASS_17 Solid { translation 0.85 -5.58 0.005 rotation 0 0 1 0.25 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.48 0 0, 0.48 0 0, 0.48 0 0.30, -0.48 0 0.30, 0 -0.48 0, 0 0.48 0, 0 0.48 0.30, 0 -0.48 0.30 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 17" }
+DEF GRASS_18 Solid { translation -2.32 -6.27 0.005 rotation 0 0 1 1.70 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.39 0 0, 0.39 0 0, 0.39 0 0.24, -0.39 0 0.24, 0 -0.39 0, 0 0.39 0, 0 0.39 0.24, 0 -0.39 0.24 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 18" }
+DEF GRASS_19 Solid { translation 4.30 -3.20 0.005 rotation 0 0 1 1.76 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.31 0 0, 0.31 0 0, 0.31 0 0.19, -0.31 0 0.19, 0 -0.31 0, 0 0.31 0, 0 0.31 0.19, 0 -0.31 0.19 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 19" }
+DEF GRASS_20 Solid { translation -2.17 -6.22 0.005 rotation 0 0 1 1.41 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.36 0 0, 0.36 0 0, 0.36 0 0.23, -0.36 0 0.23, 0 -0.36 0, 0 0.36 0, 0 0.36 0.23, 0 -0.36 0.23 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 20" }
+DEF GRASS_21 Solid { translation 4.60 -4.40 0.005 rotation 0 0 1 0.01 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.43 0 0, 0.43 0 0, 0.43 0 0.26, -0.43 0 0.26, 0 -0.43 0, 0 0.43 0, 0 0.43 0.26, 0 -0.43 0.26 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 21" }
+DEF GRASS_22 Solid { translation -2.86 -5.90 0.005 rotation 0 0 1 2.47 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.34 0 0, 0.34 0 0, 0.34 0 0.21, -0.34 0 0.21, 0 -0.34 0, 0 0.34 0, 0 0.34 0.21, 0 -0.34 0.21 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 22" }
+DEF GRASS_23 Solid { translation 4.15 -2.20 0.005 rotation 0 0 1 2.72 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.28 0 0, 0.28 0 0, 0.28 0 0.17, -0.28 0 0.17, 0 -0.28 0, 0 0.28 0, 0 0.28 0.17, 0 -0.28 0.17 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 23" }
+DEF GRASS_24 Solid { translation -2.60 -5.52 0.005 rotation 0 0 1 2.14 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.30 0 0, 0.30 0 0, 0.30 0 0.18, -0.30 0 0.18, 0 -0.30 0, 0 0.30 0, 0 0.30 0.18, 0 -0.30 0.18 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 24" }
+DEF GRASS_25 Solid { translation 2.60 -5.75 0.005 rotation 0 0 1 1.41 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.29 0 0, 0.29 0 0, 0.29 0 0.18, -0.29 0 0.18, 0 -0.29 0, 0 0.29 0, 0 0.29 0.18, 0 -0.29 0.18 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 25" }
+DEF GRASS_26 Solid { translation -2.20 -4.80 0.005 rotation 0 0 1 0.26 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.35 0 0, 0.35 0 0, 0.35 0 0.22, -0.35 0 0.22, 0 -0.35 0, 0 0.35 0, 0 0.35 0.22, 0 -0.35 0.22 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 26" }
+DEF GRASS_27 Solid { translation 1.40 -5.90 0.005 rotation 0 0 1 1.51 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.42 0 0, 0.42 0 0, 0.42 0 0.26, -0.42 0 0.26, 0 -0.42 0, 0 0.42 0, 0 0.42 0.26, 0 -0.42 0.26 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 27" }
+DEF GRASS_28 Solid { translation -2.19 -4.17 0.005 rotation 0 0 1 1.69 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.42 0 0, 0.42 0 0, 0.42 0 0.26, -0.42 0 0.26, 0 -0.42 0, 0 0.42 0, 0 0.42 0.26, 0 -0.42 0.26 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 28" }
+DEF GRASS_29 Solid { translation 3.79 -3.21 0.005 rotation 0 0 1 1.65 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.39 0 0, 0.39 0 0, 0.39 0 0.24, -0.39 0 0.24, 0 -0.39 0, 0 0.39 0, 0 0.39 0.24, 0 -0.39 0.24 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 29" }
+DEF GRASS_30 Solid { translation -2.41 -3.33 0.005 rotation 0 0 1 2.82 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.32 0 0, 0.32 0 0, 0.32 0 0.20, -0.32 0 0.20, 0 -0.32 0, 0 0.32 0, 0 0.32 0.20, 0 -0.32 0.20 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 30" }
+DEF GRASS_31 Solid { translation 4.50 -1.30 0.005 rotation 0 0 1 2.75 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.27 0 0, 0.27 0 0, 0.27 0 0.17, -0.27 0 0.17, 0 -0.27 0, 0 0.27 0, 0 0.27 0.17, 0 -0.27 0.17 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 31" }
+DEF GRASS_32 Solid { translation -3.90 5.50 0.005 rotation 0 0 1 1.56 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.46 0 0, 0.46 0 0, 0.46 0 0.29, -0.46 0 0.29, 0 -0.46 0, 0 0.46 0, 0 0.46 0.29, 0 -0.46 0.29 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 32" }
+DEF GRASS_33 Solid { translation -7.16 -2.88 0.005 rotation 0 0 1 2.12 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.44 0 0, 0.44 0 0, 0.44 0 0.27, -0.44 0 0.27, 0 -0.44 0, 0 0.44 0, 0 0.44 0.27, 0 -0.44 0.27 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 33" }
+DEF GRASS_34 Solid { translation -7.65 2.43 0.005 rotation 0 0 1 0.92 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.40 0 0, 0.40 0 0, 0.40 0 0.25, -0.40 0 0.25, 0 -0.40 0, 0 0.40 0, 0 0.40 0.25, 0 -0.40 0.25 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 34" }
+DEF GRASS_35 Solid { translation 2.31 5.30 0.005 rotation 0 0 1 1.10 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.33 0 0, 0.33 0 0, 0.33 0 0.20, -0.33 0 0.20, 0 -0.33 0, 0 0.33 0, 0 0.33 0.20, 0 -0.33 0.20 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 35" }
+DEF GRASS_36 Solid { translation 4.07 5.35 0.005 rotation 0 0 1 3.01 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.32 0 0, 0.32 0 0, 0.32 0 0.20, -0.32 0 0.20, 0 -0.32 0, 0 0.32 0, 0 0.32 0.20, 0 -0.32 0.20 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 36" }
+DEF GRASS_37 Solid { translation 0.08 4.84 0.005 rotation 0 0 1 1.22 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.33 0 0, 0.33 0 0, 0.33 0 0.21, -0.33 0 0.21, 0 -0.33 0, 0 0.33 0, 0 0.33 0.21, 0 -0.33 0.21 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 37" }
+DEF GRASS_38 Solid { translation 3.30 -6.20 0.005 rotation 0 0 1 2.57 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.35 0 0, 0.35 0 0, 0.35 0 0.22, -0.35 0 0.22, 0 -0.35 0, 0 0.35 0, 0 0.35 0.22, 0 -0.35 0.22 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 38" }
+DEF GRASS_39 Solid { translation 6.62 -3.41 0.005 rotation 0 0 1 1.74 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.37 0 0, 0.37 0 0, 0.37 0 0.23, -0.37 0 0.23, 0 -0.37 0, 0 0.37 0, 0 0.37 0.23, 0 -0.37 0.23 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 39" }
+DEF GRASS_40 Solid { translation -7.60 -7.20 0.005 rotation 0 0 1 0.87 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.31 0 0, 0.31 0 0, 0.31 0 0.19, -0.31 0 0.19, 0 -0.31 0, 0 0.31 0, 0 0.31 0.19, 0 -0.31 0.19 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 40" }
+DEF GRASS_41 Solid { translation -2.75 -6.90 0.005 rotation 0 0 1 0.68 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColorMap ImageTexture { url [ "textures/grass_clump.png" ] } metalness 0 roughness 1 } geometry IndexedFaceSet { coord Coordinate { point [ -0.27 0 0, 0.27 0 0, 0.27 0 0.17, -0.27 0 0.17, 0 -0.27 0, 0 0.27 0, 0 0.27 0.17, 0 -0.27 0.17 ] } texCoord TextureCoordinate { point [ 0 0, 1 0, 1 1, 0 1 ] } coordIndex [ 0 1 2 -1 0 2 3 -1 4 5 6 -1 4 6 7 -1 ] texCoordIndex [ 0 1 2 -1 0 2 3 -1 0 1 2 -1 0 2 3 -1 ] } } ] name "grass clump 41" }

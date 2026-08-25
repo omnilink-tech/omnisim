@@ -1,0 +1,164 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+# THE SMOKE LANE'S DYNAMICS GATE. Every number this world is graded on has a
+# closed-form answer, so it cannot be "re-goldened" to whatever the engine
+# currently does -- see tests/physics/controllers/gravity_rest_height/ for the
+# assertions. Three properties, in the order they fail:
+#
+#  1. GRAVITY IS REAL AND HAS THE RIGHT MAGNITUDE. FALLER is released from rest
+#     in vacuum; the controller recovers g from the second difference of its own
+#     recorded z trajectory (z[k+1] - 2 z[k] + z[k-1] = -g dt^2 holds exactly for
+#     a constant-acceleration integrator, so the estimate carries no
+#     integrator-convention bias) and compares it against WorldInfo.gravity read
+#     live from this file. This is the assertion the "gravity was never plumbed
+#     into Newton, every world silently ran at -9.81 regardless of
+#     WorldInfo.gravity" defect would have tripped, and it is also what a
+#     no-physics inert stub trips (g_est = 0).
+#
+#  2. IT LANDS ON THE COLLIDER, NOT THROUGH IT, AT AN ANALYTIC HEIGHT. FLOOR's
+#     top face is deliberately at z = 0.5, NOT z = 0 -- a floor at z = 0 is
+#     masked by Newton's implicit ground plane, which is exactly how the
+#     statics-off defect survived (a ball dropped on a floor topped at 0.55
+#     settled at 0.0996 on a surface that is not in the file). Rest height must
+#     be floor_top + half the faller's box, computed by the controller from the
+#     scene's own geometry.
+#
+#  3. A MOTORISED HINGE REACHES ITS COMMANDED ANGLE. PROBE is a static-base
+#     one-link arm; the controller commands 0.6 rad and checks it two
+#     independent ways -- the PositionSensor, and the link's absolute world
+#     position (so a sensor that merely echoed the setpoint cannot pass).
+#
+# Deliberately left UNSET so the defaults are what gets graded: newtonStatics
+# (ON by default since 2026-08-07; if someone reverts it, assertion 2 fails),
+# newtonSolver, newtonCone, newtonContactKe/Kd, newtonSubsteps. Nothing here is
+# pinned to coax a pass.
+#
+# Coordinate system is the ENU default (+Z up). The NUE path is what the skipped
+# accelerometer world is still blocked on -- keep this world off it.
+
+WorldInfo {
+  info [
+    "Asserts that rigid-body dynamics are alive: free-fall acceleration, an analytic rest height on a static collider, and a motorised hinge reaching its commanded angle."
+  ]
+  title "Gravity, free fall and analytic rest height"
+  basicTimeStep 4
+  FPS 30
+}
+Viewpoint {
+  orientation -0.2154 0.4098 0.8863 1.9106
+  position 3.6 -3.6 2.8
+}
+Background {
+  skyColor [
+    0.15 0.2 0.3
+  ]
+}
+DEF SUN DirectionalLight {
+  color 1 0.95 0.85
+  direction -0.5 -0.5 -0.6
+  intensity 2.5
+}
+DEF FLOOR Solid {
+  translation 0 0 0.4
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.5 0.5 0.5
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 4 4 0.2
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 4 4 0.2
+  }
+}
+DEF FALLER Solid {
+  translation 0 0 1.5
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.3 0.25
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  name "faller"
+  boundingObject Box {
+    size 0.2 0.2 0.2
+  }
+  physics Physics {
+    density -1
+    mass 1
+  }
+}
+DEF PROBE Robot {
+  translation 1.5 0 1.5
+  children [
+    TestSuiteEmitter {
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0 0 0
+      }
+      device [
+        RotationalMotor {
+          name "arm_motor"
+          # minPosition/maxPosition are LOAD-BEARING, not decoration. A motor
+          # that declares no position limits is configured as a VELOCITY wheel
+          # by this backend and setPosition() on it is IGNORED -- measured here
+          # first time round: the arm sat at 0.003532 rad after 2.4 s of a
+          # 0.6 rad command, under an explicit engine WARNING saying exactly
+          # that. Declaring limits makes it a position-controlled servo.
+          minPosition -1.5
+          maxPosition 1.5
+          maxVelocity 4
+          maxTorque 50
+        }
+        PositionSensor {
+          name "arm_sensor"
+        }
+      ]
+      endPoint DEF ARM_LINK Solid {
+        translation 0.15 0 0
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.3 0.65 0.85
+              roughness 1
+              metalness 0
+            }
+            geometry Box {
+              size 0.3 0.05 0.05
+            }
+          }
+        ]
+        name "arm_link"
+        boundingObject Box {
+          size 0.3 0.05 0.05
+        }
+        physics Physics {
+          density -1
+          mass 0.5
+        }
+      }
+    }
+  ]
+  name "probe"
+  controller "gravity_rest_height"
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

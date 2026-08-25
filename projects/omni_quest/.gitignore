@@ -1,0 +1,23 @@
+# Run artifacts produced by headless verification — never commit.
+# All run-time scratch files are underscore-prefixed; committed sources are not.
+_*.log
+_*.txt
+_*.csv
+_*.json
+_cap.out.txt
+_cap.err.txt
+*.pyc
+__pycache__/
+
+# Generated city composition (a 1000-line copy of the external city_traffic.omniworld)
+# and the external city_traffic controller copied in by tools/setup_city_nav.sh.
+# Regenerate with: python tools/gen_city_nav.py && bash tools/setup_city_nav.sh
+worlds/city_husky_nav.wbt
+worlds/city_husky_nav.omniworld
+worlds/city_husky_full.wbt
+worlds/city_husky_full.omniworld
+controllers/city_traffic/
+
+# Real-sensor datasets (KITTI raw: stereo + GPS + IMU). Large; download on demand:
+#   curl -L -o _kitti/drive.zip https://s3.eu-central-1.amazonaws.com/avg-kitti/raw_data/...
+_kitti/

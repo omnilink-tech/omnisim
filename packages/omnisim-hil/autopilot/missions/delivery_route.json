@@ -1,0 +1,27 @@
+{
+  "name": "depot delivery round trip",
+  "comment": "Positions are local ENU metres about the WORLD origin of hil_delivery_aircraft.omniworld, not about the launch point. The two delivery zones are the DELIVERY_ZONE_A and DELIVERY_ZONE_B Solids in that world; the depot is the DEPOT tower at the origin. The aircraft is hand-launched at (-60, 0, 45) heading east, so the first leg is a gentle right turn and the second is a 145 degree reversal, which is the leg that exercises the bank limit.",
+  "cruise_altitude": 45.0,
+  "acceptance_radius": 30.0,
+  "waypoints": [
+    {
+      "x": 140.0,
+      "y": 60.0,
+      "alt": 50.0,
+      "label": "ZONE_A"
+    },
+    {
+      "x": -120.0,
+      "y": 150.0,
+      "alt": 55.0,
+      "label": "ZONE_B"
+    },
+    {
+      "x": 0.0,
+      "y": 0.0,
+      "alt": 45.0,
+      "label": "DEPOT",
+      "rtb": true
+    }
+  ]
+}

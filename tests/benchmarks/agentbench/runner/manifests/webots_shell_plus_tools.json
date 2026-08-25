@@ -1,0 +1,2899 @@
+{
+  "schema": "agentbench/tool_set/v1",
+  "tool_set": "shell_plus_tools",
+  "description": "The shell baseline plus upstream Webots R2025a's published Supervisor and Robot (device-generic) function reference, wrapped one-tool-per-function by the AgentBench Webots bridge (plan 2.2; agentbench/webots_bridge/v1)",
+  "n_tools": 144,
+  "tools": [
+    {
+      "name": "run_shell",
+      "description": "Run a shell command and return its exit code, stdout and stderr. The working directory defaults to your working directory; pass `cwd` to run elsewhere. The command runs to completion (or is killed at the timeout); there is no interactive terminal, so never run anything that waits for input.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "the command line to execute"
+          },
+          "cwd": {
+            "type": "string",
+            "description": "directory to run in (default: your working directory)"
+          },
+          "timeout_s": {
+            "type": "number",
+            "description": "kill the command after this many seconds"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      }
+    },
+    {
+      "name": "read_file",
+      "description": "Read a text file and return its contents with line numbers. Use `start_line` and `max_lines` to page through a large file.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "file to read; relative paths resolve against your working directory"
+          },
+          "start_line": {
+            "type": "integer",
+            "description": "1-based first line to return"
+          },
+          "max_lines": {
+            "type": "integer",
+            "description": "how many lines to return"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "write_file",
+      "description": "Write text to a file, creating parent directories and overwriting any existing file. Writes are only permitted inside your working directory.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "file to write; relative paths resolve against your working directory"
+          },
+          "content": {
+            "type": "string",
+            "description": "the full contents to write"
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "list_dir",
+      "description": "List the entries of a directory, with sizes. Pass `recursive` to walk the whole tree.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "directory to list (default: your working directory)"
+          },
+          "recursive": {
+            "type": "boolean",
+            "description": "walk subdirectories too"
+          },
+          "max_entries": {
+            "type": "integer",
+            "description": "cap on returned entries"
+          }
+        }
+      }
+    },
+    {
+      "name": "wb_robot_step",
+      "description": "Advance the controller by time_step milliseconds: actuator commands are sent, the simulation steps forward, and sensor data is read back. Returns -1 if the simulation is about to terminate, else 0 or a positive value. Simulated time does not advance unless this (or wb_robot_step_begin/wb_robot_step_end) is called.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "time_step": {
+            "type": "integer",
+            "description": "duration in milliseconds; defaults to the world's basicTimeStep"
+          }
+        }
+      }
+    },
+    {
+      "name": "wb_robot_step_begin",
+      "description": "Send the actuation commands and start a simulation step of time_step milliseconds without waiting for it to complete; pair with wb_robot_step_end. Returns -1 if the simulation is about to terminate.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "time_step": {
+            "type": "integer",
+            "description": "duration in milliseconds; defaults to the world's basicTimeStep"
+          }
+        }
+      }
+    },
+    {
+      "name": "wb_robot_step_end",
+      "description": "Wait for the simulation step started with wb_robot_step_begin to complete and read the sensor data back. Returns -1 if the simulation is about to terminate.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_get_device",
+      "description": "Get a unique handle to the robot's device with the given name, usable with the wb_device_* tools. Returns null if the robot has no device with this name.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "name"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "wb_robot_get_device_by_index",
+      "description": "Get a handle to the device at the given index in the robot's device list (0 <= index < wb_robot_get_number_of_devices).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_robot_get_number_of_devices",
+      "description": "Return the number of devices of the robot.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_get_basic_time_step",
+      "description": "Return the value of the basicTimeStep field of the WorldInfo node, in milliseconds.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_get_name",
+      "description": "Return the name defined in the name field of the Robot node. Robot names are unique within a world.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_get_model",
+      "description": "Return the model string defined in the model field of the Robot node.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_get_custom_data",
+      "description": "Return the string contained in the customData field of the Robot node.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_set_custom_data",
+      "description": "Write the given string into the customData field of the Robot node.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string",
+            "description": "data"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    },
+    {
+      "name": "wb_robot_get_project_path",
+      "description": "Return the full path of the current project directory.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_get_world_path",
+      "description": "Return the full path of the currently opened world file (.wbt).",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_get_supervisor",
+      "description": "Return true if the supervisor field of this controller's Robot node is TRUE, i.e. the wb_supervisor_* functions are available.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_get_synchronization",
+      "description": "Return the value of the synchronization field of the Robot node.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_get_time",
+      "description": "Return the current simulation time in seconds.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_get_urdf",
+      "description": "Return the URDF representation of the robot; link and joint names are prefixed with the optional prefix string.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "prefix": {
+            "type": "string",
+            "description": "prefix"
+          }
+        }
+      }
+    },
+    {
+      "name": "wb_robot_get_mode",
+      "description": "Return the current operating mode of the controller: 0 = simulation, 1 = cross-compilation, 2 = remote-control.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_set_mode",
+      "description": "Set the operating mode of the controller (e.g. switch between simulation and remote-control); arg is passed to the remote control plugin.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "integer",
+            "description": "mode"
+          },
+          "arg": {
+            "type": "string",
+            "description": "arg"
+          }
+        },
+        "required": [
+          "mode",
+          "arg"
+        ]
+      }
+    },
+    {
+      "name": "wb_robot_battery_sensor_enable",
+      "description": "Enable battery level measurement, sampled every sampling_period milliseconds.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "sampling_period": {
+            "type": "integer",
+            "description": "sampling period in milliseconds"
+          }
+        },
+        "required": [
+          "sampling_period"
+        ]
+      }
+    },
+    {
+      "name": "wb_robot_battery_sensor_disable",
+      "description": "Disable battery level measurement.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_battery_sensor_get_sampling_period",
+      "description": "Return the sampling period of the battery sensor, in milliseconds.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_robot_battery_sensor_get_value",
+      "description": "Return the current battery level in joules; requires wb_robot_battery_sensor_enable to have been called.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_device_get_name",
+      "description": "Return the name of the device, as defined in its name field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "type": "integer",
+            "description": "device handle (from wb_robot_get_device or wb_robot_get_device_by_index)"
+          }
+        },
+        "required": [
+          "device"
+        ]
+      }
+    },
+    {
+      "name": "wb_device_get_model",
+      "description": "Return the model string of the device, as defined in its model field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "type": "integer",
+            "description": "device handle (from wb_robot_get_device or wb_robot_get_device_by_index)"
+          }
+        },
+        "required": [
+          "device"
+        ]
+      }
+    },
+    {
+      "name": "wb_device_get_node_type",
+      "description": "Return the node type of the device as a WB_NODE_* constant integer.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "type": "integer",
+            "description": "device handle (from wb_robot_get_device or wb_robot_get_device_by_index)"
+          }
+        },
+        "required": [
+          "device"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_root",
+      "description": "Get a handle to the root node of the scene tree; its 'children' field lists every top-level node of the world, and importing into that field spawns top-level nodes.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_self",
+      "description": "Get a handle to the Robot node of this supervisor controller itself.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_from_def",
+      "description": "Get a handle to the node identified by the given DEF name in the scene tree; dot-separated DEF paths ('PARENT.CHILD') reach nested DEF nodes. Returns null if no matching node exists.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "def": {
+            "type": "string",
+            "description": "def"
+          }
+        },
+        "required": [
+          "def"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_from_id",
+      "description": "Get a handle to the node with the given unique id (as returned by wb_supervisor_node_get_id). Returns null if no node has this id.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "id"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_from_device",
+      "description": "Get a handle to the scene-tree node corresponding to the given device handle.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "type": "integer",
+            "description": "device handle (from wb_robot_get_device or wb_robot_get_device_by_index)"
+          }
+        },
+        "required": [
+          "device"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_selected",
+      "description": "Get a handle to the node currently selected in the scene tree view. Returns null if no node is selected.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_supervisor_set_label",
+      "description": "Display a text label overlaid on the 3D view. id identifies the label (reusing an id updates that label), x and y are screen coordinates as fractions in [0, 1], size is the text height as a fraction of the screen height, color is a 0xRRGGBB integer, transparency is in [0, 1] (0 = opaque), font is a font family name.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "id"
+          },
+          "label": {
+            "type": "string",
+            "description": "label"
+          },
+          "x": {
+            "type": "number",
+            "description": "x"
+          },
+          "y": {
+            "type": "number",
+            "description": "y"
+          },
+          "size": {
+            "type": "number",
+            "description": "size"
+          },
+          "color": {
+            "type": "integer",
+            "description": "color"
+          },
+          "transparency": {
+            "type": "number",
+            "description": "transparency"
+          },
+          "font": {
+            "type": "string",
+            "description": "font"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "x",
+          "y",
+          "size",
+          "color"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_simulation_quit",
+      "description": "Terminate the simulator with the given exit status. The bridge acknowledges this call and then shuts down; no further tool calls will succeed.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "description": "status"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_simulation_set_mode",
+      "description": "Set the simulation mode: 0 = pause, 1 = real-time, 2 = fast (no rendering).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "integer",
+            "description": "mode"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_simulation_get_mode",
+      "description": "Return the current simulation mode: 0 = pause, 1 = real-time, 2 = fast.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_supervisor_simulation_reset",
+      "description": "Reset the simulation to the initial state it had when the world was loaded: node fields and the simulation time are restored. Controllers are NOT restarted; use wb_supervisor_node_restart_controller for that.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_supervisor_simulation_reset_physics",
+      "description": "Stop the inertia of every solid in the world: all linear and angular velocities are zeroed.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_supervisor_world_load",
+      "description": "Load the world given by filename (.wbt), replacing the current one. Every controller process, this bridge included, is terminated and restarted by the simulator.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "filename"
+          }
+        },
+        "required": [
+          "filename"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_world_save",
+      "description": "Save the current world; with no filename the currently loaded .wbt file is overwritten. Returns true on success.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "filename"
+          }
+        }
+      }
+    },
+    {
+      "name": "wb_supervisor_world_reload",
+      "description": "Reload the current world file, restarting the simulation and every controller process (this bridge included).",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wb_supervisor_export_image",
+      "description": "Save the current main-window 3D view to an image file; the format is chosen by the filename extension (PNG or JPEG), quality applies to JPEG (1-100).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "filename"
+          },
+          "quality": {
+            "type": "integer",
+            "description": "quality"
+          }
+        },
+        "required": [
+          "filename",
+          "quality"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_def",
+      "description": "Return the DEF name of the node, or an empty string if it has none.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_id",
+      "description": "Return the unique id of the node (resolvable back with wb_supervisor_node_get_from_id).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_parent_node",
+      "description": "Get a handle to the parent node. Returns null for the root node.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_is_proto",
+      "description": "Return true if the node is a PROTO instance.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_proto",
+      "description": "Get a handle to the PROTO of the node, usable with the wb_supervisor_proto_* tools. Returns null if the node is not a PROTO instance.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_from_proto_def",
+      "description": "Get a handle to the node with the given DEF name inside the internal (hidden) subtree of this PROTO instance. Returns null if no matching node exists.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "def": {
+            "type": "string",
+            "description": "def"
+          }
+        },
+        "required": [
+          "node",
+          "def"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_type",
+      "description": "Return the type of the node as a WB_NODE_* constant integer.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_type_name",
+      "description": "Return the node's type name as displayed in the scene tree (the PROTO name for PROTO instances, e.g. 'Pioneer3at').",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_base_type_name",
+      "description": "Return the base node type name of the node (e.g. 'Robot' for a PROTO whose base type is Robot).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_remove",
+      "description": "Remove the node from the scene tree.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_export_string",
+      "description": "Export the node and its subtree as a .wbt-syntax node string, suitable for re-import with the import-from-string tools.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_field",
+      "description": "Get a handle to the node's field with the given name. Returns null if the node has no such field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "name": {
+            "type": "string",
+            "description": "name"
+          }
+        },
+        "required": [
+          "node",
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_field_by_index",
+      "description": "Get a handle to the node's field at the given index (0 <= index < wb_supervisor_node_get_number_of_fields).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "node",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_number_of_fields",
+      "description": "Return the number of fields of the node.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_base_node_field",
+      "description": "Get a handle to a field of the underlying base node of a PROTO instance by name (bypassing the PROTO interface). Returns null if there is no such field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "name": {
+            "type": "string",
+            "description": "name"
+          }
+        },
+        "required": [
+          "node",
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_base_node_field_by_index",
+      "description": "Get a handle to a field of the underlying base node of a PROTO instance by index.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "node",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_number_of_base_node_fields",
+      "description": "Return the number of fields of the underlying base node of a PROTO instance.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_position",
+      "description": "Return the position [x, y, z] of the node's origin, expressed in the global (world) coordinate system, in meters. The node must derive from Pose (e.g. Solid, Robot).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_orientation",
+      "description": "Return the 3x3 rotation matrix of the node (9 values, row-major) expressing its orientation in the global coordinate system.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_pose",
+      "description": "Return the 4x4 transformation matrix of the node (16 values, row-major) expressed relative to from_node, or in the global coordinate system if from_node is omitted.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "from_node": {
+            "type": "integer",
+            "description": "node handle of the reference frame node"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_enable_pose_tracking",
+      "description": "Force the simulator to stream this node's pose to the controller every sampling_period milliseconds, making subsequent pose reads cheap.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "sampling_period": {
+            "type": "integer",
+            "description": "sampling period in milliseconds"
+          },
+          "from_node": {
+            "type": "integer",
+            "description": "node handle of the reference frame node"
+          }
+        },
+        "required": [
+          "node",
+          "sampling_period"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_disable_pose_tracking",
+      "description": "Stop the pose tracking started with wb_supervisor_node_enable_pose_tracking.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "from_node": {
+            "type": "integer",
+            "description": "node handle of the reference frame node"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_center_of_mass",
+      "description": "Return the position [x, y, z] of the center of mass of a Solid node, in the global coordinate system.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_contact_points",
+      "description": "Return the list of current contact points of a Solid node; with include_descendants true, contacts of descendant solids are included. Each contact is {point: [x, y, z] in the global coordinate system, node_id: id of the other contacted solid, depth: penetration depth in meters}.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "include_descendants": {
+            "type": "boolean",
+            "description": "include descendants"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_enable_contact_points_tracking",
+      "description": "Force the simulator to stream this node's contact points to the controller every sampling_period milliseconds.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "sampling_period": {
+            "type": "integer",
+            "description": "sampling period in milliseconds"
+          },
+          "include_descendants": {
+            "type": "boolean",
+            "description": "include descendants"
+          }
+        },
+        "required": [
+          "node",
+          "sampling_period"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_disable_contact_points_tracking",
+      "description": "Stop the contact points tracking started with wb_supervisor_node_enable_contact_points_tracking.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_static_balance",
+      "description": "Return the boolean static balance measure of a Solid node: true if the projection of its center of mass lies inside the support polygon of its ground contact points.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_get_velocity",
+      "description": "Return the 6 velocity components [vx, vy, vz, wx, wy, wz] of a Solid node: linear velocity in m/s and angular velocity in rad/s, both in the global coordinate system.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_set_velocity",
+      "description": "Set the 6 velocity components [vx, vy, vz, wx, wy, wz] of a Solid node: linear velocity in m/s and angular velocity in rad/s, both in the global coordinate system.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "velocity": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 6,
+            "maxItems": 6,
+            "description": "array of 6 numbers"
+          }
+        },
+        "required": [
+          "node",
+          "velocity"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_save_state",
+      "description": "Save the current state of the node and its descendants under the given state name, restorable later with wb_supervisor_node_load_state.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "state_name": {
+            "type": "string",
+            "description": "state name"
+          }
+        },
+        "required": [
+          "node",
+          "state_name"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_load_state",
+      "description": "Restore the state of the node previously saved under the given state name ('__init__' is the state at world load).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "state_name": {
+            "type": "string",
+            "description": "state name"
+          }
+        },
+        "required": [
+          "node",
+          "state_name"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_reset_physics",
+      "description": "Stop the inertia of the node and its descendants: linear and angular velocities are zeroed.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_set_joint_position",
+      "description": "Set the position of a joint node (HingeJoint, Hinge2Joint, SliderJoint, BallJoint) instantaneously; index selects the axis for multi-axis joints (1 by default, 2 or 3 for Hinge2Joint and BallJoint).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "position": {
+            "type": "number",
+            "description": "position"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "node",
+          "position"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_restart_controller",
+      "description": "Restart the controller of the given Robot node.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_move_viewpoint",
+      "description": "Move the viewpoint so that the given node is visible, as the 'move viewpoint to object' menu action does.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          }
+        },
+        "required": [
+          "node"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_set_visibility",
+      "description": "Set whether the node is rendered from the point of view of from_node (a Viewpoint, Camera, Lidar or RangeFinder node); physics is unaffected.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "from_node": {
+            "type": "integer",
+            "description": "node handle of the reference frame node"
+          },
+          "visible": {
+            "type": "boolean",
+            "description": "visible"
+          }
+        },
+        "required": [
+          "node",
+          "from_node",
+          "visible"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_add_force",
+      "description": "Add a force [fx, fy, fz] in newtons to a Solid node at its center of mass for the current time step; if relative is true the force is expressed in the node's frame, otherwise in the global frame.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "force": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "array of 3 numbers [x, y, z]"
+          },
+          "relative": {
+            "type": "boolean",
+            "description": "relative"
+          }
+        },
+        "required": [
+          "node",
+          "force",
+          "relative"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_add_force_with_offset",
+      "description": "Add a force [fx, fy, fz] in newtons to a Solid node, applied at the point given by offset [x, y, z] expressed in the node's frame; if relative is true the force is expressed in the node's frame, otherwise in the global frame.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "force": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "array of 3 numbers [x, y, z]"
+          },
+          "offset": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "array of 3 numbers [x, y, z]"
+          },
+          "relative": {
+            "type": "boolean",
+            "description": "relative"
+          }
+        },
+        "required": [
+          "node",
+          "force",
+          "offset",
+          "relative"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_node_add_torque",
+      "description": "Add a torque [tx, ty, tz] in newton-meters to a Solid node for the current time step; if relative is true the torque is expressed in the node's frame, otherwise in the global frame.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "integer",
+            "description": "node handle (from a wb_supervisor_node_get_* tool)"
+          },
+          "torque": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "array of 3 numbers [x, y, z]"
+          },
+          "relative": {
+            "type": "boolean",
+            "description": "relative"
+          }
+        },
+        "required": [
+          "node",
+          "torque",
+          "relative"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_name",
+      "description": "Return the name of the field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_type",
+      "description": "Return the type of the field as a WB_SF_* / WB_MF_* constant integer.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_type_name",
+      "description": "Return the type name of the field as a string (e.g. 'SFVec3f', 'MFNode').",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_count",
+      "description": "Return the number of items of a multiple (MF) field, or -1 if the field is a single (SF) field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_actual_field",
+      "description": "For a field of a PROTO instance, get a handle to the internal base-node field it is bound to through IS statements. Returns null if the field is not bound.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_enable_sf_tracking",
+      "description": "Force the simulator to stream this field's value to the controller every sampling_period milliseconds, making subsequent reads cheap.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "sampling_period": {
+            "type": "integer",
+            "description": "sampling period in milliseconds"
+          }
+        },
+        "required": [
+          "field",
+          "sampling_period"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_disable_sf_tracking",
+      "description": "Stop the field tracking started with wb_supervisor_field_enable_sf_tracking.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_sf_bool",
+      "description": "Return the boolean value of an SF_BOOL field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_sf_int32",
+      "description": "Return the 32-bit integer value of an SF_INT32 field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_sf_float",
+      "description": "Return the floating point value of an SF_FLOAT field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_sf_vec2f",
+      "description": "Return the 2D vector [x, y] value of an SF_VEC2F field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_sf_vec3f",
+      "description": "Return the 3D vector [x, y, z] value of an SF_VEC3F field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_sf_rotation",
+      "description": "Return the rotation [x, y, z, angle] (axis-angle, angle in radians) value of an SF_ROTATION field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_sf_color",
+      "description": "Return the RGB color [r, g, b], each channel in [0, 1] value of an SF_COLOR field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_sf_string",
+      "description": "Return the string value of an SF_STRING field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_sf_node",
+      "description": "Return the node handle stored in an SF_NODE field, or null if the field is empty.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_mf_bool",
+      "description": "Return the boolean value at the given index of an MF_BOOL field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "field",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_mf_int32",
+      "description": "Return the 32-bit integer value at the given index of an MF_INT32 field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "field",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_mf_float",
+      "description": "Return the floating point value at the given index of an MF_FLOAT field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "field",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_mf_vec2f",
+      "description": "Return the 2D vector [x, y] value at the given index of an MF_VEC2F field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "field",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_mf_vec3f",
+      "description": "Return the 3D vector [x, y, z] value at the given index of an MF_VEC3F field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "field",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_mf_rotation",
+      "description": "Return the rotation [x, y, z, angle] (axis-angle, angle in radians) value at the given index of an MF_ROTATION field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "field",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_mf_color",
+      "description": "Return the RGB color [r, g, b], each channel in [0, 1] value at the given index of an MF_COLOR field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "field",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_mf_string",
+      "description": "Return the string value at the given index of an MF_STRING field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "field",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_get_mf_node",
+      "description": "Return the node handle at the given index of an MF_NODE field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "field",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_sf_bool",
+      "description": "Set the boolean value of an SF_BOOL field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "value": {
+            "type": "boolean",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_sf_int32",
+      "description": "Set the 32-bit integer value of an SF_INT32 field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "value": {
+            "type": "integer",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_sf_float",
+      "description": "Set the floating point value of an SF_FLOAT field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "value": {
+            "type": "number",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_sf_vec2f",
+      "description": "Set the 2D vector [x, y] value of an SF_VEC2F field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "array of 2 numbers [x, y]"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_sf_vec3f",
+      "description": "Set the 3D vector [x, y, z] value of an SF_VEC3F field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "array of 3 numbers [x, y, z]"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_sf_rotation",
+      "description": "Set the rotation [x, y, z, angle] (axis-angle, angle in radians) value of an SF_ROTATION field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 4,
+            "maxItems": 4,
+            "description": "rotation as 4 numbers [x, y, z, angle] (axis-angle, radians)"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_sf_color",
+      "description": "Set the RGB color [r, g, b], each channel in [0, 1] value of an SF_COLOR field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "RGB color as 3 numbers, each in [0, 1]"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_sf_string",
+      "description": "Set the string value of an SF_STRING field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "value": {
+            "type": "string",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_mf_bool",
+      "description": "Set the boolean value at the given index of an MF_BOOL field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "boolean",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_mf_int32",
+      "description": "Set the 32-bit integer value at the given index of an MF_INT32 field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "integer",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_mf_float",
+      "description": "Set the floating point value at the given index of an MF_FLOAT field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "number",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_mf_vec2f",
+      "description": "Set the 2D vector [x, y] value at the given index of an MF_VEC2F field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "array of 2 numbers [x, y]"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_mf_vec3f",
+      "description": "Set the 3D vector [x, y, z] value at the given index of an MF_VEC3F field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "array of 3 numbers [x, y, z]"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_mf_rotation",
+      "description": "Set the rotation [x, y, z, angle] (axis-angle, angle in radians) value at the given index of an MF_ROTATION field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 4,
+            "maxItems": 4,
+            "description": "rotation as 4 numbers [x, y, z, angle] (axis-angle, radians)"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_mf_color",
+      "description": "Set the RGB color [r, g, b], each channel in [0, 1] value at the given index of an MF_COLOR field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "RGB color as 3 numbers, each in [0, 1]"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_set_mf_string",
+      "description": "Set the string value at the given index of an MF_STRING field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "string",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_insert_mf_bool",
+      "description": "Insert a new boolean value at the given index into an MF_BOOL field; negative indices count from the end (-1 appends).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "boolean",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_insert_mf_int32",
+      "description": "Insert a new 32-bit integer value at the given index into an MF_INT32 field; negative indices count from the end (-1 appends).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "integer",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_insert_mf_float",
+      "description": "Insert a new floating point value at the given index into an MF_FLOAT field; negative indices count from the end (-1 appends).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "number",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_insert_mf_vec2f",
+      "description": "Insert a new 2D vector [x, y] value at the given index into an MF_VEC2F field; negative indices count from the end (-1 appends).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "array of 2 numbers [x, y]"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_insert_mf_vec3f",
+      "description": "Insert a new 3D vector [x, y, z] value at the given index into an MF_VEC3F field; negative indices count from the end (-1 appends).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "array of 3 numbers [x, y, z]"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_insert_mf_rotation",
+      "description": "Insert a new rotation [x, y, z, angle] (axis-angle, angle in radians) value at the given index into an MF_ROTATION field; negative indices count from the end (-1 appends).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 4,
+            "maxItems": 4,
+            "description": "rotation as 4 numbers [x, y, z, angle] (axis-angle, radians)"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_insert_mf_color",
+      "description": "Insert a new RGB color [r, g, b], each channel in [0, 1] value at the given index into an MF_COLOR field; negative indices count from the end (-1 appends).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "description": "RGB color as 3 numbers, each in [0, 1]"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_insert_mf_string",
+      "description": "Insert a new string value at the given index into an MF_STRING field; negative indices count from the end (-1 appends).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          },
+          "value": {
+            "type": "string",
+            "description": "value"
+          }
+        },
+        "required": [
+          "field",
+          "index",
+          "value"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_remove_mf",
+      "description": "Remove the item at the given index from a multiple (MF) field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "field",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_remove_sf",
+      "description": "Remove the node stored in an SF_NODE field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          }
+        },
+        "required": [
+          "field"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_import_mf_node_from_string",
+      "description": "Import a node into an MF_NODE field (typically a 'children' field, e.g. the root node's, which spawns it into the world), constructed from a .wbt-syntax node string, inserted at the given position; negative positions count from the end (-1 appends). This is the supervisor's spawn-from-string verb.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "position": {
+            "type": "integer",
+            "description": "position"
+          },
+          "node_string": {
+            "type": "string",
+            "description": "node string"
+          }
+        },
+        "required": [
+          "field",
+          "position",
+          "node_string"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_field_import_sf_node_from_string",
+      "description": "Import a node into an empty SF_NODE field, constructed from a .wbt-syntax node string.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "integer",
+            "description": "field handle (from a wb_supervisor_node_get_field* or wb_supervisor_proto_get_field* tool)"
+          },
+          "node_string": {
+            "type": "string",
+            "description": "node string"
+          }
+        },
+        "required": [
+          "field",
+          "node_string"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_proto_get_type_name",
+      "description": "Return the name of the PROTO.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "proto": {
+            "type": "integer",
+            "description": "proto handle (from wb_supervisor_node_get_proto or wb_supervisor_proto_get_parent)"
+          }
+        },
+        "required": [
+          "proto"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_proto_get_parent",
+      "description": "Get a handle to the parent PROTO if this PROTO is derived from another PROTO. Returns null otherwise.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "proto": {
+            "type": "integer",
+            "description": "proto handle (from wb_supervisor_node_get_proto or wb_supervisor_proto_get_parent)"
+          }
+        },
+        "required": [
+          "proto"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_proto_get_field",
+      "description": "Get a handle to the PROTO interface field with the given name. Returns null if the PROTO has no such field.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "proto": {
+            "type": "integer",
+            "description": "proto handle (from wb_supervisor_node_get_proto or wb_supervisor_proto_get_parent)"
+          },
+          "name": {
+            "type": "string",
+            "description": "name"
+          }
+        },
+        "required": [
+          "proto",
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_proto_get_field_by_index",
+      "description": "Get a handle to the PROTO interface field at the given index.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "proto": {
+            "type": "integer",
+            "description": "proto handle (from wb_supervisor_node_get_proto or wb_supervisor_proto_get_parent)"
+          },
+          "index": {
+            "type": "integer",
+            "description": "0-based index"
+          }
+        },
+        "required": [
+          "proto",
+          "index"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_proto_get_number_of_fields",
+      "description": "Return the number of fields of the PROTO interface.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "proto": {
+            "type": "integer",
+            "description": "proto handle (from wb_supervisor_node_get_proto or wb_supervisor_proto_get_parent)"
+          }
+        },
+        "required": [
+          "proto"
+        ]
+      }
+    },
+    {
+      "name": "wb_supervisor_proto_is_derived",
+      "description": "Return true if the PROTO is derived from another PROTO.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "proto": {
+            "type": "integer",
+            "description": "proto handle (from wb_supervisor_node_get_proto or wb_supervisor_proto_get_parent)"
+          }
+        },
+        "required": [
+          "proto"
+        ]
+      }
+    }
+  ],
+  "tool_sources": {
+    "run_shell": "agentbench/shell/v1",
+    "read_file": "agentbench/shell/v1",
+    "write_file": "agentbench/shell/v1",
+    "list_dir": "agentbench/shell/v1",
+    "wb_robot_step": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_step_begin": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_step_end": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_device": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_device_by_index": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_number_of_devices": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_basic_time_step": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_name": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_model": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_custom_data": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_set_custom_data": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_project_path": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_world_path": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_supervisor": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_synchronization": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_time": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_urdf": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_get_mode": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_set_mode": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_battery_sensor_enable": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_battery_sensor_disable": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_battery_sensor_get_sampling_period": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_robot_battery_sensor_get_value": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_device_get_name": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_device_get_model": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_device_get_node_type": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_root": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_self": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_from_def": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_from_id": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_from_device": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_selected": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_set_label": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_simulation_quit": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_simulation_set_mode": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_simulation_get_mode": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_simulation_reset": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_simulation_reset_physics": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_world_load": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_world_save": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_world_reload": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_export_image": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_def": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_id": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_parent_node": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_is_proto": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_proto": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_from_proto_def": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_type": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_type_name": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_base_type_name": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_remove": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_export_string": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_field": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_field_by_index": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_number_of_fields": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_base_node_field": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_base_node_field_by_index": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_number_of_base_node_fields": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_position": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_orientation": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_pose": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_enable_pose_tracking": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_disable_pose_tracking": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_center_of_mass": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_contact_points": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_enable_contact_points_tracking": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_disable_contact_points_tracking": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_static_balance": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_get_velocity": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_set_velocity": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_save_state": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_load_state": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_reset_physics": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_set_joint_position": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_restart_controller": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_move_viewpoint": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_set_visibility": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_add_force": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_add_force_with_offset": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_node_add_torque": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_name": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_type": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_type_name": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_count": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_actual_field": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_enable_sf_tracking": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_disable_sf_tracking": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_sf_bool": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_sf_int32": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_sf_float": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_sf_vec2f": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_sf_vec3f": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_sf_rotation": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_sf_color": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_sf_string": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_sf_node": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_mf_bool": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_mf_int32": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_mf_float": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_mf_vec2f": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_mf_vec3f": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_mf_rotation": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_mf_color": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_mf_string": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_get_mf_node": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_sf_bool": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_sf_int32": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_sf_float": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_sf_vec2f": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_sf_vec3f": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_sf_rotation": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_sf_color": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_sf_string": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_mf_bool": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_mf_int32": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_mf_float": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_mf_vec2f": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_mf_vec3f": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_mf_rotation": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_mf_color": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_set_mf_string": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_insert_mf_bool": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_insert_mf_int32": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_insert_mf_float": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_insert_mf_vec2f": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_insert_mf_vec3f": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_insert_mf_rotation": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_insert_mf_color": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_insert_mf_string": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_remove_mf": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_remove_sf": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_import_mf_node_from_string": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_field_import_sf_node_from_string": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_proto_get_type_name": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_proto_get_parent": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_proto_get_field": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_proto_get_field_by_index": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_proto_get_number_of_fields": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)",
+    "wb_supervisor_proto_is_derived": "webots-r2025a-reference/v1 (names from upstream's function index via the local fork's controller package; descriptions follow the upstream reference manual; cyberbotics.com cross-check pending the V5 review window)"
+  },
+  "tools_sha256": "a624c7f4a42205322f54b1574cddecdd9022f2888aae99c1b1c69d794c2895ca",
+  "env_policy": {
+    "mode": "allowlist",
+    "allow": [
+      "APPDATA",
+      "COMSPEC",
+      "ComSpec",
+      "DISPLAY",
+      "HOME",
+      "HOMEDRIVE",
+      "HOMEPATH",
+      "LANG",
+      "LC_ALL",
+      "LD_LIBRARY_PATH",
+      "LOCALAPPDATA",
+      "LOGNAME",
+      "NUMBER_OF_PROCESSORS",
+      "PATH",
+      "PATHEXT",
+      "PROCESSOR_ARCHITECTURE",
+      "SHELL",
+      "SYSTEMROOT",
+      "SystemRoot",
+      "TEMP",
+      "TERM",
+      "TMP",
+      "TMPDIR",
+      "TZ",
+      "USER",
+      "USERPROFILE",
+      "WINDIR",
+      "XAUTHORITY",
+      "windir"
+    ],
+    "deny_prefixes": [
+      "AGENTBENCH_",
+      "ANTHROPIC_",
+      "AWS_",
+      "GH_TOKEN",
+      "GITHUB_TOKEN",
+      "GOOGLE_",
+      "OMNILINK_",
+      "OMNI_KEY",
+      "OPENAI_",
+      "PYTHONHASHSEED"
+    ],
+    "injected": [
+      "OMNISIM_HOME",
+      "WEBOTS_HOME",
+      "OMNISIM_LOG_PATH",
+      "OMNISIM_HARNESS_PORT",
+      "OMNISIM_SUPERVISOR_PORT",
+      "OMNISIM_HARNESS_URL"
+    ],
+    "notes": [
+      "PYTHONHASHSEED is deliberately NOT set: husky_random seeds from hash(name), so pinning it would change the task's difficulty.",
+      "ANTHROPIC_* / AGENTBENCH_* are stripped: the agent must not reach the model API or an external artifact."
+    ]
+  },
+  "notes": [
+    "Tool DEFINITIONS are frozen across simulators; tool IMPLEMENTATIONS may differ (shell binary, container) and are deliberately excluded from tools_sha256.",
+    "Working directory is the run's scratch dir. Writes are confined to it; reads of the benchmark's own package are refused.",
+    "run_shell cannot be path-confined on a bare host: commands and results are scanned and any hit on the benchmark package is flagged leak_suspect in the trace. Full enforcement needs the per-run container from SPEC 4.3.",
+    "The model sees at most 20000 characters of a result; the trace keeps the whole thing.",
+    "Tool names and argument shapes are upstream R2025a's own function reference, enumerated mechanically from the controller package this fork inherited; every unwrapped public function is justified in adapters/webots/EXCLUSIONS.md (completeness rule, plan 2.2). A cross-check against cyberbotics.com's published R2025a reference is a V5 review-window item.",
+    "No batch or composite verbs were added: the bridge is faithful function-for-function; upstream publishes no aggregate scene read and none was invented for it.",
+    "The API is handle-based like upstream's C reference: tools return integer node/field/proto/device handles and take them as arguments. Handles are only valid for the current bridge process.",
+    "Simulated time advances ONLY via wb_robot_step / wb_robot_step_begin + wb_robot_step_end; between calls the simulation waits on the bridge (synchronous controller).",
+    "The bridge controller is NOT necessarily pre-started: where starting the simulator is part of the task, these tools report that nothing is listening until the agent starts it."
+  ],
+  "manifest_sha256": "00219b2bd161f880595e9b0e65668cba7152c0d4c3ea597f242c1160c5dae1f1"
+}

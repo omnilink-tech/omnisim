@@ -1,0 +1,368 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="omniarm6">
+
+	<link name="link0">
+		<inertial>
+			<origin rpy="0 0 0" xyz="-0.00090289 -3.524e-05 0.0464554" />
+			<mass value="2.002" />
+			<inertia ixx="0.00382661" ixy="-1.191e-05" ixz="-3.816e-05" iyy="0.00386108" iyz="-1.6e-06" izz="0.00485705" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link0_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link0_accent.obj" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+<collision>
+			<origin xyz="-0.02 0 0.037" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.12" length="0.075" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link1">
+		<inertial>
+			<origin rpy="0 0 0" xyz="2.496e-05 0.0196556 0.169149" />
+			<mass value="8.256" />
+			<inertia ixx="0.0447417" ixy="-5.18e-06" ixz="3.29e-06" iyy="0.038383" iyz="-0.00805897" izz="0.0211142" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link1_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link1_joint.obj" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+<collision>
+			<origin xyz="0 0.01 0.17" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.10" length="0.23" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link2">
+		<inertial>
+			<origin rpy="0 0 0" xyz="-4.02745e-06 0.113023 0.158393" />
+			<mass value="3.9668" />
+			<inertia ixx="0.100126" ixy="1.52983e-07" ixz="4.2228e-06" iyy="0.0997161" iyz="0.00215017" izz="0.00646289" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link2_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link2_accent.obj" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link2_joint.obj" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+<collision>
+			<origin xyz="0 0.13 0.185" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.10" length="0.49" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link3">
+		<inertial>
+			<origin rpy="0 -0 0" xyz="-3.51946e-05 0.0177216 0.04073" />
+			<mass value="5.26105" />
+			<inertia ixx="0.0206029" ixy="1.61027e-05" ixz="2.308e-06" iyy="0.016636" iyz="0.00374158" izz="0.010099" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link3_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link3_accent.obj" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+<collision>
+			<origin xyz="0 0 0.04" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.10" length="0.20" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link4">
+		<inertial>
+			<origin rpy="0 -0 0" xyz="8.08281e-05 0.044542 0.241911" />
+			<mass value="2.271" />
+			<inertia ixx="0.0342334" ixy="3.365e-06" ixz="-4.11571e-06" iyy="0.0311273" iyz="-0.00818683" izz="0.00522653" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link4_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link4_accent.obj" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link4_joint.obj" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+<collision>
+			<origin xyz="0 0.035 0.29" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.10" length="0.35" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link5">
+		<inertial>
+			<origin rpy="0 -0 0" xyz="4.18387e-05 0.0147744 0.0354" />
+			<mass value="2.54629" />
+			<inertia ixx="0.00855547" ixy="4.97317e-06" ixz="6.07841e-06" iyy="0.00582159" iyz="0.00129227" izz="0.00358312" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link5_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link5_accent.obj" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+<collision>
+			<origin xyz="0 0 0.04" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.10" length="0.18" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="link6">
+		<inertial>
+			<origin rpy="0 -0 0" xyz="-2.51647e-06 0.000204679 0.12067" />
+			<mass value="0.577639" />
+			<inertia ixx="0.00034085" ixy="1.01877e-06" ixz="-1.4781e-07" iyy="0.00038675" iyz="-1.06647e-06" izz="0.000536577" />
+		</inertial>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link6_shell.obj" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0" rpy="0 0 0" />
+			<geometry>
+				<mesh filename="meshes/link6_joint.obj" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+<collision>
+			<origin xyz="0 0 0.083" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.05" length="0.165" />
+			</geometry>
+		</collision>
+	</link>
+
+	<link name="flange">
+	</link>
+
+	<link name="gripper_tcp">
+	</link>
+
+
+	<joint name="joint1" type="revolute">
+		<limit lower="-3.14159" upper="3.14159" effort="194" velocity="3.1415" />
+		<origin rpy="0 0 0" xyz="0 0 0" />
+		<parent link="link0" />
+		<child link="link1" />
+		<axis xyz="0 0 1" />
+	</joint>
+
+	<joint name="joint2" type="revolute">
+		<limit lower="-3.14159" upper="3.14159" effort="194" velocity="3.1415" />
+		<origin rpy="0 0 0" xyz="0 0 0.22" />
+		<parent link="link1" />
+		<child link="link2" />
+		<axis xyz="0 1 0" />
+	</joint>
+
+	<joint name="joint3" type="revolute">
+		<limit lower="-2.61799" upper="2.61799" effort="102" velocity="3.1415" />
+		<origin rpy="0 0 0" xyz="0 0 0.38" />
+		<parent link="link2" />
+		<child link="link3" />
+		<axis xyz="0 1 0" />
+	</joint>
+
+	<joint name="joint4" type="revolute">
+		<limit lower="-6.28319" upper="6.28319" effort="102" velocity="3.1415" />
+		<origin rpy="0 0 0" xyz="0 0 0" />
+		<parent link="link3" />
+		<child link="link4" />
+		<axis xyz="0 0 1" />
+	</joint>
+
+	<joint name="joint5" type="revolute">
+		<limit lower="-3.14159" upper="3.14159" effort="34" velocity="3.4906" />
+		<origin rpy="0 0 0" xyz="0 0 0.42" />
+		<parent link="link4" />
+		<child link="link5" />
+		<axis xyz="0 1 0" />
+	</joint>
+
+	<joint name="joint6" type="revolute">
+		<limit lower="-6.28319" upper="6.28319" effort="34" velocity="3.4906" />
+		<origin rpy="0 0 0" xyz="0 0 0" />
+		<parent link="link5" />
+		<child link="link6" />
+		<axis xyz="0 0 1" />
+	</joint>
+
+	<joint name="link6flange" type="fixed">
+		<origin rpy="0 0 0" xyz="0 0 0.1655" />
+		<parent link="link6" />
+		<child link="flange" />
+	</joint>
+
+	<joint name="flangegripper_tcp" type="fixed">
+		<origin rpy="0 0 0" xyz="0 0 0.0" />
+		<parent link="flange" />
+		<child link="gripper_tcp" />
+	</joint>
+
+
+	<!-- ===== Sticky-gum (gecko adhesive) PAD tool: visual-only, NO fingers =====
+	     A compliant amber gel pad on the flange (grips whatever it touches; adhesion modelled in the controller as a contact-gated breakable weld). Mounted at link6 + 0.1655 (the flange),
+	     it extends +z so the PAD FACE sits at local z=0.085 = tool point OZ=0.25 from
+	     link6. No <collision>: the pick is the adhesion weld (controller), so the pad
+	     carries no collider and can't knock the pile. -->
+	<link name="gum_pad">
+		<visual>
+			<origin xyz="0 0 0.008" rpy="0 0 0"/>
+			<geometry><cylinder radius="0.024" length="0.016"/></geometry>
+			<material name="pad_metal"><color rgba="0.55 0.55 0.58 1"/></material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.028" rpy="0 0 0"/>
+			<geometry><cylinder radius="0.014" length="0.024"/></geometry>
+			<material name="pad_neck"><color rgba="0.18 0.18 0.20 1"/></material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.050" rpy="0 0 0"/>
+			<geometry><cylinder radius="0.022" length="0.018"/></geometry>
+			<material name="pad_base"><color rgba="0.25 0.25 0.27 1"/></material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 0.0725" rpy="0 0 0"/>
+			<geometry><cylinder radius="0.026" length="0.027"/></geometry>
+			<material name="pad_gum"><color rgba="0.93 0.72 0.22 0.92"/></material>
+		</visual>
+		<inertial>
+			<origin xyz="0 0 0.04" rpy="0 0 0"/>
+			<mass value="0.05"/>
+			<inertia ixx="2e-5" ixy="0" ixz="0" iyy="2e-5" iyz="0" izz="2e-5"/>
+		</inertial>
+	</link>
+	<joint name="link6_gum_pad" type="fixed">
+		<origin rpy="0 0 0" xyz="0 0 0.1655"/>
+		<parent link="link6"/>
+		<child link="gum_pad"/>
+	</joint>
+
+</robot>

@@ -1,0 +1,8 @@
+# SQLite index is rebuilt on first save_local_memory call. The markdown
+# notes are the source of truth — commit those, regenerate the index.
+_index.sqlite
+*.sqlite-journal
+
+# Bridge exports vision frames to tempdir, but if the dev machine ever
+# writes them here we don't want them in git.
+husky_view_*.png

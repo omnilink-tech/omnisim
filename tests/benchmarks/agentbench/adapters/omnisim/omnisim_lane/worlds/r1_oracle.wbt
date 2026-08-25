@@ -1,0 +1,336 @@
+#OMNISIM R2025a utf8
+
+# R1 lidar_nav -- the ORACLE SCENE on the OmniSim arm (AgentBench SPEC 7.1).
+#
+# ONE scene, several drivers. The gate varies only the `controller` field of
+# ROVER, so a difference in the verdict can only be the program:
+#
+#     r1_null    steps, commands nothing            FAIL (R1.4, R1.5, R1.6)
+#     r1_blind   drives straight at the goal        FAIL (R1.4, R1.5)
+#     r1_oracle  reads the Lidar, maps, plans, goes PASS 6/6
+#
+# WHAT IS AUTHORED HERE, and against what:
+#
+#   * the arena is 10 m x 10 m (task prompt), walls 0.5 m high with their
+#     INNER faces exactly at +/- 5.0 m;
+#   * the five obstacles are the frozen ones from
+#     tasks/R1_lidar_nav/initial/benchmark_assets/obstacles.json, at their
+#     published centres and full extents -- so graders/r1_core.match_spec_
+#     obstacles matches them by GEOMETRY (AABB centre + footprint within
+#     0.05 m) and re-derives from the measured boxes that the straight
+#     START->GOAL line is blocked (it is, by OBSTACLE_1/2/3);
+#   * the robot starts at (-4, -4) heading 0 deg and the goal is (4, 4).
+#
+# THREE ENGINE FACTS THIS WORLD DEPENDS ON, stated because none is guessable:
+#
+#   1. `newtonRobotColliders TRUE`. Newton's DEFAULT is FALSE, which collides a
+#      robot through its WHEELS ONLY -- the chassis envelope is not a collider.
+#      With the default, this rover's body passes THROUGH a 0.5 m obstacle box
+#      while its wheels pass underneath the overhang, so "nothing was hit"
+#      would be true of a robot that drove through everything. R1.5 is a
+#      physical assertion and it must be able to fail; this field is what makes
+#      the chassis solid. (docs/reference/worldinfo.md)
+#   2. Walls and obstacles are plain `Solid` nodes, NOT a `RectangleArena`
+#      PROTO. A supervisor cannot walk a PROTO instance's internals, so an
+#      arena PROTO's four walls are neither boundable in the recorder's t=0
+#      scan nor NAMEABLE in a contact pair -- a robot that drove into such a
+#      wall would produce a contact whose partner is `null`. Spelling the walls
+#      out is what makes R1.5's wall clause measurable at all.
+#   3. Every collidable body's `boundingObject` re-USEs the same geometry the
+#      Shape draws, so what the Lidar SEES and what the robot HITS are the same
+#      box. A world where they differ can be navigated by a sensor that is
+#      lying to its own controller.
+#
+# The rover is a 4-wheel skid-steer differential drive: two motorised sides,
+# four wheel contact patches (a 2-wheel + belly base is not statically stable
+# under wheel-only collision), a 181-beam / 180 deg / 6 m planar Lidar on a
+# mast at z = 0.24 m -- above the chassis top (0.18 m) and the wheel tops
+# (0.16 m), so the scan plane cannot see the robot's own body -- and a GPS +
+# InertialUnit for pose. The obstacles are 0.5 m tall, so the scan plane cuts
+# every one of them.
+
+WorldInfo {
+  info [
+    "AgentBench R1 lidar_nav oracle scene (OmniSim arm)."
+  ]
+  title "AgentBench R1 oracle"
+  basicTimeStep 8
+  lineScale 0.2
+  newtonSolver "mujoco"
+  newtonSubsteps 4
+  newtonRobotColliders TRUE
+}
+Viewpoint {
+  orientation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931953
+  position 0 0 18
+}
+Background {
+  skyColor [
+    0.15 0.17 0.2
+  ]
+}
+DirectionalLight {
+  ambientIntensity 1
+  direction 0.3 -0.4 -1
+  intensity 2
+}
+
+# --- the ground ------------------------------------------------------------
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    DEF FLOOR_GEO Shape {
+      appearance PBRAppearance { baseColor 0.35 0.36 0.38 roughness 1 metalness 0 }
+      geometry Box { size 10.4 10.4 0.1 }
+    }
+  ]
+  name "floor"
+  boundingObject USE FLOOR_GEO
+}
+
+# --- the four walls (inner faces at +/- 5.0 m) ------------------------------
+DEF WALL_NORTH Solid {
+  translation 0 5.05 0.25
+  children [
+    DEF WALL_NS_GEO Shape {
+      appearance PBRAppearance { baseColor 0.6 0.6 0.62 roughness 1 metalness 0 }
+      geometry Box { size 10.2 0.1 0.5 }
+    }
+  ]
+  name "wall north"
+  boundingObject USE WALL_NS_GEO
+}
+DEF WALL_SOUTH Solid {
+  translation 0 -5.05 0.25
+  children [
+    USE WALL_NS_GEO
+  ]
+  name "wall south"
+  boundingObject USE WALL_NS_GEO
+}
+DEF WALL_EAST Solid {
+  translation 5.05 0 0.25
+  children [
+    DEF WALL_EW_GEO Shape {
+      appearance PBRAppearance { baseColor 0.6 0.6 0.62 roughness 1 metalness 0 }
+      geometry Box { size 0.1 10.0 0.5 }
+    }
+  ]
+  name "wall east"
+  boundingObject USE WALL_EW_GEO
+}
+DEF WALL_WEST Solid {
+  translation -5.05 0 0.25
+  children [
+    USE WALL_EW_GEO
+  ]
+  name "wall west"
+  boundingObject USE WALL_EW_GEO
+}
+
+# --- the five frozen obstacles ---------------------------------------------
+# Centres and full extents copied from benchmark_assets/obstacles.json. The
+# grader matches these by geometry, not by name, but they carry the published
+# names so a reader can check them against the asset by eye.
+DEF OBSTACLE_1 Solid {
+  translation 0 0 0.25
+  children [
+    DEF OBS1_GEO Shape {
+      appearance PBRAppearance { baseColor 0.85 0.45 0.2 roughness 0.9 metalness 0 }
+      geometry Box { size 1.6 1.6 0.5 }
+    }
+  ]
+  name "OBSTACLE_1"
+  boundingObject USE OBS1_GEO
+}
+DEF OBSTACLE_2 Solid {
+  translation -2 -1.4 0.25
+  children [
+    DEF OBS2_GEO Shape {
+      appearance PBRAppearance { baseColor 0.85 0.45 0.2 roughness 0.9 metalness 0 }
+      geometry Box { size 1.2 0.8 0.5 }
+    }
+  ]
+  name "OBSTACLE_2"
+  boundingObject USE OBS2_GEO
+}
+DEF OBSTACLE_3 Solid {
+  translation 1.6 0.6 0.25
+  children [
+    DEF OBS3_GEO Shape {
+      appearance PBRAppearance { baseColor 0.85 0.45 0.2 roughness 0.9 metalness 0 }
+      geometry Box { size 0.8 2 0.5 }
+    }
+  ]
+  name "OBSTACLE_3"
+  boundingObject USE OBS3_GEO
+}
+DEF OBSTACLE_4 Solid {
+  translation -1.2 2 0.25
+  children [
+    DEF OBS4_GEO Shape {
+      appearance PBRAppearance { baseColor 0.85 0.45 0.2 roughness 0.9 metalness 0 }
+      geometry Box { size 2 0.8 0.5 }
+    }
+  ]
+  name "OBSTACLE_4"
+  boundingObject USE OBS4_GEO
+}
+DEF OBSTACLE_5 Solid {
+  translation 2.4 -2 0.25
+  children [
+    DEF OBS5_GEO Shape {
+      appearance PBRAppearance { baseColor 0.85 0.45 0.2 roughness 0.9 metalness 0 }
+      geometry Box { size 1 1 0.5 }
+    }
+  ]
+  name "OBSTACLE_5"
+  boundingObject USE OBS5_GEO
+}
+
+# --- the rover -------------------------------------------------------------
+DEF ROVER Robot {
+  translation -4 -4 0
+  rotation 0 0 1 0
+  children [
+    Pose {
+      translation 0 0 0.13
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.15 0.35 0.55 roughness 0.7 metalness 0.1 }
+          geometry DEF CHASSIS_GEO Box { size 0.34 0.26 0.1 }
+        }
+      ]
+    }
+    # The scan plane: z = 0.24 m, clear of the chassis top (0.18) and the
+    # wheel tops (0.16), and inside every 0.5 m obstacle and wall.
+    DEF LIDAR Lidar {
+      translation 0 0 0.24
+      name "lidar"
+      horizontalResolution 181
+      fieldOfView 3.14159265
+      verticalFieldOfView 0.05
+      numberOfLayers 1
+      near 0.03
+      minRange 0.05
+      maxRange 6
+      type "fixed"
+      noise 0
+    }
+    GPS {
+      translation 0 0 0.2
+      name "gps"
+    }
+    InertialUnit {
+      translation 0 0 0.2
+      name "imu"
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0  anchor 0.12 0.15 0.08 }
+      device [
+        RotationalMotor { name "left front motor"  maxVelocity 12  maxTorque 12 }
+        PositionSensor { name "left front sensor" }
+      ]
+      endPoint Solid {
+        translation 0.12 0.15 0.08
+        children [
+          Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.1 0.1 0.1 roughness 1 metalness 0 }
+                geometry DEF WHEEL_GEO Cylinder { height 0.05 radius 0.08 subdivision 24 }
+              }
+            ]
+          }
+        ]
+        name "left front wheel"
+        boundingObject Pose { rotation 1 0 0 1.5707963267948966  children [ USE WHEEL_GEO ] }
+        physics DEF WHEEL_PHYSICS Physics { density -1  mass 0.15 }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0  anchor -0.12 0.15 0.08 }
+      device [
+        RotationalMotor { name "left rear motor"  maxVelocity 12  maxTorque 12 }
+        PositionSensor { name "left rear sensor" }
+      ]
+      endPoint Solid {
+        translation -0.12 0.15 0.08
+        children [
+          Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.1 0.1 0.1 roughness 1 metalness 0 }
+                geometry USE WHEEL_GEO
+              }
+            ]
+          }
+        ]
+        name "left rear wheel"
+        boundingObject Pose { rotation 1 0 0 1.5707963267948966  children [ USE WHEEL_GEO ] }
+        physics USE WHEEL_PHYSICS
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0  anchor 0.12 -0.15 0.08 }
+      device [
+        RotationalMotor { name "right front motor"  maxVelocity 12  maxTorque 12 }
+        PositionSensor { name "right front sensor" }
+      ]
+      endPoint Solid {
+        translation 0.12 -0.15 0.08
+        children [
+          Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.1 0.1 0.1 roughness 1 metalness 0 }
+                geometry USE WHEEL_GEO
+              }
+            ]
+          }
+        ]
+        name "right front wheel"
+        boundingObject Pose { rotation 1 0 0 1.5707963267948966  children [ USE WHEEL_GEO ] }
+        physics USE WHEEL_PHYSICS
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0  anchor -0.12 -0.15 0.08 }
+      device [
+        RotationalMotor { name "right rear motor"  maxVelocity 12  maxTorque 12 }
+        PositionSensor { name "right rear sensor" }
+      ]
+      endPoint Solid {
+        translation -0.12 -0.15 0.08
+        children [
+          Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.1 0.1 0.1 roughness 1 metalness 0 }
+                geometry USE WHEEL_GEO
+              }
+            ]
+          }
+        ]
+        name "right rear wheel"
+        boundingObject Pose { rotation 1 0 0 1.5707963267948966  children [ USE WHEEL_GEO ] }
+        physics USE WHEEL_PHYSICS
+      }
+    }
+  ]
+  name "rover"
+  boundingObject Pose {
+    translation 0 0 0.13
+    children [ USE CHASSIS_GEO ]
+  }
+  physics Physics {
+    density -1
+    mass 3.0
+    centerOfMass [ 0 0 0.06 ]
+  }
+  controller "r1_oracle"
+}

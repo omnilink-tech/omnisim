@@ -1,0 +1,198 @@
+#OMNISIM R2025a utf8
+# license: Apache License 2.0
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/samples/protogen/protos/OmniSimDemoPipeProp.proto.py
+# keywords: object/primitive
+# Hollow pipe prop with an author-time boundingObject (no JS template, no EXTERNPROTO trampoline). Useful as a reference for the protogen.bounding helpers.
+
+PROTO OmniSimDemoPipeProp [
+  field SFVec3f    translation 0 0 0  # Pose translation.
+  field SFRotation rotation    0 0 1 0  # Pose rotation.
+  field SFString   name        "pipe prop"  # Solid name.
+]
+{
+
+        Solid {
+          translation IS translation
+          rotation IS rotation
+          name IS name
+          children [
+            Shape {
+              appearance Appearance { material Material { } }
+              geometry Cylinder { height 1 radius 0.25 }
+            }
+          ]
+          boundingObject Group {
+    children [
+      Pose {
+        translation 0.236887 0.031187 0
+        rotation 0 0 1 1.701696
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.220743 0.091435 0
+        rotation 0 0 1 1.963495
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.189556 0.145452 0
+        rotation 0 0 1 2.225295
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.145452 0.189556 0
+        rotation 0 0 1 2.487094
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.091435 0.220743 0
+        rotation 0 0 1 2.748894
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.031187 0.236887 0
+        rotation 0 0 1 3.010693
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.031187 0.236887 0
+        rotation 0 0 1 3.272492
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.091435 0.220743 0
+        rotation 0 0 1 3.534292
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.145452 0.189556 0
+        rotation 0 0 1 3.796091
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.189556 0.145452 0
+        rotation 0 0 1 4.057891
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.220743 0.091435 0
+        rotation 0 0 1 4.31969
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.236887 0.031187 0
+        rotation 0 0 1 4.581489
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.236887 -0.031187 0
+        rotation 0 0 1 4.843289
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.220743 -0.091435 0
+        rotation 0 0 1 5.105088
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.189556 -0.145452 0
+        rotation 0 0 1 5.366887
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.145452 -0.189556 0
+        rotation 0 0 1 5.628687
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.091435 -0.220743 0
+        rotation 0 0 1 5.890486
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation -0.031187 -0.236887 0
+        rotation 0 0 1 6.152286
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.031187 -0.236887 0
+        rotation 0 0 1 6.414085
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.091435 -0.220743 0
+        rotation 0 0 1 6.675884
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.145452 -0.189556 0
+        rotation 0 0 1 6.937684
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.189556 -0.145452 0
+        rotation 0 0 1 7.199483
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.220743 -0.091435 0
+        rotation 0 0 1 7.461283
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+      Pose {
+        translation 0.236887 -0.031187 0
+        rotation 0 0 1 7.723082
+        children [
+          Box { size 0.065263 0.017861 1 }
+        ]
+      }
+    ]
+  }
+        }
+}

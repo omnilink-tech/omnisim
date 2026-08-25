@@ -1,0 +1,133 @@
+#OMNISIM R2025a utf8
+
+# Talk to Ari - conversational OmniArm 6 that physically picks things up
+# A 6-DOF OmniArm 6 you talk to as "Ari": a warm, first-person assistant
+# embodied in the arm. Right-click the robot -> "Talk to the Robot" (in-sim
+# chat card) or Show Robot Window, then chat or speak. As well as wave / go
+# home / reach, Ari can PICK UP and PLACE the coloured cubes in front of it:
+# the omnilink_arm_bridge plans a top-down approach and CLOSES its real Robotiq
+# 2F-85 fingers on the cube (a visible contact pinch), lifts, carries, and drops
+# it. The cubes are real rigid bodies that rest on the floor and fall when
+# released.
+#
+# Grasp model: the fingers physically close on the cube (omniarm6_2f85.urdf has
+# prismatic, colliding finger joints merged onto link6; robotiq_2f85_phys drives
+# them shut), and once they are around it the bridge attaches the cube to the
+# tool so it holds firmly through the carry. A pure position-servo pinch alone
+# slowly creeps out of the MuJoCo contact over a long interactive hold (chat
+# between pick and place), so the attach is what makes it reliable -- the fingers
+# still do the grabbing, the cube still obeys physics and falls when released.
+# Pick/place waypoints are solved top-down at execution time (cmove) so the
+# fingers straddle the cube squarely. Runs on the NEWTON backend with the MuJoCo
+# solver (WorldInfo.newtonSolver "mujoco"). Voice + persona route prompts
+# through OmniLink (needs OMNI_KEY); offline it's the terse command console.
+# Easiest launch: run_omniarm6_talk.ps1.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Talk to Ari"
+  newtonSolver "mujoco"
+  contactProperties [
+    ContactProperties { material1 "default" material2 "default" coulombFriction [ 3 ] bounce 0 softCFM 0.0003 }
+  ]
+  info [
+    "Talk to Ari - an OmniArm 6 6-DOF arm driven by an OmniLink agent."
+    "Right-click the robot -> Talk to the Robot, then chat or speak."
+    "Try: 'pick up the red cube', 'put it down', 'wave hello', 'go home'."
+  ]
+  # translation_audit: ContactProperties.coulombFriction is an ODE-path field the
+  # Newton backend does not read; this declares the same friction where it is read.
+  #
+  # mu 5 is past the contact solver's stable range at basicTimeStep 16 and sank
+  # this world's dynamic bodies through the floor -- measured over a 12 s settle
+  # with the robots removed: all 3 grasp cubes below z=0. mu 3 keeps every part on its
+  # surface and is the value docs/guide/friction-grasp.md measured for a
+  # two-finger pinch, so it is the highest friction this world can actually hold.
+  newtonGroundMu 3
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 1.959 -2.085 2.282
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 4 4
+}
+
+# OmniArm 6 carrying a real Robotiq 2F-85 (prismatic finger joints with collision,
+# merged onto link6 of omniarm6_2f85.urdf). --gripper robotiq_2f85_phys drives the
+# two finger motors to close on a cube; the bridge then attaches it so the grip
+# holds firmly through the carry (the fingers do the grabbing -- no magnet pick).
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_2f85.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omnilink_arm_bridge"
+  controllerArgs [ "--robot" "omniarm6" "--port" "8765" "--gripper" "robotiq_2f85_phys" ]
+  window "omnilink_chat"
+}
+
+# Graspable cubes (DEF GRASP_* -> the bridge picks the named / nearest). Real
+# rigid bodies that rest on the stage floor, are gripped by the fingers, and
+# fall when released.
+DEF GRASP_CUBE_RED Solid {
+  translation 0.45 -0.12 0.025
+  physicsBackend "newton"
+  children [
+    DEF CUBE_RED_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.88 0.18 0.16 roughness 1 metalness 0 }
+      geometry Box { size 0.05 0.05 0.05 }
+    }
+  ]
+  name "cube_red"
+  boundingObject USE CUBE_RED_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+DEF GRASP_CUBE_BLUE Solid {
+  translation 0.45 0.0 0.025
+  physicsBackend "newton"
+  children [
+    DEF CUBE_BLUE_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.16 0.36 0.88 roughness 1 metalness 0 }
+      geometry Box { size 0.05 0.05 0.05 }
+    }
+  ]
+  name "cube_blue"
+  boundingObject USE CUBE_BLUE_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+DEF GRASP_CUBE_GREEN Solid {
+  translation 0.45 0.12 0.025
+  physicsBackend "newton"
+  children [
+    DEF CUBE_GREEN_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.20 0.62 0.28 roughness 1 metalness 0 }
+      geometry Box { size 0.05 0.05 0.05 }
+    }
+  ]
+  name "cube_green"
+  boundingObject USE CUBE_GREEN_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+
+# Drop zone marker (visual only) -- where "put it down" places the cube.
+DEF DROP_ZONE Solid {
+  translation 0.30 0.34 0.001
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.95 0.85 0.20 roughness 1 metalness 0 transparency 0.4 }
+      geometry Box { size 0.16 0.16 0.002 }
+    }
+  ]
+  name "drop_zone"
+}

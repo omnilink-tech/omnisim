@@ -1,0 +1,52 @@
+#OMNISIM R2025a utf8
+
+# STAND + WAVE deploy -- SINGLE robot (no ghost), to isolate whether the two-robot world
+# affects Newton state indexing. The physics G1 shadows the stand+wave (legs balance, arms
+# track the wave). Launch via the deploy env in run_g1_standwave_deploy.ps1 (pointed here).
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 -- stand + wave (solo, no ghost)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.294 -4.571 5.547
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 8 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF G1_REAL URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_stand_arms_deploy"
+  physicsBackend "newton"
+}

@@ -1,0 +1,133 @@
+#OMNISIM R2025a utf8
+
+# Unitree Go2 SHADOW policy on the ROUGH-TERRAIN track. Same terrain as
+# go2_rough_track.omniworld (graduated bump ridges 3->18cm at x=6..16, then a rock
+# field at x=18..21) but driven by the SHADOWING champion (controller
+# go2_shadow_deploy) instead of the residual-RL walker -- i.e. the exact policy
+# the BATON walk->stand->walk demo runs.
+#
+# HONEST CAVEAT: the shadow policy was trained shadowing a FLAT-ground trot
+# ghost; it has never seen terrain. This world is an out-of-distribution
+# robustness probe, not a terrain-trained result -- expect it to clear the low
+# bumps and struggle as they grow past its ~5cm foot clearance.
+#
+# Launch: GO2_SHADOW_WORLD=<this> bash scripts/dev/run_go2_shadow_deploy.sh
+# (reuses the shadow deploy recipe byte-for-byte). Spawn 0.33 == settle height.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  basicTimeStep 16
+  title "Go2 shadow policy on rough terrain"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 7
+  follow "go2"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 60 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+Solid { translation 3 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m3" }
+Solid { translation 6 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0.6 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m6" }
+Solid { translation 9 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m9" }
+Solid { translation 12 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m12" }
+Solid { translation 15 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 0.6 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m15" }
+Solid { translation 18 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.5 0 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m18" }
+Solid { translation 21 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m21" }
+
+# ===== DIFFICULT TRACK (static boxes; needs OMNISIM_NEWTON_STATICS=1) =====
+Solid { translation 6.0000 0.0000 0.0150 children [ Shape { appearance PBRAppearance { baseColor 0.67 0.4 0.18 roughness 0.95 metalness 0 } geometry Box { size 0.2000 6.0000 0.0300 } } ] name "bump_0_3cm" boundingObject Box { size 0.2000 6.0000 0.0300 } }
+Solid { translation 8.0000 0.0000 0.0250 children [ Shape { appearance PBRAppearance { baseColor 0.65 0.39 0.18 roughness 0.95 metalness 0 } geometry Box { size 0.2000 6.0000 0.0500 } } ] name "bump_1_5cm" boundingObject Box { size 0.2000 6.0000 0.0500 } }
+Solid { translation 10.0000 0.0000 0.0350 children [ Shape { appearance PBRAppearance { baseColor 0.63 0.38 0.18 roughness 0.95 metalness 0 } geometry Box { size 0.2000 6.0000 0.0700 } } ] name "bump_2_7cm" boundingObject Box { size 0.2000 6.0000 0.0700 } }
+Solid { translation 12.0000 0.0000 0.0500 children [ Shape { appearance PBRAppearance { baseColor 0.6 0.36 0.18 roughness 0.95 metalness 0 } geometry Box { size 0.2000 6.0000 0.1000 } } ] name "bump_3_10cm" boundingObject Box { size 0.2000 6.0000 0.1000 } }
+Solid { translation 14.0000 0.0000 0.0700 children [ Shape { appearance PBRAppearance { baseColor 0.56 0.34 0.18 roughness 0.95 metalness 0 } geometry Box { size 0.2000 6.0000 0.1400 } } ] name "bump_4_14cm" boundingObject Box { size 0.2000 6.0000 0.1400 } }
+Solid { translation 16.0000 0.0000 0.0900 children [ Shape { appearance PBRAppearance { baseColor 0.52 0.31 0.18 roughness 0.95 metalness 0 } geometry Box { size 0.2000 6.0000 0.1800 } } ] name "bump_5_18cm" boundingObject Box { size 0.2000 6.0000 0.1800 } }
+Solid { translation 18.0558 -1.1400 0.0191 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1423 0.1936 0.0383 } } ] name "rock_0" boundingObject Box { size 0.1423 0.1936 0.0383 } }
+Solid { translation 18.0707 0.9412 0.0163 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1622 0.1230 0.0326 } } ] name "rock_1" boundingObject Box { size 0.1622 0.1230 0.0326 } }
+Solid { translation 17.8875 0.0129 0.0154 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1399 0.1850 0.0308 } } ] name "rock_2" boundingObject Box { size 0.1399 0.1850 0.0308 } }
+Solid { translation 18.0180 -0.6709 0.0238 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2009 0.1206 0.0477 } } ] name "rock_3" boundingObject Box { size 0.2009 0.1206 0.0477 } }
+Solid { translation 18.6223 0.4755 0.0201 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1355 0.2157 0.0402 } } ] name "rock_4" boundingObject Box { size 0.1355 0.2157 0.0402 } }
+Solid { translation 18.4346 -0.9774 0.0165 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2047 0.1804 0.0329 } } ] name "rock_5" boundingObject Box { size 0.2047 0.1804 0.0329 } }
+Solid { translation 18.6229 0.5514 0.0230 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2173 0.1579 0.0461 } } ] name "rock_6" boundingObject Box { size 0.2173 0.1579 0.0461 } }
+Solid { translation 18.5208 0.7906 0.0243 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2062 0.1777 0.0486 } } ] name "rock_7" boundingObject Box { size 0.2062 0.1777 0.0486 } }
+Solid { translation 19.0818 -1.0900 0.0184 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1489 0.1280 0.0368 } } ] name "rock_8" boundingObject Box { size 0.1489 0.1280 0.0368 } }
+Solid { translation 18.8931 -0.9576 0.0192 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1836 0.1565 0.0383 } } ] name "rock_9" boundingObject Box { size 0.1836 0.1565 0.0383 } }
+Solid { translation 18.9481 -0.6972 0.0190 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2137 0.1848 0.0380 } } ] name "rock_10" boundingObject Box { size 0.2137 0.1848 0.0380 } }
+Solid { translation 19.0437 -0.7893 0.0259 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1363 0.1579 0.0519 } } ] name "rock_11" boundingObject Box { size 0.1363 0.1579 0.0519 } }
+Solid { translation 19.6958 0.3360 0.0234 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1885 0.2043 0.0467 } } ] name "rock_12" boundingObject Box { size 0.1885 0.2043 0.0467 } }
+Solid { translation 19.6104 -0.6503 0.0155 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1515 0.1468 0.0310 } } ] name "rock_13" boundingObject Box { size 0.1515 0.1468 0.0310 } }
+Solid { translation 19.3844 1.0630 0.0281 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1515 0.1855 0.0563 } } ] name "rock_14" boundingObject Box { size 0.1515 0.1855 0.0563 } }
+Solid { translation 19.4583 0.9949 0.0219 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1465 0.1447 0.0438 } } ] name "rock_15" boundingObject Box { size 0.1465 0.1447 0.0438 } }
+Solid { translation 20.0245 -0.5694 0.0238 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2098 0.1599 0.0475 } } ] name "rock_16" boundingObject Box { size 0.2098 0.1599 0.0475 } }
+Solid { translation 19.8877 1.1941 0.0226 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1291 0.1247 0.0453 } } ] name "rock_17" boundingObject Box { size 0.1291 0.1247 0.0453 } }
+Solid { translation 19.8439 0.3059 0.0269 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1622 0.1264 0.0538 } } ] name "rock_18" boundingObject Box { size 0.1622 0.1264 0.0538 } }
+Solid { translation 19.9526 1.1907 0.0229 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2171 0.2061 0.0459 } } ] name "rock_19" boundingObject Box { size 0.2171 0.2061 0.0459 } }
+Solid { translation 20.3046 0.5297 0.0252 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1737 0.1467 0.0505 } } ] name "rock_20" boundingObject Box { size 0.1737 0.1467 0.0505 } }
+Solid { translation 20.5564 -0.9323 0.0215 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1654 0.2154 0.0430 } } ] name "rock_21" boundingObject Box { size 0.1654 0.2154 0.0430 } }
+Solid { translation 20.6503 -0.5679 0.0225 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1379 0.2113 0.0450 } } ] name "rock_22" boundingObject Box { size 0.1379 0.2113 0.0450 } }
+Solid { translation 20.6482 -0.4837 0.0246 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1809 0.1353 0.0492 } } ] name "rock_23" boundingObject Box { size 0.1809 0.1353 0.0492 } }
+Solid { translation 21.1050 0.0945 0.0267 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1730 0.1201 0.0534 } } ] name "rock_24" boundingObject Box { size 0.1730 0.1201 0.0534 } }
+Solid { translation 20.9297 -1.1533 0.0289 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2079 0.2032 0.0579 } } ] name "rock_25" boundingObject Box { size 0.2079 0.2032 0.0579 } }
+Solid { translation 20.9230 -1.0610 0.0282 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2147 0.1286 0.0563 } } ] name "rock_26" boundingObject Box { size 0.2147 0.1286 0.0563 } }
+Solid { translation 20.9944 -1.0339 0.0264 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1966 0.1328 0.0528 } } ] name "rock_27" boundingObject Box { size 0.1966 0.1328 0.0528 } }
+Solid { translation 21.4901 0.1195 0.0190 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2072 0.1623 0.0380 } } ] name "rock_28" boundingObject Box { size 0.2072 0.1623 0.0380 } }
+Solid { translation 21.3847 0.0943 0.0259 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1401 0.1512 0.0519 } } ] name "rock_29" boundingObject Box { size 0.1401 0.1512 0.0519 } }
+Solid { translation 21.6981 0.3597 0.0216 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1718 0.1321 0.0431 } } ] name "rock_30" boundingObject Box { size 0.1718 0.1321 0.0431 } }
+Solid { translation 21.3899 -0.3886 0.0238 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1430 0.1420 0.0476 } } ] name "rock_31" boundingObject Box { size 0.1430 0.1420 0.0476 } }
+Solid { translation 21.8284 0.3146 0.0184 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2105 0.2060 0.0369 } } ] name "rock_32" boundingObject Box { size 0.2105 0.2060 0.0369 } }
+Solid { translation 21.8283 -0.6288 0.0250 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1414 0.1332 0.0501 } } ] name "rock_33" boundingObject Box { size 0.1414 0.1332 0.0501 } }
+Solid { translation 22.1742 0.1705 0.0221 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1985 0.2007 0.0442 } } ] name "rock_34" boundingObject Box { size 0.1985 0.2007 0.0442 } }
+Solid { translation 21.8762 -0.9674 0.0215 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1624 0.1667 0.0429 } } ] name "rock_35" boundingObject Box { size 0.1624 0.1667 0.0429 } }
+Solid { translation 22.5916 0.4161 0.0298 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1298 0.1603 0.0595 } } ] name "rock_36" boundingObject Box { size 0.1298 0.1603 0.0595 } }
+Solid { translation 22.4357 0.8680 0.0187 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1390 0.1649 0.0375 } } ] name "rock_37" boundingObject Box { size 0.1390 0.1649 0.0375 } }
+Solid { translation 22.4688 -0.5315 0.0187 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2123 0.1643 0.0375 } } ] name "rock_38" boundingObject Box { size 0.2123 0.1643 0.0375 } }
+Solid { translation 22.6445 0.1208 0.0158 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2199 0.2036 0.0315 } } ] name "rock_39" boundingObject Box { size 0.2199 0.2036 0.0315 } }
+Solid { translation 23.1876 1.0233 0.0277 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1366 0.1686 0.0555 } } ] name "rock_40" boundingObject Box { size 0.1366 0.1686 0.0555 } }
+Solid { translation 22.8855 -0.2375 0.0159 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1579 0.2185 0.0318 } } ] name "rock_41" boundingObject Box { size 0.1579 0.2185 0.0318 } }
+Solid { translation 22.9061 0.6818 0.0218 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1623 0.2157 0.0437 } } ] name "rock_42" boundingObject Box { size 0.1623 0.2157 0.0437 } }
+Solid { translation 23.1982 0.1338 0.0258 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1355 0.1497 0.0516 } } ] name "rock_43" boundingObject Box { size 0.1355 0.1497 0.0516 } }
+Solid { translation 23.6875 0.1900 0.0231 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1948 0.1257 0.0463 } } ] name "rock_44" boundingObject Box { size 0.1948 0.1257 0.0463 } }
+Solid { translation 23.5337 0.0068 0.0278 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1357 0.2161 0.0556 } } ] name "rock_45" boundingObject Box { size 0.1357 0.2161 0.0556 } }
+Solid { translation 23.3320 -0.7540 0.0239 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1875 0.1435 0.0479 } } ] name "rock_46" boundingObject Box { size 0.1875 0.1435 0.0479 } }
+Solid { translation 23.3480 0.9367 0.0187 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1795 0.1819 0.0374 } } ] name "rock_47" boundingObject Box { size 0.1795 0.1819 0.0374 } }
+Solid { translation 23.9677 0.2008 0.0228 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.2135 0.1404 0.0457 } } ] name "rock_48" boundingObject Box { size 0.2135 0.1404 0.0457 } }
+Solid { translation 24.0865 -0.6272 0.0209 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1872 0.1500 0.0419 } } ] name "rock_49" boundingObject Box { size 0.1872 0.1500 0.0419 } }
+Solid { translation 23.9265 0.6045 0.0161 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1658 0.2198 0.0322 } } ] name "rock_50" boundingObject Box { size 0.1658 0.2198 0.0322 } }
+Solid { translation 24.1984 -1.0242 0.0182 children [ Shape { appearance PBRAppearance { baseColor 0.45 0.43 0.4 roughness 0.95 metalness 0 } geometry Box { size 0.1465 0.2133 0.0364 } } ] name "rock_51" boundingObject Box { size 0.1465 0.2133 0.0364 } }
+# bumps=6 rocks=52
+
+URDFRobot {
+  url "../../../robots/unitree/go2/urdf/go2.urdf"
+  translation 0 0 0.33
+  name "go2"
+  supervisor TRUE
+  controller "go2_shadow_deploy"
+  physicsBackend "newton"
+}

@@ -1,0 +1,186 @@
+{
+  "task": "C2_fall_through_floor",
+  "outcome": "PASS",
+  "progress": 4,
+  "progress_name": "graded_pass",
+  "assertions": {
+    "C2.1": {
+      "ok": true,
+      "what": "the run is clean",
+      "measured": {
+        "exit code": 0,
+        "ERROR: lines": 0,
+        "recorder complete": true,
+        "timed out": false
+      },
+      "threshold": {
+        "exit code": 0,
+        "ERROR: lines": 0
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "error stream + exit code: the per-run engine log at $OMNISIM_LOG_PATH plus the process exit code from the headless launch"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "clean run",
+          "how_to_fail": "a non-zero exit code, an error-class line, a timeout, or a driver that never reached its target simulated time",
+          "witness": "the adapter captured the exit code AND the simulator's own error stream",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "C2.2": {
+      "ok": true,
+      "what": "the robot stays up",
+      "measured": {
+        "min z over all samples (m)": 0.2375,
+        "z_end (m)": 0.249
+      },
+      "threshold": {
+        "z (m)": "> -0.10"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "vertical floor",
+          "how_to_fail": "one z sample at or below -0.10 m",
+          "witness": ">= 1 z sample",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "C2.3": {
+      "ok": true,
+      "what": "it is still a dynamic body",
+      "measured": {
+        "Physics node attached": true
+      },
+      "threshold": true,
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "dynamics model: type=Robot num_joints=0 (recorder roster)"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "dynamics attached",
+          "how_to_fail": "the agent 'fixed' the fall by removing the body's dynamics",
+          "witness": "the adapter answers 'is this body dynamic' either way, rather than returning None",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "C2.4": {
+      "ok": true,
+      "what": "gravity still acts on it, and it came to rest",
+      "measured": {
+        "total descent (m)": 0.7248,
+        "z spread over the last 1.0 s (m)": 0.0
+      },
+      "threshold": {
+        "descent (m)": ">= 0.10",
+        "rest band (m)": "<= 0.020"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "descended then rested",
+          "how_to_fail": "a body pinned in place (no descent) or still moving at the end",
+          "witness": ">= 2 samples, and a recorded window longer than the 1.0 s rest test",
+          "witness_present": true,
+          "detail": "recorded 4.992 s"
+        }
+      ]
+    },
+    "C2.5": {
+      "ok": true,
+      "what": "it rests on the floor surface",
+      "measured": {
+        "z_end (m)": 0.249,
+        "expected rest z (m)": 0.25,
+        "floor top z (m)": 0.05,
+        "robot half-height (m)": 0.2,
+        "error (m)": 0.001
+      },
+      "threshold": {
+        "error (m)": "<= 0.15"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "rests on the surface",
+          "how_to_fail": "a body resting more than 0.15 m from the top of the floor it built",
+          "witness": "world-space AABBs for BOTH the body and the floor at a frozen t=0",
+          "witness_present": true,
+          "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+        }
+      ]
+    }
+  },
+  "n_pass": 5,
+  "n_total": 5,
+  "failed_assertion": null,
+  "failed_assertions": [],
+  "self_verified": true,
+  "attribution": {
+    "backend": "ode",
+    "solver": "ode",
+    "degraded": false,
+    "source": "explicit physicsBackend \"ode\" pin in the world"
+  },
+  "measurements": {
+    "phase_b": {
+      "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\phase0_c2\\C2_fall_through_floor.oracle.r0\\scratch\\fall_through.wbt",
+      "injected_world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\phase0_c2\\C2_fall_through_floor.oracle.r0\\scratch\\_agentbench_phaseB_fall_through.wbt",
+      "rc": 0,
+      "wall_s": 5.175607500015758,
+      "timed_out": false,
+      "log_path": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\phase0_c2\\C2_fall_through_floor.oracle.r0\\phaseB\\phaseB_engine.log",
+      "sidecar": {
+        "present": false
+      },
+      "recorder_complete": true,
+      "rows": 313,
+      "n_robots": 1,
+      "attempts_used": 1,
+      "launch_backend_env": {},
+      "tamper": [],
+      "error": null
+    }
+  },
+  "artifacts": {
+    "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\phase0_c2\\C2_fall_through_floor.oracle.r0\\scratch\\fall_through.wbt",
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\phase0_c2\\C2_fall_through_floor.oracle.r0\\trace.jsonl",
+    "engine_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\phase0_c2\\C2_fall_through_floor.oracle.r0\\phaseB\\phaseB_engine.log",
+    "recorder_csv": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\phase0_c2\\C2_fall_through_floor.oracle.r0\\phaseB\\phaseB.csv"
+  },
+  "notes": [],
+  "basis": {
+    "core-physical": [
+      "C2.2",
+      "C2.4",
+      "C2.5"
+    ],
+    "mixed": [
+      "C2.1",
+      "C2.3"
+    ]
+  },
+  "vacuous_assertions": {}
+}

@@ -1,0 +1,66 @@
+{
+  "name": "g1",
+  "urdf": "projects/robots/unitree/g1/urdf/g1_23dof_omnisim.urdf",
+  "spawn_z": 0.78,
+  "_note": "G1 23-DOF run through the SAME generic harness as H1/Valkyrie, to test whether the centering+stiffening method makes its stand robust. Pose = G1's documented deeper squat (hip -0.30/knee 0.52/ankle -0.23) + arms-down (g1_stand_arms_deploy). deploy_ke/ank_bias are swept empirically.",
+  "joint_order": [
+    "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+    "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+    "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+    "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "nominal": {
+    "left_hip_pitch_joint": -0.30, "left_knee_joint": 0.52, "left_ankle_pitch_joint": -0.23,
+    "right_hip_pitch_joint": -0.30, "right_knee_joint": 0.52, "right_ankle_pitch_joint": -0.23,
+    "left_shoulder_roll_joint": 0.20, "right_shoulder_roll_joint": -0.20
+  },
+  "ankle_pitch_joints": ["left_ankle_pitch_joint", "right_ankle_pitch_joint"],
+  "ankle_roll_joints": ["left_ankle_roll_joint", "right_ankle_roll_joint"],
+  "hip_pitch_joints": ["left_hip_pitch_joint", "right_hip_pitch_joint"],
+  "arm_hold": [
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "deploy_ke": 400,
+  "deploy_kd": 60,
+  "ank_bias": -0.06,
+  "_result": "Through this generic harness G1 STANDS robustly with ank_bias -0.06 (KE 400): 0 falls over 400s+ sim. At bias 0 it tips forward at 1.46s -- the SAME marginal forward-CoM failure as H1/Valkyrie at bias 0, fixed by the SAME backward-ankle centering. Confirms G1's committed stand was marginal only because its pose was not centred. Basin ~[-0.05,-0.07]: bias 0/-0.03 tip forward, -0.09 tips back.",
+  "upright": {"bz_min": 0.55, "roll_max": 0.7, "pitch_max": 0.7},
+  "settle_s": 0.2,
+  "wave": {
+    "enabled": false,
+    "ramp_s": 1.5,
+    "pose": {
+      "right_shoulder_pitch_joint": 0.0,
+      "right_shoulder_roll_joint": -1.4,
+      "right_shoulder_yaw_joint": 0.3,
+      "right_elbow_joint": 1.0
+    },
+    "osc": {"joint": "right_shoulder_yaw_joint", "amp": 0.5, "freq_hz": 0.9}
+  },
+  "lean": {
+    "_note": "G1's stand is marginal (forward-CoM), so the reactive ankle lean earns its keep -- it holds all thrown cubes where the passive stand drops them. H1/Valkyrie are stiff enough to hold passively and the lean HURTS them, so they leave it off.",
+    "enabled": true
+  },
+  "capture_step": {
+    "enabled": false,
+    "trigger_tilt": 0.16,
+    "trigger_vel": 0.25,
+    "reach": 0.55,
+    "lift": 0.55,
+    "dur": 0.34,
+    "settle": 0.8,
+    "legs": {
+      "left":  {"hip_pitch": "left_hip_pitch_joint",  "hip_roll": "left_hip_roll_joint",  "knee": "left_knee_joint",  "ankle_pitch": "left_ankle_pitch_joint",  "ankle_roll": "left_ankle_roll_joint"},
+      "right": {"hip_pitch": "right_hip_pitch_joint", "hip_roll": "right_hip_roll_joint", "knee": "right_knee_joint", "ankle_pitch": "right_ankle_pitch_joint", "ankle_roll": "right_ankle_roll_joint"}
+    }
+  }
+}

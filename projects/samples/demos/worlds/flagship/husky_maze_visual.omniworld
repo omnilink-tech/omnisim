@@ -1,0 +1,285 @@
+#OMNISIM R2025a utf8
+
+# Husky maze - Husky Maze (Visual)
+# Recursive-backtracker maze, seed=100. Same coordinate
+# convention as husky_maze.omniworld: 11x11 cells, 2 m each,
+# cell (col, row) center at (-10 + 2*col, -10 + 2*row).
+# Start cell (0, 10) at (-10, +10).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky Maze (Visual)"
+  info [
+    "find the red one via read_camera, BFS to it, complete_mission"
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 50
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.4 0.3 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 26 26
+  tileSize 26 26
+  appearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# Outer perimeter walls (22 m x 22 m enclosure, centred on origin).
+Wall { name "wall_perim_N" translation 0 11 0 size 22.2 0.2 1 }
+Wall { name "wall_perim_S" translation 0 -11 0 size 22.2 0.2 1 }
+Wall { name "wall_perim_E" translation 11 0 0 size 0.2 22.2 1 }
+Wall { name "wall_perim_W" translation -11 0 0 size 0.2 22.2 1 }
+
+# Internal maze walls.
+Wall { name "H_000" translation -10  -7 0 size 2 0.2 1 }
+Wall { name "H_001" translation -10   3 0 size 2 0.2 1 }
+Wall { name "H_002" translation -10   7 0 size 2 0.2 1 }
+Wall { name "H_003" translation  -8  -9 0 size 2 0.2 1 }
+Wall { name "H_004" translation  -8  -7 0 size 2 0.2 1 }
+Wall { name "H_005" translation  -8  -1 0 size 2 0.2 1 }
+Wall { name "H_006" translation  -8   1 0 size 2 0.2 1 }
+Wall { name "H_007" translation  -8   5 0 size 2 0.2 1 }
+Wall { name "H_008" translation  -8   9 0 size 2 0.2 1 }
+Wall { name "H_009" translation  -6  -7 0 size 2 0.2 1 }
+Wall { name "H_010" translation  -6  -3 0 size 2 0.2 1 }
+Wall { name "H_011" translation  -6   3 0 size 2 0.2 1 }
+Wall { name "H_012" translation  -6   9 0 size 2 0.2 1 }
+Wall { name "H_013" translation  -4  -5 0 size 2 0.2 1 }
+Wall { name "H_014" translation  -4  -3 0 size 2 0.2 1 }
+Wall { name "H_015" translation  -4   5 0 size 2 0.2 1 }
+Wall { name "H_016" translation  -4   9 0 size 2 0.2 1 }
+Wall { name "H_017" translation  -2  -9 0 size 2 0.2 1 }
+Wall { name "H_018" translation  -2  -3 0 size 2 0.2 1 }
+Wall { name "H_019" translation  -2   1 0 size 2 0.2 1 }
+Wall { name "H_020" translation  -2   7 0 size 2 0.2 1 }
+Wall { name "H_021" translation   0  -7 0 size 2 0.2 1 }
+Wall { name "H_022" translation   0   3 0 size 2 0.2 1 }
+Wall { name "H_023" translation   2  -7 0 size 2 0.2 1 }
+Wall { name "H_024" translation   2  -5 0 size 2 0.2 1 }
+Wall { name "H_025" translation   2   1 0 size 2 0.2 1 }
+Wall { name "H_026" translation   2   3 0 size 2 0.2 1 }
+Wall { name "H_027" translation   4  -9 0 size 2 0.2 1 }
+Wall { name "H_028" translation   4  -7 0 size 2 0.2 1 }
+Wall { name "H_029" translation   4  -5 0 size 2 0.2 1 }
+Wall { name "H_030" translation   4  -1 0 size 2 0.2 1 }
+Wall { name "H_031" translation   4   9 0 size 2 0.2 1 }
+Wall { name "H_032" translation   6  -9 0 size 2 0.2 1 }
+Wall { name "H_033" translation   6  -7 0 size 2 0.2 1 }
+Wall { name "H_034" translation   6   1 0 size 2 0.2 1 }
+Wall { name "H_035" translation   6   5 0 size 2 0.2 1 }
+Wall { name "H_036" translation   8  -9 0 size 2 0.2 1 }
+Wall { name "H_037" translation   8  -3 0 size 2 0.2 1 }
+Wall { name "H_038" translation   8  -1 0 size 2 0.2 1 }
+Wall { name "H_039" translation   8   3 0 size 2 0.2 1 }
+Wall { name "H_040" translation   8   7 0 size 2 0.2 1 }
+Wall { name "H_041" translation   8   9 0 size 2 0.2 1 }
+Wall { name "H_042" translation  10   1 0 size 2 0.2 1 }
+
+Wall { name "V_000" translation  -9 -10 0 size 0.2 2 1 }
+Wall { name "V_001" translation  -9  -4 0 size 0.2 2 1 }
+Wall { name "V_002" translation  -9  -2 0 size 0.2 2 1 }
+Wall { name "V_003" translation  -9   2 0 size 0.2 2 1 }
+Wall { name "V_004" translation  -7  -6 0 size 0.2 2 1 }
+Wall { name "V_005" translation  -7  -4 0 size 0.2 2 1 }
+Wall { name "V_006" translation  -7   0 0 size 0.2 2 1 }
+Wall { name "V_007" translation  -7   4 0 size 0.2 2 1 }
+Wall { name "V_008" translation  -7   6 0 size 0.2 2 1 }
+Wall { name "V_009" translation  -7   8 0 size 0.2 2 1 }
+Wall { name "V_010" translation  -5  -8 0 size 0.2 2 1 }
+Wall { name "V_011" translation  -5   0 0 size 0.2 2 1 }
+Wall { name "V_012" translation  -5   2 0 size 0.2 2 1 }
+Wall { name "V_013" translation  -5   6 0 size 0.2 2 1 }
+Wall { name "V_014" translation  -5   8 0 size 0.2 2 1 }
+Wall { name "V_015" translation  -3 -10 0 size 0.2 2 1 }
+Wall { name "V_016" translation  -3  -8 0 size 0.2 2 1 }
+Wall { name "V_017" translation  -3  -6 0 size 0.2 2 1 }
+Wall { name "V_018" translation  -3  -2 0 size 0.2 2 1 }
+Wall { name "V_019" translation  -3   2 0 size 0.2 2 1 }
+Wall { name "V_020" translation  -3   4 0 size 0.2 2 1 }
+Wall { name "V_021" translation  -1  -6 0 size 0.2 2 1 }
+Wall { name "V_022" translation  -1  -4 0 size 0.2 2 1 }
+Wall { name "V_023" translation  -1  -2 0 size 0.2 2 1 }
+Wall { name "V_024" translation  -1   0 0 size 0.2 2 1 }
+Wall { name "V_025" translation  -1   4 0 size 0.2 2 1 }
+Wall { name "V_026" translation  -1   6 0 size 0.2 2 1 }
+Wall { name "V_027" translation  -1   8 0 size 0.2 2 1 }
+Wall { name "V_028" translation   1  -8 0 size 0.2 2 1 }
+Wall { name "V_029" translation   1  -2 0 size 0.2 2 1 }
+Wall { name "V_030" translation   1   0 0 size 0.2 2 1 }
+Wall { name "V_031" translation   1   4 0 size 0.2 2 1 }
+Wall { name "V_032" translation   1   6 0 size 0.2 2 1 }
+Wall { name "V_033" translation   1   8 0 size 0.2 2 1 }
+Wall { name "V_034" translation   1  10 0 size 0.2 2 1 }
+Wall { name "V_035" translation   3 -10 0 size 0.2 2 1 }
+Wall { name "V_036" translation   3  -4 0 size 0.2 2 1 }
+Wall { name "V_037" translation   3  -2 0 size 0.2 2 1 }
+Wall { name "V_038" translation   3   2 0 size 0.2 2 1 }
+Wall { name "V_039" translation   3   6 0 size 0.2 2 1 }
+Wall { name "V_040" translation   3   8 0 size 0.2 2 1 }
+Wall { name "V_041" translation   5  -4 0 size 0.2 2 1 }
+Wall { name "V_042" translation   5   0 0 size 0.2 2 1 }
+Wall { name "V_043" translation   5   2 0 size 0.2 2 1 }
+Wall { name "V_044" translation   5   4 0 size 0.2 2 1 }
+Wall { name "V_045" translation   5   6 0 size 0.2 2 1 }
+Wall { name "V_046" translation   5   8 0 size 0.2 2 1 }
+Wall { name "V_047" translation   7  -6 0 size 0.2 2 1 }
+Wall { name "V_048" translation   7  -4 0 size 0.2 2 1 }
+Wall { name "V_049" translation   7   0 0 size 0.2 2 1 }
+Wall { name "V_050" translation   7   8 0 size 0.2 2 1 }
+Wall { name "V_051" translation   9  -8 0 size 0.2 2 1 }
+Wall { name "V_052" translation   9  -6 0 size 0.2 2 1 }
+Wall { name "V_053" translation   9  -2 0 size 0.2 2 1 }
+Wall { name "V_054" translation   9   2 0 size 0.2 2 1 }
+Wall { name "V_055" translation   9   4 0 size 0.2 2 1 }
+Wall { name "V_056" translation   9   6 0 size 0.2 2 1 }
+
+# Goal marker - red post + yellow finial at the SE goal cell.
+Solid {
+  translation 10 -10 0.25
+  name "goal_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.1 0.1
+        roughness 0.4
+        metalness 0.0
+        emissiveColor 0.4 0.0 0.0
+      }
+      geometry Cylinder {
+        height 0.5
+        radius 0.15
+      }
+    }
+    Pose {
+      translation 0 0 0.42
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1.0 0.85 0.0
+            roughness 0.4
+            metalness 0.0
+            emissiveColor 0.5 0.4 0.0
+          }
+          geometry Sphere {
+            radius 0.22
+            subdivision 2
+          }
+        }
+      ]
+    }
+  ]
+}
+
+# Visual marker 'red_cylinder' at cell (5,3).
+Solid {
+  translation 0.0 -4.0 0.30
+  name "red_cylinder"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.10 0.10
+        roughness 0.4
+        metalness 0.0
+        emissiveColor 0.38 0.04 0.04
+      }
+      geometry Cylinder {
+        height 0.60
+        radius 0.18
+      }
+    }
+  ]
+}
+
+# Visual marker 'green_cylinder' at cell (3,7).
+Solid {
+  translation -4.0 4.0 0.30
+  name "green_cylinder"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.10 0.85 0.20
+        roughness 0.4
+        metalness 0.0
+        emissiveColor 0.04 0.34 0.08
+      }
+      geometry Cylinder {
+        height 0.60
+        radius 0.18
+      }
+    }
+  ]
+}
+
+# Visual marker 'blue_cylinder' at cell (8,8).
+Solid {
+  translation 6.0 6.0 0.30
+  name "blue_cylinder"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.10 0.30 0.95
+        roughness 0.4
+        metalness 0.0
+        emissiveColor 0.04 0.12 0.38
+      }
+      geometry Cylinder {
+        height 0.60
+        radius 0.18
+      }
+    }
+  ]
+}
+
+# Husky robot, spawned at the NW start cell facing east.
+DEF HUSKY URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -10 10 0.1
+  name "husky"
+  supervisor TRUE
+  controller "husky_omnilink_bridge"
+}
+
+# Vision sidecar — see controllers/husky_eye/.
+Robot {
+  name "husky_eye"
+  translation -10 10 1
+  supervisor TRUE
+  controller "husky_eye"
+  children [
+    Camera {
+      name "front_camera"
+      width 320
+      height 240
+      fieldOfView 1.4
+      rotation 0 1 0 0.35
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.6 1.0
+        emissiveColor 0.05 0.15 0.3
+        roughness 0.4
+      }
+      geometry Sphere { radius 0.05 }
+    }
+  ]
+}

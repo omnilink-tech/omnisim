@@ -1,0 +1,96 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/tables/protos/Table.proto
+# keywords: furniture/table
+# A customizable table: a rectangular tray resting on one square leg under each corner, every part a Solid in its own right.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/VarnishedPine.proto"
+EXTERNPROTO "omnisim://projects/objects/solids/protos/SolidBox.proto"
+
+PROTO Table [
+  field SFVec3f    translation    0 0 0
+  field SFRotation rotation       0 0 1 0
+  field SFString   name           "table"
+  field SFVec3f    size           1 1.8 0.74                                                           # Defines the size of the table.
+  field SFVec2f    feetSize       0.1 0.1                                                              # Defines the size of the feet.
+  field SFFloat    feetPadding    0                                                                    # Defines the padding of the feet.
+  field SFFloat    frameThickness 0.05                                                                 # Defines the thickness of the frame.
+  field SFNode     trayAppearance VarnishedPine { textureTransform TextureTransform { scale 10 10 } }  # Defines the appearance of the tray.
+  field SFNode     legAppearance  VarnishedPine { textureTransform TextureTransform { scale 4 5 } }    # Defines the appearance of the feet.
+]
+{
+  %<
+    // ---------------------------------------------------------------------
+    // Parameters. `size` is the overall footprint and the finished height, so
+    // the legs have to give back whatever the tray takes off the top.
+    // ---------------------------------------------------------------------
+    let size = fields.size.value;
+    if (size.x <= 0.0 || size.y <= 0.0 || size.z <= 0.0) {
+      size = fields.size.defaultValue;
+      console.error('\'size\' must contain positive values.');
+    }
+
+    let feetSize = fields.feetSize.value;
+    if (feetSize.x < 0.0 || feetSize.y < 0.0) {
+      feetSize = fields.feetSize.defaultValue;
+      console.error('\'feetSize\' must contain positive values.');
+    }
+
+    let feetPadding = fields.feetPadding.value;
+    if (feetPadding < 0.0) {
+      console.error('\'feetPadding\' must be positive.');
+      feetPadding = fields.feetPadding.defaultValue;
+    }
+
+    let frameThickness = fields.frameThickness.value;
+    if (frameThickness <= 0.0) {
+      console.error('\'frameThickness\' must be positive.');
+      frameThickness = fields.frameThickness.defaultValue;
+    }
+
+    // The tray hangs off the top of the table; the legs fill the gap below it.
+    const trayCenter = size.z - 0.5 * frameThickness;
+    const legHeight = size.z - frameThickness;
+    const legCenter = 0.5 * legHeight;
+
+    // One leg per corner, inset by the padding, tucked so its outer faces are
+    // flush with the tray's.
+    const inset = {
+      x: 0.5 * size.x - feetPadding - 0.5 * feetSize.x,
+      y: 0.5 * size.y - feetPadding - 0.5 * feetSize.y
+    };
+    const hasLegs = feetSize.x !== 0.0 && feetSize.y !== 0.0;
+    const corners = [
+      {sx:  1, sy:  1},
+      {sx: -1, sy:  1},
+      {sx:  1, sy: -1},
+      {sx: -1, sy: -1}
+    ];
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      SolidBox { # tray
+        translation 0 0 %<= trayCenter >%
+        name "main frame"
+        size %<= size.x >% %<= size.y >% %<= frameThickness >%
+        appearance IS trayAppearance
+      }
+      %< if (hasLegs) { >%
+        %< for (let i = 0; i < corners.length; ++i) { >%
+        SolidBox { # leg
+          translation %<= corners[i].sx * inset.x >% %<= corners[i].sy * inset.y >% %<= legCenter >%
+          name %<= '"foot ' + (i + 1) + '"' >%
+          size %<= feetSize.x >% %<= feetSize.y >% %<= legHeight >%
+          appearance IS legAppearance
+        }
+        %< } >%
+      %< } >%
+    ]
+    name IS name
+    model "table"
+  }
+}

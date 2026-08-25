@@ -1,0 +1,183 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/stairs/protos/StraightStairsRail.proto
+# keywords: building/component
+# A handrail for a straight flight of stairs: a newel post at each end, a sloped top bar between them, and a row of balusters hanging under the bar.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/VarnishedPine.proto"
+EXTERNPROTO "omnisim://projects/objects/geometries/protos/TexturedParallelepiped.proto"
+
+PROTO StraightStairsRail [
+  field SFVec3f    translation      0 0 0
+  field SFRotation rotation         0 0 1 0
+  field SFString   name             "straight stairs rail"
+  field SFFloat    run              2.0                                                                # Defines the horizontal lenght of the rail.
+  field SFFloat    rise             0.75                                                               # Defines the vertical lenght of the rail.
+  field SFFloat    width            0.04                                                               # Defines the width of the rail.
+  field SFFloat    newelHeight      0.93                                                               # Defines the height of the top bar.
+  field SFFloat    balusterHeight   0.8                                                                # Defines the height of the balusters.
+  field SFFloat    balusterRadius   0.01                                                               # Defines the radius of the balusters.
+  field SFInt32    nBalusters       20                                                                 # Defines the number of balusters.
+  field SFNode     appearance       VarnishedPine { textureTransform TextureTransform { scale 4 4 } }  # Defines the appearance of the rail.
+  field SFString   contactMaterial "default"                                                           # Is `Solid.contactMaterial`.
+]
+{
+  # The rail is authored in the frame of the flight it belongs to: its origin sits at
+  # the foot of the stairs, the flight climbs along +x, and the nosing line -- the
+  # line traced by the front edges of the steps -- is the diagonal from (0, 0) to
+  # (run, rise).  Everything else hangs off that line:
+  #
+  #   * near newel: a square post standing on the ground at x = 0, 'newelHeight' tall;
+  #   * far newel:  the same post, lifted onto the top landing at z = rise;
+  #   * top bar:    a square section joining the two post tops.  It is therefore
+  #                 parallel to the nosing line and 'newelHeight' above it everywhere,
+  #                 which is what makes 'newelHeight' read as "the height of the rail";
+  #   * balusters:  'nBalusters' rods evenly spaced along the run, each hanging from
+  #                 the underside of the bar.  They are hung rather than stood up
+  #                 because 'balusterHeight' is independent of 'newelHeight' -- a
+  #                 baluster that does not reach the rail it supports is what looks
+  #                 broken, whereas the gap at its foot is where the steps and the
+  #                 stringer already are.
+  #
+  # Only the two posts and the bar are handed to the collision engine.  The balusters
+  # are thin and numerous, and anything that could hit one has already hit the bar.
+  %<
+    let run = fields.run.value;
+    if (run <= 0.0) {
+      run = fields.run.defaultValue;
+      console.error('StraightStairsRail: \'run\' must be strictly positive. Falling back to ' + run + '.');
+    }
+    const rise = fields.rise.value;
+
+    let width = fields.width.value;
+    if (width <= 0.0) {
+      width = fields.width.defaultValue;
+      console.error('StraightStairsRail: \'width\' must be strictly positive. Falling back to ' + width + '.');
+    }
+
+    let newelHeight = fields.newelHeight.value;
+    if (newelHeight <= 0.0) {
+      newelHeight = fields.newelHeight.defaultValue;
+      console.error('StraightStairsRail: \'newelHeight\' must be strictly positive. Falling back to ' + newelHeight + '.');
+    }
+
+    let balusterHeight = fields.balusterHeight.value;
+    if (balusterHeight < 0.0)
+      balusterHeight = 0.0;
+    if (balusterHeight > newelHeight) {
+      balusterHeight = newelHeight;
+      console.error('StraightStairsRail: \'balusterHeight\' cannot exceed \'newelHeight\'. Clamped to ' +
+                    balusterHeight + '.');
+    }
+
+    const balusterRadius = Math.max(0.0, fields.balusterRadius.value);
+    const nBalusters = Math.max(0, fields.nBalusters.value);
+
+    // pitch of the nosing line; the bar is a box of this length tilted about -y so
+    // that its own +x axis climbs the slope
+    const pitch = Math.atan2(rise, run);
+    // the bar overshoots the two posts by half a section at each end, so its corners
+    // close flush with the post tops instead of leaving a notch
+    const barLength = Math.sqrt(run * run + rise * rise) + width;
+    // centre-line height of the bar, measured vertically above the nosing line
+    const barCentre = newelHeight - 0.5 * width;
+    const balusterFootOffset = barCentre - balusterHeight;
+    const drawBalusters = nBalusters > 0 && balusterRadius > 0.0 && balusterHeight > 0.0;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Pose {
+        translation 0 0 %<= 0.5 * newelHeight >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry DEF NEWEL_POST TexturedParallelepiped {
+              size %<= width >% %<= width >% %<= newelHeight >%
+              angles 0 1.5707963267948966 0
+              mapping "metric"
+            }
+          }
+        ]
+      }
+      Pose {
+        translation %<= run >% 0 %<= rise + 0.5 * newelHeight >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry USE NEWEL_POST
+          }
+        ]
+      }
+      Pose {
+        translation %<= 0.5 * run >% 0 %<= 0.5 * rise + barCentre >%
+        rotation 0 1 0 %<= -pitch >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry TexturedParallelepiped {
+              size %<= barLength >% %<= width >% %<= width >%
+              angles 0 1.5707963267948966 0
+              mapping "metric"
+            }
+          }
+        ]
+      }
+      %< if (drawBalusters) {
+           for (let i = 0; i < nBalusters; ++i) {
+             const x = run * (i + 1) / (nBalusters + 1);
+             const foot = x * rise / run + balusterFootOffset; >%
+      Pose {
+        translation %<= x >% 0 %<= foot + 0.5 * balusterHeight >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Cylinder {
+              radius %<= balusterRadius >%
+              height %<= balusterHeight >%
+              subdivision 12
+            }
+          }
+        ]
+      }
+      %<   }
+         } >%
+    ]
+    name IS name
+    model "straight stairs rail"
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 %<= 0.5 * newelHeight >%
+          children [
+            Box {
+              size %<= width >% %<= width >% %<= newelHeight >%
+            }
+          ]
+        }
+        Pose {
+          translation %<= run >% 0 %<= rise + 0.5 * newelHeight >%
+          children [
+            Box {
+              size %<= width >% %<= width >% %<= newelHeight >%
+            }
+          ]
+        }
+        Pose {
+          translation %<= 0.5 * run >% 0 %<= 0.5 * rise + barCentre >%
+          rotation 0 1 0 %<= -pitch >%
+          children [
+            Box {
+              size %<= barLength >% %<= width >% %<= width >%
+            }
+          ]
+        }
+      ]
+    }
+    contactMaterial IS contactMaterial
+    locked TRUE
+  }
+}

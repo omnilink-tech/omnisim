@@ -1,0 +1,316 @@
+{
+  "task": "A1_husky_swarm_10",
+  "outcome": "PASS",
+  "progress": 4,
+  "progress_name": "graded_pass",
+  "assertions": {
+    "A1.1": {
+      "ok": true,
+      "what": "exactly ten Huskies",
+      "measured": {
+        "robot_nodes_ge_4_joints": 10,
+        "husky.urdf refs in the artifact": 10
+      },
+      "threshold": {
+        "robot_nodes": 10,
+        "husky.urdf refs": 10
+      },
+      "detail": ""
+    },
+    "A1.2": {
+      "ok": true,
+      "what": "ten distinct robots",
+      "measured": {
+        "distinct non-empty names": 10,
+        "distinct node ids": 10
+      },
+      "threshold": 10,
+      "detail": ""
+    },
+    "A1.4": {
+      "ok": true,
+      "what": "all ten are controlled",
+      "measured": {
+        "non-empty controller fields": 10,
+        "controller processes started": {
+          "sun_marker": 1,
+          "husky_random": 10,
+          "agentbench_recorder": 1
+        }
+      },
+      "threshold": {
+        "controller fields": 10,
+        "starts": {
+          "husky_random": 10
+        }
+      },
+      "detail": ""
+    },
+    "A1.3": {
+      "ok": true,
+      "what": "none interpenetrating at t=0",
+      "measured": {
+        "min pairwise AABB clearance (m)": 4.8805,
+        "worst pair": [
+          6,
+          7
+        ],
+        "robot-robot contacts in first 10 steps": 0,
+        "robots without bounds": 0
+      },
+      "threshold": {
+        "clearance (m)": 0.05,
+        "contacts": 0
+      },
+      "detail": ""
+    },
+    "A1.5": {
+      "ok": true,
+      "what": "all ten moved >= 2.0 m",
+      "measured": {
+        "min net displacement (m)": 11.311,
+        "n robots": 10,
+        "recorded window (s)": 30.016
+      },
+      "threshold": {
+        "net displacement (m)": 2.0,
+        "n robots": 10,
+        "window (s)": 30.0
+      },
+      "detail": ""
+    },
+    "A1.6": {
+      "ok": true,
+      "what": "they drove, not slid (path length)",
+      "measured": {
+        "min path length (m)": 14.5824
+      },
+      "threshold": {
+        "path length (m)": 4.0
+      },
+      "detail": ""
+    },
+    "A1.7": {
+      "ok": true,
+      "what": "nobody fell through or tipped over",
+      "measured": {
+        "max |dz| (m)": 0.0014,
+        "min z over all samples (m)": 0.1299
+      },
+      "threshold": {
+        "|dz| (m)": 0.3,
+        "z (m)": -0.1
+      },
+      "detail": ""
+    },
+    "A1.8": {
+      "ok": true,
+      "what": "the motion is random, not a parade",
+      "measured": {
+        "circular resultant R": 0.1597,
+        "robots with an undefined bearing (net displacement < 0.05 m)": 0
+      },
+      "threshold": {
+        "R": "< 0.70",
+        "undefined bearings": 0
+      },
+      "detail": ""
+    },
+    "A1.9": {
+      "ok": true,
+      "what": "the run exited cleanly",
+      "measured": {
+        "exit code": 0,
+        "ERROR: lines": 0,
+        "recorder reached quit(0)": true,
+        "finalize evidence": "newton log marker",
+        "timed out": false
+      },
+      "threshold": {
+        "exit code": 0,
+        "ERROR: lines": 0
+      },
+      "detail": ""
+    },
+    "A1.10": {
+      "ok": true,
+      "what": "backend attribution recorded",
+      "measured": {
+        "backend": "newton",
+        "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+        "degraded": false,
+        "finalised": true,
+        "source": "<log>.newton.json sidecar"
+      },
+      "threshold": "a sidecar verdict or an explicit pin",
+      "detail": ""
+    }
+  },
+  "n_pass": 10,
+  "n_total": 10,
+  "failed_assertion": null,
+  "failed_assertions": [],
+  "self_verified": true,
+  "attribution": {
+    "backend": "newton",
+    "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+    "degraded": false,
+    "finalised": true,
+    "source": "<log>.newton.json sidecar"
+  },
+  "measurements": {
+    "husky_url_blocks": 10,
+    "harness": {
+      "ok": true,
+      "error": null,
+      "timings_s": {
+        "start": 1.144848500029184,
+        "world_load": 29.42140340001788,
+        "robots": 24.561601000023074,
+        "contacts": 21.443568199989386
+      },
+      "n_robots": 10
+    },
+    "robots_seen": 10,
+    "robots_qualifying": 10,
+    "phase_b": {
+      "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\20260726_111423\\A1_husky_swarm_10.oracle.r0\\scratch\\husky_swarm_10.wbt",
+      "injected_world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\20260726_111423\\A1_husky_swarm_10.oracle.r0\\scratch\\_agentbench_phaseB_husky_swarm_10.wbt",
+      "rc": 0,
+      "wall_s": 44.79965380008798,
+      "timed_out": false,
+      "log_path": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\20260726_111423\\A1_husky_swarm_10.oracle.r0\\phaseB\\phaseB_engine.log",
+      "sidecar": {
+        "backend": "newton",
+        "degraded": false,
+        "finalised": true,
+        "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+        "present": true
+      },
+      "recorder_complete": true,
+      "rows": 939,
+      "n_robots": 10,
+      "attempts_used": 1,
+      "error": null
+    },
+    "per_robot": {
+      "net_displacement_m": [
+        14.4387,
+        14.8071,
+        14.1325,
+        11.8613,
+        11.311,
+        13.8248,
+        12.4901,
+        13.3599,
+        13.8361,
+        13.5637
+      ],
+      "path_length_m": [
+        14.6317,
+        15.0431,
+        14.7156,
+        15.1604,
+        14.5824,
+        14.9063,
+        15.2922,
+        14.768,
+        15.3753,
+        14.8315
+      ],
+      "z_first_last_min_max_absdz": [
+        [
+          0.1322,
+          0.1321,
+          0.1303,
+          0.139,
+          0.0001
+        ],
+        [
+          0.1322,
+          0.1321,
+          0.1303,
+          0.1476,
+          0.0001
+        ],
+        [
+          0.1321,
+          0.1325,
+          0.1304,
+          0.1457,
+          0.0004
+        ],
+        [
+          0.1321,
+          0.132,
+          0.13,
+          0.1392,
+          0.0001
+        ],
+        [
+          0.1321,
+          0.1322,
+          0.1302,
+          0.139,
+          0.0001
+        ],
+        [
+          0.1323,
+          0.132,
+          0.1311,
+          0.1396,
+          0.0002
+        ],
+        [
+          0.1321,
+          0.1335,
+          0.1299,
+          0.1579,
+          0.0014
+        ],
+        [
+          0.1322,
+          0.1322,
+          0.1303,
+          0.1398,
+          0.0
+        ],
+        [
+          0.1321,
+          0.1322,
+          0.131,
+          0.1391,
+          0.0001
+        ],
+        [
+          0.1322,
+          0.1321,
+          0.1312,
+          0.1393,
+          0.0001
+        ]
+      ],
+      "bearing_rad": [
+        -0.7711,
+        0.3475,
+        1.5768,
+        2.769,
+        1.1996,
+        2.9105,
+        2.1697,
+        -2.8129,
+        -0.7733,
+        -0.404
+      ]
+    }
+  },
+  "artifacts": {
+    "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\20260726_111423\\A1_husky_swarm_10.oracle.r0\\scratch\\husky_swarm_10.wbt",
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\20260726_111423\\A1_husky_swarm_10.oracle.r0\\trace.jsonl",
+    "engine_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\20260726_111423\\A1_husky_swarm_10.oracle.r0\\phaseB\\phaseB_engine.log",
+    "recorder_csv": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\20260726_111423\\A1_husky_swarm_10.oracle.r0\\phaseB\\phaseB.csv"
+  },
+  "notes": [
+    "A1.3 t=0 geometry measured by the grader-owned recorder: the harness free-runs and cannot report t=0."
+  ]
+}

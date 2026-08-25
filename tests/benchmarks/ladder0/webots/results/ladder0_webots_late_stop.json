@@ -1,0 +1,140 @@
+{
+  "arm": "webots",
+  "engine": "upstream Webots R2025a",
+  "generated_utc": "2026-08-12T19:37:33Z",
+  "fault": "late_stop",
+  "rows": [
+    {
+      "rung": 6,
+      "sim": "webots",
+      "fault": "late_stop",
+      "title": "drive forward, stop at a sensed threshold",
+      "measured": {
+        "steps": 2000.0,
+        "sim_time_end": 8.0,
+        "exit_code": 0.0,
+        "n_samples": 2000,
+        "min_gap": 0.24198600937353332,
+        "start_gap": 2.679871626523021,
+        "stop_gap": 0.24202937635686794,
+        "stop_creep": 0.0,
+        "trigger_reading": 0.498974416618544,
+        "trigger_t": 5.472,
+        "range_residual": 2.2012932454629208e-07,
+        "wheel_stop": -2.842170943040401e-14,
+        "wheel_stop_each": [
+          1.7763568394002505e-14,
+          1.7763568394002505e-14,
+          -2.842170943040401e-14,
+          -2.842170943040401e-14
+        ]
+      },
+      "checks": [
+        {
+          "name": "stop_gap",
+          "measured": 0.24202937635686794,
+          "expected": 0.48536758409785935,
+          "tol": 0.014632415902140674,
+          "unit": "m",
+          "rel": false,
+          "error": -0.2433382077409914,
+          "margin": -0.22870579183885073,
+          "ok": false,
+          "why": "the rover stops when the sensor first reads below 0.50 m, and may then travel at most 29.3 mm further (3 steps of latency plus 3x the friction-limited braking distance v^2/2 mu g).  MEASURED FROM THE POSE, so a fabricated sensor cannot grade itself",
+          "key": "stop_gap"
+        },
+        {
+          "name": "min_gap",
+          "measured": 0.24198600937353332,
+          "expected": 0.48536758409785935,
+          "tol": 0.014632415902140674,
+          "unit": "m",
+          "rel": false,
+          "error": -0.24338157472432603,
+          "margin": -0.22874915882218536,
+          "ok": false,
+          "why": "the SMALLEST gap over the whole run.  A rover that ran into the wall and rebounded to a plausible resting place passes stop_gap and fails only here -- the same shape as rung 4's roll_overrun, and the reason a final-state check is never enough",
+          "key": "min_gap"
+        },
+        {
+          "name": "trigger_reading",
+          "measured": 0.498974416618544,
+          "expected": 0.4992,
+          "tol": 0.0028,
+          "unit": "m",
+          "rel": false,
+          "error": -0.00022558338145595158,
+          "margin": 0.0025744166185440484,
+          "ok": true,
+          "why": "the sensor value on the step the stop was commanded: it must be the threshold, reached from above within one step of travel.  Unmeasurable -- and therefore RED -- when the sensor never crossed the threshold at all",
+          "key": "trigger_reading"
+        },
+        {
+          "name": "sensor_agrees",
+          "measured": 2.2012932454629208e-07,
+          "expected": 0.0,
+          "tol": 0.002,
+          "unit": "m",
+          "rel": false,
+          "error": 2.2012932454629208e-07,
+          "margin": 0.0019997798706754537,
+          "ok": true,
+          "why": "rung 5's claim under real locomotion: max over the whole run of |reading - (wall face - sensor x)|, with the sensor pose now produced by the wheels rather than written by the driver",
+          "key": "range_residual"
+        },
+        {
+          "name": "stop_creep",
+          "measured": 0.0,
+          "expected": 0.0,
+          "tol": 0.005,
+          "unit": "m",
+          "rel": false,
+          "error": 0.0,
+          "margin": 0.005,
+          "ok": true,
+          "why": "peak-to-peak x over the last 1.0 s.  A stopped rover stays stopped; the tolerance is the same contact-compliance bound as a resting box",
+          "key": "stop_creep"
+        },
+        {
+          "name": "wheel_stop",
+          "measured": -2.842170943040401e-14,
+          "expected": 0.0,
+          "tol": 0.01,
+          "unit": "rad/s",
+          "rel": false,
+          "error": -2.842170943040401e-14,
+          "margin": 0.009999999999971578,
+          "ok": true,
+          "why": "the wheels themselves must be at zero, not merely the body: a chassis held still by friction while its wheels spin passes stop_creep and fails here",
+          "key": "wheel_stop"
+        }
+      ],
+      "wall": {
+        "startup_s": 3.8029446601867676,
+        "total_s": 5.308983564376831,
+        "step_s": 1.2549562454223633
+      },
+      "passed": false,
+      "meta": {
+        "sim": "webots",
+        "rung": 6,
+        "fault": "late_stop",
+        "engine": "upstream Webots R2025a",
+        "webots_home": "/opt/upstream-webots/R2025a",
+        "port": 1604,
+        "error": null,
+        "exit_code": 0,
+        "timed_out": false,
+        "proc_t0": 1786563454.6621428,
+        "proc_t1": 1786563459.9711263,
+        "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung6.wbt",
+        "cmd": "wsl.exe -e bash /mnt/o/omnisim/tests/benchmarks/ladder0/webots/run_cell.sh 6 late_stop /mnt/o/omnisim/tests/benchmarks/ladder0/webots/results/rung6_late_stop /mnt/o/omnisim/tests/benchmarks/ladder0/webots/worlds/rung6.wbt 240 1604",
+        "engine_version": "R2025a",
+        "engine_sha256_16": "c12c65e8680b579d",
+        "engine_complaints": [
+          "WARNING: It is not recommended to run Webots as root."
+        ]
+      }
+    }
+  ]
+}

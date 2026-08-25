@@ -1,0 +1,6 @@
+# Stale scenes from earlier revisions of the contract are worse than absent:
+# a world nothing regenerates is a scene judged against an expectation it no
+# longer matches, and the row is silently meaningless rather than red.  The
+# fault and variant worlds ARE committed (a reader diffs them against the other
+# arms'); only run output is not.
+results/

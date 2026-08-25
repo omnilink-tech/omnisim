@@ -1,0 +1,104 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — OmniArm 6 TOSS-TO-PLACE (Shadowing demo)
+# An OmniArm 6 + a real SUCTION (vacuum) cup PICKS a cube, then THROWS it into a bin that is
+# BEYOND the arm's kinematic reach -- a placement no quasi-static IK controller can do. The
+# arm executes a feasibility-certified swing (the "ghost", from projects/policies/research/shadowing) and
+# releases the vacuum at the planned instant; the cube flies on a ballistic arc into the bin.
+#
+# This is the deploy of the Shadowing toss ghost: generate (feasible-by-construction swing) ->
+# verify (velocity/torque/landing certificate) -> deploy (this world). The release velocity is
+# the ARM's ACTUAL achieved TCP velocity (FK of the live joint sensors), so the cube landing is
+# an honest sim-to-deploy test of whether the certified ghost reproduces in Newton physics.
+#
+# Headless verify:
+#   OMNISIM_NEWTON_STATICS=1 OMNIARM6_TOSS_AUTOQUIT=1 python scripts/dev/headless_runner.py \
+#     projects/samples/demos/worlds/flagship/omniarm6_toss_demo.omniworld --duration 600
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — OmniArm 6 toss-to-place (Shadowing)"
+  newtonSolver "mujoco"
+  contactProperties [
+    ContactProperties { material1 "default" material2 "default" coulombFriction [ 3 ] bounce 0 softCFM 0.0003 }
+  ]
+  # translation_audit: ContactProperties.coulombFriction is an ODE-path field the
+  # Newton backend does not read; this declares the same friction where it is read.
+  #
+  # mu 5 is past the contact solver's stable range at basicTimeStep 16 and sank
+  # this world's dynamic bodies through the floor -- measured over a 12 s settle
+  # with the robots removed: the part below z=0. mu 3 keeps every part on its
+  # surface and is the value docs/guide/friction-grasp.md measured for a
+  # two-finger pinch, so it is the highest friction this world can actually hold.
+  newtonGroundMu 3
+}
+Viewpoint { orientation -0.278945 0.120681 0.952694 2.359689 position 3.303 -3.516 3.540 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 6 6 }
+
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_suction.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_toss_deploy"
+}
+
+# ── Pick pedestal (static) with the cube to be thrown on top ─────────
+DEF PEDESTAL Solid {
+  translation 0.45 0 0.05
+  children [
+    DEF PED_SH Shape {
+      appearance PBRAppearance { baseColor 0.35 0.37 0.40 roughness 0.9 metalness 0.1 }
+      geometry Box { size 0.12 0.12 0.10 }
+    }
+  ]
+  name "pedestal"
+  boundingObject USE PED_SH
+}
+
+# The cube to throw: a free Newton dynamic body (0.2 kg = the ghost's payload mass).
+DEF PART Solid {
+  translation 0.45 0 0.125
+  physicsBackend "newton"
+  children [
+    DEF PART_SH Shape {
+      appearance PBRAppearance { baseColor 0.90 0.30 0.12 roughness 0.6 metalness 0.1 }
+      geometry Box { size 0.05 0.05 0.05 }
+    }
+  ]
+  name "part"
+  boundingObject USE PART_SH
+  physics Physics { density -1 mass 0.2 }
+}
+
+# ── Target bin at x = 1.3 m: BEYOND the ~1.0 m kinematic reach (throw-only). A static
+# collider tray (floor + 4 low walls); launch with OMNISIM_NEWTON_STATICS=1 so the cube
+# can't pass through it. ───────────────────────────────────────────
+DEF TOSS_BIN Solid {
+  translation 1.30 0 0
+  children [
+    Transform { translation 0 0 0.01 children [ DEF TB_FLOOR Shape { appearance PBRAppearance { baseColor 0.20 0.45 0.30 roughness 0.9 } geometry Box { size 0.40 0.40 0.02 } } ] }
+    Transform { translation -0.19 0 0.07 children [ DEF TB_WW Shape { appearance PBRAppearance { baseColor 0.22 0.50 0.34 roughness 0.85 } geometry Box { size 0.02 0.40 0.12 } } ] }
+    Transform { translation 0.19 0 0.07 children [ DEF TB_WE Shape { appearance PBRAppearance { baseColor 0.22 0.50 0.34 roughness 0.85 } geometry Box { size 0.02 0.40 0.12 } } ] }
+    Transform { translation 0 -0.19 0.07 children [ DEF TB_WS Shape { appearance PBRAppearance { baseColor 0.22 0.50 0.34 roughness 0.85 } geometry Box { size 0.40 0.02 0.12 } } ] }
+    Transform { translation 0 0.19 0.07 children [ DEF TB_WN Shape { appearance PBRAppearance { baseColor 0.22 0.50 0.34 roughness 0.85 } geometry Box { size 0.40 0.02 0.12 } } ] }
+  ]
+  name "toss_bin"
+  boundingObject Group { children [
+    Transform { translation 0 0 0.01 children [ Box { size 0.40 0.40 0.02 } ] }
+    Transform { translation -0.19 0 0.07 children [ Box { size 0.02 0.40 0.12 } ] }
+    Transform { translation 0.19 0 0.07 children [ Box { size 0.02 0.40 0.12 } ] }
+    Transform { translation 0 -0.19 0.07 children [ Box { size 0.40 0.02 0.12 } ] }
+    Transform { translation 0 0.19 0.07 children [ Box { size 0.40 0.02 0.12 } ] }
+  ] }
+}

@@ -1,0 +1,671 @@
+#OMNISIM R2025a utf8
+
+# Forest (cinematic morning-light edition) — companion environment to
+# environments/desert_ruins.omniworld. Same OmniSim recipe (procedural sky +
+# OmniSimSun + draggable SUN_MARKER) and the same level of hand-built
+# detail, but tuned for a deep-mist deciduous-conifer mix instead of
+# golden-hour desert.
+#
+# This file is an *environment* — no robots. Demos that want a husky/
+# spot/etc. driving through this forest should compose on top of it
+# (EXTERNPROTO this file's tree/floor content, or copy + add their
+# robots).
+#
+# Composition strategy
+# --------------------
+#   - Light: warm side-low sun (~25° elevation, NE quadrant) so it
+#     rakes between the trunks and casts long shadow stripes across
+#     the floor — the dappled-light reading that says "forest" more
+#     than the trees themselves do. castShadows TRUE (single biggest
+#     realism win).
+#   - Atmosphere: heavier fog than the desert (visibility ~110 m,
+#     warm-cool neutral) so the back rows fade into mist. This is
+#     what fakes the volumetric god-rays-through-trees look on a
+#     forward renderer that has no real volumetrics.
+#   - Foreground: 8-10 hero trees within 15 m of the central clearing
+#     plus understory (ferns, mushrooms, fallen logs, moss-coloured
+#     rocks, stumps). Eye reads them first.
+#   - Mid-ground (15-40 m): mixed Oak / Pine / BigSassafras / Cypress
+#     at varied density, with broken-light gaps.
+#   - Background (40-90 m): dense filler — three Forest PROTO patches
+#     (procedural-placed random species) give crowd density without
+#     hand-placing 200 more trees.
+#   - Floor: terrain uses Grass PBR; on top we lay leaf-litter
+#     patches (Soil/DryMud) and a dirt path winding NW through the
+#     scene — the path leads the eye toward the sunlit gap.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/UnevenTerrain.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Grass.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Soil.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/DryMud.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughOak.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughPine.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Plaster.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Oak.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Pine.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/BigSassafras.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Sassafras.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/Cypress.proto"
+EXTERNPROTO "omnisim://projects/objects/trees/protos/SimpleTree.proto"
+EXTERNPROTO "omnisim://projects/objects/rocks/protos/Rock.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Forest"
+}
+
+# Eye-level camera (1.9 m) inside the clearing, looking NW down the
+# path between the trunks toward the backlit canopy gap. ~50° FOV
+# (0.85 rad) for a natural standing-human-in-forest feel — wider
+# than the desert hero shot because the forest needs to read across
+# more vertical span (canopy + trunks + floor in one frame).
+# Orientation computed via /scene/look_at {position:[14,-14,1.9],
+# target:[-12,16,3]} on the harness.
+Viewpoint {
+  orientation 0.0 -0.05163537 0.99866637 2.36492113
+  position 14 -14 1.9
+  fieldOfView 0.85
+  near 0.1
+  ambientOcclusionRadius 2
+  bloomThreshold 4
+}
+
+# Cool morning sky — neutral upper band, warm pre-dawn near the sun.
+# Lower luminosity than the desert so the canopy reads as the brightest
+# thing in frame (dappled light hierarchy).
+OmniSimSky {
+  skyColor [ 0.22 0.28 0.26 ]
+  luminosity 0.65
+}
+
+# Warm side-low sun in the NE quadrant. Lower intensity than desert
+# (3.0 vs 4.2) because the forest is meant to feel cooler and shadier;
+# strong contrast between lit canopy and shaded floor sells the
+# dappled-light reading. The runtime sun_marker controller overrides
+# direction every step using SUN_MARKER's pose.
+DEF SUN OmniSimSun {
+  color 1.0 0.78 0.50
+  direction -0.48 -0.78 -0.40
+  intensity 3.6
+  ambientIntensity 0
+}
+
+# Sun marker low and to the NE, ~24° above the horizon. Its position
+# is also chosen so the marker disk falls visible through a tree gap
+# in the hero shot's upper-third when the camera is at default pose.
+DEF SUN_MARKER OmniSimSunMarker {
+  translation 42 70 13
+  radius 1.0
+  baseColor 1.0 0.78 0.40
+  emissiveColor 1.0 0.58 0.20
+  emissiveIntensity 150
+}
+
+# Cool sky fill from the opposite (SW) quadrant — keeps deep-shade
+# trunks from reading pure black.
+DirectionalLight {
+  direction 0.5 0.6 -0.5
+  color 0.45 0.55 0.70
+  intensity 0.9
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+# Subtle green canopy bounce from above — fakes the wrap-around tint
+# of light filtering through leaves. Almost no intensity, but it
+# colors shadowed sides of trunks slightly green.
+DirectionalLight {
+  direction 0 0 -1
+  color 0.42 0.62 0.40
+  intensity 0.25
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+# Forest mist — neutral cool tone, exponential, dense enough that the
+# back rows of trees fade legibly into the haze (visibilityRange 110).
+# This is the single biggest atmosphere lever — fake-volumetrics for
+# a forward renderer that has no real volumetric scattering.
+Fog {
+  color 0.50 0.55 0.50
+  fogType "EXPONENTIAL"
+  visibilityRange 55
+}
+
+# ============================================================================
+# Terrain — 200 m square, rolling perlin hills (size.z 6, octaves 7).
+# Grass PBR with normal+occlusion maps, tile scale 35 so close-up
+# detail is sub-meter without the obvious-repeat pattern we hit in
+# the desert. flatCenter keeps the clearing flat.
+# ============================================================================
+# translation z is 0 — the flat-center clearing sits at world z=0,
+# matching the implicit "ground at z=0" assumption for every tree,
+# log, branch, leaf-pile, etc. below. Previously z=-0.3 made every
+# centred object hover 0.3 m above the clearing.
+UnevenTerrain {
+  translation 0 0 0
+  name "forest_terrain"
+  size 200 200 6
+  xDimension 180
+  yDimension 180
+  appearance Grass {
+    textureTransform TextureTransform { scale 35 35 }
+  }
+  randomSeed 19
+  flatCenter TRUE
+  perlinNOctaves 7
+}
+
+# ============================================================================
+# Background ring — hand-placed real-mesh trees in the 25-80 m belt
+# around the clearing. We deliberately do NOT use Webots' Forest
+# PROTO here: it generates 8-polygon SimpleTree billboards which read
+# as flat cardboard cutouts against the high-detail Oak/Pine/Sassafras
+# protos in front. Heavier (more polygons), but visually consistent.
+#
+# Layout is a stochastic ring with three density bands:
+#   25-40 m (inner ring, mostly visible):       ~22 trees
+#   40-65 m (mid ring, partial fog):            ~22 trees
+#   65-90 m (outer ring, silhouettes in fog):   ~14 trees
+# Mixed Oak / Pine / BigSassafras / Sassafras + Cypress at varied
+# scale for vertical variety.
+# ============================================================================
+
+# --- 25-40 m inner ring ---
+Oak  { translation -32  16 0  rotation 0 0 1  0.4  name "bg_oak_NW1" }
+Oak  { translation -28  30 0  rotation 0 0 1  1.6  name "bg_oak_NW2" }
+Oak  { translation -10  35 0  rotation 0 0 1  0.7  name "bg_oak_N1"  }
+Oak  { translation  12  36 0  rotation 0 0 1  2.2  name "bg_oak_N2"  }
+Oak  { translation  28  28 0  rotation 0 0 1  0.3  name "bg_oak_NE1" }
+Pine { translation  35   8 0  rotation 0 0 1  1.4  name "bg_pine_E1" }
+Pine { translation  32  -8 0  rotation 0 0 1  0.9  name "bg_pine_E2" }
+Pine { translation  18  32 0  rotation 0 0 1  1.0  name "bg_pine_NE3" }
+Pine { translation -35  -2 0  rotation 0 0 1  0.5  name "bg_pine_W1" }
+Pine { translation -33  -15 0 rotation 0 0 1  1.8  name "bg_pine_W2" }
+BigSassafras { translation  -3  32 0 rotation 0 0 1  0.2  name "bg_sass_N1" }
+BigSassafras { translation -22  26 0 rotation 0 0 1  1.1  name "bg_sass_NW1" }
+BigSassafras { translation  26  18 0 rotation 0 0 1  0.6  name "bg_sass_NE1" }
+BigSassafras { translation  34 -22 0 rotation 0 0 1  2.4  name "bg_sass_SE1" }
+BigSassafras { translation -16 -28 0 rotation 0 0 1  0.8  name "bg_sass_SW1" }
+Sassafras { translation  22  -28 0  rotation 0 0 1  1.5  name "bg_sass_S1"  }
+Sassafras { translation  -8  -30 0  rotation 0 0 1  0.2  name "bg_sass_S2"  }
+Sassafras { translation  6   -28 0  rotation 0 0 1  2.0  name "bg_sass_S3"  }
+Sassafras { translation -30   20 0  rotation 0 0 1  0.9  name "bg_sass_NW2" }
+Cypress { translation -28 -22 0 scale 1.1 rotation 0 0 1  1.0  name "bg_cyp_SW1" }
+Cypress { translation  28 -16 0 scale 0.9 rotation 0 0 1  0.4  name "bg_cyp_SE1" }
+Cypress { translation -38   8 0 scale 1.0 rotation 0 0 1  1.8  name "bg_cyp_W1" }
+
+# --- 40-65 m mid ring (partially in fog) ---
+Oak  { translation -52  35 0  rotation 0 0 1  0.5  name "bg_oak_far_NW1" }
+Oak  { translation -42  52 0  rotation 0 0 1  1.3  name "bg_oak_far_N1" }
+Oak  { translation   2  55 0  rotation 0 0 1  0.7  name "bg_oak_far_N2" }
+Oak  { translation  48  38 0  rotation 0 0 1  2.0  name "bg_oak_far_NE1" }
+Oak  { translation  55   8 0  rotation 0 0 1  0.4  name "bg_oak_far_E1" }
+Oak  { translation -55 -25 0  rotation 0 0 1  1.7  name "bg_oak_far_W1" }
+Pine { translation  60  20 0  rotation 0 0 1  0.8  name "bg_pine_far_E1" }
+Pine { translation  58 -32 0  rotation 0 0 1  1.6  name "bg_pine_far_SE1" }
+Pine { translation -60  -8 0  rotation 0 0 1  0.3  name "bg_pine_far_W1" }
+Pine { translation  -8  62 0  rotation 0 0 1  1.0  name "bg_pine_far_N1" }
+Pine { translation  22  52 0  rotation 0 0 1  2.1  name "bg_pine_far_NE2" }
+BigSassafras { translation -48 -38 0 rotation 0 0 1  0.4  name "bg_sass_far_SW1" }
+BigSassafras { translation  44 -45 0 rotation 0 0 1  1.5  name "bg_sass_far_SE1" }
+BigSassafras { translation  -2 -55 0 rotation 0 0 1  0.8  name "bg_sass_far_S1" }
+BigSassafras { translation  62 -10 0 rotation 0 0 1  2.3  name "bg_sass_far_E1" }
+BigSassafras { translation -62  20 0 rotation 0 0 1  0.6  name "bg_sass_far_W2" }
+Sassafras { translation -30 -50 0   rotation 0 0 1  1.2  name "bg_sass_far_SW2" }
+Sassafras { translation  30 -55 0   rotation 0 0 1  0.5  name "bg_sass_far_SE2" }
+Sassafras { translation  16 -42 0   rotation 0 0 1  1.9  name "bg_sass_far_S2" }
+Cypress { translation  52 -22 0 scale 1.2 rotation 0 0 1  0.7  name "bg_cyp_far_SE1" }
+Cypress { translation -55  14 0 scale 1.1 rotation 0 0 1  1.4  name "bg_cyp_far_W1" }
+Cypress { translation  10  60 0 scale 1.0 rotation 0 0 1  2.0  name "bg_cyp_far_N1" }
+
+# --- 65-90 m outer ring (silhouettes in deep fog) ---
+Oak  { translation -78  45 0  rotation 0 0 1  0.6  name "bg_oak_xfar_NW1" }
+Oak  { translation -82 -15 0  rotation 0 0 1  1.4  name "bg_oak_xfar_W1" }
+Oak  { translation  75  35 0  rotation 0 0 1  0.9  name "bg_oak_xfar_NE1" }
+Oak  { translation  80 -22 0  rotation 0 0 1  2.0  name "bg_oak_xfar_E1" }
+Pine { translation  -8  82 0  rotation 0 0 1  0.5  name "bg_pine_xfar_N1" }
+Pine { translation  25  78 0  rotation 0 0 1  1.7  name "bg_pine_xfar_NE1" }
+Pine { translation -28  82 0  rotation 0 0 1  0.2  name "bg_pine_xfar_NW1" }
+Pine { translation  85 -45 0  rotation 0 0 1  1.1  name "bg_pine_xfar_SE1" }
+Pine { translation -85 -50 0  rotation 0 0 1  1.9  name "bg_pine_xfar_SW1" }
+BigSassafras { translation -75 -60 0 rotation 0 0 1  0.4  name "bg_sass_xfar_SW1" }
+BigSassafras { translation  70 -70 0 rotation 0 0 1  1.5  name "bg_sass_xfar_SE1" }
+BigSassafras { translation   5 -85 0 rotation 0 0 1  0.8  name "bg_sass_xfar_S1" }
+Sassafras { translation -50 -75 0   rotation 0 0 1  1.0  name "bg_sass_xfar_SW2" }
+Sassafras { translation  55 -82 0   rotation 0 0 1  0.6  name "bg_sass_xfar_SE2" }
+
+# ============================================================================
+# Hand-placed hero trees — within 15 m of the central clearing where
+# the eye reads first. Mixed species so silhouettes vary.
+# ============================================================================
+# Frame-edge foreground hero trees: ~5-8 m from camera along the
+# view direction, just off-axis so they curtain the shot without
+# blocking the path. Anchors the lower corners with bark silhouette.
+Oak    { translation  13.0  -8.2 0  rotation 0 0 1  0.5  name "oak_frame_R_close" }
+Oak    { translation   8.4 -12.2 0  rotation 0 0 1  1.8  name "oak_frame_L_close" }
+BigSassafras { translation  11.8  -5.3 0  rotation 0 0 1  0.9  name "sass_frame_R_mid" }
+BigSassafras { translation   5.8 -10.6 0  rotation 0 0 1  2.4  name "sass_frame_L_mid" }
+# Hero trees in the mid path zone
+Oak  { translation  10  -2 0  rotation 0 0 1  0.7  name "oak_hero_L" }
+Oak  { translation -11  -3 0  rotation 0 0 1 -0.4  name "oak_hero_R" }
+Pine { translation  -6   8 0  rotation 0 0 1  0.2  name "pine_mid_NW" }
+Pine { translation   7  10 0  rotation 0 0 1  1.5  name "pine_mid_NE" }
+BigSassafras { translation  -3  14 0  rotation 0 0 1  0.6  name "sass_mid_N" }
+BigSassafras { translation  12  -8 0  rotation 0 0 1  2.1  name "sass_hero_SE" }
+Sassafras    { translation  -9   2 0  rotation 0 0 1  1.1  name "sass_close_W" }
+Sassafras    { translation   2  -7 0  rotation 0 0 1 -0.8  name "sass_close_S" }
+Cypress      { translation   4   3 0  rotation 0 0 1  0.3  name "cyp_close_NE" }
+Cypress      { translation  -5  -8 0  rotation 0 0 1  1.0  name "cyp_close_SW" }
+# Canopy-cover trees placed BEHIND and BESIDE the camera so their
+# crowns sit overhead in the hero shot, blocking the bright sky band
+# at the top of frame — the "you are under trees" feeling.
+Oak  { translation  18 -22 0  rotation 0 0 1  1.4  name "canopy_back_R" }
+Oak  { translation  10 -24 0  rotation 0 0 1  0.5  name "canopy_back_C" }
+Pine { translation  22 -16 0  rotation 0 0 1  2.0  name "canopy_back_R2" }
+BigSassafras { translation   5 -20 0  rotation 0 0 1  0.9  name "canopy_back_L" }
+
+# Inner mid-ring (10-20 m) — fills the gap between the path zone
+# and the back forest patches.
+Pine    { translation  15   0 0  rotation 0 0 1  0.4  name "pine_inner_E" }
+Pine    { translation -15   0 0  rotation 0 0 1  1.7  name "pine_inner_W" }
+Cypress { translation  18  -6 0  rotation 0 0 1  0.6  name "cyp_inner_SE" }
+BigSassafras { translation -18  -4 0  rotation 0 0 1  1.3  name "sass_inner_SW" }
+Sassafras { translation  15  12 0  rotation 0 0 1  0.2  name "sass_inner_NE" }
+Pine    { translation -15  14 0  rotation 0 0 1  2.0  name "pine_inner_NW" }
+Oak     { translation  20   8 0  rotation 0 0 1  0.8  name "oak_inner_E" }
+BigSassafras { translation -20  10 0  rotation 0 0 1  1.5  name "sass_inner_W" }
+
+# Mid-ring (15-30 m): tree wall that reads as the start of the deep
+# forest. Mixed species, mostly closing in from the sides.
+Oak  { translation  22   6 0  rotation 0 0 1  0.4  name "oak_mid_E1" }
+Oak  { translation -20   8 0  rotation 0 0 1  1.2  name "oak_mid_W1" }
+Oak  { translation  18  18 0  rotation 0 0 1  2.4  name "oak_mid_NE2" }
+Oak  { translation -18 -14 0  rotation 0 0 1  0.0  name "oak_mid_SW2" }
+Pine { translation  25  -8 0  rotation 0 0 1  1.7  name "pine_mid_E1" }
+Pine { translation -25  -2 0  rotation 0 0 1 -0.5  name "pine_mid_W1" }
+Pine { translation  14  24 0  rotation 0 0 1  0.8  name "pine_mid_NE1" }
+Pine { translation -14  22 0  rotation 0 0 1  0.4  name "pine_mid_NW1" }
+Pine { translation   5  28 0  rotation 0 0 1  1.6  name "pine_mid_N1" }
+Pine { translation -22 -22 0  rotation 0 0 1  2.0  name "pine_mid_SW" }
+BigSassafras { translation  28  16 0  rotation 0 0 1  0.5  name "sass_mid_NE3" }
+BigSassafras { translation -28  18 0  rotation 0 0 1  1.4  name "sass_mid_NW3" }
+BigSassafras { translation  -8 -20 0  rotation 0 0 1  0.9  name "sass_mid_S" }
+BigSassafras { translation  20 -18 0  rotation 0 0 1 -0.6  name "sass_mid_SE" }
+Cypress      { translation  17  10 0  rotation 0 0 1  0.7  name "cyp_mid_E" }
+Cypress      { translation -16   4 0  rotation 0 0 1  1.3  name "cyp_mid_W" }
+Cypress      { translation  10 -22 0  rotation 0 0 1  2.2  name "cyp_mid_S" }
+Cypress      { translation -10  26 0  rotation 0 0 1  0.1  name "cyp_mid_N" }
+Sassafras    { translation  30   2 0  rotation 0 0 1  0.5  name "sass_mid_E" }
+Sassafras    { translation -30   8 0  rotation 0 0 1  1.0  name "sass_mid_W" }
+
+# ============================================================================
+# Forest floor — fallen logs, stumps, mossy rocks, mushroom clusters,
+# fern patches, leaf-litter zones. This is what sells "lived-in forest"
+# vs "just some trees".
+# ============================================================================
+
+# --- Dirt path winding NW from camera through the clearing. Soil
+# appearance (darker brown) reads as worn earth where feet have
+# trodden the grass away.
+DEF PATH_1 Solid {
+  translation 4 -10 0.06
+  rotation 0 0 1 0.7
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 6 2 } } geometry Box { size 9 2.2 0.12 } castShadows FALSE } ]
+  name "path_1"
+}
+DEF PATH_2 Solid {
+  translation -1 -4 0.06
+  rotation 0 0 1 0.85
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 6 2 } } geometry Box { size 8 2.0 0.12 } castShadows FALSE } ]
+  name "path_2"
+}
+DEF PATH_3 Solid {
+  translation -6 3 0.06
+  rotation 0 0 1 0.95
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 6 2 } } geometry Box { size 7 2.0 0.12 } castShadows FALSE } ]
+  name "path_3"
+}
+DEF PATH_4 Solid {
+  translation -10 10 0.06
+  rotation 0 0 1 1.05
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 6 2 } } geometry Box { size 6 1.8 0.12 } castShadows FALSE } ]
+  name "path_4"
+}
+
+# --- Fallen logs — cylinders lying horizontally, RoughOak appearance
+# so they catch bark texture. Half-sunk into the ground so they look
+# settled and weathered.
+DEF LOG_1 Solid {
+  translation -6 12 0.5
+  rotation 0.95 0.3 0 1.5708
+  children [ Shape { appearance RoughOak { textureTransform TextureTransform { scale 1 4 } } geometry Cylinder { height 6 radius 0.55 } } ]
+  name "log_1"
+}
+DEF LOG_2 Solid {
+  translation 11 5 0.4
+  rotation 0.6 0.8 0 1.5708
+  children [ Shape { appearance RoughOak { textureTransform TextureTransform { scale 1 3 } } geometry Cylinder { height 4 radius 0.45 } } ]
+  name "log_2"
+}
+DEF LOG_3 Solid {
+  translation -14 -6 0.45
+  rotation 1 0 0 1.5708
+  children [ Shape { appearance RoughOak { textureTransform TextureTransform { scale 1 5 } } geometry Cylinder { height 7 radius 0.5 } } ]
+  name "log_3"
+}
+DEF LOG_4 Solid {
+  translation 8 18 0.3
+  rotation 0.4 0.92 0 1.5708
+  children [ Shape { appearance RoughPine { textureTransform TextureTransform { scale 1 4 } } geometry Cylinder { height 5 radius 0.4 } } ]
+  name "log_4"
+}
+DEF LOG_5 Solid {
+  translation -20 4 0.4
+  rotation 0.85 0.5 0 1.5708
+  children [ Shape { appearance RoughOak { textureTransform TextureTransform { scale 1 5 } } geometry Cylinder { height 6 radius 0.5 } } ]
+  name "log_5"
+}
+DEF LOG_6 Solid {
+  translation 16 -4 0.35
+  rotation 0 1 0 1.5708
+  children [ Shape { appearance RoughPine { textureTransform TextureTransform { scale 1 3 } } geometry Cylinder { height 4.5 radius 0.42 } } ]
+  name "log_6"
+}
+
+# --- Tree stumps — short wide cylinders with RoughOak texture,
+# scattered as evidence of past clearing.
+DEF STUMP_1 Solid {
+  translation 4 5 0.35
+  children [ Shape { appearance RoughOak { textureTransform TextureTransform { scale 1 1 } } geometry Cylinder { height 0.7 radius 0.6 } } ]
+  name "stump_1"
+}
+DEF STUMP_2 Solid {
+  translation -8 -10 0.4
+  children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.8 radius 0.7 } } ]
+  name "stump_2"
+}
+DEF STUMP_3 Solid {
+  translation 18 14 0.35
+  children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.7 radius 0.5 } } ]
+  name "stump_3"
+}
+DEF STUMP_4 Solid {
+  translation -14 20 0.3
+  children [ Shape { appearance RoughPine {} geometry Cylinder { height 0.6 radius 0.55 } } ]
+  name "stump_4"
+}
+
+# --- Mossy rocks — Rock proto with mossy-stone appearance hint; use
+# default Rock and a few extra DEF mossy-tinted spheres for variation.
+# Distributed near the path and the foreground logs.
+Rock { translation  3 -5 0 rotation 0 0 1 0.3 name "rock_1" scale 1.1 }
+Rock { translation -3 -3 0 rotation 0 0 1 1.2 name "rock_2" scale 0.9 type "flat" }
+Rock { translation  6  3 0 rotation 0 0 1 2.0 name "rock_3" scale 0.7 }
+Rock { translation -6  5 0 rotation 0 0 1 -0.5 name "rock_4" scale 1.0 }
+Rock { translation  9 -7 0 rotation 0 0 1 1.6 name "rock_5" scale 1.3 }
+Rock { translation -10  0 0 rotation 0 0 1 0.4 name "rock_6" scale 0.8 type "flat" }
+Rock { translation -3 -15 0 rotation 0 0 1 1.0 name "rock_7" scale 1.4 }
+Rock { translation 15  8 0 rotation 0 0 1 -0.3 name "rock_8" scale 1.2 }
+Rock { translation -16  16 0 rotation 0 0 1 0.8 name "rock_9" scale 1.6 }
+Rock { translation 22 -14 0 rotation 0 0 1 1.4 name "rock_10" scale 1.3 type "flat" }
+# Moss-coloured boulder cluster — inline PBRAppearance tinted
+# green-grey because Webots has no dedicated "mossy stone" appearance
+# and a tinted matte material reads well enough at this scale.
+# Mossy boulders — raised z by +0.3 to keep them looking half-buried
+# now that the clearing is at z=0 instead of z=-0.3. Each sphere
+# bottom sits ~0.3 m below ground, exposing the top hemisphere.
+DEF MOSSY_BOULDER_1 Solid {
+  translation -1 -8 0.5
+  rotation 0 0 1 0.5
+  children [ Shape { appearance PBRAppearance { baseColor 0.42 0.50 0.36 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.8 subdivision 4 } } ]
+  name "mossy_boulder_1"
+}
+DEF MOSSY_BOULDER_2 Solid {
+  translation -3 -9 0.35
+  rotation 0 0 1 1.2
+  children [ Shape { appearance PBRAppearance { baseColor 0.38 0.46 0.32 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.6 subdivision 4 } } ]
+  name "mossy_boulder_2"
+}
+DEF MOSSY_BOULDER_3 Solid {
+  translation 1 -10 0.45
+  rotation 0 0 1 -0.4
+  children [ Shape { appearance PBRAppearance { baseColor 0.44 0.52 0.38 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.7 subdivision 4 } } ]
+  name "mossy_boulder_3"
+}
+
+# --- Mushroom clusters — small white-cap mushroom stems, hand-faked
+# as a thin cylinder (stem) + a flat cap cylinder on top. Two clusters
+# in the moist shade behind logs/stumps.
+DEF MUSHROOM_1 Solid {
+  translation -5.8 11.5 0.1
+  children [
+    Pose { translation 0 0 0.1 children [ Shape { appearance Plaster { textureTransform TextureTransform { scale 1 1 } } geometry Cylinder { height 0.18 radius 0.04 } } ] }
+    Pose { translation 0 0 0.22 children [ Shape { appearance Plaster {} geometry Cylinder { height 0.04 radius 0.10 } } ] }
+  ]
+  name "mushroom_1"
+}
+DEF MUSHROOM_2 Solid {
+  translation -6.1 11.8 0.1
+  children [
+    Pose { translation 0 0 0.08 children [ Shape { appearance Plaster {} geometry Cylinder { height 0.16 radius 0.04 } } ] }
+    Pose { translation 0 0 0.18 children [ Shape { appearance Plaster {} geometry Cylinder { height 0.04 radius 0.09 } } ] }
+  ]
+  name "mushroom_2"
+}
+DEF MUSHROOM_3 Solid {
+  translation -5.5 11.7 0.1
+  children [
+    Pose { translation 0 0 0.07 children [ Shape { appearance Plaster {} geometry Cylinder { height 0.14 radius 0.035 } } ] }
+    Pose { translation 0 0 0.16 children [ Shape { appearance Plaster {} geometry Cylinder { height 0.04 radius 0.08 } } ] }
+  ]
+  name "mushroom_3"
+}
+DEF MUSHROOM_4 Solid {
+  translation 10.8 4.5 0.1
+  children [
+    Pose { translation 0 0 0.1 children [ Shape { appearance Plaster {} geometry Cylinder { height 0.18 radius 0.04 } } ] }
+    Pose { translation 0 0 0.22 children [ Shape { appearance Plaster {} geometry Cylinder { height 0.04 radius 0.11 } } ] }
+  ]
+  name "mushroom_4"
+}
+DEF MUSHROOM_5 Solid {
+  translation 11.1 4.7 0.1
+  children [
+    Pose { translation 0 0 0.08 children [ Shape { appearance Plaster {} geometry Cylinder { height 0.15 radius 0.035 } } ] }
+    Pose { translation 0 0 0.18 children [ Shape { appearance Plaster {} geometry Cylinder { height 0.04 radius 0.09 } } ] }
+  ]
+  name "mushroom_5"
+}
+
+# --- Leaf-litter patches: thin DryMud boxes scattered between trees
+# and the path. Darker brown reads as accumulated forest floor where
+# leaves have settled and rotted.
+DEF LITTER_1 Solid {
+  translation -8 6 0.04
+  rotation 0 0 1 0.3
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 4 2.6 0.06 } castShadows FALSE } ]
+  name "litter_1"
+}
+DEF LITTER_2 Solid {
+  translation 7 -5 0.04
+  rotation 0 0 1 1.1
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 3.5 2.2 0.06 } castShadows FALSE } ]
+  name "litter_2"
+}
+DEF LITTER_3 Solid {
+  translation -4 -12 0.04
+  rotation 0 0 1 -0.5
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 5 3 0.06 } castShadows FALSE } ]
+  name "litter_3"
+}
+DEF LITTER_4 Solid {
+  translation 14 9 0.04
+  rotation 0 0 1 0.8
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 4.5 2.6 0.06 } castShadows FALSE } ]
+  name "litter_4"
+}
+DEF LITTER_5 Solid {
+  translation -12 -2 0.04
+  rotation 0 0 1 0.2
+  children [ Shape { appearance DryMud { textureTransform TextureTransform { scale 4 4 } } geometry Box { size 4 2.4 0.06 } castShadows FALSE } ]
+  name "litter_5"
+}
+
+# ============================================================================
+# Undergrowth — SimpleTree at small height (Webots' efficient 8-polygon
+# customisable tree mesh, set to bush dimensions). Real plant geometry,
+# not Box clusters. Mixed species via `type` so different bushes show
+# different leaf textures.
+# ============================================================================
+# Small bushes (~0.8-1.2 m tall) scattered through the foreground and
+# mid-ring. "hazel tree" and "cherry tree" types read most like
+# rounded broadleaf shrubs at small scale.
+SimpleTree { translation -7   9 0   rotation 0 0 1  0.3  name "bush_NW1" type "hazel tree"  height 1.1  radius 0.7  subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation  8   6 0   rotation 0 0 1  1.0  name "bush_NE1" type "cherry tree" height 0.9  radius 0.6  subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation -11 -4 0   rotation 0 0 1  0.6  name "bush_W1"  type "hazel tree"  height 1.0  radius 0.65 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation  12 -10 0  rotation 0 0 1 -0.4  name "bush_SE1" type "hazel tree"  height 1.2  radius 0.8  subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation  -2 -6 0   rotation 0 0 1  1.4  name "bush_S1"  type "cherry tree" height 0.8  radius 0.55 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation   6  16 0  rotation 0 0 1  0.5  name "bush_N1"  type "hazel tree"  height 1.3  radius 0.75 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation -10  16 0  rotation 0 0 1  1.8  name "bush_NW2" type "cherry tree" height 1.0  radius 0.65 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation  18  2 0   rotation 0 0 1  0.9  name "bush_E1"  type "hazel tree"  height 1.1  radius 0.7  subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation -18  -8 0  rotation 0 0 1  2.1  name "bush_SW1" type "hazel tree"  height 0.9  radius 0.6  subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation  3   12 0  rotation 0 0 1 -0.6  name "bush_NN1" type "cherry tree" height 1.0  radius 0.7  subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation  -8 -12 0  rotation 0 0 1  0.2  name "bush_SS1" type "hazel tree"  height 1.2  radius 0.75 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation  16 -2 0   rotation 0 0 1  1.5  name "bush_E2"  type "cherry tree" height 0.8  radius 0.55 subdivision 3 enableBoundingObject FALSE }
+
+# Saplings — young trees, mid-height SimpleTree (2-3 m). Reads as
+# next-generation trees coming up between the canopy, gives vertical
+# variety at mid-floor level. "white pine" + "spruce" types for
+# conifer saplings.
+SimpleTree { translation  9   2 0   rotation 0 0 1  0.6  name "sapling_E"   type "white pine" height 2.4 radius 0.6 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation -7  -1 0   rotation 0 0 1  1.2  name "sapling_W"   type "spruce"     height 2.6 radius 0.7 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation  4  -4 0   rotation 0 0 1  0.4  name "sapling_S"   type "white pine" height 2.0 radius 0.5 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation -12  6 0   rotation 0 0 1  1.7  name "sapling_NW"  type "spruce"     height 2.8 radius 0.75 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation  14  6 0   rotation 0 0 1  2.0  name "sapling_NE"  type "white pine" height 2.4 radius 0.6 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation -3  20 0   rotation 0 0 1  0.8  name "sapling_N"   type "spruce"     height 2.8 radius 0.7 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation  6 -16 0   rotation 0 0 1  1.3  name "sapling_SE"  type "white pine" height 2.2 radius 0.6 subdivision 3 enableBoundingObject FALSE }
+SimpleTree { translation -14 -10 0  rotation 0 0 1  0.3  name "sapling_SW"  type "spruce"     height 2.5 radius 0.7 subdivision 3 enableBoundingObject FALSE }
+
+# ============================================================================
+# Fallen branches, twigs, leaf scatter — ground litter that sells the
+# "real forest floor" reading. Branches are RoughOak cylinders lying
+# at varied angles; twigs are tiny cylinders in clusters; leaf scatter
+# is small flat boxes tinted brown/yellow as fallen-leaf piles.
+# ============================================================================
+# --- Big fallen branches (1.5-3 m long, broken off the canopy)
+DEF BRANCH_BIG_1 Solid { translation  2  9 0.14 rotation 0.95 0.32 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 2.4 radius 0.14 } } ] name "branch_big_1" }
+DEF BRANCH_BIG_2 Solid { translation -4  6 0.12 rotation 0.6 0.8 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 2.0 radius 0.12 } } ] name "branch_big_2" }
+DEF BRANCH_BIG_3 Solid { translation  10 -4 0.10 rotation 0.3 0.95 0 1.5708 children [ Shape { appearance RoughPine {} geometry Cylinder { height 1.6 radius 0.10 } } ] name "branch_big_3" }
+DEF BRANCH_BIG_4 Solid { translation -8 -14 0.11 rotation 0.85 0.5 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 1.8 radius 0.11 } } ] name "branch_big_4" }
+DEF BRANCH_BIG_5 Solid { translation  14  10 0.13 rotation 0.4 0.9 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 2.2 radius 0.13 } } ] name "branch_big_5" }
+DEF BRANCH_BIG_6 Solid { translation -16  2 0.10 rotation 1 0 0 1.5708 children [ Shape { appearance RoughPine {} geometry Cylinder { height 1.5 radius 0.10 } } ] name "branch_big_6" }
+DEF BRANCH_BIG_7 Solid { translation  6 14 0.11 rotation 0.7 0.7 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 1.7 radius 0.11 } } ] name "branch_big_7" }
+DEF BRANCH_BIG_8 Solid { translation -10  4 0.09 rotation 0.5 0.85 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 1.4 radius 0.09 } } ] name "branch_big_8" }
+DEF BRANCH_BIG_9 Solid { translation  18 -8 0.10 rotation 0.9 0.4 0 1.5708 children [ Shape { appearance RoughPine {} geometry Cylinder { height 1.6 radius 0.10 } } ] name "branch_big_9" }
+DEF BRANCH_BIG_10 Solid { translation -2  -8 0.09 rotation 0.2 0.98 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 1.5 radius 0.09 } } ] name "branch_big_10" }
+DEF BRANCH_BIG_11 Solid { translation  9 -12 0.11 rotation 0.6 0.8 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 1.8 radius 0.11 } } ] name "branch_big_11" }
+DEF BRANCH_BIG_12 Solid { translation -13 12 0.09 rotation 0.4 0.9 0 1.5708 children [ Shape { appearance RoughPine {} geometry Cylinder { height 1.4 radius 0.09 } } ] name "branch_big_12" }
+
+# --- Small twigs (0.3-0.7 m, very thin) — scattered in clusters near
+# branches and tree bases. Just enough mesh detail at floor level.
+DEF TWIG_01 Solid { translation  1.5  8.5 0.025 rotation 1 0 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.5 radius 0.025 } } ] name "twig_01" }
+DEF TWIG_02 Solid { translation  2.4  9.2 0.022 rotation 0.4 0.9 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.4 radius 0.022 } } ] name "twig_02" }
+DEF TWIG_03 Solid { translation  1.8  8.8 0.02 rotation 0.7 0.7 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.3 radius 0.02 } } ] name "twig_03" }
+DEF TWIG_04 Solid { translation -3.5  6.5 0.022 rotation 0.5 0.85 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.45 radius 0.022 } } ] name "twig_04" }
+DEF TWIG_05 Solid { translation -4.4  6.2 0.025 rotation 0.9 0.4 0 1.5708 children [ Shape { appearance RoughPine {} geometry Cylinder { height 0.5 radius 0.025 } } ] name "twig_05" }
+DEF TWIG_06 Solid { translation 10.5 -3.7 0.022 rotation 0.3 0.95 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.4 radius 0.022 } } ] name "twig_06" }
+DEF TWIG_07 Solid { translation 11.2 -4.4 0.02 rotation 1 0 0 1.5708 children [ Shape { appearance RoughPine {} geometry Cylinder { height 0.35 radius 0.02 } } ] name "twig_07" }
+DEF TWIG_08 Solid { translation -8.5 -13.6 0.024 rotation 0.7 0.7 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.5 radius 0.024 } } ] name "twig_08" }
+DEF TWIG_09 Solid { translation -7.8 -14.4 0.022 rotation 0.4 0.9 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.4 radius 0.022 } } ] name "twig_09" }
+DEF TWIG_10 Solid { translation 13.6 9.5 0.025 rotation 0.6 0.8 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.5 radius 0.025 } } ] name "twig_10" }
+DEF TWIG_11 Solid { translation 14.5 10.7 0.02 rotation 0.95 0.3 0 1.5708 children [ Shape { appearance RoughPine {} geometry Cylinder { height 0.35 radius 0.02 } } ] name "twig_11" }
+DEF TWIG_12 Solid { translation -16.4 1.5 0.023 rotation 0.5 0.85 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.45 radius 0.023 } } ] name "twig_12" }
+DEF TWIG_13 Solid { translation  5.8 14.5 0.022 rotation 0.3 0.95 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.4 radius 0.022 } } ] name "twig_13" }
+DEF TWIG_14 Solid { translation  6.6 13.7 0.02 rotation 0.8 0.6 0 1.5708 children [ Shape { appearance RoughPine {} geometry Cylinder { height 0.35 radius 0.02 } } ] name "twig_14" }
+DEF TWIG_15 Solid { translation -10.4 3.5 0.025 rotation 0.6 0.8 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.5 radius 0.025 } } ] name "twig_15" }
+DEF TWIG_16 Solid { translation -11.5 4.3 0.022 rotation 1 0 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.4 radius 0.022 } } ] name "twig_16" }
+DEF TWIG_17 Solid { translation  17.5 -7.7 0.023 rotation 0.4 0.9 0 1.5708 children [ Shape { appearance RoughPine {} geometry Cylinder { height 0.45 radius 0.023 } } ] name "twig_17" }
+DEF TWIG_18 Solid { translation -2.6 -8.4 0.022 rotation 0.7 0.7 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.4 radius 0.022 } } ] name "twig_18" }
+DEF TWIG_19 Solid { translation  9.5 -11.5 0.024 rotation 0.5 0.85 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.5 radius 0.024 } } ] name "twig_19" }
+DEF TWIG_20 Solid { translation -13.6 11.4 0.02 rotation 0.3 0.95 0 1.5708 children [ Shape { appearance RoughOak {} geometry Cylinder { height 0.35 radius 0.02 } } ] name "twig_20" }
+
+# --- Leaf-scatter piles: small flat-topped Cylinders with a brownish
+# tint, sized like real leaf-litter piles that accumulate at tree
+# bases and against logs. Each is given a distinct PBR baseColor
+# variation so the piles don't look identical.
+DEF LEAFPILE_1 Solid {
+  translation -6 11.5 0.04
+  rotation 0 0 1 0.4
+  children [ Shape { appearance PBRAppearance { baseColor 0.46 0.32 0.18 roughness 1.0 metalness 0.0 } geometry Cylinder { height 0.06 radius 0.5 subdivision 10 } castShadows FALSE } ]
+  name "leafpile_1"
+}
+DEF LEAFPILE_2 Solid {
+  translation 10 5 0.04
+  rotation 0 0 1 1.1
+  children [ Shape { appearance PBRAppearance { baseColor 0.52 0.36 0.20 roughness 1.0 metalness 0.0 } geometry Cylinder { height 0.06 radius 0.6 subdivision 10 } castShadows FALSE } ]
+  name "leafpile_2"
+}
+DEF LEAFPILE_3 Solid {
+  translation -14 -6 0.04
+  rotation 0 0 1 0.6
+  children [ Shape { appearance PBRAppearance { baseColor 0.42 0.30 0.16 roughness 1.0 metalness 0.0 } geometry Cylinder { height 0.06 radius 0.55 subdivision 10 } castShadows FALSE } ]
+  name "leafpile_3"
+}
+DEF LEAFPILE_4 Solid {
+  translation 8 18 0.04
+  rotation 0 0 1 -0.3
+  children [ Shape { appearance PBRAppearance { baseColor 0.48 0.34 0.20 roughness 1.0 metalness 0.0 } geometry Cylinder { height 0.06 radius 0.5 subdivision 10 } castShadows FALSE } ]
+  name "leafpile_4"
+}
+DEF LEAFPILE_5 Solid {
+  translation -20 4 0.04
+  rotation 0 0 1 1.4
+  children [ Shape { appearance PBRAppearance { baseColor 0.50 0.36 0.18 roughness 1.0 metalness 0.0 } geometry Cylinder { height 0.06 radius 0.55 subdivision 10 } castShadows FALSE } ]
+  name "leafpile_5"
+}
+DEF LEAFPILE_6 Solid {
+  translation 16 -4 0.04
+  rotation 0 0 1 0.2
+  children [ Shape { appearance PBRAppearance { baseColor 0.44 0.30 0.16 roughness 1.0 metalness 0.0 } geometry Cylinder { height 0.06 radius 0.5 subdivision 10 } castShadows FALSE } ]
+  name "leafpile_6"
+}
+DEF LEAFPILE_7 Solid {
+  translation -3 -3 0.04
+  rotation 0 0 1 0.8
+  children [ Shape { appearance PBRAppearance { baseColor 0.50 0.34 0.18 roughness 1.0 metalness 0.0 } geometry Cylinder { height 0.06 radius 0.6 subdivision 10 } castShadows FALSE } ]
+  name "leafpile_7"
+}
+DEF LEAFPILE_8 Solid {
+  translation 4 -1 0.04
+  rotation 0 0 1 -0.5
+  children [ Shape { appearance PBRAppearance { baseColor 0.42 0.28 0.14 roughness 1.0 metalness 0.0 } geometry Cylinder { height 0.06 radius 0.45 subdivision 10 } castShadows FALSE } ]
+  name "leafpile_8"
+}
+DEF LEAFPILE_9 Solid {
+  translation -7 0 0.04
+  rotation 0 0 1 1.2
+  children [ Shape { appearance PBRAppearance { baseColor 0.48 0.32 0.18 roughness 1.0 metalness 0.0 } geometry Cylinder { height 0.06 radius 0.5 subdivision 10 } castShadows FALSE } ]
+  name "leafpile_9"
+}
+DEF LEAFPILE_10 Solid {
+  translation 11 -2 0.04
+  rotation 0 0 1 0.3
+  children [ Shape { appearance PBRAppearance { baseColor 0.46 0.30 0.16 roughness 1.0 metalness 0.0 } geometry Cylinder { height 0.06 radius 0.55 subdivision 10 } castShadows FALSE } ]
+  name "leafpile_10"
+}
+
+# --- Pine cones — small dark-brown spheres clustered under pines.
+DEF CONE_1 Solid { translation -5.6 7.8 0.07 children [ Shape { appearance PBRAppearance { baseColor 0.32 0.20 0.10 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.07 subdivision 2 } } ] name "cone_1" }
+DEF CONE_2 Solid { translation -5.4 7.5 0.07 children [ Shape { appearance PBRAppearance { baseColor 0.28 0.18 0.08 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.06 subdivision 2 } } ] name "cone_2" }
+DEF CONE_3 Solid { translation -5.8 7.6 0.07 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.19 0.09 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.07 subdivision 2 } } ] name "cone_3" }
+DEF CONE_4 Solid { translation  7.1 10.3 0.07 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.19 0.09 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.07 subdivision 2 } } ] name "cone_4" }
+DEF CONE_5 Solid { translation  7.4 10.0 0.07 children [ Shape { appearance PBRAppearance { baseColor 0.28 0.18 0.08 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.06 subdivision 2 } } ] name "cone_5" }
+DEF CONE_6 Solid { translation -15.2 13.6 0.07 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.19 0.09 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.07 subdivision 2 } } ] name "cone_6" }
+DEF CONE_7 Solid { translation -15.4 14.0 0.07 children [ Shape { appearance PBRAppearance { baseColor 0.32 0.20 0.10 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.07 subdivision 2 } } ] name "cone_7" }
+DEF CONE_8 Solid { translation -25.3 -2.5 0.07 children [ Shape { appearance PBRAppearance { baseColor 0.28 0.18 0.08 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.06 subdivision 2 } } ] name "cone_8" }
+DEF CONE_9 Solid { translation -25.0 -2.2 0.07 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.19 0.09 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.07 subdivision 2 } } ] name "cone_9" }
+DEF CONE_10 Solid { translation 25.4 -7.5 0.07 children [ Shape { appearance PBRAppearance { baseColor 0.30 0.19 0.09 roughness 1.0 metalness 0.0 } geometry Sphere { radius 0.07 subdivision 2 } } ] name "cone_10" }

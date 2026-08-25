@@ -1,0 +1,144 @@
+{
+  "generated_at": "2026-05-03T13:45:19",
+  "platform": "win32",
+  "records": [
+    {
+      "scenario": "many-robots",
+      "params": {
+        "robots": 5,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\many-robots-005.log",
+      "wall_time_s": 3.411,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 710.432,
+        "prePhysics(ms)": 0.005,
+        "physics(ms)": 0.013,
+        "postPhysics(ms)": 0.014,
+        "mainRendering(ms)": 23.329,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 0.132,
+        "controller:bench_quit(ms)": 0.143
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 710.432,
+        "prePhysics(ms)": 2.736,
+        "physics(ms)": 7.635,
+        "postPhysics(ms)": 8.585,
+        "mainRendering(ms)": 23.329,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 80.142,
+        "controller:bench_quit(ms)": 86.03
+      },
+      "devices": {},
+      "controllers": {
+        "controller:<generic>(ms)": 0.132,
+        "controller:bench_quit(ms)": 0.143
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "many-robots",
+      "params": {
+        "robots": 25,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\many-robots-025.log",
+      "wall_time_s": 4.385,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 431.704,
+        "prePhysics(ms)": 0.017,
+        "physics(ms)": 0.058,
+        "postPhysics(ms)": 0.084,
+        "mainRendering(ms)": 24.19,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 0.369,
+        "controller:bench_quit(ms)": 0.393
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 431.704,
+        "prePhysics(ms)": 10.332,
+        "physics(ms)": 34.747,
+        "postPhysics(ms)": 50.55,
+        "mainRendering(ms)": 24.19,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:<generic>(ms)": 230.981,
+        "controller:bench_quit(ms)": 236.278
+      },
+      "devices": {},
+      "controllers": {
+        "controller:<generic>(ms)": 0.369,
+        "controller:bench_quit(ms)": 0.393
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    },
+    {
+      "scenario": "many-robots",
+      "params": {
+        "robots": 50,
+        "steps": 600
+      },
+      "log_path": "tests\\benchmarks\\optim-logs\\many-robots-050.log",
+      "wall_time_s": 6.532,
+      "returncode": 0,
+      "avg": {
+        "_steps": 600,
+        "loading(ms)": 505.884,
+        "prePhysics(ms)": 0.053,
+        "physics(ms)": 0.194,
+        "postPhysics(ms)": 0.37,
+        "mainRendering(ms)": 24.184,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": NaN,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 0.877,
+        "controller:<generic>(ms)": 0.797
+      },
+      "tot": {
+        "_steps": 600,
+        "loading(ms)": 505.884,
+        "prePhysics(ms)": 32.06,
+        "physics(ms)": 116.35,
+        "postPhysics(ms)": 222.015,
+        "mainRendering(ms)": 24.184,
+        "virtualRealityHeadsetRendering(ms)": 0.0,
+        "gpuMemoryTransfer(ms)": 0.0,
+        "trianglesCount": 0.0,
+        "mainFPS": 0.0,
+        "controller:bench_quit(ms)": 526.279,
+        "controller:<generic>(ms)": 518.433
+      },
+      "devices": {},
+      "controllers": {
+        "controller:bench_quit(ms)": 0.877,
+        "controller:<generic>(ms)": 0.797
+      },
+      "steps_count": 600,
+      "threads_count": 1,
+      "notes": []
+    }
+  ]
+}

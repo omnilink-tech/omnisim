@@ -1,0 +1,31 @@
+{
+  "units": "metres",
+  "what_this_is": "The benchmark ARM asset for R3_pick_and_place. It specifies the arm rather than shipping one, and that is a deliberate, disclosed choice: the two things a cross-simulator comparison must hold identical are the SCENE (shipped, byte-pinned, see scene.json) and the TASK. The manipulator itself is the agent's work -- author it from base nodes, or import one from the simulator's own robot library -- because a hand-authored arm frozen into the fixture without ever being run in either simulator would be an unverified claim at the centre of the measurement.",
+  "base_frame": {
+    "rule": "THE ROBOT BASE FRAME IS THE WORLD FRAME. Mount the arm so its base node sits at the world origin with z up. Every coordinate in the task prompt is then read straight off the world.",
+    "origin": [0.0, 0.0, 0.0],
+    "up_axis": "z",
+    "why_it_is_pinned": "the prompt states the cube, the table and the bin in the ROBOT BASE frame, and the benchmark ships them at fixed WORLD coordinates. The two only agree if the base frame is pinned, so an arm mounted anywhere else is solving a different task from the one being graded."
+  },
+  "mount": {
+    "keep_out_radius_m": 0.15,
+    "note": "the nearest table leg face is at x = 0.175, so a base column of radius <= 0.15 at the origin clears it. A tall base column is a legitimate way to buy reach: the base FRAME stays at the origin while the joint chain starts higher."
+  },
+  "requirements": {
+    "min_joints": 3,
+    "must_reach": [
+      {"what": "the cube", "point": [0.45, 0.0, 0.8], "distance_from_base_m": 0.918},
+      {"what": "the bin", "point": [0.3, 0.35, 0.8], "distance_from_base_m": 0.923}
+    ],
+    "recommended_reach_m": 1.1,
+    "reach_derivation": "a top-down grasp puts the wrist ~0.10 m above the part (1.006 m from the base) and the transfer clears the 0.85 m bin rim (~1.06 m). 1.10 m of reach from a base at floor level is comfortable; less than ~1.00 m cannot do the task. A floor-standing 1.3 m-class arm, or a shorter arm on its own base column, both work.",
+    "gripper": "any grasping mechanism the simulator supports. The benchmark does NOT prescribe one and does NOT count devices: friction fingers, a suction/vacuum effector and a connector-style attachment are all acceptable, and the grasp is proven BEHAVIOURALLY -- the cube leaves the table, travels through free space clear of every surface, and comes to rest inside the bin. A device list would have been simulator-specific and gameable; the cube's own trajectory is neither."
+  },
+  "not_prescribed": [
+    "the number of degrees of freedom beyond the minimum",
+    "link lengths, masses and inertias",
+    "the gripper mechanism",
+    "the controller, the inverse kinematics and the trajectory",
+    "the contact/solver settings the grasp needs -- the shipped world carries the simulator's ORDINARY defaults and nothing has been pre-tuned for grasping on either arm"
+  ]
+}

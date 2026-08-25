@@ -1,0 +1,5 @@
+# Raw per-cell recordings (sample series + engine console), one dir per cell.
+# Regenerate with:  python tests/benchmarks/ladder0/webots/run_local.py
+# The REDUCED measurements -- the numbers anyone would actually cite -- are
+# committed as results/ladder0_webots*.json.
+results/rung*/

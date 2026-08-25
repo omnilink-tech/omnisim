@@ -1,0 +1,207 @@
+#OMNISIM R2025a utf8
+
+# R1 bring-up PROBE (OmniSim arm). Not part of the gate -- it exists so the
+# oracle's sensing conventions are MEASURED rather than assumed.
+#
+# Three things a planar-Lidar navigator has to get right, none of which is
+# guessable from the node reference, and each of which silently mirrors or
+# rotates the map it builds if it is wrong:
+#
+#   1. which END of the range image is the LEFT of the robot (the sign of the
+#      per-beam azimuth);
+#   2. what `InertialUnit.getRollPitchYaw()[2]` measures yaw FROM;
+#   3. whether a range is the RADIAL distance to the surface (it is -- the
+#      engine's own lidar smoke world pins range[theta] = d / cos(theta)).
+#
+# Geometry: the rover sits at the origin yawed +0.5 rad, and a single 0.2 m
+# post stands at world (0, 3). That is bearing +90 deg in the world and
+# +90 - 28.65 = +61.35 deg = +1.0708 rad in the robot frame, at a range of
+# 3.0 m -- one unambiguous return, on the LEFT, at a known angle and distance.
+# r1_probe.py prints the index that saw it and what the closed form predicts
+# under each convention, and says which one the engine actually used.
+
+WorldInfo {
+  info [
+    "AgentBench R1 sensing-convention probe (OmniSim arm)."
+  ]
+  title "AgentBench R1 probe"
+  basicTimeStep 8
+  newtonSolver "mujoco"
+  newtonSubsteps 4
+  newtonRobotColliders TRUE
+}
+Viewpoint {
+  orientation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931953
+  position 0 0 12
+}
+Background {
+  skyColor [
+    0.15 0.17 0.2
+  ]
+}
+DirectionalLight {
+  ambientIntensity 1
+  direction 0.3 -0.4 -1
+  intensity 2
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    DEF FLOOR_GEO Shape {
+      appearance PBRAppearance { baseColor 0.35 0.36 0.38 roughness 1 metalness 0 }
+      geometry Box { size 12 12 0.1 }
+    }
+  ]
+  name "floor"
+  boundingObject USE FLOOR_GEO
+}
+DEF POST Solid {
+  translation 0 3 0.25
+  children [
+    DEF POST_GEO Shape {
+      appearance PBRAppearance { baseColor 0.9 0.2 0.2 roughness 1 metalness 0 }
+      geometry Box { size 0.2 0.2 0.5 }
+    }
+  ]
+  name "post"
+  boundingObject USE POST_GEO
+}
+DEF ROVER Robot {
+  translation 0 0 0
+  rotation 0 0 1 0.5
+  children [
+    Pose {
+      translation 0 0 0.13
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.15 0.35 0.55 roughness 0.7 metalness 0.1 }
+          geometry DEF CHASSIS_GEO Box { size 0.34 0.26 0.1 }
+        }
+      ]
+    }
+    DEF LIDAR Lidar {
+      translation 0 0 0.24
+      name "lidar"
+      horizontalResolution 181
+      fieldOfView 3.14159265
+      verticalFieldOfView 0.05
+      numberOfLayers 1
+      near 0.03
+      minRange 0.05
+      maxRange 6
+      type "fixed"
+      noise 0
+    }
+    GPS {
+      translation 0 0 0.2
+      name "gps"
+    }
+    InertialUnit {
+      translation 0 0 0.2
+      name "imu"
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0  anchor 0.12 0.15 0.08 }
+      device [
+        RotationalMotor { name "left front motor"  maxVelocity 12  maxTorque 12 }
+      ]
+      endPoint Solid {
+        translation 0.12 0.15 0.08
+        children [
+          Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.1 0.1 0.1 roughness 1 metalness 0 }
+                geometry DEF WHEEL_GEO Cylinder { height 0.05 radius 0.08 subdivision 24 }
+              }
+            ]
+          }
+        ]
+        name "left front wheel"
+        boundingObject Pose { rotation 1 0 0 1.5707963267948966  children [ USE WHEEL_GEO ] }
+        physics DEF WHEEL_PHYSICS Physics { density -1  mass 0.15 }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0  anchor -0.12 0.15 0.08 }
+      device [
+        RotationalMotor { name "left rear motor"  maxVelocity 12  maxTorque 12 }
+      ]
+      endPoint Solid {
+        translation -0.12 0.15 0.08
+        children [
+          Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.1 0.1 0.1 roughness 1 metalness 0 }
+                geometry USE WHEEL_GEO
+              }
+            ]
+          }
+        ]
+        name "left rear wheel"
+        boundingObject Pose { rotation 1 0 0 1.5707963267948966  children [ USE WHEEL_GEO ] }
+        physics USE WHEEL_PHYSICS
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0  anchor 0.12 -0.15 0.08 }
+      device [
+        RotationalMotor { name "right front motor"  maxVelocity 12  maxTorque 12 }
+      ]
+      endPoint Solid {
+        translation 0.12 -0.15 0.08
+        children [
+          Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.1 0.1 0.1 roughness 1 metalness 0 }
+                geometry USE WHEEL_GEO
+              }
+            ]
+          }
+        ]
+        name "right front wheel"
+        boundingObject Pose { rotation 1 0 0 1.5707963267948966  children [ USE WHEEL_GEO ] }
+        physics USE WHEEL_PHYSICS
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters { axis 0 1 0  anchor -0.12 -0.15 0.08 }
+      device [
+        RotationalMotor { name "right rear motor"  maxVelocity 12  maxTorque 12 }
+      ]
+      endPoint Solid {
+        translation -0.12 -0.15 0.08
+        children [
+          Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.1 0.1 0.1 roughness 1 metalness 0 }
+                geometry USE WHEEL_GEO
+              }
+            ]
+          }
+        ]
+        name "right rear wheel"
+        boundingObject Pose { rotation 1 0 0 1.5707963267948966  children [ USE WHEEL_GEO ] }
+        physics USE WHEEL_PHYSICS
+      }
+    }
+  ]
+  name "rover"
+  boundingObject Pose {
+    translation 0 0 0.13
+    children [ USE CHASSIS_GEO ]
+  }
+  physics Physics {
+    density -1
+    mass 3.0
+    centerOfMass [ 0 0 0.06 ]
+  }
+  controller "r1_probe"
+}

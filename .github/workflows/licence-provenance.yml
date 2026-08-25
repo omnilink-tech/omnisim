@@ -1,0 +1,88 @@
+name: Licence and provenance
+
+# The lightweight licensing gate. Seconds, not minutes -- so it can run on every
+# push and pull request rather than nightly.
+#
+# WHY THIS EXISTS SEPARATELY FROM THE SOURCES SUITE. The full source suite lives
+# at .github/workflows.disabled/tests_sources.yml and is NOT enabled: it builds
+# cppcheck from source on three operating systems and takes ~10 minutes, which
+# is why it was parked. But the licence checks inside it need none of that --
+# they are stdlib + git + pytest -- and they are exactly the checks whose value
+# depends on running before a merge rather than after. Leaving them behind the
+# heavy suite is how an unlicensed header assembled from CC BY-SA Stack Overflow
+# answers, and 2000-odd binary assets with no recorded provenance, accumulated
+# unnoticed in an Apache-2.0 tree.
+#
+# DELIBERATELY UNFILTERED BY PATH. A path filter on a licence gate defeats it:
+# the failure mode is a NEW file in a directory nobody thought to list. The
+# whole job is ~10 seconds, so it runs on everything.
+#
+# This does not enable the heavy suite. Adding cppcheck, clang-format or the
+# rest of tests/sources here would put the 10-minute job back on every push.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: licence-provenance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  licence:
+    runs-on: ubuntu-latest
+    steps:
+      # SUBMODULES ARE PART OF WHAT IS BEING CHECKED. NOTICE attributes glm and
+      # stb by pointing at licence files that live INSIDE the submodules --
+      # src/glm/copying.txt and src/stb/LICENSE -- and a default checkout leaves
+      # those directories empty, so the pointer test reported two dangling
+      # attributions that every real clone resolves. fetch-depth applies to the
+      # submodules too, so this stays a shallow fetch and costs a few seconds.
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test deps (pytest only)
+        run: python -m pip install --upgrade pip pytest
+
+      # Source-file Apache-2.0 headers, including the vendored components under
+      # src/omnisim/external, which this test used to skip wholesale.
+      - name: Source licence headers
+        run: |
+          export OMNISIM_HOME=$PWD
+          python -m pytest tests/sources/test_license.py -v
+
+      # Binary assets -- meshes, textures, audio, fonts, wasm, weights -- have
+      # nowhere to put a header, so they are checked for a licence/provenance
+      # file at or above them instead.
+      - name: Binary-asset provenance
+        run: |
+          export OMNISIM_HOME=$PWD
+          python -m pytest tests/sources/test_asset_provenance.py -v
+
+      # NOTICE and THIRD_PARTY_NOTICES.md discharge attribution by pointing at
+      # licence files. A pointer that no longer resolves is an attribution that
+      # has silently stopped being made.
+      - name: Attribution pointers resolve
+        run: |
+          export OMNISIM_HOME=$PWD
+          python -m pytest tests/sources/test_licence_pointers.py -v
+
+      # Human-readable summaries, always printed, so a green run still shows the
+      # size of the outstanding provenance backlog rather than hiding it.
+      - name: Report outstanding provenance debt
+        if: always()
+        run: |
+          export OMNISIM_HOME=$PWD
+          python tests/sources/test_asset_provenance.py --report || true
+          python tests/sources/test_licence_pointers.py --report || true

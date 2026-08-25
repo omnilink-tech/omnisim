@@ -1,0 +1,431 @@
+bin/ [mac,linux]
+bin/qt/ [mac,linux]
+bin/qt/moc [mac,linux,exe]
+
+docs/
+docs/list.txt
+
+include/
+include/controller/
+include/controller/c/
+include/controller/c/omnisim/
+include/controller/c/omnisim/*.h
+include/controller/c/omnisim/plugins/
+include/controller/c/omnisim/plugins/robot_window/
+include/controller/c/omnisim/plugins/robot_window/*.h
+include/controller/c/omnisim/plugins/robot_window/generic_robot_window/
+include/controller/c/omnisim/plugins/robot_window/generic_robot_window/*.h
+include/controller/c/omnisim/utils/
+include/controller/c/omnisim/utils/*.h
+include/controller/c/omnisim/vehicle/
+include/controller/c/omnisim/vehicle/*.h
+include/controller/cpp/
+include/controller/cpp/omnisim/
+include/controller/cpp/omnisim/*.hpp
+include/controller/cpp/omnisim/utils/
+include/controller/cpp/omnisim/utils/*.hpp
+include/controller/cpp/omnisim/vehicle/
+include/controller/cpp/omnisim/vehicle/*.hpp
+include/plugins/
+include/plugins/*.h
+include/qt/ [windows,linux]
+include/qt/QtConcurrent/ [windows,linux]
+include/qt/QtConcurrent/QtConcurrent/ [windows,linux]
+include/qt/QtConcurrent/QtConcurrent/* [windows,linux]
+include/qt/QtCore/ [windows,linux]
+include/qt/QtCore/QtCore/ [windows,linux]
+include/qt/QtCore/QtCore/* [windows,linux]
+include/qt/QtGui/ [windows,linux]
+include/qt/QtGui/QtGui/ [windows,linux]
+include/qt/QtGui/QtGui/* [windows,linux]
+include/qt/QtNetwork/ [windows,linux]
+include/qt/QtNetwork/QtNetwork/ [windows,linux]
+include/qt/QtNetwork/QtNetwork/* [windows,linux]
+include/qt/QtOpenGL/ [windows,linux]
+include/qt/QtOpenGL/QtOpenGL/ [windows,linux]
+include/qt/QtOpenGL/QtOpenGL/* [windows,linux]
+include/qt/QtPrintSupport/ [windows,linux]
+include/qt/QtPrintSupport/QtPrintSupport/ [windows,linux]
+include/qt/QtPrintSupport/QtPrintSupport/* [windows,linux]
+include/qt/QtWebSockets/ [windows,linux]
+include/qt/QtWebSockets/QtWebSockets/ [windows,linux]
+include/qt/QtWebSockets/QtWebSockets/* [windows,linux]
+include/qt/QtWidgets/ [windows,linux]
+include/qt/QtWidgets/QtWidgets/ [windows,linux]
+include/qt/QtWidgets/QtWidgets/* [windows,linux]
+
+lib/ [windows,linux]
+lib/controller/ [windows,linux]
+
+lib/controller/Controller [dll,windows,linux]
+lib/controller/Controller.lib [windows]
+
+lib/controller/CppController [dll,windows,linux]
+lib/controller/CppController.lib [windows]
+
+
+lib/controller/car [dll,windows,linux]
+lib/controller/CppCar [dll,windows,linux]
+lib/controller/CppDriver [dll,windows,linux]
+lib/controller/driver [dll,windows,linux]
+lib/controller/car.lib [windows]
+lib/controller/driver.lib [windows]
+lib/controller/CppCar.lib [windows]
+lib/controller/CppDriver.lib [windows]
+
+lib/controller/generic_robot_window [dll,windows,linux]
+lib/controller/generic_robot_window.lib [windows]
+
+lib/controller/python/ [windows,linux]
+lib/controller/python/omnisim/ [windows,linux]
+lib/controller/python/omnisim/*.py [windows,linux]
+lib/controller/python/vehicle/ [windows,linux]
+lib/controller/python/vehicle/*.py [windows,linux]
+
+
+lib/webots/ [linux]
+lib/webots/libassimp.so* [linux]
+lib/webots/libOIS-1.4.0.so [linux]
+lib/webots/libQt6Concurrent.so* [linux]
+lib/webots/libQt6Core.so* [linux]
+lib/webots/libQt6DBus.so* [linux]
+lib/webots/libQt6Gui.so* [linux]
+lib/webots/libQt6Network.so* [linux]
+lib/webots/libQt6OpenGL.so* [linux]
+lib/webots/libQt6OpenGLWidgets.so* [linux]
+lib/webots/libQt6PrintSupport.so* [linux]
+lib/webots/libQt6Qml.so* [linux]
+lib/webots/libQt6WebSockets.so* [linux]
+lib/webots/libQt6Widgets.so* [linux]
+lib/webots/libQt6XcbQpa.so* [linux]
+lib/webots/libQt6WaylandClient.so* [linux]
+lib/webots/libQt6WaylandEglClientHwIntegration.so* [linux]
+lib/webots/libQt6WlShellIntegration.so* [linux]
+lib/webots/libQt6Xml.so* [linux]
+lib/webots/libicudata.so* [linux]
+lib/webots/libicui18n.so* [linux]
+lib/webots/libicuuc.so* [linux]
+lib/webots/libopenal.so* [linux]
+
+lib/webots/qt/ [linux]
+lib/webots/qt/plugins/ [linux]
+lib/webots/qt/plugins/platforminputcontexts/ [linux]
+lib/webots/qt/plugins/platforminputcontexts/libcomposeplatforminputcontextplugin.so [linux]
+lib/webots/qt/plugins/platforminputcontexts/libibusplatforminputcontextplugin.so [linux]
+lib/webots/qt/plugins/platforms/ [linux]
+lib/webots/qt/plugins/platforms/lib*.so [linux]
+lib/webots/qt/plugins/platformthemes/ [linux]
+lib/webots/qt/plugins/platformthemes/libqgtk3.so [linux]
+lib/webots/qt/plugins/printsupport/ [linux]
+lib/webots/qt/plugins/printsupport/libcupsprintersupport.so [linux]
+lib/webots/qt/plugins/imageformats/ [linux]
+lib/webots/qt/plugins/imageformats/libqjpeg.so [linux]
+lib/webots/qt/plugins/tls/ [linux]
+lib/webots/qt/plugins/tls/*.so [linux]
+lib/webots/qt/plugins/xcbglintegrations/ [linux]
+lib/webots/qt/plugins/xcbglintegrations/libqxcb-glx-integration.so [linux]
+lib/webots/qt/plugins/wayland-graphics-integration-client/ [linux]
+lib/webots/qt/plugins/wayland-graphics-integration-client/* [linux]
+lib/webots/qt/plugins/wayland-decoration-client/ [linux]
+lib/webots/qt/plugins/wayland-decoration-client/* [linux]
+lib/webots/qt/plugins/wayland-shell-integration/ [linux]
+lib/webots/qt/plugins/wayland-shell-integration/* [linux]
+lib/webots/qt/translations/ [linux]
+lib/webots/qt/translations/*.qm [linux]
+lib/webots/qt/libexec/ [linux]
+lib/webots/qt/libexec/qt.conf [linux]
+
+resources/
+resources/fonts/
+resources/fonts/fallback_fonts.txt
+resources/fonts/SIL-Open-Font-License.txt
+resources/fonts/*.ttf
+resources/icons/
+resources/icons/core/
+resources/icons/core/*.png
+resources/icons/core/license.txt
+resources/icons/core/omnisim_doc.ico [windows]
+resources/icons/dark/
+resources/icons/dark/*.png
+resources/icons/light/
+resources/icons/light/*.png
+resources/images/
+resources/images/*.png
+resources/images/themes/
+resources/images/themes/*.png
+resources/nodes/
+resources/nodes/*.wrl
+resources/nodes/icons/
+resources/nodes/icons/*.png
+resources/proto-list.xml
+resources/projects/
+resources/projects/controllers/
+resources/projects/controllers/generic/
+resources/projects/controllers/generic/Makefile
+resources/projects/controllers/generic/generic [exe]
+resources/projects/controllers/generic/generic.c
+resources/projects/libraries/
+resources/projects/libraries/generic_robot_window/
+resources/projects/libraries/generic_robot_window/Makefile
+resources/projects/libraries/generic_robot_window/*.c
+resources/projects/libraries/qt_utils/
+resources/projects/libraries/qt_utils/qt_utils [dll]
+resources/projects/libraries/qt_utils/icons/
+resources/projects/libraries/qt_utils/icons/*.png
+resources/projects/libraries/qt_utils/Makefile
+resources/projects/libraries/qt_utils/core/
+resources/projects/libraries/qt_utils/core/*pp
+resources/projects/libraries/qt_utils/devices/
+resources/projects/libraries/qt_utils/devices/*pp
+resources/projects/libraries/qt_utils/graph2d/
+resources/projects/libraries/qt_utils/graph2d/*pp
+resources/projects/libraries/qt_utils/gui/
+resources/projects/libraries/qt_utils/gui/*pp
+resources/projects/libraries/qt_utils/motion_editor/
+resources/projects/libraries/qt_utils/motion_editor/*pp
+resources/projects/libraries/qt_utils/widgets/
+resources/projects/libraries/qt_utils/widgets/*pp
+resources/projects/plugins/
+resources/projects/plugins/robot_windows/
+resources/projects/plugins/robot_windows/generic/
+resources/projects/plugins/robot_windows/generic/generic [dll]
+resources/projects/plugins/robot_windows/generic/*.c
+resources/projects/plugins/robot_windows/generic/*.css
+resources/projects/plugins/robot_windows/generic/*.js
+resources/projects/plugins/robot_windows/generic/*.html
+resources/projects/plugins/robot_windows/generic/Makefile
+resources/projects/plugins/robot_windows/generic_window/
+resources/projects/plugins/robot_windows/generic_window/generic_window [dll]
+resources/projects/plugins/robot_windows/generic_window/Makefile
+resources/projects/plugins/robot_windows/generic_window/*pp
+resources/projects/worlds/
+resources/projects/worlds/empty.omniworld
+resources/templates/
+resources/templates/controllers [recurse]
+resources/templates/protos/
+resources/templates/protos/template.proto
+resources/web/
+resources/web/streaming_viewer/
+resources/web/streaming_viewer/index.html
+resources/web/streaming_viewer/setup_viewer.js
+resources/web/streaming_viewer/style.css
+resources/web/templates/
+resources/web/templates/w3d_playback.html
+resources/web/templates/w3d_playback.css
+resources/web/wwi/
+resources/web/wwi/protoVisualizer/
+resources/web/wwi/protoVisualizer/*.js
+resources/web/wwi/protoVisualizer/templating/
+resources/web/wwi/protoVisualizer/templating/jsTemplate.js
+resources/web/wwi/protoVisualizer/templating/modules/
+resources/web/wwi/protoVisualizer/templating/modules/webots/
+resources/web/wwi/protoVisualizer/templating/modules/webots/*.js
+# glad is statically linked into omnisim-bin (libglad.a, src/omnisim/Makefile),
+# so its MIT notice has to travel with a BINARY distribution the same way
+# resources/wren/LICENSE does. src/glad/ is otherwise not shipped, which is
+# exactly why this line is easy to forget.
+src/glad/
+src/glad/LICENSE
+resources/wren/
+resources/wren/LICENSE
+resources/wren/meshes/
+resources/wren/meshes/*.obj
+resources/wren/textures/
+resources/wren/textures/*.png
+
+resources/Makefile.include
+resources/Makefile.os.include
+resources/qt_warning_filters.conf
+resources/stylesheet.linux.qss [linux]
+resources/stylesheet.macos.qss [mac]
+resources/stylesheet.windows.qss [windows]
+resources/version.txt
+resources/omnisim_classic.qss
+resources/omnisim_dusk.qss
+resources/omnisim_night.qss
+
+scripts/
+scripts/preferences_cleaner [recurse]
+
+src/
+src/controller/
+src/controller/cpp/
+src/controller/cpp/*.cpp
+src/controller/cpp/Makefile
+
+webots [exe,linux] # on Windows, we create a shortcut in setup.iss, on macOS, we create it in mac_distro.py
+omnisim-controller [linux]
+bin/omnisim-bin [linux]
+bin/qt.conf [linux]
+
+Contents/lib/ [mac]
+Contents/lib/controller/ [mac]
+Contents/lib/webots/ [mac]
+Contents/lib/webots/qt/ [mac]
+Contents/lib/webots/qt/plugins/ [mac]
+Contents/lib/webots/qt/plugins/platforms/ [mac]
+Contents/lib/webots/qt/plugins/imageformats/ [mac]
+Contents/lib/webots/qt/plugins/styles/ [mac]
+Contents/lib/webots/qt/plugins/tls [mac]
+Contents/lib/webots/qt/libexec/ [mac]
+
+Contents/lib/controller/Controller [dll,mac]
+Contents/lib/controller/CppController [dll,mac]
+
+
+Contents/lib/controller/car [dll,mac]
+Contents/lib/controller/CppCar [dll,mac]
+Contents/lib/controller/CppDriver [dll,mac]
+Contents/lib/controller/driver [dll,mac]
+
+Contents/lib/controller/generic_robot_window [dll,mac]
+
+Contents/lib/controller/python/ [mac]
+Contents/lib/controller/python/omnisim/ [mac]
+Contents/lib/controller/python/omnisim/*.py [mac]
+Contents/lib/controller/python/vehicle/ [mac]
+Contents/lib/controller/python/vehicle/*.py [mac]
+
+
+Contents/lib/webots/qt/plugins/platforms/libqcocoa.dylib [mac]
+Contents/lib/webots/qt/plugins/imageformats/libqjpeg.dylib [mac]
+Contents/lib/webots/qt/plugins/styles/libqmacstyle.dylib [mac]
+Contents/lib/webots/qt/plugins/tls/*.dylib [mac]
+Contents/lib/webots/qt/libexec/qt.conf [mac]
+
+Contents/lib/webots/libassimp.dylib [mac]
+Contents/lib/webots/liblua.dylib [mac]
+Contents/lib/webots/libOIS.dylib [mac]
+
+Contents/Frameworks/ [mac]
+
+Contents/Frameworks/QtConcurrent.framework/ [mac]
+Contents/Frameworks/QtConcurrent.framework/Versions/ [mac]
+Contents/Frameworks/QtConcurrent.framework/Versions/A/ [mac]
+Contents/Frameworks/QtConcurrent.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtConcurrent.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtConcurrent.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtConcurrent.framework/Versions/A/QtConcurrent [exe,mac]
+Contents/Frameworks/QtConcurrent.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtConcurrent.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtCore.framework/ [mac]
+Contents/Frameworks/QtCore.framework/Versions/ [mac]
+Contents/Frameworks/QtCore.framework/Versions/A/ [mac]
+Contents/Frameworks/QtCore.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtCore.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtCore.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtCore.framework/Versions/A/QtCore [exe,mac]
+Contents/Frameworks/QtCore.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtCore.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtDBus.framework/ [mac]
+Contents/Frameworks/QtDBus.framework/Versions/ [mac]
+Contents/Frameworks/QtDBus.framework/Versions/A/ [mac]
+Contents/Frameworks/QtDBus.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtDBus.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtDBus.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtDBus.framework/Versions/A/QtDBus [exe,mac]
+Contents/Frameworks/QtDBus.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtDBus.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtGui.framework/ [mac]
+Contents/Frameworks/QtGui.framework/Versions/ [mac]
+Contents/Frameworks/QtGui.framework/Versions/A/ [mac]
+Contents/Frameworks/QtGui.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtGui.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtGui.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtGui.framework/Versions/A/QtGui [exe,mac]
+Contents/Frameworks/QtGui.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtGui.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtNetwork.framework/ [mac]
+Contents/Frameworks/QtNetwork.framework/Versions/ [mac]
+Contents/Frameworks/QtNetwork.framework/Versions/A/ [mac]
+Contents/Frameworks/QtNetwork.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtNetwork.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtNetwork.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtNetwork.framework/Versions/A/QtNetwork [exe,mac]
+Contents/Frameworks/QtNetwork.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtNetwork.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtOpenGL.framework/ [mac]
+Contents/Frameworks/QtOpenGL.framework/Versions/ [mac]
+Contents/Frameworks/QtOpenGL.framework/Versions/A/ [mac]
+Contents/Frameworks/QtOpenGL.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtOpenGL.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtOpenGL.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtOpenGL.framework/Versions/A/QtOpenGL [exe,mac]
+Contents/Frameworks/QtOpenGL.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtOpenGL.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtOpenGLWidgets.framework/ [mac]
+Contents/Frameworks/QtOpenGLWidgets.framework/Versions/ [mac]
+Contents/Frameworks/QtOpenGLWidgets.framework/Versions/A/ [mac]
+Contents/Frameworks/QtOpenGLWidgets.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtOpenGLWidgets.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtOpenGLWidgets.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtOpenGLWidgets.framework/Versions/A/QtOpenGLWidgets [exe,mac]
+Contents/Frameworks/QtOpenGLWidgets.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtOpenGLWidgets.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtPrintSupport.framework/ [mac]
+Contents/Frameworks/QtPrintSupport.framework/Versions/ [mac]
+Contents/Frameworks/QtPrintSupport.framework/Versions/A/ [mac]
+Contents/Frameworks/QtPrintSupport.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtPrintSupport.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtPrintSupport.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtPrintSupport.framework/Versions/A/QtPrintSupport [exe,mac]
+Contents/Frameworks/QtPrintSupport.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtPrintSupport.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtQml.framework/ [mac]
+Contents/Frameworks/QtQml.framework/Versions/ [mac]
+Contents/Frameworks/QtQml.framework/Versions/A/ [mac]
+Contents/Frameworks/QtQml.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtQml.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtQml.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtQml.framework/Versions/A/QtQml [exe,mac]
+Contents/Frameworks/QtQml.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtQml.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtWebSockets.framework/ [mac]
+Contents/Frameworks/QtWebSockets.framework/Versions/ [mac]
+Contents/Frameworks/QtWebSockets.framework/Versions/A/ [mac]
+Contents/Frameworks/QtWebSockets.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtWebSockets.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtWebSockets.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtWebSockets.framework/Versions/A/QtWebSockets [exe,mac]
+Contents/Frameworks/QtWebSockets.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtWebSockets.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtWidgets.framework/ [mac]
+Contents/Frameworks/QtWidgets.framework/Versions/ [mac]
+Contents/Frameworks/QtWidgets.framework/Versions/A/ [mac]
+Contents/Frameworks/QtWidgets.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtWidgets.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtWidgets.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtWidgets.framework/Versions/A/QtWidgets [exe,mac]
+Contents/Frameworks/QtWidgets.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtWidgets.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Frameworks/QtXml.framework/ [mac]
+Contents/Frameworks/QtXml.framework/Versions/ [mac]
+Contents/Frameworks/QtXml.framework/Versions/A/ [mac]
+Contents/Frameworks/QtXml.framework/Versions/A/Headers/ [mac]
+Contents/Frameworks/QtXml.framework/Versions/A/Headers/Q* [mac]
+Contents/Frameworks/QtXml.framework/Versions/A/Headers/*.h [mac]
+Contents/Frameworks/QtXml.framework/Versions/A/QtXml [exe,mac]
+Contents/Frameworks/QtXml.framework/Versions/A/Resources/ [mac]
+Contents/Frameworks/QtXml.framework/Versions/A/Resources/Info.plist [mac]
+
+Contents/Info.plist [mac]
+Contents/MacOS/ [mac]
+Contents/MacOS/webots [exe,mac]
+Contents/MacOS/omnisim-controller [exe,mac]
+Contents/Resources/ [mac]
+Contents/Resources/qt.conf [mac]
+Contents/Resources/webots.rsrc [mac]
+
+Contents/util/ [mac]
+Contents/util/ffmpeg [exe,mac]

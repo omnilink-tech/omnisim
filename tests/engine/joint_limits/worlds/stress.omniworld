@@ -1,0 +1,61 @@
+#OMNISIM R2025a utf8
+
+# Engine-level stress test for joint-limit enforcement.
+#
+# This test is INDEPENDENT of the RL pipeline. Its goal: any motion that
+# would violate the URDF's per-joint velocity_limit or position range
+# must be IMPOSSIBLE for the simulator to produce, the way it is
+# impossible for the real robot.
+#
+# The accompanying joint_limits_stress controller pelts OmniQuad with
+# escalating impacts and continuously asserts joint state stays within
+# spec. The test passes if no joint ever exceeds its URDF limits.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Engine joint-limit stress test"
+  randomSeed 1
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+  # translation_audit: ContactProperties.coulombFriction is an ODE-path field the
+  # Newton backend does not read; this declares the same friction where it is read.
+  newtonGroundMu 2
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 6
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+
+RectangleArena {
+  floorSize 12 12
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.20 0.22 0.24
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF OMNIQUAD URDFRobot {
+  url "../../../../projects/robots/omnisim/omniquad/urdf/omniquad.classic.urdf"
+  translation 0 0 0.70
+  name "omniquad"
+  supervisor TRUE
+  controller "joint_limits_stress"
+  physicsBackend "newton"
+}

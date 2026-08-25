@@ -1,0 +1,96 @@
+{
+  "file_paths_webots": {
+    "description": "files/dirs whose path contains 'webots' (case-insensitive)",
+    "count": 296,
+    "expected_min": 0,
+    "expected_max": 850,
+    "in_range": true,
+    "samples": [
+      "docs/developer/webots-control-baseline.md",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbgeometry.js",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbrandom.js",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbrotation.js",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbutility.js",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbvector2.js",
+      "resources/web/wwi/protoVisualizer/templating/modules/webots/wbvector3.js",
+      "tests/benchmarks/agentbench/adapters/webots/BRINGUP.md",
+      "tests/benchmarks/agentbench/adapters/webots/EXCLUSIONS.md",
+      "tests/benchmarks/agentbench/adapters/webots/__init__.py"
+    ],
+    "note": "Re-snapshotted 2026-08-16 after the Webots->OmniSim migration lane. 299 -> 296: three launcher renames (src/controller/launcher/webots_controller.c -> omnisim_controller.c, src/omnisim/launcher/webots-{linux,mac}.sh -> omnisim-{linux,mac}.sh). The bulk of what remains is NOT migratable: tests/benchmarks/agentbench/adapters/webots/ is the deliberate upstream-Webots control arm (its freeze_manifest.json pins SHA256 by path and a red freeze test is a release gate), and resources/web/wwi/.../modules/webots/ is the web viewer's own JS tree. The jump from the previous 182 to 299 was ladder0's control arm landing 2026-08-12, not drift."
+  },
+  "webots_yaml_files": {
+    "description": "project metadata files literally named webots.yaml",
+    "count": 0,
+    "expected_min": 0,
+    "expected_max": 0,
+    "in_range": true,
+    "samples": []
+  },
+  "include_c_webots": {
+    "description": "C/C++ #include <webots/...> or \"webots/...\"",
+    "count": 4,
+    "expected_min": 0,
+    "expected_max": 1600,
+    "in_range": true,
+    "samples": [
+      ".git-blame-ignore-revs",
+      "AGENTS.md",
+      "CHANGELOG.md"
+    ],
+    "note": "Re-snapshotted 2026-08-16 (verification lane): 5 -> 4. This one FELL, which tightens the ratchet."
+  },
+  "wb_class_use": {
+    "description": "occurrences of Wb<Pascal> class-style identifiers",
+    "count": 6090,
+    "expected_min": 0,
+    "expected_max": 50000,
+    "in_range": true,
+    "samples": [
+      ".gitignore",
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "cloud/runpod/campaigns/_campaign_lib.sh",
+      "cloud/runpod/campaigns/campaign_omnibench_validate.sh",
+      "docs/developer/architectural-baseline.md",
+      "docs/developer/archive/cuda-rigid-body-solver-plan.md",
+      "docs/developer/archive/fps-optimization-journey.md",
+      "docs/developer/archive/r3-rendering-backend-evaluation.md",
+      "docs/developer/atmospheric-sky-preview.html"
+    ],
+    "note": "Collapsed with the Wb*->Om* engine rename. What remains is the public controller ABI (WbNodeRef, WbDeviceTag, ...), which must never be renamed, plus the web viewer's independent JS class tree.\n  Re-snapshotted 2026-08-16 (verification lane) 6088 -> 6090. The +2 is NOT code: it is AGENTS.md and CHANGELOG.md prose spelling WbDeviceTag / WbNodeRef / WbFieldRef while explaining that the C ABI deliberately did NOT move. Verified by diffing the working tree: 3 added lines carry the pattern, all in those two documents, and zero source files gained one. A doc that describes the rename must name the symbols it did not rename; this ratchet counts that prose, so the category can only be held by re-snapshotting it."
+  },
+  "webots_url_scheme": {
+    "description": "webots:// URL references inside text files",
+    "count": 13,
+    "expected_min": 0,
+    "expected_max": 500,
+    "in_range": true,
+    "samples": [
+      "CHANGELOG.md",
+      "docs/developer/omniworld-format.md",
+      "projects/default/controllers/harness_supervisor/geometry.py",
+      "scripts/dev/migrate_url_scheme.py"
+    ]
+  },
+  "webots_home_env": {
+    "description": "WEBOTS_HOME env-var reads / writes inside text files",
+    "count": 320,
+    "expected_min": 0,
+    "expected_max": 400,
+    "in_range": true,
+    "samples": [
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "Makefile",
+      "TRADEMARKS.md",
+      "build_omni.bat",
+      "cloud/runpod/BENCHMARKS.md",
+      "cloud/runpod/README.md",
+      "cloud/runpod/bench_throughput.sh",
+      "cloud/runpod/bootstrap.sh"
+    ],
+    "note": "Grew intentionally: the runtime env contract moved to OMNISIM_* with WEBOTS_* kept as a working fallback, so every reader now names both. Re-snapshotted 2026-08-16: 336 -> 318. The -20 is the launcher rename (webots_controller.c carried 23 WEBOTS_HOME reads; omnisim_controller.c carries 2, keeping only the documented legacy fallback), offset by +3 in src/python/omniworld/validation/headless.py which now names both vars. NOTE the audit counts untracked-but-not-ignored files too, so this 318 is the staged number: measured mid-migration with the renamed-to file still untracked it read 316, and a baseline taken then would have flipped this ratchet red the moment the rename was staged.\n  Re-snapshotted 2026-08-16 (verification lane) 318 -> 320. Same self-referential cause: 8 added and 2 removed lines mention WEBOTS_HOME, every one of them AGENTS.md/CHANGELOG.md prose documenting that the runtime contract moved to OMNISIM_* and that WEBOTS_HOME still works at BUILD time. No source file gained a read."
+  }
+}

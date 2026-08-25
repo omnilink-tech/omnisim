@@ -1,0 +1,38 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — OmniArm 6
+# 6-DOF OmniArm 6 arm. Prompts: "home", "wave", "joint N to V", "stop".
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — OmniArm 6"
+  info [
+    "OmniArm 6 6-DOF arm driven by an OmniLink agent."
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 1.959 -2.085 2.282
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 4 4
+}
+
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  controller "omnilink_arm_bridge"
+  controllerArgs [ "--robot" "omniarm6" "--port" "8765" ]
+  window "omnilink_chat"
+}

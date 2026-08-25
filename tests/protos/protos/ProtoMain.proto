@@ -1,0 +1,16 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/ProtoNested.proto"
+
+PROTO ProtoMain [
+  field SFBool mainParameter TRUE
+]
+{
+Group {
+  children [
+    ProtoNested {
+      nestedParameter IS mainParameter
+    }
+  ]
+}
+}

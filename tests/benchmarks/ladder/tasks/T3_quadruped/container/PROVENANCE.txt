@@ -1,0 +1,63 @@
+T3_quadruped -- what is in this container, where it came from, and what it is
+not.
+
+CONTENTS
+    walker_description/urdf/walker.urdf     one four-legged robot description
+
+    That is the whole container. There is no world, no ground plane, no
+    launch script, no controller, no trajectory, no gait, no policy and no
+    checkpoint. Building a scene and making the robot move are the capability
+    under test.
+
+ORIGIN
+    Authored by this benchmark's own maintainers, 2026-08-02. It is not a
+    vendor model, it is not derived from one, and it carries no third-party
+    licence obligations. Nobody's first-party support for a real robot helps
+    on this tier and nobody's absence of it hurts -- which is a deliberate
+    trade, and the cost of it is recorded in meta.json under
+    container.authored_here rather than hidden: a column that ships an
+    excellent model of a REAL quadruped gets no credit for having it.
+
+GEOMETRY
+    Primitive only: boxes, cylinders and spheres. Not one mesh, not one
+    external reference, not one package URI. capability-ladder-plan.md
+    section 9 Q4 names the risk that a column fails a tier on a mesh-decoding
+    quirk and the grid reads as a capability verdict; T1's container carries
+    COLLADA meshes and lives with that risk on the record, and this tier does
+    not compound it.
+
+STRUCTURE
+    13 links, 12 revolute joints, no fixed joints anywhere.
+      base_link                            0.40 x 0.20 x 0.10 m, 6.0 kg
+      hip_{fl,fr,rl,rr}                    abduction about x, +/- 0.70 rad
+      thigh_{fl,fr,rl,rr}                  flexion about y, +/- 1.60 rad
+      shank_{fl,fr,rl,rr}                  knee about y, -2.50 .. -0.20 rad
+    Total declared mass 10.80 kg. Link lengths: thigh 0.20 m, shank 0.20 m,
+    hip offsets (+/-0.18, +/-0.09, -0.02) from the base centre.
+
+    The absence of fixed joints is deliberate. An importer that fuses welded
+    bodies erases a named foot link, and the tier counts make-and-break ground
+    contacts per contacting body -- so each shank carries its own foot sphere
+    and stays a named body on every column.
+
+COLLISION
+    The base box and the four foot spheres (radius 0.022 m at each shank tip).
+    Thighs and shanks are visual. The only bodies on this robot that can
+    appear in a contact are therefore base_link and shank_{fl,fr,rl,rr}.
+
+WHAT URDF CANNOT SAY, AND WHAT THAT COSTS HERE
+    A URDF has no world, no ground, no light, no actuator and no rotor
+    inertia. The first four are ordinary and every column adds them. The
+    fifth is not ordinary and it bit hard during this container's own
+    achievability check: with no rotor inertia (armature) and an explicit
+    integrator at a 2 ms step, a stiff joint-position servo on a 0.00085
+    kg.m^2 shank is NUMERICALLY unstable, and the robot cannot even stand --
+    told to hold a fixed pose it bounced across the floor at about 1 m/s,
+    drifted 1.8 m and flipped over inside 3 s. The same command, with rotor
+    inertia added on the scene side, held the base within 0.0001 m for 20 s.
+    The full measurement is in meta.json under
+    container.authored_here.what_the_demonstration_found_about_THIS_ASSET.
+
+    The URDF root link also has no joint to the world, so an importer that
+    welds a jointless body will weld this robot to the ground. That is the
+    same finding T1's container already carries and it is not new here.

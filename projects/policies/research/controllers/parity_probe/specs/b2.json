@@ -1,0 +1,24 @@
+{
+  "name": "b2",
+  "_note": "Parity-probe spec for the Unitree B2 quadruped. Pose = b2_trot_gait.standing_pose(body_height=0.50) planted stance (hip ~0, thigh 0.7751, calf -1.5501); gains/substeps/mu = run_b2_walk_deploy.ps1 (KE 1400/KD 35). spawn_z 0.54 (the .wbt field; the world header '0.33' comment is stale). All 12 joints are legs -> sweep all. Foot = sphere r=0.032 on each calf.",
+  "urdf": "projects/robots/unitree/b2/urdf/b2.urdf",
+  "spawn_z": 0.54,
+  "deploy_ke": 1400,
+  "deploy_kd": 35,
+  "ground_mu": 2.0,
+  "probe_substeps": 8,
+  "joint_order": [
+    "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+    "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
+    "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
+    "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"
+  ],
+  "nominal": {
+    "FL_hip_joint": 0.0005, "FL_thigh_joint": 0.7751, "FL_calf_joint": -1.5501,
+    "FR_hip_joint": -0.0005, "FR_thigh_joint": 0.7751, "FR_calf_joint": -1.5501,
+    "RL_hip_joint": 0.0005, "RL_thigh_joint": 0.7751, "RL_calf_joint": -1.5501,
+    "RR_hip_joint": -0.0005, "RR_thigh_joint": 0.7751, "RR_calf_joint": -1.5501
+  },
+  "ankle_pitch_joints": [],
+  "arm_hold": []
+}

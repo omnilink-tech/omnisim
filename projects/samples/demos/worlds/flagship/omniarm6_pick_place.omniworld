@@ -1,0 +1,241 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — OmniArm 6 pick & place (gripper demo)
+# A 6-DOF OmniArm 6 arm with a runtime-selectable gripper (--gripper) doing
+# kinematic-attach pick & place. Graspable objects opt in with a DEF that
+# starts with "GRASP_"; on /grasp the nearest one within grasp_radius of
+# the TCP welds to the tool and follows it until /release.
+#
+# Try (HTTP on :8765):
+#   curl -XPOST -d'{"xyz":[0.45,0.0,0.10]}' .../set_tcp_target
+#   curl -XPOST .../grasp
+#   curl -XPOST -d'{"xyz":[0.30,0.35,0.30]}' .../set_tcp_target
+#   curl -XPOST .../release
+#
+# Swap the gripper by editing controllerArgs --gripper (robotiq_2f85,
+# robotiq_2f140, robotiq_3f, vacuum, …). The pick is the kinematic weld,
+# so it works regardless of which gripper is selected.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — OmniArm 6 pick & place"
+  info [
+    "OmniArm 6 arm with a runtime-selectable gripper doing kinematic pick & place."
+    "Graspable objects use a DEF starting with GRASP_."
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 3.303 -3.516 3.540
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 4 4
+}
+
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  controller "omnilink_arm_bridge"
+  controllerArgs [ "--robot" "omniarm6" "--gripper" "robotiq_2f85" "--port" "8765" ]
+  window "omnilink_chat"
+}
+
+# ── Mounted gripper (Robotiq 2F-85 style) ──────────────────────────
+# A visual end effector the bridge teleports onto the OmniArm 6 wrist each
+# tick (DEF GRIPPER_omniarm6) and whose fingers it spaces from the gripper
+# width. Placed here at the zero-pose flange (z=1.02, arm pointing up) so
+# it renders mounted even before a controller poses the arm. No
+# boundingObject — purely visual, so it never fights the arm or the parts.
+DEF GRIPPER_omniarm6 Solid {
+  translation 0 0 1.02
+  rotation 0 0 1 0
+  children [
+    # Brushed-metal adapter coupler that bolts to the flange.
+    Transform {
+      translation 0 0 0.009
+      rotation 1 0 0 1.5708
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.55 0.56 0.58 roughness 0.35 metalness 0.9 }
+          geometry Cylinder { radius 0.0375 height 0.018 }
+        }
+      ]
+    }
+    # Robotiq-blue accent ring.
+    Transform {
+      translation 0 0 0.022
+      rotation 1 0 0 1.5708
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.10 0.36 0.72 roughness 0.4 metalness 0.4 }
+          geometry Cylinder { radius 0.0345 height 0.006 }
+        }
+      ]
+    }
+    # Matte-black main body housing.
+    Transform {
+      translation 0 0 0.050
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.05 0.05 0.055 roughness 0.55 metalness 0.3 }
+          geometry Box { size 0.070 0.060 0.062 }
+        }
+      ]
+    }
+    # Rounded top cover (cylinder across Y) where the fingers emerge.
+    Transform {
+      translation 0 0 0.082
+      rotation 1 0 0 1.5708
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.07 0.07 0.075 roughness 0.5 metalness 0.35 }
+          geometry Cylinder { radius 0.030 height 0.060 }
+        }
+      ]
+    }
+    # ── Fingers (parallel pinch). The bridge drives each finger's X to
+    #    space them from the gripper width; geometry is modelled around
+    #    the finger origin so they slide cleanly. Inner faces carry a
+    #    high-roughness rubber pad and the tips curl inward. ──
+    DEF GRIPPER_omniarm6_FINGER_L Solid {
+      translation 0.0425 0 0.115
+      children [
+        Transform {
+          translation 0 0 -0.028
+          rotation 1 0 0 1.5708
+          children [
+            Shape {
+              appearance PBRAppearance { baseColor 0.20 0.20 0.22 roughness 0.4 metalness 0.6 }
+              geometry Cylinder { radius 0.013 height 0.030 }
+            }
+          ]
+        }
+        Shape {
+          appearance PBRAppearance { baseColor 0.06 0.06 0.07 roughness 0.5 metalness 0.4 }
+          geometry Box { size 0.016 0.026 0.070 }
+        }
+        Transform {
+          translation -0.008 0 0.046
+          rotation 0 1 0 -0.42
+          children [
+            Shape {
+              appearance PBRAppearance { baseColor 0.06 0.06 0.07 roughness 0.5 metalness 0.4 }
+              geometry Box { size 0.016 0.026 0.030 }
+            }
+          ]
+        }
+        Transform {
+          translation -0.010 0 0.020
+          children [
+            Shape {
+              appearance PBRAppearance { baseColor 0.11 0.11 0.11 roughness 0.95 metalness 0.0 }
+              geometry Box { size 0.004 0.022 0.050 }
+            }
+          ]
+        }
+      ]
+      name "gripper_omniarm6_finger_l"
+    }
+    DEF GRIPPER_omniarm6_FINGER_R Solid {
+      translation -0.0425 0 0.115
+      children [
+        Transform {
+          translation 0 0 -0.028
+          rotation 1 0 0 1.5708
+          children [
+            Shape {
+              appearance PBRAppearance { baseColor 0.20 0.20 0.22 roughness 0.4 metalness 0.6 }
+              geometry Cylinder { radius 0.013 height 0.030 }
+            }
+          ]
+        }
+        Shape {
+          appearance PBRAppearance { baseColor 0.06 0.06 0.07 roughness 0.5 metalness 0.4 }
+          geometry Box { size 0.016 0.026 0.070 }
+        }
+        Transform {
+          translation 0.008 0 0.046
+          rotation 0 1 0 0.42
+          children [
+            Shape {
+              appearance PBRAppearance { baseColor 0.06 0.06 0.07 roughness 0.5 metalness 0.4 }
+              geometry Box { size 0.016 0.026 0.030 }
+            }
+          ]
+        }
+        Transform {
+          translation 0.010 0 0.020
+          children [
+            Shape {
+              appearance PBRAppearance { baseColor 0.11 0.11 0.11 roughness 0.95 metalness 0.0 }
+              geometry Box { size 0.004 0.022 0.050 }
+            }
+          ]
+        }
+      ]
+      name "gripper_omniarm6_finger_r"
+    }
+  ]
+  name "gripper_omniarm6"
+}
+
+# ── Graspable parts (DEF GRASP_* — the bridge welds the nearest one) ──
+DEF GRASP_CUBE_A Solid {
+  translation 0.45 0.0 0.03
+  children [
+    DEF CUBE_A_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.90 0.25 0.20 roughness 1 metalness 0 }
+      geometry Box { size 0.05 0.05 0.05 }
+    }
+  ]
+  name "cube_a"
+  boundingObject USE CUBE_A_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+DEF GRASP_CUBE_B Solid {
+  translation 0.45 0.20 0.03
+  children [
+    DEF CUBE_B_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 1 metalness 0 }
+      geometry Box { size 0.05 0.05 0.05 }
+    }
+  ]
+  name "cube_b"
+  boundingObject USE CUBE_B_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+DEF GRASP_CUBE_C Solid {
+  translation 0.45 -0.20 0.03
+  children [
+    DEF CUBE_C_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.30 0.80 0.35 roughness 1 metalness 0 }
+      geometry Box { size 0.05 0.05 0.05 }
+    }
+  ]
+  name "cube_c"
+  boundingObject USE CUBE_C_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+
+# ── Drop zone marker (visual only) ──────────────────────────────────
+DEF DROP_ZONE Solid {
+  translation 0.30 0.35 0.001
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.95 0.85 0.20 roughness 1 metalness 0 transparency 0.4 }
+      geometry Box { size 0.18 0.18 0.002 }
+    }
+  ]
+  name "drop_zone"
+}

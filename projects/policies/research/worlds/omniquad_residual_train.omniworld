@@ -1,0 +1,58 @@
+#OMNISIM R2025a utf8
+
+# OmniQuad residual-RL training world. Same arena as omniquad_rl.omniworld; only
+# the controller differs (omniquad_residual_agent wraps the model walker
+# and adds a 12-dim foot-offset residual from the policy).
+#
+# Physics: Newton (migrated from ODE 2026-06-11). Train via
+# projects/policies/research/training/train_residual_newton.py, which exports the
+# required OMNISIM_NEWTON_* knobs before launching this world.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "OmniQuad residual-RL training"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.624 -4.923 5.476
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 60 12
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad.urdf"
+  translation 0 0 0.70
+  name "omniquad"
+  supervisor TRUE
+  controller "omniquad_residual_agent"
+  controllerArgs [ "--port" "7100" ]
+  physicsBackend "newton"
+}

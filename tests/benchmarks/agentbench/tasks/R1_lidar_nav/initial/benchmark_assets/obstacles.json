@@ -1,0 +1,87 @@
+{
+  "units": "metres",
+  "arena": {
+    "size": [
+      10.0,
+      10.0
+    ],
+    "wall_height": 0.5
+  },
+  "start": {
+    "x": -4.0,
+    "y": -4.0,
+    "yaw_deg": 0.0
+  },
+  "goal": {
+    "x": 4.0,
+    "y": 4.0
+  },
+  "obstacles": [
+    {
+      "name": "OBSTACLE_1",
+      "position": [
+        0.0,
+        0.0,
+        0.25
+      ],
+      "size": [
+        1.6,
+        1.6,
+        0.5
+      ]
+    },
+    {
+      "name": "OBSTACLE_2",
+      "position": [
+        -2.0,
+        -1.4,
+        0.25
+      ],
+      "size": [
+        1.2,
+        0.8,
+        0.5
+      ]
+    },
+    {
+      "name": "OBSTACLE_3",
+      "position": [
+        1.6,
+        0.6,
+        0.25
+      ],
+      "size": [
+        0.8,
+        2.0,
+        0.5
+      ]
+    },
+    {
+      "name": "OBSTACLE_4",
+      "position": [
+        -1.2,
+        2.0,
+        0.25
+      ],
+      "size": [
+        2.0,
+        0.8,
+        0.5
+      ]
+    },
+    {
+      "name": "OBSTACLE_5",
+      "position": [
+        2.4,
+        -2.0,
+        0.25
+      ],
+      "size": [
+        1.0,
+        1.0,
+        0.5
+      ]
+    }
+  ],
+  "note": "Fixed geometry. Positions are box CENTRES, sizes are full extents (x, y, z). Do not move, resize or remove them."
+}

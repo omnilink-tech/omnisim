@@ -1,0 +1,12 @@
+# Shell scripts MUST check out with LF endings on every platform.
+#
+# Why (found live 2026-07-17): with core.autocrlf=true a Windows clone checks
+# *.sh out as CRLF. bash launched INSIDE an MSYS/Git-Bash session tolerates
+# that (text-mode mount strips \r), so the scripts appear healthy -- but the
+# SAME bash.exe launched from a Windows process (python subprocess, skill_lib's
+# `bash -lc`, CI runners) parses the raw bytes and dies with
+#   syntax error near unexpected token `$'in\r''
+# i.e. whether a launcher works depended on WHO launched it. LF-pinning
+# removes the whole failure class.
+*.sh text eol=lf
+.githooks/* text eol=lf

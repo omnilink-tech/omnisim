@@ -1,0 +1,126 @@
+OMNISIM_HOME ?= ..
+# WEBOTS_DEPENDENCY_PATH is the pre-rebrand name, documented in
+# docs/developer/quickstart.md and suggested by scripts/install/bash_profile.windows.
+# Honour it when the canonical name is unset so an existing shared dependency
+# cache is not silently re-downloaded into the default location.
+OMNISIM_DEPENDENCY_PATH ?= $(if $(WEBOTS_DEPENDENCY_PATH),$(WEBOTS_DEPENDENCY_PATH),$(OMNISIM_HOME)/dependencies)
+OMNISIM_HOME_LIB = $(OMNISIM_HOME)/lib/webots
+
+include $(OMNISIM_HOME)/resources/Makefile.os.include
+
+# --- Build dependencies -------------------------------------------------------
+# OmniSim mirrors its own prebuilt build dependencies, so that building this project
+# does NOT depend on upstream (Cyberbotics) infrastructure. Every archive fetched here
+# is MD5-verified below, so a mirror serving identical bytes is safe by construction.
+#
+# Override OMNISIM_DEPS_URL to use an internal mirror or a local directory.
+OMNISIM_DEPS_TAG ?= deps-linux-v1
+OMNISIM_DEPS_URL ?= https://github.com/omnilink-tech/omnisim/releases/download/$(OMNISIM_DEPS_TAG)
+DEPENDENCIES_URL = $(OMNISIM_DEPS_URL)
+# TRANSITIONAL fallback, used only if the mirror above does not serve the file yet.
+# Populate the mirror with scripts/packaging/mirror_build_deps.sh, then delete this line.
+DEPENDENCIES_FALLBACK_URL = https://cyberbotics.com/files/repository/dependencies/linux64/release
+
+QT_VERSION = 6.5.3
+QT_PACKAGE = webots-qt-$(QT_VERSION)-linux64-release.tar.bz2
+OIS_PACKAGE = libOIS.1.4.tar.bz2
+ASSIMP_PACKAGE = libassimp-5.2.3.tar.bz2
+OPENSSL_VERSION=3.0.14
+OPENSSL_SRC_PACKAGE=openssl-$(OPENSSL_VERSION).tar.gz
+
+PACKAGES = qt open-al ois assimp
+PACKAGES_CLEAN = $(addsuffix -clean, $(PACKAGES))
+
+.PHONY: release debug distrib profile clean cleanse $(PACKAGES) $(PACKAGES_CLEAN)
+
+release debug distrib profile: ../.clang-format $(PACKAGES)
+clean:
+cleanse: $(PACKAGES_CLEAN)
+	@rm -f ../.clang-format
+
+../.clang-format:
+	@echo "# copying clang-format configuration file"
+ifeq ($(filter $(UBUNTU_VERSION), 22.04 24.04), $(UBUNTU_VERSION))
+	@cp .clang-format-9 $@
+else
+	@cp .clang-format-6 $@
+endif
+
+
+qt-clean:
+	@rm -rf $(OMNISIM_DEPENDENCY_PATH)/webots-qt-*-linux64-release.tar.bz2 $(OMNISIM_HOME)/$(QT_PACKAGE)* $(OMNISIM_HOME_LIB)/libQt* $(OMNISIM_HOME_LIB)/libicu* $(OMNISIM_HOME_LIB)/qt $(OMNISIM_HOME)/include/qt $(OMNISIM_HOME)/bin/qt/lrelease $(OMNISIM_HOME)/bin/qt/lupdate $(OMNISIM_HOME)/bin/qt/moc
+
+qt: $(OMNISIM_HOME_LIB)/libQt6Core.so.$(QT_VERSION)
+
+$(OMNISIM_HOME_LIB)/libQt6Core.so.$(QT_VERSION): $(OMNISIM_DEPENDENCY_PATH)/$(QT_PACKAGE)
+	@echo "# uncompressing $(QT_PACKAGE)"
+	@tar --no-same-owner -xmf $(OMNISIM_DEPENDENCY_PATH)/$(QT_PACKAGE) -C $(OMNISIM_HOME)
+
+$(OMNISIM_DEPENDENCY_PATH)/$(QT_PACKAGE):
+	@rm -f $(OMNISIM_DEPENDENCY_PATH)/$(QT_PACKAGE)
+	@echo "# Installing $(QT_PACKAGE)"
+	$(OMNISIM_HOME)/scripts/install/qt_linux_installer.sh
+	@touch $(OMNISIM_DEPENDENCY_PATH)/$(QT_PACKAGE)
+
+
+open-al-clean:
+	@rm -rf $(OMNISIM_HOME_LIB)/libopenal.so*
+
+open-al: $(OMNISIM_HOME_LIB)/libopenal.so
+
+.LIBPATTERNS = lib%.so lib%.so.1 lib%.a
+$(OMNISIM_HOME_LIB)/libopenal.so: -lopenal
+	@cp -a $<* $(OMNISIM_HOME_LIB)/
+
+ois-clean:
+	@rm -rf $(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE) $(OMNISIM_HOME_LIB)/libOIS* $(OMNISIM_HOME)/include/libOIS
+
+ois: $(OMNISIM_HOME_LIB)/libOIS-1.4.0.so
+
+$(OMNISIM_HOME_LIB)/libOIS-1.4.0.so: $(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE)
+	@echo "# uncompressing $(OIS_PACKAGE)"
+	@tar --no-same-owner -xmf $(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE) -C $(OMNISIM_HOME)
+
+$(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE):
+	@echo "# downloading $(OIS_PACKAGE)"
+	@rm -f $(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE)
+	@wget -qq "$(DEPENDENCIES_URL)/$(OIS_PACKAGE)" -P "$(OMNISIM_DEPENDENCY_PATH)" || wget -qq "$(DEPENDENCIES_FALLBACK_URL)/$(OIS_PACKAGE)" -P "$(OMNISIM_DEPENDENCY_PATH)"
+	@if [ "$$(md5sum $(OIS_PACKAGE) | awk '{print $$1;}')" != "d1482733dce06f6dcc1c062c5c314185" ]; then echo "MD5 checksum failed for $(OIS_PACKAGE)"; exit 1; fi
+	@touch $(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE)
+
+assimp-clean:
+	@rm -rf $(OMNISIM_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE) $(OMNISIM_HOME_LIB)/libassimp* $(OMNISIM_HOME)/include/assimp
+
+assimp: $(OMNISIM_HOME_LIB)/libassimp.so
+
+$(OMNISIM_HOME_LIB)/libassimp.so: $(OMNISIM_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE)
+	@echo "# uncompressing $(ASSIMP_PACKAGE)"
+	@tar --no-same-owner -xmf $(OMNISIM_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE) -C $(OMNISIM_HOME)
+
+$(OMNISIM_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE):
+	@echo "# downloading $(ASSIMP_PACKAGE)"
+	@rm -f $(OMNISIM_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE)
+	@wget -qq "$(DEPENDENCIES_URL)/$(ASSIMP_PACKAGE)" -P "$(OMNISIM_DEPENDENCY_PATH)" || wget -qq "$(DEPENDENCIES_FALLBACK_URL)/$(ASSIMP_PACKAGE)" -P "$(OMNISIM_DEPENDENCY_PATH)"
+	@if [ "$$(md5sum $(ASSIMP_PACKAGE) | awk '{print $$1;}')" != "25f08ba04d580e8d81a387856d304f4c" ]; then echo "MD5 checksum failed for $(ASSIMP_PACKAGE)"; exit 1; fi
+	@touch $(OMNISIM_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE)
+
+open-ssl-clean:
+	@rm -rf $(OMNISIM_DEPENDENCY_PATH)/$(OPENSSL_SRC_PACKAGE) $(OMNISIM_DEPENDENCY_PATH)/openssl-$(OPENSSL_VERSION) $(OMNISIM_DEPENDENCY_PATH)/openssl-3.0 $(OMNISIM_HOME_LIB)/libcrypto.so* $(OMNISIM_HOME_LIB)/libssl.so*
+
+open-ssl: $(OMNISIM_HOME_LIB)/libcrypto.so
+
+$(OMNISIM_HOME_LIB)/libcrypto.so: $(OMNISIM_DEPENDENCY_PATH)/openssl-3.0
+	@cp -a $(OMNISIM_DEPENDENCY_PATH)/openssl-3.0/libcrypto.so* $(OMNISIM_HOME_LIB)
+	@cp -a $(OMNISIM_DEPENDENCY_PATH)/openssl-3.0/libssl.so* $(OMNISIM_HOME_LIB)
+
+$(OMNISIM_DEPENDENCY_PATH)/openssl-3.0:
+	@echo "# downloading $(OPENSSL_SRC_PACKAGE)"
+	@rm -f $(OMNISIM_DEPENDENCY_PATH)/$(OPENSSL_SRC_PACKAGE)
+	@wget -qq https://github.com/openssl/openssl/releases/download/openssl-$(OPENSSL_VERSION)/$(OPENSSL_SRC_PACKAGE) -P $(OMNISIM_DEPENDENCY_PATH)
+	@if [ "$$(sha256sum $(OPENSSL_SRC_PACKAGE) | awk '{print $$1;}')" != "eeca035d4dd4e84fc25846d952da6297484afa0650a6f84c682e39df3a4123ca" ]; then echo "SHA256 checksum failed for $(OPENSSL_SRC_PACKAGE)"; exit 1; fi
+	@echo "# uncompressing $(OPENSSL_SRC_PACKAGE)"
+	@tar --no-same-owner -xmf $(OMNISIM_DEPENDENCY_PATH)/$(OPENSSL_SRC_PACKAGE) -C $(OMNISIM_DEPENDENCY_PATH)
+	@cd $(OMNISIM_DEPENDENCY_PATH)/openssl-$(OPENSSL_VERSION) && ./Configure shared --prefix=/usr --openssldir=/usr/lib/ssl --libdir=lib/x86_64-linux-gnu no-idea no-mdc2 no-rc5 no-zlib no-ssl3 enable-unit-test no-ssl3-method enable-rfc3779 enable-cms no-capieng enable-ec_nistp_64_gcc_128 && $(MAKE) -j4
+	@mkdir $(OMNISIM_DEPENDENCY_PATH)/openssl-3.0
+	@cp -a $(OMNISIM_DEPENDENCY_PATH)/openssl-$(OPENSSL_VERSION)/libcrypto.so* $(OMNISIM_DEPENDENCY_PATH)/openssl-3.0
+	@cp -a $(OMNISIM_DEPENDENCY_PATH)/openssl-$(OPENSSL_VERSION)/libssl.so* $(OMNISIM_DEPENDENCY_PATH)/openssl-3.0

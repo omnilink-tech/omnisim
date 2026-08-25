@@ -1,0 +1,88 @@
+T4_humanoid -- what is in this container, where it came from, and what it is
+not.
+
+CONTENTS
+    strider_description/urdf/strider.urdf   one two-legged robot description
+    ARENA.txt                               what the world has to offer
+
+    That is the whole container. There is no world, no ground plane, no
+    launch script, no controller, no trajectory, no gait, no policy and no
+    checkpoint. Building a scene and making the robot walk are the capability
+    under test.
+
+ORIGIN
+    Authored by this benchmark's own maintainers, 2026-08-02. It is not a
+    vendor model, it is not derived from one, and it carries no third-party
+    licence obligations. Nobody's first-party support for a real humanoid
+    helps on this tier and nobody's absence of it hurts -- which is a
+    deliberate trade, and the cost of it is recorded in meta.json under
+    container.authored_here rather than hidden: a column that ships an
+    excellent model of a REAL humanoid gets no credit for having it.
+
+GEOMETRY
+    Primitive only: boxes and cylinders. Not one mesh, not one external
+    reference, not one package URI. capability-ladder-plan.md section 9 Q4
+    names the risk that a column fails a tier on a mesh-decoding quirk and the
+    grid reads as a capability verdict; T1's container carries COLLADA meshes
+    and lives with that risk on the record, and this tier does not compound
+    it.
+
+STRUCTURE
+    13 links, 12 revolute joints, no fixed joints anywhere.
+      base_link              pelvis and trunk in one body, 12.0 kg,
+                             0.20 x 0.28 x 0.44 m centred 0.20 m above the
+                             hip plane
+      hip_yaw_{l,r}          about z, +/- 0.70 rad
+      hip_roll_{l,r}         about x, +/- 0.45 rad
+      thigh_{l,r}            hip pitch about y, -2.00 .. 1.00 rad, 0.28 m
+      shank_{l,r}            knee about y, -2.30 .. -0.05 rad, 0.28 m
+      ankle_{l,r}            ankle pitch about y, +/- 0.90 rad
+      foot_{l,r}             ankle roll about x, +/- 0.45 rad,
+                             0.20 x 0.09 x 0.04 m box
+    Total declared mass 25.60 kg. Hip offsets (0, +/-0.085, -0.03) from the
+    base origin.
+
+    There are no arms, and the trunk is part of base_link rather than a body
+    on a waist joint. Both are deliberate: the tier is a statement about legs,
+    every extra body is one more thing a column's importer can differ on, and
+    a waist joint would need a controller of its own just to keep the trunk
+    up.
+
+    The absence of fixed joints is deliberate too. An importer that fuses
+    welded bodies erases a named foot link, and the tier counts make-and-break
+    ground contacts per contacting body -- so each foot hangs off its own
+    ankle-roll joint and stays a named body on every column.
+
+    The knee's upper limit is -0.05 rad rather than 0. A knee allowed to lock
+    straight sits exactly on the singularity of every two-link leg solution,
+    where the answer is numerically fine and physically rigid.
+
+COLLISION
+    The base box and the two foot boxes. Thighs, shanks and joint housings are
+    visual. The only bodies on this robot that can appear in a contact are
+    therefore base_link, foot_l and foot_r.
+
+STANDING GEOMETRY (a fact about the file, not a recommended pose)
+    With every joint at zero the legs are straight and the sole sits 0.725 m
+    below the base origin. With a crouch of hip pitch 0.30, knee -0.60, ankle
+    pitch 0.30 the sole sits 0.680 m below it and each foot is still directly
+    under its own hip, because the shank rotates back through exactly the
+    angle the thigh rotated forward. Each leg reaches between 0.09 m and
+    0.60 m from the hip pitch axis to the sole.
+
+WHAT A ROBOT DESCRIPTION CANNOT SAY, AND WHAT THAT COSTS HERE
+    This format has no world, no ground, no light, no actuator and no rotor
+    inertia. The first four are ordinary and every column adds them. The fifth
+    is not ordinary, and on the four-legged tier it bit hard enough to be
+    worth repeating here: with no rotor inertia (armature) and an explicit
+    integrator at a small step, a stiff joint-position servo on a light shank
+    is NUMERICALLY unstable, and the robot cannot even stand -- told to hold a
+    fixed pose it bounced across the floor and flipped over within seconds.
+    The same command, with rotor inertia added on the scene side, held it
+    still. A two-legged robot has less margin than a four-legged one, not
+    more, so an agent that reads that first behaviour as "the robot is badly
+    modelled" or "the physics is wrong" will fix the wrong thing.
+
+    The root link also has no joint to the world, so an importer that welds a
+    jointless body will weld this robot to the ground. That is the same
+    finding the tiers below already carry and it is not new here.
