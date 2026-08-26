@@ -1,0 +1,80 @@
+name: OmniSim Builder Challenge
+description: Submit a reproducible world, robot task, or externally authored AgentBench task.
+title: "[Builder Challenge] "
+labels: ["builder-challenge", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Build one small, measurable thing and give another person enough evidence to reproduce it. Read the [Builder Challenge guide](https://github.com/omnilink-tech/omnisim/blob/main/BUILDERS.md) before submitting.
+
+  - type: dropdown
+    id: lane
+    attributes:
+      label: Challenge lane
+      options:
+        - First edit
+        - Robot or task
+        - Agent benchmark
+    validations:
+      required: true
+
+  - type: textarea
+    id: result
+    attributes:
+      label: What did you build or test?
+      description: State the intended outcome and what actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Exact reproduction steps
+      description: Include the world or task path, commands, prompt, seed, and any required environment variables without secrets.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Measured evidence
+      description: Give the success criterion, observed values, and a negative control or failure case where the lane requires one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Paste `python -m omnisim doctor` output and name the OS and hardware used.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: artifact
+    attributes:
+      label: Patch, repository, or artifact link
+      placeholder: https://github.com/...
+    validations:
+      required: false
+
+  - type: textarea
+    id: limitations
+    attributes:
+      label: Known limitations
+      description: Say what is visual-only, unmeasured, flaky, or outside the claim.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: rights
+    attributes:
+      label: Submission checks
+      options:
+        - label: I have the right to share every submitted asset and have named its license or provenance.
+          required: true
+        - label: I understand that a clean load or screenshot alone does not establish correct physics.
+          required: true

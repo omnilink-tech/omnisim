@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=77.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,8 @@ name = "omnisim-mcp"
 version = "0.1.0"
 description = "Model Context Protocol server over the OmniSim World Harness — drive world authoring/inspection from Claude Desktop, Cursor, and other MCP clients. Zero runtime dependencies (pure stdlib)."
 readme = "README.md"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{ name = "OmniLink", email = "info@omnilink-agents.com" }]
 requires-python = ">=3.9"
 keywords = ["omnisim", "mcp", "model-context-protocol", "robotics", "agents", "harness"]
@@ -15,7 +16,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -40,11 +40,11 @@ Issues        = "https://github.com/omnilink-tech/omnisim/issues"
 [project.optional-dependencies]
 dev = ["pytest>=7", "ruff>=0.4"]
 
-[tool.setuptools]
-# Apache-2.0 requires that recipients receive a copy of the licence,
-# so the wheel and sdist must carry it (setuptools also globs LICEN[CS]E* by
-# default; this makes it explicit).
-license-files = ["LICENSE"]
-
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff.lint]
+# The server intentionally catches the broad boundary around each JSON-RPC
+# request so a buggy tool cannot terminate the stdio process. Long adjacent
+# description strings keep the MCP schema readable next to each handler.
+ignore = ["BLE001", "ISC004"]

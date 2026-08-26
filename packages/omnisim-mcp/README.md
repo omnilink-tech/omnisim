@@ -1,5 +1,7 @@
 # omnisim-mcp
 
+<!-- mcp-name: io.github.omnilink-tech/omnisim -->
+
 **Talk to OmniSim from any MCP client.** A [Model Context Protocol](https://modelcontextprotocol.io)
 server that exposes the OmniSim **World Harness** (author → inspect → screenshot →
 hot-reload) as MCP tools, so Claude Desktop, Cursor, or any MCP-capable agent can drive
@@ -27,7 +29,8 @@ a fresh clone, and under OmniSim's embedded interpreter, with nothing installed.
    # or: python scripts/dev/omnisim_dev.py harness
    ```
 
-2. **Register the MCP server** with your client. Either install it —
+2. **Register the MCP server** with your client. Either install it from this
+   checkout —
 
    ```bash
    pip install -e packages/omnisim-mcp     # provides the `omnisim-mcp` command
@@ -35,6 +38,10 @@ a fresh clone, and under OmniSim's embedded interpreter, with nothing installed.
 
    — or run it straight from source with no install (`python -m omnisim_mcp`, with
    `packages/omnisim-mcp/src` on `PYTHONPATH`).
+
+   The package is prepared for PyPI and the official MCP Registry. Until its
+   first production release is visible there, prefer the checkout command above
+   instead of assuming `pip install omnisim-mcp` is available.
 
    Claude Desktop / Cursor `mcpServers` entry:
 

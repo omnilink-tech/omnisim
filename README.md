@@ -10,7 +10,7 @@ direction. Physics is [Newton](https://github.com/newton-physics/newton), the on
 Apache-2.0, with a first-party [MCP server](packages/omnisim-mcp/) for Claude Code and Cursor,
 and a [ROS 2 sidecar](packages/omnisim-ros2/) speaking the `simulation_interfaces` standard.
 
-[**Join the public beta**](BETA.md) · [For research labs](LABS.md) · [Latest release](https://github.com/omnilink-tech/omnisim/releases/latest) ·
+[**Join the public beta**](BETA.md) · [Builder challenge](BUILDERS.md) · [For research labs](LABS.md) · [Latest release](https://github.com/omnilink-tech/omnisim/releases/latest) ·
 [Demos](DEMOS.md) · [Agent entry point](AGENTS.md) · [Protocol](PROTOCOL.md)
 
 [![OmniArm 6 uses depth perception to pick unknown objects in OmniSim](docs/media/videos/omniarm6_universal_pick.gif)](docs/media/videos/omniarm6_universal_pick.mp4)
