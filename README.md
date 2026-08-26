@@ -10,7 +10,7 @@ direction. Physics is [Newton](https://github.com/newton-physics/newton), the on
 Apache-2.0, with a first-party [MCP server](packages/omnisim-mcp/) for Claude Code and Cursor,
 and a [ROS 2 sidecar](packages/omnisim-ros2/) speaking the `simulation_interfaces` standard.
 
-[**Join the public beta**](BETA.md) · [Latest release](https://github.com/omnilink-tech/omnisim/releases/latest) ·
+[**Join the public beta**](BETA.md) · [For research labs](LABS.md) · [Latest release](https://github.com/omnilink-tech/omnisim/releases/latest) ·
 [Demos](DEMOS.md) · [Agent entry point](AGENTS.md) · [Protocol](PROTOCOL.md)
 
 [![OmniArm 6 uses depth perception to pick unknown objects in OmniSim](docs/media/videos/omniarm6_universal_pick.gif)](docs/media/videos/omniarm6_universal_pick.mp4)
@@ -58,7 +58,7 @@ published documentation**, dated and linked; we did not measure their engines. W
 | Minimum GPU | **none — the default solver is CPU** | OpenGL >3.3 | **GeForce RTX 4080** |
 | Minimum VRAM | n/a on the CPU path | not published | **16 GB** |
 | Datacenter GPUs | fine | fine | **A100 / H100 [unsupported](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html)** |
-| Installed size | **7.7 MB binary + 647 MB runtime** — but built from source; no binary is published yet | not published | **13.02 GB + 80.17 GB assets ≈ 93 GB** |
+| Installed size | **7.7 MB binary + 647 MB runtime** — Windows beta package published; Linux is source-build | not published | **13.02 GB + 80.17 GB assets ≈ 93 GB** |
 | Container image | CUDA **training** image on [GHCR](https://github.com/omnilink-tech/omnisim/pkgs/container/omnisim-train); no demo image yet | yes | **10.7 GB** |
 | GPU physics | **yes** (`mujoco_warp`) | **none**, absent from the roadmap | yes |
 | Batched parallel envs | **yes** | process-level only | yes |
