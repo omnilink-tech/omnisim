@@ -4,6 +4,9 @@ OmniSim is looking for its first external users. The useful outcome is not a
 star: it is a completed install, a simulation that ran, and an honest report of
 where the experience became confusing or broke.
 
+Research groups that want OmniLink to help port one bounded task, policy, or
+robot should also read [OmniSim for research labs](LABS.md).
+
 OmniSim is an Apache-2.0 robotics simulator built for coding agents. An agent
 can load a world, inspect the scene, step physics, capture an image, and hot
 reload changes over HTTP/JSON. The repository also ships an MCP server, a ROS 2
