@@ -323,6 +323,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p.set_defaults(func=_doctor)
 
+    from omnisim import validate_urdf as _validate_urdf
+    _validate_urdf.add_parser(sub)
+
     p = sub.add_parser("demo", help="Run a named demo (see `omnisim demos`). No id = the flagship demo.")
     p.add_argument("id", nargs="?", help="Demo id from `omnisim demos`.")
     p.add_argument("--headless", action="store_true",

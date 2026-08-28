@@ -16,6 +16,7 @@
 
 #include "OmLog.hpp"
 
+#include <QtCore/QByteArray>
 #include <QtCore/QFile>
 #include <QtCore/QString>
 #include <QtCore/QThread>
@@ -132,13 +133,58 @@ OmVulkanBackend::OmVulkanBackend() : mAvailable(false) {
     }
   };
   note("init begin");
-  // Step 1: instance. Default descriptor opts into all platform-native
-  // backends (Vulkan/Metal/D3D12). The wgpu-native impl exposes
-  // Backend_Vulkan / _Metal / _D3D12 / _GL — we leave the default
-  // (any-non-Force32) so the implementation picks whichever native
-  // backend is available; on Linux that's Vulkan, on macOS Metal, on
-  // Windows D3D12.
+  // Step 1: instance, restricted to the PRIMARY backends.
+  //
+  // This used to pass a zero-initialised descriptor with the comment that it
+  // "opts into all platform-native backends (Vulkan/Metal/D3D12)". That was
+  // wrong, and wgpu.h says so directly: WGPUInstanceBackend_All is 0 and is
+  // "the default when zero-initialized", and _All includes GL. So the engine
+  // was opting into the GL/GLES backend on every platform.
+  //
+  // On a headless Linux host that is fatal, not merely wasteful. wgpu-hal
+  // builds its GLES adapter through EGL, and with no usable EGL display it
+  // panics inside Rust:
+  //
+  //     wgpu-hal-29.0.1/src/gles/egl.rs:182
+  //     called `Result::unwrap()` on an `Err` value: BadAccess
+  //     thread caused non-unwinding panic. aborting.
+  //
+  // A non-unwinding panic crosses the C FFI boundary as an abort(), so the
+  // whole process dies -- SIGABRT, exit -6 -- and none of the degradation
+  // paths below ever run. That is why .github/workflows/linux-build.yml had
+  // never once gone green: the build was fine and the first real world run
+  // killed the engine at startup.
+  //
+  // _Primary is exactly the set the old comment claimed: Vulkan | Metal |
+  // DX12 | BrowserWebGPU. Windows still gets D3D12 and macOS still gets
+  // Metal, so this is a no-op there; on Linux it selects Vulkan (lavapipe
+  // when there is no GPU -- linux_bootstrap.sh installs mesa-vulkan-drivers
+  // and libvulkan1 for exactly that) and never constructs the GLES adapter.
+  //
+  // OMNISIM_WGPU_BACKENDS overrides it for debugging: "all", "primary"
+  // (default), "vulkan", "gl". Value-parsed, not presence-gated.
+  WGPUInstanceBackend backends = WGPUInstanceBackend_Primary;
+  const QByteArray backendSel = qgetenv("OMNISIM_WGPU_BACKENDS").trimmed().toLower();
+  if (backendSel == "all")
+    backends = WGPUInstanceBackend_All;
+  else if (backendSel == "vulkan")
+    backends = WGPUInstanceBackend_Vulkan;
+  else if (backendSel == "gl")
+    backends = WGPUInstanceBackend_GL;
+  else if (!backendSel.isEmpty() && backendSel != "primary")
+    OmLog::warning(QString("[OmWgpuBackend] ignoring unknown OMNISIM_WGPU_BACKENDS='%1' "
+                           "(expected all|primary|vulkan|gl)").arg(QString(backendSel)));
+
+  WGPUInstanceExtras instExtras = {};
+  // WGPUSType_InstanceExtras is declared in the WGPUNativeSType enum, which is
+  // a distinct type from the WGPUSType the chain field takes -- wgpu-native
+  // extends the upstream enum's numeric space rather than the enum itself.
+  instExtras.chain.sType = static_cast<WGPUSType>(WGPUSType_InstanceExtras);
+  instExtras.backends = backends;
+
   WGPUInstanceDescriptor instDesc = {};
+  instDesc.nextInChain = &instExtras.chain;
+  note(QString("instance backends = 0x%1").arg(backends, 0, 16).toUtf8().constData());
   WGPUInstance instance = wgpuCreateInstance(&instDesc);
   if (!instance) {
     note("FAIL: wgpuCreateInstance returned NULL");

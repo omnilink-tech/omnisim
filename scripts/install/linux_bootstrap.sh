@@ -405,6 +405,29 @@ phase_smoke() {
     run_smoke_once "$RETRY_DURATION" || die "headless run failed on the long retry"
   fi
 
+  # RENDERER acceptance. The sidecar below proves PHYSICS drove the world; it
+  # says nothing about whether anything could be drawn, and those two failed
+  # independently here. Until 2026-08-28 the engine opted into wgpu's GL
+  # backend by accident, and on a headless host wgpu-hal's GLES adapter
+  # panicked inside Rust (egl.rs:182, BadAccess) -- a non-unwinding panic, so
+  # the process aborted outright rather than degrading. Restricting the
+  # instance to the primary backends removed that, but "does not abort" is not
+  # the same claim as "renders", so assert the renderer came up.
+  log "smoke: renderer (wgpu-native must reach instance + adapter + device)"
+  if grep -q '\[OmWgpuBackend\] wgpu-native init OK' "$OMNISIM_LOG_PATH" 2>/dev/null; then
+    grep -m1 'wgpu-native init OK' "$OMNISIM_LOG_PATH"
+    grep -m1 -i 'adapter.*backend\|backend.*Vulkan\|rendering through the wgpu' "$OMNISIM_LOG_PATH" || true
+    log "smoke: renderer OK"
+  else
+    grep -i 'wgpu\|vulkan\|adapter' "$OMNISIM_LOG_PATH" 2>/dev/null | head -20 || true
+    die "wgpu-native did not initialise -- this build has NO renderer (physics may still be fine).
+     On a GPU-less host this is usually a missing software Vulkan driver: the
+     deps phase installs libvulkan1 + mesa-vulkan-drivers (lavapipe) for exactly
+     this. Check with: vulkaninfo --summary
+     To see which backends were offered:  OMNISIM_WGPU_BACKENDS=all
+     To A/B the pre-2026-08-28 behaviour:  OMNISIM_WGPU_BACKENDS=gl  (expect an abort)"
+  fi
+
   log "smoke: Newton verdict sidecar (the race-free 'did Newton drive it' signal)"
   if [ -f "$OMNISIM_LOG_PATH.newton.json" ]; then
     cat "$OMNISIM_LOG_PATH.newton.json"

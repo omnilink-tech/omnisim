@@ -29,6 +29,35 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.8] — 2026-08-28
+
+### Linux
+
+- **The engine no longer aborts at startup on a headless Linux host.** It passed
+  a zero-initialised `WGPUInstanceDescriptor` under a comment claiming that
+  selects only the native backends; `wgpu.h` documents the opposite —
+  `WGPUInstanceBackend_All` is `0`, is "the default when zero-initialized", and
+  includes GL. So every platform enumerated a GLES adapter, and with no usable
+  EGL display wgpu-hal panicked (`egl.rs:182`, `BadAccess`). A non-unwinding
+  Rust panic crosses the C FFI as `abort()`, so the process died outright and
+  none of the backend's degradation paths ran. The instance is now restricted
+  to the primary backends (Vulkan / Metal / DX12); Windows and macOS are
+  unaffected, and Linux selects Vulkan — lavapipe on a GPU-less host.
+  `OMNISIM_WGPU_BACKENDS=all|primary|vulkan|gl` overrides it.
+- `linux_bootstrap.sh` asserts the **renderer** came up, not only that physics
+  drove the world. Those two have failed independently here: the
+  `libwgpu_native.so` check passed on every run that then died inside the GLES
+  adapter. On failure it names the remedy (software Vulkan driver) and how to
+  A/B it.
+- With both, `linux-build` is **green for the first time**, and the run verifies
+  wgpu reaching instance + adapter + device and the main view rendering through
+  it, on Ubuntu 24.04 with software Vulkan.
+
+### Tools
+
+- `omnisim validate-urdf` — checks a robot description is physically
+  realisable and exits non-zero when it is not.
+
 ## [v8.1.7] — 2026-08-28
 
 ### Onboarding
