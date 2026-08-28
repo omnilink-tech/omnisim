@@ -37,11 +37,12 @@ Three minutes on Windows. About half an hour on Linux, because you build it.
    - **Windows 10/11** — install the asset from the
      [latest release](https://github.com/omnilink-tech/omnisim/releases/latest)
      (~600 MB). This is the only prebuilt package.
-   - **Linux** — Ubuntu 24.04, built from source:
+   - **Linux** — Ubuntu 24.04 or 22.04, built from source:
      `bash scripts/install/linux_bootstrap.sh`. Budget 25–45 minutes; most of it
      is the compile. Details: [quickstart](docs/developer/quickstart.md).
-     ⚠ Ubuntu 22.04 does not work — its Python 3.10 makes `newton` raise at
-     `ModelBuilder()`, so worlds load and nothing moves.
+     On 22.04 the bootstrap installs Python 3.12 (deadsnakes) and the engine
+     embeds it — the system 3.10 cannot run `newton`, and the build refuses to
+     link it rather than produce a simulator where nothing moves.
    - **macOS** — not supported. There is no package, no verified build, and
      Newton physics is unverified. Use Windows or Ubuntu 24.04.
 

@@ -53,7 +53,17 @@ defaults:
 
 jobs:
   build-and-smoke:
-    runs-on: ubuntu-24.04
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both documented targets build and smoke. 24.04 embeds the system
+        # 3.12; 22.04's system python3 is 3.10 -- where newton 1.5.0 raises at
+        # ModelBuilder() -- so the bootstrap's `python` phase installs 3.12
+        # from deadsnakes and the build embeds that. This leg is the
+        # end-to-end proof of that path: build, physics sidecar, renderer.
+        os: [ubuntu-24.04, ubuntu-22.04]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,18 +79,29 @@ jobs:
       # asserts against at build time: it does not fail loudly, it makes ONNX
       # deploys silently run a zero-residual baseline. The disabled upstream
       # workflow this replaces requested python 3.11 and had exactly this bug.
-      - name: Assert the system interpreter is the one the engine links
+      # 24.04: the engine embeds the SYSTEM 3.12 and the wheels land there.
+      # 22.04: the system python3 is 3.10 (asserted, so a runner-image change
+      # cannot silently shift what this leg is evidence of); the engine embeds
+      # the deadsnakes 3.12 the `python` phase installs below, and the post-
+      # build ldd assert plus the smoke prove it end to end.
+      - name: Report and pin the interpreters this leg is evidence about
         run: |
           v="$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')"
-          echo "system python3: $v"
-          test "$v" = "3.12" || { echo "FATAL: expected 3.12, got $v"; exit 1; }
+          echo "system python3: $v (os=${{ matrix.os }})"
+          case "${{ matrix.os }}" in
+            ubuntu-24.04) test "$v" = "3.12" || { echo "FATAL: expected 3.12, got $v"; exit 1; } ;;
+            ubuntu-22.04) test "$v" = "3.10" || { echo "FATAL: expected 3.10, got $v -- this leg exists to prove the deadsnakes path FROM 3.10"; exit 1; } ;;
+          esac
+
+      - name: Physics interpreter (the bootstrap's own python phase)
+        run: bash scripts/install/linux_bootstrap.sh python
 
       - name: System dependencies (the same list the docs give users)
         run: bash scripts/install/linux_bootstrap.sh deps
 
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
-          key: linux-build-${{ github.ref_name }}
+          key: linux-build-${{ matrix.os }}-${{ github.ref_name }}
           max-size: 800M
 
       # Install wgpu-native BEFORE the build. Since the WREN deletion this is the
@@ -105,8 +126,11 @@ jobs:
       - name: Assert the binary is coherent
         run: |
           BIN=bin/omnisim-bin
+          # Both legs must land on 3.12: the system one on 24.04, the
+          # deadsnakes one on 22.04. Linking 3.10 anywhere is the no-physics
+          # build this workflow exists to prevent.
           ldd "$BIN" | grep -q 'libpython3\.12' \
-            || { echo "FATAL: omnisim-bin does not link libpython3.12"; exit 1; }
+            || { echo "FATAL: omnisim-bin does not link libpython3.12"; ldd "$BIN" | grep -i python || true; exit 1; }
           echo "OK: links libpython3.12"
           test -f lib/webots/libwgpu_native.so \
             || { echo "FATAL: libwgpu_native.so not staged -- this build has NO renderer"; exit 1; }
@@ -125,8 +149,92 @@ jobs:
       # OMNISIM_REQUIRE_NEWTON=1 and asserts the Newton verdict SIDECAR -- the
       # only race-free proof that physics drove the simulation. A bare PASS is a
       # log verdict, not a physics one.
-      - name: Smoke - a real world runs and Newton drove it
+      # A CPU-solver world FIRST. Round three on 22.04 hung between world parse
+      # and finalize -- six engine-log lines in 480 s -- on warehouse_husky,
+      # which declares newtonSolver "mujoco_warp" and therefore compiles warp
+      # kernels on first use. Running a plain CPU mj_step world before it
+      # separates "Newton finalize is broken on this interpreter" from
+      # "mujoco_warp's cold CPU kernel compile stalls on this runner": if this
+      # passes and the next step does not, the fault is scoped to the second.
+      - name: Smoke - CPU solver world (finalize + step + renderer)
+        env:
+          WORLD: projects/samples/demos/worlds/physics/newton_smoke_test.omniworld
         run: bash scripts/install/linux_bootstrap.sh smoke
+
+      # THE 22.04 STALL, FACTORED. Rounds four and five established:
+      #   * a CPU-solver world with plain Solids finalises in 39 s (green);
+      #   * mujoco_warp on CPU works OUTSIDE the engine in 26.6 s (green);
+      #   * warehouse_husky -- mujoco_warp AND a URDF robot with 11 meshes --
+      #     never finalises in 480 s, and never even logs body registration,
+      #     which happens BEFORE finalize. Empty stderr/stdout.
+      # So the stall is in registration, and the two variables that differ
+      # from the green world are (1) the URDF/mesh import and (2) mujoco_warp
+      # inside the engine. The three smokes below isolate each, in order, and
+      # every one writes the runtime's own durable log (OMNISIM_NEWTON_LOG --
+      # the runtime cannot rely on stdout from an embedded interpreter, so it
+      # keeps a file) which the failure dump then prints: it is the only
+      # channel that names the last phase the runtime reached.
+      - name: Smoke - CPU solver world, plain Solids (finalize + step + renderer)
+        env:
+          WORLD: projects/samples/demos/worlds/physics/newton_smoke_test.omniworld
+          OMNISIM_NEWTON_LOG: ${{ github.workspace }}/newton_solver.cpu_plain.log
+          OMNISIM_NEWTON_STEP_PROFILE: "1"
+        run: bash scripts/install/linux_bootstrap.sh smoke
+
+      - name: Smoke - URDF Husky on the CPU solver (isolates the mesh import)
+        env:
+          WORLD: projects/samples/demos/worlds/chat/omnilink_husky.omniworld
+          OMNISIM_NEWTON_LOG: ${{ github.workspace }}/newton_solver.cpu_urdf.log
+          OMNISIM_NEWTON_STEP_PROFILE: "1"
+        run: bash scripts/install/linux_bootstrap.sh smoke
+
+      - name: Smoke - plain Solids on mujoco_warp (isolates warp inside the engine)
+        env:
+          WORLD: projects/samples/demos/worlds/physics/newton_smoke_test.omniworld
+          OMNISIM_NEWTON_MJWARP: "1"
+          OMNISIM_NEWTON_LOG: ${{ github.workspace }}/newton_solver.warp_plain.log
+          OMNISIM_NEWTON_STEP_PROFILE: "1"
+        run: bash scripts/install/linux_bootstrap.sh smoke
+
+      # THE 22.04 STALL, RESOLVED (rounds four to eleven + a RunPod session).
+      # On this GPU-less runner the Vulkan device is lavapipe -- Mesa's software
+      # rasteriser, 23.2 on jammy against 25.2 on noble. Round eleven's sampler
+      # named the burning threads outright: llvmpipe-0 and llvmpipe-1, each
+      # climbing ~100 utime ticks/s for ten minutes, while the engine's main
+      # thread sat in futex_wait inside wgpuDevicePoll(device, wait=true), a
+      # blocking wait on the render queue. OMNILIGHT=0 changed nothing, so it is
+      # the main-view frame itself: the warehouse's texture uploads and pipeline
+      # compiles never land a first frame on two cores of the older lavapipe. A
+      # real 22.04 machine finalises the same world in 0.5 s (GPU) or 107 s
+      # (cold cache, two CPUs, no CUDA -- but still the NVIDIA Vulkan device).
+      #
+      # The correct shape for a headless PHYSICS smoke on a host with no GPU is
+      # therefore no main view at all: OMNISIM_NO_WINDOW=1 builds none (camera
+      # devices still render offscreen through wgpu). That is the gate.
+      - name: Smoke - the demo world on the CPU solver, no main view (GATES 22.04 for the demo content)
+        env:
+          WORLD: projects/samples/demos/worlds/showcase/warehouse_husky.ci_cpu.omniworld
+          OMNISIM_NO_WINDOW: "1"
+          OMNISIM_NEWTON_LOG: ${{ github.workspace }}/newton_solver.cpu_urdf_warehouse.log
+          OMNISIM_NEWTON_STEP_PROFILE: "1"
+          DURATION: "600"
+          RETRY_DURATION: "600"
+        run: |
+          sed 's/newtonSolver "mujoco_warp"/newtonSolver "mujoco"/' \
+            projects/samples/demos/worlds/showcase/warehouse_husky.omniworld > "$WORLD"
+          bash scripts/dev/ci_timeline.sh "$OMNISIM_NEWTON_LOG" & TL=$!
+          bash scripts/install/linux_bootstrap.sh smoke; rc=$?; kill $TL 2>/dev/null; exit $rc
+
+      - name: Smoke - the onboarding demo (URDF Husky on mujoco_warp), no main view
+        env:
+          OMNISIM_NO_WINDOW: "1"
+          OMNISIM_NEWTON_LOG: ${{ github.workspace }}/newton_solver.warp_urdf.log
+          OMNISIM_NEWTON_STEP_PROFILE: "1"
+          DURATION: "900"
+          RETRY_DURATION: "900"
+        run: |
+          bash scripts/dev/ci_timeline.sh "$OMNISIM_NEWTON_LOG" & TL=$!
+          bash scripts/install/linux_bootstrap.sh smoke; rc=$?; kill $TL 2>/dev/null; exit $rc
 
       # The broader world set. Separate step so a failure here is attributable
       # to the suite rather than to the build.
@@ -148,6 +256,33 @@ jobs:
           xvfb-run -a --server-args="-screen 0 1280x1024x24" \
             python3 tests/smoke/run_smoke.py
 
-      - name: Engine log on failure
+      # The engine log alone is not enough. A Python exception inside the
+      # embedded interpreter -- a failed import at finalize, a solver that
+      # raised while building the model -- goes to the process's stderr/stdout,
+      # which the headless runner captures beside the log and prints only on an
+      # EARLY exit. A hang is not an early exit, so round three on 22.04 showed
+      # six log lines and nothing else for 480 s.
+      - name: Engine log + streams on failure
         if: failure()
-        run: tail -120 omnisim_log.txt 2>/dev/null || echo "(no engine log produced)"
+        run: |
+          for f in omnisim_log.txt omnisim_log.txt.stderr omnisim_log.txt.stdout \
+                   newton_solver.cpu_plain.log newton_solver.cpu_urdf.log \
+                   newton_solver.warp_plain.log newton_solver.warp_urdf.log \
+                   newton_solver.cpu_urdf_warehouse.log; do
+            echo "::group::tail -150 $f"
+            tail -150 "$f" 2>/dev/null || echo "(absent)"
+            echo "::endgroup::"
+          done
+          echo "::group::kernel log (OOM / swap / faults)"
+          sudo dmesg -T 2>/dev/null | tail -40 || echo "(dmesg unavailable)"
+          free -m; nproc; df -h / | tail -1
+          echo "::endgroup::"
+          echo "::group::process tree + sockets (anything still alive)"
+          ps -ef --forest | grep -vE 'ps -ef|grep' | tail -30
+          ss -tnp 2>/dev/null | head -20
+          ls -la /tmp | head -30
+          echo "::endgroup::"
+          echo "::group::warp kernel cache"
+          ls -la ~/.cache/warp 2>/dev/null || echo "(no warp cache dir)"
+          find ~/.cache/warp -maxdepth 2 2>/dev/null | head -20
+          echo "::endgroup::"

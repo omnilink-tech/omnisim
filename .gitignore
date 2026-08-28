@@ -107,6 +107,11 @@ Thumbs.db
 /social/.env
 /social/**/.env
 /social/x_videos/
+# long-form campaign intermediates: per-shot trims, cards and the generated
+# soundtrack that social/build_long_omnisim_campaign.py rebuilds from the
+# tracked captures. Only the final reels under assets/ are tracked.
+/social/public_launch/assets/_long_campaign/*
+!/social/public_launch/assets/_long_campaign/.gitkeep
 /social/**/__pycache__/
 
 # Local build scratch dir

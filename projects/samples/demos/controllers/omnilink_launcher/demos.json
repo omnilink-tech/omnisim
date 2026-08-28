@@ -248,6 +248,12 @@
       "description": "Self-running visual showcases — sit back and watch, or follow a robot with F5.",
       "demos": [
         {
+          "id": "alife_ecosystem",
+          "name": "Living ecosystem (alife)",
+          "world": "projects/alife/worlds/alife_life.omniworld",
+          "blurb": "Evolved quadruped creatures that sense food, steer to it, eat, breed and starve in one live world. One supervisor drives every body; species bodies evolve between epochs."
+        },
+        {
           "id": "warehouse_omnilink",
           "name": "OmniLink Warehouse (OmniArm 6 + OmniTug 500 crew)",
           "world": "projects/samples/demos/worlds/flagship/warehouse_omnilink.omniworld",

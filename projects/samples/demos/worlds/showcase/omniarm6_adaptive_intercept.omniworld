@@ -1,0 +1,158 @@
+#OMNISIM R2025a utf8
+
+# OmniSim -- ADAPTIVE BALLISTIC INTERCEPT
+#
+# A throws the certified OmniArm 6 toss.  The part glances off an authored
+# static deflector after release.  B observes the disturbed rigid-body
+# trajectory, predicts one crossing of the catch plane, retargets once, and
+# engages a proximity-triggered suction capture.  OMNISIM_INTERCEPT_MODE=fixed
+# holds B on the nominal centreline and is the negative control.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniSim -- Adaptive Ballistic Intercept"
+  newtonSolver "mujoco"
+  # Low global contact friction lets the lightweight part glance off the
+  # deflector instead of sticking to it.  The throw uses force-coupled suction,
+  # so this does not weaken a friction grasp.
+  newtonGroundMu 0.05
+}
+Viewpoint {
+  orientation -0.249 0.112 0.962 2.345
+  position 6.2 -6.7 4.8
+}
+OmniSimSky { }
+OmniSimSun { }
+DirectionalLight {
+  direction -0.45 0.28 -0.86
+  color 0.82 0.90 1
+  intensity 0.95
+  castShadows TRUE
+}
+PointLight {
+  location 0.25 -0.35 1.25
+  color 0.05 0.85 1
+  intensity 1.35
+  radius 2.5
+  attenuation 0 0 1
+}
+PointLight {
+  location 1.35 0.25 1.15
+  color 1 0.32 0.05
+  intensity 1.6
+  radius 2.2
+  attenuation 0 0 1
+}
+OmniLinkStage { floorSize 7 5 }
+
+# Thrower: native certified toss motion, with its projected landing target
+# moved through OMNIARM6_TC_THROW_X by the launch script.
+DEF OMNIARM6_A URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_suction.urdf"
+  translation 0 0 0
+  name "thrower"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_throw_arm"
+}
+
+# Catcher: farther downrange than the legacy throw/catch scene, leaving a
+# visible reaction window after the lateral disturbance.
+DEF OMNIARM6_B URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_suction.urdf"
+  translation 1.55 0 0
+  rotation 0 0 1 3.14159
+  name "adaptive_catcher"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_adaptive_catcher"
+}
+
+# Observation-only supervisor.  It records the before/after flight state but
+# never writes the part; the deflection comes from contact with the collider.
+Robot {
+  name "deflection_observer"
+  supervisor TRUE
+  controller "adaptive_intercept_observer"
+}
+
+DEF PEDESTAL Solid {
+  translation 0.45 0 0.055
+  children [
+    DEF PEDESTAL_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.11 0.13 0.17
+        emissiveColor 0.01 0.03 0.05
+        roughness 0.42
+        metalness 0.65
+      }
+      geometry Box { size 0.16 0.16 0.11 }
+    }
+  ]
+  name "launch pedestal"
+  boundingObject USE PEDESTAL_SHAPE
+}
+
+DEF PART Solid {
+  translation 0.45 0 0.14
+  physicsBackend "newton"
+  children [
+    DEF PART_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 1 0.18 0.025
+        emissiveColor 0.22 0.018 0
+        roughness 0.28
+        metalness 0.2
+      }
+      geometry Box { size 0.065 0.065 0.065 }
+    }
+  ]
+  name "disturbed part"
+  boundingObject USE PART_SHAPE
+  physics Physics { density -1 mass 0.2 }
+}
+
+# Catch-plane marker.  It is thin enough not to collide with the part.
+Solid {
+  translation 1.02 0 0.009
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.02 0.62 0.86
+        emissiveColor 0.02 0.34 0.55
+        transparency 0.08
+        roughness 0.32
+        metalness 0.45
+      }
+      geometry Box { size 0.44 0.44 0.018 }
+    }
+  ]
+  name "intercept marker"
+}
+
+# The visible cyan blade is also the real static collider.  Its shallow yaw
+# turns some forward momentum into a clear lateral deviation.
+DEF DEFLECTOR Solid {
+  translation 0.50 -0.02 1.02
+  rotation 0 0 1 0.45
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.02 0.72 0.95
+        emissiveColor 0.01 0.34 0.55
+        transparency 0.32
+        roughness 0.18
+        metalness 0.55
+      }
+      geometry Box { size 0.26 0.035 0.44 }
+    }
+  ]
+  name "trajectory deflector blade"
+  boundingObject Box { size 0.26 0.035 0.44 }
+}

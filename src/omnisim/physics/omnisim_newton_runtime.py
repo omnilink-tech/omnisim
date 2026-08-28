@@ -2729,10 +2729,31 @@ class World:
         # compiles fine; verified). Returns the slot id (>= 0) or -1.
         if self.model is not None:
             return -1              # too late: eq arrays are compile-sized
+        # VERSION-TOLERANT (2026-08-28). newton 1.2.0 exposed
+        # ModelBuilder.add_equality_constraint_weld(); newton 1.5.0 REMOVED it
+        # (equality constraints became mujoco: custom attributes, written by
+        # newton._src.solvers.mujoco.equality._add_equality_constraint). The
+        # bare `except Exception: return -1` this used to carry swallowed that
+        # AttributeError, so from the 1.5.0 upgrade (b56be84a0) until this
+        # line every Connector / VacuumGripper lock warned "no Newton weld slot
+        # was reserved" and held nothing -- measured: the shipped
+        # tests/test_newton_weld_parity.py hold world dropped its payload to the
+        # floor (z 0.0999, hold_drift 0.8265 m). A fifth API break of that
+        # upgrade, missed because the parity test is not in the active CI set.
         try:
-            eq = self.builder.add_equality_constraint_weld(
-                body1=int(body_idx), body2=-1, enabled=False)
-        except Exception:
+            _add_weld = getattr(self.builder, "add_equality_constraint_weld", None)
+            if _add_weld is not None:                       # newton <= 1.2
+                eq = _add_weld(body1=int(body_idx), body2=-1, enabled=False)
+            else:                                           # newton >= 1.5
+                from newton._src.solvers.mujoco.equality import _add_equality_constraint
+                from newton._src.solvers.mujoco.enums import EqType
+                eq = _add_equality_constraint(
+                    self.builder, constraint_type=EqType.WELD,
+                    body1=int(body_idx), body2=-1, enabled=False)
+        except Exception as _exc:                          # noqa: BLE001
+            self._newton_log("[OmNewtonBackend] add_weld_slot(body %d) FAILED: %r "
+                             "-- this Connector / VacuumGripper will never lock natively"
+                             % (int(body_idx), _exc))
             return -1
         if not hasattr(self, "_weld_slots"):
             self._weld_slots = []
@@ -2820,6 +2841,23 @@ class World:
         m.eq_data[eq, 0:3] = anchor
         m.eq_data[eq, 6:10] = relq
         m.eq_data[eq, 10] = 1.0
+        # WELD STIFFNESS (2026-08-28). MuJoCo's default eq_solref [0.02, 1] is a
+        # 20 ms time constant, i.e. a mass-scaled SPRING: ~300 N/m on a 0.12 kg
+        # block, so a chain of welded modules stretched 7-13 cm under a 0.6 N m
+        # hinge (Metazoa P1 gate, machine 9722d23d12a3). A time constant of
+        # 2 x the solver step is the stiffest MuJoCo keeps stable; with the
+        # engine's dt 8 ms / substeps 4 that is 4 ms -> ~25x stiffer. Override:
+        # OMNISIM_NEWTON_WELD_TIMECONST=<seconds> (value-parsed; 0 = MuJoCo
+        # default). Written per engage so it survives model rebuilds.
+        try:
+            import os as _os
+            _tc = _os.environ.get("OMNISIM_NEWTON_WELD_TIMECONST", "")
+            _tc = float(_tc) if _tc.strip() else 2.0 * float(m.opt.timestep)
+            if _tc > 0.0:
+                m.eq_solref[eq, 0] = _tc
+                m.eq_solref[eq, 1] = 1.0
+        except Exception as _exc:                          # noqa: BLE001
+            self._newton_log("[OmNewtonBackend] weld solref not set: %r" % _exc)
         d.eq_active[eq] = 1
         if not hasattr(self, "_weld_engaged"):
             self._weld_engaged = {}

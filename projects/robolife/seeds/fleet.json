@@ -1,0 +1,389 @@
+{
+ "config": {
+  "arena": 24.0,
+  "pads": [
+   [
+    0.0,
+    7.68
+   ],
+   [
+    -6.651,
+    -3.84
+   ],
+   [
+    6.651,
+    -3.84
+   ]
+  ],
+  "bay": [
+   0.0,
+   0.0
+  ],
+  "epoch_s": 240,
+  "watch": false,
+  "epoch": 0,
+  "seed": 7,
+  "robots": 6,
+  "alive": 4,
+  "modules": 14,
+  "loose": 10,
+  "lineages": [
+   "L0",
+   "L1",
+   "L2",
+   "L3"
+  ]
+ },
+ "robots": [
+  {
+   "slot": 0,
+   "id": "L0_g0_00",
+   "lineage": "L0",
+   "alive_at_start": true,
+   "genome": {
+    "cruise_speed": 0.6590662118665299,
+    "charge_at": 0.20279721087357566,
+    "module_pref": {
+     "battery": 0.36568891691258554,
+     "solar": 0.057998924774706806,
+     "mast": 0.5074357331894203,
+     "armor": 0.03749565844198488
+    },
+    "greed": 0.6509344730398537,
+    "caution": 0.42314168733482266,
+    "explore_radius": 7.822938038760203
+   },
+   "pos": [
+    5.091,
+    5.091,
+    0.15
+   ],
+   "yaw": 1.1335,
+   "charge_frac": 0.6,
+   "docked": {
+    "front": null,
+    "rear": null
+   }
+  },
+  {
+   "slot": 1,
+   "id": "L1_g0_01",
+   "lineage": "L1",
+   "alive_at_start": true,
+   "genome": {
+    "cruise_speed": 0.7469165469299086,
+    "charge_at": 0.1744493982511166,
+    "module_pref": {
+     "battery": 0.12380196114964559,
+     "solar": 0.22323896460701453,
+     "mast": 0.6274332224055893,
+     "armor": 0.9477089424570057
+    },
+    "greed": 0.09071301334386506,
+    "caution": 1.0216826215422736,
+    "explore_radius": 10.441669122048342
+   },
+   "pos": [
+    -5.091,
+    5.091,
+    0.15
+   ],
+   "yaw": -0.455,
+   "charge_frac": 0.6,
+   "docked": {
+    "front": null,
+    "rear": null
+   }
+  },
+  {
+   "slot": 2,
+   "id": "L2_g0_02",
+   "lineage": "L2",
+   "alive_at_start": true,
+   "genome": {
+    "cruise_speed": 0.8616823588939989,
+    "charge_at": 0.288838166127773,
+    "module_pref": {
+     "battery": 0.28960928633167626,
+     "solar": 0.14425508335743753,
+     "mast": 0.11779223807836836,
+     "armor": 0.30848182410193437
+    },
+    "greed": 0.9762551055929201,
+    "caution": 0.3791905570501857,
+    "explore_radius": 10.726216131438115
+   },
+   "pos": [
+    -5.091,
+    -5.091,
+    0.15
+   ],
+   "yaw": -1.1677,
+   "charge_frac": 0.6,
+   "docked": {
+    "front": null,
+    "rear": null
+   }
+  },
+  {
+   "slot": 3,
+   "id": "L3_g0_03",
+   "lineage": "L3",
+   "alive_at_start": true,
+   "genome": {
+    "cruise_speed": 1.052901087296025,
+    "charge_at": 0.2132542329733781,
+    "module_pref": {
+     "battery": 0.5477444657095578,
+     "solar": 0.06278897497332314,
+     "mast": 0.05960116996623266,
+     "armor": 0.20595871281932654
+    },
+    "greed": 0.5816001636624663,
+    "caution": 1.386152897174513,
+    "explore_radius": 6.351577884531581
+   },
+   "pos": [
+    5.091,
+    -5.091,
+    0.15
+   ],
+   "yaw": 0.5376,
+   "charge_frac": 0.6,
+   "docked": {
+    "front": null,
+    "rear": null
+   }
+  },
+  {
+   "slot": 4,
+   "id": "pool_04",
+   "lineage": null,
+   "alive_at_start": false,
+   "genome": {
+    "cruise_speed": 0.8,
+    "charge_at": 0.3,
+    "module_pref": {
+     "battery": 0.5,
+     "solar": 0.5,
+     "mast": 0.5,
+     "armor": 0.5
+    },
+    "greed": 0.5,
+    "caution": 1.0,
+    "explore_radius": 8.0
+   },
+   "pos": [
+    68.0,
+    60.0,
+    0.16
+   ],
+   "yaw": 0.0,
+   "charge_frac": 0.0,
+   "docked": {
+    "front": null,
+    "rear": null
+   }
+  },
+  {
+   "slot": 5,
+   "id": "pool_05",
+   "lineage": null,
+   "alive_at_start": false,
+   "genome": {
+    "cruise_speed": 0.8,
+    "charge_at": 0.3,
+    "module_pref": {
+     "battery": 0.5,
+     "solar": 0.5,
+     "mast": 0.5,
+     "armor": 0.5
+    },
+    "greed": 0.5,
+    "caution": 1.0,
+    "explore_radius": 8.0
+   },
+   "pos": [
+    70.0,
+    60.0,
+    0.16
+   ],
+   "yaw": 0.0,
+   "charge_frac": 0.0,
+   "docked": {
+    "front": null,
+    "rear": null
+   }
+  }
+ ],
+ "modules": [
+  {
+   "id": 0,
+   "type": "battery",
+   "loose": true,
+   "loose_at_start": true,
+   "pos": [
+    -0.983,
+    -4.205,
+    0.01
+   ],
+   "yaw": 1.8496
+  },
+  {
+   "id": 1,
+   "type": "solar",
+   "loose": true,
+   "loose_at_start": true,
+   "pos": [
+    7.878,
+    4.818,
+    0.01
+   ],
+   "yaw": -1.3324
+  },
+  {
+   "id": 2,
+   "type": "mast",
+   "loose": true,
+   "loose_at_start": true,
+   "pos": [
+    10.084,
+    -8.021,
+    0.01
+   ],
+   "yaw": -0.5144
+  },
+  {
+   "id": 3,
+   "type": "armor",
+   "loose": true,
+   "loose_at_start": true,
+   "pos": [
+    5.4,
+    -7.308,
+    0.01
+   ],
+   "yaw": -0.0693
+  },
+  {
+   "id": 4,
+   "type": "battery",
+   "loose": true,
+   "loose_at_start": true,
+   "pos": [
+    -9.677,
+    3.533,
+    0.01
+   ],
+   "yaw": 1.6623
+  },
+  {
+   "id": 5,
+   "type": "solar",
+   "loose": true,
+   "loose_at_start": true,
+   "pos": [
+    1.982,
+    1.678,
+    0.01
+   ],
+   "yaw": -0.2752
+  },
+  {
+   "id": 6,
+   "type": "mast",
+   "loose": true,
+   "loose_at_start": true,
+   "pos": [
+    7.139,
+    9.338,
+    0.01
+   ],
+   "yaw": -0.1627
+  },
+  {
+   "id": 7,
+   "type": "armor",
+   "loose": true,
+   "loose_at_start": true,
+   "pos": [
+    3.447,
+    -9.226,
+    0.01
+   ],
+   "yaw": 1.266
+  },
+  {
+   "id": 8,
+   "type": "battery",
+   "loose": true,
+   "loose_at_start": true,
+   "pos": [
+    3.09,
+    10.355,
+    0.01
+   ],
+   "yaw": 2.0227
+  },
+  {
+   "id": 9,
+   "type": "solar",
+   "loose": true,
+   "loose_at_start": true,
+   "pos": [
+    -4.523,
+    -2.398,
+    0.01
+   ],
+   "yaw": 1.0597
+  },
+  {
+   "id": 10,
+   "type": "mast",
+   "loose": false,
+   "loose_at_start": false,
+   "pos": [
+    70.0,
+    62.0,
+    0.01
+   ],
+   "yaw": 0.0
+  },
+  {
+   "id": 11,
+   "type": "armor",
+   "loose": false,
+   "loose_at_start": false,
+   "pos": [
+    71.0,
+    62.0,
+    0.01
+   ],
+   "yaw": 0.0
+  },
+  {
+   "id": 12,
+   "type": "battery",
+   "loose": false,
+   "loose_at_start": false,
+   "pos": [
+    72.0,
+    62.0,
+    0.01
+   ],
+   "yaw": 0.0
+  },
+  {
+   "id": 13,
+   "type": "solar",
+   "loose": false,
+   "loose_at_start": false,
+   "pos": [
+    73.0,
+    62.0,
+    0.01
+   ],
+   "yaw": 0.0
+  }
+ ]
+}

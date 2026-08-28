@@ -20,11 +20,11 @@ generation, and an in-engine reinforcement-learning pipeline.
      [latest GitHub release](https://github.com/omnilink-tech/omnisim/releases/latest)
      (~600 MB). Install somewhere writable — under `C:\Program Files` the
      harness cannot write the sibling file it needs to load a world.
-   - **Linux:** Ubuntu 24.04, `bash scripts/install/linux_bootstrap.sh`. Budget
-     25–45 minutes; most of it is the compile. Details in the
-     [developer quickstart](docs/developer/quickstart.md). ⚠ Ubuntu 22.04 does
-     not work — its Python 3.10 makes `newton` raise at `ModelBuilder()`, so
-     worlds load and nothing moves.
+   - **Linux:** Ubuntu 24.04 or 22.04, `bash scripts/install/linux_bootstrap.sh`.
+     Budget 25–45 minutes; most of it is the compile. Details in the
+     [developer quickstart](docs/developer/quickstart.md). On 22.04 the
+     bootstrap installs Python 3.12 (deadsnakes) for the engine to embed —
+     the system 3.10 cannot run `newton`, and the build refuses to link it.
    - **macOS:** not supported. There is no package, no verified build, and
      Newton physics is unverified.
 2. From the OmniSim directory, run `python -m omnisim doctor` and keep its

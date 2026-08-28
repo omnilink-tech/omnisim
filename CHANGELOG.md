@@ -29,6 +29,54 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.9] — 2026-08-28
+
+### Linux
+
+- **Ubuntu 22.04 is supported again — by fixing it, not by refusing it.** The
+  system python3 there is 3.10, where `newton` 1.5.0 raises
+  `TypeError: Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool].`
+  at `ModelBuilder()`; the annotation is byte-identical in 1.5.1, so no version
+  bump helps, and patching a vendored solver is not a road we maintain. What
+  nothing forced was embedding *that* interpreter. `linux_bootstrap.sh` gained a
+  `python` phase that installs 3.12 from deadsnakes when the system python3 is
+  <3.11 (a no-op on 24.04); the `build` phase passes `PYTHON_CONFIG` so the
+  engine embeds it and then asserts the link on the produced binary with
+  `ldd`; the `gpu` phase already targeted wheels at the linked interpreter. The
+  system `python3` keeps running controllers and the CLI — fine at 3.10, since
+  controllers never import newton. `src/omnisim/Makefile` honours an explicit
+  `PYTHON_CONFIG`.
+- The pip for that interpreter comes from `get-pip.py`, never `ensurepip`:
+  measured on the 22.04 CI image, `python3.12 -m ensurepip --upgrade` as root
+  half-replaced the pip the system 3.10 also reads through the shared
+  `dist-packages`, breaking both — and the wreckage surfaced two phases later
+  inside `make`, in the Qt fetch. The phase now verifies the system pip
+  survived and repairs it if not.
+- The bootstrap smoke uses `--until-finalized` with a real ceiling instead of
+  a fixed 45 s and a heuristic retry. A cold `mujoco_warp` kernel compile can
+  take minutes; the fixed window declared "Newton did NOT drive this run" on
+  an install where the embedded interpreter had just logged the runtime up.
+- `linux-build` runs a full **ubuntu-22.04** leg alongside 24.04, driving the
+  same phases a user runs; `physics-runtime-check`'s 22.04 leg **gates green**
+  now instead of being a permanently red "expected failure", and asserts the
+  3.10 floor in the inverted direction — the day newton runs on 3.10, it goes
+  red and says the docs are stale.
+- `omnisim doctor` (and the fingerprint) probe the interpreter the binary
+  **links** rather than assuming `python3`, so a deadsnakes install no longer
+  reports its wheels missing while the engine is healthy.
+- **A ten-round CI mystery, resolved with a thread name.** The 22.04 runner
+  produced no physics for the warehouse demo in ten minutes while a real
+  22.04 machine finished it in half a second. Per-thread sampling on the
+  runner (no ptrace there) showed the engine's main thread waiting in
+  `wgpuDevicePoll` on the render queue while `llvmpipe-0`/`llvmpipe-1` --
+  lavapipe, Mesa's software Vulkan, 23.2 on jammy -- burned both vCPUs on the
+  world's first frame. Headless physics smokes on GPU-less hosts now run with
+  `OMNISIM_NO_WINDOW=1` (no main view; cameras still render offscreen), and the
+  caveat is documented for 22.04 machines without a GPU. Along the way the
+  bootstrap gained a `wgpu` phase (the recipe had shipped no renderer), a
+  `python` phase (deadsnakes 3.12 on 22.04), the versioned-`-config` and
+  stale-`libpython` fixes, and a smoke that asserts the renderer came up.
+
 ## [v8.1.8] — 2026-08-28
 
 ### Linux

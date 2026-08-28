@@ -97,6 +97,21 @@ These showcase **OmniSim's own engine** — the URDF importer, the Newton/MuJoCo
 
 > **Honest status is canonical.** Every one-liner below is sourced from [`docs/developer/rl-current-state.md`](docs/developer/rl-current-state.md) — the single source of truth for OmniSim RL. "Stands" ≠ "stands via RL"; "walks" ≠ "walks durably". Read it before quoting any robot result.
 
+### Living ecosystem (alife) ⭐ *flagship artificial-life demo*
+
+| Demo | World | Controller |
+|---|---|---|
+| Living ecosystem — evolved quadrupeds forage, breed and starve | [`alife_life.omniworld`](projects/alife/worlds/alife_life.omniworld) | [`terrarium_life`](projects/alife/controllers/terrarium_life/) (one supervisor drives every creature; HTTP bridge on `:8790`) |
+
+Karl Sims-style creatures with real jointed bodies on Newton/MuJoCo. Every
+creature is a `controller "<none>"` Robot actuated by one director through
+batched field writes; food is visual-only; births and deaths are teleports of
+pooled slots; species *bodies* evolve between epochs by regenerating the world.
+Build + watch: `python projects/alife/ecosystem.py --epochs 8 --species 3
+--slots 2 --alive 1 --epoch-s 90 --arena 18` then `python
+projects/alife/watch_life.py`. Full measured story (what broke and why):
+[`projects/alife/README.md`](projects/alife/README.md).
+
 ### OmniArm 6 pick-and-place
 
 | Demo | World | Controller |

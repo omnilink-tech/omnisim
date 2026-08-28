@@ -17,7 +17,7 @@ yourself.
 | Platform | Fastest route | Time | What you need first |
 |---|---|---|---|
 | **Windows 10/11** | The installer asset on the [latest release](https://github.com/omnilink-tech/omnisim/releases/latest) | one ~600 MB download + install | nothing (admin rights for the installer) |
-| **Ubuntu 24.04** | `bash scripts/install/linux_bootstrap.sh` | 25-45 min | a clone and `sudo` |
+| **Ubuntu 24.04 / 22.04** | `bash scripts/install/linux_bootstrap.sh` | 25-45 min | a clone and `sudo` |
 | **macOS** | *none — not supported* | — | — |
 | **Any**, if you intend to modify the engine | Source build | 10-25 min compile | a full toolchain |
 
@@ -71,15 +71,22 @@ cd omnisim
 bash scripts/install/linux_bootstrap.sh          # or one phase at a time
 ```
 
-Phases are `deps | fetch | wgpu | build | gpu | smoke | all`; `all` is the
+Phases are `deps | python | fetch | wgpu | build | gpu | smoke | all`; `all` is the
 default. Budget **25-45 minutes** — the compile is the bulk of it, and `gpu`
 pulls the Newton wheels.
 
-⚠️ **Ubuntu 24.04, not 22.04.** The engine embeds and links the *system*
-interpreter, so the distro release picks your Python: 24.04 gives 3.12 and
-22.04 gives 3.10, where `newton` 1.5.0 raises at `ModelBuilder()`. On 22.04 you
-get a simulator that loads worlds and stands still. Details in
+**Ubuntu 24.04 or 22.04.** On 24.04 the engine embeds the system Python 3.12.
+On 22.04 the system python3 is 3.10 — where `newton` 1.5.0 raises at
+`ModelBuilder()` — so the bootstrap's `python` phase installs 3.12 from
+deadsnakes and the build embeds that instead, refusing to link a 3.10 rather
+than produce a simulator that loads worlds and stands still. Details in
 [System Requirements](system-requirements.md#python).
+
+**No GPU on the box?** Headless physics runs should set `OMNISIM_NO_WINDOW=1`:
+without a GPU the main view is drawn by Mesa's software Vulkan, and on 22.04
+that can hold a texture-heavy world's first frame -- and the physics behind it
+-- for minutes. Measured, and explained, in
+[System Requirements](system-requirements.md#operating-systems).
 
 A native Linux tarball is a real gap rather than an impossibility — the
 packaging code for it exists but has never been exercised in CI. See

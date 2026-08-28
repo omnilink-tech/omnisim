@@ -19,18 +19,21 @@
 # brings up the Newton (mujoco_warp) physics backend so the in-engine RL
 # trainers can run.
 #
-# SUPPORTED TARGET: Ubuntu 24.04 (system Python 3.12).
-#
-# The two venues this header used to name as "verified end-to-end" are both
-# unsupported now, and naming them was misleading:
-#   * Ubuntu 22.04.5 / py3.10 -- REFUSED by phase_gpu's own guard below, because
-#     newton 1.5.0 raises TypeError at ModelBuilder() on 3.10. A build there
-#     loads worlds and nothing moves.
-#   * Ubuntu 26.04 / py3.14   -- passes that guard but is wheel-fragile; the
+# SUPPORTED TARGETS:
+#   * Ubuntu 24.04 -- the engine embeds the system Python 3.12. Nothing extra.
+#   * Ubuntu 22.04 -- the system python3 is 3.10, where newton 1.5.0 raises
+#     TypeError at ModelBuilder() (typing.Union rejects wp.array[wp.bool]
+#     before 3.11; identical in 1.5.1, so not fixed by a bump). phase_python
+#     installs 3.12 from deadsnakes and phase_build embeds THAT interpreter;
+#     python3 remains the controller/CLI interpreter, which is fine at 3.10 --
+#     controllers never import newton.
+#   * Ubuntu 26.04 / py3.14 passes the version guard but is wheel-fragile; the
 #     pinned physics stack has no guaranteed 3.14 wheels.
-# Both are measured by .github/workflows/physics-runtime-check.yml.
+# All measured by .github/workflows/physics-runtime-check.yml and the 22.04 +
+# 24.04 legs of linux-build.yml.
 #
 #   bash scripts/install/linux_bootstrap.sh deps    # apt prerequisites
+#   bash scripts/install/linux_bootstrap.sh python  # >=3.11 interpreter where the distro lacks one
 #   bash scripts/install/linux_bootstrap.sh fetch   # clone repo + glm/stb submodules
 #   bash scripts/install/linux_bootstrap.sh wgpu    # wgpu-native: the ONLY renderer
 #   bash scripts/install/linux_bootstrap.sh build   # make release (fetches its own Qt 6.5.3)
@@ -164,6 +167,62 @@ phase_fetch() {
   log "fetch: OK  (glm $(cd src/glm && git describe --tags 2>/dev/null || echo '?'))"
 }
 
+# The interpreter the ENGINE should embed. newton 1.5.0 raises
+# `TypeError: Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool].`
+# at ModelBuilder() on CPython 3.10 -- warp's array.__or__ builds typing.Union
+# at annotation-evaluation time, and the stdlib only accepts that from 3.11.
+# Measured on both newton 1.5.0 and 1.5.1 (identical annotation in solver.py),
+# so this is not fixed by a version bump. The fix is to embed a >=3.11
+# interpreter; the system python3 stays the CONTROLLER interpreter and is fine
+# at 3.10 -- controllers never import newton, physics lives in the engine.
+embed_python() {
+  for cand in python3.13 python3.12 python3.11; do
+    command -v "$cand" >/dev/null 2>&1 && { echo "$cand"; return; }
+  done
+  echo python3
+}
+
+phase_python() {
+  # On a distro whose system python3 is older than 3.11 (Ubuntu 22.04 ships
+  # 3.10), install Python 3.12 from the deadsnakes PPA so the engine has a
+  # physics-capable interpreter to embed. A no-op on 24.04.
+  PYV_SYS=$(python3 -c 'import sys;print("%d%02d"%sys.version_info[:2])' 2>/dev/null || echo 0)
+  if [ "$PYV_SYS" -ge 311 ]; then
+    log "python: system python3 $(python3 -V 2>&1 | cut -d' ' -f2) is >=3.11 -- nothing to install"
+    return
+  fi
+  log "python: system python3 is <3.11; newton 1.5.0 raises at ModelBuilder() there."
+  log "python: installing 3.12 from deadsnakes -- the engine embeds it, python3 keeps running controllers"
+  export DEBIAN_FRONTEND=noninteractive
+  $SUDO apt-get update
+  $SUDO apt-get install -y --no-install-recommends software-properties-common
+  $SUDO add-apt-repository -y ppa:deadsnakes/ppa
+  $SUDO apt-get update
+  $SUDO apt-get install -y --no-install-recommends python3.12 python3.12-dev python3.12-venv
+  # pip for the new interpreter -- via get-pip.py, NEVER ensurepip. Measured
+  # on the ubuntu-22.04 CI image: `python3.12 -m ensurepip --upgrade` as root
+  # half-replaces the pip the SYSTEM 3.10 also sees through Debian's shared
+  # /usr/lib/python3/dist-packages, leaving BOTH interpreters with a broken
+  # pip ("No module named pip._internal.cli.main") -- which then killed the
+  # Qt dependency fetch inside make, two phases later, in a different tool.
+  # get-pip.py installs into the version-specific dist-packages and touches
+  # nothing shared.
+  if ! python3.12 -m pip --version >/dev/null 2>&1; then
+    curl -fsSL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+    $SUDO python3.12 /tmp/get-pip.py
+    rm -f /tmp/get-pip.py
+  fi
+  python3.12 -m pip --version
+  # The system interpreter's pip must have SURVIVED the install above -- it
+  # fetches Qt via aqtinstall during make, and a corrupted one fails there
+  # with a message nobody would trace back to this phase. Repair it if not.
+  if ! python3 -m pip --version >/dev/null 2>&1; then
+    log "python: system pip was damaged -- reinstalling python3-pip"
+    $SUDO apt-get install -y --reinstall python3-pip
+  fi
+  log "python: $(python3.12 -V 2>&1) ready"
+}
+
 phase_wgpu() {
   # The ONE step the user recipe omitted and CI added privately.
   #
@@ -188,10 +247,59 @@ phase_build() {
   cd "$OMNISIM_HOME"
   export OMNISIM_HOME
   export WEBOTS_HOME="$OMNISIM_HOME"   # legacy alias ~20 sub-makefiles still consume
-  make -C "$OMNISIM_HOME" -j"$JOBS" release
+  # Embed a >=3.11 interpreter where the system python3 cannot run newton.
+  # Passed as a make ARGUMENT, not env: the Makefile honours an explicit
+  # PYTHON_CONFIG and only then falls back to plain python3-config.
+  # ALWAYS name the embed interpreter's own -config, never trust a bare
+  # python3-config. Measured on a RunPod ubuntu-22.04 image: /usr/bin/python3
+  # is 3.11 but /usr/bin/python3-config is 3.10's, so the Makefile's default
+  # embedded libpython3.10 -- a newton-incapable interpreter -- while every
+  # "python3 -V" check in this script said 3.11. The versioned -config is the
+  # only spelling that cannot be shadowed like that.
+  EMBED_PY=$(embed_python)
+  PY_ARGS=""
+  if [ "$EMBED_PY" != "python3" ] && command -v "${EMBED_PY}-config" >/dev/null 2>&1; then
+    PY_ARGS="PYTHON_CONFIG=${EMBED_PY}-config"
+    log "build: embedding $EMBED_PY ($PY_ARGS)"
+  else
+    PYV_SYS=$(python3 -c 'import sys;print("%d%02d"%sys.version_info[:2])' 2>/dev/null || echo 0)
+    [ "$PYV_SYS" -ge 311 ]       || die "system python3 is <3.11 and no newer interpreter is installed. Run: bash scripts/install/linux_bootstrap.sh python"
+    log "build: embedding the system python3 (python3-config)"
+  fi
+  # A STALE binary survives a changed PYTHON_CONFIG. make tracks file mtimes,
+  # not flags: with objects and binary already present, a rebuild after
+  # switching interpreters recompiles nothing and relinks nothing -- measured
+  # (0 relinks, 0 recompiles) -- and the old libpython3.10 link is kept while
+  # the log says "embedding python3.11". Only two TUs include Python.h, and
+  # the Python C-API layout differs between minor versions, so both must be
+  # recompiled, not merely relinked. Purge them and the binary when the
+  # binary on disk links a different libpython than the one selected.
+  WANT_PYV=$("${EMBED_PY}" -c 'import sys;print("%d.%d"%sys.version_info[:2])' 2>/dev/null || true)
+  HAVE_BIN="$OMNISIM_HOME/bin/omnisim-bin"
+  if [ -n "$WANT_PYV" ] && [ -x "$HAVE_BIN" ]; then
+    HAVE_PYV=$(ldd "$HAVE_BIN" 2>/dev/null | grep -oE 'libpython3\.[0-9]+' | head -1 | sed 's/libpython//')
+    if [ -n "$HAVE_PYV" ] && [ "$HAVE_PYV" != "$WANT_PYV" ]; then
+      log "build: existing omnisim-bin links python$HAVE_PYV but python$WANT_PYV was selected -- purging it and the Python-including objects so make rebuilds them"
+      rm -f "$HAVE_BIN"
+      find "$OMNISIM_HOME/src/omnisim" -type f \( -name 'OmNewtonBackend*.o' -o -name 'newton_embed_smoke*.o' \) -delete
+    fi
+  fi
+  make -C "$OMNISIM_HOME" -j"$JOBS" release $PY_ARGS
   BIN="$OMNISIM_HOME/bin/omnisim-bin"
   [ -x "$BIN" ] || BIN="$(find "$OMNISIM_HOME" -maxdepth 3 -name 'omnisim-bin' -type f -perm -u+x | head -1)"
   [ -n "$BIN" ] && [ -x "$BIN" ] || die "omnisim-bin not produced"
+  # The physics floor, asserted on the BINARY rather than trusted from flags:
+  # whatever python3-config the make resolved is now baked into the link.
+  PYLIB=$(ldd "$BIN" 2>/dev/null | grep -oE 'libpython3\.[0-9]+' | head -1 || true)
+  case "$PYLIB" in
+    libpython3.1[1-9]|libpython3.[2-9][0-9])
+      log "build: engine embeds ${PYLIB#lib} (>=3.11, newton-capable)" ;;
+    "")
+      die "omnisim-bin links no libpython at all -- the Newton runtime cannot come up" ;;
+    *)
+      die "omnisim-bin links ${PYLIB#lib}, and newton 1.5.0 raises at ModelBuilder() before 3.11.
+     Run: bash scripts/install/linux_bootstrap.sh python   then rebuild." ;;
+  esac
   # A build can succeed and still have no renderer: the wgpu link is conditional
   # on WGPU_NATIVE_HOME resolving. Fail loudly here rather than letting the user
   # discover it later as an empty screenshot.
@@ -250,6 +358,14 @@ phase_gpu() {
   # -- never a venv (the embedded interpreter ignores venvs). Package name is
   # `newton` (NOT `newton-physics`).
   PY=$(linked_python)
+  # A deadsnakes interpreter arrives without pip. NOT ensurepip -- see
+  # phase_python: as root it corrupts the shared dist-packages pip that the
+  # system 3.10 reads. get-pip.py is version-scoped.
+  if ! "$PY" -m pip --version >/dev/null 2>&1; then
+    curl -fsSL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+    $SUDO "$PY" /tmp/get-pip.py
+    rm -f /tmp/get-pip.py
+  fi
   PIPFLAGS=$(pip_flags_for "$PY")
   # ⛔ Refuse 3.10 loudly rather than install a stack that cannot run. newton
   # 1.5.0 raises "Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool]."
@@ -259,7 +375,7 @@ phase_gpu() {
   PYV_GPU=$("$PY" -c 'import sys;print("%d.%d"%sys.version_info[:2])' 2>/dev/null || echo "?")
   case "$PYV_GPU" in
     3.10|3.9|3.8|3.7)
-      die "the engine links Python $PYV_GPU, but newton 1.5.0 needs >= 3.11 in practice (it raises at ModelBuilder() on 3.10 despite declaring >=3.10). Use Ubuntu 24.04 (python 3.12), or rebuild the engine against a newer interpreter with PYTHON_HOME=." ;;
+      die "the engine links Python $PYV_GPU, but newton 1.5.0 needs >= 3.11 in practice (it raises at ModelBuilder() on 3.10 despite declaring >=3.10). Run: bash scripts/install/linux_bootstrap.sh python   then rebuild -- the build embeds the newer interpreter automatically." ;;
   esac
   log "gpu: torch / warp / newton / mujoco_warp into $PY (the interpreter the binary links)"
   # $SUDO_H, not --user: the wheels have to land in the SYSTEM interpreter the
@@ -388,22 +504,32 @@ phase_smoke() {
   # (measured on a fresh RunPod A4000: 45 s insufficient, ~5 min sufficient).
   # So: try DURATION, and if the runtime clearly loaded but finalize was not
   # reached, retry ONCE with a kernel-compile-sized window.
+  # ONE run, --until-finalized, generous CEILING. This replaces a fixed 45 s
+  # run plus a 300 s retry gated on a heuristic ("imports OK" AND "Newton
+  # bodies" in the log). Measured 2026-08-28 on the ubuntu-22.04 CI leg: the
+  # embedded 3.12 came up ("warp + newton imports OK; FFI smoke OK"), the
+  # renderer came up, and the world still had not FINALISED at 45 s -- the
+  # demo world declares mujoco_warp, whose kernels compile on first use --
+  # so no "Newton bodies" line existed and the retry never fired. Verdict:
+  # "Newton did NOT drive this run", on an install where it demonstrably had.
+  # The 24.04 leg brushed the same edge from the other side ("FINALISED but
+  # NEVER STEPPED": finalize inside the window, first step outside it).
+  #
+  # --until-finalized stops the moment finalize AND the first physics step
+  # are observed, so a warm box pays seconds; --duration is then only the
+  # ceiling a cold kernel compile may take, and --step-wait-timeout matches
+  # it so the first step is given the same budget as the finalize. Both the
+  # old variable names keep working; the larger of the two is the ceiling.
   DURATION="${DURATION:-45}"
-  RETRY_DURATION="${RETRY_DURATION:-300}"
+  RETRY_DURATION="${RETRY_DURATION:-480}"
+  CEILING=$(( DURATION > RETRY_DURATION ? DURATION : RETRY_DURATION ))
 
-  run_smoke_once() {
-    rm -f "$OMNISIM_LOG_PATH" "$OMNISIM_LOG_PATH.newton.json"
-    xvfb-run -a --server-args="-screen 0 1280x1024x24" \
-      python3 -m omnisim run-headless "$WORLD" --duration "$1"
-  }
-
-  run_smoke_once "$DURATION" || true
-  if [ ! -f "$OMNISIM_LOG_PATH.newton.json" ] \
-     && grep -q 'imports OK' "$OMNISIM_LOG_PATH" 2>/dev/null \
-     && grep -q 'Newton bodies' "$OMNISIM_LOG_PATH" 2>/dev/null; then
-    log "smoke: runtime loaded but no finalize in ${DURATION}s -- cold warp kernel compile; retrying once with ${RETRY_DURATION}s"
-    run_smoke_once "$RETRY_DURATION" || die "headless run failed on the long retry"
-  fi
+  rm -f "$OMNISIM_LOG_PATH" "$OMNISIM_LOG_PATH.newton.json"
+  log "smoke: run-headless --until-finalized (ceiling ${CEILING}s; a cold warp kernel compile can take minutes)"
+  xvfb-run -a --server-args="-screen 0 1280x1024x24" \
+    python3 -m omnisim run-headless "$WORLD" \
+      --until-finalized --duration "$CEILING" --step-wait-timeout "$CEILING" \
+    || die "headless run failed (see $OMNISIM_LOG_PATH)"
 
   # RENDERER acceptance. The sidecar below proves PHYSICS drove the world; it
   # says nothing about whether anything could be drawn, and those two failed
@@ -414,7 +540,11 @@ phase_smoke() {
   # instance to the primary backends removed that, but "does not abort" is not
   # the same claim as "renders", so assert the renderer came up.
   log "smoke: renderer (wgpu-native must reach instance + adapter + device)"
-  if grep -q '\[OmWgpuBackend\] wgpu-native init OK' "$OMNISIM_LOG_PATH" 2>/dev/null; then
+  if [ -n "${OMNISIM_NO_WINDOW:-}" ]; then
+    # No-window mode builds no main view, so there is no main-view renderer to
+    # assert; camera devices still render offscreen through wgpu.
+    log "smoke: renderer check skipped -- OMNISIM_NO_WINDOW builds no main view"
+  elif grep -q '\[OmWgpuBackend\] wgpu-native init OK' "$OMNISIM_LOG_PATH" 2>/dev/null; then
     grep -m1 'wgpu-native init OK' "$OMNISIM_LOG_PATH"
     grep -m1 -i 'adapter.*backend\|backend.*Vulkan\|rendering through the wgpu' "$OMNISIM_LOG_PATH" || true
     log "smoke: renderer OK"
@@ -443,12 +573,13 @@ phase_smoke() {
 }
 
 case "$PHASE" in
-  deps)  phase_deps ;;
-  fetch) phase_fetch ;;
-  wgpu)  phase_wgpu ;;
-  build) phase_build ;;
-  gpu)   phase_gpu ;;
-  smoke) phase_smoke ;;
-  all)   phase_deps; phase_fetch; phase_wgpu; phase_build; phase_gpu; phase_smoke ;;
-  *)     die "unknown phase: $PHASE (deps|fetch|wgpu|build|gpu|smoke|all)" ;;
+  deps)   phase_deps ;;
+  python) phase_python ;;
+  fetch)  phase_fetch ;;
+  wgpu)   phase_wgpu ;;
+  build)  phase_build ;;
+  gpu)    phase_gpu ;;
+  smoke)  phase_smoke ;;
+  all)    phase_deps; phase_python; phase_fetch; phase_wgpu; phase_build; phase_gpu; phase_smoke ;;
+  *)      die "unknown phase: $PHASE (deps|python|fetch|wgpu|build|gpu|smoke|all)" ;;
 esac

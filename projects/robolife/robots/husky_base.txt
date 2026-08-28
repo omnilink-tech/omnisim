@@ -1,0 +1,359 @@
+# projects/robolife/robots/husky_base.txt -- the RoboLife robot body.
+#
+# The Clearpath Husky EXPANDED from its shipped URDF:
+#   python scripts/dev/urdf_import.py projects/robots/clearpath/husky_description/urdf/husky.urdf --to <f>
+# with mesh URLs rewritten to the repo-relative omnisim:// scheme (OmUrl
+# resolves it against OMNISIM_HOME), the URDF's massless base_link given the
+# inertial_link's Physics directly, and the RoboLife additions from DESIGN.md
+# (two active Connector sockets, a planar Lidar, customData).
+#
+# This is a TEMPLATE: rl/worldgen.py stamps N copies by replacing
+#   @@DEF@@ @@NAME@@ @@TRANSLATION@@ @@ROTATION@@ @@CONTROLLER@@
+#   @@CONTROLLER_ARGS@@ @@SUPERVISOR@@ @@WHEEL_TORQUE@@
+# (the URDF top_plate_link boundingObject is dropped: it has no Physics, so the
+#  engine warns "collisions will have no effect" and registers nothing for it)
+# Never hand-edit a stamped world; edit this file and regenerate.
+#
+# Wheels: HingeJoint axis 0 1 0, RotationalMotor *_wheel_motor, maxVelocity 60,
+# maxTorque @@WHEEL_TORQUE@@ (worldgen default 30 N m), a PositionSensor
+# *_wheel_sensor per wheel, NO position limits -> velocity joints
+# (setPosition(inf) + setVelocity). Wheel radius 0.1651 m, track 0.555 m
+# (y +-0.2775). MEASURED by probe_dock.py (machine 9722d23d12a3, CPU mj_step,
+# newtonGroundMu 0.3, newtonSubsteps 4, 30 N m -- see rl/worldgen.py):
+#   positive wheel velocity drives +x; 2 m open-loop drive at 0.5 m/s ->
+#   1.9995 m; a skid-steer pivot delivers ~0.27 of the commanded yaw rate
+#   (w = 0.6 -> 0.16 rad/s; w = 3.0 -> 0.94 rad/s) and an arc while driving
+#   ~0.26 -- and at DESIGN.md's mu 1.5 / 10 N m / 1 substep the Husky cannot
+#   turn AT ALL (0.04 deg for a commanded 90 deg, wheels stalled).
+DEF @@DEF@@ Robot {
+  translation @@TRANSLATION@@
+  rotation @@ROTATION@@
+  name "@@NAME@@"
+  controller "@@CONTROLLER@@"
+  controllerArgs [ @@CONTROLLER_ARGS@@ ]
+  supervisor @@SUPERVISOR@@
+  synchronization FALSE
+  customData ""
+  children [
+    Shape {
+      geometry Mesh { url "omnisim://projects/robots/clearpath/husky_description/meshes/base_link.dae" }
+    }
+    InertialUnit { name "imu_data" }
+    Gyro { name "imu_data_gyro" }
+    Accelerometer { name "imu_data_accel" }
+    GPS { name "navsat_fix" }
+    # --- RoboLife additions (DESIGN.md "The robot") -------------------------
+    # Docking sockets. World height 0.25 m: the Husky origin sits 0.13228 m
+    # above the ground (base_footprint), so the robot-frame z is 0.11772.
+    # Connector normal = its local +x; the module plug faces -x, so the pair
+    # is x-anti-parallel (isXAlignedWith) when the robot faces the plug.
+    DEF @@DEF@@_SOCKET_F Connector {
+      name "socket_front"
+      translation 0.55 0 0.11772
+      rotation 0 0 1 0
+      type "active"
+      distanceTolerance 0.08
+      axisTolerance 0.45
+      rotationTolerance 0.6
+      numberOfRotations 4
+      snap FALSE
+      boundingObject NULL
+      physics NULL
+    }
+    DEF @@DEF@@_SOCKET_R Connector {
+      name "socket_rear"
+      translation -0.55 0 0.11772
+      rotation 0 0 1 3.14159
+      type "active"
+      distanceTolerance 0.08
+      axisTolerance 0.45
+      rotationTolerance 0.6
+      numberOfRotations 4
+      snap FALSE
+      boundingObject NULL
+      physics NULL
+    }
+    # Planar lidar above module height (a docked front module must not blind it).
+    Receiver { name "radio" type "radio" channel 1 }
+    Lidar {
+      name "lidar"
+      translation 0 0 0.45
+      horizontalResolution 90
+      fieldOfView 3.14159
+      numberOfLayers 1
+      minRange 0.2
+      maxRange 8
+      noise 0.01
+    }
+    # -------------------------------------------------------------------------
+    Solid {
+      translation 0.0 0.0 -0.13228
+      name "base_footprint"
+      children [
+      ]
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0.0 1.0 0.0
+        anchor 0.256 0.2775 0.03282
+      }
+      device [
+        RotationalMotor {
+          name "front_left_wheel_motor"
+          maxVelocity 60.0
+          maxTorque @@WHEEL_TORQUE@@
+        }
+        PositionSensor { name "front_left_wheel_sensor" }
+      ]
+      endPoint Solid {
+        translation 0.256 0.2775 0.03282
+        name "front_left_wheel_link"
+        children [
+          Shape {
+            geometry Mesh { url "omnisim://projects/robots/clearpath/husky_description/meshes/wheel.dae" }
+          }
+        ]
+        boundingObject Pose {
+          translation 0.0 0.0 0.0
+          rotation 1.0 0.0 0.0 1.570795
+          children [
+            Cylinder { height 0.1143 radius 0.1651 }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 2.637
+          centerOfMass [0.0 0.0 0.0]
+          inertiaMatrix [
+            0.02467 0.04411 0.02467
+            0.0 0.0 0.0
+          ]
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0.0 1.0 0.0
+        anchor 0.256 -0.2775 0.03282
+      }
+      device [
+        RotationalMotor {
+          name "front_right_wheel_motor"
+          maxVelocity 60.0
+          maxTorque @@WHEEL_TORQUE@@
+        }
+        PositionSensor { name "front_right_wheel_sensor" }
+      ]
+      endPoint Solid {
+        translation 0.256 -0.2775 0.03282
+        name "front_right_wheel_link"
+        children [
+          Shape {
+            geometry Mesh { url "omnisim://projects/robots/clearpath/husky_description/meshes/wheel.dae" }
+          }
+        ]
+        boundingObject Pose {
+          translation 0.0 0.0 0.0
+          rotation 1.0 0.0 0.0 1.570795
+          children [
+            Cylinder { height 0.1143 radius 0.1651 }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 2.637
+          centerOfMass [0.0 0.0 0.0]
+          inertiaMatrix [
+            0.02467 0.04411 0.02467
+            0.0 0.0 0.0
+          ]
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0.0 1.0 0.0
+        anchor -0.256 0.2775 0.03282
+      }
+      device [
+        RotationalMotor {
+          name "rear_left_wheel_motor"
+          maxVelocity 60.0
+          maxTorque @@WHEEL_TORQUE@@
+        }
+        PositionSensor { name "rear_left_wheel_sensor" }
+      ]
+      endPoint Solid {
+        translation -0.256 0.2775 0.03282
+        name "rear_left_wheel_link"
+        children [
+          Shape {
+            geometry Mesh { url "omnisim://projects/robots/clearpath/husky_description/meshes/wheel.dae" }
+          }
+        ]
+        boundingObject Pose {
+          translation 0.0 0.0 0.0
+          rotation 1.0 0.0 0.0 1.570795
+          children [
+            Cylinder { height 0.1143 radius 0.1651 }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 2.637
+          centerOfMass [0.0 0.0 0.0]
+          inertiaMatrix [
+            0.02467 0.04411 0.02467
+            0.0 0.0 0.0
+          ]
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0.0 1.0 0.0
+        anchor -0.256 -0.2775 0.03282
+      }
+      device [
+        RotationalMotor {
+          name "rear_right_wheel_motor"
+          maxVelocity 60.0
+          maxTorque @@WHEEL_TORQUE@@
+        }
+        PositionSensor { name "rear_right_wheel_sensor" }
+      ]
+      endPoint Solid {
+        translation -0.256 -0.2775 0.03282
+        name "rear_right_wheel_link"
+        children [
+          Shape {
+            geometry Mesh { url "omnisim://projects/robots/clearpath/husky_description/meshes/wheel.dae" }
+          }
+        ]
+        boundingObject Pose {
+          translation 0.0 0.0 0.0
+          rotation 1.0 0.0 0.0 1.570795
+          children [
+            Cylinder { height 0.1143 radius 0.1651 }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 2.637
+          centerOfMass [0.0 0.0 0.0]
+          inertiaMatrix [
+            0.02467 0.04411 0.02467
+            0.0 0.0 0.0
+          ]
+        }
+      }
+    }
+    Solid {
+      translation 0.0 0.0 0.0
+      name "top_chassis_link"
+      children [
+        Shape {
+          geometry Mesh { url "omnisim://projects/robots/clearpath/husky_description/meshes/top_chassis.dae" }
+        }
+      ]
+    }
+    Solid {
+      translation 0.48 0.0 0.091
+      name "front_bumper_link"
+      children [
+        Shape {
+          geometry Mesh { url "omnisim://projects/robots/clearpath/husky_description/meshes/bumper.dae" }
+        }
+      ]
+    }
+    Solid {
+      translation -0.48 0.0 0.091
+      rotation 0.0 0.0 1.000004280267536 3.141590000011358
+      name "rear_bumper_link"
+      children [
+        Shape {
+          geometry Mesh { url "omnisim://projects/robots/clearpath/husky_description/meshes/bumper.dae" }
+        }
+      ]
+    }
+    Solid {
+      translation 0.272 0.0 0.245
+      name "user_rail_link"
+      children [
+        Shape {
+          geometry Mesh { url "omnisim://projects/robots/clearpath/husky_description/meshes/user_rail.dae" }
+        }
+      ]
+    }
+    Solid {
+      translation 0.0812 0.0 0.245
+      name "top_plate_link"
+      children [
+        Shape {
+          geometry Mesh { url "omnisim://projects/robots/clearpath/husky_description/meshes/top_plate.dae" }
+        }
+        Solid {
+          translation 0.36367 0.0 0.00639
+          name "top_plate_front_link"
+          children [
+          ]
+        }
+        Solid {
+          translation -0.36633 0.0 0.00639
+          name "top_plate_rear_link"
+          children [
+          ]
+        }
+        Solid {
+          translation 0.12 0.0 0.26
+          name "base_laser_link"
+          children [
+            Lidar {
+              name "base_laser"
+              horizontalResolution 90
+              fieldOfView 4.71238
+              minRange 0.1
+              maxRange 20.0
+            }
+          ]
+        }
+      ]
+    }
+    Solid {
+      translation 0.19 0.0 0.149
+      rotation -0.707109856410594 -2.5973583136560556e-06 -0.707107259055831 3.1415874589159105
+      name "imu_link"
+      children [
+      ]
+    }
+  ]
+  boundingObject Group {
+    children [
+      Pose {
+        translation 0.0 0.0 0.061875
+        children [
+          Box { size 0.9874 0.5709 0.12375 }
+        ]
+      }
+      Pose {
+        translation 0.0 0.0 0.17562499999999998
+        children [
+          Box { size 0.7899200000000001 0.5709 0.10375 }
+        ]
+      }
+    ]
+  }
+  # The URDF puts the 46.034 kg on a childless "inertial_link" Solid and
+  # leaves base_link massless. Under Newton the Robot root must carry its own
+  # Physics (explicit inertiaMatrix + centerOfMass -- the geometry-derived
+  # path excludes OmRobot, projects/alife/README.md), so the values live here.
+  physics Physics {
+    density -1
+    mass 46.034
+    centerOfMass [-0.00065 -0.085 0.062]
+    inertiaMatrix [
+      0.6022 1.7386 2.0296
+      -0.02364 -0.1197 -0.001544
+    ]
+  }
+}

@@ -19,8 +19,15 @@
 #   that produces a simulator with no physics -- the worst failure shape there
 #   is, because the world still loads and simply stands still.
 #
-#   The 22.04 leg is informational and marked continue-on-error: it documents
-#   the floor by demonstrating it. Only the 24.04 leg gates.
+#   BOTH legs gate now. 22.04 used to be informational-and-expected-to-fail
+#   ("documents the floor by demonstrating it"), which produced a permanently
+#   red job on the public Actions tab -- a broken-looking project, and no fix.
+#   The fix shipped instead: linux_bootstrap.sh's `python` phase installs 3.12
+#   from deadsnakes on a distro whose python3 is <3.11, and the engine embeds
+#   that interpreter. So the 22.04 leg now asserts BOTH halves of the truth:
+#     1. the system 3.10 still fails at ModelBuilder() -- if this ever starts
+#        PASSING, the floor moved and the docs + bootstrap gate are stale;
+#     2. the bootstrap-installed 3.12 runs the identical pins to completion.
 #
 #   fail-fast is off on purpose: the point is to see EVERY interpreter's verdict
 #   in one run, not to stop at the first bad one.
@@ -48,12 +55,6 @@ jobs:
   import:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    # ubuntu-22.04 is EXPECTED to fail: newton 1.5.0 raises at ModelBuilder() on
-    # its Python 3.10. It stays in the matrix as the evidence for why the whole
-    # Linux stack moved to 24.04 -- but it must not turn the run red, or this
-    # job emails a failure every time it does exactly what it is supposed to.
-    # 24.04 is the leg that gates: if THAT breaks, the run fails.
-    continue-on-error: ${{ matrix.os == 'ubuntu-22.04' }}
     strategy:
       fail-fast: false
       matrix:
@@ -68,25 +69,39 @@ jobs:
           python3 -VV
           echo "os=${{ matrix.os }}"
 
+      # On a distro whose python3 is <3.11, this installs 3.12 from deadsnakes
+      # -- the SAME phase a user's `linux_bootstrap.sh all` runs, so a green
+      # tick here is evidence about their experience. No-op on 24.04.
+      - name: Physics interpreter (the bootstrap's own python phase)
+        run: bash scripts/install/linux_bootstrap.sh python
+
       - name: Install the pinned physics stack (from the repo SSOT)
         run: |
+          # The interpreter the ENGINE would embed -- same selection the
+          # bootstrap's build phase makes: newest >=3.11 present, else python3.
+          PY=python3
+          for cand in python3.13 python3.12 python3.11; do
+            command -v "$cand" >/dev/null 2>&1 && { PY="$cand"; break; }
+          done
+          echo "PY=$PY" >> "$GITHUB_ENV"
+          "$PY" -VV
           FLAGS=""
           # PEP-668 pips (24.04) refuse a system install without this; older
           # pips reject the flag outright. Same probe linux_bootstrap.sh uses.
-          if python3 -m pip install --help 2>/dev/null | grep -q break-system-packages; then
+          if "$PY" -m pip install --help 2>/dev/null | grep -q break-system-packages; then
             FLAGS="--break-system-packages"
           fi
-          python3 -m pip install $FLAGS --upgrade pip
-          PINS="$(python3 scripts/packaging/newton_runtime_pins.py | tr '\n' ' ')"
+          "$PY" -m pip install $FLAGS --upgrade pip
+          PINS="$("$PY" scripts/packaging/newton_runtime_pins.py | tr '\n' ' ')"
           echo "pins: $PINS"
-          python3 -m pip install $FLAGS $PINS "mujoco==3.11.0" numpy
+          "$PY" -m pip install $FLAGS $PINS "mujoco==3.11.0" numpy
 
       # newton.ModelBuilder() is exactly the FFI smoke the engine performs at
       # startup (OmNewtonBackend). Importing is not enough -- the failure above
       # happened at construction, not at import.
       - name: Import and construct, the way the engine does
         run: |
-          python3 - <<'PY'
+          "$PY" - <<'PY_EOF'
           import sys
           print("python", sys.version)
           import warp, newton, mujoco, mujoco_warp
@@ -95,4 +110,43 @@ jobs:
           print("mujoco     ", mujoco.__version__)
           b = newton.ModelBuilder()
           print("ModelBuilder() OK ->", type(b).__name__)
-          PY
+          PY_EOF
+
+      # The floor itself, kept as a MEASUREMENT with the assertion inverted:
+      # the system 3.10 must STILL fail at ModelBuilder(). The day this step
+      # goes red, newton runs on 3.10 and the deadsnakes machinery above (plus
+      # every "22.04 needs the python phase" sentence in the docs) is stale.
+      - name: Assert the 3.10 floor still holds (22.04 only)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          python3 -VV
+          # Measured on this runner image: after the deadsnakes install above,
+          # `python3 -m pip` on the SYSTEM 3.10 dies with "No module named
+          # pip.__main__" -- a partial pip. Reinstalling the distro's own
+          # python3-pip restores it; without this the step fails on plumbing
+          # before it ever reaches the measurement it exists to take.
+          if ! python3 -m pip --version >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y --reinstall python3-pip
+          fi
+          python3 -m pip --version
+          FLAGS=""
+          if python3 -m pip install --help 2>/dev/null | grep -q break-system-packages; then
+            FLAGS="--break-system-packages"
+          fi
+          PINS="$(python3 scripts/packaging/newton_runtime_pins.py | tr '\n' ' ')"
+          python3 -m pip install $FLAGS $PINS "mujoco==3.11.0" numpy
+          set +e
+          OUT=$(python3 -c "import newton; newton.ModelBuilder()" 2>&1)
+          RC=$?
+          set -e
+          echo "$OUT" | tail -3
+          if [ $RC -eq 0 ]; then
+            echo "UNEXPECTED: newton now constructs on the system 3.10."
+            echo "The documented floor moved -- update the docs and simplify the"
+            echo "bootstrap's python phase before trusting this green."
+            exit 1
+          fi
+          echo "$OUT" | grep -q "each arg must be a type" \
+            || { echo "3.10 failed for a DIFFERENT reason than the documented one:"; echo "$OUT" | tail -10; exit 1; }
+          echo "floor holds: newton still raises the documented TypeError on 3.10" 

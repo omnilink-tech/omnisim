@@ -1034,32 +1034,127 @@ class World:
             cls._SHAPE_CFG = newton.ModelBuilder.ShapeConfig(density=0.0, mu=_mu, ke=_ke, kd=_kd)
         return cls._SHAPE_CFG
 
-    def add_shape_sphere(self, body_idx, radius, cx=0.0, cy=0.0, cz=0.0):
+    @classmethod
+    def _shape_cfg_override(cls, ke=-1.0, mu=-1.0, mu_t=-1.0, mu_r=-1.0):
+        """A per-shape ShapeConfig, or the shared default when nothing is overridden.
+
+        ⚠ mu here is PER-SHAPE tangential friction. Until 2026-08-27 the only
+        friction control was builder.default_shape_cfg.mu -- ONE global value for
+        every shape in the world -- which is why WorldInfo.wrl:34 says a world
+        using several materials "has no exact migration". A gripper pad at mu=2
+        on a table at mu=0.3 could not be expressed at all.
+
+        The negative sentinel means "inherit the world value", matching
+        newtonGroundMu's own convention, so 0.0 stays a legal frictionless value.
+        """
+        _ke_set = bool(ke) and float(ke) > 0.0
+        _mu_set = mu is not None and float(mu) >= 0.0
+        # Torsional / rolling friction: MuJoCo's geom_friction is a TRIPLE
+        # [slide, torsion, roll] and newton's ShapeConfig carries all three, but
+        # OmniSim only ever reached element 0. Without these, a part pinched
+        # between two pads is free to SPIN about the contact normal at zero cost
+        # and a cylinder rolls for ever.
+        # ⚠ They are only CONSULTED at condim >= 4 (torsion) and >= 6 (rolling);
+        # at the default condim 3 MuJoCo never reads them, so setting these
+        # without also raising WorldInfo.newtonCondim is a silent no-op.
+        _mut_set = mu_t is not None and float(mu_t) >= 0.0
+        _mur_set = mu_r is not None and float(mu_r) >= 0.0
+        if not (_ke_set or _mu_set or _mut_set or _mur_set):
+            return cls._shape_cfg()
+        _cw = cls._contact_world
+        # ⚠ env > FIELD > default, via _contact_value. The previous per-shape ke
+        # branch read os.environ directly with a hardcoded 1.0 default, so a world
+        # declaring newtonGroundMu 3 and a per-shape ke silently got mu=1.0 on that
+        # shape -- the world's own declared friction never reached the solver. That
+        # is the "declared but unread" class this runtime warns about elsewhere.
+        _mu_eff = (float(mu) if _mu_set
+                   else cls._contact_value("OMNISIM_NEWTON_GROUND_MU", _cw.get("mu"), 1.0))
+        if _ke_set:
+            import os as _os2
+            _ke_eff = float(ke)
+            _kd_eff = float(_os2.environ.get("OMNISIM_NEWTON_SOFT_KD", "150"))
+        else:
+            _ke_eff = cls._contact_value("OMNISIM_NEWTON_CONTACT_KE", _cw.get("ke"), 2500.0)
+            _kd_eff = cls._contact_value("OMNISIM_NEWTON_CONTACT_KD", _cw.get("kd"), 100.0)
+        _cfg = newton.ModelBuilder.ShapeConfig(density=0.0, mu=_mu_eff,
+                                               ke=_ke_eff, kd=_kd_eff)
+        if _mut_set:
+            _cfg.mu_torsional = float(mu_t)
+        if _mur_set:
+            _cfg.mu_rolling = float(mu_r)
+        return _cfg
+
+    # ------------------------------------------------------------------
+    # Per-body gravity compensation (Solid.newtonGravityCompensation).
+    #
+    # MuJoCo applies gravcomp * m * g upward on the body, so 1.0 is a body that
+    # does not fall. Arm models are routinely authored this way -- ManiSkill
+    # disables gravity on every Panda link and tunes its PD gains for that
+    # world -- and OmniSim had no way to express it at all.
+    #
+    # ⚠ IT CANNOT BE PATCHED AFTER THE FACT. Writing mj_model.body_gravcomp
+    # post-construction leaves qfrc_gravcomp at zero and the body still falls
+    # (measured: z -3.895 after 500 steps against 1.000 when the same value is
+    # baked in) -- MuJoCo decides at compile time whether the gravcomp pass runs
+    # at all. So this is NOT the geom_condim route of patching mj_model; the
+    # value has to reach the spec, which is what newton's custom attribute does
+    # (solver_mujoco.py reads "gravcomp" and injects it into the mjSpec body).
+    #
+    # ⚠ REGISTRATION IS LAZY, for the same reason the MPM path's is:
+    # SolverMuJoCo.register_custom_attributes(builder) adds MuJoCo's whole
+    # attribute set (actuator_*, geom_*, jnt_*, ...) to the builder, and no
+    # world that does not ask for gravcomp should carry it. Measured: late
+    # registration -- after the bodies already exist -- reaches
+    # mj_model.body_gravcomp correctly, so first-use is a safe scope.
+    def _ensure_mujoco_attributes(self):
+        if getattr(self, "_mjc_attrs_registered", False):
+            return
+        if self.builder is None:
+            raise RuntimeError("gravcomp requested with no builder (post-finalize?)")
+        from newton.solvers import SolverMuJoCo
+        SolverMuJoCo.register_custom_attributes(self.builder)
+        self._mjc_attrs_registered = True
+        self._newton_log(
+            "gravcomp: SolverMuJoCo.register_custom_attributes(builder) -- registered "
+            "LAZILY on the first Solid.newtonGravityCompensation, so a world that does "
+            "not use it carries none of MuJoCo's custom attributes.")
+
+    def set_body_gravcomp(self, body_idx, value):
+        """Fraction of gravity cancelled on one body. 0 = normal, 1 = hovers."""
+        try:
+            v = float(value)
+        except (TypeError, ValueError):
+            return -1
+        if v <= 0.0:
+            return 0                      # unset: leave the world byte-identical
+        self._ensure_mujoco_attributes()
+        key = "mujoco:gravcomp"
+        attrs = getattr(self.builder, "custom_attributes", None)
+        if not attrs or key not in attrs:
+            self._newton_log("gravcomp: '%s' not offered by this newton build -- ignored" % key)
+            return -1
+        attrs[key].values[int(body_idx)] = v
+        return 0
+
+    def add_shape_sphere(self, body_idx, radius, cx=0.0, cy=0.0, cz=0.0, mu=-1.0,
+                         mu_t=-1.0, mu_r=-1.0):
         return self.builder.add_shape_sphere(
             int(body_idx),
             xform=wp.transform((float(cx), float(cy), float(cz)),
                                (0.0, 0.0, 0.0, 1.0)),
             radius=float(radius),
-            cfg=self._shape_cfg(),
+            cfg=self._shape_cfg_override(mu=mu, mu_t=mu_t, mu_r=mu_r),
         )
 
     def add_shape_box(self, body_idx, hx, hy, hz, cx=0.0, cy=0.0, cz=0.0, ke=-1.0,
-                      qx=0.0, qy=0.0, qz=0.0, qw=1.0):
+                      qx=0.0, qy=0.0, qz=0.0, qw=1.0, mu=-1.0, mu_t=-1.0, mu_r=-1.0):
         # (qx,qy,qz,qw) is the collider's authored orientation in the body frame (identity
         # default). It is appended AFTER ke so the existing positional order is untouched.
         # A rotated box collider was previously flattened to axis-aligned.
-        cfg = self._shape_cfg()
-        if ke and float(ke) > 0.0:                    # per-shape SOFT contact:
-            # a low ke -> larger MuJoCo solref timeconst -> compliant contact.
-            # Used for tote/bin CONTENTS (e.g. cubes on a dynamic bin floor) so
-            # the gripper plowing the layer can't inject launch energy; MuJoCo
-            # mixes the contact toward the softer geom, so only the soft side
-            # needs marking while the structure/grasp stays firm.
-            import os as _os2
-            _mu = float(_os2.environ.get("OMNISIM_NEWTON_GROUND_MU", "1.0"))
-            _kd = float(_os2.environ.get("OMNISIM_NEWTON_SOFT_KD", "150"))
-            cfg = newton.ModelBuilder.ShapeConfig(density=0.0, mu=_mu,
-                                                  ke=float(ke), kd=_kd)
+        # per-shape SOFT contact (low ke -> larger MuJoCo solref timeconst ->
+        # compliant contact; used for tote/bin CONTENTS so a gripper plowing the
+        # layer can't inject launch energy) and/or per-shape friction.
+        cfg = self._shape_cfg_override(ke=ke, mu=mu, mu_t=mu_t, mu_r=mu_r)
         return self.builder.add_shape_box(
             int(body_idx),
             xform=wp.transform((float(cx), float(cy), float(cz)),
@@ -2658,10 +2753,31 @@ class World:
         # compiles fine; verified). Returns the slot id (>= 0) or -1.
         if self.model is not None:
             return -1              # too late: eq arrays are compile-sized
+        # VERSION-TOLERANT (2026-08-28). newton 1.2.0 exposed
+        # ModelBuilder.add_equality_constraint_weld(); newton 1.5.0 REMOVED it
+        # (equality constraints became mujoco: custom attributes, written by
+        # newton._src.solvers.mujoco.equality._add_equality_constraint). The
+        # bare `except Exception: return -1` this used to carry swallowed that
+        # AttributeError, so from the 1.5.0 upgrade (b56be84a0) until this
+        # line every Connector / VacuumGripper lock warned "no Newton weld slot
+        # was reserved" and held nothing -- measured: the shipped
+        # tests/test_newton_weld_parity.py hold world dropped its payload to the
+        # floor (z 0.0999, hold_drift 0.8265 m). A fifth API break of that
+        # upgrade, missed because the parity test is not in the active CI set.
         try:
-            eq = self.builder.add_equality_constraint_weld(
-                body1=int(body_idx), body2=-1, enabled=False)
-        except Exception:
+            _add_weld = getattr(self.builder, "add_equality_constraint_weld", None)
+            if _add_weld is not None:                       # newton <= 1.2
+                eq = _add_weld(body1=int(body_idx), body2=-1, enabled=False)
+            else:                                           # newton >= 1.5
+                from newton._src.solvers.mujoco.equality import _add_equality_constraint
+                from newton._src.solvers.mujoco.enums import EqType
+                eq = _add_equality_constraint(
+                    self.builder, constraint_type=EqType.WELD,
+                    body1=int(body_idx), body2=-1, enabled=False)
+        except Exception as _exc:                          # noqa: BLE001
+            self._newton_log("[OmNewtonBackend] add_weld_slot(body %d) FAILED: %r "
+                             "-- this Connector / VacuumGripper will never lock natively"
+                             % (int(body_idx), _exc))
             return -1
         if not hasattr(self, "_weld_slots"):
             self._weld_slots = []
@@ -2749,6 +2865,23 @@ class World:
         m.eq_data[eq, 0:3] = anchor
         m.eq_data[eq, 6:10] = relq
         m.eq_data[eq, 10] = 1.0
+        # WELD STIFFNESS (2026-08-28). MuJoCo's default eq_solref [0.02, 1] is a
+        # 20 ms time constant, i.e. a mass-scaled SPRING: ~300 N/m on a 0.12 kg
+        # block, so a chain of welded modules stretched 7-13 cm under a 0.6 N m
+        # hinge (Metazoa P1 gate, machine 9722d23d12a3). A time constant of
+        # 2 x the solver step is the stiffest MuJoCo keeps stable; with the
+        # engine's dt 8 ms / substeps 4 that is 4 ms -> ~25x stiffer. Override:
+        # OMNISIM_NEWTON_WELD_TIMECONST=<seconds> (value-parsed; 0 = MuJoCo
+        # default). Written per engage so it survives model rebuilds.
+        try:
+            import os as _os
+            _tc = _os.environ.get("OMNISIM_NEWTON_WELD_TIMECONST", "")
+            _tc = float(_tc) if _tc.strip() else 2.0 * float(m.opt.timestep)
+            if _tc > 0.0:
+                m.eq_solref[eq, 0] = _tc
+                m.eq_solref[eq, 1] = 1.0
+        except Exception as _exc:                          # noqa: BLE001
+            self._newton_log("[OmNewtonBackend] weld solref not set: %r" % _exc)
         d.eq_active[eq] = 1
         if not hasattr(self, "_weld_engaged"):
             self._weld_engaged = {}

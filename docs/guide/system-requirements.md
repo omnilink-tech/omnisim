@@ -12,25 +12,28 @@
 
 - **Windows** — fully supported. OmniSim runs on Windows 11 and Windows 10 (64-bit only). This is the primary development and release platform; see the [Developer Quickstart](../developer/quickstart.md).
 - **Linux** — supported as of v5.1 (x86-64 only). Verified end-to-end on Ubuntu (build from source, Newton GPU physics, locomotion demos). Specifics:
-  - **Ubuntu 24.04 is required** (system Python 3.12). ⚠ **22.04 does NOT work**: its Python is 3.10, and `newton` 1.5.0 raises `TypeError: Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool].` at `ModelBuilder()` there — despite every package in the stack declaring `Requires-Python >=3.10`. Measured on both, same wheels, by [`physics-runtime-check`](../../.github/workflows/physics-runtime-check.yml). The engine embeds and links the **system** interpreter on Linux, so the distro release chooses it, and on 22.04 you get a simulator that loads worlds and stands still. Ubuntu 26.04 / Python 3.14 is wheel-fragile.
-  - The supported setup path is `scripts/install/linux_bootstrap.sh` (v5.1); manual steps are in the [quickstart's Linux section](../developer/quickstart.md#linux-quickstart-ubuntu).
-  - Newton needs its wheels (`torch warp-lang newton mujoco mujoco-warp`) installed into the **system** `python3` — the engine's embedded interpreter ignores virtualenvs.
+  - **Ubuntu 24.04 and 22.04 are both supported.** 24.04 is the simple case: the engine embeds the system Python 3.12. On 22.04 the system python3 is 3.10, where `newton` 1.5.0 raises `TypeError: Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool].` at `ModelBuilder()` — despite every package in the stack declaring `Requires-Python >=3.10`, and identically on newton 1.5.1, so it is not fixed by a bump. The bootstrap therefore installs **Python 3.12 from deadsnakes** on 22.04 and the engine embeds *that* interpreter; the system `python3` keeps running controllers and the CLI, which is fine at 3.10 because controllers never import newton. The build refuses to link a <3.11 interpreter rather than produce a simulator that loads worlds and stands still. Both paths — and the 3.10 floor itself — are measured on every change by [`physics-runtime-check`](../../.github/workflows/physics-runtime-check.yml) and the two legs of [`linux-build`](../../.github/workflows/linux-build.yml). Ubuntu 26.04 / Python 3.14 is wheel-fragile.
+  - The supported setup path is `scripts/install/linux_bootstrap.sh`; manual steps are in the [quickstart's Linux section](../developer/quickstart.md#linux-quickstart-ubuntu).
+  - Newton needs its wheels installed into the interpreter **the engine links** — the system `python3` on 24.04, the deadsnakes `python3.12` on 22.04. `bash scripts/install/linux_bootstrap.sh gpu` resolves that automatically (it reads the binary with `ldd`); the embedded interpreter ignores virtualenvs either way.
   - Headless runs require **Xvfb**: a Qt/XCB context is created even with `--no-rendering`.
+  - **No GPU at all?** Then the main view renders through **lavapipe**, Mesa's software Vulkan, and on Ubuntu 22.04 (Mesa 23.2) a texture-heavy world can spend *minutes* compiling its first frame on two cores while physics waits behind it -- measured on a 2-vCPU GitHub runner, where the warehouse demo never produced a frame in ten minutes that a real 22.04 machine with a GPU finishes in half a second. Ubuntu 24.04's Mesa 25.2 gets through in seconds. For a headless run that only needs physics and camera images, set **`OMNISIM_NO_WINDOW=1`**: no main view is built at all, camera devices still render offscreen through wgpu, and the world finalises on the physics timeline. That is how the Linux CI smokes run on GPU-less hosts.
 - **macOS** — **not supported: there is no package, no verified build, and Newton physics is unverified. Use Windows or Ubuntu 24.04.** There is also no `linux/arm64` container image, so Apple Silicon would emulate the x86-64 one, which is equally unverified. (`warp`'s Apple support story differs from its CUDA one, so the Newton GPU path would not carry over as-is either.)
 
 Versions of the above operating systems older than those listed may work but are not supported.
 
 ### Python
 
-**Python 3.12** is the version to install. It is not a preference: on Linux the
-engine embeds and links the *system* interpreter, and `newton` 1.5.0 raises
-`TypeError: Union[arg, ...]: each arg must be a type.` at `ModelBuilder()` under
-Python 3.10 — so a 3.10 host gives you a simulator that loads worlds and stands
-still. That is why Ubuntu 24.04 is required and 22.04 is not.
+**Python 3.12** is the version the engine embeds. It is not a preference:
+`newton` 1.5.0 raises `TypeError: Union[arg, ...]: each arg must be a type.` at
+`ModelBuilder()` under Python 3.10 — so an engine embedding 3.10 loads worlds
+and stands still. What changed on 2026-08-28: the bootstrap no longer treats
+that as a reason to refuse 22.04 — it installs 3.12 (deadsnakes) there and the
+build embeds it, asserting the link on the produced binary.
 
-- **Linux** — the distro release picks the interpreter, so use 24.04 and leave
-  the system `python3` alone. Newton's wheels must go into that **system**
-  `python3`; the embedded interpreter ignores virtualenvs.
+- **Linux** — on 24.04 the engine embeds the system `python3` (3.12); on 22.04
+  it embeds the deadsnakes `python3.12` the bootstrap installs, while the
+  system 3.10 keeps running controllers and the CLI. Newton's wheels go into
+  the linked interpreter; the embedded interpreter ignores virtualenvs.
 - **Windows** — install Python 3.12 from [python.org](https://www.python.org/downloads/)
   and tick *Add python.exe to PATH*. It is recommended rather than required: the
   installed package ships `omnisim.bat` in the install root, which prefers a

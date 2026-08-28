@@ -145,35 +145,49 @@ def _physics_runtime(binary: str | None) -> dict:
             info["fix"] = "make -C src/omnisim bundle-newton-runtime"
         return info
 
-    info["source"] = "system-python3"
+    # Probe the interpreter the BINARY LINKS, not a bare `python3`. They can
+    # legitimately differ: on Ubuntu 22.04 the system python3 is 3.10 (where
+    # newton 1.5.0 raises at ModelBuilder()), so the bootstrap installs 3.12
+    # from deadsnakes and the engine embeds that -- probing python3 there
+    # would report the wheels missing on a perfectly healthy install.
+    py = "python3"
+    try:
+        import re as _re
+        ldd = subprocess.run(["ldd", binary], capture_output=True, text=True, timeout=15)
+        m = _re.search(r"libpython(3\.\d+)", ldd.stdout)
+        if m and shutil.which("python" + m.group(1)):
+            py = "python" + m.group(1)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    info["source"] = f"linked-interpreter ({py})"
     probe = (
         "import importlib.util as u;"
         "print(','.join(m for m in ('warp','newton','mujoco') if u.find_spec(m) is None))"
     )
     try:
         out = subprocess.run(
-            ["python3", "-c", probe],
+            [py, "-c", probe],
             capture_output=True, text=True, timeout=30,
         )
     except (OSError, subprocess.SubprocessError):
-        info["detail"] = "could not run `python3` to check the physics runtime"
+        info["detail"] = f"could not run `{py}` to check the physics runtime"
         return info
     if out.returncode != 0:
-        info["detail"] = "`python3 -c` failed, so the physics runtime is unverified"
+        info["detail"] = f"`{py} -c` failed, so the physics runtime is unverified"
         return info
     missing = [m for m in out.stdout.strip().split(",") if m]
     if not missing:
         info["status"] = "present"
-        info["detail"] = "physics wheels importable from the system python3"
+        info["detail"] = f"physics wheels importable from {py}"
     else:
         info["status"] = "absent"
         info["detail"] = (
-            "system python3 cannot import " + ", ".join(missing) + " -- "
+            py + " cannot import " + ", ".join(missing) + " -- "
             "this install has NO physics at all"
         )
         info["fix"] = (
-            "pip install warp-lang newton mujoco mujoco-warp "
-            "(into the SYSTEM python3 -- the engine ignores venvs)"
+            py + " -m pip install warp-lang newton mujoco mujoco-warp "
+            "(the interpreter the engine links -- it ignores venvs)"
         )
     return info
 
@@ -484,7 +498,11 @@ def run(argv: list[str]) -> int:
     elif not python["spawned"]:
         py_line += "   WARN: no python/python3 on PATH -- every Python controller will fail to start"
     print(py_line)
-    if python["too_old"]:
+    if python["too_old"] and physics["status"] != "present":
+        # Suppressed when the physics probe already found a working (linked)
+        # interpreter: on Ubuntu 22.04 + deadsnakes the CLI runs on 3.10 by
+        # design while the engine embeds 3.12, and warning about it would
+        # read as a fault on a healthy install.
         print("            WARN: newton 1.5.0 raises at ModelBuilder() on CPython 3.10 --")
         print("                  use 3.12 for the interpreter that supplies physics.")
     # Coherence advisories are things NOT already on the build line above (env

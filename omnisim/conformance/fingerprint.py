@@ -103,10 +103,23 @@ def newton_runtime_present(binary: str | None) -> bool:
         return True
     if os.name == "nt":
         return False
+    import re
+    import shutil
     import subprocess
+    # Probe the interpreter the binary LINKS: on Ubuntu 22.04 the engine
+    # embeds a deadsnakes 3.12 while `python3` stays 3.10, so a bare python3
+    # probe reports the wheels missing on a healthy install.
+    py = "python3"
+    try:
+        ldd = subprocess.run(["ldd", binary], capture_output=True, text=True, timeout=15)
+        m = re.search(r"libpython(3\.\d+)", ldd.stdout)
+        if m and shutil.which("python" + m.group(1)):
+            py = "python" + m.group(1)
+    except (OSError, subprocess.SubprocessError):
+        pass
     probe = "import importlib.util as u; raise SystemExit(0 if u.find_spec('warp') else 1)"
     try:
-        return subprocess.run(["python3", "-c", probe], timeout=30,
+        return subprocess.run([py, "-c", probe], timeout=30,
                               capture_output=True).returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False

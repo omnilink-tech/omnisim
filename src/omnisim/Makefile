@@ -491,10 +491,18 @@ ifeq ($(OMNISIM_WITH_NEWTON),ON)
     # matches whatever Python 3 the system ships (3.10/3.12/3.13/...) instead
     # of hardcoding one version. If PYTHON_HOME is explicitly set (env or
     # command line), prefer that install's own python3-config.
-    ifeq ($(origin PYTHON_HOME),undefined)
-      PYTHON_CONFIG := python3-config
-    else
-      PYTHON_CONFIG := $(PYTHON_HOME)/bin/python3-config
+    # PYTHON_CONFIG is overridable on its own (env or make arg), because the
+    # right interpreter is not always the one `python3-config` resolves: on
+    # Ubuntu 22.04 the system python3 is 3.10, where newton 1.5.0 raises at
+    # ModelBuilder() (typing.Union rejects wp.array[wp.bool] before 3.11), so
+    # linux_bootstrap.sh installs 3.12 from deadsnakes and passes
+    # PYTHON_CONFIG=python3.12-config to embed THAT interpreter instead.
+    ifeq ($(origin PYTHON_CONFIG),undefined)
+      ifeq ($(origin PYTHON_HOME),undefined)
+        PYTHON_CONFIG := python3-config
+      else
+        PYTHON_CONFIG := $(PYTHON_HOME)/bin/python3-config
+      endif
     endif
     PYTHON_HOME ?= /usr
     PYTHON_INCLUDE := $(shell $(PYTHON_CONFIG) --includes)
