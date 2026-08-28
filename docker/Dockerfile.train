@@ -4,25 +4,33 @@
 # the in-engine RL trainers run with no further setup. Published to GHCR by
 # .github/workflows/train-image.yml.
 #
-#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v8.1.6 bash
+#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v8.1.7 bash
 #   # inside:
 #   xvfb-run -a bash projects/policies/training/run_quad_walk_rl.sh 600 mytag train headless
 #
-# WHY THE BASE IMAGE IS UBUNTU 22.04 AND NOT AN ML IMAGE
+# WHY THE BASE IMAGE IS UBUNTU 24.04 AND NOT AN ML IMAGE
 # ------------------------------------------------------
-# This is a correctness decision, not a taste one.
+# This is a correctness decision, not a taste one, and it has TWO parts.
 #
-# OmniSim embeds CPython: the engine `import warp` / `import newton` from the
-# interpreter its BINARY LINKS. Separately, Python *controllers* are spawned as
-# whatever `python3` is on PATH. Popular ML base images (pytorch, etc.) ship
-# their own Python 3.11 on PATH while the engine links the distro's 3.10 — so
-# there are TWO interpreters, `pip install` feeds the wrong one, and the failure
-# is SILENT: an ONNX deploy controller that cannot import onnxruntime falls back
-# to a zero-residual baseline, prints one warning, and STILL EXITS 0. You get a
-# clean "PASS" from a policy that never loaded.
+# ONE INTERPRETER. OmniSim embeds CPython: the engine `import warp` / `import
+# newton` from the interpreter its BINARY LINKS, while Python *controllers* are
+# spawned as whatever `python3` is on PATH. Popular ML base images ship their
+# own Python on PATH while the engine links the distro's -- so there are TWO
+# interpreters, `pip install` feeds the wrong one, and the failure is SILENT: an
+# ONNX deploy controller that cannot import onnxruntime falls back to a
+# zero-residual baseline, prints one warning, and STILL EXITS 0. You get a clean
+# "PASS" from a policy that never loaded. A distro base means one interpreter,
+# one install, and that entire class of bug cannot occur.
 #
-# Ubuntu 22.04's system python IS 3.10 — the one the engine links. One
-# interpreter, one install, and that entire class of bug cannot occur here.
+# AND IT MUST BE 3.12, NOT 3.10. This file pinned 22.04 for years precisely
+# BECAUSE its system python is 3.10. That is now wrong: newton 1.5.0 does not
+# work on 3.10, despite every package in the stack declaring
+# Requires-Python >=3.10. Measured by .github/workflows/physics-runtime-check:
+#   3.10.12 -> newton.ModelBuilder() raises TypeError: Union[arg, ...]: each
+#              arg must be a type. Got wp.array[wp.bool].
+#   3.12.3  -> constructs fine, same warp 1.16.0 and newton 1.5.0.
+# On 22.04 this image therefore builds green and produces a simulator with NO
+# PHYSICS: the world loads and stands still. 24.04's system python is 3.12.
 #
 # WHAT IS BAKED
 # -------------
@@ -40,10 +48,10 @@
 #                     version libcudart.so.12
 # The image still BUILDS fine (no GPU on the builder) and only fails on the GPU
 # box — which is precisely why the image is verified end-to-end on a pod.
-ARG CUDA_TAG=12.8.1-devel-ubuntu22.04
+ARG CUDA_TAG=12.8.1-devel-ubuntu24.04
 FROM nvidia/cuda:${CUDA_TAG}
 
-ARG OMNISIM_TAG=v8.1.6
+ARG OMNISIM_TAG=v8.1.7
 ARG REPO_URL=https://github.com/omnilink-tech/omnisim.git
 ARG GPU_VERIFY=0
 ARG JOBS=8
@@ -89,19 +97,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxml2-dev libboost-dev libssh-gcrypt-dev libzip-dev libreadline-dev \
         libopenal-dev libssl-dev libgl1-mesa-dev libxi-dev libxrandr-dev pbzip2 \
         libdbus-1-dev libdbus-1-3 \
+        libfontconfig1-dev libxkbcommon-dev libxkbcommon-x11-dev \
         python3 python3-pip python3-dev python-is-python3 \
         xvfb x11-utils \
         libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
         libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxkbcommon-x11-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Enforce the single-interpreter invariant at BUILD time. If a future base image
-# reintroduces a second Python, fail here rather than silently resurrect the
-# zero-residual-deploy bug on someone's GPU.
-RUN test "$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')" = "3.10" \
-    || (echo "FATAL: system python is not 3.10, but the engine links libpython3.10." \
-        && echo "Two interpreters => ONNX deploys silently run a zero-residual baseline." \
-        && exit 1)
+# newton 1.5.0 does NOT work on CPython 3.10, despite every package in the
+# stack declaring Requires-Python >=3.10. Measured by physics-runtime-check:
+# on 3.10.12 newton.ModelBuilder() raises
+#   TypeError: Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool].
+# while 3.12.3 constructs fine -- same warp 1.16.0, same newton 1.5.0. The
+# engine embeds and links the SYSTEM interpreter on Linux, so the base image is
+# what selects it: 24.04 gives 3.12, 22.04 gives 3.10 and therefore a simulator
+# with NO PHYSICS AT ALL (the world loads and stands still).
+#
+# Assert it rather than trust the base tag -- two interpreters is also how ONNX
+# deploys silently run a zero-residual baseline.
+RUN test "$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')" = "3.12" \
+    || (echo "FATAL: system python is not 3.12 but the engine links libpython3.12." && exit 1)
 
 # ---------------------------------------------------------------------------
 # 2. The GPU stack. One interpreter, so one install serves both the engine's
@@ -118,9 +133,9 @@ RUN test "$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')" = "3.1
 #    convention assert below deliberately exercises the 3.11.0 form, so this
 #    image fails to BUILD rather than failing mid-run on a paid GPU.
 # ---------------------------------------------------------------------------
-RUN python3 -m pip install --no-cache-dir --upgrade pip \
-    && python3 -m pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu128 \
-    && python3 -m pip install --no-cache-dir \
+RUN python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir --upgrade pip \
+    && python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu128 \
+    && python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir \
         'warp-lang==1.16.0' 'newton==1.5.0' 'mujoco==3.11.0' 'mujoco-warp==3.11.0' \
         numpy scipy onnx onnxscript onnxruntime
 
@@ -153,8 +168,8 @@ RUN cd "${OMNISIM_HOME}" && make -j"${JOBS}" release \
 
 # The engine must link the interpreter the wheels went into. Verify it from the
 # ELF rather than assume — this is the invariant the whole image rests on.
-RUN ldd "${OMNISIM_HOME}/bin/omnisim-bin" | grep -q 'libpython3\.10' \
-    || (echo "FATAL: omnisim-bin does not link libpython3.10 — wheels are in the wrong python" && exit 1)
+RUN ldd "${OMNISIM_HOME}/bin/omnisim-bin" | grep -q 'libpython3\.12' \
+    || (echo "FATAL: omnisim-bin does not link libpython3.12 — wheels are in the wrong python" && exit 1)
 
 # ---------------------------------------------------------------------------
 # 4. Optional GPU verification + warp kernel prewarm. Needs a GPU at BUILD time,
@@ -170,7 +185,7 @@ RUN if [ "${GPU_VERIFY}" = "1" ]; then \
       cd "${OMNISIM_HOME}" && \
       export OMNISIM_LOG_PATH="${OMNISIM_HOME}/build_smoke.txt" && \
       xvfb-run -a python3 -m omnisim run-headless \
-        projects/samples/demos/worlds/showcase/warehouse_husky.wbt --duration 45 && \
+        projects/samples/demos/worlds/showcase/warehouse_husky.omniworld --duration 45 && \
       test -f "$OMNISIM_LOG_PATH.newton.json" \
         || (echo "FATAL: no Newton sidecar — ODE drove it, or it never reached finalize" && exit 1) && \
       ! grep -q '"degraded": *true' "$OMNISIM_LOG_PATH.newton.json" \

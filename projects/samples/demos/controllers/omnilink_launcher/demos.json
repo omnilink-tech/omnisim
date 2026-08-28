@@ -11,6 +11,12 @@
           "name": "Warehouse Husky",
           "world": "projects/samples/demos/worlds/showcase/warehouse_husky.omniworld",
           "blurb": "The onboarding demo. Husky random-walks a 30 × 18 m warehouse with collision recovery."
+        },
+        {
+          "id": "omniarm6_real_pick_place",
+          "name": "OmniArm 6 real pick and place",
+          "world": "projects/samples/demos/worlds/flagship/omniarm6_real_pick_place.omniworld",
+          "blurb": "The demo README and BETA open with: a real friction grasp lifts a block and places it, with a drop control (PICK_CONTROL_DROP=1) that must fail."
         }
       ]
     },

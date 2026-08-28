@@ -1,0 +1,29 @@
+# OmniSim guided tour -- the "Welcome to OmniSim!" menu shown on first launch.
+#
+# Read by src/omnisim/gui/OmGuidedTour.cpp:134. Format:
+#   [Section title]
+#   <path relative to OMNISIM_HOME> [seconds to show before auto-advancing]
+# Lines starting with # are ignored, and a world listed before any [section] is
+# skipped -- so every entry must sit under a heading.
+#
+# This file did not exist until 2026-08-27, which meant the welcome menu that
+# docs/guide/starting-omnisim.md promises ("a list of possible starting points")
+# opened EMPTY for every new user -- the loader simply returns when the file is
+# absent. Keep every entry pointing at a world that ships in the package and is
+# known to run; a broken entry here is a broken first impression.
+
+[Start here]
+projects/samples/demos/worlds/omnilink_launcher.omniworld 30
+projects/samples/demos/worlds/showcase/warehouse_husky.omniworld 25
+
+[Manipulation]
+projects/samples/demos/worlds/flagship/omniarm6_real_pick_place.omniworld 45
+
+[Navigation]
+projects/samples/demos/worlds/flagship/husky_maze.omniworld 30
+
+[Talk to a robot]
+projects/samples/demos/worlds/chat/omnilink_husky.omniworld 30
+
+[Physics at scale]
+projects/samples/demos/worlds/physics/newton_husky_swarm_drive.omniworld 25

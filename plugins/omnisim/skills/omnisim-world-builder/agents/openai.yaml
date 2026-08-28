@@ -1,0 +1,4 @@
+interface:
+  display_name: "OmniSim World Builder"
+  short_description: "Build and debug agent-driven robot simulations"
+  default_prompt: "Use $omnisim-world-builder to create and verify an OmniSim world."

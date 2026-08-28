@@ -131,7 +131,8 @@ namespace omnisim {
       // APPEND ONLY -- must stay in lockstep with WbNodeType in
       // include/controller/c/omnisim/nodes.h, value for value.
       CLOTH,
-      SOFT_BODY
+      SOFT_BODY,
+      GRANULAR_BED
     } Type;
 
     virtual void remove();

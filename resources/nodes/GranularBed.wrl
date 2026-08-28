@@ -1,0 +1,177 @@
+# GranularBed — a rectangular volume of GRANULAR MATTER (sand, snow, gravel,
+# soil), simulated by newton's SolverImplicitMPM and TWO-WAY COUPLED to the
+# rigid world through SolverCoupledProxy.
+#
+# The third particle node, and the first that is NOT a SolverVBD one. `Cloth`
+# (a triangle sheet) and `SoftBody` (a tet lattice) are elastic CONTINUA whose
+# particles are bound to each other by elements; a GranularBed's particles are
+# bound to NOTHING. Its constitutive law is a Drucker-Prager yield surface
+# evaluated on a background grid — the material-point method — so what it holds
+# is a friction coefficient, a yield pressure and a yield stress, not a
+# stiffness. That is why there is no triKe / kMu / dim{X,Y,Z} here, and why the
+# geometry is authored as a `size` in METRES rather than as a cell count.
+#
+# ⚠ IT LANDS ON A DIFFERENT SOLVER FROM Cloth AND SoftBody, AND THE RUNTIME
+# BUILDS BOTH WHEN A WORLD CARRIES BOTH. A bed adds an "mpm" entry
+# (SolverImplicitMPM) next to the "mjc" entry (SolverMuJoCo); a Cloth or a
+# SoftBody adds a "vbd" one (SolverVBD). All three coexist in ONE
+# SolverCoupledProxy over ONE Model. As with the other particle nodes the
+# coupling is selected by the NODES PRESENT, never by WorldInfo.newtonSolver —
+# that field selects nothing here, and the runtime says so once if what it
+# declares disagrees with what the nodes imply.
+#
+# ⛔ A GranularBed REQUIRES CUDA AND THE RUNTIME REFUSES TO BUILD WITHOUT IT.
+# This is the only particle node with a hard device requirement, and it is a
+# refusal rather than a degradation because the CPU path is not slow, it is
+# unusable — MEASURED: 42-67 ms/step at ~3k particles (0.15-0.25x realtime) and
+# 351 ms/step at 8192, against CUDA that is nearly FLAT in N (30.9 ms at 2197,
+# 67.4 ms at 405224). A world quietly running at 0.2x realtime reads as a
+# physics bug, so the runtime raises a named error instead. OMNISIM_MPM_ALLOW_CPU=1
+# takes the CPU path anyway (for a smoke test on a box with no GPU); expect the
+# numbers above.
+#
+# GEOMETRY. The bed is a BOX of `size` metres filled with a jittered particle
+# lattice.
+#
+# ⚠ `translation` IS THE MINIMUM CORNER, NOT THE CENTRE. The bed runs from that
+# corner along +X/+Y/+Z, so `translation 0 0 0` with `size 2 2 0.5` spans
+# z = 0 .. 0.5 and its centre is 0.25 m above the number in the file. That is
+# newton's convention (`add_particle_grid`'s `pos` is the grid origin) and it is
+# the OPPOSITE of Solid/Box, where translation is the centre. It is the same
+# convention SoftBody uses, so the two volumetric particle nodes agree.
+# `rotation` then turns the whole bed about that corner.
+#
+# ⚠ `GranularGroup` — the OLDER, CUDA-kernel, non-Newton particle node — HAS NO
+# `translation` FIELD AT ALL, which is a live bug: its particles are placed in
+# world coordinates by its own kernel, and a shipped probe that assumed the node
+# could be positioned was silently wrong. GranularBed is a SEPARATE node, not a
+# re-backing of that one, and it declares `translation` for exactly that reason.
+# The two can coexist in one world; nothing is shared between them.
+#
+# ⚠ `count` IS A BUDGET, NOT A TARGET, AND THE PARTICLE COUNT IS DERIVED. The
+# lattice resolution comes from `voxelSize` and `particlesPerCell`:
+#
+#     n = PRODUCT over i in {x,y,z} of ( ceil(particlesPerCell * size_i / voxelSize) + 1 )
+#
+# which is monotone DECREASING in voxelSize. So `count` is an upper bound the
+# runtime satisfies by BISECTING for the FINEST grid (smallest voxel, largest n)
+# that still fits under it, starting from the authored `voxelSize` and only ever
+# COARSENING — it never refines past what the file asked for. The value it
+# settles on (voxel size, particle count, budget) is LOGGED, so a bed that came
+# out coarser than intended says so rather than looking like a modelling
+# mistake. 0 disables the budget and the authored voxelSize is used verbatim.
+#
+# ⚠ AND — the trap that formula exists to name — newton's `add_particle_grid`
+# counts PARTICLES in its dim_x/dim_y/dim_z, which is the OPPOSITE of
+# `add_soft_grid` and `add_cloth_grid`, where they count CELLS. Getting that
+# backwards does not fail: it silently builds a bed one lattice step SMALLER on
+# every axis than the `size` in the file, and the error grows as the grid
+# coarsens. The runtime owns the +1; the number in this file is metres.
+#
+# MATERIAL, and the 0 = unset convention. 0 on any material field means "leave
+# it to newton", exactly as it does on every WorldInfo newton* field and on
+# SoftBody. Unlike SoftBody, the substituted values are NOT duplicated in the
+# engine: the runtime simply OMITS that per-particle custom attribute, so
+# newton's own default applies and there is exactly one source of truth for it.
+# Those defaults (newton 1.5.0, SolverImplicitMPM.register_custom_attributes)
+# are: friction 0.5, yieldPressure 1e15, yieldStress 0, youngModulus 1e15,
+# poissonRatio 0.3, viscosity 0. The FIELD defaults below are deliberately not
+# all 0 — they are the values newton's own sand example uses — so a bed authored
+# with no material fields at all is dry sand, not the library default.
+#
+# ⚠ rigidSubsteps DEFAULTS TO 4, AND 1 IS MEASURABLY WRONG. The MuJoCo entry
+# runs `rigidSubsteps` substeps per coupled step. MEASURED at rigidSubsteps 1: a
+# rigid cube RESTING on the bed GAINS energy and climbs, 0.27 -> 0.99 m. That is
+# not a tuning preference; treat anything below 4 as a diagnostic setting.
+#
+# ⚠ gridType "fixed" NaNs SILENTLY WHEN UNDERPADDED. A "fixed" grid is allocated
+# once, from the particle bounds at construction, and material that leaves that
+# box is undefined — no error, no warning, no exception, just NaN positions from
+# some step onward. It is the faster and CUDA-graph-friendly choice, and
+# upstream's coupled example selects it WITH `grid_padding 50`. If you select
+# it, pad it. "sparse" (the default) rebuilds its topology per step and has no
+# such cliff.
+#
+# RENDERING is engine-owned, as for every particle node: one instanced unit
+# sphere per particle, world-space positions streamed from the solver each
+# frame. There is no Shape / IndexedFaceSet child to author and none is accepted.
+#
+# ⚠ A BED IS INVISIBLE UNTIL THE FIRST PHYSICS STEP, ON PURPOSE. Those
+# positions come BACK from the solver, and the readback needs a running world; at
+# t = 0, and on a simulation paused before its first step, there is nothing to
+# read. The node declines to draw rather than inventing a rest pose -- the same
+# choice GranularGroup makes on a box with no CUDA, and for the same reason: N
+# spheres piled at the world origin is not a scene anyone authored. Step once and
+# the bed appears. An empty-looking first frame is THIS, not a missing node.
+#
+# ⚠ THE `appearance` FIELD SUPPLIES COLOUR, NOT TEXTURE, AND THAT IS A REAL
+# LIMIT RATHER THAN AN OVERSIGHT. A particle is drawn as a unit sphere and the
+# BED has no UV parameterisation at all, so `baseColor`, `roughness`,
+# `emissiveColor` and `transparency` are honoured while baseColorMap /
+# roughnessMap / metalnessMap / normalMap are NOT SAMPLED. Use `diffuseColor`
+# for the simple case and reach for `appearance` when the bed has to sit in a
+# PBR-lit scene — see SoftBody.wrl for why a Phong surface renders exactly black
+# in the shade under the canonical lighting recipe.
+#
+# ⚠ castShadows DEFAULTS **FALSE** HERE, unlike Cloth and SoftBody. A bed is
+# routinely 10^4-10^5 draws, and every one of them would be re-rasterised into
+# the shadow map each frame per light for a silhouette that is already the top
+# surface of an opaque volume. Turn it on deliberately, on a small bed, if a
+# shot needs it.
+#
+# Reference worlds:
+#   projects/samples/demos/worlds/physics/newton_granular_bed_drop.omniworld
+#   projects/samples/demos/worlds/physics/newton_granular_bed_drop_control.omniworld
+# The second is the first MINUS the bed, and it is not optional reading: the
+# failure mode of this whole node is a bed that registers, renders and does
+# nothing, and the only thing that distinguishes that from a working one is a
+# rest height that DIFFERS from the no-bed control. A body that settles at
+# byte-identical heights in the two worlds is not resting on sand.
+
+GranularBed {
+  field SFVec3f    translation      0 0 0        # world position of the bed's MINIMUM CORNER (not its centre)
+  field SFRotation rotation         0 0 1 0      # world orientation of the bed, about that corner
+  field SFVec3f    size             1 1 0.3      # extent in METRES along local X/Y/Z (all strictly positive)
+  # ---- RESOLUTION --------------------------------------------------------
+  # voxelSize is the MPM background-grid spacing and it is the single most
+  # consequential number here: it sets the cost, the particle count (with
+  # particlesPerCell) and the smallest feature the material can resolve. A
+  # collider thinner than one voxel is not felt.
+  field SFFloat    voxelSize        0.05         # MPM grid voxel edge (m). 0 => 0.05
+  field SFFloat    particlesPerCell 3            # particle lattice density per voxel edge. 0 => 3
+  # A BUDGET (see the long note above): not a target, and not the particle
+  # count. 0 = no budget, and the authored voxelSize is used exactly.
+  field SFInt32    count            0            # max particles; the runtime coarsens voxelSize until n <= this
+  # ---- MATERIAL (0 = leave it to newton; see the note above) --------------
+  field SFFloat    density          2500         # kg/m^3 of the bulk material. 0 => 2500 (dry sand)
+  field SFFloat    friction         0.75         # Drucker-Prager friction coefficient. 0 => newton's 0.5
+  field SFFloat    yieldPressure    0            # compressive yield (Pa). 0 => newton's 1e15 (no cap)
+  field SFFloat    yieldStress      0            # deviatoric yield stress (Pa) -- COHESION. 0 => newton's 0 (cohesionless)
+  field SFFloat    youngModulus     0            # elastic modulus (Pa). 0 => newton's 1e15 (rigid grains)
+  field SFFloat    poissonRatio     0            # elastic Poisson ratio. 0 => newton's 0.3
+  field SFFloat    viscosity        0            # plastic viscosity (Pa.s). 0 => newton's 0 (rate-independent)
+  # Per-particle collision/render radius. 0 => derived as half the LARGEST
+  # lattice spacing, which is what makes a bed look packed rather than gappy and
+  # is what upstream's own sand example does.
+  field SFFloat    particleRadius   0            # m. 0 => max(latticeSpacing) * 0.5, derived per bed
+  # ---- COUPLING / SOLVER (world-level -- read this) -----------------------
+  # ⚠ THESE SIX ARE PROPERTIES OF THE ONE SHARED MPM ENTRY, NOT OF THIS BED.
+  # A world may declare several GranularBeds, but there is exactly ONE
+  # SolverImplicitMPM and ONE coupled-solver configuration. When two beds
+  # disagree the runtime REDUCES them (max for the three counts, min for
+  # tolerance and for voxelSize) and WARNS naming both values, rather than
+  # letting the last-parsed bed silently win.
+  field SFInt32    rigidSubsteps    4            # MuJoCo substeps per coupled step. ⚠ 1 GAINS ENERGY (measured 0.27 -> 0.99 m)
+  field SFInt32    proxyIterations  1            # proxy relaxation passes per coupled step. 0 => 1
+  field SFInt32    maxIterations    0            # MPM rheology iterations. 0 => 50 (upstream's coupled value)
+  field SFFloat    tolerance        0            # MPM rheology tolerance. 0 => 1e-4
+  # ⚠ "fixed" is FASTER and CUDA-graph friendly but NaNs SILENTLY once material
+  # leaves the box allocated at construction -- pad it (upstream pairs it with
+  # gridPadding 50). "sparse" rebuilds per step and cannot underflow.
+  field SFString   gridType         "sparse"     # "sparse" | "fixed"
+  field SFInt32    gridPadding      0            # empty cells reserved around the particles. REQUIRED with "fixed"
+  # ---- APPEARANCE ---------------------------------------------------------
+  field SFColor    diffuseColor     0.85 0.7 0.4 # engine-owned phong diffuse, used ONLY when `appearance` is NULL
+  field SFNode     appearance       NULL         # Appearance | PBRAppearance. COLOUR ONLY -- texture maps are not sampled
+  field SFBool     castShadows      FALSE        # ⚠ FALSE by default: a bed is 10^4-10^5 draws (see the note above)
+}

@@ -565,13 +565,32 @@ emit("[pick] RESULT carried=%s pinched=%s palm_wedge=%s drift=%.4fm placed=%s "
      % (carried_ok, pinched, palm_wedge, drift, placed, p[0], p[1], p[2],
         "PASS" if ok else "FAIL"))
 
-with open(OUT, "w", encoding="utf-8") as fh:
-    json.dump({"control_drop": CONTROL_DROP, "carried": carried_ok,
-               "pinched": pinched, "palm_wedge": palm_wedge,
-               "contacts": [c_squeeze, c_lift, c_carry],
-               "drift_m": drift, "placed": placed, "ok": ok,
-               "final": list(p), "hold_mechanism": "friction",
-               "interference_m": INTERFERENCE, "grip_n_per_pad": GRIP_KP * INTERFERENCE, "log": log}, fh, indent=1)
+_result = {"control_drop": CONTROL_DROP, "carried": carried_ok,
+           "pinched": pinched, "palm_wedge": palm_wedge,
+           "contacts": [c_squeeze, c_lift, c_carry],
+           "drift_m": drift, "placed": placed, "ok": ok,
+           "final": list(p), "hold_mechanism": "friction",
+           "interference_m": INTERFERENCE, "grip_n_per_pad": GRIP_KP * INTERFERENCE,
+           "log": log}
+# This is the demo README leads with, and the default Windows install lands in
+# C:\Program Files, which a normal shell cannot write -- so an unguarded write
+# here killed the controller with a PermissionError AFTER a successful pick and
+# place, freezing the robot at the moment the demo had just worked. Fall back to
+# the temp dir and say where it went, rather than losing the run over a file
+# nobody asked for.
+try:
+    with open(OUT, "w", encoding="utf-8") as fh:
+        json.dump(_result, fh, indent=1)
+except OSError as _exc:
+    import tempfile
+    OUT = os.path.join(tempfile.gettempdir(), os.path.basename(OUT))
+    emit("[pick] result file not writable (%s); writing %s instead" % (_exc, OUT))
+    try:
+        with open(OUT, "w", encoding="utf-8") as fh:
+            json.dump(_result, fh, indent=1)
+    except OSError as _exc2:
+        emit("[pick] could not write the result anywhere (%s) -- the RESULT line "
+             "above is the record" % _exc2)
 
 if os.environ.get("PICK_AUTOQUIT"):
     robot.simulationQuit(0 if ok else 1)

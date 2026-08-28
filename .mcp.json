@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "Project-scoped MCP registration. Claude Code loads this automatically when",
+    "the OmniSim directory is opened, so `omnisim` tools are available with no",
+    "install and no `claude mcp add`. Cursor and Claude Desktop need their own",
+    "config -- packages/omnisim-mcp/README.md carries those snippets.",
+    "",
+    "`python -m omnisim_mcp` with PYTHONPATH is used deliberately instead of the",
+    "`omnisim-mcp` console script: that script only exists after `pip install -e`",
+    "and lands in the installing interpreter's Scripts/ dir, which an MCP client's",
+    "spawn environment often does not inherit on Windows. The package is pure",
+    "stdlib, so this form needs no install at all.",
+    "",
+    "The server is a PROXY to the harness on :6789. Start it first, from this",
+    "directory: `python -m omnisim harness`. `harness_status` reports on the",
+    "harness, not the engine -- it can read reachable on an install that cannot",
+    "load a world, so run `python -m omnisim doctor` if a load fails."
+  ],
+  "mcpServers": {
+    "omnisim": {
+      "command": "python",
+      "args": ["-m", "omnisim_mcp"],
+      "env": {
+        "PYTHONPATH": "packages/omnisim-mcp/src",
+        "OMNISIM_HARNESS_URL": "http://127.0.0.1:6789"
+      }
+    }
+  }
+}

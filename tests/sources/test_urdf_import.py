@@ -258,5 +258,282 @@ class TestUrdfImport(unittest.TestCase):
         self.assertIn("geometry Box { size 0.2 0.2 0.2 }", vrml)
 
 
+    # ------------------------------------------------------------------
+    # Physical-plausibility checks (added 2026-08-27).
+    #
+    # These four defect classes all LOAD without error and are silently
+    # wrong, which is why a load-succeeds smoke test cannot see them. Each
+    # test asserts BOTH directions -- fires on the defect, silent on the
+    # valid control -- because a check that cannot go green is as useless
+    # as one that cannot go red.
+    # ------------------------------------------------------------------
+
+    def _warnings_for(self, body: str) -> str:
+        path = self.write_urdf(body)
+        robot = self.urdf_import.parse_urdf(path)
+        return chr(10).join(self.urdf_import.build_report(robot)["warnings"])
+
+    def test_triangle_inequality_violation_is_flagged(self):
+        """A tensor can be positive definite and still describe no rigid body.
+
+        Values are the real ones shipped by a public robot description whose
+        ixy was copy-pasted from ixx; principal moments come out
+        (3.382e-05, 4.145e-04, 6.392e-04), so a+b < c by ~30%.
+        """
+        warnings = self._warnings_for(
+            """            <?xml version="1.0"?>
+            <robot name="bad_inertia">
+              <link name="base">
+                <inertial>
+                  <mass value="0.55665538"/>
+                  <inertia ixx="0.00030053" ixy="0.00030053" ixz="-0.0000017"
+                           iyy="0.00037247" iyz="-0.00000005" izz="0.00041454"/>
+                </inertial>
+              </link>
+            </robot>
+            """
+        )
+        self.assertIn("triangle inequality", warnings)
+
+        # Control: the same tensor with the copy-paste undone is valid and
+        # must produce no such warning.
+        ok = self._warnings_for(
+            """            <?xml version="1.0"?>
+            <robot name="good_inertia">
+              <link name="base">
+                <inertial>
+                  <mass value="0.55665538"/>
+                  <inertia ixx="0.00030053" ixy="0" ixz="-0.0000017"
+                           iyy="0.00037247" iyz="-0.00000005" izz="0.00041454"/>
+                </inertial>
+              </link>
+            </robot>
+            """
+        )
+        self.assertNotIn("triangle inequality", ok)
+
+    def test_zero_mass_link_with_geometry_is_flagged(self):
+        warnings = self._warnings_for(
+            """            <?xml version="1.0"?>
+            <robot name="massless">
+              <link name="finger">
+                <visual><geometry><box size="0.01 0.01 0.05"/></geometry></visual>
+                <collision><geometry><box size="0.01 0.01 0.05"/></geometry></collision>
+                <inertial>
+                  <mass value="0"/>
+                  <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+                </inertial>
+              </link>
+            </robot>
+            """
+        )
+        self.assertIn("cannot be simulated", warnings)
+
+        # Control: a massless link carrying NO geometry is a normal URDF
+        # idiom (a pure frame) and must stay silent.
+        ok = self._warnings_for(
+            """            <?xml version="1.0"?>
+            <robot name="frame_only">
+              <link name="imu_frame">
+                <inertial>
+                  <mass value="0"/>
+                  <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+                </inertial>
+              </link>
+            </robot>
+            """
+        )
+        self.assertNotIn("cannot be simulated", ok)
+
+    def test_zero_effort_and_velocity_limits_are_flagged(self):
+        """effort="0" is a declared inability to move, not "unlimited" --
+        URDF spells unlimited by omitting the attribute."""
+        warnings = self._warnings_for(
+            """            <?xml version="1.0"?>
+            <robot name="no_authority">
+              <link name="base"/>
+              <link name="arm"/>
+              <joint name="shoulder" type="revolute">
+                <parent link="base"/>
+                <child link="arm"/>
+                <axis xyz="0 0 1"/>
+                <limit effort="0" velocity="0" lower="-1.0" upper="1.0"/>
+              </joint>
+            </robot>
+            """
+        )
+        self.assertIn("zero authority", warnings)
+
+        ok = self._warnings_for(
+            """            <?xml version="1.0"?>
+            <robot name="has_authority">
+              <link name="base"/>
+              <link name="arm"/>
+              <joint name="shoulder" type="revolute">
+                <parent link="base"/>
+                <child link="arm"/>
+                <axis xyz="0 0 1"/>
+                <limit effort="50" velocity="12.5664" lower="-1.0" upper="1.0"/>
+              </joint>
+            </robot>
+            """
+        )
+        self.assertNotIn("zero authority", ok)
+
+    def test_joint_range_excluding_zero_is_flagged(self):
+        """All-zero is the only default configuration a URDF can express, so a
+        range excluding it leaves every consumer starting in limit violation.
+
+        Note this is INFORMATION, not automatically a defect: Franka's real
+        panda_joint4 has range [-3.0718, -0.0698] and is a correct description
+        of a real robot. The warning asks for a published home pose.
+        """
+        warnings = self._warnings_for(
+            """            <?xml version="1.0"?>
+            <robot name="no_zero">
+              <link name="base"/>
+              <link name="shin"/>
+              <joint name="knee" type="revolute">
+                <parent link="base"/>
+                <child link="shin"/>
+                <axis xyz="0 1 0"/>
+                <limit effort="150" velocity="12" lower="0.1745" upper="2.443"/>
+              </joint>
+            </robot>
+            """
+        )
+        self.assertIn("excludes the zero position", warnings)
+
+        ok = self._warnings_for(
+            """            <?xml version="1.0"?>
+            <robot name="spans_zero">
+              <link name="base"/>
+              <link name="shin"/>
+              <joint name="knee" type="revolute">
+                <parent link="base"/>
+                <child link="shin"/>
+                <axis xyz="0 1 0"/>
+                <limit effort="150" velocity="12" lower="-0.1" upper="2.443"/>
+              </joint>
+            </robot>
+            """
+        )
+        self.assertNotIn("excludes the zero position", ok)
+
+    def test_principal_moments_matches_closed_form_on_a_diagonal_tensor(self):
+        """Guards the no-numpy eigenvalue solver: a diagonal tensor's principal
+        moments are its diagonal, and the solver must not perturb them."""
+        moments = self.urdf_import.principal_moments(3.0, 0.0, 0.0, 1.0, 0.0, 2.0)
+        for got, want in zip(moments, (1.0, 2.0, 3.0)):
+            self.assertAlmostEqual(got, want, places=12)
+
+
+    def test_gazebo_mu1_becomes_per_solid_friction(self):
+        """URDF has no native schema for SURFACE friction; <gazebo><mu1> is the
+        de-facto convention and we used to drop it silently.
+
+        It now emits Solid.newtonFriction, which is the only way a robot whose
+        gripper pads grip harder than the table it works on can state that in
+        its own file -- friction was one global world value until 2026-08-27.
+        """
+        path = self.write_urdf(
+            """            <?xml version="1.0"?>
+            <robot name="gripper">
+              <link name="base">
+                <collision><geometry><box size="0.1 0.1 0.1"/></geometry></collision>
+                <inertial><mass value="1.0"/>
+                  <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/></inertial>
+              </link>
+              <link name="pad">
+                <collision><geometry><box size="0.02 0.01 0.03"/></geometry></collision>
+                <inertial><mass value="0.05"/>
+                  <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-5"/></inertial>
+              </link>
+              <joint name="slide" type="prismatic">
+                <parent link="base"/><child link="pad"/><axis xyz="0 1 0"/>
+                <limit effort="100" velocity="0.2" lower="0" upper="0.04"/>
+              </joint>
+              <gazebo reference="pad"><mu1>2.0</mu1><mu2>2.0</mu2></gazebo>
+            </robot>
+            """
+        )
+        robot = self.urdf_import.parse_urdf(path)
+        self.assertEqual(robot.links["pad"].surface_friction, 2.0)
+        self.assertIsNone(robot.links["base"].surface_friction)
+        vrml = self.urdf_import.emit_robot(robot)
+        self.assertIn("newtonFriction 2.0", vrml)
+        # Exactly one link declared it, so exactly one emission.
+        self.assertEqual(vrml.count("newtonFriction"), 1)
+
+    def test_urdf_without_gazebo_friction_emits_none(self):
+        """Control: a URDF that declares no surface friction must emit no
+        newtonFriction at all, so every existing robot keeps inheriting the
+        world value and nothing changes for it."""
+        path = self.write_urdf(
+            """            <?xml version="1.0"?>
+            <robot name="plain">
+              <link name="base">
+                <collision><geometry><box size="0.1 0.1 0.1"/></geometry></collision>
+                <inertial><mass value="1.0"/>
+                  <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/></inertial>
+              </link>
+            </robot>
+            """
+        )
+        robot = self.urdf_import.parse_urdf(path)
+        vrml = self.urdf_import.emit_robot(robot)
+        self.assertNotIn("newtonFriction", vrml)
+
+
+    # ------------------------------------------------------------------
+    # Cross-file mirror diff. A whole class of defect is invisible to a
+    # single-file checker because nothing in the file is out of range -- the
+    # value is only wrong RELATIVE TO the robot's other hand. The mirror is
+    # also the only place the CORRECT value comes from.
+    # ------------------------------------------------------------------
+
+    HAND = """        <?xml version="1.0"?>
+        <robot name="hand">
+          <link name="palm"/>
+          <link name="finger"/>
+          <joint name="index_mcp" type="revolute">
+            <parent link="palm"/><child link="finger"/><axis xyz="0 0 1"/>
+            <limit effort="%s" velocity="%s" lower="0" upper="1.3"/>
+          </joint>
+        </robot>
+        """
+
+    def test_mirror_diff_catches_transposed_effort_and_velocity(self):
+        """The real case: one hand ships (effort 100, velocity 1) and its twin
+        ships (effort 1, velocity 100). Both are in range; only the pair is wrong."""
+        left = self.write_urdf(self.HAND % ("100", "1"))
+        right = self.write_urdf(self.HAND % ("1", "100"))
+        rep = self.urdf_import.build_mirror_report(
+            self.urdf_import.parse_urdf(left), self.urdf_import.parse_urdf(right))
+        self.assertEqual(rep["matched_joint_pairs"], 1)
+        joined = chr(10).join(rep["findings"])
+        self.assertIn("effort differs across the mirror", joined)
+        self.assertIn("velocity differs across the mirror", joined)
+
+    def test_mirror_diff_is_silent_on_a_matching_pair(self):
+        """Control: identical twins must produce no findings at all, otherwise
+        the mode is noise and nobody will run it."""
+        a = self.write_urdf(self.HAND % ("4.8", "1"))
+        b = self.write_urdf(self.HAND % ("4.8", "1"))
+        rep = self.urdf_import.build_mirror_report(
+            self.urdf_import.parse_urdf(a), self.urdf_import.parse_urdf(b))
+        self.assertEqual(rep["matched_joint_pairs"], 1)
+        self.assertEqual(rep["findings"], [])
+
+    def test_mirror_matching_handles_both_naming_conventions(self):
+        """Side-in-the-name and side-in-the-path are both common. Missing the
+        second made this checker match ZERO pairs on the descriptions it was
+        written for, so both are asserted."""
+        self.assertEqual(self.urdf_import.mirror_name("left_arm_joint2"), "right_arm_joint2")
+        self.assertEqual(self.urdf_import.mirror_name("right_arm_joint2"), "left_arm_joint2")
+        # No affix -> no mirror name; the caller falls back to identity matching.
+        self.assertIsNone(self.urdf_import.mirror_name("index_mcp_roll"))
+
+
 if __name__ == "__main__":
     unittest.main()

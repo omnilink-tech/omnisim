@@ -71,8 +71,13 @@ Pick the closest existing demo and copy it, e.g. for the rover we just configure
 
 ```bash
 cp projects/samples/demos/worlds/chat/omnilink_husky.omniworld \
-   projects/samples/demos/worlds/chat/omnilink_my_rover.wbt
+   projects/samples/demos/worlds/chat/omnilink_my_rover.omniworld
 ```
+
+Name the copy **`.omniworld`**. OmniSim reads `.wbt` forever — there are external
+forks and old worlds that must keep working — but nothing in the tree writes one any
+more, and the extension is a capability signal: `URDFRobot`, `Cloth`, the `omnisim://`
+URL scheme and every `newton*` field are unloadable in Webots.
 
 Edit four lines:
 
@@ -95,7 +100,7 @@ Give `translation` enough height that the wheels rest on the floor rather than s
 ## Step 4 — launch and verify
 
 ```bat
-launch.bat projects\samples\demos\worlds\chat\omnilink_my_rover.wbt
+launch.bat projects\samples\demos\worlds\chat\omnilink_my_rover.omniworld
 ```
 
 Sanity-check the bridge:

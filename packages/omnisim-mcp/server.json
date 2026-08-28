@@ -1,0 +1,32 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.omnilink-tech/omnisim",
+  "title": "OmniSim",
+  "description": "Build, inspect, run, and debug OmniSim robotics worlds through the first-party World Harness.",
+  "repository": {
+    "url": "https://github.com/omnilink-tech/omnisim",
+    "source": "github",
+    "subfolder": "packages/omnisim-mcp"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "omnisim-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "OmniSim World Harness URL",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "OMNISIM_HARNESS_URL",
+          "default": "http://127.0.0.1:6789"
+        }
+      ]
+    }
+  ]
+}

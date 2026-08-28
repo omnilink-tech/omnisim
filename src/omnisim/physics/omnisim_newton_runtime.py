@@ -248,16 +248,28 @@ class World:
         # takes byte-identically the same code it took before cloth existed.
         self.cloth_grids = []          # one dict per add_cloth_grid() call
         self.soft_grids = []           # one dict per add_soft_grid() call (OmSoftBody)
+        # ---- FUTURE PARTICLE / ROD SOURCES (no producer yet) --------------
+        # Declared HERE, empty, on purpose. Every composition gate in finalize()
+        # is written against these rosters rather than against "is there cloth",
+        # so adding the authoring verb later is a producer-only change and
+        # cannot miss a gate. Empty => every predicate below answers exactly
+        # what it answered before they existed, on every world in the tree.
+        self.granular_beds = []        # one dict per MPM granular source
+        self.rods = []                 # finalized rod/cable descriptors
+        self.pending_rods = []         # rod authoring queued before finalize()
         self.cloth_particle_start = -1  # first particle index owned by cloth
         self.cloth_particle_end = -1    # one past the last
-        self.solver_soft = None        # SolverVBD instance, cloth worlds only.
-                                       # ⚠ _mjc_batch_substeps_ok() keys its
-                                       # refusal on THIS NAME -- the batched CPU
-                                       # path drives mj_step directly and never
-                                       # calls solver.step(), so a second solver
-                                       # would be silently skipped. Renaming this
-                                       # attribute without updating that guard
-                                       # makes cloth freeze with no error.
+        # ---- THE SECOND-SOLVER SLOTS -------------------------------------
+        # One attribute per KIND of second solver, and a read-only `solver_soft`
+        # property below that answers the only question the step() path actually
+        # asks: "is a second solver live?". The old single `solver_soft`
+        # attribute conflated the two, which is why its own comment had to warn
+        # that renaming it would freeze cloth -- see the property's docstring
+        # for the mechanism, which is unchanged and still load-bearing.
+        self.solver_vbd = None         # SolverVBD instance: cloth / soft bodies.
+        self.solver_mpm = None         # SolverMPM instance: granular beds. No
+                                       # producer yet; declared so the property
+                                       # below is total rather than a getattr.
         self.solver_mjc = None         # the SolverMuJoCo *inside* the coupled
                                        # solver; see _mjc_solver().
         self.collision_pipeline = None  # newton.CollisionPipeline, cloth only
@@ -267,6 +279,34 @@ class World:
         # use the field, which is what keeps the default roster (every body)
         # bit-identical. See _resolve_coupled_bodies.
         self._cloth_coupling = {}
+
+    @property
+    def solver_soft(self):
+        """READ-ONLY: the live SECOND solver, whichever kind it is, else None.
+
+        ⚠ THIS IS AN "IS A SECOND SOLVER LIVE?" SENTINEL. IT IS NOT "IS THERE
+        CLOTH?". The name is historical -- SolverVBD was the only second solver
+        when it was coined -- and every site that reads it means the general
+        question: the substep-batching refusal, the CUDA-graph predicate, the
+        narrow-phase skip guard, the coupled-solver dirty accounting and the
+        overflow-telemetry gate.
+
+        ⚠ WHY A SECOND SOLVER MUST BE REACHABLE FROM HERE, restated because it
+        is the single most expensive thing to rediscover in this file:
+        ``_mjc_batch_substeps_ok`` drives ``mj_step`` DIRECTLY. It reaches into
+        SolverMuJoCo's private members and NEVER calls ``solver.step()`` at all.
+        So a second solver that fails to make this sentinel non-None is SILENTLY
+        SKIPPED on every batched tick -- its particles never advance, no
+        exception is raised, and nothing is logged. The batched branch is the
+        default on CPU passive scenes, so the symptom is "the cloth / the sand
+        is frozen" with no clue as to why. Any solver added alongside the MuJoCo
+        entry must land in one of the slots this property reads.
+
+        Assign to ``solver_vbd`` or ``solver_mpm``. This attribute is
+        deliberately NOT settable, so a future solver cannot quietly shadow the
+        sentinel with an assignment that type-checks and does nothing.
+        """
+        return self.solver_vbd if self.solver_vbd is not None else self.solver_mpm
 
     def set_cloth_coupling(self, body_index, mode):
         """Record one Solid's newtonClothCoupling declaration.
@@ -970,32 +1010,127 @@ class World:
             cls._SHAPE_CFG = newton.ModelBuilder.ShapeConfig(density=0.0, mu=_mu, ke=_ke, kd=_kd)
         return cls._SHAPE_CFG
 
-    def add_shape_sphere(self, body_idx, radius, cx=0.0, cy=0.0, cz=0.0):
+    @classmethod
+    def _shape_cfg_override(cls, ke=-1.0, mu=-1.0, mu_t=-1.0, mu_r=-1.0):
+        """A per-shape ShapeConfig, or the shared default when nothing is overridden.
+
+        ⚠ mu here is PER-SHAPE tangential friction. Until 2026-08-27 the only
+        friction control was builder.default_shape_cfg.mu -- ONE global value for
+        every shape in the world -- which is why WorldInfo.wrl:34 says a world
+        using several materials "has no exact migration". A gripper pad at mu=2
+        on a table at mu=0.3 could not be expressed at all.
+
+        The negative sentinel means "inherit the world value", matching
+        newtonGroundMu's own convention, so 0.0 stays a legal frictionless value.
+        """
+        _ke_set = bool(ke) and float(ke) > 0.0
+        _mu_set = mu is not None and float(mu) >= 0.0
+        # Torsional / rolling friction: MuJoCo's geom_friction is a TRIPLE
+        # [slide, torsion, roll] and newton's ShapeConfig carries all three, but
+        # OmniSim only ever reached element 0. Without these, a part pinched
+        # between two pads is free to SPIN about the contact normal at zero cost
+        # and a cylinder rolls for ever.
+        # ⚠ They are only CONSULTED at condim >= 4 (torsion) and >= 6 (rolling);
+        # at the default condim 3 MuJoCo never reads them, so setting these
+        # without also raising WorldInfo.newtonCondim is a silent no-op.
+        _mut_set = mu_t is not None and float(mu_t) >= 0.0
+        _mur_set = mu_r is not None and float(mu_r) >= 0.0
+        if not (_ke_set or _mu_set or _mut_set or _mur_set):
+            return cls._shape_cfg()
+        _cw = cls._contact_world
+        # ⚠ env > FIELD > default, via _contact_value. The previous per-shape ke
+        # branch read os.environ directly with a hardcoded 1.0 default, so a world
+        # declaring newtonGroundMu 3 and a per-shape ke silently got mu=1.0 on that
+        # shape -- the world's own declared friction never reached the solver. That
+        # is the "declared but unread" class this runtime warns about elsewhere.
+        _mu_eff = (float(mu) if _mu_set
+                   else cls._contact_value("OMNISIM_NEWTON_GROUND_MU", _cw.get("mu"), 1.0))
+        if _ke_set:
+            import os as _os2
+            _ke_eff = float(ke)
+            _kd_eff = float(_os2.environ.get("OMNISIM_NEWTON_SOFT_KD", "150"))
+        else:
+            _ke_eff = cls._contact_value("OMNISIM_NEWTON_CONTACT_KE", _cw.get("ke"), 2500.0)
+            _kd_eff = cls._contact_value("OMNISIM_NEWTON_CONTACT_KD", _cw.get("kd"), 100.0)
+        _cfg = newton.ModelBuilder.ShapeConfig(density=0.0, mu=_mu_eff,
+                                               ke=_ke_eff, kd=_kd_eff)
+        if _mut_set:
+            _cfg.mu_torsional = float(mu_t)
+        if _mur_set:
+            _cfg.mu_rolling = float(mu_r)
+        return _cfg
+
+    # ------------------------------------------------------------------
+    # Per-body gravity compensation (Solid.newtonGravityCompensation).
+    #
+    # MuJoCo applies gravcomp * m * g upward on the body, so 1.0 is a body that
+    # does not fall. Arm models are routinely authored this way -- ManiSkill
+    # disables gravity on every Panda link and tunes its PD gains for that
+    # world -- and OmniSim had no way to express it at all.
+    #
+    # ⚠ IT CANNOT BE PATCHED AFTER THE FACT. Writing mj_model.body_gravcomp
+    # post-construction leaves qfrc_gravcomp at zero and the body still falls
+    # (measured: z -3.895 after 500 steps against 1.000 when the same value is
+    # baked in) -- MuJoCo decides at compile time whether the gravcomp pass runs
+    # at all. So this is NOT the geom_condim route of patching mj_model; the
+    # value has to reach the spec, which is what newton's custom attribute does
+    # (solver_mujoco.py reads "gravcomp" and injects it into the mjSpec body).
+    #
+    # ⚠ REGISTRATION IS LAZY, for the same reason the MPM path's is:
+    # SolverMuJoCo.register_custom_attributes(builder) adds MuJoCo's whole
+    # attribute set (actuator_*, geom_*, jnt_*, ...) to the builder, and no
+    # world that does not ask for gravcomp should carry it. Measured: late
+    # registration -- after the bodies already exist -- reaches
+    # mj_model.body_gravcomp correctly, so first-use is a safe scope.
+    def _ensure_mujoco_attributes(self):
+        if getattr(self, "_mjc_attrs_registered", False):
+            return
+        if self.builder is None:
+            raise RuntimeError("gravcomp requested with no builder (post-finalize?)")
+        from newton.solvers import SolverMuJoCo
+        SolverMuJoCo.register_custom_attributes(self.builder)
+        self._mjc_attrs_registered = True
+        self._newton_log(
+            "gravcomp: SolverMuJoCo.register_custom_attributes(builder) -- registered "
+            "LAZILY on the first Solid.newtonGravityCompensation, so a world that does "
+            "not use it carries none of MuJoCo's custom attributes.")
+
+    def set_body_gravcomp(self, body_idx, value):
+        """Fraction of gravity cancelled on one body. 0 = normal, 1 = hovers."""
+        try:
+            v = float(value)
+        except (TypeError, ValueError):
+            return -1
+        if v <= 0.0:
+            return 0                      # unset: leave the world byte-identical
+        self._ensure_mujoco_attributes()
+        key = "mujoco:gravcomp"
+        attrs = getattr(self.builder, "custom_attributes", None)
+        if not attrs or key not in attrs:
+            self._newton_log("gravcomp: '%s' not offered by this newton build -- ignored" % key)
+            return -1
+        attrs[key].values[int(body_idx)] = v
+        return 0
+
+    def add_shape_sphere(self, body_idx, radius, cx=0.0, cy=0.0, cz=0.0, mu=-1.0,
+                         mu_t=-1.0, mu_r=-1.0):
         return self.builder.add_shape_sphere(
             int(body_idx),
             xform=wp.transform((float(cx), float(cy), float(cz)),
                                (0.0, 0.0, 0.0, 1.0)),
             radius=float(radius),
-            cfg=self._shape_cfg(),
+            cfg=self._shape_cfg_override(mu=mu, mu_t=mu_t, mu_r=mu_r),
         )
 
     def add_shape_box(self, body_idx, hx, hy, hz, cx=0.0, cy=0.0, cz=0.0, ke=-1.0,
-                      qx=0.0, qy=0.0, qz=0.0, qw=1.0):
+                      qx=0.0, qy=0.0, qz=0.0, qw=1.0, mu=-1.0, mu_t=-1.0, mu_r=-1.0):
         # (qx,qy,qz,qw) is the collider's authored orientation in the body frame (identity
         # default). It is appended AFTER ke so the existing positional order is untouched.
         # A rotated box collider was previously flattened to axis-aligned.
-        cfg = self._shape_cfg()
-        if ke and float(ke) > 0.0:                    # per-shape SOFT contact:
-            # a low ke -> larger MuJoCo solref timeconst -> compliant contact.
-            # Used for tote/bin CONTENTS (e.g. cubes on a dynamic bin floor) so
-            # the gripper plowing the layer can't inject launch energy; MuJoCo
-            # mixes the contact toward the softer geom, so only the soft side
-            # needs marking while the structure/grasp stays firm.
-            import os as _os2
-            _mu = float(_os2.environ.get("OMNISIM_NEWTON_GROUND_MU", "1.0"))
-            _kd = float(_os2.environ.get("OMNISIM_NEWTON_SOFT_KD", "150"))
-            cfg = newton.ModelBuilder.ShapeConfig(density=0.0, mu=_mu,
-                                                  ke=float(ke), kd=_kd)
+        # per-shape SOFT contact (low ke -> larger MuJoCo solref timeconst ->
+        # compliant contact; used for tote/bin CONTENTS so a gripper plowing the
+        # layer can't inject launch energy) and/or per-shape friction.
+        cfg = self._shape_cfg_override(ke=ke, mu=mu, mu_t=mu_t, mu_r=mu_r)
         return self.builder.add_shape_box(
             int(body_idx),
             xform=wp.transform((float(cx), float(cy), float(cz)),
@@ -1237,21 +1372,52 @@ class World:
     # CLOTH AUTHORING
     # ------------------------------------------------------------------
 
+    def has_vbd_particles(self):
+        """True once any SolverVBD particle source has been authored.
+
+        Cloth sheets (add_cloth_grid / add_cloth_mesh) and volumetric tet-FEM
+        soft bodies (add_soft_grid) both land on SolverVBD, so both answer yes.
+
+        THIS IS THE PREDICATE FOR ANYTHING SPECIFIC TO THE VBD SOLVER, and
+        exactly one thing in finalize() is: ``builder.color()``. Colouring walks
+        the particle / bending-edge graph that VBD's Gauss-Seidel sweeps consume
+        and that no other particle solver reads at all -- see the gate there.
+        """
+        return bool(self.cloth_grids) or bool(self.soft_grids)
+
+    def has_granular(self):
+        """True once any MPM granular bed has been authored.
+
+        ALWAYS FALSE TODAY: ``granular_beds`` has no producer yet (the MPM
+        authoring verbs land in a later tranche). It exists now so the
+        composition gates in finalize() can be written against the question they
+        actually mean -- "do particles exist" -- instead of against cloth, which
+        is what has_cloth() had been standing in for.
+        """
+        return bool(self.granular_beds)
+
+    def has_particles(self):
+        """True once ANY particle source of ANY kind has been authored.
+
+        THIS IS THE PREDICATE FOR EVERYTHING THAT IS ABOUT PARTICLES EXISTING
+        rather than about which solver owns them: the CUDA device pin (any
+        particle solver is a warp solver, so the CPU model pin has to invert),
+        the mjc-entry -> mujoco_warp flip that follows from that device move,
+        and the coupled-solver construction itself.
+
+        Every branch it gates stays inert on the rigid-only worlds in this tree,
+        so the rigid path is unchanged and unchanged-cost.
+        """
+        return self.has_vbd_particles() or self.has_granular()
+
     def has_cloth(self):
-        """True once any PARTICLE SOURCE has been authored into the builder.
+        """DEPRECATED ALIAS for has_particles(). Prefer the explicit name.
 
-        Every cloth branch in finalize() and step() is gated on this, so the
-        rigid-only path is unchanged (and unchanged-cost) on the 863 worlds in
-        this tree that carry no particles.
-
-        ⚠ THE NAME IS HISTORICAL AND NOW NARROWER THAN THE MEANING. Every branch
-        this gates -- builder.color(), the CUDA device pin, the coupled-solver
-        construction -- is about PARTICLES EXISTING, not about fabric. A
-        volumetric soft body is particles + tetrahedra and needs all three, so it
-        answers yes here too. Kept under the old name because the six-site
-        `solver_soft` sentinel and the ownership assertions in
-        _build_cloth_coupled_solver already spell "cloth" throughout; renaming
-        the whole family is a separate, mechanical change.
+        Kept because six call sites in this file plus the g1_deploy mirror spell
+        it, and EVERY ONE OF THEM MEANS "PARTICLES EXIST", not "fabric exists" --
+        the docstring this replaces said so itself. New code should name the
+        question it is really asking: has_vbd_particles() (VBD-specific),
+        has_granular() (MPM-specific), or has_particles() (solver-agnostic).
 
         Soft bodies are safe to fold in here for a reason that is worth stating,
         because the Rope work proved the converse: a soft body adds PARTICLES
@@ -1259,9 +1425,11 @@ class World:
         index-identity check below stays true. MEASURED at 1 and 3 bodies:
         view("mjc").body_count equals the parent model's. A rod, by contrast,
         adds rigid capsule BODIES and moves them out of "mjc", which breaks
-        raycast / weld / TouchSensor readbacks that index by parent body id.
+        raycast / weld / TouchSensor readbacks that index by parent body id --
+        which is why ``rods``/``pending_rods`` are their own rosters and are
+        deliberately NOT folded into has_particles().
         """
-        return bool(self.cloth_grids) or bool(self.soft_grids)
+        return self.has_particles()
 
     def has_soft_bodies(self):
         """True once any volumetric (tet FEM) soft body has been authored."""
@@ -1792,6 +1960,359 @@ class World:
             return (-1, -1)
         g = self.soft_grids[i]
         return (int(g["start"]), int(g["end"]))
+
+    # ================= GRANULAR MATTER (MPM) ==========================
+    #
+    # A GranularBed is the FIRST particle source in this file that does NOT
+    # land on SolverVBD. Cloth and SoftBody are elastic continua whose
+    # particles are bound to each other by elements; a bed's particles are
+    # bound to nothing and are integrated by SolverImplicitMPM against a
+    # background grid. Everything below exists because of that one difference.
+    #
+    # ⚠ THE ATTRIBUTE REGISTRATION IS LAZY AND MUST STAY LAZY.
+    # SolverImplicitMPM.register_custom_attributes(builder) adds TWELVE
+    # per-particle MODEL attributes and FIVE per-particle STATE attributes
+    # (three of them wp.mat33) to whatever builder it is handed. Calling it
+    # unconditionally would put 17 arrays sized to particle_count on EVERY
+    # world -- including every cloth world, which would then carry mat33 state
+    # it never reads. MEASURED against the contract, not guessed: the only
+    # ordering requirement is that it precede finalize(), NOT that it precede
+    # the first particle, so registering on the first add_granular_bed() call
+    # is both sufficient and the narrowest possible scope. A world with no bed
+    # is byte-identical to one built before this existed.
+    def _ensure_mpm_attributes(self):
+        if getattr(self, "_mpm_attrs_registered", False):
+            return
+        if self.builder is None:
+            raise RuntimeError("add_granular_bed called with no builder (post-finalize?)")
+        from newton.solvers import SolverImplicitMPM
+        SolverImplicitMPM.register_custom_attributes(self.builder)
+        self._mpm_attrs_registered = True
+        self._newton_log(
+            "granular: SolverImplicitMPM.register_custom_attributes(builder) -- "
+            "registered LAZILY on the first bed, so no cloth-only or rigid-only "
+            "world carries the 17 MPM per-particle arrays.")
+
+    @staticmethod
+    def _mpm_lattice(size, voxel, ppc):
+        """(resolution triple, particle count) for one (size, voxel, ppc).
+
+        ⚠ THE +1 IS THE WHOLE POINT AND IT IS THE OPPOSITE CONVENTION FROM THE
+        OTHER TWO PARTICLE VERBS. newton's ``add_particle_grid`` counts
+        PARTICLES in dim_x/dim_y/dim_z (builder.py: ``np.arange(dim_x) *
+        cell_x``), while ``add_soft_grid`` and ``add_cloth_grid`` count CELLS.
+        Passing the cell resolution straight through therefore does not fail --
+        it silently builds a bed ONE LATTICE STEP SHORT on every axis, an error
+        that grows as the grid coarsens. `res` below is the CELL resolution
+        (what divides the box) and `res + 1` is what goes on the wire.
+        """
+        import math
+        res = [max(1, int(math.ceil(float(ppc) * float(s) / float(voxel)))) for s in size]
+        n = 1
+        for r in res:
+            n *= (r + 1)
+        return res, int(n)
+
+    def _mpm_fit_budget(self, size, voxel, ppc, budget):
+        """Coarsen `voxel` until the lattice fits `budget`. Never refines.
+
+        `count` on the node is a BUDGET, not a target: the particle count is
+        DERIVED from voxelSize and particlesPerCell, and n(voxel) is monotone
+        DECREASING in voxel. So the finest grid under the budget is found by
+        bisection -- double until a passing voxel exists, then halve the
+        bracket -- and the authored voxel is the lower bound, so a budget can
+        only ever make a bed COARSER than the file asked for, never finer.
+
+        Returns (voxel, resolution triple, particle count, coarsened?).
+        """
+        res, n = self._mpm_lattice(size, voxel, ppc)
+        if budget <= 0 or n <= budget:
+            return float(voxel), res, n, False
+        # The floor of n over all voxels is 2*2*2 = 8 (every axis clamps to one
+        # cell). A budget below that cannot be met by any grid, so say so once
+        # and build the smallest lattice rather than looping forever.
+        if budget < 8:
+            self._newton_log(
+                "granular: count budget %d is below the 8-particle floor of a "
+                "3-D lattice (2x2x2); building the minimum grid instead." % int(budget))
+        lo = float(voxel)          # known TOO FINE (n > budget)
+        hi = float(voxel)
+        _found = False
+        for _ in range(64):
+            hi *= 2.0
+            _r, _n = self._mpm_lattice(size, hi, ppc)
+            if _n <= budget:
+                _found = True
+                break
+        if not _found:
+            # Unreachable for budget >= 8 (the count floors at 8), so this is a
+            # guard against a pathological size/ppc rather than an expected path.
+            res, n = self._mpm_lattice(size, hi, ppc)
+            return hi, res, n, True
+        for _ in range(64):
+            mid = 0.5 * (lo + hi)
+            if not (mid > lo and mid < hi):
+                break
+            _r, _n = self._mpm_lattice(size, mid, ppc)
+            if _n <= budget:
+                hi = mid
+            else:
+                lo = mid
+        res, n = self._mpm_lattice(size, hi, ppc)
+        return hi, res, n, True
+
+    def set_granular_grid(self, grid_type, grid_padding):
+        """WORLD-LEVEL MPM grid selection, deliberately OFF the positional wire.
+
+        ⚠ WHY THIS IS NOT A PARAMETER OF add_granular_bed(). grid_type and
+        grid_padding do not describe a BED, they describe the ONE
+        SolverImplicitMPM every bed in the world shares. Putting them in the
+        positional signature would let two beds "each" declare a value that
+        cannot both be honoured, and would grow the C++ format string with two
+        arguments that are silently ignored on the second call. Routed through
+        their own setter, the C++ side can call it once per bed, the last
+        writer is visible, and a disagreement is reported instead of dropped.
+
+        ⚠ "fixed" NaNs SILENTLY when underpadded: the grid is allocated once
+        from the particle bounds at construction and material that leaves that
+        box is undefined -- no exception, no warning, just NaN positions from
+        some step on. Upstream's coupled example selects "fixed" WITH
+        grid_padding 50. This refuses an unknown value rather than passing it
+        to newton, where it would surface as a Literal mismatch.
+        """
+        t = (str(grid_type or "").strip().lower() or "sparse")
+        if t not in ("sparse", "fixed"):
+            self._newton_log(
+                "granular: gridType %r is not one of \"sparse\" / \"fixed\" -- "
+                "using \"sparse\"." % (grid_type,))
+            t = "sparse"
+        p = max(0, int(grid_padding))
+        prev_t = getattr(self, "_mpm_grid_type", None)
+        prev_p = getattr(self, "_mpm_grid_padding", None)
+        if prev_t is not None and (prev_t != t or prev_p != p):
+            self._newton_log(
+                "granular: ⚠ two beds declare DIFFERENT grid settings "
+                "(%r/padding %d vs %r/padding %d) and there is only ONE MPM "
+                "solver. Taking the later one (%r/%d); reconcile the world file."
+                % (prev_t, prev_p, t, p, t, p))
+        self._mpm_grid_type = t
+        self._mpm_grid_padding = p
+        if t == "fixed" and p <= 0:
+            self._newton_log(
+                "granular: ⚠ gridType \"fixed\" with gridPadding 0. A fixed grid is "
+                "sized ONCE from the particle bounds; material that leaves that box "
+                "produces NaN positions with NO error of any kind. Declare a "
+                "gridPadding (upstream uses 50) or use \"sparse\".")
+
+    def add_granular_bed(self, pos_x, pos_y, pos_z,
+                         qx, qy, qz, qw,
+                         size_x, size_y, size_z,
+                         voxel_size, particles_per_cell,
+                         count_budget,
+                         density, friction, yield_pressure, yield_stress,
+                         young_modulus, poisson_ratio, viscosity, particle_radius,
+                         rigid_substeps, proxy_iterations, max_iterations,
+                         tolerance,
+                         label=None):
+        """Author one granular (MPM) bed. Returns (particle_start, particle_end).
+
+        C++-callable in exactly the same sense as add_cloth_grid /
+        add_soft_grid: scalars only, because the ctypes FFI boundary cannot
+        pass wp.vec3 / wp.quat, so the warp types are composed here.
+
+        ⚠ THE ARGUMENT ORDER IS A WIRE CONTRACT with
+        OmNewtonBackend::addGranularBed and the format string there. gridType
+        and gridPadding are NOT in it -- they go through set_granular_grid()
+        above, for the reason documented there.
+
+        GEOMETRY. `pos` is the bed's MINIMUM CORNER (newton's convention for
+        add_particle_grid, and the OPPOSITE of Solid/Box), `size` its extent in
+        METRES, and `rot` turns the box about that corner. The lattice
+        resolution is derived from voxel_size / particles_per_cell and then
+        coarsened, if necessary, to fit count_budget -- see _mpm_fit_budget.
+
+        MATERIAL. Every material argument follows the schema's "0 = unset"
+        convention, and unset means the per-particle custom attribute is simply
+        OMITTED so newton's own default applies. That is deliberately NOT how
+        add_soft_grid does it (which substitutes constants duplicated in
+        OmSoftBody.cpp): omitting keeps ONE source of truth for each default,
+        inside newton, where a version bump can move it without this file
+        going stale. `density` is the exception -- a 0 there is massless
+        particles, so it falls back to 2500 (dry sand).
+
+        The four solver arguments (rigid_substeps, proxy_iterations,
+        max_iterations, tolerance) are recorded PER BED and reduced across
+        beds at solver-build time, because there is only one MPM entry and one
+        coupled configuration; see _mpm_solver_params.
+        """
+        if self.builder is None:
+            raise RuntimeError("add_granular_bed called with no builder (post-finalize?)")
+        sx, sy, sz = float(size_x), float(size_y), float(size_z)
+        if not (sx > 0.0 and sy > 0.0 and sz > 0.0):
+            raise RuntimeError("add_granular_bed: size must be strictly positive on every "
+                               "axis (got %g x %g x %g)" % (sx, sy, sz))
+        voxel = float(voxel_size) if float(voxel_size) > 0.0 else 0.05
+        ppc = float(particles_per_cell) if float(particles_per_cell) > 0.0 else 3.0
+        dens = float(density) if float(density) > 0.0 else 2500.0
+
+        self._ensure_mpm_attributes()
+
+        size = (sx, sy, sz)
+        voxel_used, res, n_expected, coarsened = self._mpm_fit_budget(
+            size, voxel, ppc, int(count_budget))
+        # Lattice SPACING, from the CELL resolution: res cells span the box, so
+        # res + 1 particles sit on its faces at this spacing.
+        cell = (sx / res[0], sy / res[1], sz / res[2])
+        radius_derived = 0.5 * max(cell)
+        radius = float(particle_radius) if float(particle_radius) > 0.0 else radius_derived
+        # Per-particle mass from the lattice cell volume, so the BULK density is
+        # what the field says regardless of how finely the bed is sampled --
+        # the same derivation upstream's sand example uses.
+        mass = float(cell[0] * cell[1] * cell[2]) * dens
+
+        # 0 = unset => omit the attribute => newton's own default. See the
+        # docstring: this is why no MPM default value is duplicated in OmniSim.
+        attrs = {}
+        for _key, _val in (("mpm:friction", friction),
+                           ("mpm:yield_pressure", yield_pressure),
+                           ("mpm:yield_stress", yield_stress),
+                           ("mpm:young_modulus", young_modulus),
+                           ("mpm:poisson_ratio", poisson_ratio),
+                           ("mpm:viscosity", viscosity)):
+            if float(_val) > 0.0:
+                attrs[_key] = float(_val)
+
+        p_start = int(len(self.builder.particle_q))
+        self.builder.add_particle_grid(
+            pos=wp.vec3(float(pos_x), float(pos_y), float(pos_z)),
+            rot=wp.quat(float(qx), float(qy), float(qz), float(qw)),
+            vel=wp.vec3(0.0, 0.0, 0.0),
+            # ⚠ PARTICLES, NOT CELLS -- see _mpm_lattice. res + 1 on every axis.
+            dim_x=int(res[0]) + 1, dim_y=int(res[1]) + 1, dim_z=int(res[2]) + 1,
+            cell_x=float(cell[0]), cell_y=float(cell[1]), cell_z=float(cell[2]),
+            mass=float(mass),
+            jitter=2.0 * radius_derived,
+            radius_mean=float(radius),
+            custom_attributes=(attrs or None),
+        )
+        p_end = int(len(self.builder.particle_q))
+        if p_end - p_start != n_expected:
+            # The count formula and newton's own emission disagreeing means one
+            # of the two moved. Loud, because every downstream buffer in the
+            # engine is sized from the formula.
+            self._newton_log(
+                "granular: ⚠ add_particle_grid emitted %d particles but the "
+                "lattice formula predicted %d (res %s + 1). The engine sizes its "
+                "readback buffers from the formula -- treat any render or "
+                "coupling anomaly as this first."
+                % (p_end - p_start, n_expected, res))
+
+        rec = {
+            "start": p_start, "end": p_end,
+            "voxel_size": float(voxel_used),
+            "voxel_authored": float(voxel),
+            "particles_per_cell": float(ppc),
+            "res": [int(r) for r in res],
+            "size": [sx, sy, sz],
+            "cell": [float(c) for c in cell],
+            "density": float(dens),
+            "particle_radius": float(radius),
+            "rigid_substeps": max(1, int(rigid_substeps)) if int(rigid_substeps) > 0 else 4,
+            "proxy_iterations": max(1, int(proxy_iterations)) if int(proxy_iterations) > 0 else 1,
+            "max_iterations": int(max_iterations) if int(max_iterations) > 0 else 50,
+            "tolerance": float(tolerance) if float(tolerance) > 0.0 else 1.0e-4,
+            "attrs": dict(attrs),
+            "label": (str(label) if label else "granular_%d" % len(self.granular_beds)),
+        }
+        self.granular_beds.append(rec)
+        # ⚠ DELIBERATELY NOT EXTENDING cloth_particle_start/end. That pair is the
+        # VBD entry's union range; folding MPM particles into it would hand a bed
+        # to SolverVBD, which would integrate it as an unconnected point cloud
+        # while SolverImplicitMPM was also given it -- a doubly-owned particle,
+        # which the coupled solver catches only from inside itself and only by
+        # index. The ownership partition check in _build_cloth_coupled_solver is
+        # what keeps this honest.
+        self._newton_log(
+            "granular: %s particles [%d,%d) = %d, box %.4g x %.4g x %.4g m at corner "
+            "(%.4g, %.4g, %.4g), voxel %.5g%s, ppc %.4g, lattice %dx%dx%d cells, "
+            "spacing %.5g/%.5g/%.5g, radius %.5g, mass %.6g kg/particle, density %.6g, "
+            "attrs %s | substeps %d proxy_iters %d mpm_iters %d tol %.3g"
+            % (rec["label"], p_start, p_end, p_end - p_start, sx, sy, sz,
+               float(pos_x), float(pos_y), float(pos_z), voxel_used,
+               (" (COARSENED from the authored %.5g to fit the count budget %d)"
+                % (voxel, int(count_budget))) if coarsened else "",
+               ppc, res[0], res[1], res[2], cell[0], cell[1], cell[2], radius, mass, dens,
+               (sorted(attrs) if attrs else "all newton defaults"),
+               rec["rigid_substeps"], rec["proxy_iterations"], rec["max_iterations"],
+               rec["tolerance"]))
+        return (p_start, p_end)
+
+    def granular_particle_range(self, bed_index=0):
+        """(start, end) particle range of one granular bed, for the readback."""
+        i = int(bed_index)
+        if i < 0 or i >= len(self.granular_beds):
+            return (-1, -1)
+        b = self.granular_beds[i]
+        return (int(b["start"]), int(b["end"]))
+
+    def granular_bed_count(self):
+        """How many granular beds this world holds.
+
+        ⚠ EXISTS SO THE ENGINE DOES NOT HAVE TO PROBE FOR ITS OWN INDEX.
+        OmSoftBody has to discover its key by calling soft_surface_packed() on
+        ascending indices until one answers empty, because nothing reports the
+        length of that list -- and that probe cannot distinguish "the runtime
+        declined" from "one past the end". One honest accessor removes the
+        whole class of error for beds.
+        """
+        return len(self.granular_beds)
+
+    def granular_particle_radius(self, bed_index=0):
+        """The per-particle render/collision radius of one bed, in metres.
+
+        The engine needs this to draw the bed and cannot derive it: the radius
+        is a function of the FINAL lattice spacing, which the count budget may
+        have coarsened after the world file was written. -1.0 for an unknown bed.
+        """
+        i = int(bed_index)
+        if i < 0 or i >= len(self.granular_beds):
+            return -1.0
+        return float(self.granular_beds[i]["particle_radius"])
+
+    def _mpm_solver_params(self):
+        """Reduce the per-bed solver declarations to the ONE shared configuration.
+
+        There is one SolverImplicitMPM and one SolverCoupledProxy per world, so
+        four of a GranularBed's fields are world-level whatever the schema
+        looks like. Reduced rather than last-writer-wins, and every
+        disagreement is NAMED with both values: silently dropping one bed's
+        declaration is precisely the "declared but not read" failure this tree
+        keeps getting bitten by.
+
+        max on the three counts and min on tolerance and voxel_size, i.e. the
+        SAFER end of every axis -- more substeps, more iterations, a tighter
+        tolerance and a finer grid all cost time and none of them destabilises.
+        """
+        beds = list(self.granular_beds)
+        out = {"voxel_size": 0.05, "rigid_substeps": 4, "proxy_iterations": 1,
+               "max_iterations": 50, "tolerance": 1.0e-4}
+        if not beds:
+            return out
+        for _key, _how in (("voxel_size", "min"), ("tolerance", "min"),
+                           ("rigid_substeps", "max"), ("proxy_iterations", "max"),
+                           ("max_iterations", "max")):
+            vals = [b[_key] for b in beds]
+            chosen = min(vals) if _how == "min" else max(vals)
+            out[_key] = chosen
+            if len(set(vals)) > 1:
+                _lo = beds[vals.index(min(vals))]["label"]
+                _hi = beds[vals.index(max(vals))]["label"]
+                self._newton_log(
+                    "granular: ⚠ beds disagree on %s -- %r declares %g and %r declares "
+                    "%g, but there is only ONE MPM entry. Taking the %s (%g). Reconcile "
+                    "the world file; the value NOT taken is doing nothing."
+                    % (_key, _lo, min(vals), _hi, max(vals), _how, chosen))
+        return out
 
     def _mjc_solver(self):
         """The SolverMuJoCo that owns the RIGID model.
@@ -4088,8 +4609,8 @@ class World:
 
         self.collision_pipeline = self._build_cloth_collision_pipeline(model, "world")
         self._contacts_cache = self.collision_pipeline.contacts()
-        self.solver_soft = newton.solvers.SolverVBD(model, **vbd_kwargs)
-        self.solver = self.solver_soft
+        self.solver_vbd = newton.solvers.SolverVBD(model, **vbd_kwargs)
+        self.solver = self.solver_vbd
         # ⚠ LOAD-BEARING: _mjc_solver() returns None from here, and every
         # mj_model-backed readback in this file is guarded on that. Setting it
         # to anything else would make those readbacks answer about a model that
@@ -4128,6 +4649,49 @@ class World:
                vbd_kwargs["rigid_contact_hard"],
                vbd_kwargs["rigid_body_particle_contact_buffer_size"],
                model.soft_contact_ke, model.soft_contact_kd, model.soft_contact_mu))
+
+    def _build_mpm_solver(self, model_or_view, params):
+        """Construct the SolverImplicitMPM for this world.
+
+        Called from two places -- the coupled entry factory and the
+        no-rigid-bodies branch -- so the configuration is written ONCE. The
+        caller is responsible for landing the result in ``self.solver_mpm``;
+        see the warning in _mpm_factory for why that assignment cannot be
+        skipped.
+
+        WHAT IS PINNED HERE AND WHY:
+
+        * ``voxel_size`` is the reduced value across every bed (min), because
+          there is ONE grid however many beds are authored.
+        * ``strain_basis "P0"`` and ``critical_fraction 0.0`` are the values
+          upstream's own MuJoCo+MPM coupled example runs; they are not tuned
+          here and should not be tuned without a measurement.
+        * ``max_active_cell_count`` is the grid's capacity. Upstream pairs
+          ``grid_type "fixed"`` with an explicit reservation (1 << 15); a
+          "sparse" grid at -1 allocates per step instead, which is the safe
+          default. ⚠ On "fixed" this is a HARD CEILING and exceeding it is one
+          of the ways that grid type goes silently wrong.
+        """
+        from newton.solvers import SolverImplicitMPM
+        cfg = SolverImplicitMPM.Config()
+        cfg.voxel_size = float(params.get("voxel_size", 0.05))
+        cfg.grid_type = str(getattr(self, "_mpm_grid_type", None) or "sparse")
+        cfg.grid_padding = int(getattr(self, "_mpm_grid_padding", 0) or 0)
+        cfg.max_iterations = int(params.get("max_iterations", 50))
+        cfg.tolerance = float(params.get("tolerance", 1.0e-4))
+        cfg.strain_basis = "P0"
+        cfg.critical_fraction = 0.0
+        _cells = _os.environ.get("OMNISIM_MPM_MAX_ACTIVE_CELLS")
+        if _cells not in (None, ""):
+            cfg.max_active_cell_count = int(_cells)
+        elif cfg.grid_type == "fixed":
+            cfg.max_active_cell_count = 1 << 15
+        self._newton_log(
+            "granular: SolverImplicitMPM(voxel_size=%.5g, grid_type=%r, grid_padding=%d, "
+            "max_iterations=%d, tolerance=%.3g, strain_basis=%r, max_active_cell_count=%s)"
+            % (cfg.voxel_size, cfg.grid_type, cfg.grid_padding, cfg.max_iterations,
+               cfg.tolerance, cfg.strain_basis, cfg.max_active_cell_count))
+        return SolverImplicitMPM(model=model_or_view, config=cfg)
 
     def _build_cloth_coupled_solver(self, mjc_kwargs):
         """Robot on SolverMuJoCo + cloth on SolverVBD, coupled over ONE Model.
@@ -4237,12 +4801,31 @@ class World:
                 "OMNISIM_CLOTH_NEWTON_CONTACTS=1 to move the whole world to mujoco_warp.")
         n_bodies = int(getattr(model, "body_count", 0) or 0)
         n_joints = int(getattr(model, "joint_count", 0) or 0)
+        # ---- WHICH PARTICLES BELONG TO WHICH SOLVER ----------------------
+        # ⚠ TWO ROSTERS NOW, NOT ONE, AND THEY ARE BUILT FROM THE AUTHORING
+        # RECORDS RATHER THAN FROM A CONTIGUOUS RANGE. `cloth_particle_start/end`
+        # is the VBD union range and add_granular_bed deliberately does NOT
+        # extend it (see the note there), so the vbd entry gets the cloth+soft
+        # particles and the mpm entry gets the beds. Reading the records is what
+        # makes the partition check below an OWNERSHIP test rather than a RANGE
+        # test -- "[0,n) is covered" is satisfied just as well by two sources
+        # that OVERLAP as by two that tile.
+        _vbd_particles = []
+        for _rec in (list(self.cloth_grids) + list(self.soft_grids)):
+            _vbd_particles.extend(range(int(_rec["start"]), int(_rec["end"])))
+        _mpm_particles = []
+        for _rec in list(self.granular_beds):
+            _mpm_particles.extend(range(int(_rec["start"]), int(_rec["end"])))
         p_start = int(self.cloth_particle_start)
         p_end = int(self.cloth_particle_end)
-        particles = list(range(p_start, p_end))
-        if not particles:
-            raise RuntimeError("cloth path entered with no particles "
-                               "[%d,%d)" % (p_start, p_end))
+        particles = list(range(p_start, p_end)) if (p_start >= 0 and p_end > p_start) else []
+        if not _vbd_particles and not _mpm_particles:
+            raise RuntimeError("particle path entered with no particles at all "
+                               "(vbd range [%d,%d), %d granular bed(s))"
+                               % (p_start, p_end, len(self.granular_beds)))
+        # The ONE shared MPM configuration, reduced across every bed (there is
+        # one SolverImplicitMPM per world however many beds are authored).
+        _mpm = self._mpm_solver_params() if _mpm_particles else None
 
         # ---- SOFT-CONTACT MATERIAL --------------------------------------
         # The starting point measured for OmniSim cloth, and the same triple
@@ -4319,8 +4902,34 @@ class World:
         # one body, particle or joint, and a coupled solver with nothing to
         # couple is pure overhead. A world that is only cloth runs VBD alone.
         if n_bodies == 0:
-            self.solver_soft = newton.solvers.SolverVBD(model, **vbd_kwargs)
-            self.solver = self.solver_soft
+            if _mpm_particles and _vbd_particles:
+                # Coupling VBD to MPM with no rigid body in between needs a
+                # PARTICLE proxy mapping, which nothing in this tree has ever
+                # exercised. Refuse rather than ship an untested topology: a
+                # wrong result is worse than a lost one.
+                raise RuntimeError(
+                    "a world with BOTH a Cloth/SoftBody and a GranularBed and NO rigid "
+                    "body at all is not supported: coupling VBD to MPM directly needs a "
+                    "particle proxy mapping that has never been exercised here. Add one "
+                    "rigid Solid (a floor is enough) or drop one of the two node types.")
+            if _mpm_particles:
+                self.solver_mpm = self._build_mpm_solver(model, _mpm)
+                self.solver = self.solver_mpm
+                self.solver_mjc = None
+                # No pipeline and no _contacts_cache assignment: MPM resolves
+                # its own collider contact, there is no rigid body to collide,
+                # and leaving both untouched lets step() take the ordinary
+                # model.contacts() / model.collide() route rather than a
+                # soft-contact buffer sized to a 10^5-particle bed for nothing.
+                self.collision_pipeline = None
+                self._newton_log(
+                    "granular: %d particles, NO rigid bodies -> SolverImplicitMPM alone "
+                    "(no coupling). mj_model-backed features (raycast sensors, welds, "
+                    "TouchSensor, joint readback) are unavailable on this world."
+                    % len(_mpm_particles))
+                return
+            self.solver_vbd = newton.solvers.SolverVBD(model, **vbd_kwargs)
+            self.solver = self.solver_vbd
             self.solver_mjc = None
             self.collision_pipeline = self._build_cloth_collision_pipeline(model, "world")
             self._contacts_cache = self.collision_pipeline.contacts()
@@ -4360,18 +4969,59 @@ class World:
         #     wholesale and EVERY entry integrates EVERY body: silent double
         #     integration, i.e. gravity applied twice.
         # Both are avoided by declaring the FULL body and joint sets on "mjc"
-        # and the FULL particle set on "vbd". Assert exactly that rather than
-        # trusting the ranges: `particles` is derived from the cloth range, and
-        # if anything ever introduces a particle outside it (a second particle
-        # source, a reordering in add_cloth_grid) that particle would be frozen
-        # and the sheet would have an invisible dead patch.
+        # and the FULL particle set on "vbd".
+        #
+        # ⚠ THE OLD FORM OF THIS CHECK ASSERTED ONE CONTIGUOUS BLOCK OWNED BY
+        # VBD -- `particles[0] != 0 or particles[-1] != n-1` -- which is a
+        # RANGE test, not an OWNERSHIP test. It is true today only because VBD
+        # is the sole particle source, and it answers the wrong question the
+        # moment a second one exists: a range [0,n) is satisfied just as well by
+        # two sources that OVERLAP as by two that tile.
+        #
+        # So check ownership directly, per source, in both directions:
+        #   * UNION == every particle in the model. A particle owned by NO entry
+        #     is silently FROZEN (SolverCoupled._build_owner_map zeroes its
+        #     inverse mass) with no warning at all -- a sheet with an invisible
+        #     dead patch, or a granular bed with a column that will not pour.
+        #   * DISJOINT. A doubly-owned particle IS caught by newton, but late
+        #     and from inside the coupled solver, where the message names an
+        #     index rather than the two authoring calls that produced it.
+        # len(union as a SET) is what tests both at once against the summed
+        # per-source counts.
+        # (_vbd_particles / _mpm_particles were built at the top of this
+        # function, from the same authoring records, and are the rosters the
+        # ENTRIES below are handed. Checked here, used there -- one source.)
         _n_particles = int(getattr(model, "particle_count", 0) or 0)
-        if len(particles) != _n_particles or particles[0] != 0 or particles[-1] != _n_particles - 1:
+        _owned = _vbd_particles + _mpm_particles
+        _uniq = set(_owned)
+        if len(_owned) != len(_uniq) or len(_uniq) != _n_particles:
             raise RuntimeError(
-                "cloth: the vbd entry would own particles [%d,%d) of %d in the model. "
-                "Every particle must be owned by exactly one entry -- an unowned "
-                "particle is silently FROZEN (inv mass zeroed) with no warning."
-                % (p_start, p_end, _n_particles))
+                "cloth: particle ownership is not a partition of the model. "
+                "vbd owns %d (from %d cloth + %d soft sources), mpm owns %d, "
+                "union %d distinct, model has %d. %s%s"
+                "An UNOWNED particle is silently FROZEN (inverse mass zeroed) "
+                "with no warning; a DOUBLE-owned one is caught by newton, but "
+                "only from inside the coupled solver and only by index."
+                % (len(_vbd_particles), len(self.cloth_grids), len(self.soft_grids),
+                   len(_mpm_particles), len(_uniq), _n_particles,
+                   ("OVERLAP: %d duplicate assignment(s). "
+                    % (len(_owned) - len(_uniq))) if len(_owned) != len(_uniq) else "",
+                   ("UNOWNED: %d particle(s) belong to no source. "
+                    % (_n_particles - len(_uniq))) if len(_uniq) < _n_particles else
+                   (("EXTRA: %d owned index(es) are outside the model. "
+                     % (len(_uniq) - _n_particles)) if len(_uniq) > _n_particles else "")))
+        # ⚠ THE VBD ENTRY IS NO LONGER HANDED THE WHOLE MODEL. Before MPM it
+        # was given the contiguous [p_start,p_end) union range and that range
+        # had to cover every particle; with a bed in the world the beds own the
+        # rest, so the check is now "the vbd entry's list IS the vbd roster",
+        # and the coverage question is the partition check above. On a world
+        # with no bed the two are the same statement and the same values.
+        if _vbd_particles and len(particles) != len(_vbd_particles):
+            raise RuntimeError(
+                "cloth: the vbd entry would own particles [%d,%d) = %d, but the cloth + "
+                "soft authoring records name %d. The union range and the per-source "
+                "rosters disagree; every particle must reach exactly one entry."
+                % (p_start, p_end, len(particles), len(_vbd_particles)))
         if len(bodies) != n_bodies or len(joints) != n_joints:
             raise RuntimeError("cloth: mjc entry must own every body and joint")
 
@@ -4381,7 +5031,24 @@ class World:
         # step() bakes in whatever object graph exists at capture time. Order
         # is CollisionPipeline -> Contacts -> solvers, which is also the order
         # upstream's examples construct them in.
-        self.collision_pipeline = self._build_cloth_collision_pipeline(model, "world")
+        # ⚠ A BED WITHOUT CLOTH GETS A RIGID-ONLY PIPELINE, AND THAT IS NOT A
+        # MICRO-OPTIMISATION. _build_cloth_collision_pipeline requests the
+        # water-tight rigid-soft pass, which SIZES a soft-contact buffer at
+        # construction against the model's particle count -- for a 10^5-particle
+        # bed that is a large allocation for contacts nothing reads, because MPM
+        # resolves collider contact internally (which is also why the proxy
+        # below passes collision_pipeline=lambda _model: None). soft_contact_max=0
+        # is the shape upstream's own coupled MPM example builds
+        # (example_mujoco_mpm_coupled_solver.py: CollisionPipeline(model,
+        # soft_contact_max=0)). A world carrying cloth keeps the cloth pipeline
+        # unchanged, bed or no bed.
+        if _vbd_particles:
+            self.collision_pipeline = self._build_cloth_collision_pipeline(model, "world")
+        else:
+            self.collision_pipeline = newton.CollisionPipeline(model, soft_contact_max=0)
+            self._newton_log(
+                "granular: outer CollisionPipeline built with soft_contact_max=0 "
+                "(no VBD particles in this world) -- MPM owns its collider contact.")
         self._contacts_cache = self.collision_pipeline.contacts()
 
         # The factories run inside SolverCoupledProxy.__init__, each receiving
@@ -4396,7 +5063,21 @@ class World:
 
         def _vbd_factory(view, _kw=dict(vbd_kwargs)):
             s = newton.solvers.SolverVBD(model=view, **_kw)
-            self.solver_soft = s
+            self.solver_vbd = s
+            return s
+
+        def _mpm_factory(view, _p=dict(_mpm or {})):
+            # ⚠ THE ASSIGNMENT ON THE NEXT-BUT-ONE LINE IS LOAD-BEARING AND ITS
+            # OMISSION IS SILENT. `solver_soft` is the sentinel
+            # _mjc_batch_substeps_ok() reads to refuse the batched branch, and
+            # that branch drives mj_step DIRECTLY without ever calling
+            # solver.step(). An MPM solver that never reaches solver_mpm is
+            # therefore SKIPPED ON EVERY TICK with no exception and nothing in
+            # the log -- and the measured symptom is the worst kind: a body
+            # resting on the bed at a rest height BYTE-IDENTICAL to the no-sand
+            # control world. That is why the demo ships a control arm.
+            s = self._build_mpm_solver(view, _p)
+            self.solver_mpm = s
             return s
 
         def _proxy_pipeline(view):
@@ -4448,7 +5129,13 @@ class World:
             )
 
         _proxies = []
-        if _pb_static and abs(_ms_static - _ms_dynamic) > 1e-12:
+        # ⚠ GUARDED ON _vbd_particles: a bed-only world has no "vbd" entry, and
+        # a Proxy naming a destination that does not exist is a construction
+        # error inside SolverCoupledProxy rather than anything an author could
+        # read. On a cloth world this branch is entered exactly as before.
+        if not _vbd_particles:
+            pass
+        elif _pb_static and abs(_ms_static - _ms_dynamic) > 1e-12:
             _proxies.append(_mk_proxy(_pb_static, _ms_static))
             if _pb_dynamic:
                 _proxies.append(_mk_proxy(_pb_dynamic, _ms_dynamic))
@@ -4461,28 +5148,85 @@ class World:
             # exact previous behaviour.
             _proxies.append(_mk_proxy(list(proxy_bodies), _ms_static))
 
+        # ---- MPM: ONE MORE ENTRY AND ONE MORE PROXY ----------------------
+        # A bed adds an "mpm" entry owning only its own particles, plus a
+        # mjc -> mpm proxy so the rigid bodies appear to MPM as colliders and
+        # the grid impulses come back as body wrenches. Two details are not
+        # optional:
+        #
+        #   * in_place=True. That is what upstream's coupled MPM example passes
+        #     (example_mujoco_mpm_coupled_solver.py) and SolverImplicitMPM is
+        #     one of the solvers that supports it; a bed is 10^4-10^5 particles
+        #     and the alternative is a full second State per substep.
+        #   * collision_pipeline=lambda _model: None. MPM does its OWN collider
+        #     contact against the proxy bodies; handing the proxy a pipeline
+        #     would build a SECOND, competing contact set for the same pairs.
+        #     Upstream says so in-line at the same call site ("MPM handles
+        #     collider contact internally; no proxy collision pipeline should
+        #     generate Contacts here").
+        if _mpm_particles:
+            _mpm_ms = self._cloth_env_float("OMNISIM_MPM_PROXY_MASS_SCALE", 1.0)
+            _proxies.append(SolverCoupledProxy.Proxy(
+                source="mjc",
+                destination="mpm",
+                # The SAME narrowed roster the cloth proxy uses. ⚠ That means
+                # Solid.newtonClothCoupling narrows what the SAND sees too --
+                # the field is named for cloth and behaves as "particle
+                # coupling"; a body excluded there is invisible to the bed and
+                # passes straight through it.
+                bodies=list(proxy_bodies),
+                mass_scale=_mpm_ms,
+                mode="lagged",
+                collision_pipeline=lambda _model: None,
+            ))
+
+        _entries = [
+            SolverCoupledProxy.Entry(
+                name="mjc",
+                solver=_mjc_factory,
+                bodies=bodies,
+                joints=joints,
+                # shapes deliberately left empty: solver_coupled.py:1057-1065
+                # then gives the entry every shape of its own bodies PLUS the
+                # world/static shapes (the ground plane), which is exactly the
+                # rigid world SolverMuJoCo would have seen uncoupled.
+                #
+                # ⚠ `substeps` IS SET ONLY WHEN A BED EXISTS, and the scoping is
+                # the point: SolverCoupled runs `substeps` MuJoCo substeps per
+                # coupled step, so writing it unconditionally would change the
+                # rigid trajectory of all 14 shipped cloth worlds for a reason
+                # that has nothing to do with them. GranularBed.rigidSubsteps
+                # defaults to 4 because 1 is MEASURABLY WRONG -- a rigid cube
+                # resting on the bed GAINS energy and climbs, 0.27 -> 0.99 m.
+                **({"substeps": int(_mpm["rigid_substeps"])} if _mpm_particles else {}),
+            ),
+        ]
+        if _vbd_particles:
+            _entries.append(SolverCoupledProxy.Entry(
+                name="vbd",
+                solver=_vbd_factory,
+                particles=particles,
+            ))
+        if _mpm_particles:
+            _entries.append(SolverCoupledProxy.Entry(
+                name="mpm",
+                solver=_mpm_factory,
+                particles=_mpm_particles,
+                in_place=True,
+            ))
+
+        # Proxy relaxation passes per coupled step. Same precedence as every
+        # other knob here -- env var first -- but the DEFAULT comes from the
+        # bed when there is one, so GranularBed.proxyIterations is a field that
+        # actually reaches the solver rather than a declared-but-unread one.
+        _proxy_iters_default = int(_mpm["proxy_iterations"]) if _mpm_particles else 1
         self.solver = SolverCoupledProxy(
             model=model,
-            entries=[
-                SolverCoupledProxy.Entry(
-                    name="mjc",
-                    solver=_mjc_factory,
-                    bodies=bodies,
-                    joints=joints,
-                    # shapes deliberately left empty: solver_coupled.py:1057-1065
-                    # then gives the entry every shape of its own bodies PLUS the
-                    # world/static shapes (the ground plane), which is exactly the
-                    # rigid world SolverMuJoCo would have seen uncoupled.
-                ),
-                SolverCoupledProxy.Entry(
-                    name="vbd",
-                    solver=_vbd_factory,
-                    particles=particles,
-                ),
-            ],
+            entries=_entries,
             coupling=SolverCoupledProxy.Config(
                 proxies=_proxies,
-                iterations=self._cloth_env_int("OMNISIM_CLOTH_PROXY_ITERATIONS", 1),
+                iterations=self._cloth_env_int("OMNISIM_CLOTH_PROXY_ITERATIONS",
+                                               _proxy_iters_default),
             ),
         )
 
@@ -4496,23 +5240,28 @@ class World:
         # entry that takes bodies away from "mjc" would shift those maps and
         # every one of those readbacks would answer about the wrong body,
         # silently.
-        try:
-            _view = self.solver.view("mjc")
-            _vb = int(getattr(_view, "body_count", -1))
-            if _vb != n_bodies:
-                self._newton_log(
-                    "cloth: ⚠ mjc view has %d bodies but the parent model has %d "
-                    "-- the view is NOT an identity compaction, so raycast / weld / "
-                    "TouchSensor readbacks that index by parent body id are now "
-                    "WRONG. Do not trust them on this world." % (_vb, n_bodies))
-        except Exception as _e:                   # noqa: BLE001
-            self._newton_log("cloth: mjc view body-count check unavailable: %r" % (_e,))
+        self._check_entry_index_identity("mjc", n_bodies, n_joints)
 
         # (The OUTER pipeline + its Contacts were built above, before the
         # solvers. Upstream keeps both it and the per-proxy one
         # -- example_proxy_joint_gripper.py:88 and :143 -- for the same reason:
         # the coupled solver refreshes destination proxy contacts itself, the
         # outer buffer serves the substep loop and everything else.)
+        if _mpm_particles:
+            self._newton_log(
+                "granular: mpm entry up -- %d particles in %d bed(s), voxel %.5g, "
+                "grid %r padding %d, mpm_iters %d tol %.3g, rigid substeps %d, "
+                "proxy iterations %d, proxy bodies %d/%d, in_place=True, "
+                "proxy collision_pipeline=None (MPM owns collider contact)"
+                % (len(_mpm_particles), len(self.granular_beds), _mpm["voxel_size"],
+                   getattr(self, "_mpm_grid_type", "sparse"),
+                   int(getattr(self, "_mpm_grid_padding", 0) or 0),
+                   _mpm["max_iterations"], _mpm["tolerance"], _mpm["rigid_substeps"],
+                   self._cloth_env_int("OMNISIM_CLOTH_PROXY_ITERATIONS",
+                                       int(_mpm["proxy_iterations"])),
+                   len(proxy_bodies), n_bodies))
+        if not _vbd_particles:
+            return
         self._newton_log(
             "cloth: SolverCoupledProxy up -- mjc=%d bodies/%d joints, vbd=%d "
             "particles [%d,%d), proxy_bodies=%d/%d (%s) proxy_joints=%s mode=%s "
@@ -4526,6 +5275,194 @@ class World:
                vbd_kwargs["particle_enable_self_contact"],
                vbd_kwargs["particle_self_contact_radius"],
                vbd_kwargs["rigid_body_particle_contact_buffer_size"]))
+
+    # Tranche-0 scaffold. WARN-ONLY: on every world in this tree the check below
+    # passes, so this constant is what a later tranche flips to turn each
+    # finding into a RuntimeError. Kept as a class attribute rather than an env
+    # var so the promotion is one visible line in a diff.
+    _IDENTITY_FATAL = False
+
+    def _check_entry_index_identity(self, entry_name, n_bodies, n_joints):
+        """Verify a coupled entry's LOCAL ids are literally the PARENT's ids.
+
+        WHY THIS EXISTS AT ALL. Everything in this file that reads mj_model /
+        mj_data or the ``mjc_*_to_newton_*`` maps -- raycast, welds,
+        TouchSensor, the pose check, the contact readback -- resolves through
+        ``_mjc_solver()`` and then indexes with PARENT-model ids. That is sound
+        only while the entry's ModelView is an IDENTITY compaction of the
+        parent, which it is today because the "mjc" entry owns every body,
+        joint and shape. A future entry that takes any of them away would shift
+        those maps and every one of those readbacks would answer about the
+        wrong object, silently.
+
+        ⚠ WHY THREE DOMAINS AND NOT JUST BODIES. The check this replaces
+        compared body COUNTS only, and that is not enough to license the
+        readbacks it was written to protect. ``_raycast_maps`` MIXES TWO
+        NAMESPACES in one expression: ``sv.mjc_geom_to_newton_shape`` is
+        ENTRY-LOCAL (it comes off the entry's own solver) while
+        ``self.model.shape_body`` is the PARENT's shape->body table. Indexing
+        the second with the first is correct only if the SHAPE compaction is
+        ALSO the identity -- and nothing in this file checked that. Joint
+        coordinates are the third domain: every joint-space readback indexes
+        ``joint_q`` / ``joint_qd`` by parent coordinate offset.
+
+        ⚠ AND WHY THE WORLD COUNT IS PART OF IT. The whole prefix-identity
+        argument rests on ``SolverCoupled._ordered_world_subset`` returning
+        ``sorted(indices)``, which it does only on a SINGLE-world model. On a
+        batched (multi-world) model the per-entry ordering is world-interleaved,
+        so "the entry owns everything" no longer implies "local id == parent id"
+        and none of the three checks below would mean what they say.
+
+        ⚠ PRIVATE NEWTON FIELDS. ``solver._entries`` and the entry's
+        ``*_local_to_global`` / ``attribute_projections`` members are internals
+        of ``newton.solvers.coupled``. A newton upgrade may move or rename them,
+        so the block is guarded: if they are unreachable this DEGRADES to
+        exactly the body-count check it replaced, plus one line saying the
+        stronger check could not run. A version bump must never take out every
+        particle world in the tree.
+        """
+        _findings = []
+        _verified = []
+
+        try:
+            _wc = int(getattr(self.model, "world_count", 1) or 1)
+        except (TypeError, ValueError):
+            _wc = 1
+        if _wc > 1:
+            _findings.append(
+                "world_count=%d (>1): entry-local ids are NOT implied to equal parent "
+                "ids on a batched model (_ordered_world_subset returns sorted(indices) "
+                "only for a single world), so the identity every mj_model-backed "
+                "readback assumes is unverified here" % _wc)
+
+        try:
+            _view = self.solver.view(entry_name)
+            _vb = int(getattr(_view, "body_count", -1))
+        except Exception as _ve:                  # noqa: BLE001
+            self._newton_log("cloth: %s view unavailable, index identity NOT "
+                             "verified: %r" % (entry_name, _ve))
+            return
+        if _vb != n_bodies:
+            _findings.append("body count: %s view has %d, parent model has %d"
+                             % (entry_name, _vb, n_bodies))
+        else:
+            _verified.append("body_count=%d" % _vb)
+
+        try:
+            _entry = self.solver._entries[entry_name]
+            _freq = newton.Model.AttributeFrequency
+            _n_shapes = int(getattr(self.model, "shape_count", 0) or 0)
+            _n_coord = int(getattr(self.model, "joint_coord_count", 0) or 0)
+            _domains = (
+                ("body", _entry.body_local_to_global, n_bodies),
+                ("joint-coord", _entry.joint_coord_local_to_global, _n_coord),
+                ("shape",
+                 _entry.attribute_projections[_freq.SHAPE].local_to_global, _n_shapes),
+            )
+            for _dname, _map, _expect in _domains:
+                _ids = (_map.numpy().tolist() if hasattr(_map, "numpy")
+                        else [int(_v) for _v in _map])
+                _bad = None
+                for _i, _g in enumerate(_ids):
+                    if int(_g) != _i:
+                        _bad = _i
+                        break
+                if len(_ids) != _expect or _bad is not None:
+                    _findings.append(
+                        "%s map is NOT the identity: %d entries vs %d in the parent%s"
+                        % (_dname, len(_ids), _expect,
+                           ("; first mismatch local %d -> global %d"
+                            % (_bad, int(_ids[_bad]))) if _bad is not None else ""))
+                else:
+                    _verified.append("%s=%d" % (_dname, _expect))
+        except AttributeError as _pe:
+            # newton moved or renamed the private entry maps. Degrade to the
+            # body-count verdict already computed above and say so once.
+            self._newton_log(
+                "cloth: %s joint-coord/shape index identity CANNOT BE VERIFIED on this "
+                "newton build (%r). Falling back to the body-count check alone -- "
+                "raycast mixes entry-local geom ids with the parent shape_body table, "
+                "so a shape compaction would go undetected here." % (entry_name, _pe))
+        except Exception as _pe2:                 # noqa: BLE001
+            self._newton_log(
+                "cloth: %s index-identity check unavailable: %r" % (entry_name, _pe2))
+
+        if _findings:
+            _msg = ("cloth: ⚠ %s view is NOT an identity compaction of the parent "
+                    "model -- %s. Every mj_model-backed readback (raycast / weld / "
+                    "TouchSensor / contact / joint) indexes by PARENT id and is WRONG "
+                    "on this world. Do not trust them."
+                    % (entry_name, "; ".join(_findings)))
+            if self._IDENTITY_FATAL:
+                raise RuntimeError(_msg)
+            self._newton_log(_msg)
+        elif _verified:
+            self._newton_log(
+                "cloth: %s index identity VERIFIED (%s, world_count=%d) -- parent-id "
+                "readbacks are sound on this world."
+                % (entry_name, ", ".join(_verified), _wc))
+
+    def _validate_solver_composition(self):
+        """WARN-ONLY: does WorldInfo.newtonSolver describe what was actually built?
+
+        ⚠ READ THIS BEFORE ADDING A BRANCH HERE. ``newtonSolver "mujoco+vbd"``
+        IS A DEAD STRING. Nothing in this runtime compares against it -- grep
+        confirms it appears only in a docstring, a comment and one log message.
+        ``_vbd_world()`` compares only against ``"vbd"`` and the warp selection
+        only against ``"mujoco_warp"``; every other value, ``"mujoco+vbd"``
+        included, falls through to the same default MuJoCo path. THE COUPLING IS
+        SELECTED PURELY BY has_particles() -- i.e. by the NODES the world
+        declares, never by the string. 14 worlds in this tree declare
+        ``"mujoco+vbd"`` and every one of them would build the identical solver
+        with the field deleted.
+
+        That is defensible (the nodes are the truth; a string that can disagree
+        with them is a second source of truth waiting to drift) but it is
+        invisible, so an author who writes ``newtonSolver "mujoco"`` into a
+        world carrying a Cloth gets a coupled solver and no indication that the
+        field they set did nothing. This closes that gap the cheap way: compute
+        the composition the NODES imply, and if the world named a DIFFERENT one,
+        say so once.
+
+        ⚠ IT MUST NOT BECOME A BRANCH. Making the string select the solver would
+        give a world two ways to ask for coupling that can contradict each
+        other, and would break every one of those 14 worlds the day someone
+        "tidied" the field. Do not extend the enum here either -- the schema
+        owns that. This function logs and returns.
+
+        The CPU/GPU half is taken from the DECLARED preference rather than from
+        what was built, on purpose: the particle path legitimately moves the
+        MuJoCo entry to mujoco_warp at runtime once the model lands on CUDA, and
+        reporting that as a mismatch with the world file would fire on every
+        cloth world for a flip the file never asked about.
+        """
+        try:
+            _declared = (getattr(self, "_solver_pref", None) or "").strip().lower()
+            if not _declared:
+                return                       # world named nothing: nothing to contradict
+            if self._vbd_world():
+                _implied = "vbd"
+            else:
+                _implied = "mujoco_warp" if _declared == "mujoco_warp" else "mujoco"
+                if self.has_vbd_particles():
+                    _implied += "+vbd"
+                if self.has_granular():
+                    _implied += "+mpm"
+            if _declared == _implied:
+                return
+            self._newton_log(
+                "composition: WorldInfo.newtonSolver says %r but the nodes in this "
+                "world imply %r (%d cloth, %d soft, %d granular source(s); "
+                "%d rigid bodies). ⚠ THE FIELD DID NOT SELECT THIS -- coupling is "
+                "chosen by the particle sources present, never by the string, so the "
+                "solver built is the one named second. Nothing was changed by this "
+                "message; reconcile the world file."
+                % (_declared, _implied, len(self.cloth_grids), len(self.soft_grids),
+                   len(self.granular_beds),
+                   int(getattr(self.model, "body_count", 0) or 0)))
+        except Exception as _ce:                  # noqa: BLE001
+            # Telemetry must never be able to fail a finalize.
+            self._newton_log("composition: validator unavailable: %r" % (_ce,))
 
     def _fin_mark(self, label):
         """Record a finalize phase boundary (OMNISIM_NEWTON_STEP_PROFILE=1).
@@ -4883,11 +5820,19 @@ class World:
         # example_proxy_joint_gripper.py:77 because a SOFT (tetrahedral) grid
         # has no bending edges; ours is a CLOTH grid, so ours needs the flag.
         #
-        # ⚠ GATED ON has_cloth(). color() walks the whole particle/edge graph
-        # and is not free; more importantly it also populates
-        # `body_color_groups`, so calling it unconditionally would change what
-        # finalize() hands every rigid-only world. It stays off unless cloth
-        # was authored.
+        # ⚠ GATED ON has_vbd_particles() -- NARROWER THAN THE OTHER PARTICLE
+        # GATES BELOW, AND DELIBERATELY SO. color() walks the whole
+        # particle/edge graph and is not free; more importantly it also
+        # populates `body_color_groups`, so calling it unconditionally would
+        # change what finalize() hands every rigid-only world.
+        # ⚠ MPM MUST NOT WIDEN THIS GATE. Graph colouring exists for VBD's
+        # Gauss-Seidel sweeps, which relax same-colour vertices in parallel; a
+        # material-point solver has no colour groups and never reads the result.
+        # Folding granular in here would walk a 400k-particle graph at finalize
+        # for a solver that ignores it, AND -- because color() also writes
+        # body_color_groups -- would change what finalize() hands the world on
+        # every granular scene. Use has_particles() for the composition gates;
+        # use this one only for VBD.
         # ⚠ ALSO REQUIRED BY newtonSolver "vbd" EVEN WITH NO CLOTH AT ALL, and
         # it is a hard failure rather than a degradation: SolverVBD raises
         # ValueError("model.body_color_groups is empty but rigid bodies are
@@ -4895,12 +5840,12 @@ class World:
         # ModelBuilder.finalize()") at solver_vbd.py:850-857. color() populates
         # body_color_groups as well as the particle graph, so the whole-world
         # VBD path needs it for its BODIES, not for a sheet.
-        if self.has_cloth() or self._vbd_world():
+        if self.has_vbd_particles() or self._vbd_world():
             _t_color = _perf()
             self.builder.color(include_bending=True)
             self._newton_log("%s: builder.color(include_bending=True) over %d "
                              "particles / %d bodies in %.0f ms"
-                             % ("cloth" if self.has_cloth() else "vbd-world",
+                             % ("cloth" if self.has_vbd_particles() else "vbd-world",
                                 len(self.builder.particle_q),
                                 int(getattr(self.builder, "body_count", 0) or 0),
                                 (_perf() - _t_color) * 1000.0))
@@ -4948,9 +5893,14 @@ class World:
         # The same reasoning covers newtonSolver "vbd" with no cloth in it: the
         # solver is still SolverVBD, still a warp solver, and there is no CPU
         # mj_step on that path for the pin to be saving anything for.
+        #
+        # ⚠ GATED ON has_particles(), NOT has_vbd_particles(): the argument is
+        # about the SOLVER BEING A WARP SOLVER, which is true of every particle
+        # solver, not about which one owns the particles. A granular bed forces
+        # the model to CUDA for exactly the reason cloth does.
         _cloth_dev_note = ""
-        if self.has_cloth() or self._vbd_world():
-            _who = "cloth" if self.has_cloth() else "newtonSolver \"vbd\""
+        if self.has_particles() or self._vbd_world():
+            _who = "cloth" if self.has_particles() else "newtonSolver \"vbd\""
             if _dev_env == "cpu":
                 _cloth_dev_note = (" (%s wanted cuda; OMNISIM_NEWTON_MODEL_DEVICE=cpu "
                                    "overrides -- expect ~6.7 fps at a few hundred "
@@ -5022,10 +5972,43 @@ class World:
             except Exception as _bm_e:                    # noqa: BLE001
                 self._newton_log(
                     "cloth: OMNISIM_CLOTH_BODY_MU ignored (%r)" % (_bm_e,))
-        if self.has_cloth() or self._vbd_world():
+        if self.has_particles() or self._vbd_world():
             self._newton_log("%s: model device=%s%s"
-                             % ("cloth" if self.has_cloth() else "vbd-world",
+                             % ("cloth" if self.has_particles() else "vbd-world",
                                 self.model.device, _cloth_dev_note))
+        # ---- MPM REQUIRES CUDA, AND THIS REFUSES RATHER THAN DEGRADES -----
+        # ⚠ THE ONLY HARD DEVICE REQUIREMENT IN THIS FILE, and it is a refusal
+        # because the CPU path is not slow, it is unusable. MEASURED: 42-67
+        # ms/step at ~3k particles (0.15-0.25x realtime) and 351 ms/step at
+        # 8192, against a CUDA path that is nearly FLAT in N (30.9 ms at 2197,
+        # 67.4 ms at 405224). A world quietly running at 0.2x realtime does not
+        # read as "wrong device", it reads as a physics bug -- which is exactly
+        # the class of silent degradation this runtime keeps being bitten by --
+        # so name the cause instead. OMNISIM_MPM_ALLOW_CPU=1 takes the CPU path
+        # anyway, for a smoke test on a box with no GPU.
+        if self.has_granular():
+            _mpm_dev = str(getattr(self.model, "device", "") or "").lower()
+            if "cuda" not in _mpm_dev:
+                if self._cloth_env_flag("OMNISIM_MPM_ALLOW_CPU", False):
+                    self._newton_log(
+                        "granular: ⚠ OMNISIM_MPM_ALLOW_CPU=1 -- building %d bed(s) on "
+                        "device %r. MEASURED on CPU: 42-67 ms/step at ~3k particles "
+                        "(0.15-0.25x realtime), 351 ms/step at 8192. This is a smoke-test "
+                        "configuration, not a simulation you can drive."
+                        % (len(self.granular_beds), _mpm_dev))
+                else:
+                    raise RuntimeError(
+                        "GranularBed requires CUDA and the model finalized on device %r. "
+                        "SolverImplicitMPM is a warp GPU solver; on the CPU it measures "
+                        "42-67 ms/step at ~3k particles (0.15-0.25x realtime) and 351 "
+                        "ms/step at 8192, against a CUDA path that is nearly flat in N "
+                        "(30.9 ms at 2197, 67.4 ms at 405224). Refusing rather than "
+                        "shipping a world that runs at 0.2x realtime and reads as a "
+                        "physics bug. Causes, in order of likelihood: no CUDA-capable "
+                        "GPU / no CUDA warp build reachable by this interpreter; or "
+                        "OMNISIM_NEWTON_MODEL_DEVICE=cpu is set, which overrides the "
+                        "particle path's own CUDA pin. Set OMNISIM_MPM_ALLOW_CPU=1 to "
+                        "build anyway at the numbers above." % (_mpm_dev,))
         try:
             _lp = _devos.environ.get("OMNISIM_NEWTON_LOG")
             if _lp:
@@ -5193,7 +6176,10 @@ class World:
             # newtonSolver "vbd" world (no mjc entry at all) are all untouched,
             # which is why the 8-Husky 56.579 m datum is byte-identical.
             # OMNISIM_NEWTON_CLOTH_CPU_MJ=1 restores the CPU entry exactly.
-            if (_use_cpu and self.has_cloth()
+            # has_particles(): the flip follows from the MODEL BEING ON CUDA,
+            # which any particle source causes -- not from the particles being
+            # fabric. Same argument as the device pin above.
+            if (_use_cpu and self.has_particles()
                     and "cuda" in str(self.model.device).lower()
                     and not _os.environ.get("OMNISIM_NEWTON_CLOTH_CPU_MJ")):
                 _use_cpu = False
@@ -5274,8 +6260,8 @@ class World:
             if _save_mjcf:
                 _kw["save_to_mjcf"] = _save_mjcf
             try:
-                if self.has_cloth():
-                    # CLOTH PATH: the same SolverMuJoCo, built with the same
+                if self.has_particles():
+                    # PARTICLE PATH: the same SolverMuJoCo, built with the same
                     # **_kw, wrapped in a SolverCoupledProxy alongside a
                     # SolverVBD that owns the particles. See
                     # _build_cloth_coupled_solver for the full rationale.
@@ -5308,7 +6294,7 @@ class World:
                 _eff_cpu = bool(getattr(self._mjc_solver(), "use_mujoco_cpu", _use_cpu))
                 _solver_kind = ("MuJoCo (%s, %s)" %
                                 ("cpu/mj_step" if _eff_cpu else "mujoco_warp", _why))
-                if self.has_cloth():
+                if self.has_particles():
                     _solver_kind += (" + VBD cloth via SolverCoupledProxy (%s contacts)"
                                      % ("newton" if _os.environ.get("OMNISIM_CLOTH_NEWTON_CONTACTS",
                                                                     "").strip().lower()
@@ -5692,6 +6678,7 @@ class World:
                         _df.write("DUMP FAILED: %r\n" % (_de,))
             except Exception:
                 pass
+        self._validate_solver_composition()
         self.state_a = self.model.state()
         self.state_b = self.model.state()
         self._fin_mark("state_alloc")
@@ -7035,7 +8022,14 @@ class World:
             return
         if int(getattr(self, "_stepn", 0)) % n:
             return
-        sv = self.solver_soft
+        # ⚠ solver_vbd DIRECTLY, NOT the solver_soft property. Every attribute
+        # read below (body_particle_contact_overflow_max, the *_pre_alloc caps)
+        # is a SolverVBD member; another kind of second solver would answer None
+        # to all of them and this telemetry would silently report nothing about
+        # a solver it does not understand. Name the solver it is written for.
+        sv = self.solver_vbd
+        if sv is None:
+            return
         try:
             for attr, cap_attr, what in (
                     ("body_particle_contact_overflow_max",
@@ -7503,7 +8497,7 @@ class World:
                 _o.environ.get("OMNISIM_CLOTH_TELEMETRY_EVERY") or 25))
             self._cloth_tlm_full = bool(_o.environ.get("OMNISIM_CLOTH_TELEMETRY_FULL"))
             self._cloth_tlm_n = 0
-        return g is not None and self.has_cloth()
+        return g is not None and self.has_vbd_particles()
 
     def _cloth_telemetry(self):
         # WHY THIS EXISTS. Cloth was, until this function, UNOBSERVABLE from
@@ -7609,7 +8603,7 @@ class World:
             self._cloth_attach_ofs = 0
             self._cloth_attach_seq = 0
             self._cloth_attach_group = None
-        return g is not None and self.has_cloth()
+        return g is not None and self.has_vbd_particles()
 
     @staticmethod
     def _quat_to_mat(q):

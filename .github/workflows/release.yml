@@ -88,6 +88,48 @@ jobs:
           test -f "$PYTHON_HOME/libs/${PYTHON_LIB#-l}.lib"
           make distrib -j4
 
+      # A release that silently omitted the entire documented entry point built
+      # green, published green, and sat as "latest" for three days: v8.1.6 ships
+      # no omnisim/ package, so `python -m omnisim doctor` -- step 2 of README
+      # and BETA -- fails with "No module named omnisim" on the only artifact
+      # anyone can download. Nothing here looked inside the payload;
+      # if-no-files-found: error only checks that an .exe exists.
+      #
+      # windows_distro.py emits one Source: "<path>" line per packaged file into
+      # the generated .iss, so a literal grep is exact.
+      - name: Assert the package contains the documented entry points
+        shell: bash
+        run: |
+          ISS="$(find . -name 'omnisim*.iss' -print -quit)"
+          test -n "$ISS" || { echo "FATAL: no generated .iss found"; exit 1; }
+          echo "checking $ISS"
+          fail=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            grep -qF "Source: \"$f\"" "$ISS" || { echo "MISSING FROM PACKAGE: $f"; fail=1; }
+          done <<'ENTRYPOINTS'
+          omnisim\cli.py
+          omnisim\doctor.py
+          omnisim.bat
+          AGENTS.md
+          README.md
+          DEMOS.md
+          PROTOCOL.md
+          LICENSE
+          launch.bat
+          projects\guided_tour.txt
+          scripts\harness\omnisim_harness.py
+          packages\omnisim-mcp\src\omnisim_mcp\server.py
+          projects\samples\demos\worlds\flagship\omniarm6_real_pick_place.omniworld
+          ENTRYPOINTS
+          if [ "$fail" -ne 0 ]; then
+            echo
+            echo "Every path above is one a document tells a new user to run."
+            echo "Add it to scripts/packaging/files_core.txt."
+            exit 1
+          fi
+          echo "OK: every documented entry point is in the payload"
+
       - name: List release asset
         run: ls -lh distribution/*.exe
 

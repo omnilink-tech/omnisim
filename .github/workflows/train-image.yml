@@ -4,7 +4,7 @@
 # OmniSim built from a tagged release, so a GPU box can train immediately instead
 # of spending ~10 minutes reinstalling the identical stack every time.
 #
-# Trigger manually:  gh workflow run train-image.yml -f omnisim_tag=v8.1.6
+# Trigger manually:  gh workflow run train-image.yml -f omnisim_tag=v8.1.7
 name: train-image
 
 on:
@@ -20,7 +20,7 @@ on:
       omnisim_tag:
         description: "Release tag to build the engine from"
         required: true
-        default: "v8.1.6"
+        default: "v8.1.7"
 
 concurrency:
   group: train-image-${{ github.ref }}
@@ -28,6 +28,23 @@ concurrency:
 
 jobs:
   build:
+    # IDENTITY + COST GUARD -- only the OmniLink org publishes these images.
+    #
+    # Both workflows interpolate github.repository_owner into their GHCR tags, so
+    # on the development fork a path-filtered push to main would create a
+    # personal-account package under a name every doc writes as
+    # ghcr.io/omnilink-tech/omnisim. That is the same leak a036707b5 closed for
+    # publish_snapshot.sh.
+    #
+    # Gated at the JOB rather than before the push, because on the dev remote
+    # these have never once succeeded -- 18 train-image failures and 5
+    # runtime-image runs (3 cancelled, 2 failed), one of which burned 6 hours
+    # before being cancelled. A skipped job is neutral and free; a step that
+    # refuses after a full CUDA build is red and expensive. Verified 2026-08-28:
+    # zero successful runs, so no personal package was ever created.
+    #
+    # A fork that wants the image builds it locally -- docker/README.md says how.
+    if: github.repository_owner == 'omnilink-tech'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -37,7 +54,7 @@ jobs:
       # `inputs` is EMPTY on a push trigger -- only workflow_dispatch populates it.
       # Without this fallback the tag renders as "omnisim-train:" and buildx dies
       # with "invalid reference format". Resolve it once, here, for both triggers.
-      OMNISIM_TAG: ${{ inputs.omnisim_tag || 'v8.1.6' }}
+      OMNISIM_TAG: ${{ inputs.omnisim_tag || 'v8.1.7' }}
 
     steps:
       - uses: actions/checkout@v4

@@ -1,0 +1,153 @@
+# Build OmniSim on Linux and prove the physics actually ran.
+#
+# WHY THIS EXISTS
+#   Until now NO Linux build ran in CI at all. release.yml is Windows-only and
+#   every Linux workflow sat dormant in .github/workflows.disabled/, inherited
+#   from upstream Webots and never validated against this tree. The cost was not
+#   theoretical:
+#
+#     * src/omnisim/gui/OmWgpuView.cpp did not COMPILE on Linux -- a bare
+#       `#if QT_CONFIG(wayland)` is `1/0` to the preprocessor there. It is in the
+#       unconditional source list, so this broke EVERY Linux build.
+#     * The vendored libQt6Gui could not LINK, because fontconfig and xkbcommon
+#       dev packages were missing from all three copies of the dependency list --
+#       including scripts/install/linux_bootstrap.sh, the recipe the README hands
+#       to Linux users.
+#
+#   Both shipped for weeks. The only Linux build that existed anywhere -- the GPU
+#   training image -- had been failing on the first of them since 2026-08-25,
+#   across three consecutive runs, with nobody watching.
+#
+# WHY IT DRIVES scripts/install/linux_bootstrap.sh
+#   That script IS the documented Linux install path (README.md -> "Linux: use
+#   the verified source quickstart"). Running the same phases a user runs means a
+#   green tick here is evidence about THEIR experience, not just ours. A CI job
+#   with its own private dependency list would drift from the user recipe, which
+#   is exactly how the fontconfig hole survived.
+name: linux-build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "include/**"
+      - "resources/**"
+      - "dependencies/**"
+      - "lib/**"
+      - "Makefile"
+      - "scripts/install/**"
+      - "scripts/dev/setup_wgpu_native.sh"
+      - "tests/smoke/**"
+      - ".github/workflows/linux-build.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: linux-build-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # glm and stb are real submodules (.gitmodules); without them the
+          # build fails on missing headers.
+          submodules: true
+
+      # ⛔ DO NOT ADD actions/setup-python HERE.
+      # The engine EMBEDS CPython and links libpython3.12 -- the system python of
+      # ubuntu-24.04. actions/setup-python puts a different interpreter first on
+      # PATH, so the build would link one interpreter while the physics wheels
+      # land in another. That is the "two interpreters" trap docker/Dockerfile.train
+      # asserts against at build time: it does not fail loudly, it makes ONNX
+      # deploys silently run a zero-residual baseline. The disabled upstream
+      # workflow this replaces requested python 3.11 and had exactly this bug.
+      - name: Assert the system interpreter is the one the engine links
+        run: |
+          v="$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')"
+          echo "system python3: $v"
+          test "$v" = "3.12" || { echo "FATAL: expected 3.12, got $v"; exit 1; }
+
+      - name: System dependencies (the same list the docs give users)
+        run: bash scripts/install/linux_bootstrap.sh deps
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: linux-build-${{ github.ref_name }}
+          max-size: 800M
+
+      # Install wgpu-native BEFORE the build. Since the WREN deletion this is the
+      # only renderer, and it is also the only way the wgpu translation units get
+      # compiled AND linked on Linux -- the gap that hid the OmWgpuView break.
+      #
+      # Goes through the bootstrap PHASE, not setup_wgpu_native.sh directly. This
+      # workflow's whole claim is that "a green tick here is evidence about THEIR
+      # experience", and it was calling the script the user recipe never
+      # mentioned -- so CI had a renderer and every user following the docs did
+      # not. Driving the same phase the user runs is what makes the two the same
+      # recipe.
+      - name: wgpu-native
+        run: bash scripts/install/linux_bootstrap.sh wgpu
+
+      - name: Build
+        env:
+          JOBS: 4
+        run: bash scripts/install/linux_bootstrap.sh build
+
+      # Assert the two invariants that are silent when broken.
+      - name: Assert the binary is coherent
+        run: |
+          BIN=bin/omnisim-bin
+          ldd "$BIN" | grep -q 'libpython3\.12' \
+            || { echo "FATAL: omnisim-bin does not link libpython3.12"; exit 1; }
+          echo "OK: links libpython3.12"
+          test -f lib/webots/libwgpu_native.so \
+            || { echo "FATAL: libwgpu_native.so not staged -- this build has NO renderer"; exit 1; }
+          echo "OK: renderer library staged"
+
+      # OMNISIM_SKIP_TORCH=1: torch is training-only (`import torch` appears
+      # nowhere under src/ or lib/controller/) and is a ~2.5 GB download from the
+      # CUDA index that a GPU-less runner cannot use. onnxruntime, the actual
+      # hard inference dependency, is still installed.
+      - name: Physics runtime (pinned from the repo SSOT, no torch)
+        env:
+          OMNISIM_SKIP_TORCH: "1"
+        run: bash scripts/install/linux_bootstrap.sh gpu
+
+      # The decisive check. It runs a real world headless under Xvfb with
+      # OMNISIM_REQUIRE_NEWTON=1 and asserts the Newton verdict SIDECAR -- the
+      # only race-free proof that physics drove the simulation. A bare PASS is a
+      # log verdict, not a physics one.
+      - name: Smoke - a real world runs and Newton drove it
+        run: bash scripts/install/linux_bootstrap.sh smoke
+
+      # The broader world set. Separate step so a failure here is attributable
+      # to the suite rather than to the build.
+      #
+      # NOTE: no --nomake. That flag skips the controller rebuild, which is the
+      # right default on a developer box where the test controllers already
+      # exist -- but a CI runner is always fresh, and `make release` builds the
+      # PROJECT controllers, not the ones under tests/. With --nomake the worlds
+      # would load and their controllers would simply never start.
+      - name: Smoke suite (all declared worlds)
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "true"
+          QT_QPA_PLATFORM: xcb
+          WEBOTS_TMPDIR: /tmp
+        run: |
+          export OMNISIM_HOME="$PWD"
+          export WEBOTS_HOME="$PWD"
+          export LD_LIBRARY_PATH="$PWD/lib/webots${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          xvfb-run -a --server-args="-screen 0 1280x1024x24" \
+            python3 tests/smoke/run_smoke.py
+
+      - name: Engine log on failure
+        if: failure()
+        run: tail -120 omnisim_log.txt 2>/dev/null || echo "(no engine log produced)"

@@ -29,6 +29,72 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.7] — 2026-08-28
+
+### Onboarding
+
+- The Windows package now contains the `omnisim` CLI. `README.md` and `BETA.md`
+  both open with `python -m omnisim doctor`, which failed on the installer with
+  "No module named omnisim" because the CLI lived only in a git clone.
+  `scripts/packaging/files_core.txt` now ships `omnisim/`, `scripts/dev`,
+  `scripts/harness`, `scripts/capture`, `scripts/cinema`, the first-launch world
+  list `projects/guided_tour.txt`, and the entry-point documents `AGENTS.md`,
+  `PROTOCOL.md`, `DEMOS.md`, `README.md` and `LICENSE`.
+- Added `omnisim.bat` to the Windows package. The package bundles CPython 3.12
+  at `msys64/mingw64/bin/newton-runtime/python.exe` but puts no interpreter on
+  `PATH`, and on a clean Windows box `python` opens the Microsoft Store — so the
+  documented first command failed without ever naming OmniSim. The launcher
+  resolves an interpreter (system first, bundled as fallback, Store alias stub
+  rejected) and sets `PYTHONPATH`, so it works from any directory.
+- The MCP and Codex on-ramp now ships in the package:
+  `packages/omnisim-mcp`, `packages/omnisim-bridges`, `plugins/omnisim` and a
+  repo-root `.mcp.json`. The README told a package user to connect the MCP
+  server and use the plugin, and both links resolved to nothing on an installed
+  tree. The `.mcp.json` registers the server for Claude Code with no install and
+  no `claude mcp add`; it spawns `python -m omnisim_mcp` rather than the console
+  script, which only exists after a `pip install` and lands where an MCP client
+  often cannot see it on Windows. The packaging ignore rules now drop `dist/`,
+  `*.egg-info` and tool caches so a local `make distrib` cannot ship what a CI
+  build never had.
+- `omnisim doctor` now ends with a **VERDICT** line naming the next command, and
+  exits non-zero when the install cannot run a controller-driven world. It
+  previously reported facts, ended on a git log, exited 0 on a fatal install,
+  and printed the answer it had already computed only under `--strict` — a flag
+  no document names.
+- `omnisim doctor` now checks for the physics runtime, and treats its absence as
+  fatal. The README already claimed it did. The probe existed behind
+  `--fingerprint` and could not have worked on Linux at all, because
+  `newton_runtime_present()` tested the Windows bundle layout only. Both
+  platforms now resolve properly — the bundle on Windows, `importlib.util.find_spec`
+  in the system `python3` on Linux, which answers without importing warp and
+  paying for CUDA init. An absent runtime is not a degraded mode: nothing falls.
+- Added `omnisim demos` and `omnisim demo`. There was no route from "installed"
+  to "a robot moved" that did not involve pasting a 63-character world path.
+  `demos` lists all 50 from the launcher's own `demos.json` — the same catalogue
+  the in-sim gallery reads — and `demo <id>` runs one; bare `demo` runs the
+  flagship, which was missing from `demos.json` entirely.
+- `python -m omnisim` with no arguments was an argparse error with exit code 2.
+  It now prints three facts and four commands.
+- `scripts/install/linux_bootstrap.sh` gained a `wgpu` phase, included in `all`.
+  `src/omnisim/Makefile` auto-discovers `WGPU_NATIVE_HOME` from exactly one path,
+  `$OMNISIM_HOME/_scratch/wgpu-native`, and only `setup_wgpu_native.sh` creates
+  it — so the documented Linux recipe produced a green build with **no renderer
+  at all**: no screenshots, no capture service, no Camera device. `linux-build.yml`
+  knew this and worked around it privately; it now drives the bootstrap phase, so
+  the two recipes cannot diverge, and the build asserts `libwgpu_native.so`.
+- The Linux apt list gained `libdbus-1-dev` / `libdbus-1-3` (the vendored
+  `libQt6DBus` needs it at link time; the build otherwise dies after ~6 minutes
+  of compiling) and `libvulkan1` / `mesa-vulkan-drivers`, so wgpu-native has a
+  software adapter on a GPU-less host. `torch` now defaults to AUTO rather than
+  always installing — ~2.5 GB from the CUDA index for a package the engine never
+  imports.
+- Added a runtime container, `docker/Dockerfile.runtime`, with a workflow that
+  smoke-tests the image before pushing it. It is **not published**:
+  `runtime-image.yml` has never run and there is no `ghcr.io/omnilink-tech/omnisim`
+  tag, so build it locally with
+  `docker build -f docker/Dockerfile.runtime -t omnisim:local .`. See
+  [`docker/README.md`](docker/README.md) for what it covers and what it does not.
+
 ---
 
 ## [v8.1.6] — 2026-08-25

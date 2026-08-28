@@ -713,6 +713,7 @@ QT_SOURCES = OmAboutBox.cpp \
   OmGeometry.cpp \
   OmGlWindow.cpp \
   OmGps.cpp \
+  OmGranularBed.cpp \
   OmGranularGroup.cpp \
   OmGroup.cpp \
   OmGuiApplication.cpp \

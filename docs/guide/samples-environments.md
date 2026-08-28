@@ -18,7 +18,7 @@ A bright-midday urban street block: a 2-lane avenue running East–West crossed 
 
 **Keywords**: Desert, ancient ruins, golden hour, cinematic
 
-A golden-hour desert scene built to push OmniSim's WREN/OpenGL renderer. The backdrop is hand-built ancient architecture — a 4-tier ziggurat, an Egyptian-style pylon gate, a colossal marble colonnade (several columns collapsed), an obelisk, and a half-buried stone dome — plus haze-faded duplicates on the far horizon. The silhouettes are primitive composites (Box/Cylinder/Sphere) with mineral PBR appearances (Plaster, DryMud, Marble) rather than generic city building PROTOs.
+A golden-hour desert scene built to push OmniSim's wgpu-native renderer. The backdrop is hand-built ancient architecture — a 4-tier ziggurat, an Egyptian-style pylon gate, a colossal marble colonnade (several columns collapsed), an obelisk, and a half-buried stone dome — plus haze-faded duplicates on the far horizon. The silhouettes are primitive composites (Box/Cylinder/Sphere) with mineral PBR appearances (Plaster, DryMud, Marble) rather than generic city building PROTOs.
 
 ### [forest.omniworld]({{ url.github_tree }}/projects/samples/demos/worlds/environments/forest.omniworld)
 

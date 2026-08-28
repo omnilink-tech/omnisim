@@ -54,10 +54,12 @@
 #
 # Required environment:
 #   PUBLIC_REMOTE    git URL of the public repo (e.g. git@github.com:omnilink-tech/omnisim.git).
-#   PUBLISH_EMAIL    email recorded as author/committer of the public commit.
 #
 # Optional environment:
-#   PUBLISH_NAME     author/committer name. Defaults to "omnilink".
+#   PUBLISH_EMAIL    email recorded as author/committer of the public commit.
+#                    Defaults to "omni.link.technologies@gmail.com" -- the address
+#                    GitHub attributes to the omnilink-tech account.
+#   PUBLISH_NAME     author/committer name. Defaults to "OmniLink".
 #   GITHUB_TOKEN     GitHub Personal Access Token with `repo` scope (or fine-
 #                    grained equivalent with "Contents: Read and write" on the
 #                    public repo). When set, the script POSTs to GitHub's API
@@ -143,7 +145,7 @@ done
     || err "version '$VERSION' is not vMAJOR.MINOR.PATCH[-prerelease]"
 
 [[ -n "${PUBLIC_REMOTE:-}" ]] || err "PUBLIC_REMOTE env var is required"
-[[ -n "${PUBLISH_EMAIL:-}" ]] || err "PUBLISH_EMAIL env var is required"
+PUBLISH_EMAIL="${PUBLISH_EMAIL:-omni.link.technologies@gmail.com}"
 PUBLISH_NAME="${PUBLISH_NAME:-OmniLink}"
 
 # Extract owner/repo from PUBLIC_REMOTE. Supports git@host:owner/repo.git and
@@ -796,6 +798,35 @@ fi
 # branch landed first, that run could start against a tag the remote does not
 # have yet and fail on checkout. A tag pointing at a not-yet-referenced commit
 # is valid git; the reverse race is not recoverable without a re-run.
+# ---------------------------------------------------------------------------
+# IDENTITY GUARD -- who is about to PUSH.
+#
+# PUBLISH_NAME/PUBLISH_EMAIL above pin the COMMIT author and committer, and it
+# works: every commit on public main reads 'OmniLink'. But the commit identity
+# is not the only identity GitHub shows. The account whose CREDENTIAL pushes
+# becomes the 'actor' on every workflow run that push triggers, and that actor
+# is displayed publicly on the Actions tab.
+#
+# So a publish with a personal token produces perfectly clean commits and still
+# puts a personal GitHub login on the public repository. Check it before
+# pushing rather than after: a workflow run can be deleted, but a pull request
+# opened from a personal account cannot be deleted by anyone except GitHub
+# Support.
+#
+# Override for a legitimately different publisher: PUBLISH_ACTOR=<login>.
+# ---------------------------------------------------------------------------
+PUBLISH_ACTOR="${PUBLISH_ACTOR:-omnilink-tech}"
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    _actor=$(curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user 2>/dev/null | grep -o '"login"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -z "$_actor" ]]; then
+        log "WARNING: could not resolve the GITHUB_TOKEN identity; publishing account unverified."
+    elif [[ "$_actor" != "$PUBLISH_ACTOR" ]]; then
+        err "refusing to publish as GitHub user $_actor (expected $PUBLISH_ACTOR). That account becomes the public actor on every workflow run this push triggers, which would expose it on the public Actions tab. Use the OmniLink token, or set PUBLISH_ACTOR=$_actor if that is intended."
+    else
+        log "publishing actor : $_actor (verified)"
+    fi
+fi
+
 if [[ $FORCE_ORPHAN -eq 1 ]]; then
     # Replacing the tag: delete it remotely first, since a plain push cannot
     # move an existing tag and --force on a tag is easy to fire by accident

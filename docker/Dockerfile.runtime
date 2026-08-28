@@ -1,0 +1,229 @@
+# syntax=docker/dockerfile:1
+# ============================================================================
+# OmniSim RUNTIME image — the no-build onboarding path.
+#
+# WHY THIS EXISTS
+#   Before this image the only ways in were a 613 MB Windows installer or a
+#   10-25 minute source build (scripts/install/linux_bootstrap.sh:132). On
+#   Linux and macOS there was no download at all, so every non-Windows user
+#   compiled 586 translation units to see a robot move. This replaces that
+#   with a pull.
+#
+# HOW IT DIFFERS FROM Dockerfile.train
+#   - ubuntu:22.04, NOT nvidia/cuda:*-devel. The CUDA devel base is ~6.6 GB and
+#     nothing on the default physics path needs it.
+#   - NO torch. `import torch` appears nowhere under src/ or lib/controller/;
+#     it is a training-only dependency and costs ~3 GB installed. The hard
+#     inference gate is onnxruntime, not torch (linux_bootstrap.sh:245-250).
+#   - Multi-stage, so the source tree, build objects and Qt headers stay in the
+#     builder and never reach the shipped layers.
+#   - It installs wgpu-native. Dockerfile.train does not, and since the WREN
+#     deletion that means the published training image contains a binary with
+#     NO RENDERER at all. See stage 1.
+#
+# WHAT IT CAN AND CANNOT DO — read this before promising anything
+#   The default solver is CPU mj_step and needs no GPU: WorldInfo.wrl:36 leaves
+#   newtonSolver "", omnisim_newton_runtime.py:6144 maps that to
+#   use_mujoco_cpu=True, and the model is pinned to the CPU device at :5911.
+#   `import warp` performs no CUDA check, so the stack imports on a machine with
+#   no driver. OmniBench lane 4c measures this (rest_z 0.6498922 against an
+#   analytic 0.65) but measures it by HIDING CUDA from the process, not on a box
+#   that never had it — running lane4/cpu_only.py inside this container is the
+#   measurement that closes that gap, and it has NOT been run.
+#   NOT covered on CPU: GranularBed (MPM) raises unless the model is on CUDA,
+#   and cloth/soft-body worlds fall back to CPU at ~0.15x real time. Do not
+#   advertise those demos from this image.
+# ============================================================================
+
+ARG UBUNTU_TAG=24.04
+
+# ---------------------------------------------------------------------------
+# Stage 1 — builder. Everything expensive happens here and is then discarded.
+# ---------------------------------------------------------------------------
+FROM ubuntu:${UBUNTU_TAG} AS builder
+
+ARG JOBS=8
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    OMNISIM_HOME=/opt/omnisim \
+    WEBOTS_HOME=/opt/omnisim \
+    TAR_OPTIONS=--no-same-owner
+
+# This list is the one from docker/Dockerfile.train:85-96, which is itself kept
+# identical to scripts/install/linux_bootstrap.sh:94-102. Do not fork it: a
+# second parallel dependency list is a thing that silently drifts.
+# libdbus-1-dev is NOT in the bootstrap's list and is required — the vendored
+# libQt6DBus needs it AT LINK TIME and the build dies after ~6 minutes with
+# "undefined reference to dbus_message_*". That is a real hole in the bootstrap,
+# not a Docker quirk.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential make git wget curl unzip zip pkg-config ca-certificates \
+        cmake swig libglu1-mesa-dev libglib2.0-dev libfreeimage3 libfreetype-dev \
+        libxml2-dev libboost-dev libssh-gcrypt-dev libzip-dev libreadline-dev \
+        libopenal-dev libssl-dev libgl1-mesa-dev libxi-dev libxrandr-dev pbzip2 \
+        libdbus-1-dev libdbus-1-3 \
+        libfontconfig1-dev libxkbcommon-dev libxkbcommon-x11-dev \
+        python3 python3-pip python3-dev python-is-python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# newton 1.5.0 does NOT work on CPython 3.10, despite every package in the
+# stack declaring Requires-Python >=3.10. Measured by physics-runtime-check:
+# on 3.10.12 newton.ModelBuilder() raises
+#   TypeError: Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool].
+# while 3.12.3 constructs fine -- same warp 1.16.0, same newton 1.5.0. The
+# engine embeds and links the SYSTEM interpreter on Linux, so the base image is
+# what selects it: 24.04 gives 3.12, 22.04 gives 3.10 and therefore a simulator
+# with NO PHYSICS AT ALL (the world loads and stands still).
+#
+# Assert it rather than trust the base tag -- two interpreters is also how ONNX
+# deploys silently run a zero-residual baseline.
+RUN test "$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')" = "3.12" \
+    || (echo "FATAL: system python is not 3.12 but the engine links libpython3.12." && exit 1)
+
+# Build the tree the CALLER checked out, rather than cloning a published tag.
+# A tag-clone can only ever build already-released code, so it cannot verify a
+# fix before release -- and that is exactly how the first build of this image
+# failed: the source it fetched predated the wgpu fix that build needed. The
+# workflow checks out whatever ref it was asked for, so the context covers the
+# release case (check out a tag) and the verification case (check out a SHA)
+# with one mechanism, needs no network, and works for a private repository.
+COPY . ${OMNISIM_HOME}
+
+# glm and stb are submodules, so they arrive from the context as empty dirs.
+RUN cd "${OMNISIM_HOME}" \
+    && rm -rf src/glm src/stb \
+    && git clone -q --depth 1 --branch 1.0.1 https://github.com/g-truc/glm.git src/glm \
+    && git clone -q --depth 1 -b patch-1 https://github.com/omichel/stb.git src/stb
+
+# The build writes docs/list.txt, but .dockerignore excludes docs/ from the
+# context (280 MB, and the Dockerfile prunes it anyway), so the write failed
+# with "cannot create /opt/omnisim/docs/list.txt: Directory nonexistent".
+# Non-fatal, but it is log noise that looks like a real error.
+RUN mkdir -p ${OMNISIM_HOME}/docs
+
+# wgpu-native BEFORE the build. The Makefile auto-discovers exactly one path,
+# $(OMNISIM_PATH)/_scratch/wgpu-native (src/omnisim/Makefile:406-411), and sets
+# WB_WGPU_NATIVE_AVAILABLE only if it is there. Get the order wrong and you get
+# a clean, green build of a binary that cannot draw anything.
+RUN cd "${OMNISIM_HOME}" && bash scripts/dev/setup_wgpu_native.sh
+
+RUN cd "${OMNISIM_HOME}" && make -j"${JOBS}" release \
+    && test -x "${OMNISIM_HOME}/bin/omnisim-bin"
+
+# The binary must link the interpreter the wheels will go into. Verify from the
+# ELF rather than assume — this is the invariant the whole image rests on.
+RUN ldd "${OMNISIM_HOME}/bin/omnisim-bin" | grep -q 'libpython3\.12' \
+    || (echo "FATAL: omnisim-bin does not link libpython3.12" && exit 1)
+
+# The renderer is the thing most likely to be silently missing, so make its
+# absence a BUILD failure here rather than a runtime surprise for a user.
+RUN test -f "${OMNISIM_HOME}/lib/webots/libwgpu_native.so" \
+    || (echo "FATAL: libwgpu_native.so not staged into lib/webots — this image would have no renderer." && exit 1)
+
+# Prune what only the builder needed. Deliberately conservative: object files
+# and archives, not whole directories.
+# KEEP src/omnisim/physics/*.py — the engine probes
+# $OMNISIM_HOME/src/omnisim/physics/ for omnisim_newton_runtime.py and inserts
+# it on sys.path (OmNewtonBackend.cpp:552-569). Deleting src/ wholesale removes
+# the physics runtime helper and the world then finalises with no Newton at all.
+RUN cd "${OMNISIM_HOME}" \
+    && find . -name '*.o' -delete \
+    && find . -name '*.d' -delete \
+    && rm -rf .git tests docs _scratch dependencies/*.tar.bz2 dependencies/*.zip \
+    && du -sh "${OMNISIM_HOME}"
+
+# ---------------------------------------------------------------------------
+# Stage 2 — runtime.
+# ---------------------------------------------------------------------------
+FROM ubuntu:${UBUNTU_TAG} AS runtime
+
+# NOTE: PYTHONPATH is deliberately NOT set here. Two different packages in this
+# tree are both importable as `omnisim` — the CLI at /opt/omnisim/omnisim and
+# the controller API at lib/controller/python/omnisim — and they shadow each
+# other on one sys.path. Putting /opt/omnisim on a global PYTHONPATH would leak
+# into every controller process the engine spawns and turn `from omnisim import
+# Robot` into an AttributeError. The entrypoint cd's to $OMNISIM_HOME instead,
+# which puts the CLI on sys.path for the CLI only.
+ENV DEBIAN_FRONTEND=noninteractive \
+    OMNISIM_HOME=/opt/omnisim \
+    WEBOTS_HOME=/opt/omnisim \
+    LD_LIBRARY_PATH=/opt/omnisim/lib/webots \
+    QT_QPA_PLATFORM=xcb \
+    WEBOTS_TMPDIR=/tmp \
+    XDG_RUNTIME_DIR=/tmp/runtime \
+    LIBGL_ALWAYS_SOFTWARE=1 \
+    OMNISIM_REQUIRE_NEWTON=1 \
+    PYTHONUNBUFFERED=1 \
+    TAR_OPTIONS=--no-same-owner
+
+# Package names use the -dev spelling on purpose. Ubuntu 24.04's t64 transition
+# renamed many runtime libraries (libssl3 -> libssl3t64, libzip4 -> libzip4t64,
+# libglib2.0-0 -> libglib2.0-0t64, ...) while the -dev names stayed stable and
+# pull the correct runtime as a dependency. Hand-listing the runtime spellings
+# means a list that installs on 22.04 and 404s on 24.04.
+#
+#   xvfb            : MANDATORY, not optional. The engine constructs a Qt main
+#                     window for any world-running invocation, so an XCB context
+#                     exists even under --no-rendering. Without a display it dies
+#                     with an EMPTY log while the launcher still exits 0. The
+#                     window-free modes are not usable: OMNISIM_NO_WINDOW
+#                     deadlocks Newton's embedded CPython at add_joint_revolute,
+#                     and OMNISIM_NO_GL does not reliably step.
+#   xcb libs        : required EVEN HEADLESS; a partial set kills the engine with
+#                     an EMPTY log while the launcher still exits 0.
+#   mesa-vulkan-drivers + libvulkan1 : lavapipe, so wgpu-native has a software
+#                     Vulkan adapter on a GPU-less host. UNVERIFIED -- read the
+#                     OMNISIM_WGPU_INITLOG output before claiming screenshots work.
+#   ffmpeg          : capture/cinema encode; without it those services return 503.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-pip python-is-python3 \
+        ca-certificates curl git \
+        xvfb x11-utils \
+        libglu1-mesa-dev libglib2.0-dev libfreeimage3 libfreetype-dev \
+        libxml2-dev libssh-gcrypt-dev libzip-dev libreadline-dev \
+        libopenal-dev libssl-dev libgl1-mesa-dev libxi-dev libxrandr-dev \
+        libdbus-1-3 libfontconfig1-dev libxkbcommon-dev libxkbcommon-x11-dev \
+        libvulkan1 mesa-vulkan-drivers ffmpeg \
+        libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
+        libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/omnisim /opt/omnisim
+
+# The physics stack, pinned from the repo's own SSOT
+# (scripts/packaging/newton_runtime_pins.py) rather than a hand-copied list, so
+# this image cannot drift from the bundle the Windows installer ships.
+# NO torch: training-only, ~3 GB.
+# mujoco-warp is required even on the pure-CPU path — newton's
+# SolverMuJoCo.import_mujoco() imports both mujoco AND mujoco_warp
+# unconditionally and raises ImportError if either is missing.
+RUN python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir --upgrade pip \
+    && PINS="$(python3 -c 'import sys; sys.path.insert(0,"/opt/omnisim/scripts/packaging"); import newton_runtime_pins as p; print(" ".join(p.bundle_requirements()))')" \
+    && echo "pinned physics stack: $PINS" \
+    && python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir $PINS \
+    && python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir numpy onnxruntime Pillow
+
+# Assert the CONVENTION, not the version string. mj_fullM's signature changed
+# between mujoco 3.8 and 3.9; a caller using the old form raises TypeError.
+# Fail the BUILD here rather than mid-run on a user's first demo.
+RUN python3 -c "import numpy as np, mujoco; m = mujoco.MjModel.from_xml_string(\"<mujoco><worldbody><body><joint type='slide'/><geom size='.1'/></body></worldbody></mujoco>\"); d = mujoco.MjData(m); mujoco.mj_fullM(m, d, np.zeros((m.nv, m.nv))); print('mj_fullM convention OK on mujoco', mujoco.__version__)"
+
+# Prove the physics runtime imports with no CUDA device present. `import warp`
+# performs no CUDA check and get_preferred_device() returns cpu when no driver
+# exists, so this passes on the GPU-less CI builder — which is the point: it is
+# the assertion that catches a regression into a CUDA-required import.
+RUN python3 -c "import warp, newton, mujoco, mujoco_warp; print('physics imports OK with no CUDA present; warp', warp.config.version)"
+
+RUN mkdir -p /tmp/runtime && chmod 700 /tmp/runtime
+
+COPY docker/omnisim-entrypoint.sh /usr/local/bin/omnisim-entrypoint
+RUN chmod +x /usr/local/bin/omnisim-entrypoint
+
+WORKDIR /opt/omnisim
+
+LABEL org.opencontainers.image.source="https://github.com/omnilink-tech/omnisim" \
+      org.opencontainers.image.description="OmniSim runtime — CPU physics, no build, no GPU required" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
+ENTRYPOINT ["/usr/local/bin/omnisim-entrypoint"]
+CMD ["doctor"]

@@ -187,6 +187,10 @@ void OmSolid::init() {
   mNewtonClothCoupling = findSFInt("newtonClothCoupling");
   mBoundingObject = findSFNode("boundingObject");
   mPhysics = findSFNode("physics");
+  mNewtonGravityCompensation = findSFDouble("newtonGravityCompensation");
+  mNewtonFriction = findSFDouble("newtonFriction");
+  mNewtonFrictionTorsional = findSFDouble("newtonFrictionTorsional");
+  mNewtonFrictionRolling = findSFDouble("newtonFrictionRolling");
   mRadarCrossSection = findSFDouble("radarCrossSection");
   mRecognitionColors = findMFColor("recognitionColors");
 
@@ -2852,21 +2856,24 @@ static OmNewtonShapeXform composeNewtonShapePose(const OmNewtonShapeXform &runni
 
 static QString addNewtonPrimitive(OmNewtonBackend *newton, int idx,
                                   const OmBaseNode *g, const OmNewtonShapeXform &x,
-                                  double softKe) {
+                                  double softKe, double solidMu,
+                                  double solidMuT, double solidMuR) {
   const OmVector3 &off = x.t;
   // Newton/warp quaternion order is (qx, qy, qz, qw); OmQuaternion stores (w, x, y, z).
   const double qx = x.q.x(), qy = x.q.y(), qz = x.q.z(), qw = x.q.w();
   if (const OmSphere *sphere = dynamic_cast<const OmSphere *>(g)) {
     // No orientation: a sphere is rotation-invariant. It still needs the
     // correctly COMPOSED offset above.
-    newton->addShapeSphere(idx, sphere->radius(), off.x(), off.y(), off.z());
+    newton->addShapeSphere(idx, sphere->radius(), off.x(), off.y(), off.z(), solidMu,
+                           solidMuT, solidMuR);
     return QString("sphere r=%1 at (%2,%3,%4)").arg(sphere->radius())
         .arg(off.x()).arg(off.y()).arg(off.z());
   }
   if (const OmBox *box = dynamic_cast<const OmBox *>(g)) {
     const OmVector3 &sz = box->size();
     newton->addShapeBox(idx, sz.x() * 0.5, sz.y() * 0.5, sz.z() * 0.5,
-                        off.x(), off.y(), off.z(), softKe, qx, qy, qz, qw);
+                        off.x(), off.y(), off.z(), softKe, qx, qy, qz, qw, solidMu,
+                        solidMuT, solidMuR);
     return QString("box hx=%1 hy=%2 hz=%3 at (%4,%5,%6) q=(%7,%8,%9,%10)")
         .arg(sz.x() * 0.5).arg(sz.y() * 0.5).arg(sz.z() * 0.5)
         .arg(off.x()).arg(off.y()).arg(off.z())
@@ -2939,11 +2946,12 @@ static bool newtonCompoundCollidersOn() {
 // physics byte-for-byte unchanged.
 static QString registerNewtonShapesRec(OmNewtonBackend *newton, int idx,
                                        const OmBaseNode *bo, OmNewtonShapeXform x,
-                                       double softKe) {
+                                       double softKe, double solidMu,
+                                       double solidMuT, double solidMuR) {
   if (bo == nullptr)
     return QString();
   if (const OmShape *sh = dynamic_cast<const OmShape *>(bo))
-    return registerNewtonShapesRec(newton, idx, sh->geometry(), x, softKe);
+    return registerNewtonShapesRec(newton, idx, sh->geometry(), x, softKe, solidMu, solidMuT, solidMuR);
   // OmPose extends OmGroup: compose its translation AND rotation, then recurse
   // its kids. (OmTransform derives from OmPose, so this arm catches it too.)
   if (const OmPose *p = dynamic_cast<const OmPose *>(bo)) {
@@ -2952,7 +2960,7 @@ static QString registerNewtonShapesRec(OmNewtonBackend *newton, int idx,
     const OmMFNode &kids = p->children();
     for (int i = 0; i < kids.size(); ++i) {
       const QString d = registerNewtonShapesRec(
-          newton, idx, dynamic_cast<OmBaseNode *>(kids.item(i)), childX, softKe);
+          newton, idx, dynamic_cast<OmBaseNode *>(kids.item(i)), childX, softKe, solidMu, solidMuT, solidMuR);
       if (!d.isEmpty())
         desc += (desc.isEmpty() ? "" : "; ") + d;
     }
@@ -2963,18 +2971,30 @@ static QString registerNewtonShapesRec(OmNewtonBackend *newton, int idx,
     const OmMFNode &kids = g->children();
     for (int i = 0; i < kids.size(); ++i) {
       const QString d = registerNewtonShapesRec(
-          newton, idx, dynamic_cast<OmBaseNode *>(kids.item(i)), x, softKe);
+          newton, idx, dynamic_cast<OmBaseNode *>(kids.item(i)), x, softKe, solidMu, solidMuT, solidMuR);
       if (!d.isEmpty())
         desc += (desc.isEmpty() ? "" : "; ") + d;
     }
     return desc;
   }
-  return addNewtonPrimitive(newton, idx, bo, x, softKe);
+  return addNewtonPrimitive(newton, idx, bo, x, softKe, solidMu, solidMuT, solidMuR);
+}
+
+// Per-Solid tangential friction (Solid.newtonFriction). Returns a NEGATIVE
+// sentinel when the field is absent or unset, which the runtime reads as
+// "inherit WorldInfo.newtonGroundMu" -- so every world that does not declare
+// it is byte-for-byte unchanged. Null-checked because derived node types need
+// not redeclare Solid's field set.
+static double newtonFrictionForSolid(const OmSFDouble *f) {
+  return (f == nullptr) ? -1.0 : f->value();
 }
 
 static QString attachNewtonShapeFromBoundingObject(OmNewtonBackend *newton, int idx,
                                                    OmBaseNode *boundingObjectValue,
-                                                   double softKe = -1.0) {
+                                                   double softKe = -1.0,
+                                                   double solidMu = -1.0,
+                                                   double solidMuT = -1.0,
+                                                   double solidMuR = -1.0) {
   // OPT-IN two ways (mirrors newtonStatics / newtonRobotColliders): register
   // every collider in a compound boundingObject (Group of offset primitives on
   // one rigid body) instead of just the first child, via the launch env var OR
@@ -2986,7 +3006,8 @@ static QString attachNewtonShapeFromBoundingObject(OmNewtonBackend *newton, int 
   const bool compound = newtonCompoundCollidersOn();
   if (compound) {
     const QString d = registerNewtonShapesRec(newton, idx, boundingObjectValue,
-                                              OmNewtonShapeXform(), softKe);
+                                              OmNewtonShapeXform(), softKe, solidMu,
+                                              solidMuT, solidMuR);
     if (!d.isEmpty())
       return d;
     // fall through to the single-shape walker if nothing matched
@@ -3063,14 +3084,15 @@ static QString attachNewtonShapeFromBoundingObject(OmNewtonBackend *newton, int 
   if (const OmSphere *sphere = dynamic_cast<const OmSphere *>(bo)) {
     const double radius = sphere->radius();
     // Sphere: rotation-invariant, offset only.
-    newton->addShapeSphere(idx, radius, shapeOffset.x(), shapeOffset.y(), shapeOffset.z());
+    newton->addShapeSphere(idx, radius, shapeOffset.x(), shapeOffset.y(), shapeOffset.z(), solidMu,
+                           solidMuT, solidMuR);
     shapeDesc = QString("sphere r=%1 at (%2,%3,%4)").arg(radius)
                     .arg(shapeOffset.x()).arg(shapeOffset.y()).arg(shapeOffset.z());
   } else if (const OmBox *box = dynamic_cast<const OmBox *>(bo)) {
     const OmVector3 &sz = box->size();
     newton->addShapeBox(idx, sz.x() * 0.5, sz.y() * 0.5, sz.z() * 0.5,
                         shapeOffset.x(), shapeOffset.y(), shapeOffset.z(), softKe,
-                        sqx, sqy, sqz, sqw);
+                        sqx, sqy, sqz, sqw, solidMu, solidMuT, solidMuR);
     shapeDesc = QString("box hx=%1 hy=%2 hz=%3 at (%4,%5,%6) q=(%7,%8,%9,%10)")
                     .arg(sz.x() * 0.5).arg(sz.y() * 0.5).arg(sz.z() * 0.5)
                     .arg(shapeOffset.x()).arg(shapeOffset.y()).arg(shapeOffset.z())
@@ -3536,7 +3558,10 @@ void OmSolid::flushPendingNewtonRegistrations() {
           if (kidx >= 0) {
             attachNewtonShapeFromBoundingObject(
                 newton, kidx, dynamic_cast<OmBaseNode *>(kc->mBoundingObject->value()),
-                newtonSoftKeForMaterial(kc->mContactMaterial));
+                newtonSoftKeForMaterial(kc->mContactMaterial),
+                newtonFrictionForSolid(kc->mNewtonFriction),
+                newtonFrictionForSolid(kc->mNewtonFrictionTorsional),
+                newtonFrictionForSolid(kc->mNewtonFrictionRolling));
             kc->mNewtonBodyIndex = kidx;
             // Static protections (no per-step pose readback, no
             // resetBodyPose/resetJointsToDefaults) PLUS the kinematic
@@ -3684,7 +3709,10 @@ void OmSolid::flushPendingNewtonRegistrations() {
         if (sidx >= 0) {
           attachNewtonShapeFromBoundingObject(
               newton, sidx, dynamic_cast<OmBaseNode *>(sc->mBoundingObject->value()),
-              newtonSoftKeForMaterial(sc->mContactMaterial));
+              newtonSoftKeForMaterial(sc->mContactMaterial),
+              newtonFrictionForSolid(sc->mNewtonFriction),
+              newtonFrictionForSolid(sc->mNewtonFrictionTorsional),
+              newtonFrictionForSolid(sc->mNewtonFrictionRolling));
           sc->mNewtonBodyIndex = sidx;
           sc->mNewtonBodyIsStatic = true;
           ++registeredThisFlush;
@@ -3864,6 +3892,11 @@ void OmSolid::flushPendingNewtonRegistrations() {
                                     q.x(), q.y(), q.z(), q.w(),
                                     ixx, iyy, izz, ixy, ixz, iyz,
                                     hasCom, cx, cy, cz);
+    if (idx >= 0 && s->mNewtonGravityCompensation != nullptr)
+      // Must precede finalizeWorld(): gravcomp reaches the mjSpec at build time
+      // and cannot be patched into mj_model afterwards. A 0 value is a no-op, so
+      // a world that does not declare the field is untouched.
+      newton->setBodyGravcomp(idx, s->mNewtonGravityCompensation->value());
     if (idx >= 0) {
       // P3.10i: OmRobot wrappers (URDFRobot expansion produces these)
       // typically have a chassis-envelope bounding box that includes
@@ -3914,7 +3947,10 @@ void OmSolid::flushPendingNewtonRegistrations() {
         // is now shared with the static-body path via this helper.
         shapeDesc = attachNewtonShapeFromBoundingObject(
             newton, idx, dynamic_cast<OmBaseNode *>(s->mBoundingObject->value()),
-            newtonSoftKeForMaterial(s->mContactMaterial));
+            newtonSoftKeForMaterial(s->mContactMaterial),
+            newtonFrictionForSolid(s->mNewtonFriction),
+              newtonFrictionForSolid(s->mNewtonFrictionTorsional),
+              newtonFrictionForSolid(s->mNewtonFrictionRolling));
       }
       if (shapeDesc.isEmpty() && !isRobotWrapper) {
         newton->addShapeSphere(idx, 0.12);
@@ -4049,10 +4085,15 @@ void OmSolid::flushPendingNewtonRegistrations() {
                                     ixx, iyy, izz, ixy, ixz, iyz);
     if (idx < 0)
       continue;
+    if (ts->mNewtonGravityCompensation != nullptr)
+      newton->setBodyGravcomp(idx, ts->mNewtonGravityCompensation->value());
     if (ts->mBoundingObject != nullptr && ts->mBoundingObject->value() != nullptr)
       attachNewtonShapeFromBoundingObject(
           newton, idx, dynamic_cast<OmBaseNode *>(ts->mBoundingObject->value()),
-          newtonSoftKeForMaterial(ts->mContactMaterial));
+          newtonSoftKeForMaterial(ts->mContactMaterial),
+          newtonFrictionForSolid(ts->mNewtonFriction),
+              newtonFrictionForSolid(ts->mNewtonFrictionTorsional),
+              newtonFrictionForSolid(ts->mNewtonFrictionRolling));
     if (newton->addJointFixed(parentBody, idx) < 0) {
       OmLog::warning(QObject::tr("TouchSensor '%1': un-fold weld to its parent body failed -- the sensor body is "
                                  "registered but unattached. Its force readback will be wrong; report this.")

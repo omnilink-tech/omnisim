@@ -706,6 +706,35 @@ void OmBasicJoint::flushPendingNewtonRegistrations() {
         // the Spot/G1 RL recipes keep their explicitly-swept gains.
         targetKe = (effortLimit > 0.0) ? effortLimit * 10.0 : 20.0;
         targetKd = (effortLimit > 0.0) ? effortLimit * 0.5 : 3.0;
+        // ⚠ WARN WHEN WE SUBSTITUTE, BECAUSE THE SUBSTITUTION MAKES A BROKEN
+        // DESCRIPTION LOOK HEALTHY *HERE* AND NOWHERE ELSE.
+        //
+        // effortLimit <= 0 covers TWO different authoring cases that URDF
+        // distinguishes and this branch cannot:
+        //   * the attribute is OMITTED  -- URDF's way of spelling "unlimited";
+        //   * effort="0" is DECLARED    -- a declared inability to apply torque.
+        // The second is a real and common defect: a published 918-star hand
+        // ships all 16 of its actuated joints at effort="0" velocity="0", and
+        // measured in PyBullet not one of them moves (mean |err| = the full
+        // commanded 0.5 rad). Here the same file gets ke = 20.0 and behaves
+        // plausibly, so OmniSim is the one simulator that would NOT reveal it.
+        //
+        // scripts/dev/urdf_import.py already warns on the import side that
+        // "consumers will give this joint zero authority". The engine saying
+        // nothing means our own two halves disagree about the same file.
+        //
+        // This registration path runs once per joint per world load, so the
+        // warning is naturally once per joint -- no latch needed.
+        if (effortLimit <= 0.0 && motor != nullptr) {
+          OmLog::warning(QObject::tr(
+              "Motor '%1': no positive effort limit declared, so a SYNTHETIC position gain "
+              "ke=%2 kd=%3 is being used. If the source URDF declared effort=\"0\" rather "
+              "than omitting it, that is a declaration that the joint cannot apply torque -- "
+              "PyBullet, Gazebo and ros2_control will leave it inert while OmniSim drives it, "
+              "so a defective description looks correct here and nowhere else. Declare a real "
+              "effort limit, or omit the attribute if unlimited is intended.")
+              .arg(motor->deviceName()).arg(targetKe).arg(targetKd));
+        }
       } else {
         // VELOCITY-WHEEL CONFIG: no position spring, strong velocity damping.
         //

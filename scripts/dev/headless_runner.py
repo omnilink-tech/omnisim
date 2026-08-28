@@ -647,7 +647,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--duration", type=int, default=None,
                         help="Seconds to run before stopping. OMIT IT and the run is treated "
                              "as a load check: it stops as soon as Newton finalises the world "
-                             "(see --until-finalized), with 10s as the ceiling. Pass an "
+                             f"(see --until-finalized), with {DEFAULT_DURATION_S}s as the "
+                             "ceiling. Pass an "
                              "explicit value when the run must OBSERVE the simulation for that "
                              "long -- an explicit value is always honoured verbatim.")
     parser.add_argument("--wait-for-step", action="store_true",
@@ -716,7 +717,7 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="Run the engine in COMPUTE-ONLY headless mode (OMNISIM_NO_GL=1): no window, no GL "
                              "context, no WREN -- physics/controllers/IPC only, ~35%% less RSS. A controller "
                              "enabling a camera/range-finder/lidar is a FATAL, attributed error (vision worlds "
-                             "must use --no-window instead). ⚠️ EXPERIMENTAL (Phase Q1 Tier C spike): "
+                             "must use --no-window instead). WARNING: EXPERIMENTAL (Phase Q1 Tier C spike): "
                              "the world finalises but does NOT reliably step on all backends yet -- do "
                              "not use it for demos or timing. Prefer --no-window for a working headless run.")
     parser.add_argument("--require-newton", action="store_true",
@@ -758,10 +759,21 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-# The wall-clock ceiling applied when the caller expressed no opinion. Same 10 s
-# the old default used, so an explicitly-timed run is unchanged and this is only
-# ever a CEILING for the load check below.
-DEFAULT_DURATION_S = 10
+# The wall-clock ceiling applied when the caller expressed no opinion. It is
+# only ever a CEILING: --until-finalized returns the moment Newton finalises,
+# so a larger number costs nothing on a world that loads and buys correctness
+# on one that is merely slow.
+#
+# It was 10 s, inherited from the old sleep-based default, and 10 s is right at
+# the cold-load cost of the demo README leads with. MEASURED on machine
+# 9722d23d12a3: omniarm6_real_pick_place finalises at 9.43 s WARM and misses
+# the ceiling COLD -- and a miss is not a quiet one. It prints a five-line
+# "OBSERVED / NOT DIAGNOSED" block explaining that the evidence is equally
+# consistent with a world declaring no physics bodies, and then says PASS with
+# no sidecar. So the documented load check was flaky on the documented demo,
+# and its failure mode was a wall of text about a defect that was not there.
+# 30 s clears every world measured here with margin.
+DEFAULT_DURATION_S = 30
 
 
 def _resolve_duration_default(args) -> None:
@@ -892,7 +904,17 @@ def run_once(args) -> int:
     if not world.is_absolute():
         world = REPO_ROOT / world
     if not world.exists():
-        raise SystemExit(f"World not found: {world}")
+        # DUAL-READ (AGENTS.md): OmniSim reads .omniworld and .wbt
+        # interchangeably and indefinitely -- the tree migrated 661 of its own
+        # worlds, so every older tutorial, script and bookmark names a .wbt that
+        # is now a .omniworld. The engine honours that; the Python side did not,
+        # and a bare exists() turned a renamed file into a hard "World not
+        # found". docker/Dockerfile.train shipped exactly that bug for months.
+        _twin = {".wbt": ".omniworld", ".omniworld": ".wbt"}.get(world.suffix)
+        if _twin and world.with_suffix(_twin).exists():
+            world = world.with_suffix(_twin)
+        else:
+            raise SystemExit(f"World not found: {world}")
 
     # Use OMNISIM_LOG_PATH if set (per the parallel-runs convention in
     # AGENTS.md §3e); otherwise default to omnisim_log.txt at OMNISIM_HOME.
@@ -1058,6 +1080,19 @@ def run_once(args) -> int:
         path_prefix = [str(binary.parent)]
         if mingw_bin.is_dir() and mingw_bin != binary.parent:
             path_prefix.append(str(mingw_bin))
+        # Release builds keep the bundled controller interpreter below the
+        # engine directory.  Direct omnisim-bin launches bypass the launcher
+        # that normally exposes it, so include it explicitly; otherwise every
+        # Python controller fails with `"python.exe" was not found` even while
+        # the engine's embedded Newton interpreter is healthy.
+        runtime = mingw_bin / "newton-runtime"
+        if (runtime / "python.exe").is_file():
+            path_prefix.append(str(runtime))
+            site_packages = runtime / "site-packages"
+            if site_packages.is_dir():
+                env["PYTHONPATH"] = str(site_packages) + ";" + env.get(
+                    "PYTHONPATH", ""
+                )
         env["PATH"] = ";".join(path_prefix) + ";" + env.get("PATH", "")
     # Linux: spawning omnisim-bin directly bypasses the `webots` launcher
     # shell, so supply the runtime env it would otherwise miss (bundled-Qt
@@ -1133,10 +1168,28 @@ def run_once(args) -> int:
                 # The cause of an early exit often lives only on stderr.
                 try:
                     stderr_sink.close()
-                    tail = stderr_path.read_bytes()[-2000:].decode(errors="replace").strip()
-                    if tail:
-                        print(f"[headless] engine stderr tail ({stderr_path}):")
-                        for ln in tail.splitlines()[-15:]:
+                    text = stderr_path.read_bytes()[-64_000:].decode(errors="replace").strip()
+                    lines = text.splitlines()
+                    if lines:
+                        # A Rust panic prints its MESSAGE first and then ~40
+                        # backtrace frames, so a last-15-lines tail kept frames
+                        # 24-37 and threw away the one line that says why. That
+                        # is exactly what happened to the Linux CI SIGABRT: the
+                        # diagnostic was fifteen Qt symbols and no cause. Surface
+                        # the panic line explicitly, then head AND tail.
+                        panic = [ln for ln in lines
+                                 if "panicked at" in ln or "non-unwinding panic" in ln]
+                        if panic:
+                            print("[headless]   RUST PANIC (the only Rust in the process is "
+                                  "libwgpu_native.so): " + panic[0].strip())
+                        print(f"[headless] engine stderr ({stderr_path}):")
+                        head = lines[:8]
+                        tail_lines = lines[-15:]
+                        shown = head + (["   ... (%d lines elided) ..."
+                                         % (len(lines) - len(head) - len(tail_lines))]
+                                        if len(lines) > len(head) + len(tail_lines) else [])
+                        shown += [ln for ln in tail_lines if ln not in head]                             if len(lines) <= len(head) + len(tail_lines) else tail_lines
+                        for ln in shown:
                             print(f"[headless]   {ln}")
                 except OSError:
                     pass

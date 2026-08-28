@@ -1,9 +1,11 @@
 # omnisim-mcp
 
+<!-- mcp-name: io.github.omnilink-tech/omnisim -->
+
 **Talk to OmniSim from any MCP client.** A [Model Context Protocol](https://modelcontextprotocol.io)
 server that exposes the OmniSim **World Harness** (author → inspect → screenshot →
-hot-reload) as MCP tools, so Claude Desktop, Cursor, or any MCP-capable agent can drive
-world authoring and debugging directly.
+hot-reload) as MCP tools, so Claude Code, Claude Desktop, Cursor, or any MCP-capable agent
+can drive world authoring and debugging directly.
 
 ## Why this exists
 
@@ -14,59 +16,150 @@ and the comparable community servers (`omni-mcp/isaac-sim-mcp`, `kvgork/gazebo-m
 *non*-agent-native simulator. This one wraps an *already* agent-native one, so it is a thin,
 honest adapter rather than a re-plumbing.
 
-**Zero runtime dependencies.** The MCP stdio protocol and the harness HTTP client are both
-implemented on the Python standard library, matching the harness's own design — so it runs on
-a fresh clone, and under OmniSim's embedded interpreter, with nothing installed.
+**The server itself has zero runtime dependencies.** The MCP stdio protocol and the harness
+HTTP client are both implemented on the Python standard library, matching the harness's own
+design — so the *proxy* runs from a fresh clone, and under OmniSim's embedded interpreter,
+with nothing installed. That is a statement about this package only. The thing it proxies is
+a simulator, and the simulator has to exist first — see Prerequisites.
+
+## Prerequisites
+
+This server is a **stateless proxy**. Three things sit behind it, and a fresh `git clone`
+supplies none of them:
+
+1. **A working OmniSim install.** A clone contains no engine: `msys64/` is gitignored and has
+   **0 tracked files**, so there is no `omnisim-bin` until you install or build one. Either
+   install the Windows package from
+   [Releases](https://github.com/omnilink-tech/omnisim/releases), or build from source
+   ([`docs/developer/quickstart.md`](../../docs/developer/quickstart.md)) and then vendor the
+   physics runtime:
+
+   ```bash
+   make -C src/omnisim bundle-newton-runtime
+   ```
+
+   That step is not optional. Newton is the only physics backend, so an engine without its
+   runtime has no dynamics at all — nothing falls, and it fails quietly. Check the whole
+   chain with:
+
+   ```bash
+   python -m omnisim doctor      # prints a VERDICT line; non-zero exit if it cannot run
+   ```
+
+   **macOS is not supported** — no package, no verified build, Newton unverified.
+
+2. **A running harness** on `:6789`. See Setup step 1.
+
+3. **Pillow, for exactly one tool.** `render_stats` is served by `GET /world/render_stats`,
+   which returns **503** when the harness's interpreter has no Pillow
+   (`omnisim_harness.py:1753`). No other tool needs it — `screenshot` works without.
+   `pip install Pillow` into whichever interpreter runs the harness.
 
 ## Setup
 
 1. **Start the harness** (this server is a stateless proxy to it):
 
    ```bash
-   python scripts/harness/omnisim_harness.py --port 6789
-   # or: python scripts/dev/omnisim_dev.py harness
+   python -m omnisim harness
    ```
 
-2. **Register the MCP server** with your client. Either install it —
+   **Use the module form, not `python scripts/harness/omnisim_harness.py`.** The module form
+   runs the harness under `omnisim_env()` (`omnisim/dev/runner.py:79`), which pins
+   `OMNISIM_HOME` to this clone, uses `sys.executable`, and on Windows prepends the bundled
+   `msys64/mingw64/bin` so the engine's Qt6 DLLs resolve. The raw script does none of that,
+   so on Windows it starts fine, answers `harness_status` as healthy, and then fails the
+   **first world load** with `LAUNCHER_DLL_NOT_FOUND` (Windows exit code `0xC0000135`).
+
+2. **Register the MCP server** with your client.
+
+   **Claude Code** — nothing to do. Open the OmniSim directory and the checked-in
+   [`.mcp.json`](../../.mcp.json) registers the server: no install, no `claude mcp add`. To
+   register it explicitly (for example from another directory):
 
    ```bash
-   pip install -e packages/omnisim-mcp     # provides the `omnisim-mcp` command
+   claude mcp add omnisim -e PYTHONPATH=packages/omnisim-mcp/src \
+     -e OMNISIM_HARNESS_URL=http://127.0.0.1:6789 -- python -m omnisim_mcp
    ```
 
-   — or run it straight from source with no install (`python -m omnisim_mcp`, with
-   `packages/omnisim-mcp/src` on `PYTHONPATH`).
-
-   Claude Desktop / Cursor `mcpServers` entry:
+   **Claude Desktop / Cursor** — add this to the client's `mcpServers` config. The paths are
+   relative to the OmniSim checkout, so set the client's `cwd` to it if it supports one, or
+   make `PYTHONPATH` absolute:
 
    ```json
    {
      "mcpServers": {
        "omnisim": {
-         "command": "omnisim-mcp",
-         "env": { "OMNISIM_HARNESS_URL": "http://127.0.0.1:6789" }
+         "command": "python",
+         "args": ["-m", "omnisim_mcp"],
+         "env": {
+           "PYTHONPATH": "packages/omnisim-mcp/src",
+           "OMNISIM_HARNESS_URL": "http://127.0.0.1:6789"
+         }
        }
      }
    }
    ```
 
+   `python -m omnisim_mcp` is used deliberately instead of the `omnisim-mcp` console script.
+   That script only exists after `pip install -e`, and it lands in the installing
+   interpreter's `Scripts/` directory, which an MCP client's spawn environment often does not
+   inherit on Windows. The package is pure stdlib, so the module form needs no install at all.
+
+   `pip install -e packages/omnisim-mcp` still works and provides the `omnisim-mcp` command if
+   you want it. **The package is not on PyPI** (verified: the JSON API returns 404) and
+   [`publish-omnisim-mcp.yml`](../../.github/workflows/publish-omnisim-mcp.yml) is
+   `workflow_dispatch`-only, so it has never fired. It is not in the official MCP Registry
+   either. `pip install omnisim-mcp` does not resolve — install from this checkout.
+
 3. **Call `harness_status` first.** It reports whether the harness is reachable and, if not,
    exactly how to start it.
 
+   ⚠️ **It reports on the *harness*, not the engine.** The harness is a Python HTTP server; it
+   comes up and answers healthy on an install that cannot load a single world — no engine
+   binary, no Newton runtime, missing Qt DLLs. Reachable means "the proxy has something to
+   talk to", not "this install works". `python -m omnisim doctor` is the check for that.
+
+### First call
+
+With the harness running:
+
+```
+load_world      {"path": "projects/samples/demos/worlds/showcase/warehouse_husky.omniworld",
+                 "light": true}
+get_scene_tree  {}
+frame           {"def": "HUSKY"}
+screenshot      {}
+```
+
+Relative paths resolve against the **repo root of the clone whose `omnisim_harness.py` is
+running** (`omnisim_harness.py:2972`) — not your editor's working directory, and not the MCP
+client's. If the harness runs out of a different checkout, pass an absolute path.
+
+`light: true` is close to always right: it drops the per-step contact / grip / joint-limit
+trackers and is worth 4–40× on step and reload cost. The trade is that `get_contacts` still
+answers but the `contact.*` / `grip.*` / `joint.limit_hit` **events** go quiet — see
+[`AGENTS.md` §5](../../AGENTS.md#5-iterating-on-worlds-with-the-validation-harness).
+
 ## Tools
 
-Each tool is one HTTP call to the harness — the surface mirrors
+18 tools, each one HTTP call to the harness — the surface mirrors
 [`AGENTS.md` §5](../../AGENTS.md#5-iterating-on-worlds-with-the-validation-harness) and
-[`PROTOCOL.md`](../../PROTOCOL.md) so it stays honest to the real endpoints.
+[`PROTOCOL.md`](../../PROTOCOL.md) so it stays honest to the real endpoints. The live list is
+`python -m omnisim_mcp --help`.
 
 | Tool | Harness endpoint | Purpose |
 |---|---|---|
-| `harness_status` | `GET /healthz`, `/sim/state` | Is the harness up, and on what world? Start here. |
+| `harness_status` | `GET /healthz`, `/sim/state` | Is the harness up, and on what world? Start here — but see the warning above about what it does *not* prove. |
 | `load_world` | `POST /world/sync` (or `/world/load`) | Default safe iteration path: batch live pose-only edits, automatically reload anything else; `force_reload=true` restarts deliberately. |
 | `get_scene_tree` | `GET /scene/tree` | Every node's type, DEF, pose. |
 | `get_scene_node` | `GET /scene/node/<def>` | Full field dump + contacts for one node. |
-| `look_at` | `POST /scene/look_at` | Aim the Viewpoint from a position at a target. |
+| `get_viewpoint` | `GET /scene/viewpoint` | **Read** the live camera: position, orientation, FOV, near/far, plus derived forward/up/right and the resolved FOV for the real viewport aspect. Every other camera tool writes to a camera you otherwise cannot read. |
+| `frame` | `POST /scene/frame` | **The camera verb to reach for first.** Computes aim *and* distance from the node's real geometric bounds, pushes it, and returns a numeric proof the subject is in frame. Prefer it over guessing a `look_at` position. |
+| `orbit` | `POST /scene/orbit` | Nudge the camera *relative* to the current view (azimuth, elevation, dolly, pan). Every other camera tool is absolute. |
+| `visible` | `GET /scene/visible` | What is on screen right now: frustum test, screen-space bbox in pixels, angular offset, plus hints like `"off-screen: 34 deg to the left"`. The closed-loop feedback signal for aiming. |
+| `look_at` | `POST /scene/look_at` | Aim the Viewpoint from an explicit position at a target. Use when you already know both points. |
 | `screenshot` | `POST /world/screenshot` | Render PNG — returned **inline** (so a vision agent sees it) or written to a path. |
-| `render_stats` | `GET /world/render_stats` | Exposure/brightness stats — catch blown-out lighting without eyeballing. |
+| `render_stats` | `GET /world/render_stats` | Exposure/brightness stats — catch blown-out lighting without eyeballing. **Needs Pillow** (see Prerequisites). |
 | `sim_step` | `POST /sim/step` | Advance N basic timesteps. |
 | `sim_reset` | `POST /sim/reset` | Reset to t=0 without re-parsing. |
 | `get_events` | `GET /sim/events` | Unified event stream (`controller.log`, `contact.*`, `joint.limit_hit`, `damage.*`). |
@@ -74,6 +167,24 @@ Each tool is one HTTP call to the harness — the surface mirrors
 | `get_robot_joints` | `GET /robot/<def>/joints` | Per-joint position/velocity/limits. |
 | `get_contacts` | `GET /sim/contacts` | Global contact set. |
 | `get_diagnostics` | `GET /world/diagnostics` | Re-fetch the current load's diagnostics. |
+
+The four camera tools (`get_viewpoint`, `frame`, `orbit`, `visible`) are the ones
+[`AGENTS.md`](../../AGENTS.md) tells agents to reach for *instead of* guessing a pose and
+iterating on screenshots.
+
+## Command line
+
+The server is normally spawned by an MCP client and speaks JSON-RPC on stdio, but it answers
+three flags without entering that loop:
+
+```bash
+PYTHONPATH=packages/omnisim-mcp/src python -m omnisim_mcp --help       # tool list + harness URL
+PYTHONPATH=packages/omnisim-mcp/src python -m omnisim_mcp --version
+PYTHONPATH=packages/omnisim-mcp/src python -m omnisim_mcp --self-test  # calls harness_status; exit 1 if unreachable
+```
+
+`--self-test` is the fastest way to check a registration end to end without an MCP client.
+Before these existed, `--help` printed a startup line and then blocked forever reading stdin.
 
 ## Config
 
@@ -87,7 +198,8 @@ Each tool is one HTTP call to the harness — the surface mirrors
 - **Stateless.** The server holds no simulator state; restart it freely. All state lives in
   the harness.
 - **One harness at a time.** For parallel sessions, run harnesses on different ports (see
-  [`AGENTS.md` §3e](../../AGENTS.md)) and point separate `omnisim` MCP entries at each.
+  [`AGENTS.md` §3e](../../AGENTS.md)) and point separate `omnisim` MCP entries at each via
+  `OMNISIM_HARNESS_URL`.
 - **Not the capture/cinema service.** This wraps the *authoring* harness (`:6789`), not the
   capture service (`:6791`). High-res/movie rendering stays in
   [`scripts/capture/`](../../scripts/capture/).

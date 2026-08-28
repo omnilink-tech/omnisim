@@ -187,18 +187,28 @@ public:
   // Attaches a sphere collision/visual shape to bodyIdx. Returns 0/-1.
   // (cx, cy, cz) is an offset in the body's local frame -- default
   // (0,0,0) places the sphere at the body origin.
+  // Per-body gravity compensation (Solid.newtonGravityCompensation). 0 = normal
+  // weight (and a no-op), 1 = the body does not fall. Must be called BEFORE
+  // finalizeWorld(): the value reaches the mjSpec at build time and cannot be
+  // patched into mj_model afterwards.
+  int setBodyGravcomp(int bodyIdx, double value);
   int addShapeSphere(int bodyIdx, double radius,
-                     double cx = 0.0, double cy = 0.0, double cz = 0.0);
+                     double cx = 0.0, double cy = 0.0, double cz = 0.0, double solidMu = -1.0,
+                     double solidMuT = -1.0, double solidMuR = -1.0);
   // Attaches a box collision/visual shape to bodyIdx. (hx, hy, hz) are
   // half-extents along each local axis (Newton's convention -- OmBox
   // uses full size, so callers must divide by 2). (cx, cy, cz) is the
   // box centre offset in the body's local frame (default origin), and
   // (qx,qy,qz,qw) its orientation in that frame -- see the shape-xform
   // note below. Identity default, so an unrotated caller is unchanged.
+  // solidMu: per-Solid tangential friction (Solid.newtonFriction). NEGATIVE = unset,
+  // inheriting the world value. Appended LAST so the positional order is untouched.
   int addShapeBox(int bodyIdx, double hx, double hy, double hz,
                   double cx = 0.0, double cy = 0.0, double cz = 0.0,
                   double ke = -1.0,
-                  double qx = 0.0, double qy = 0.0, double qz = 0.0, double qw = 1.0);
+                  double qx = 0.0, double qy = 0.0, double qz = 0.0, double qw = 1.0,
+                  double solidMu = -1.0,
+                  double solidMuT = -1.0, double solidMuR = -1.0);
   // ── SHAPE XFORM CONVENTION ────────────────────────────────────────────────
   // Every addShape* below takes the collider's pose in the OWNING BODY's local
   // frame: (cx,cy,cz) translation + (qx,qy,qz,qw) orientation, quaternion in
@@ -410,6 +420,89 @@ public:
                   double cellX, double cellY, double cellZ,
                   double density, double kMu, double kLambda, double kDamp,
                   double particleRadius, int fixFlags, int *endOut = nullptr);
+
+  // BUILD phase. One GRANULAR (MPM) bed -- a rectangular volume of sand / snow /
+  // gravel simulated by newton's SolverImplicitMPM and two-way coupled to the
+  // rigid world through SolverCoupledProxy.
+  //
+  // ⚠ IT IS THE FIRST PARTICLE SOURCE THAT DOES NOT LAND ON SolverVBD, and the
+  // runtime builds a SECOND particle solver for it alongside (not instead of)
+  // the VBD one a Cloth or SoftBody asks for. Like a soft body -- and unlike a
+  // Cosserat rod -- it adds PARTICLES ONLY, so the coupled solver's "mjc"
+  // ModelView still owns every rigid body and the raycast / weld / TouchSensor /
+  // pose-check readbacks that index by parent body id stay valid.
+  //
+  // ⛔ IT REQUIRES CUDA. The runtime REFUSES to finalize a world carrying a bed
+  // when the model did not land on a cuda device, because the CPU path is not
+  // slow but unusable (MEASURED: 42-67 ms/step at ~3k particles = 0.15-0.25x
+  // realtime, 351 ms/step at 8192, against a CUDA path nearly FLAT in N --
+  // 30.9 ms at 2197, 67.4 ms at 405224). OMNISIM_MPM_ALLOW_CPU=1 overrides.
+  //
+  //   pos  = the bed's MINIMUM CORNER (newton's add_particle_grid convention,
+  //          the OPPOSITE of Solid/Box and the same as addSoftGrid)
+  //   quat = (qx, qy, qz, qw), w LAST, turning the box about that corner
+  //   size = extent in METRES along local X/Y/Z, all strictly positive
+  //   voxelSize / particlesPerCell = the MPM grid spacing and the lattice
+  //          density per voxel edge; together they DERIVE the particle count
+  //   countBudget = an UPPER BOUND on that derived count, not a target. The
+  //          runtime bisects for the finest grid under it and only ever
+  //          COARSENS voxelSize; 0 disables the budget.
+  //   density..particleRadius = material. ⚠ 0 IS "UNSET" ON ALL OF THESE and
+  //          the runtime OMITS the corresponding per-particle attribute so
+  //          newton's own default applies -- deliberately NOT addSoftGrid's
+  //          convention of substituting constants duplicated on this side,
+  //          because that keeps one source of truth per default.
+  //   rigidSubsteps = MuJoCo substeps per coupled step. ⚠ 4, not 1: at 1 a
+  //          rigid cube RESTING on the bed GAINS energy and climbs (measured
+  //          0.27 -> 0.99 m).
+  //   proxyIterations / maxIterations / tolerance = coupling and rheology
+  //          budgets. ⚠ These four, like voxelSize, are properties of the ONE
+  //          shared MPM entry; with several beds the runtime reduces them and
+  //          WARNS naming both values rather than letting one silently win.
+  //
+  // ⚠ gridType / gridPadding are NOT in this signature. They go through
+  // setGranularGrid() below -- see the comment there.
+  //
+  // Returns the bed's PARTICLE START INDEX (>= 0), writing one-past-the-last to
+  // `endOut` when non-null -- the range snapshotParticlePositions() wants.
+  // -1 on failure.
+  int addGranularBed(const double pos[3], const double quat[4], const double size[3],
+                     double voxelSize, double particlesPerCell, int countBudget,
+                     double density, double friction, double yieldPressure,
+                     double yieldStress, double youngModulus, double poissonRatio,
+                     double viscosity, double particleRadius,
+                     int rigidSubsteps, int proxyIterations, int maxIterations,
+                     double tolerance, int *endOut = nullptr);
+
+  // BUILD phase. The WORLD-LEVEL MPM grid selection, deliberately kept OFF the
+  // positional signature above.
+  //
+  // grid_type and grid_padding do not describe a BED, they describe the ONE
+  // SolverImplicitMPM every bed in the world shares. In the positional
+  // signature two beds could "each" declare a value that cannot both be
+  // honoured, and the second call's pair would be silently dropped. As its own
+  // setter the last writer is explicit and the runtime reports a disagreement.
+  //
+  // ⚠ gridType "fixed" NaNs SILENTLY when underpadded: the grid is allocated
+  // once from the particle bounds at construction and material leaving that box
+  // is undefined -- no exception, no warning, just NaN positions from some step
+  // onward. Upstream pairs it with a padding of 50. Returns 0 / -1.
+  int setGranularGrid(const char *gridType, int gridPadding);
+
+  // BUILD or RUN phase. The per-particle render/collision radius of bed
+  // `bedIndex`, in metres, or -1 when unknown.
+  //
+  // The engine cannot derive this: the radius is half the FINAL lattice
+  // spacing, and the count budget may have coarsened that lattice after the
+  // world file was written. Asking is the only way to draw the bed at the size
+  // the solver is actually simulating.
+  double granularParticleRadius(int bedIndex) const;
+
+  // BUILD or RUN phase. How many granular beds the runtime holds, or -1 when it
+  // is unavailable. Asked BEFORE registering, the answer is the index the bed
+  // about to be added will occupy -- which is what makes granularParticleRadius()
+  // addressable without the ascending-index probe OmSoftBody is forced into.
+  int granularBedCount() const;
 
   // BUILD or RUN phase. The render surface of soft block `gridIndex`: the open
   // faces of its tet mesh, as tightly-packed int32 triangle triples in

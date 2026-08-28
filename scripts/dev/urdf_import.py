@@ -94,6 +94,7 @@ class Inertial:
     origin: Origin = field(default_factory=Origin)
     mass: float = 0.0
     has_inertia_matrix: bool = False  # True iff the URDF declared a PD <inertia> tensor
+    inertia_declared: bool = False  # True iff an <inertia> tag was present at all
     ixx: float = 0.0
     ixy: float = 0.0
     ixz: float = 0.0
@@ -126,6 +127,12 @@ class Link:
     visuals: list[Visual] = field(default_factory=list)
     collisions: list[Collision] = field(default_factory=list)
     inertial: Inertial | None = None
+    # Surface friction from <gazebo reference="LINK"><mu1>. None = not declared,
+    # so the Solid inherits WorldInfo.newtonGroundMu. URDF has no native schema
+    # for surface friction; the gazebo extension is the de-facto convention, and
+    # dropping it silently is exactly the "declared but unread" failure this
+    # importer warns about elsewhere.
+    surface_friction: float | None = None
 
 
 @dataclass
@@ -140,6 +147,14 @@ class Joint:
     upper: float | None = None
     velocity: float | None = None
     effort: float | None = None
+    # <mimic joint="X" multiplier="M" offset="O">. Every commodity parallel-jaw
+    # gripper is mimic-driven (Robotiq 2F85/2F140/3F, Franka Hand, PAL, Schunk),
+    # so dropping it silently turns a coupled gripper into independently free
+    # fingers -- they drift apart under asymmetric load and the grasp never
+    # closes symmetrically, with no error anywhere.
+    mimic_joint: str | None = None
+    mimic_multiplier: float = 1.0
+    mimic_offset: float = 0.0
     damping: float | None = None
     friction: float | None = None
 
@@ -168,6 +183,112 @@ def inertia_is_positive_definite(ixx: float, ixy: float, ixz: float,
         + ixz * (ixy * iyz - iyy * ixz)
     )
     return det > 0.0
+
+
+def implied_inertia_from_primitive(geom, mass: float) -> tuple[float, float, float] | None:
+    """Principal moments a link WOULD have if its collision primitive were solid.
+
+    Only defined for box/sphere/cylinder -- a mesh needs the actual vertices. The
+    point is not to demand this value, it is to catch a tensor that disagrees with
+    the link's own declared geometry by orders of magnitude, which is how zero and
+    placeholder inertias reach shipped robots. A foot declaring a 22 mm collision
+    sphere and mass 0.02 implies 3.872e-06; several published quadrupeds declare 0
+    on exactly that link.
+    """
+    if geom is None or mass <= 0.0:
+        return None
+    if geom.kind == "sphere":
+        i = 0.4 * mass * geom.sphere_radius ** 2
+        return (i, i, i)
+    if geom.kind == "box" and geom.box_size:
+        a, b, c = geom.box_size
+        k = mass / 12.0
+        return (k * (b * b + c * c), k * (a * a + c * c), k * (a * a + b * b))
+    if geom.kind == "cylinder":
+        r, h = geom.cylinder_radius, geom.cylinder_length
+        it = mass * (3.0 * r * r + h * h) / 12.0
+        return (it, it, 0.5 * mass * r * r)
+    return None
+
+
+def principal_moments(ixx: float, ixy: float, ixz: float,
+                      iyy: float, iyz: float, izz: float) -> tuple[float, float, float]:
+    """Eigenvalues of the symmetric 3x3 inertia tensor, ascending.
+
+    Closed form (Smith 1961) rather than numpy: this script is deliberately
+    dependency-light and runs as a preflight before anything else is installed.
+    """
+    p1 = ixy * ixy + ixz * ixz + iyz * iyz
+    if p1 == 0.0:
+        return tuple(sorted((ixx, iyy, izz)))  # already diagonal
+    q = (ixx + iyy + izz) / 3.0
+    p2 = (ixx - q) ** 2 + (iyy - q) ** 2 + (izz - q) ** 2 + 2.0 * p1
+    p = math.sqrt(p2 / 6.0)
+    # B = (A - q*I) / p, then r = det(B) / 2
+    b11, b22, b33 = (ixx - q) / p, (iyy - q) / p, (izz - q) / p
+    b12, b13, b23 = ixy / p, ixz / p, iyz / p
+    det = (b11 * (b22 * b33 - b23 * b23)
+           - b12 * (b12 * b33 - b23 * b13)
+           + b13 * (b12 * b23 - b22 * b13))
+    r = max(-1.0, min(1.0, det / 2.0))
+    phi = math.acos(r) / 3.0
+    eig1 = q + 2.0 * p * math.cos(phi)
+    eig3 = q + 2.0 * p * math.cos(phi + 2.0 * math.pi / 3.0)
+    eig2 = 3.0 * q - eig1 - eig3
+    return tuple(sorted((eig1, eig2, eig3)))
+
+
+def max_admissible_product_of_inertia(ixx: float, iyy: float, izz: float,
+                                      tol: float = 1e-12) -> float:
+    """Largest equal-magnitude off-diagonal that keeps the tensor physical.
+
+    Detecting that a tensor is impossible tells an author it is wrong. It does
+    NOT tell them what would be right, and that is the question they are
+    actually stuck on -- a real maintainer, asked to replace a bad product of
+    inertia, answered "1e-7 works as well, but that is again just a guessed
+    number." This turns the warning into an interval: any |off-diagonal| at or
+    below the returned value is admissible for the given diagonal.
+
+    Bisection rather than a closed form because the constraint is the pair
+    (positive definite AND triangle inequality on the PRINCIPAL moments), and
+    the second is what the eigenvalues -- not the declared entries -- decide.
+    """
+    def ok(p: float) -> bool:
+        if inertia_violates_triangle_inequality(ixx, p, p, iyy, p, izz)[0]:
+            return False
+        return inertia_is_positive_definite(ixx, p, p, iyy, p, izz)
+
+    if not ok(0.0):
+        return 0.0                       # the diagonal alone is already impossible
+    hi = max(abs(ixx), abs(iyy), abs(izz))
+    if hi <= 0.0:
+        return 0.0
+    while ok(hi):                        # bracket upward if even the diagonal scale is fine
+        hi *= 2.0
+        if hi > 1e12:
+            return hi
+    lo = 0.0
+    while hi - lo > tol * max(1.0, hi):
+        mid = 0.5 * (lo + hi)
+        if ok(mid):
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
+def inertia_violates_triangle_inequality(ixx: float, ixy: float, ixz: float,
+                                         iyy: float, iyz: float, izz: float,
+                                         rel_tol: float = 1e-9) -> tuple[bool, tuple[float, float, float]]:
+    """A rigid body's principal moments must satisfy a + b >= c.
+
+    A tensor can be positive definite and still describe no physical body, so
+    this is a strictly stronger check than inertia_is_positive_definite() and
+    catches a different defect class (most commonly a product of inertia that
+    was copy-pasted from a moment of inertia).
+    """
+    a, b, c = principal_moments(ixx, ixy, ixz, iyy, iyz, izz)
+    return (a + b) < c * (1.0 - rel_tol), (a, b, c)
 
 
 def _resolve_mesh_path(filename_attr: str, urdf_dir: Path) -> str:
@@ -327,13 +448,18 @@ def parse_inertial(elem: ET.Element) -> Inertial:
         iyy = float(inertia_elem.get("iyy", "0.0"))
         iyz = float(inertia_elem.get("iyz", "0.0"))
         izz = float(inertia_elem.get("izz", "0.0"))
+        # Always retain what the file declared; has_inertia_matrix stays the
+        # "PD and therefore usable for emission" gate. Keeping the rejected
+        # values is what lets build_report tell a bad tensor from an absent one
+        # and run the triangle-inequality check on it.
+        inertial.ixx = ixx
+        inertial.ixy = ixy
+        inertial.ixz = ixz
+        inertial.iyy = iyy
+        inertial.iyz = iyz
+        inertial.izz = izz
+        inertial.inertia_declared = True
         if inertia_is_positive_definite(ixx, ixy, ixz, iyy, iyz, izz):
-            inertial.ixx = ixx
-            inertial.ixy = ixy
-            inertial.ixz = ixz
-            inertial.iyy = iyy
-            inertial.iyz = iyz
-            inertial.izz = izz
             inertial.has_inertia_matrix = True
         # else: non-PD tensor will be flagged in build_report; the run-time
         # importer falls back to bounding-object-derived inertia.
@@ -439,6 +565,18 @@ def parse_gazebo_extensions(root: ET.Element, robot: UrdfRobot) -> None:
     for g in root.findall("gazebo"):
         reference = g.get("reference", "")
         if reference:
+            # <gazebo reference="LINK"><mu1>2.0</mu1></gazebo>. mu1/mu2 are the
+            # two tangential directions; per-Solid friction is a single isotropic
+            # value, so mu1 is taken and a DIFFERING mu2 is reported as a lossy
+            # import rather than silently averaged.
+            _link = robot.links.get(reference)
+            if _link is not None:
+                _m1 = g.find("mu1")
+                if _m1 is not None and (_m1.text or "").strip():
+                    try:
+                        _link.surface_friction = float(_m1.text.strip())
+                    except ValueError:
+                        pass
             for sensor_el in g.findall("sensor"):
                 s = _parse_gazebo_sensor(sensor_el, reference)
                 if s is not None:
@@ -486,6 +624,14 @@ def parse_joint(elem: ET.Element) -> Joint:
             joint.damping = float(dynamics_elem.get("damping"))
         if dynamics_elem.get("friction") is not None:
             joint.friction = float(dynamics_elem.get("friction"))
+    mimic_elem = elem.find("mimic")
+    if mimic_elem is not None and mimic_elem.get("joint"):
+        joint.mimic_joint = mimic_elem.get("joint")
+        try:
+            joint.mimic_multiplier = float(mimic_elem.get("multiplier", "1.0"))
+            joint.mimic_offset = float(mimic_elem.get("offset", "0.0"))
+        except ValueError:
+            pass
     return joint
 
 
@@ -778,6 +924,12 @@ def emit_link_physics_and_bounding(link: Link, indent: str) -> str:
         out.append(emit_collision_bounding_object(supported[0], indent))
     elif len(supported) > 1:
         out.append(emit_collision_group(supported, indent))
+    # Surface friction declared via the gazebo extension. Emitted as the
+    # per-Solid field so it actually reaches the solver; absent means the
+    # Solid inherits WorldInfo.newtonGroundMu, so nothing changes for a URDF
+    # that does not declare it.
+    if link.surface_friction is not None:
+        out.append(f"{indent}newtonFriction {link.surface_friction}" + chr(10))
     if link.inertial is not None:
         out.append(f"{indent}physics Physics {{\n")
         out.append(f"{indent}  density -1\n")
@@ -973,17 +1125,68 @@ def build_report(robot: UrdfRobot) -> dict:
 
         if link.collisions and supported_collisions == 0:
             link_notes.append("No supported collision geometry is available; the imported link will have no boundingObject.")
-        if link.inertial and not link.inertial.has_inertia_matrix:
-            # has_inertia_matrix is only False if either no <inertia> tag was
-            # present (silent — most leaf links) or the tensor wasn't PD (worth
-            # flagging). We can't distinguish without keeping the raw element,
-            # but a tensor that parsed all zeros most likely means "no tag".
-            tensor_all_zero = (
-                link.inertial.ixx == 0.0 and link.inertial.iyy == 0.0 and link.inertial.izz == 0.0
-            )
-            if not tensor_all_zero:
+        if link.inertial is not None:
+            inert = link.inertial
+            if inert.inertia_declared and not inert.has_inertia_matrix:
                 link_notes.append(
                     "URDF inertia tensor is not positive definite; falling back to bounding-object-derived inertia."
+                )
+            # A tensor can be positive definite and still describe no physical
+            # body. Checked independently of the PD gate so a valid-looking
+            # tensor is not waved through.
+            if inert.inertia_declared:
+                violates, (a, b, c) = inertia_violates_triangle_inequality(
+                    inert.ixx, inert.ixy, inert.ixz, inert.iyy, inert.iyz, inert.izz
+                )
+                if violates:
+                    # The interval is what makes this actionable rather than a
+                    # complaint: it answers "then what value IS right?".
+                    p_max = max_admissible_product_of_inertia(
+                        inert.ixx, inert.iyy, inert.izz)
+                    link_notes.append(
+                        "URDF inertia tensor violates the triangle inequality for principal moments "
+                        f"(a+b >= c): principal moments are ({a:.9g}, {b:.9g}, {c:.9g}), "
+                        f"a+b = {a + b:.9g} < c = {c:.9g} (short by {100.0 * (1.0 - (a + b) / c):.3f}%). "
+                        "No rigid body can have this tensor; a product of inertia copied from a "
+                        "moment of inertia is the usual cause. "
+                        f"For this diagonal, any |off-diagonal| <= {p_max:.6g} is admissible."
+                    )
+            # A tensor that disagrees with the link's OWN collision primitive by
+            # orders of magnitude is checkable from one file, with no sibling and
+            # no mesh loading. Deliberately an order-of-magnitude test: real links
+            # are not uniform solids, so a factor of a few is ordinary.
+            if inert.inertia_declared and inert.mass > 0.0 and link.collisions:
+                prim = next((c.geometry for c in link.collisions
+                             if c.geometry is not None
+                             and c.geometry.kind in ("box", "sphere", "cylinder")), None)
+                implied = implied_inertia_from_primitive(prim, inert.mass)
+                if implied is not None:
+                    declared_trace = inert.ixx + inert.iyy + inert.izz
+                    implied_trace = sum(implied)
+                    if implied_trace > 0.0:
+                        if declared_trace <= 0.0:
+                            link_notes.append(
+                                f"Link declares an all-zero (or negative) inertia while carrying a "
+                                f"{prim.kind} collision primitive and mass={inert.mass}; a solid "
+                                f"{prim.kind} of those dimensions implies principal moments "
+                                f"({implied[0]:.6g}, {implied[1]:.6g}, {implied[2]:.6g})."
+                            )
+                        elif declared_trace < implied_trace / 10.0 or declared_trace > implied_trace * 10.0:
+                            link_notes.append(
+                                f"Declared inertia disagrees with the link's own {prim.kind} collision "
+                                f"primitive by {implied_trace / declared_trace:.3g}x on the trace "
+                                f"(declared {declared_trace:.6g}, implied {implied_trace:.6g} for a solid "
+                                f"{prim.kind} at mass={inert.mass}). Worth confirming the units."
+                            )
+            # Zero mass is only a defect when the link is meant to be a body.
+            # A massless frame carrying no geometry is a normal URDF idiom.
+            if inert.mass <= 0.0 and (link.collisions or link.visuals):
+                link_notes.append(
+                    f"Link declares mass={inert.mass} but carries "
+                    f"{len(link.visuals)} visual and {len(link.collisions)} collision geometr"
+                    f"{'y' if len(link.collisions) == 1 else 'ies'}; a dynamic body with no mass "
+                    "cannot be simulated and consumers differ on whether they reject it or "
+                    "integrate garbage."
                 )
         if unresolved_meshes_v:
             link_notes.append(
@@ -1029,6 +1232,66 @@ def build_report(robot: UrdfRobot) -> dict:
             joint_warning = "Revolute joint has incomplete limits; the imported joint will be free unless limits are added."
             joint_notes.append(joint_warning)
             joint_warnings.append(joint_warning)
+        if joint.mimic_joint is not None:
+            # OmniSim has no coupled-joint primitive, so this constraint is
+            # DROPPED at emission. Silence here turns a coupled gripper into
+            # independently free fingers: they drift apart under asymmetric load
+            # and never close symmetrically, with no error anywhere. Every
+            # commodity parallel-jaw gripper is mimic-driven, including three
+            # shipped in this repo.
+            joint_warning = (
+                f"Joint mimics '{joint.mimic_joint}' (multiplier {joint.mimic_multiplier}, "
+                f"offset {joint.mimic_offset}), but the coupling is NOT imported -- the joint "
+                "becomes independently free. Drive both joints from one command in the "
+                "controller, or the gripper will not close symmetrically."
+            )
+            joint_notes.append(joint_warning)
+            joint_warnings.append(joint_warning)
+        if joint.type in ("revolute", "prismatic", "continuous"):
+            # effort/velocity of 0 is not "no limit declared" -- URDF spells that
+            # by omitting the attribute. A declared zero is a declared inability
+            # to move, and consumers that honour it give the joint no authority
+            # at all (the arm collapses under gravity, the gripper never closes).
+            zeroed = [
+                name for name, value in (("effort", joint.effort), ("velocity", joint.velocity))
+                if value is not None and value == 0.0
+            ]
+            if zeroed:
+                joint_warning = (
+                    f"Actuated joint declares {' and '.join(f'{n}=0' for n in zeroed)}; "
+                    "consumers that honour URDF limits will give this joint zero authority. "
+                    "Omit the attribute if the intent was 'unlimited'."
+                )
+                joint_notes.append(joint_warning)
+                joint_warnings.append(joint_warning)
+        if (joint.type in ("revolute", "prismatic")
+                and joint.lower is not None and joint.upper is not None
+                and joint.lower == joint.upper):
+            # A zero-width range on a joint declared movable is a mis-typed fixed
+            # joint. It slips past the range-excludes-zero check whenever the
+            # pinned value happens to BE zero, which is the common case.
+            joint_warning = (
+                f"Joint declares a zero-width range [{joint.lower}, {joint.upper}] but is "
+                f"type '{joint.type}'; it cannot move, so this is almost certainly meant "
+                "to be type=\"fixed\". A pinned value of 0 also passes the "
+                "range-excludes-zero check, so nothing else flags it."
+            )
+            joint_notes.append(joint_warning)
+            joint_warnings.append(joint_warning)
+        if joint.type in ("revolute", "prismatic") and joint.lower is not None and joint.upper is not None:
+            # A URDF can only express one default configuration -- all-zero. A
+            # joint whose own range excludes 0 therefore has no representable
+            # valid default, and every consumer that initialises at q=0 starts
+            # in limit violation and takes a constraint impulse on step 1.
+            if not (joint.lower <= 0.0 <= joint.upper):
+                joint_warning = (
+                    f"Joint range [{joint.lower}, {joint.upper}] excludes the zero position, "
+                    "which is the only default a URDF can express; consumers that initialise "
+                    "at q=0 will start this joint outside its own limits. Publish a home pose "
+                    "alongside the URDF."
+                )
+                joint_notes.append(joint_warning)
+                joint_warnings.append(joint_warning)
 
         joint_entries.append(
             {
@@ -1082,12 +1345,143 @@ def build_report(robot: UrdfRobot) -> dict:
 # ---------------------------------------------------------------------------
 
 
+# ── CROSS-FILE MIRROR DIFF ───────────────────────────────────────────────────
+# A whole class of real defect is INVISIBLE to a single-file checker, because
+# nothing in the file itself is out of range -- it is only wrong relative to the
+# robot's other hand/arm/leg. Found in the field on published descriptions:
+#   * a hand whose left file declares (effort 100, velocity 1) on all 21 joints
+#     and whose right declares (effort 1, velocity 100) -- transposed, and only
+#     the sibling reveals which side is right;
+#   * two joints carrying a placeholder effort=100 where the mirror has
+#     calibrated 4.29 and 4.8;
+#   * fingertip joints pinned at 1.0 rad on one hand and 0.0 on the other.
+# This mode also carries the ONLY reliable source of the CORRECT value, which is
+# what turns a complaint into a fix.
+
+MIRROR_PREFIXES = (("left_", "right_"), ("l_", "r_"), ("L_", "R_"),
+                   ("lh_", "rh_"), ("left", "right"))
+MIRROR_SUFFIXES = (("_left", "_right"), ("_l", "_r"), ("_L", "_R"))
+
+
+def mirror_name(name: str) -> str | None:
+    """The name this link/joint would have on the opposite side, or None.
+
+    Two conventions exist and both are common:
+      * ONE file describing both sides, where the side is in the NAME
+        (``left_arm_joint2`` / ``right_arm_joint2``) -- handled by the affix
+        swap below;
+      * TWO files, one per side, where the side is in the FILE PATH and the
+        joint names are IDENTICAL (``index_mcp_roll`` in both). Handled by the
+        identity fallback in the caller -- a name with no mirror affix matches
+        its own name in the other file. Missing that second case made this
+        checker silently match ZERO pairs on the very descriptions it was
+        written for.
+    """
+    for a, b in MIRROR_PREFIXES:
+        if name.startswith(a):
+            return b + name[len(a):]
+        if name.startswith(b):
+            return a + name[len(b):]
+    for a, b in MIRROR_SUFFIXES:
+        if name.endswith(a):
+            return name[: -len(a)] + b
+        if name.endswith(b):
+            return name[: -len(b)] + a
+    return None
+
+
+def build_mirror_report(robot: UrdfRobot, other: UrdfRobot) -> dict:
+    """Differences between a robot and its mirror twin, matched by name.
+
+    Reports only fields that SHOULD agree across a mirror. Poses and the
+    products of inertia legitimately differ (see the sign note below), so they
+    are handled separately rather than reported as mismatches.
+    """
+    findings: list[str] = []
+    matched = 0
+
+    ours = {j.name: j for j in robot.joints}
+    theirs = {j.name: j for j in other.joints}
+    for name, j in sorted(ours.items()):
+        twin_name = mirror_name(name)
+        if twin_name is None or twin_name not in theirs:
+            # Two-file convention: identical names, side carried by the path.
+            twin_name = name if name in theirs else None
+        if twin_name is None:
+            continue
+        matched += 1
+        t = theirs[twin_name]
+        for field_name, a, b in (("effort", j.effort, t.effort),
+                                 ("velocity", j.velocity, t.velocity),
+                                 ("type", j.type, t.type)):
+            if a != b:
+                findings.append(
+                    f"joint {name} / {twin_name}: {field_name} differs across the mirror "
+                    f"({a} vs {b}). Mirror-image hardware should agree; one side is "
+                    "likely the intended value."
+                )
+        # Limits mirror as a NEGATED, SWAPPED pair on a mirrored axis, so a bare
+        # inequality would be noise. Only a differing WIDTH is unambiguous.
+        if None not in (j.lower, j.upper, t.lower, t.upper):
+            wa, wb = abs(j.upper - j.lower), abs(t.upper - t.lower)
+            if abs(wa - wb) > 1e-6 * max(1.0, abs(wa), abs(wb)):
+                findings.append(
+                    f"joint {name} / {twin_name}: range WIDTH differs across the mirror "
+                    f"({wa:.6g} vs {wb:.6g} rad); the sign convention may flip but the "
+                    "travel should not."
+                )
+
+    lours = robot.links
+    lthem = other.links
+    for name, link in sorted(lours.items()):
+        twin_name = mirror_name(name)
+        if twin_name is None or twin_name not in lthem:
+            twin_name = name if name in lthem else None
+        if twin_name is None:
+            continue
+        twin = lthem[twin_name]
+        if link.inertial is None or twin.inertial is None:
+            continue
+        if abs(link.inertial.mass - twin.inertial.mass) > 1e-9 * max(1.0, link.inertial.mass):
+            findings.append(
+                f"link {name} / {twin_name}: mass differs across the mirror "
+                f"({link.inertial.mass} vs {twin.inertial.mass})."
+            )
+        # Under a mirror about a principal plane, exactly two products of inertia
+        # NEGATE and one keeps its sign -- which two depends on the plane. We do
+        # not know the plane, so we only flag the case where NONE of the three
+        # negated while at least one is materially non-zero: a mirrored link whose
+        # products are all identical is the signature of geometry that was
+        # mirrored without transforming its inertia tensor.
+        if link.inertial.inertia_declared and twin.inertial.inertia_declared:
+            prods = [(link.inertial.ixy, twin.inertial.ixy),
+                     (link.inertial.ixz, twin.inertial.ixz),
+                     (link.inertial.iyz, twin.inertial.iyz)]
+            scale = max(abs(v) for pair in prods for v in pair)
+            if scale > 1e-12:
+                identical = all(abs(a - b) <= 1e-9 * scale for a, b in prods)
+                if identical:
+                    findings.append(
+                        f"link {name} / {twin_name}: all three products of inertia are "
+                        "IDENTICAL across the mirror, none negated. A mirrored body should "
+                        "negate two of the three; this is the signature of geometry that was "
+                        "mirrored without transforming its inertia tensor. Worth confirming "
+                        "against the mesh rather than taking this as proof."
+                    )
+    return {"matched_joint_pairs": matched, "findings": findings}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Convert URDF to OmniSim VRML")
     parser.add_argument("urdf", type=Path, help="Path to .urdf file")
     parser.add_argument("--to", type=Path, default=None, help="Output file (default: stdout)")
     parser.add_argument("--controller", default="<none>", help="Controller name to set on the Robot node")
     parser.add_argument("--report", type=Path, default=None, help="Write a JSON import report for debugging")
+    parser.add_argument(
+        "--mirror", type=Path, default=None,
+        help="Compare against the robot's mirror twin (the other hand/arm/leg) and report "
+             "fields that disagree across the mirror. Catches transposed or placeholder "
+             "values that are in range in both files and only wrong relative to each other.")
     parser.add_argument(
         "--strict",
         action="store_true",
@@ -1108,6 +1502,18 @@ def main() -> int:
         print(f"[urdf-import] Wrote {args.to} ({len(vrml)} bytes)", file=sys.stderr)
     else:
         sys.stdout.write(vrml)
+
+    if args.mirror:
+        if not args.mirror.exists():
+            print(f"Mirror file not found: {args.mirror}", file=sys.stderr)
+            return 1
+        mrep = build_mirror_report(robot, parse_urdf(args.mirror))
+        report["mirror"] = mrep
+        report["warnings"].extend(mrep["findings"])
+        print(f"[urdf-import] mirror: matched {mrep['matched_joint_pairs']} joint pairs, "
+              f"{len(mrep['findings'])} finding(s)", file=sys.stderr)
+        for f in mrep["findings"]:
+            print(f"[urdf-import] mirror: {f}", file=sys.stderr)
 
     if args.report:
         args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

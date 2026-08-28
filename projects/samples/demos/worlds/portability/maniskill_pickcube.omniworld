@@ -1,0 +1,111 @@
+#OMNISIM R2025a utf8
+
+# ManiSkill PickCube-v1 task contract, reproduced in OmniSim.
+#
+# Portability experiment invited by the ManiSkill maintainer in
+# haosulab/ManiSkill discussions/1485. The goal is CONTRACT fidelity -- scene,
+# randomization, action mapping, observation and success predicate -- not a
+# performance comparison and not a claim that OmniSim replaces SAPIEN.
+#
+# Every constant below is read from ManiSkill main @ 62ff3a5:
+#   cube half size 0.02          pick_cube_cfgs.py:8   (full side 0.04 m)
+#   cube mass      0.064 kg      DERIVED: SAPIEN ActorBuilder default density
+#                                1000 kg/m^3 x 0.04^3. PickCube passes no
+#                                density= argument.
+#   goal_thresh    0.025         pick_cube_cfgs.py:9
+#   default mu     0.3           utils/structs/types.py:66-70 (global default;
+#                                PickCube overrides no material)
+#   table          2.418 x 1.209 x 0.9196429, TOP AT z = 0
+#                                scene_builder.py:32-42, one BOX collider --
+#                                their add_nonconvex_collision_from_file is
+#                                commented out at :27-31
+#   sim timestep   0.01 s        types.py:83 sim_freq = 100
+#
+# The goal marker is VISUAL ONLY, matching ManiSkill's kinematic goal_site built
+# with add_collision=False (pick_cube.py:95-104). It must never collide.
+#
+# DEVIATIONS FROM THE CONTRACT ARE RECORDED, NOT HIDDEN -- see
+# O:/omnilink-outreach/wave2/PICKCUBE-PORT.md for the running list.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 10
+  newtonGroundMu 0.3
+  newtonSolver "mujoco"
+  title "ManiSkill PickCube-v1 contract"
+}
+Viewpoint {
+  orientation -0.30 0.55 0.78 2.15
+  position 0.75 -0.70 0.60
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# Table. Collider is ONE box, exactly as ManiSkill does it. Top face at z = 0,
+# so every height below is measured from the table surface like theirs.
+DEF TABLE Solid {
+  translation 0 0 -0.45982145
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.82 0.74 0.62
+        roughness 0.8
+        metalness 0
+      }
+      geometry Box {
+        size 2.418 1.209 0.9196429
+      }
+    }
+  ]
+  boundingObject Box {
+    size 2.418 1.209 0.9196429
+  }
+}
+
+# The cube. Authored at its exact analytic rest height: table top (z=0) plus
+# half the cube. ManiSkill spawns at z = cube_half_size and takes NO settle
+# step, so a faithful port must rest there without one.
+DEF CUBE Solid {
+  translation 0 0 0.02
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        roughness 0.5
+        metalness 0
+      }
+      geometry Box {
+        size 0.04 0.04 0.04
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.04 0.04 0.04
+  }
+  physics Physics {
+    density -1
+    mass 0.064
+  }
+}
+
+# Goal marker: no boundingObject, so it is visual only and never collides.
+DEF GOAL_SITE Solid {
+  translation 0 0 0.20
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 1 0
+        transparency 0.5
+        roughness 0.5
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.025
+      }
+    }
+  ]
+}

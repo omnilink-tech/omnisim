@@ -3,7 +3,7 @@
 This guide walks a complete beginner through running OmniSim's
 **OmniLink chat demos**: a set of small OmniSim worlds where you open a
 chat panel next to a robot, type something in plain English, and the
-robot does it. The current gallery contains 13 worlds across mobile bases,
+robot does it. The current gallery contains 16 worlds across mobile bases,
 arms, a quadruped, and an aerial robot.
 
 You don't need to know Python, OmniSim controllers, or robot kinematics
@@ -29,7 +29,7 @@ the robot moves. The transcript shows the agent's reply
 
 ---
 
-## The 13 demos
+## The 16 demos
 
 | World file | Robot | Class | Example prompts |
 |---|---|---|---|
@@ -46,6 +46,9 @@ the robot moves. The transcript shows the agent's reply
 | `omnilink_ur5e.omniworld`         | Universal Robots UR5e      | 6-DOF arm | same arm tool surface |
 | `omnilink_ur10e.omniworld`        | Universal Robots UR10e     | 6-DOF arm | same arm tool surface |
 | `omnilink_multi_arm.omniworld`    | Multi-arm workcell         | parallel arms | select an arm, inspect state, and command bounded motion |
+| `omnilink_omniarm6.omniworld`     | OmniArm 6                  | 6-DOF arm | same arm tool surface |
+| `omnilink_omniarm6_2f140.omniworld` | OmniArm 6 + 2F-140 gripper | 6-DOF arm + parallel gripper | arm tool surface, plus open/close the gripper |
+| `omniarm6_talk.omniworld`         | OmniArm 6 (talk demo)      | 6-DOF arm | the same bridge, staged as a conversation demo |
 
 All worlds live at [projects/samples/demos/worlds/chat/](../../projects/samples/demos/worlds/chat/).
 
@@ -228,10 +231,16 @@ $env:OMNI_KEY = "olink_YOUR_KEY_HERE"
 .\launch.bat projects\samples\demos\worlds\chat\omnilink_tb3_burger.omniworld
 ```
 
-**Linux / macOS:**
+**Linux:**
 ```bash
-OMNI_KEY=olink_YOUR_KEY_HERE bin/omnisim-bin projects/samples/demos/worlds/chat/omnilink_tb3_burger.omniworld
+cd $OMNISIM_HOME
+OMNI_KEY=olink_YOUR_KEY_HERE   python3 -m omnisim run-world projects/samples/demos/worlds/chat/omnilink_tb3_burger.omniworld
 ```
+
+Launch through the CLI, not `bin/omnisim-bin` — nothing puts that binary on your
+`PATH`, and running it directly needs `LD_LIBRARY_PATH`, `QT_QPA_PLATFORM` and
+`WEBOTS_TMPDIR` set by hand. (macOS is not supported; see
+[System Requirements](system-requirements.md).)
 
 When the bridge starts, its log line tells you which mode is active:
 
@@ -339,9 +348,10 @@ Three pieces of code, all in this repo:
 1. **Add a config**: drop a dict into `_mobile_configs.py` with the
    robot's wheel layout, wheel radius, half-track and max speed.
    Adding the entry is usually 10–15 lines.
-2. **Add a world**: copy any `omnilink_*.wbt` next to the existing
+2. **Add a world**: copy any `omnilink_*.omniworld` next to the existing
    worlds, change the `url` to your robot's URDF and the
-   `controllerArgs` to your new robot id. Roughly 20 lines.
+   `controllerArgs` to your new robot id. Roughly 20 lines. Name the copy
+   `.omniworld` — OmniSim reads `.wbt` forever but never writes one.
 
 That's it — no new controller, no new bridge code.
 

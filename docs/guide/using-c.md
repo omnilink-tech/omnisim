@@ -14,10 +14,12 @@ Although less represented in the controller examples, the other APIs offer exact
 The Windows build of OmniSim uses the MinGW C/C++ compiler, which you install separately as part of MSYS2 (by default at `C:\msys64`, or wherever `MSYS64_HOME` points). OmniSim itself bundles only the runtime DLLs next to the simulator binary, not the compiler toolchain.
 The MinGW compiler is a port of the GNU Compiler Collection (gcc) on the Windows platform.
 The advantage of using the MinGW compiler will be the better portability of your controller code.
-If you develop your code with MinGW it will be straightforward to recompile it on the other OmniSim supported platforms: macOS and Linux.
+If you develop your code with MinGW it will be straightforward to recompile it on Linux, the other supported platform.
 However, if you prefer to use Microsoft Visual Studio you will find instructions [here](using-your-ide.md#visual-studio).
 
 #### macOS Instructions
+
+> **macOS is not supported: there is no package, no verified build, and Newton physics is unverified. Use Windows or Ubuntu 24.04.** The instructions below are inherited from upstream Webots and are kept only for readers building there.
 
 In order to compile C/C++ controllers on the Mac, you will need to install Apple Xcode.
 Xcode is a suite of tools, developed by Apple, for developing software for macOS.

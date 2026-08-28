@@ -1,0 +1,183 @@
+# Build the OmniSim RUNTIME image and publish it to GHCR.
+#
+# This is the no-build onboarding path. Before it, a Linux or macOS user had no
+# download at all and had to compile the engine (10-25 min,
+# scripts/install/linux_bootstrap.sh:132) to see a robot move.
+#
+#   docker run --rm ghcr.io/omnilink-tech/omnisim:latest doctor
+#
+# Deliberately different from train-image.yml in one important way: this
+# workflow SMOKE-TESTS THE IMAGE BEFORE PUSHING IT. The training image is
+# pushed on a successful build, which is defensible for an internal tool. It is
+# not defensible for the artifact that IS a newcomer's first impression -- the
+# repo has already shipped one front door (the Windows installer) that built
+# perfectly and could not run its own documented first command. A build that
+# succeeds proves the layers resolved; only a run proves the product works.
+#
+# Trigger manually:  gh workflow run runtime-image.yml -f omnisim_tag=v8.1.6
+name: runtime-image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docker/Dockerfile.runtime"
+      - "docker/omnisim-entrypoint.sh"
+      - ".github/workflows/runtime-image.yml"
+  workflow_dispatch:
+    inputs:
+      omnisim_tag:
+        description: "Ref to check out and build (tag, branch or SHA)"
+        required: true
+        default: "v8.1.6"
+
+concurrency:
+  group: runtime-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # IDENTITY + COST GUARD -- only the OmniLink org publishes these images.
+    #
+    # Both workflows interpolate github.repository_owner into their GHCR tags, so
+    # on the development fork a path-filtered push to main would create a
+    # personal-account package under a name every doc writes as
+    # ghcr.io/omnilink-tech/omnisim. That is the same leak a036707b5 closed for
+    # publish_snapshot.sh.
+    #
+    # Gated at the JOB rather than before the push, because on the dev remote
+    # these have never once succeeded -- 18 train-image failures and 5
+    # runtime-image runs (3 cancelled, 2 failed), one of which burned 6 hours
+    # before being cancelled. A skipped job is neutral and free; a step that
+    # refuses after a full CUDA build is red and expensive. Verified 2026-08-28:
+    # zero successful runs, so no personal package was ever created.
+    #
+    # A fork that wants the image builds it locally -- docker/README.md says how.
+    if: github.repository_owner == 'omnilink-tech'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      # `inputs` is EMPTY on a push trigger -- only workflow_dispatch populates
+      # it. Without this fallback the tag renders as "omnisim:" and buildx dies
+      # with "invalid reference format".
+      # The image is built from the tree this workflow CHECKED OUT, so the tag
+      # names that ref. A dispatch may pass a release tag; a push labels the
+      # image with the commit it was actually built from.
+      IMAGE_TAG: ${{ inputs.omnisim_tag || github.sha }}
+      LOCAL_TAG: omnisim-runtime:ci
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Whatever ref is named here IS what the image is built from --
+          # the Dockerfile COPYs the context rather than cloning a tag.
+          ref: ${{ inputs.omnisim_tag || github.sha }}
+
+      # A from-source engine build plus Qt does not fit in the runner's default
+      # free space. Same reclaim as train-image.yml.
+      - name: Reclaim disk
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo docker image prune -af || true
+          df -h / | tail -1
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build and LOAD locally first. Nothing is published until the smoke
+      # tests below pass.
+      - name: Build (load locally, do not push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.runtime
+          load: true
+          push: false
+          build-args: |
+            JOBS=4
+          tags: ${{ env.LOCAL_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Report image size
+        run: |
+          docker image inspect "$LOCAL_TAG" --format '{{.Size}}' > /tmp/sz
+          python3 -c "print('image size: %.2f GB' % (int(open('/tmp/sz').read())/1024**3))"
+
+      # 1. The command README.md and BETA.md open with. This is the exact step
+      #    that fails on the shipped Windows installer with "No module named
+      #    omnisim", so assert it here rather than assume.
+      - name: Smoke - doctor runs and finds the binary
+        run: |
+          out="$(docker run --rm "$LOCAL_TAG" doctor)"
+          echo "$out"
+          echo "$out" | grep -qi 'omnisim-bin' \
+            || (echo "FAIL: doctor did not resolve the engine binary" && exit 1)
+
+      # 2. Physics actually drove a world. The ONLY race-free proof is the
+      #    Newton verdict sidecar -- "imports OK" proves the runtime loaded,
+      #    never that it drove anything, and a bare PASS is a log verdict, not
+      #    a physics one (AGENTS.md 3b).
+      - name: Smoke - a real world finalises under Newton, on CPU, with no GPU
+        run: |
+          docker run --rm --entrypoint /usr/local/bin/omnisim-entrypoint "$LOCAL_TAG" \
+            --exec bash -lc '
+              set -euo pipefail
+              cd "$OMNISIM_HOME"
+              export OMNISIM_LOG_PATH=/tmp/smoke.txt
+              python3 -m omnisim run-headless \
+                projects/samples/demos/worlds/showcase/warehouse_husky.omniworld \
+                --until-finalized
+              test -f /tmp/smoke.txt.newton.json \
+                || (echo "FAIL: no Newton sidecar - the world never reached finalize" && exit 1)
+              cat /tmp/smoke.txt.newton.json
+              if grep -q "\"degraded\": *true" /tmp/smoke.txt.newton.json; then
+                echo "FAIL: Newton reported a degraded solver"; exit 1
+              fi
+              echo "OK: Newton finalised the world on a runner with no GPU."
+            '
+
+      # 3. Report which wgpu adapter was actually selected. NOT a gate: whether
+      #    lavapipe is picked on a GPU-less host is reasoned from wgpu
+      #    semantics and has never been measured here. Printing it is how that
+      #    stops being a guess. Do not turn this into a hard assert until the
+      #    log has been read on a real run.
+      - name: Probe - which render adapter does a GPU-less host get?
+        continue-on-error: true
+        run: |
+          docker run --rm --entrypoint /usr/local/bin/omnisim-entrypoint "$LOCAL_TAG" \
+            --exec bash -lc '
+              cd "$OMNISIM_HOME"
+              export OMNISIM_WGPU_INITLOG=/tmp/wgpu.log
+              export OMNISIM_LOG_PATH=/tmp/probe.txt
+              python3 -m omnisim run-headless \
+                projects/samples/demos/worlds/showcase/warehouse_husky.omniworld \
+                --until-finalized >/dev/null 2>&1 || true
+              echo "----- wgpu init log -----"
+              cat /tmp/wgpu.log 2>/dev/null || echo "(no wgpu init log produced)"
+            '
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Re-runs from the layer cache, so this is a push, not a rebuild.
+      - name: Push (only after the smokes above passed)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.runtime
+          push: true
+          build-args: |
+            JOBS=4
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/omnisim:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/omnisim:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -63,8 +63,7 @@ For more complex interaction with the web component, the following functions are
 
 - All the graphical nodes ([Box](../reference/box.md), [Sphere](../reference/sphere.md), [Appearance](../reference/appearance.md), [Material](../reference/material.md), [ImageTexture](../reference/imagetexture.md), [Light](../reference/light.md), [Group](../reference/group.md), [Pose](../reference/pose.md), [Transform](../reference/transform.md), etc.) are supported.
 
-- The rendering of the OmniSim player is performed using `WRENJS`, a version of `WREN` (OmniSim Rendering ENgine) compiled in WebAssembly.
-It may occur that the rendering in the OmniSim application and in the exported Web page are not strictly equivalent.
+- The rendering of the OmniSim player is performed using `WRENJS`, a WebAssembly build of the retired `WREN` renderer. The browser viewer keeps its own vendored copy, so it was unaffected when WREN was deleted from the engine on 2026-08-23 — but the desktop application now renders through wgpu-native, so the two **permanently differ in look**. This is recorded and accepted, not a bug to report.
 
 - The `Skin` node is not supported.
 - The [Pen](../reference/pen.md) device is not supported.

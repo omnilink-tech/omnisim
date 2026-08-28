@@ -121,7 +121,8 @@ typedef enum {
   // are mirrored by numeric literal in resources/web/wwi/nodes/wb_node_type.js,
   // so inserting rather than appending renumbers every node type behind it.
   WB_NODE_CLOTH,
-  WB_NODE_SOFT_BODY
+  WB_NODE_SOFT_BODY,
+  WB_NODE_GRANULAR_BED
 } WbNodeType;
 
 const char *wb_node_get_name(WbNodeType t);

@@ -85,17 +85,47 @@ def look_at_axis_angle(pos, target):
 def edit_world(text, cam_pos, cam_axis, cam_angle, sun_dir):
     ori = "%.5f %.5f %.5f %.5f" % (cam_axis[0], cam_axis[1], cam_axis[2], cam_angle)
     pos = "%.3f %.3f %.3f" % tuple(cam_pos)
-    text = re.sub(r"(Viewpoint\s*\{[^}]*?orientation\s+)[^\n]+", lambda m: m.group(1) + ori, text,
-                  count=1, flags=re.S)
-    text = re.sub(r"(Viewpoint\s*\{[^}]*?position\s+)[^\n]+", lambda m: m.group(1) + pos, text,
-                  count=1, flags=re.S)
+    number = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
+    text = re.sub(
+        rf"(Viewpoint\s*\{{[^}}]*?\borientation\s+){number}(?:\s+{number}){{3}}",
+        lambda m: m.group(1) + ori,
+        text,
+        count=1,
+        flags=re.S,
+    )
+    text = re.sub(
+        rf"(Viewpoint\s*\{{[^}}]*?\bposition\s+){number}(?:\s+{number}){{2}}",
+        lambda m: m.group(1) + pos,
+        text,
+        count=1,
+        flags=re.S,
+    )
     if sun_dir is not None:
         sd = "%.4f %.4f %.4f" % tuple(sun_dir)
-        text, n = re.subn(r"(OmniSimSun\s*\{[^}]*?direction\s+)[^\n]+", lambda m: m.group(1) + sd,
-                          text, count=1, flags=re.S)
+        text, n = re.subn(
+            rf"(OmniSimSun\s*\{{[^}}]*?\bdirection\s+){number}(?:\s+{number}){{2}}",
+            lambda m: m.group(1) + sd,
+            text,
+            count=1,
+            flags=re.S,
+        )
         if n == 0:
             print("  [warn] world has no OmniSimSun direction to randomize -- sun left as authored")
     return text
+
+
+def absolutize_local_assets(text, world_dir):
+    """Keep local quoted asset references valid after copying a world to the output tree."""
+    def replace(match):
+        value = match.group(1)
+        if "://" in value or os.path.isabs(value):
+            return match.group(0)
+        candidate = os.path.normpath(os.path.join(world_dir, value))
+        if not os.path.exists(candidate):
+            return match.group(0)
+        return '"%s"' % candidate.replace("\\", "/")
+
+    return re.sub(r'"([^"\r\n]+)"', replace, text)
 
 
 def run_sample(binary, world_path, out_dir, cloud_cover, frame, timeout_s):
@@ -106,6 +136,13 @@ def run_sample(binary, world_path, out_dir, cloud_cover, frame, timeout_s):
     env["OMNISIM_WGPU_CLOUD_COVER"] = "%.3f" % cloud_cover
     env["OMNISIM_LOG_PATH"] = os.path.join(out_dir, "engine_log.txt")
     env.pop("OMNISIM_WGPU_MAINVIEW_DUMP", None)
+    if os.name == "nt":
+        runtime = os.path.join(os.path.dirname(binary), "newton-runtime")
+        runtime_site = os.path.join(runtime, "site-packages")
+        if os.path.exists(os.path.join(runtime, "python.exe")):
+            env["PATH"] = runtime + os.pathsep + env.get("PATH", "")
+        if os.path.isdir(runtime_site):
+            env["PYTHONPATH"] = runtime_site + os.pathsep + env.get("PYTHONPATH", "")
     proc = subprocess.Popen([binary, world_path, "--mode=realtime"], env=env,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     meta = os.path.join(out_dir, "meta_%06d.json" % frame)
@@ -155,6 +192,7 @@ def main():
     if not os.path.exists(world_src):
         sys.exit("world not found: %s" % world_src)
     base = open(world_src, encoding="utf-8").read()
+    base = absolutize_local_assets(base, os.path.dirname(world_src))
     target = tuple(float(v) for v in args.target.split(","))
     r_lo, r_hi = (float(v) for v in args.radius.split(","))
     ce_lo, ce_hi = (float(v) for v in args.cam_elev.split(","))

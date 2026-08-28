@@ -1,0 +1,98 @@
+# Does the PINNED physics stack actually import and build a model, on each
+# Python we ship against?
+#
+# WHY THIS EXISTS
+#   The Linux CI build compiled, linked and installed cleanly, and then the
+#   engine came up with NO PHYSICS:
+#
+#     WARNING: [OmNewtonBackend] FFI smoke (newton.ModelBuilder()) raised:
+#              Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool].
+#     ERROR: [physics] NO PHYSICS BACKEND IS AVAILABLE
+#
+#   Every package involved declares `Requires-Python: >=3.10` and the Windows
+#   bundle runs the identical pins happily -- on CPython 3.12.9. So the declared
+#   floor is not the real floor, and nothing in this repo checked that.
+#
+#   This job is deliberately CHEAP (a pip install and one import, ~2-3 min)
+#   because its whole job is to fail before the 15-25 minute engine build does,
+#   and to say WHICH interpreter is at fault rather than leaving a green build
+#   that produces a simulator with no physics -- the worst failure shape there
+#   is, because the world still loads and simply stands still.
+#
+#   The 22.04 leg is informational and marked continue-on-error: it documents
+#   the floor by demonstrating it. Only the 24.04 leg gates.
+#
+#   fail-fast is off on purpose: the point is to see EVERY interpreter's verdict
+#   in one run, not to stop at the first bad one.
+name: physics-runtime-check
+
+on:
+  pull_request:
+    paths:
+      - "scripts/packaging/newton_runtime_pins.py"
+      - "scripts/install/linux_bootstrap.sh"
+      - ".github/workflows/physics-runtime-check.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/packaging/newton_runtime_pins.py"
+      - "scripts/install/linux_bootstrap.sh"
+      - ".github/workflows/physics-runtime-check.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: physics-runtime-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  import:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    # ubuntu-22.04 is EXPECTED to fail: newton 1.5.0 raises at ModelBuilder() on
+    # its Python 3.10. It stays in the matrix as the evidence for why the whole
+    # Linux stack moved to 24.04 -- but it must not turn the run red, or this
+    # job emails a failure every time it does exactly what it is supposed to.
+    # 24.04 is the leg that gates: if THAT breaks, the run fails.
+    continue-on-error: ${{ matrix.os == 'ubuntu-22.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+
+      # No actions/setup-python. The interpreter that matters is the SYSTEM one,
+      # because that is the one the engine embeds and links on Linux.
+      - name: Report the system interpreter
+        run: |
+          python3 -VV
+          echo "os=${{ matrix.os }}"
+
+      - name: Install the pinned physics stack (from the repo SSOT)
+        run: |
+          FLAGS=""
+          # PEP-668 pips (24.04) refuse a system install without this; older
+          # pips reject the flag outright. Same probe linux_bootstrap.sh uses.
+          if python3 -m pip install --help 2>/dev/null | grep -q break-system-packages; then
+            FLAGS="--break-system-packages"
+          fi
+          python3 -m pip install $FLAGS --upgrade pip
+          PINS="$(python3 scripts/packaging/newton_runtime_pins.py | tr '\n' ' ')"
+          echo "pins: $PINS"
+          python3 -m pip install $FLAGS $PINS "mujoco==3.11.0" numpy
+
+      # newton.ModelBuilder() is exactly the FFI smoke the engine performs at
+      # startup (OmNewtonBackend). Importing is not enough -- the failure above
+      # happened at construction, not at import.
+      - name: Import and construct, the way the engine does
+        run: |
+          python3 - <<'PY'
+          import sys
+          print("python", sys.version)
+          import warp, newton, mujoco, mujoco_warp
+          print("warp       ", warp.config.version)
+          print("newton     ", getattr(newton, "__version__", "?"))
+          print("mujoco     ", mujoco.__version__)
+          b = newton.ModelBuilder()
+          print("ModelBuilder() OK ->", type(b).__name__)
+          PY

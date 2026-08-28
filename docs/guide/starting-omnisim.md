@@ -4,11 +4,46 @@ The first time you start OmniSim, it will open the "Welcome to OmniSim!" menu wi
 
 ### Linux
 
-Open a terminal and type `omnisim-bin` to launch OmniSim.
+There is **no native Linux package**. This section used to say "open a terminal
+and type `omnisim-bin`", which cannot work: nothing installs that binary onto
+your PATH, and even a source-built one needs `LD_LIBRARY_PATH` pointing at the
+vendored Qt before it will start.
+
+From a source build, launch through the CLI, which sets the runtime environment
+for you:
+
+```bash
+cd $OMNISIM_HOME
+python3 -m omnisim doctor          # is this install coherent?
+python3 -m omnisim demo            # the flagship demo
+python3 -m omnisim run-world projects/samples/demos/worlds/showcase/warehouse_husky.omniworld
+```
+
+There is also a container, but ⚠️ **it is not published** — no
+`ghcr.io/omnilink-tech/omnisim` tag exists on the registry, so `docker pull` and
+`docker run ghcr.io/...` both fail. Build it yourself first:
+
+```bash
+docker build -f docker/Dockerfile.runtime -t omnisim:local .
+docker run --rm omnisim:local doctor
+```
+
+See [`docker/README.md`](../../docker/README.md).
+
+Running `bin/omnisim-bin` directly requires setting `LD_LIBRARY_PATH`,
+`QT_QPA_PLATFORM` and `WEBOTS_TMPDIR` yourself -- see the Linux section of the
+[developer quickstart](../developer/quickstart.md).
 
 ### macOS
 
-Open the directory in which you installed the OmniSim package and double-click on the OmniSim icon.
+**macOS is not supported: there is no package, no verified build, and Newton
+physics is unverified. Use Windows or Ubuntu 24.04.** This section previously
+told you to "double-click on the OmniSim icon", which describes an installer
+that does not exist.
+
+The container is not a substitute. It is unpublished (above), and it has no
+`linux/arm64` build — on Apple Silicon it would run under x86-64 emulation,
+untested, over physics unverified on the platform.
 
 ### Windows
 
@@ -17,6 +52,20 @@ Open the directory in which you installed OmniSim and double-click on the `launc
 You can also start OmniSim from a DOS console (`cmd.exe`) by typing `omnisim-bin` or `omnisim-bin.exe`.
 This command works only if executed from the `<install-dir>\msys64\mingw64\bin` directory, or from any directory if that path was added to your `Path` environment variable.
 **Note:** The bundled launchers are `omnisim.exe` (console) and `omnisimw.exe` (windowed — runs in the background and returns immediately); both are thin wrappers that spawn `omnisim-bin.exe`. The legacy names `webots.exe` / `webotsw.exe` are shipped as byte-identical copies and keep working.
+
+To drive OmniSim from the command line rather than the GUI, use `omnisim.bat`
+in the install root:
+
+```bat
+omnisim.bat doctor          REM is this install coherent? VERDICT + non-zero exit on failure
+omnisim.bat demo            REM the flagship demo
+omnisim.bat demos           REM list every runnable demo
+```
+
+It resolves an interpreter itself — a system Python first, falling back to the
+CPython 3.12 bundled with the Newton runtime — so it works whether or not you
+installed Python. With Python 3.12 on `PATH`, `python -m omnisim <command>` from
+the install root is equivalent.
 
 ### Command Line Arguments
 
@@ -85,7 +134,8 @@ Options:
 
 ```
 
-The optional `worldfile` argument specifies the name of a .wbt file to open.
+The optional `worldfile` argument specifies the name of a world file to open —
+`.omniworld`, or a legacy `.wbt`, which OmniSim still reads.
 If it is not specified, OmniSim attempts to open the most recently opened file.
 
 The `--minimize` option is used to minimize (iconize) OmniSim window on startup.
@@ -96,7 +146,7 @@ Note that `--minimize` only minimizes the window and skips the splash and Welcom
 The `--mode=<mode>` option can be used to start OmniSim in the specified simulation mode.
 The three valid simulation modes are: `pause`, `realtime` and `fast`; they correspond to the simulation control buttons of OmniSim' graphical user interface. (`--mode=run` is deprecated and falls back to `fast`.)
 This option overrides, but does not modify, the startup mode saved in OmniSim' preferences.
-For example, type `omnisim-bin --mode=pause filename.wbt` to start OmniSim in `pause` mode.
+For example, type `omnisim-bin --mode=pause filename.omniworld` to start OmniSim in `pause` mode.
 
 The `--stdout` and `--stderr` options have the effect of redirecting OmniSim console output to the calling terminal or process.
 For example, this can be used to redirect the controllers output to a file or to pipe it to a shell command.
@@ -141,9 +191,17 @@ From the `cmd` command prompt:
 setx OMNISIM_SAFE_MODE true
 ```
 
-#### On Linux and macOS
+#### On Linux
 
-```
+```bash
 export OMNISIM_SAFE_MODE=true
-omnisim-bin
+cd $OMNISIM_HOME
+python3 -m omnisim run-world <world>
 ```
+
+Set the variable in the shell that launches the simulator, then launch through
+the CLI as in the [Linux](#linux) section above — nothing puts `omnisim-bin` on
+your `PATH`, and running it directly needs `LD_LIBRARY_PATH`, `QT_QPA_PLATFORM`
+and `WEBOTS_TMPDIR` set by hand.
+
+(macOS is not supported; see above.)

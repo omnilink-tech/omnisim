@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <mutex>
 #include <thread>
 #ifdef _WIN32
@@ -1067,12 +1068,28 @@ int OmNewtonBackend::setKinematicPose(int bodyIdx, double x, double y, double z,
   return rc == 0 ? 0 : -1;
 }
 
-int OmNewtonBackend::addShapeSphere(int bodyIdx, double radius,
-                                    double cx, double cy, double cz) {
+int OmNewtonBackend::setBodyGravcomp(int bodyIdx, double value) {
   if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr || !mRuntime->openForBuild)
     return -1;
-  PyObject *r = PyObject_CallMethod(mRuntime->world, "add_shape_sphere", "(idddd)",
-                                     bodyIdx, radius, cx, cy, cz);
+  if (value <= 0.0)
+    return 0;  // unset: do not touch the builder, so the world stays byte-identical
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "set_body_gravcomp", "(id)",
+                                    bodyIdx, value);
+  if (r == nullptr)
+    return reportPyError("set_body_gravcomp");
+  Py_DECREF(r);
+  return 0;
+}
+
+int OmNewtonBackend::addShapeSphere(int bodyIdx, double radius,
+                                    double cx, double cy, double cz, double solidMu,
+                                    double solidMuT, double solidMuR) {
+  if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr || !mRuntime->openForBuild)
+    return -1;
+  // solidMu is APPENDED after the offset so an older bundle (whose add_shape_sphere
+  // has no mu parameter) still accepts the call; the python side defaults it to -1.
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "add_shape_sphere", "(iddddddd)",
+                                     bodyIdx, radius, cx, cy, cz, solidMu, solidMuT, solidMuR);
   if (r == nullptr)
     return reportPyError("add_shape_sphere");
   Py_DECREF(r);
@@ -1081,14 +1098,16 @@ int OmNewtonBackend::addShapeSphere(int bodyIdx, double radius,
 
 int OmNewtonBackend::addShapeBox(int bodyIdx, double hx, double hy, double hz,
                                  double cx, double cy, double cz, double ke,
-                                 double qx, double qy, double qz, double qw) {
+                                 double qx, double qy, double qz, double qw,
+                                 double solidMu, double solidMuT, double solidMuR) {
   if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr || !mRuntime->openForBuild)
     return -1;
   // 1 int + 11 doubles: hx,hy,hz, cx,cy,cz, ke, qx,qy,qz,qw. The quaternion is
   // APPENDED after ke so the existing positional order is untouched (the python
   // side defaults it to identity, so an older bundle still accepts the old call).
-  PyObject *r = PyObject_CallMethod(mRuntime->world, "add_shape_box", "(iddddddddddd)",
-                                     bodyIdx, hx, hy, hz, cx, cy, cz, ke, qx, qy, qz, qw);
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "add_shape_box", "(idddddddddddddd)",
+                                     bodyIdx, hx, hy, hz, cx, cy, cz, ke, qx, qy, qz, qw,
+                                     solidMu, solidMuT, solidMuR);
   if (r == nullptr)
     return reportPyError("add_shape_box");
   Py_DECREF(r);
@@ -1795,6 +1814,157 @@ int OmNewtonBackend::addSoftGrid(const double pos[3], const double quat[4],
   if (endOut != nullptr)
     *endOut = static_cast<int>(end);
   return static_cast<int>(start);
+}
+
+// One granular (MPM) bed. Same build-phase guard, same GIL discipline and the same
+// (start, end) tuple return as addClothGrid / addSoftGrid above -- but a DIFFERENT solver on
+// the other side: the runtime puts these particles on SolverImplicitMPM, not SolverVBD.
+int OmNewtonBackend::addGranularBed(const double pos[3], const double quat[4], const double size[3],
+                                    double voxelSize, double particlesPerCell, int countBudget,
+                                    double density, double friction, double yieldPressure,
+                                    double yieldStress, double youngModulus, double poissonRatio,
+                                    double viscosity, double particleRadius,
+                                    int rigidSubsteps, int proxyIterations, int maxIterations,
+                                    double tolerance, int *endOut) {
+  if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr || !mRuntime->openForBuild)
+    return -1;
+  if (pos == nullptr || quat == nullptr || size == nullptr)
+    return -1;
+  if (!(size[0] > 0.0) || !(size[1] > 0.0) || !(size[2] > 0.0))
+    return -1;
+  // Cap the particle count before Python is entered, exactly as addClothGrid / addSoftGrid do.
+  // A bed is a VOLUME sampled at particlesPerCell per voxel edge, so it overflows on
+  // innocent-looking numbers: a 4 x 4 x 1 m bed at voxelSize 0.01 and ppc 3 is 1200 x 1200 x
+  // 300 = 432 MILLION particles. The runtime's `countBudget` is the graceful lever; this is the
+  // backstop for a world that declares no budget at all, and it exists so the failure names the
+  // node instead of taking the process down inside the interpreter.
+  //
+  // ⚠ THE +1 IS PART OF THE COUNT AND MUST MATCH World._mpm_lattice EXACTLY. newton's
+  // add_particle_grid counts PARTICLES in its dim_*, the opposite of add_soft_grid /
+  // add_cloth_grid, which count CELLS.
+  const double voxel = (voxelSize > 0.0) ? voxelSize : 0.05;
+  const double ppc = (particlesPerCell > 0.0) ? particlesPerCell : 3.0;
+  long long verts = 1;
+  for (int axis = 0; axis < 3; ++axis) {
+    long long res = static_cast<long long>(std::ceil(ppc * size[axis] / voxel));
+    if (res < 1)
+      res = 1;
+    verts *= (res + 1);
+    if (verts > 100000000LL)  // saturate rather than overflow while multiplying
+      break;
+  }
+  const long long kParticleCap = 4000000LL;
+  if (countBudget <= 0 && verts > kParticleCap) {
+    OmLog::warning(QString("[OmNewtonBackend] add_granular_bed refused: a %1 x %2 x %3 m bed at "
+                           "voxelSize %4 / particlesPerCell %5 needs %6 particles (cap %7 with no "
+                           "`count` budget declared). Declare `count` -- it is a BUDGET the runtime "
+                           "satisfies by coarsening voxelSize -- or raise voxelSize.")
+                     .arg(size[0]).arg(size[1]).arg(size[2])
+                     .arg(voxel).arg(ppc)
+                     .arg(verts)
+                     .arg(static_cast<long long>(kParticleCap)));
+    return -1;
+  }
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  // Wire order MUST stay in lockstep with omnisim_newton_runtime.py's World.add_granular_bed:
+  //   pos_x, pos_y, pos_z, qx, qy, qz, qw     7 doubles (w LAST, warp order)
+  //   size_x, size_y, size_z                  3 doubles (METRES, not cells)
+  //   voxel_size, particles_per_cell          2 doubles
+  //   count_budget                            1 int     -- a BUDGET, not a target
+  //   density, friction, yield_pressure,      8 doubles -- 0 = unset on every one of them;
+  //   yield_stress, young_modulus,                        the runtime OMITS the attribute so
+  //   poisson_ratio, viscosity,                           newton's own default applies
+  //   particle_radius
+  //   rigid_substeps, proxy_iterations,       3 ints
+  //   max_iterations
+  //   tolerance                               1 double
+  // ⚠ gridType / gridPadding are NOT here -- setGranularGrid() owns them.
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "add_granular_bed",
+                                    "(ddddddddddddiddddddddiiid)",
+                                    pos[0], pos[1], pos[2],
+                                    quat[0], quat[1], quat[2], quat[3],
+                                    size[0], size[1], size[2],
+                                    voxelSize, particlesPerCell,
+                                    countBudget,
+                                    density, friction, yieldPressure, yieldStress,
+                                    youngModulus, poissonRatio, viscosity, particleRadius,
+                                    rigidSubsteps, proxyIterations, maxIterations,
+                                    tolerance);
+  if (r == nullptr) {
+    const int err = reportPyError("add_granular_bed");
+    PyGILState_Release(gstate);
+    return err;
+  }
+  long start = -1, end = -1;
+  if (!PyArg_ParseTuple(r, "ll", &start, &end)) {
+    PyErr_Clear();
+    Py_DECREF(r);
+    PyGILState_Release(gstate);
+    OmLog::warning("[OmNewtonBackend] add_granular_bed: expected a (start, end) tuple");
+    return -1;
+  }
+  Py_DECREF(r);
+  PyGILState_Release(gstate);
+  if (end <= start)
+    return -1;  // an empty range is a bed that registered nothing
+  if (endOut != nullptr)
+    *endOut = static_cast<int>(end);
+  return static_cast<int>(start);
+}
+
+// The world-level MPM grid selection. Off the positional signature on purpose -- see the header.
+int OmNewtonBackend::setGranularGrid(const char *gridType, int gridPadding) {
+  if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr)
+    return -1;
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "set_granular_grid", "(si)",
+                                    (gridType != nullptr ? gridType : "sparse"), gridPadding);
+  if (r == nullptr) {
+    const int err = reportPyError("set_granular_grid");
+    PyGILState_Release(gstate);
+    return err;
+  }
+  Py_DECREF(r);
+  PyGILState_Release(gstate);
+  return 0;
+}
+
+int OmNewtonBackend::granularBedCount() const {
+  if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr)
+    return -1;
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "granular_bed_count", nullptr);
+  if (r == nullptr) {
+    const int err = reportPyError("granular_bed_count");
+    PyGILState_Release(gstate);
+    return err;
+  }
+  const long n = PyLong_AsLong(r);
+  const bool bad = (n == -1 && PyErr_Occurred() != nullptr);
+  if (bad)
+    PyErr_Clear();
+  Py_DECREF(r);
+  PyGILState_Release(gstate);
+  return bad ? -1 : static_cast<int>(n);
+}
+
+double OmNewtonBackend::granularParticleRadius(int bedIndex) const {
+  if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr)
+    return -1.0;
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "granular_particle_radius", "(i)", bedIndex);
+  if (r == nullptr) {
+    reportPyError("granular_particle_radius");
+    PyGILState_Release(gstate);
+    return -1.0;
+  }
+  const double v = PyFloat_AsDouble(r);
+  const bool bad = (v == -1.0 && PyErr_Occurred() != nullptr);
+  if (bad)
+    PyErr_Clear();
+  Py_DECREF(r);
+  PyGILState_Release(gstate);
+  return bad ? -1.0 : v;
 }
 
 // The tet mesh's open faces, block-local, as int32 triples. Snapshotted by the runtime at
@@ -3309,12 +3479,13 @@ int OmNewtonBackend::addBody(double, double, double, double, double, double, dou
 int OmNewtonBackend::addStaticBody(double, double, double, double, double, double, double) { return -1; }
 int OmNewtonBackend::addKinematicBody(double, double, double, double, double, double, double) { return -1; }
 int OmNewtonBackend::setKinematicPose(int, double, double, double, double, double, double, double) { return -1; }
-int OmNewtonBackend::addShapeSphere(int, double, double, double, double) { return -1; }
+int OmNewtonBackend::addShapeSphere(int, double, double, double, double, double, double, double) { return -1; }
 int OmNewtonBackend::addShapeBox(int, double, double, double, double, double, double, double,
-                                 double, double, double, double) { return -1; }
+                                 double, double, double, double, double, double, double) { return -1; }
 int OmNewtonBackend::addShapeCylinder(int, double, double, double, double, double,
                                       double, double, double, double) { return -1; }
 int OmNewtonBackend::addBodyForce(int, double, double, double, double, double, double) { return -1; }
+int OmNewtonBackend::setBodyGravcomp(int, double) { return -1; }
 int OmNewtonBackend::setBodyVel(int, double, double, double, int) { return -1; }
 int OmNewtonBackend::getContacts(std::vector<OmNewtonContact> &out) const { out.clear(); return -1; }
 int OmNewtonBackend::raycastBatch(int, const double *, OmNewtonRayHit *, const int *, int) const { return -1; }
@@ -3347,6 +3518,15 @@ int OmNewtonBackend::addSoftGrid(const double *, const double *, int, int, int,
                                  double, double, double, double, double, double, double,
                                  double, int, int *) { return -1; }
 int OmNewtonBackend::softSurfaceTriangles(int, int *, int) const { return -1; }
+// Same contract again for the granular bed: -1 makes an OmGranularBed node inert (parses,
+// warns once, renders nothing) rather than fatal on a NEWTON=OFF build.
+int OmNewtonBackend::addGranularBed(const double *, const double *, const double *,
+                                    double, double, int,
+                                    double, double, double, double, double, double,
+                                    double, double, int, int, int, double, int *) { return -1; }
+int OmNewtonBackend::setGranularGrid(const char *, int) { return -1; }
+int OmNewtonBackend::granularBedCount() const { return -1; }
+double OmNewtonBackend::granularParticleRadius(int) const { return -1.0; }
 int OmNewtonBackend::addJointRevolute(int, int, double, double, double,
                                       double, double, double,
                                       double, double, double,

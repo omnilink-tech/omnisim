@@ -10,7 +10,7 @@ direction. Physics is [Newton](https://github.com/newton-physics/newton), the on
 Apache-2.0, with a first-party [MCP server](packages/omnisim-mcp/) for Claude Code and Cursor,
 and a [ROS 2 sidecar](packages/omnisim-ros2/) speaking the `simulation_interfaces` standard.
 
-[**Join the public beta**](BETA.md) · [For research labs](LABS.md) · [Latest release](https://github.com/omnilink-tech/omnisim/releases/latest) ·
+[**Join the public beta**](BETA.md) · [Builder challenge](BUILDERS.md) · [For research labs](LABS.md) · [Latest release](https://github.com/omnilink-tech/omnisim/releases/latest) ·
 [Demos](DEMOS.md) · [Agent entry point](AGENTS.md) · [Protocol](PROTOCOL.md)
 
 [![OmniArm 6 uses depth perception to pick unknown objects in OmniSim](docs/media/videos/omniarm6_universal_pick.gif)](docs/media/videos/omniarm6_universal_pick.mp4)
@@ -24,8 +24,62 @@ paths. [Play the MP4](docs/media/videos/omniarm6_universal_pick.mp4).*
 > **Public beta:** we are looking for the first ten external developers willing
 > to spend 20 minutes installing OmniSim, running one demo, and reporting the
 > first confusing or broken step. Windows has the first downloadable package;
-> Linux is a verified source build; macOS physics is not part of this beta.
+> Linux is a source build; macOS is not supported.
 > [Take the 20-minute challenge →](BETA.md)
+
+---
+
+## Run a real robot demo
+
+Three minutes on Windows. About half an hour on Linux, because you build it.
+
+1. **Get OmniSim.**
+   - **Windows 10/11** — install the asset from the
+     [latest release](https://github.com/omnilink-tech/omnisim/releases/latest)
+     (~600 MB). This is the only prebuilt package.
+   - **Linux** — Ubuntu 24.04, built from source:
+     `bash scripts/install/linux_bootstrap.sh`. Budget 25–45 minutes; most of it
+     is the compile. Details: [quickstart](docs/developer/quickstart.md).
+     ⚠ Ubuntu 22.04 does not work — its Python 3.10 makes `newton` raise at
+     `ModelBuilder()`, so worlds load and nothing moves.
+   - **macOS** — not supported. There is no package, no verified build, and
+     Newton physics is unverified. Use Windows or Ubuntu 24.04.
+
+2. **Check the install.** Open a terminal in the OmniSim directory:
+
+   ```bash
+   python -m omnisim doctor
+   ```
+
+   It ends on a VERDICT line, and exits non-zero if the install cannot run —
+   most usefully when the Newton runtime is absent, which is not a degraded
+   mode but an install where nothing ever falls. On Windows without Python,
+   run `omnisim.bat doctor` instead: it uses the interpreter in the package.
+
+3. **See a robot move.**
+
+   ```bash
+   python -m omnisim demo
+   ```
+
+   That is the real friction-grasp demo above. `python -m omnisim demos` lists
+   all 50, by category.
+
+Then choose the shortest route to your own work:
+
+- **Coding agent or MCP client:** read [AGENTS.md](AGENTS.md). Opening this
+  directory in Claude Code registers the first-party
+  [OmniSim MCP server](packages/omnisim-mcp/) automatically — the checked-in
+  `.mcp.json` does it, with no install. Start the harness it proxies with
+  `python -m omnisim harness`. There is also a packaged
+  [OmniSim Codex plugin](plugins/omnisim/).
+- **ROS 2:** start with the verified
+  [`ros2_control` Husky diff-drive example](packages/omnisim-ros2/README.md#tier-3-ros2_control-on-the-husky).
+- **Your robot or research task:** use the [URDF/STEP workflows](LABS.md#good-first-pilots),
+  or ask OmniLink to port one bounded, measurable pilot.
+
+If any step is confusing or fails, that is exactly what the
+[public beta](BETA.md) is designed to capture.
 
 ---
 
@@ -49,7 +103,7 @@ published documentation**, dated and linked; we did not measure their engines. W
 | First-party MCP server | **18 tools**, stdio, zero deps | none | **5 tools — docs search; none touch a running sim** |
 | Structured load diagnostics | **54 codes** | — | — |
 | Typed runtime events | **10**, with drop counters | — | — |
-| `AGENTS.md` at repo root | **682 lines** | none | **yes, + 25 `SKILL.md` skills** |
+| `AGENTS.md` at repo root | **695 lines** | none | **yes, + 25 `SKILL.md` skills** |
 
 ### 2. Performance and resources
 
@@ -59,7 +113,7 @@ published documentation**, dated and linked; we did not measure their engines. W
 | Minimum VRAM | n/a on the CPU path | not published | **16 GB** |
 | Datacenter GPUs | fine | fine | **A100 / H100 [unsupported](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html)** |
 | Installed size | **7.7 MB binary + 647 MB runtime** — Windows beta package published; Linux is source-build | not published | **13.02 GB + 80.17 GB assets ≈ 93 GB** |
-| Container image | CUDA **training** image on [GHCR](https://github.com/omnilink-tech/omnisim/pkgs/container/omnisim-train); no demo image yet | yes | **10.7 GB** |
+| Container image | CUDA **training** image on [GHCR](https://github.com/omnilink-tech/omnisim/pkgs/container/omnisim-train); a CPU **runtime** image ([`docker/`](docker/README.md)) builds and smoke-tests but is **not on the registry yet** | yes | **10.7 GB** |
 | GPU physics | **yes** (`mujoco_warp`) | **none**, absent from the roadmap | yes |
 | Batched parallel envs | **yes** | process-level only | yes |
 
@@ -165,7 +219,8 @@ vendor-claim: [docs/developer/simulator-comparison.md](docs/developer/simulator-
 
 ## Get started
 
-Clone it, open the folder in [Claude Code](https://claude.com/claude-code), and ask:
+The three-minute path above is the fastest start. Contributors who want a
+source build can clone it, open the folder in a coding agent, and ask:
 
 ```text
 Set up OmniSim from this fresh clone — install whatever the toolchain needs, build it,
@@ -242,6 +297,7 @@ it — training a policy that does is the open problem.
 
 | Audience | Start with |
 |---|---|
+| Installing it (per platform, prerequisites) | [Installation procedure](docs/guide/installation-procedure.md) · [System requirements](docs/guide/system-requirements.md) |
 | AI coding agent in this repo | [AGENTS.md](AGENTS.md) |
 | Picking a demo | [DEMOS.md](DEMOS.md) |
 | First-time human contributor | [Developer Quickstart](docs/developer/quickstart.md) |

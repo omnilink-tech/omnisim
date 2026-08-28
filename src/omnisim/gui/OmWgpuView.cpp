@@ -104,6 +104,27 @@
 #  define OMNISIM_HAVE_QPA_NATIVE_INTERFACE 0
 #endif
 
+// QT_CONFIG(feature) expands to (1/QT_FEATURE_##feature == 1), so it is only
+// usable where QT_FEATURE_<feature> is actually DEFINED -- an undefined macro
+// is 0 to the preprocessor and the expansion becomes a literal 1/0.
+// QT_FEATURE_xcb is published by QtGui, which is why the xcb guard below is
+// fine as written. QT_FEATURE_wayland is published by QtWaylandClient, which a
+// stock Qt 6.5.3 gcc_64 build does not put on the include path -- so the bare
+// QT_CONFIG(wayland) was a hard "error: division by zero in #if" on Linux.
+// This file is in the UNCONDITIONAL source list (src/omnisim/Makefile:991) --
+// WB_WGPU_NATIVE_AVAILABLE only toggles flags and libs, never whether the file
+// is compiled -- so the error fires on ANY Linux build. It went unnoticed
+// because no Linux build runs in CI: release.yml is Windows-only and the Linux
+// workflows sit under .github/workflows.disabled/. The one Linux build that did
+// exist, the GPU training image, had simply been failing on this exact line
+// since 2026-08-25 with nobody watching.
+#if defined(QT_FEATURE_wayland)
+#  define OMNISIM_HAVE_QT_WAYLAND QT_CONFIG(wayland)
+#else
+#  define OMNISIM_HAVE_QT_WAYLAND 0
+#endif
+
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -182,7 +203,7 @@ OmWgpuNativeWindow OmWgpuNativeWindowFromQtWindow(QWindow *window) {
   }
 #  endif
 
-#  if QT_CONFIG(wayland)
+#  if OMNISIM_HAVE_QT_WAYLAND
   if (platform.startsWith(QLatin1String("wayland"))) {
     QNativeInterface::QWaylandApplication *wl =
       qGuiApp ? qGuiApp->nativeInterface<QNativeInterface::QWaylandApplication>() : nullptr;

@@ -418,6 +418,17 @@ private:
   // must be null-checked rather than dereferenced.
   OmSFInt *mNewtonClothCoupling;
   OmSFNode *mPhysics;
+  // Solid.newtonFriction: per-Solid tangential friction. NEGATIVE = unset,
+  // inheriting WorldInfo.newtonGroundMu. NULL on node types that do not declare
+  // the field, so every read must be null-checked (same guard as newtonClothCoupling).
+  // Solid.newtonGravityCompensation: 0..1 fraction of gravity cancelled on this
+  // body. NULL on node types that do not declare the field, so null-check.
+  OmSFDouble *mNewtonGravityCompensation;
+  OmSFDouble *mNewtonFriction;
+  // Torsional / rolling friction (MuJoCo geom_friction[1] and [2]). NEGATIVE =
+  // unset. Only consulted at WorldInfo.newtonCondim >= 4 / >= 6 respectively.
+  OmSFDouble *mNewtonFrictionTorsional;
+  OmSFDouble *mNewtonFrictionRolling;
   OmSFDouble *mRadarCrossSection;
   OmMFColor *mRecognitionColors;
 

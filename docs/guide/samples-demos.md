@@ -1,7 +1,7 @@
 ## Demos
 
 This section provides a list of interesting worlds that broadly illustrate OmniSim capabilities.
-You will find the corresponding ".wbt" files in the "[OMNISIM\_HOME/projects/samples/demos/worlds]({{ url.github_tree }}/projects/samples/demos/worlds)" directory, and their controller source code in the "[OMNISIM\_HOME/projects/samples/demos/controllers]({{ url.github_tree }}/projects/samples/demos/controllers)" directory.
+You will find the corresponding ".omniworld" files in the "[OMNISIM\_HOME/projects/samples/demos/worlds]({{ url.github_tree }}/projects/samples/demos/worlds)" directory, and their controller source code in the "[OMNISIM\_HOME/projects/samples/demos/controllers]({{ url.github_tree }}/projects/samples/demos/controllers)" directory.
 
 The OmniLink-driven demos are the canonical starting points; see [OmniLink chat demos](omnilink-chat-demos.md) for the agent-facing walkthrough. The list below picks out a few additional worlds that highlight specific OmniSim capabilities.
 

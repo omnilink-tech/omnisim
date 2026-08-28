@@ -1,6 +1,6 @@
 # OmniSim User Guide
 
-OmniSim v7.0.0 — for the authoritative version and release notes, see the root [`CHANGELOG.md`](https://github.com/omnilink-tech/omnisim/blob/main/CHANGELOG.md).
+For the current version and release notes, see the root [`CHANGELOG.md`](https://github.com/omnilink-tech/omnisim/blob/main/CHANGELOG.md). This guide is not pinned to a version number; where a page needs one it links to [System Requirements](system-requirements.md).
 
 %figure
 ![ImageData](images/1234web.png)

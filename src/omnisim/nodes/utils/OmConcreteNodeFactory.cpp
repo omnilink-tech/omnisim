@@ -46,6 +46,7 @@
 #include "OmFocus.hpp"
 #include "OmFog.hpp"
 #include "OmGps.hpp"
+#include "OmGranularBed.hpp"
 #include "OmGranularGroup.hpp"
 #include "OmGroup.hpp"
 #include "OmGyro.hpp"
@@ -177,6 +178,8 @@ OmNode *OmConcreteNodeFactory::createNode(const QString &modelName, OmTokenizer 
     return new OmFog(tokenizer);
   if (modelName == "GPS")
     return new OmGps(tokenizer);
+  if (modelName == "GranularBed")
+    return new OmGranularBed(tokenizer);
   if (modelName == "GranularGroup")
     return new OmGranularGroup(tokenizer);
   if (modelName == "Group")
@@ -384,6 +387,8 @@ OmNode *OmConcreteNodeFactory::createCopy(const OmNode &original) {
     return new OmFog(original);
   if (modelName == "GPS")
     return new OmGps(original);
+  if (modelName == "GranularBed")
+    return new OmGranularBed(original);
   if (modelName == "GranularGroup")
     return new OmGranularGroup(original);
   if (modelName == "Group")

@@ -18,18 +18,17 @@ These do NOT need a running harness: the point is to prove the JSON-RPC surface
 is correct and that a dead harness produces a clean isError, never a crash.
 """
 import json
+import sys
+from pathlib import Path
 
-# Allow running this file directly without pip-installing (mirrors the
-# omnisim-bridges tests -- without it a bare `pytest` at the repo root
-# cannot collect this file at all).
-import sys
-from pathlib import Path
-
-PKG_SRC = Path(__file__).resolve().parents[1] / "src"
-if str(PKG_SRC) not in sys.path:
-    sys.path.insert(0, str(PKG_SRC))
-
-from omnisim_mcp import server  # noqa: E402
+# Allow running this file directly without pip-installing (mirrors the
+# omnisim-bridges tests -- without it a bare `pytest` at the repo root
+# cannot collect this file at all).
+PKG_SRC = Path(__file__).resolve().parents[1] / "src"
+if str(PKG_SRC) not in sys.path:
+    sys.path.insert(0, str(PKG_SRC))
+
+from omnisim_mcp import server
 
 
 def test_initialize_handshake():

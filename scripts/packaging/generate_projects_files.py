@@ -46,11 +46,15 @@ def is_ignored_file(f):
     - OS generated files
     - text editor backup files
     - XCF image files (Gimp)
+    - harness / scratch world copies (gitignored, but `git clean -fdf` in
+      scripts/packaging/Makefile has no -x, so a local `make distrib` shipped
+      them: 580 such entries appeared in one resolved manifest)
     """
     return f == '.gitignore' or f == '.DS_Store' or f == '.DS_Store?' or \
         f == '.Spotlight-V100' or f == '.Trashes' or f == 'ehthumbs.db' or f == 'Thumbs.db' or \
         f.startswith("._") or f.endswith(".swp") or f.endswith(".bak") or f.endswith("~") or \
-        f.endswith(".xcf")
+        f.endswith(".xcf") or \
+        f.startswith(".harness_") or f.startswith(".scratch_")
 
 
 def is_ignored_folder(f):
@@ -60,8 +64,20 @@ def is_ignored_folder(f):
     - build folders
     - com Java folders
     - __pycache__ Python folder
+    - Python packaging / linter residue
+
+    The last group matters because the manifest now recurses into packages/
+    and plugins/ to ship the MCP + bridges on-ramp. None of dist/, *.egg-info
+    or the tool caches is ever tracked (verified: `git ls-files` matches zero
+    of each), so they only exist on a developer box -- and scripts/packaging's
+    `git clean -fdf` has no -x, so a local `make distrib` would have packaged
+    them. A release built from a fresh CI checkout was never affected; this
+    keeps the two builds producing the same payload.
     """
-    return f == 'build' or f == 'com' or f == '__pycache__'
+    return (f in ('build', 'com', '__pycache__', 'dist',
+                  '.ruff_cache', '.pytest_cache', '.mypy_cache',
+                  '.venv', 'venv', 'node_modules')
+            or f.endswith('.egg-info'))
 
 
 class ProjectFilesGenerator:

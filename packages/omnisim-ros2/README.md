@@ -228,7 +228,7 @@ Needs **ROS 2 Humble or newer** (verified on Humble) and a running harness.
 
 ```bash
 # 1. OmniSim side
-python -m omnisim harness --auto-port
+python -m omnisim harness
 curl -s -X POST http://127.0.0.1:6789/world/load \
   -H "Content-Type: application/json" \
   -d '{"path":"projects/samples/demos/worlds/chat/omnilink_husky.omniworld","light":true}'
@@ -240,6 +240,15 @@ source packages/omnisim-ros2/install/setup.bash
 # 3. one command for the whole surface
 ros2 launch omnisim_ros2 omnisim_bringup.launch.py
 ```
+
+⚠ **Do not add `--auto-port` here.** That flag exists to move the harness *off*
+`:6789` when the pair is already taken, and it prints the pair it actually chose
+to **stderr** — so pairing it with a hard-coded `127.0.0.1:6789` gives you a
+`curl` that talks to the other harness, or to nothing. Add it only when you are
+deliberately running a second harness alongside an existing one; then read the
+chosen port off stderr and carry it everywhere: `curl` it, and pass it to ROS as
+`harness_url:=http://127.0.0.1:<port>` on the launch, or as `OMNISIM_HARNESS_URL`
+in the environment (which `harness_client.py` reads).
 
 Harness-only (no robot bridge): `... omnisim_bringup.launch.py bridge:=false`.
 Tier 1 alone: `ros2 launch omnisim_ros2 simulation_interfaces.launch.py`.

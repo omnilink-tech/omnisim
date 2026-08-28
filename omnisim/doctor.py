@@ -26,12 +26,25 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import socket
 import subprocess
+import sys
 from pathlib import Path
 
 from . import __version__
 from .paths import DEMOS_WORLDS, REPO_ROOT, resolve_omnisim_binary
+
+
+def invocation() -> str:
+    """How to spell this CLI back to the user who just ran it.
+
+    A Windows user with no system Python reaches the CLI through omnisim.bat,
+    which uses the interpreter bundled beside the engine. Answering them with
+    `python -m omnisim demo` hands them the one command they cannot run, so
+    the launcher exports its own name and every "next command" echoes it.
+    """
+    return os.environ.get("OMNISIM_INVOKED_AS") or "python -m omnisim"
 
 
 HARNESS_PORT = 6789
@@ -77,9 +90,132 @@ def _worlds() -> list[str]:
     # Recursive: most demos live in subdirs (showcase/, flagship/, chat/,
     # ...). A top-level-only glob reported 2 of 73 worlds and made fresh
     # clones look empty.
+    # Dot-prefixed names are the harness's own scratch copies
+    # (.harness_*.omniworld, gitignored). They sort first, so an unfiltered
+    # listing showed a newcomer five temp files as the sample of "your worlds"
+    # and inflated the count by 26 on a box where the harness had ever run.
+    def _authored(path: Path) -> bool:
+        rel = path.relative_to(DEMOS_WORLDS)
+        return not any(part.startswith(".") for part in rel.parts)
+
     return sorted(
-        p.relative_to(DEMOS_WORLDS).as_posix() for p in [*DEMOS_WORLDS.rglob("*.omniworld"), *DEMOS_WORLDS.rglob("*.wbt")]
+        p.relative_to(DEMOS_WORLDS).as_posix()
+        for p in [*DEMOS_WORLDS.rglob("*.omniworld"), *DEMOS_WORLDS.rglob("*.wbt")]
+        if _authored(p)
     )
+
+
+def _physics_runtime(binary: str | None) -> dict:
+    """Is there a physics backend at all?
+
+    Newton has been the ONLY backend since `bdc02139` deleted ODE, so "absent"
+    is not a degraded mode -- it is an install with no dynamics whatsoever:
+    nothing falls, nothing collides, no grasp holds, and the engine still
+    exits 0. README tells the user `doctor` reports this, so it must.
+
+    It cannot be one existence test, because the runtime is resolved
+    differently per platform:
+
+    * Windows -- the release BUNDLES it next to the binary, and the embedded
+      interpreter loads it through `python312._pth`. Presence is a file test.
+    * Linux   -- there is no bundle. The embedded interpreter resolves the
+      SYSTEM `python3` (and ignores venvs), so the wheels must be importable
+      from that interpreter. Probed with `importlib.util.find_spec`, which
+      resolves without executing the module (importing `warp` initialises
+      CUDA and costs seconds).
+    """
+    info: dict = {"status": "unknown", "source": None, "detail": "", "fix": None}
+    if not binary:
+        info["detail"] = "no engine binary, so no runtime to check"
+        return info
+
+    if os.name == "nt":
+        info["source"] = "bundle"
+        root = Path(binary).parent / "newton-runtime" / "site-packages"
+        missing = [m for m in ("warp", "newton", "mujoco") if not (root / m).exists()]
+        if not missing:
+            info["status"] = "present"
+            info["detail"] = "Newton runtime bundled next to the engine"
+        else:
+            info["status"] = "absent"
+            info["detail"] = (
+                "Newton runtime NOT bundled (missing " + ", ".join(missing) + ") -- "
+                "this install has NO physics at all"
+            )
+            info["fix"] = "make -C src/omnisim bundle-newton-runtime"
+        return info
+
+    info["source"] = "system-python3"
+    probe = (
+        "import importlib.util as u;"
+        "print(','.join(m for m in ('warp','newton','mujoco') if u.find_spec(m) is None))"
+    )
+    try:
+        out = subprocess.run(
+            ["python3", "-c", probe],
+            capture_output=True, text=True, timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        info["detail"] = "could not run `python3` to check the physics runtime"
+        return info
+    if out.returncode != 0:
+        info["detail"] = "`python3 -c` failed, so the physics runtime is unverified"
+        return info
+    missing = [m for m in out.stdout.strip().split(",") if m]
+    if not missing:
+        info["status"] = "present"
+        info["detail"] = "physics wheels importable from the system python3"
+    else:
+        info["status"] = "absent"
+        info["detail"] = (
+            "system python3 cannot import " + ", ".join(missing) + " -- "
+            "this install has NO physics at all"
+        )
+        info["fix"] = (
+            "pip install warp-lang newton mujoco mujoco-warp "
+            "(into the SYSTEM python3 -- the engine ignores venvs)"
+        )
+    return info
+
+
+def _python_runtime() -> dict:
+    """The interpreter versions that decide whether physics and controllers work.
+
+    Two different interpreters matter and they are not always the same one:
+    this CLI's, and the `python`/`python3` on PATH -- which the engine spawns
+    for every Python controller, and which on Linux also supplies the physics
+    wheels. newton 1.5.0 raises `TypeError: Union[arg, ...]` at
+    `ModelBuilder()` on CPython 3.10, so a 3.10 interpreter in the physics
+    role is a world that loads and never moves.
+    """
+    info: dict = {
+        "cli": "%d.%d.%d" % sys.version_info[:3],
+        "spawned": None,
+        "spawned_name": None,
+        "too_old": False,
+    }
+    for name in ("python3", "python") if os.name != "nt" else ("python", "python3"):
+        exe = shutil.which(name)
+        if not exe:
+            continue
+        try:
+            out = subprocess.run(
+                [exe, "-c", "import sys;print('%d.%d.%d' % sys.version_info[:3])"],
+                capture_output=True, text=True, timeout=15,
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if out.returncode == 0 and out.stdout.strip():
+            info["spawned"] = out.stdout.strip()
+            info["spawned_name"] = name
+            break
+    for ver in (info["cli"], info["spawned"]):
+        if not ver:
+            continue
+        parts = ver.split(".")
+        if (int(parts[0]), int(parts[1])) < (3, 11):
+            info["too_old"] = True
+    return info
 
 
 def _controller_lib() -> Path | None:
@@ -185,7 +321,7 @@ def _env_landmines() -> list[str]:
     return out
 
 
-def _coherence(build: dict) -> dict:
+def _coherence(build: dict, physics: dict | None = None) -> dict:
     """Tier 0 -- is this install even wired coherently enough to run at all?
 
     The cross-machine determinism tiers (docs/developer/cross-machine-determinism.md)
@@ -220,6 +356,12 @@ def _coherence(build: dict) -> dict:
         # incoherence, so we must not fail on it -- unproven != broken.
         advisory.append("could not read a binary to verify the IPC nonce -- coherence unproven")
 
+    # Physics. Newton is the ONLY backend, so its absence is not a degraded
+    # mode -- it is an install where nothing falls, while the engine still
+    # exits 0. README promises doctor reports this, so it is FATAL, not a note.
+    if physics and physics.get("status") == "absent":
+        fatal.append(physics["detail"] + (" -- fix: " + physics["fix"] if physics.get("fix") else ""))
+
     advisory.extend(_env_landmines())
 
     return {"ok": not fatal, "fatal": fatal, "advisory": advisory}
@@ -240,10 +382,9 @@ def run(argv: list[str]) -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Tier 0 install-coherence gate: exit NON-ZERO if the install is not "
-        "coherent enough to run (engine/libController ABI mismatch, missing binary). "
-        "For use in hooks / CI / launchers as a preflight. Default output is unchanged "
-        "and always exits 0.",
+        help="Deprecated alias -- kept for .githooks/pre-push and existing CI. "
+        "Plain `doctor` now exits non-zero on a blocking problem, so this flag "
+        "no longer changes anything.",
     )
     args = parser.parse_args(argv)
 
@@ -267,10 +408,15 @@ def run(argv: list[str]) -> int:
         "capture": _port_status(CAPTURE_PORT),
     }
     build = _build_provenance()
-    coherence = _coherence(build)
-    # --strict is the ONLY thing that changes the exit code; plain doctor still
-    # always exits 0 (it is a first-turn report, not a gate).
-    exit_code = 1 if (args.strict and not coherence["ok"]) else 0
+    physics = _physics_runtime(webots)
+    python = _python_runtime()
+    coherence = _coherence(build, physics)
+    # A fatal coherence problem means the install cannot run a controller-driven
+    # world. Reporting that and exiting 0 made every caller -- a script, a CI
+    # lane, an agent branching on $? -- read a broken install as a pass, so the
+    # exit code now follows the verdict. --strict is kept as an explicit alias
+    # for callers (.githooks/pre-push) that already ask for gate semantics.
+    exit_code = 0 if coherence["ok"] else 1
 
     if args.json:
         print(
@@ -282,6 +428,8 @@ def run(argv: list[str]) -> int:
                     "omnisim_binary": webots,
                     "webots_binary": webots,  # legacy alias for tools that still read the old key
                     "build": build,
+                    "physics": physics,
+                    "python": python,
                     "coherence": coherence,
                     "strict": args.strict,
                     "ports": ports,
@@ -296,8 +444,19 @@ def run(argv: list[str]) -> int:
         return exit_code
 
     print(f"omnisim     {__version__}")
-    print(f"git         {branch} @ {commit}")
-    print(f"binary      {webots or 'NOT FOUND  (set OMNISIM_HOME or build the simulator)'}")
+    if commit == "?":
+        # A packaged install ships no .git, so `? @ ?` was the first line the
+        # primary README audience ever saw. Name the build instead.
+        print(f"install     packaged (no git metadata) at {REPO_ROOT}")
+    else:
+        print(f"git         {branch} @ {commit}")
+    if webots:
+        print(f"binary      {webots}")
+    else:
+        print("binary      NOT FOUND -- this tree has no simulator to run")
+        print("            build:  build_omni.bat                     (Windows)")
+        print("            build:  bash scripts/install/linux_bootstrap.sh  (Linux)")
+        print("            then:   make -C src/omnisim bundle-newton-runtime")
     # ASCII only: doctor must survive a cp1252 Windows console. A diagnostic that
     # UnicodeEncodeErrors while reporting the fault is worse than no diagnostic.
     if build["verdict"] == "incompatible":
@@ -308,9 +467,29 @@ def run(argv: list[str]) -> int:
         print(f"build       WARN: {build['detail']}")
     else:
         print("build       engine + libController compatible")
+    # Physics is the check a newcomer most needs and could least guess at:
+    # Newton is the only backend, so "absent" means nothing in any world will
+    # ever move, and the engine reports that by exiting 0.
+    if physics["status"] == "present":
+        print(f"physics     Newton runtime OK ({physics['detail']})")
+    elif physics["status"] == "absent":
+        print(f"physics     FAIL: {physics['detail']}")
+        if physics.get("fix"):
+            print(f"            fix:  {physics['fix']}")
+    else:
+        print(f"physics     ?  {physics['detail']}")
+    py_line = f"python      {python['cli']} (this CLI)"
+    if python["spawned"] and python["spawned"] != python["cli"]:
+        py_line += f"   {python['spawned_name']} on PATH: {python['spawned']}"
+    elif not python["spawned"]:
+        py_line += "   WARN: no python/python3 on PATH -- every Python controller will fail to start"
+    print(py_line)
+    if python["too_old"]:
+        print("            WARN: newton 1.5.0 raises at ModelBuilder() on CPython 3.10 --")
+        print("                  use 3.12 for the interpreter that supplies physics.")
     # Coherence advisories are things NOT already on the build line above (env
     # landmines, unreadable-binary). Shown always -- they are useful info -- but
-    # they never change the exit code, even under --strict.
+    # they never change the exit code.
     for note in coherence["advisory"]:
         print(f"warn        {note}")
     print("ports")
@@ -330,11 +509,21 @@ def run(argv: list[str]) -> int:
     if fingerprint is not None:
         from .conformance.report import format_fingerprint
         print(format_fingerprint(fingerprint))
-    if args.strict:
-        if coherence["ok"]:
-            print("strict      OK -- install is coherent (Tier 0)")
-        else:
-            print(f"strict      FAIL -- {len(coherence['fatal'])} fatal coherence problem(s):")
-            for msg in coherence["fatal"]:
-                print(f"  {msg}")
+    # THE VERDICT. This used to be printed only under --strict, so the default
+    # report -- the one README, BETA and SUPPORT all tell a new user to run --
+    # ended on a git log and left "am I OK to proceed?" unanswered. It is the
+    # first question the command exists to answer, so it is always answered,
+    # and it always names the next command.
+    print()
+    if coherence["ok"]:
+        cli = invocation()
+        print("VERDICT     READY.  Next:")
+        print("              %-26s # see a robot move" % (cli + " demo"))
+        print("              %-26s # the full catalogue" % (cli + " demos"))
+    else:
+        n = len(coherence["fatal"])
+        print(f"VERDICT     NOT READY -- {n} blocking problem{'s' if n != 1 else ''}:")
+        for i, msg in enumerate(coherence["fatal"], 1):
+            print(f"  [{i}] {msg}")
+        print("            Re-run `python -m omnisim doctor` after fixing.")
     return exit_code

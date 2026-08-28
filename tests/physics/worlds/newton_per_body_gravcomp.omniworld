@@ -1,0 +1,46 @@
+#OMNISIM R2025a utf8
+
+# Per-body gravity compensation (Solid.newtonGravityCompensation).
+#
+# Two IDENTICAL 1 kg boxes released at z=1.0. The only difference is the field.
+# MuJoCo applies gravcomp * m * g upward, so 1.0 is a body that does not fall.
+#
+# ⚠ THIS CANNOT BE DONE BY PATCHING mj_model AFTER CONSTRUCTION -- MuJoCo decides
+# at compile time whether the gravcomp pass runs at all, so a post-finalize write
+# leaves qfrc_gravcomp at zero and the body still falls (measured: z=-3.895 after
+# 500 steps vs 1.000 baked in). The value reaches the mjSpec through newton's
+# "mujoco:gravcomp" custom attribute instead.
+#
+# Before this field existed the world could not be written: every body fell.
+
+WorldInfo {
+  basicTimeStep 8
+  newtonSolver "mujoco"
+}
+Viewpoint {
+  orientation -0.35 0.62 0.70 2.2
+  position 4.0 -3.0 2.0
+}
+DEF FALLS Solid {
+  translation 0 -0.5 1.0
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.9 0.3 0.2 roughness 0.5 }
+      geometry Box { size 0.2 0.2 0.2 }
+    }
+  ]
+  boundingObject Box { size 0.2 0.2 0.2 }
+  physics Physics { density -1 mass 1 }
+}
+DEF HOVERS Solid {
+  translation 0 0.5 1.0
+  newtonGravityCompensation 1
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.2 0.5 0.9 roughness 0.5 }
+      geometry Box { size 0.2 0.2 0.2 }
+    }
+  ]
+  boundingObject Box { size 0.2 0.2 0.2 }
+  physics Physics { density -1 mass 1 }
+}

@@ -1027,6 +1027,7 @@ def verify_log_event_types(source: str) -> dict:
 HARNESS_DIAGNOSTIC_CODES = (
     "LAUNCHER_DLL_NOT_FOUND", "SIMULATOR_EXITED_NONZERO",
     "SUPERVISOR_BIND_STALLED", "SUPERVISOR_BIND_CEILING",
+    "WORLD_DIR_NOT_WRITABLE",
 )
 
 
@@ -3224,10 +3225,28 @@ class HarnessState:
                         world, light, source_text=source_text)
                     target_world = self.current_sibling
                 except OSError as exc:
+                    # Every /world/load with a supervisor -- the default, and
+                    # what the MCP `load_world` tool sends -- writes
+                    # .harness_<world> NEXT TO the world so its relative asset
+                    # paths still resolve. The Windows installer defaults to
+                    # {autopf}\OmniSim, i.e. C:\Program Files, which a normal
+                    # (UAC-filtered) shell cannot write even for the admin who
+                    # installed it. So the FIRST thing an agent does with a
+                    # packaged install failed with a bare errno and no remedy.
                     return {
                         "ok": False,
                         "error": f"could not write supervisor sibling: {exc}",
-                        "diagnostics": [],
+                        "diagnostics": [{
+                            "code": "WORLD_DIR_NOT_WRITABLE",
+                            "severity": "fatal",
+                            "message": (
+                                f"cannot write the supervisor sibling next to {world}: "
+                                f"{exc}. The harness needs write access to the world's "
+                                "own directory. Copy the world and its project tree "
+                                "somewhere writable, or reinstall OmniSim outside "
+                                "C:\\Program Files -- a default Windows install is "
+                                "not writable by the shell you are running in."),
+                        }],
                         "load_ms": 0,
                     }
 

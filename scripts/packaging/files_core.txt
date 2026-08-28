@@ -246,6 +246,51 @@ resources/omnisim_night.qss
 
 scripts/
 scripts/preferences_cleaner [recurse]
+# The agent surface. Without these the package is a GUI-only install: README.md
+# and BETA.md both open with `python -m omnisim doctor`, which fails with
+# "No module named omnisim" because the CLI lived only in a git clone. ~7 MB
+# against a 600 MB payload, and it is the difference between the documented
+# first command working and not existing.
+# The first-launch welcome menu's world list. projects/ is otherwise
+# assembled by generate_projects_files.py, which walks the robot/world
+# subtrees; this loose top-level file needs naming explicitly.
+projects/guided_tour.txt
+
+omnisim [recurse]
+scripts/dev [recurse]
+scripts/harness [recurse]
+scripts/capture [recurse]
+scripts/cinema [recurse]
+# `omnisim cinema` imports `cinema.cli` off scripts/ (cli.py:371), and the
+# harness/capture services are what an agent drives. The entry-point docs ship
+# too: BETA.md tells the user to point a coding agent at AGENTS.md.
+AGENTS.md
+PROTOCOL.md
+DEMOS.md
+README.md
+LICENSE
+launch.bat [windows]
+# The CLI launcher. README.md and BETA.md both open with a `python -m omnisim`
+# command, which needs a SYSTEM Python the package does not ship and does not
+# name as a prerequisite -- on a clean Windows box `python` opens the Microsoft
+# Store. omnisim.bat resolves an interpreter (system first, the bundled
+# newton-runtime CPython as fallback) and sets PYTHONPATH, so the documented
+# first command works out of the box and from any directory.
+omnisim.bat [windows]
+
+# The MCP / plugin on-ramp. README.md tells a package user to "connect the
+# first-party OmniSim MCP server" and to use the Codex plugin; without these
+# lines both links resolve to nothing on an installed tree. ~210 KB, pure
+# stdlib Python. omnisim-bridges is what the OmniLink chat demos import for
+# their shared status/resume intents -- absent, they degrade through a bare
+# `except Exception` with no message anywhere.
+packages/omnisim-mcp [recurse]
+packages/omnisim-bridges [recurse]
+plugins/omnisim [recurse]
+# Registers the MCP server for Claude Code with no install and no
+# `claude mcp add`. Pointless without the line above; together they make
+# "open the OmniSim directory in a coding agent" (BETA.md step 4) real.
+.mcp.json
 
 src/
 src/controller/

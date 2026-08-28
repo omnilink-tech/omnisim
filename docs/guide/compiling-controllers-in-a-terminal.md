@@ -5,23 +5,20 @@ In this case you need to define the `OMNISIM_HOME` environment variable and make
 The `OMNISIM_HOME` variable is used to locate OmniSim header files and libraries in the Makefiles.
 Setting an environment variable depends on the platform (and shell), here are some examples:
 
-### macOS and Linux
+### Linux
 
-`OMNISIM_HOME` must point to the root of your OmniSim source checkout (OmniSim is distributed as source — see [Installation Procedure](installation-procedure.md)).
-On Linux, from inside the checkout, type this:
+`OMNISIM_HOME` must point to the root of your OmniSim checkout. On Linux that is
+a source build — there is no native package yet, see
+[Installation Procedure](installation-procedure.md). From inside the checkout:
 
 ```sh
 $ export OMNISIM_HOME=$(pwd)
 ```
 
 Or add this line (with the absolute checkout path) to your "~/.bash\_profile" file.
-On macOS, type this:
 
-```sh
-$ export OMNISIM_HOME=$(pwd)
-```
-
-Or add this line to your "~/.profile" file.
+(macOS is not supported: there is no package, no verified build, and Newton
+physics is unverified. Use Windows or Ubuntu 24.04.)
 
 Once these environment variables are defined, you should be able to compile in a terminal, with the `make` command.
 Like with the editor buttons, it is possible to build the whole project, or only a single binary file, e.g.:

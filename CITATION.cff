@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If OmniSim supports your research, please cite the software and the exact release you used."
+title: "OmniSim: an agent-facing robotics simulator"
+type: software
+authors:
+  - name: "OmniLink"
+    website: "https://www.omnilink-agents.com"
+    email: "info@omnilink-agents.com"
+version: 8.1.6
+date-released: 2026-08-25
+repository-code: "https://github.com/omnilink-tech/omnisim"
+url: "https://www.omnilink-agents.com/omnisim"
+license: Apache-2.0
+keywords:
+  - robotics simulation
+  - AI agents
+  - Model Context Protocol
+  - ROS 2
+  - reinforcement learning
+  - deformable simulation

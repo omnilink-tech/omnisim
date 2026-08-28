@@ -16,7 +16,7 @@ See also:
 - Windows 10/11
 - ~10 GB free disk space (MSYS2 + dependencies + build artifacts), plus ~1 GB for the Newton runtime bundle (no longer optional on Windows — it is the only physics backend)
 - Git for Windows (for cloning the repo)
-- A Windows CPython 3.10+ from [python.org](https://www.python.org/downloads/), installed to the default per-user location. The v4 default build (`OMNISIM_WITH_NEWTON=ON`) embeds CPython and needs its build headers — the Makefile auto-detects the install (override with `PYTHON_HOME=`/`PYTHON_LIB=` make arguments). ⚠ The embedded interpreter is **mandatory**, not a choice: `bdc02139` deleted `src/ode`, so Newton with `SolverMuJoCo` is the only physics backend and there is no pure-ODE legacy stack to fall back to — `OMNISIM_WITH_NEWTON=OFF` leaves the engine with no physics at all. The same Python also runs the dev tooling (`python -m omnisim`, the harness, `omniworld`).
+- A Windows **CPython 3.12** from [python.org](https://www.python.org/downloads/), installed to the default per-user location. The v4 default build (`OMNISIM_WITH_NEWTON=ON`) embeds CPython and needs its build headers — the Makefile globs `…/Programs/Python/Python3NN/include/Python.h` and takes the **highest** version it finds (override with `PYTHON_HOME=`/`PYTHON_LIB=` make arguments). ⚠ **3.10 and 3.11 are not usable**: `newton` 1.5.0 raises `TypeError: Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool].` at `ModelBuilder()` on 3.10, so the engine links, loads worlds, and nothing moves. Version policy for every platform lives in one place — [system-requirements.md](../guide/system-requirements.md). ⚠ The embedded interpreter is **mandatory**, not a choice: `bdc02139` deleted `src/ode`, so Newton with `SolverMuJoCo` is the only physics backend and there is no pure-ODE legacy stack to fall back to — `OMNISIM_WITH_NEWTON=OFF` leaves the engine with no physics at all. The same Python also runs the dev tooling (`python -m omnisim`, the harness, `omniworld`).
 
 > **A note on paths.** This guide assumes you have set **`OMNISIM_HOME`** to the absolute path of your local checkout. **Setting it alone is sufficient** — the top-level `Makefile` exports `WEBOTS_HOME` for you, for the build Makefiles that still expand the old name. The scripts and the build system never assume a fixed install location — set this once per shell and the rest of the commands work unchanged. The bundled `build_omni.bat` derives it from its own location, so on Windows you usually do not need to export anything manually.
 >
@@ -62,9 +62,12 @@ pacman -S --noconfirm \
   mingw-w64-x86_64-openal \
   mingw-w64-x86_64-minizip \
   git \
+  curl \
   unzip \
   zip
 ```
+
+`curl` and `unzip` are what `scripts/dev/setup_wgpu_native.sh` (step 5) uses to fetch and unpack the wgpu-native release, so install them even if you have a Windows `curl.exe` on `PATH`.
 
 ## 3. Set up Qt6 headers
 
@@ -99,6 +102,19 @@ GLM 1.0.1 is used for compatibility with GCC 15. Later versions may have `operat
 
 ## 5. Build
 
+### First: fetch wgpu-native (or the build has no renderer)
+
+```bash
+cd "$OMNISIM_HOME"
+bash scripts/dev/setup_wgpu_native.sh
+```
+
+Run this once per clone, **before** the first build. wgpu-native is the only renderer — WREN was deleted on 2026-08-23 (`976b9449d`), along with `src/wren` and `src/omnisim/wren` — and the link against it is conditional: `src/omnisim/Makefile` defines `WB_WGPU_NATIVE_AVAILABLE` only when `WGPU_NATIVE_HOME` resolves, and every `wgpu*` call lives behind that macro. Skip this step and the build is *green* and nothing draws — no main view, no screenshots, no capture service, no Camera device. `setup_wgpu_native.sh` installs to the one path the Makefile auto-discovers (`$OMNISIM_HOME/_scratch/wgpu-native`), so you do not need to export `WGPU_NATIVE_HOME` yourself. Details: [wgpu-native-setup.md](wgpu-native-setup.md).
+
+⚠ An **explicit empty** `WGPU_NATIVE_HOME=` on the make command line still opts out — but since the WREN deletion that no longer selects "the other renderer", it selects a binary with no renderer at all.
+
+### The build itself
+
 From the MSYS2 MINGW64 terminal (with `OMNISIM_HOME` exported as shown in the prerequisites):
 
 ```bash
@@ -121,8 +137,8 @@ First build takes 5-25 minutes depending on hardware. Incremental builds can ran
 
 | Target | Output | Description |
 |--------|--------|-------------|
-| GLAD | `src/glad/glad.a` | OpenGL loader (static lib) |
-| Wren | `src/wren/wren.a` | Graphics renderer (static lib) |
+| GLAD | `src/glad/glad.a` | OpenGL function loader (static lib). Still linked: the GL present/blit fallback path uses it. |
+| Renderer | *(no separate target)* | ⚠️ There is **no** `src/wren/wren.a` any more — this table listed one until 2026-08-28. WREN was deleted on 2026-08-23 (`976b9449d`); the wgpu backend compiles into the engine from `src/omnisim/render/` (plus `src/omnisim/nodes/OmWgpuSceneRenderer.cpp` for Camera-family devices), so a core build **is** a renderer build. `wgpu_native.dll` is downloaded by `setup_wgpu_native.sh` and copied next to `omnisim-bin.exe` by the link recipe. |
 | omnisim-bin | `msys64/mingw64/bin/omnisim-bin.exe` | Main simulator binary. ⚠️ **There is no `webots-bin.exe`** — this row claimed that alias until 2026-08-16; no Makefile produces the name and nothing should fall back to it. The legacy *launchers* `webots.exe` / `webotsw.exe` do exist, as byte-identical copies of `omnisim.exe` / `omnisimw.exe`. |
 | Controller (C) | `lib/controller/Controller.dll` | C controller API |
 | Controller (C++) | `lib/controller/CppController.dll` | C++ controller API |
@@ -189,11 +205,18 @@ export PATH="$OMNISIM_HOME"/msys64/mingw64/bin:/mingw64/bin:$PATH
 
 ### Headless run (no window)
 
-For agent loops, CI, or any time you don't want an OmniSim window to open, use the headless runner. It launches `omnisim-bin.exe` with `--minimize --batch --no-rendering --mode=fast --stdout --stderr` and stops the sim after the duration (`--no-window` is deliberately *not* used: it skips main-window realization but deadlocks Newton's embedded CPython FFI on multi-articulation worlds, so `--minimize` is the safe headless default):
+For agent loops, CI, or any time you don't want an OmniSim window to open, use the headless runner. It launches `omnisim-bin.exe` with `--minimize --batch --no-rendering --mode=fast --stdout --stderr` (`--no-window` is deliberately *not* used: it skips main-window realization but deadlocks Newton's embedded CPython FFI on multi-articulation worlds, so `--minimize` is the safe headless default):
 
 ```bash
+# Load check -- stops the moment Newton finalises and writes its sidecar.
+python scripts/dev/headless_runner.py projects/samples/demos/worlds/showcase/turtlebot3_drive.omniworld --until-finalized
+
+# Observation run -- --duration is a wall-clock SLEEP, so pass it only when the
+# run must actually watch the simulation for that long.
 python scripts/dev/headless_runner.py projects/samples/demos/worlds/showcase/turtlebot3_drive.omniworld --duration 10
 ```
+
+Omitting `--duration` selects `--until-finalized` for you (announced on stdout) with a 30 s ceiling — `DEFAULT_DURATION_S` in `headless_runner.py`. The ceiling is only ever a ceiling: the run returns as soon as the world finalises *and* takes its first physics step, so a larger number costs a healthy world nothing.
 
 It writes the engine log to `omnisim_log.txt`, tails it for errors and warnings, and returns a structured exit code (0 PASS / non-zero FAIL). See [AGENTS.md §3b](../../AGENTS.md) (headless runs) and [§8](../../AGENTS.md) (validating a change) for the full argument list — `--until-finalized`, `--fail-on-warning`, `--fail-on-runaway` — and the rationale.
 
@@ -209,16 +232,18 @@ It writes the engine log to `omnisim_log.txt`, tails it for errors and warnings,
 For an agent-driven workflow (headless, structured exit, supported run contract):
 
 ```bash
-python scripts/dev/omnisim_dev.py run-headless projects/samples/demos/worlds/showcase/warehouse_husky.omniworld --duration 10
+python scripts/dev/omnisim_dev.py run-headless projects/samples/demos/worlds/showcase/warehouse_husky.omniworld --until-finalized
 ```
 
 To regenerate a procedural world:
 
 ```bash
 python scripts/dev/omniworld.py list-recipes
-python scripts/dev/omniworld.py generate mars --seed 42 --out my_mars.wbt
-launch.bat my_mars.wbt
+python scripts/dev/omniworld.py generate mars --seed 42 --out my_mars.omniworld
+launch.bat my_mars.omniworld
 ```
+
+The world extension is `.omniworld`. The policy is **dual-read, single-write**: the engine, harness and every script read `.omniworld` and `.wbt` interchangeably and indefinitely (`distribution/generated_worlds/mars.wbt` above is a frozen artifact and still loads), but everything you *generate* or author gets `.omniworld`.
 
 ## 8. Debug and log output
 
@@ -228,33 +253,46 @@ All warnings and errors are logged to `omnisim_log.txt` in the project root. Che
 cat "$OMNISIM_HOME"/omnisim_log.txt
 ```
 
-To build a console-attached debug version (shows output in terminal, useful for development):
+To get a console-attached build (shows output in the terminal, useful for development), use the supported target:
+
+```bash
+make -C "$OMNISIM_HOME"/src/omnisim -j$(nproc) debug
+```
+
+The mechanism is one line in `src/omnisim/Makefile`: `LD_FLAGS += -Wl,-subsystem,windows` is applied **only** under `BUILD_GOAL=release`, so a `debug` build of the same sources produces a console-subsystem `omnisim-bin.exe` and stdout/stderr land in your terminal. Objects go to `build/debug/` (`OBJDIR=build/$(BUILD_GOAL)`), so this is a full compile the first time and does not disturb your release objects; it does write the same `TARGET` path, so a later `make release` puts the GUI binary back.
+
+If you want to keep the release objects and just relink them into a *separate* console binary, mirror the Makefile's own `LIBS` line rather than inventing one:
 
 ```bash
 cd "$OMNISIM_HOME"/src/omnisim
 g++ -o "$OMNISIM_HOME"/msys64/mingw64/bin/omnisim-debug.exe \
   build/release/*.o -Wl,--enable-auto-import \
   -L"$OMNISIM_HOME"/msys64/mingw64/bin -L/mingw64/bin -L/mingw64/lib \
-  ../wren/wren.a ../glad/glad.a \
+  ../glad/glad.a \
   -lQt6Core -lQt6Network -lQt6Gui -lQt6OpenGL -lQt6OpenGLWidgets \
   -lQt6WebSockets -lQt6Widgets -lQt6PrintSupport -lQt6Qml -lQt6Xml \
-  -lode -lopenal -lopengl32 -liphlpapi -ld3d9 -lgdi32 -lglu32 \
+  -L"$OMNISIM_HOME"/_scratch/wgpu-native/lib -lwgpu_native \
+  -lopenal -lopengl32 -liphlpapi -ld3d9 -lgdi32 -lglu32 \
   -lOIS -ldinput8 -ldxguid -lole32 -lsapi -loleaut32 -luuid \
-  -lpico -lfreetype-6 -lopenvr_api -lassimp-5
+  -lfreetype-6 -lopenvr_api -lassimp-5
 ```
 
-The difference: `omnisim-bin.exe` is a Windows GUI app (no console). `omnisim-debug.exe` keeps the console attached so you can see stderr/stdout directly.
+⚠️ This block used to link `../wren/wren.a` and `-lode` (and `-lpico`, which no Makefile has referenced for years). All three are gone — `src/wren` was deleted on 2026-08-23 (`976b9449d`) and `src/ode` in `bdc02139`, and `ODE_LINK` is now defined-and-empty — so the command could not link at all. The list above tracks `src/omnisim/Makefile`'s Windows `LIBS`; if a relink fails on an undefined symbol, read that line rather than guessing, because it is the only thing that is kept current.
+
+The difference: `omnisim-bin.exe` from `make release` is a Windows GUI app (no console). A `debug` build, or `omnisim-debug.exe` above, keeps the console attached so you can see stderr/stdout directly.
 
 ## 9. Subsystem map
 
 ```
 src/
   glad/         OpenGL function loader. Rarely needs changes.
-  wren/         3D rendering engine. Edit here for graphics/shader work.
   glm/          Math library (submodule). Do not edit directly.
   stb/          Image loading (submodule). Do not edit directly.
-  controller/   Controller APIs (C, C++, Java, Python).
-                Edit here for robot programming interface changes.
+  controller/   Controller APIs: c/, cpp/, launcher/. Edit here for robot
+                programming interface changes. (The Python API is not built
+                here -- it is a ctypes binding shipped as source at
+                lib/controller/python/omnisim/.)
+  python/       The omniworld procedural world generator package.
   omnisim/      Main simulator. This is where most work happens.
     app/        Application lifecycle, selection, perspectives
     control/    Controller process management and IPC
@@ -266,12 +304,13 @@ src/
     nodes/      World node types (robots, sensors, actuators, shapes, etc.)
     nodes/utils/ World management, node factories, template engine
     physics/    Physics backend layer (Newton / `SolverMuJoCo`)
-    plugins/    Plugin loading system
+    render/     The renderer. wgpu-native backend, render targets, shaders,
+                mesh/image adapters. Edit here for graphics work — there is no
+                separate renderer library to build, it compiles into the engine.
     scene_tree/ Scene tree widget and property editors
     sound/      Audio system
     user_commands/ Undo/redo, action manager
     vrml/       VRML/PROTO parser, tokenizer, node model, URL resolution
-    wren/       Rendering integration (camera effects, overlays, context)
     widgets/    Reusable UI widgets
 
 projects/       Sample worlds, robot models, object models, appearances
@@ -289,19 +328,24 @@ The repo now exposes a thin developer command layer for targeted build and valid
 ```bash
 python scripts/dev/omnisim_dev.py --help
 python scripts/dev/omnisim_dev.py build core
-python scripts/dev/omnisim_dev.py build renderer
+python scripts/dev/omnisim_dev.py build gui
 python scripts/dev/omnisim_dev.py test-smoke
-python scripts/dev/omnisim_dev.py test-world tests/api/worlds/accelerometer.omniworld --nomake
+python scripts/dev/omnisim_dev.py test-world tests/api/worlds/accelerometer.omniworld
 python scripts/dev/omnisim_dev.py run-headless tests/api/worlds/accelerometer.omniworld
 python scripts/dev/omnisim_dev.py profile-world tests/rendering/worlds/normals.omniworld
 ```
+
+`python -m omnisim <same args>` is the going-forward spelling; `scripts/dev/omnisim_dev.py` is a shim that forwards to it, so both keep working.
+
+⚠️ **There is no `build renderer`.** It now exits non-zero with an explanation (`omnisim/dev/commands.py`), because the `renderer` make target it used to call survives only in the top-level `Makefile`'s `.PHONY` and goal-filter lists with **no recipe behind it** — `make renderer` prints `Nothing to be done for 'renderer'` and exits **0**, a build command reporting success while building nothing. Use `build core` (or `build gui`); the wgpu renderer is part of the engine.
+
+⚠️ **`--nomake` means "do not re-compile the controllers"** (`tests/test_suite.py`). On a fresh clone the test controllers do not exist yet, so passing it on the first run tests a world whose controller binary is missing. Omit it the first time, then add it once the controllers are built.
 
 Equivalent make aliases are also available:
 
 ```bash
 make sim-core
 make sim-gui
-make renderer
 make controller-libs
 make tests-smoke
 make benchmarks
@@ -317,12 +361,13 @@ make -C "$OMNISIM_HOME"/src/omnisim -j$(nproc) release
 # Then relaunch the simulator
 ```
 
-### "I changed the renderer" (e.g., edited a file in `src/wren/`)
+### "I changed the renderer" (e.g., edited a file in `src/omnisim/render/`)
 
 ```bash
-make -C "$OMNISIM_HOME"/src/wren release
-make -C "$OMNISIM_HOME"/src/omnisim -j$(nproc) release  # relink
+make -C "$OMNISIM_HOME"/src/omnisim -j$(nproc) release
 ```
+
+Same command as a node-type change, and that is the point: there is no separate renderer library to build first. This section used to name `src/wren/` and run `make -C src/wren` before relinking; WREN was deleted on 2026-08-23 (`976b9449d`) and the directory does not exist. The wgpu backend is compiled into the engine from `src/omnisim/render/` (plus `src/omnisim/nodes/OmWgpuSceneRenderer.cpp`, which drives Camera-family device rendering), so a core build **is** a renderer build.
 
 ### "I changed a controller API" (e.g., edited `src/controller/c/`)
 
@@ -350,15 +395,19 @@ Note: `WEBOTS_HOME` is the upstream-Webots name. It is still accepted by the **b
 
 ## Known issues
 
-- Java and SWIG controllers are skipped if `JAVA_HOME` is not set or SWIG is not installed. This is fine for most development.
-- The `blimp` sample controller fails to link (missing `-lwinmm`). This is a minor sample issue, not a core simulator problem.
-- GLM versions newer than 1.0.1 may fail to compile with GCC 15 due to `noexcept` specification mismatches.
+- GLM versions newer than 1.0.1 may fail to compile with GCC 15 due to `noexcept` specification mismatches — hence the `git checkout 1.0.1` in step 4.
+
+⚠️ Two entries were removed from this list on 2026-08-28 because they named things that no longer exist. "Java and SWIG controllers are skipped if `JAVA_HOME` is not set": `src/controller/` contains `c/`, `cpp/` and `launcher/` only — there is no Java or SWIG step in the build, and the Python API is a hand-written ctypes binding shipped as source. "The `blimp` sample controller fails to link (missing `-lwinmm`)": no `blimp` controller is tracked in the repo, and no Makefile in the tree references `-lwinmm`.
 
 ## Linux quickstart (Ubuntu)
 
-This guide is Windows/MSYS2-first, but **Linux is supported as of v5.1** — verified end-to-end on Ubuntu (WSL2, RTX 5070 Ti): ~7-minute build on 24 cores, Newton GPU physics confirmed via the backend-verdict sidecar, and a flagship locomotion demo (G1 box delivery) run to completion.
+This guide is Windows/MSYS2-first, but **Linux is supported as of v5.1** — verified end-to-end on Ubuntu (WSL2, RTX 5070 Ti): Newton GPU physics confirmed via the backend-verdict sidecar, and a flagship locomotion demo (G1 box delivery) run to completion.
 
-**Recommended targets: Ubuntu 22.04 / 24.04** (Python 3.10 / 3.12 — the safest targets for the Newton GPU wheels; RunPod-style cloud pods on these images are the smoothest path). Ubuntu 26.04 / Python 3.14 works today but is wheel-fragile. Newton's batched-GPU profile (`newtonSolver "mujoco_warp"`) needs an NVIDIA/CUDA GPU; **without one you still get physics** — the default `SolverMuJoCo` runs on the CPU (`mj_step`). ⚠ 2026-08-08: this used to read "without one, worlds run on the ODE CPU fallback" — there is no ODE fallback any more (`bdc02139` deleted `src/ode`); the CPU path *is* MuJoCo.
+**Budget 25–45 minutes** for the whole documented path on a fresh box: apt 2–6 min, clone 1–3 min, `make release` ~14 min at 4 cores and ~7 min at 24, physics wheels 2–4 min (plus ~2.5 GB and several more minutes if torch is installed — see below). This line used to quote only the "~7-minute build on 24 cores" figure, which is the `make` step alone and reads as the whole install.
+
+**Required target: Ubuntu 24.04** (system Python **3.12**). ⚠ **Ubuntu 22.04 does not work.** Its Python is 3.10, and `newton` 1.5.0 raises `TypeError: Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool].` at `ModelBuilder()` — so the engine builds, loads worlds, and *nothing moves*, which is far harder to diagnose than a failed install. The distro release picks the interpreter, because on Linux the engine embeds and links the **system** CPython. `linux_bootstrap.sh`'s `gpu` phase refuses 3.10 outright rather than install a stack that cannot run. Ubuntu 26.04 / Python 3.14 passes that guard but is wheel-fragile. Both ends measured by [`physics-runtime-check.yml`](../../.github/workflows/physics-runtime-check.yml); full policy in [system-requirements.md](../guide/system-requirements.md).
+
+Newton's batched-GPU profile (`newtonSolver "mujoco_warp"`) needs an NVIDIA/CUDA GPU; **without one you still get physics** — the default `SolverMuJoCo` runs on the CPU (`mj_step`). ⚠ 2026-08-08: this used to read "without one, worlds run on the ODE CPU fallback" — there is no ODE fallback any more (`bdc02139` deleted `src/ode`); the CPU path *is* MuJoCo.
 
 ### One command
 
@@ -366,42 +415,75 @@ This guide is Windows/MSYS2-first, but **Linux is supported as of v5.1** — ver
 bash scripts/install/linux_bootstrap.sh
 ```
 
-The bootstrap script (v5.1) does the whole recipe: apt dependencies → `git clone --recurse-submodules` → `make release` (Qt 6.5.3 arrives automatically via `aqtinstall` from Qt's own servers — not from apt) → the GPU wheels pip-installed into the system `python3` → an Xvfb headless smoke run with the Newton sidecar check.
+### Phase by phase (what that command runs)
 
-### Manual steps (what the script does)
+The script is the recipe — it is the thing CI runs and the thing that gets fixed when a step breaks, so **drive it phase by phase rather than retyping its commands by hand**. Every phase is independently runnable and re-runnable:
 
 ```bash
-# 1. apt dependencies (python3-dev is required — the engine embeds CPython)
-sudo apt install build-essential git python3-dev python3-pip libopenal-dev xvfb
+bash scripts/install/linux_bootstrap.sh deps    # apt prerequisites (~35 packages)
+bash scripts/install/linux_bootstrap.sh fetch   # clone + glm 1.0.1 / stb submodules
+bash scripts/install/linux_bootstrap.sh wgpu    # wgpu-native: the ONLY renderer
+bash scripts/install/linux_bootstrap.sh build   # make release (fetches its own Qt 6.5.3)
+bash scripts/install/linux_bootstrap.sh gpu     # the pinned physics stack -> the LINKED python
+bash scripts/install/linux_bootstrap.sh smoke   # Xvfb headless run + sidecar check
+bash scripts/install/linux_bootstrap.sh all     # everything, in order (the default)
+```
 
-# 2. Clone with submodules
-git clone --recurse-submodules https://github.com/omnilink-tech/omnisim.git
-cd omnisim && export OMNISIM_HOME=$(pwd)
+What each phase is *for*, and the trap it exists to avoid:
 
-# 3. Build (Qt 6.5.3 is fetched automatically via aqtinstall during the build)
-make -j$(nproc) release
+- **`deps`** — about 35 apt packages, not the half-dozen this section used to list as "what the script does". Several are non-obvious and each was added after a measured failure: `libdbus-1-dev` (the vendored `libQt6DBus` needs it **at link time**; without it the build dies after ~6 minutes of compiling), `libvulkan1` + `mesa-vulkan-drivers` (a software Vulkan adapter for wgpu-native — a wgpu-native failure is a non-unwinding Rust panic across the C FFI boundary, so it aborts the process rather than degrading), the `libxcb-*` set the Qt xcb plugin dlopens, and `python3-dev` (the engine embeds CPython). Do **not** apt-install Qt6 dev packages: the build vendors its own Qt 6.5.3 and mixing system headers with the vendored libs causes a version clash.
+- **`fetch`** — `git clone` plus glm pinned to 1.0.1 and stb from the `omichel` `patch-1` branch, and it re-applies exec bits on `scripts/**/*.sh`.
+- **`wgpu`** — runs `scripts/dev/setup_wgpu_native.sh`. **This is the step a hand-written recipe omits and the one that costs you the renderer.** wgpu-native is the only renderer since the WREN deletion (`976b9449d`), the link against it is conditional on `WGPU_NATIVE_HOME` resolving, and without it the build is green and nothing draws. `phase_build` now hard-fails if `lib/webots/libwgpu_native.so` is missing afterwards, so this cannot fail silently any more.
+- **`build`** — `make -j$JOBS release`. Qt 6.5.3 arrives automatically via `aqtinstall` from Qt's own servers, not from apt. `JOBS` defaults to `min(nproc, 32)`, because containers report the **host's** core count (a RunPod pod can claim 112) and a bare `-j$(nproc)` massively over-parallelises.
+- **`gpu`** — the physics wheels. Two things here are not guessable and are the reason to use the phase rather than a `pip install` line of your own: (1) the wheels must land in **the interpreter the binary links**, which the phase reads out of `ldd bin/omnisim-bin` — not a venv (the embedded interpreter ignores venvs) and not necessarily `python3` on `PATH` (ML cloud images repoint `/usr/bin/python3` at their own build while apt's `python3-dev` still belongs to the distro's); and (2) the **controllers** run in a *different* process from a *different* interpreter, so the phase installs `onnxruntime` there too and then **asserts** the import. Skip that assert and every ONNX deploy controller silently runs with **zero residual**, prints one warning, and exits 0 — a passing demo in which the policy under test never ran.
+- **`smoke`** — the acceptance test: a demo world under `xvfb-run` with `OMNISIM_REQUIRE_NEWTON=1`, then the backend-verdict sidecar is checked for `degraded: false` and `finalised: true`. It retries once with a 300 s window if the runtime clearly loaded but finalize was not reached, because warp compiles its CUDA kernels on first use (measured: minutes on a pristine pod).
 
-# 4. Newton GPU wheels — into the SYSTEM python3, NOT a venv.
-#    The engine's embedded interpreter (bare Py_InitializeEx) resolves the system
-#    python3's sys.path and ignores virtualenvs; wheels in a venv are invisible
-#    to it, and since bdc02139 deleted src/ode there is nothing left to fall
-#    back to -- the engine has NO physics backend and fails hard instead of
-#    quietly downgrading. The Windows runtime bundle is not involved on Linux.
-pip install torch warp-lang newton mujoco mujoco-warp
+If you do want the literal commands — for a container image, say — take them from the script. These are the ones most often written wrongly:
 
-# 5. Run headless under Xvfb (mandatory: a Qt/XCB context is created even with
-#    --no-rendering)
-xvfb-run -a python scripts/dev/omnisim_dev.py run-headless \
-  projects/samples/demos/worlds/physics/newton_smoke_test.omniworld --duration 15
+```bash
+# The pinned physics stack. `pip install torch warp-lang newton mujoco mujoco-warp`
+# fails outright on Ubuntu 24.04 with "error: externally-managed-environment", and
+# even with the flag it under-installs. Every element below is load-bearing:
+#   --break-system-packages : PEP 668 (24.04's pip refuses to touch the system env)
+#   --ignore-installed      : apt's own python3-typing-extensions has no RECORD
+#                             file, so pip cannot uninstall it to upgrade and the
+#                             whole install aborts
+#   the == pins             : scripts/packaging/newton_runtime_pins.py is the single
+#                             source of truth; an unpinned stack silently desyncs
+#                             train==deploy (a 2026-07-17 pod died this way)
+#   onnxruntime             : the CONTROLLERS' hard inference dependency
+sudo -H python3 -m pip install --break-system-packages --ignore-installed \
+  warp-lang==1.16.0 mujoco-warp==3.11.0 mujoco==3.11.0 newton==1.5.0 \
+  usd-core==26.5 newton-usd-schemas==0.5.0 \
+  numpy onnx onnxscript onnxruntime
 
-# 6. Verify Newton actually drove the run — read the sidecar, not the log
+# torch is TRAINING-ONLY -- `import torch` appears nowhere under src/ or
+# lib/controller/ -- and it is ~2.5 GB from the CUDA index, by far the largest
+# item in the install. The gpu phase installs it only when nvidia-smi sees a
+# device; skip it entirely if you are not training.
+sudo -H python3 -m pip install --break-system-packages --ignore-installed \
+  torch --index-url https://download.pytorch.org/whl/cu128
+
+# Load check under Xvfb (mandatory: a Qt/XCB context is created even with
+# --no-rendering). --until-finalized stops the moment Newton finalises and the
+# sidecar exists, so it neither sleeps out a guessed --duration nor ends before
+# the evidence exists. Its ceiling defaults to 30 s -- and when the engine has
+# named the mujoco_warp (GPU) path and not finalised yet, the runner announces
+# an extension of up to a further 180 s, because warp compiles its CUDA kernels
+# on first use. On a PRISTINE GPU box that first compile can still outrun the
+# extension (minutes, measured on a fresh RunPod A4000); the bootstrap's smoke
+# phase handles it by retrying once with a 300 s window.
+xvfb-run -a python3 -m omnisim run-headless \
+  projects/samples/demos/worlds/physics/newton_smoke_test.omniworld --until-finalized
+
+# Verify Newton actually drove the run -- read the sidecar, not the log
 cat omnisim_log.txt.newton.json
 # expect: {"backend":"newton","degraded":false,"finalised":true,"solver":"MuJoCo (...)"}
 ```
 
 ### Runtime environment when invoking `bin/omnisim-bin` directly
 
-The spawners (`omnisim_dev.py`, the demo launchers) are absorbing these, but if you exec the binary yourself you need:
+Every `python -m omnisim` verb that spawns the engine — `run-world`, `run-headless`, `run-agent`, `test-world`, the harness and the capture service — now sets these for you: `omnisim_env()` in `omnisim/dev/runner.py` applies `linux_runtime_env()` once, for all callers, and it is a no-op off Linux. ⚠️ That was **not** true until 2026-08-28: `run-headless`, the harness and capture each called `linux_runtime_env` for themselves, while `run-world`, `run-agent` and `test-world` — the GUI verbs README and BETA lead with — did not, so they aborted with `version 'Qt_6.10' not found` when a system Qt was installed. Trust the spawners now; you still need these by hand if you exec `bin/omnisim-bin` (or the `webots`/`omnisim` launcher shell is bypassed) yourself:
 
 ```bash
 export LD_LIBRARY_PATH=$OMNISIM_HOME/lib/webots   # real shipped path; the launcher exports this exact directory
@@ -412,7 +494,7 @@ export LIBGL_ALWAYS_SOFTWARE=1
 
 ### Gotchas
 
-- **Qt XCB platform plugin fails to load** (`Could not load the Qt platform plugin "xcb"`): the plugin needs transitive XCB libraries that `qt6-base` doesn't pull in on Ubuntu:
+- **Qt XCB platform plugin fails to load** (`Could not load the Qt platform plugin "xcb"`): the plugin needs transitive XCB libraries that `qt6-base` doesn't pull in on Ubuntu. The `deps` phase already installs these, so you should only hit this if you assembled the dependencies by hand:
 
   ```bash
   sudo apt install libxcb-cursor0 libxcb-cursor-dev libxcb-icccm4 \

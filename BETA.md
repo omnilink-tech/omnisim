@@ -17,20 +17,29 @@ generation, and an in-engine reinforcement-learning pipeline.
 
 1. Install OmniSim:
    - **Windows 10/11:** use the asset on the
-     [latest GitHub release](https://github.com/omnilink-tech/omnisim/releases/latest).
-   - **Linux:** follow the
-     [developer quickstart](docs/developer/quickstart.md). The source build is
-     verified; a general-purpose Linux binary is not published yet.
-   - **macOS:** not part of this beta. Newton physics on macOS is unverified.
+     [latest GitHub release](https://github.com/omnilink-tech/omnisim/releases/latest)
+     (~600 MB). Install somewhere writable — under `C:\Program Files` the
+     harness cannot write the sibling file it needs to load a world.
+   - **Linux:** Ubuntu 24.04, `bash scripts/install/linux_bootstrap.sh`. Budget
+     25–45 minutes; most of it is the compile. Details in the
+     [developer quickstart](docs/developer/quickstart.md). ⚠ Ubuntu 22.04 does
+     not work — its Python 3.10 makes `newton` raise at `ModelBuilder()`, so
+     worlds load and nothing moves.
+   - **macOS:** not supported. There is no package, no verified build, and
+     Newton physics is unverified.
 2. From the OmniSim directory, run `python -m omnisim doctor` and keep its
-   output.
+   output. It ends on a VERDICT line and exits non-zero if the install cannot
+   run. On Windows without Python, `omnisim.bat doctor` uses the interpreter
+   that ships in the package.
 3. Run the real friction-grasp demo:
 
    ```bash
-   python -m omnisim run-world projects/samples/demos/worlds/flagship/omniarm6_real_pick_place.omniworld
+   python -m omnisim demo
    ```
 
-4. Open the repository in a coding agent that reads `AGENTS.md` and ask:
+4. Open the OmniSim directory you installed in step 1 in a coding agent — it
+   ships `AGENTS.md`, and in Claude Code the checked-in `.mcp.json` registers
+   the OmniSim MCP tools for you. Ask:
 
    ```text
    Add a blue cylinder beside the place table in the OmniArm 6 real
@@ -47,8 +56,10 @@ Use the repository's issue forms:
 - [Report a bug](https://github.com/omnilink-tech/omnisim/issues/new?template=bug_report.md)
 - [Request a simulation](https://github.com/omnilink-tech/omnisim/issues/new?template=request_a_sim.yml)
 
-Please include your operating system, `python -m omnisim doctor` output, the
-exact command or prompt you used, and the first error message. Screenshots and
+Please include your operating system, `python -m omnisim doctor --fingerprint`
+output (the `--fingerprint` half adds your OS, Python, GPU and physics versions,
+which the plain report does not), the exact command or prompt you used, and the
+first error message. Screenshots and
 short screen recordings are welcome.
 
 We especially want to learn:

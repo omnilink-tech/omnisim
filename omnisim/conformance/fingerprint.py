@@ -77,16 +77,39 @@ def _mtime(path: str | None) -> int | None:
 
 
 def newton_runtime_present(binary: str | None) -> bool:
-    """True iff the bundled Newton runtime sits next to the binary.
+    """True iff a Newton runtime is reachable by the engine.
 
-    A stock release bundles it (``BUNDLE_NEWTON=1``); a from-source clone /
-    ``make debug`` without the runtime silently runs ODE — this is the single
-    field that explains a 'works on the dev box, ODE on mine' divergence.
+    Newton is the only backend, so a False here means the install has no
+    physics at all -- nothing falls, nothing collides, and every run still
+    exits 0.
+
+    The runtime is resolved differently per platform and a single existence
+    test cannot cover both. This function checked only the Windows bundle
+    layout, so it returned False on every correct LINUX install -- i.e. the
+    field meant to explain a physics divergence was itself reporting one.
+
+    * Windows: the release BUNDLES it next to the binary and the embedded
+      interpreter loads it through ``python312._pth``.
+    * Linux:   there is no bundle; the embedded interpreter resolves the
+      SYSTEM ``python3`` (and ignores venvs), so the wheels must be
+      importable from there. Probed with ``importlib.util.find_spec``, which
+      resolves without executing the module (importing ``warp`` initialises
+      CUDA and costs seconds).
     """
     if not binary:
         return False
-    warp = Path(binary).parent / "newton-runtime" / "site-packages" / "warp"
-    return warp.exists()
+    bundled = Path(binary).parent / "newton-runtime" / "site-packages" / "warp"
+    if bundled.exists():
+        return True
+    if os.name == "nt":
+        return False
+    import subprocess
+    probe = "import importlib.util as u; raise SystemExit(0 if u.find_spec('warp') else 1)"
+    try:
+        return subprocess.run(["python3", "-c", probe], timeout=30,
+                              capture_output=True).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
 
 
 def resolved_backend(fp: dict) -> str:
@@ -173,7 +196,12 @@ def collect(*, engine_log_path=None, warm=None, scrub_paths: bool = True) -> dic
         "render_backend": (
             os.environ.get("OMNISIM_RENDER_BACKEND")
             or os.environ.get("renderBackend")
-            or "wren"
+            # wgpu-native is the ONLY renderer: WREN was deleted 2026-08-23
+            # (976b9449d). This default outlived it, so the diagnostic a user
+            # is asked to paste into a bug report named a renderer that does
+            # not exist -- and it is hashed into fingerprint_id, which keys
+            # the conformance stamp.
+            or "wgpu"
         ),
         "omnisim_binary": binary,
         "binary_mtime": _mtime(binary),

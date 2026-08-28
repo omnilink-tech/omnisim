@@ -74,7 +74,14 @@ echo "[setup_wgpu_native] platform        : $PLATFORM"
 echo "[setup_wgpu_native] install dir     : $INSTALL_DIR"
 echo "[setup_wgpu_native] source URL      : $URL"
 
-if [ -f "$INSTALL_DIR/include/webgpu/webgpu.h" ] && [ -f "$INSTALL_DIR/lib/libwgpu_native.dll.a" ]; then
+case "$PLATFORM" in
+  windows) _WGPU_LIB_PROBE="$INSTALL_DIR/lib/libwgpu_native.dll.a" ;;
+  macos)   _WGPU_LIB_PROBE="$INSTALL_DIR/lib/libwgpu_native.dylib" ;;
+  *)       _WGPU_LIB_PROBE="$INSTALL_DIR/lib/libwgpu_native.so" ;;
+esac
+# The probe used to be the Windows import lib unconditionally, so on Linux/macOS
+# it never matched and the archive was re-downloaded on every single run.
+if [ -f "$INSTALL_DIR/include/webgpu/webgpu.h" ] && [ -f "$_WGPU_LIB_PROBE" ]; then
   echo "[setup_wgpu_native] already installed at $INSTALL_DIR — skipping download"
 else
   rm -rf "$INSTALL_DIR"
@@ -106,6 +113,25 @@ case "$PLATFORM" in
       mkdir -p "$REPO_ROOT/msys64/mingw64/bin"
       cp -f "$INSTALL_DIR/lib/wgpu_native.dll" "$REPO_ROOT/msys64/mingw64/bin/wgpu_native.dll"
       echo "[setup_wgpu_native] copied wgpu_native.dll -> $REPO_ROOT/msys64/mingw64/bin/"
+    fi
+    ;;
+  # The Makefile's "copy the shared library next to the binary" hook is Windows-
+  # only, so on Linux the .so stayed in _scratch/ and was never on the runtime
+  # search path: the build linked, and the binary then came up with NO renderer.
+  # lib/webots is already the first entry of LD_LIBRARY_PATH in the launcher
+  # (src/omnisim/launcher/omnisim-linux.sh) and is the binary's own DT_RUNPATH.
+  linux)
+    if [ -f "$INSTALL_DIR/lib/libwgpu_native.so" ]; then
+      mkdir -p "$REPO_ROOT/lib/webots"
+      cp -f "$INSTALL_DIR/lib/libwgpu_native.so" "$REPO_ROOT/lib/webots/libwgpu_native.so"
+      echo "[setup_wgpu_native] copied libwgpu_native.so -> $REPO_ROOT/lib/webots/"
+    fi
+    ;;
+  macos)
+    if [ -f "$INSTALL_DIR/lib/libwgpu_native.dylib" ]; then
+      mkdir -p "$REPO_ROOT/lib/webots"
+      cp -f "$INSTALL_DIR/lib/libwgpu_native.dylib" "$REPO_ROOT/lib/webots/libwgpu_native.dylib"
+      echo "[setup_wgpu_native] copied libwgpu_native.dylib -> $REPO_ROOT/lib/webots/"
     fi
     ;;
 esac

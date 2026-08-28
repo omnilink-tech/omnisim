@@ -60,6 +60,7 @@
 // W1c: the collect owns its own GL arming now (see OmWrenGlArm below) instead of
 // relying on a caller-side makeWrenCurrent()/doneWren() bracket.
 #include "OmDeformableFrameListener.hpp"  // the Cloth/SoftBody subscription registry
+#include "OmGranularBed.hpp"              // the MPM bed registry (liveBeds / anyGranularBeds)
 #include "OmSimulationState.hpp"  // sim clock — the "has the surface moved?" test
 
 // wr_transform_get_matrix — CadShape submesh world matrices, hatch-off fallback only since W1b
@@ -1629,7 +1630,13 @@ namespace OmWgpuSceneRenderer {
     // THE ZERO-COST GATE, same shape as the deformables': one static bool and an empty-test
     // on a vector that already exists. A world with no GranularGroup pays this and nothing
     // else; nothing is constructed and no scene is walked to discover the absence.
-    if (!wgpuGranularEnabled() || !OmGranularGroup::anyGranularGroups())
+    // ⚠ TWO REGISTRIES, ONE GATE. GranularGroup (the older CUDA-kernel node) and
+    // GranularBed (the Newton/MPM one) are unrelated implementations that happen to
+    // draw the same way -- N instanced unit spheres -- so they share this collector
+    // and nothing else. A world with neither still pays only one static bool and two
+    // vector empty-tests; nothing is constructed and no scene is walked.
+    if (!wgpuGranularEnabled() ||
+        (!OmGranularGroup::anyGranularGroups() && !OmGranularBed::anyGranularBeds()))
       return 0;
 
     // ---- DECISION 1 of 2: PUMP. Process-global, once per simulation step. -----------------
@@ -1716,6 +1723,69 @@ namespace OmWgpuSceneRenderer {
         out.push_back(draw);
       }
     }
+
+    // ---- GRANULAR BEDS (OmGranularBed, Newton/MPM) --------------------------------------
+    // A SECOND loop rather than a shared one, because the two nodes agree on almost
+    // nothing below the sphere: a bed's positions are TIGHTLY PACKED xyz (stride 3) read
+    // back from the solver, its radius is UNIFORM and fetched from the runtime (it is half
+    // the final lattice spacing, which the `count` budget may have coarsened after the
+    // world file was written), and its material comes from an authored `appearance` or
+    // `diffuseColor` rather than from four hardcoded constants. Folding them together
+    // would mean branching per particle on which node produced it.
+    for (OmGranularBed *b : OmGranularBed::liveBeds()) {
+      if (!b || isHiddenForViewer(hidden, b))
+        continue;
+      if (pump)
+        b->refreshHostPositions();
+      const float *xyz = nullptr;
+      int n = 0;
+      float radius = 0.0f;
+      // Declines before the first physics step: a bed's pose comes back from the solver
+      // and there is no authored rest pose to substitute (OmGranularBed.hpp, point 5).
+      if (!b->wgpuParticles(xyz, n, radius) || !xyz || n <= 0)
+        continue;
+      if (!(radius > 0.0f) || !std::isfinite(radius))
+        continue;
+      // The MATERIAL is resolved ONCE per bed, not once per particle: every particle in a
+      // bed is the same material, and fillAppearanceMaterial walks the appearance node.
+      OmWgpuSolidDraw proto;
+      float fallback[3] = {0.85f, 0.70f, 0.40f};
+      b->wgpuFallbackDiffuse(fallback);
+      // texCache is deliberately null here. A particle is a unit sphere and the BED has no
+      // UV parameterisation, so baseColorMap / roughnessMap / metalnessMap / normalMap have
+      // nothing to be sampled against -- GranularBed.wrl states that limit in the field's
+      // own comment. Colour, roughness, emission and transparency all still apply.
+      fillAppearanceMaterial(b->pbrAppearance(), b->appearance(), fallback, nullptr, proto);
+      // ⚠ FALSE by default on this node, unlike Cloth and SoftBody: a bed is 10^4-10^5
+      // draws and each would be re-rasterised into the shadow map per light per frame.
+      proto.castShadows = b->wgpuCastShadows();
+      proto.vertexBuffer = sphere.vertexBuffer;
+      proto.indexBuffer = sphere.indexBuffer;
+      proto.indexCount = sphere.indexCount;
+      proto.localCenter[0] = sphere.localCenter[0];
+      proto.localCenter[1] = sphere.localCenter[1];
+      proto.localCenter[2] = sphere.localCenter[2];
+      proto.localRadius = sphere.localRadius;
+      proto.cpuPositions = sphere.cpuPositions;
+      proto.cpuIndices = sphere.cpuIndices;
+      out.reserve(out.size() + static_cast<size_t>(n));
+      modelStorage.reserve(modelStorage.size() + static_cast<size_t>(n));
+      for (int i = 0; i < n; ++i) {
+        const float px = xyz[i * 3 + 0], py = xyz[i * 3 + 1], pz = xyz[i * 3 + 2];
+        // A non-finite position is a dead particle, not a draw -- and on this node it is
+        // also the fingerprint of the gridType "fixed" underpadding trap, which produces
+        // NaN positions with no error of any kind (GranularBed.wrl).
+        if (!std::isfinite(px) || !std::isfinite(py) || !std::isfinite(pz))
+          continue;
+        const std::array<float, 16> model = {radius, 0,      0,  0,  0,  radius, 0,  0,
+                                             0,      0,      radius, 0,  px, py,     pz, 1};
+        modelStorage.push_back(model);
+        OmWgpuSolidDraw draw = proto;
+        draw.modelMatrix16 = modelStorage.back().data();  // re-pointed below
+        out.push_back(draw);
+      }
+    }
+
     const size_t appended = out.size() - before;
 
     // Same use-after-realloc re-point the other two collects end with.

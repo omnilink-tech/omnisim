@@ -266,6 +266,14 @@ namespace {
         // the same reason (OmSoftBody.hpp).
         if (nodeName == "SoftBody")
           return true;
+        // GranularBed is top-level ONLY for the same reason again: its particle
+        // positions come back from the MPM solver in world space and it renders
+        // under the scene root, so an ancestor Pose/Group transform would be
+        // ignored rather than applied. Its own translation/rotation are the whole
+        // placement story (OmGranularBed.hpp). ⚠ Note this is NOT inherited from
+        // GranularGroup above -- that node has no translation field at all.
+        if (nodeName == "GranularBed")
+          return true;
 
         errorMessage = QObject::tr("%1 node cannot be inserted at the top level of the node hierarchy.").arg(nodeName);
         return false;

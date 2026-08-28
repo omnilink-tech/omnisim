@@ -2,8 +2,12 @@
 
 ### "ssh -X"
 
-There are known issues about running OmniSim over a `ssh -X` (X tunneling) connection.
-This problem is not specific to OmniSim but to most GLX (OpenGL on the X Window system) applications that use complex OpenGL graphics.
-We think this is caused by incomplete or defective implementation of the GLX support in the graphics drivers on Linux.
-It may help to run the `ssh -X` tunnel across two computers with the same graphics hardware, e.g., both NVIDIA or both AMD.
-It also usually works to use Mesa OpenGL on both sides of the `ssh -X` tunnel, however this solution is extremely slow.
+Do not expect the 3D view to work over an `ssh -X` (X tunneling) connection.
+OmniSim renders through wgpu-native, which needs Vulkan on Linux, and Vulkan has
+no equivalent of GLX indirect rendering — there is nothing for X to tunnel. The
+failure is quiet: wgpu-native fails to initialise, OmniSim logs one line, and you
+get physics and controllers with **no renderer at all**.
+
+For remote work use a headless run instead (`python3 -m omnisim run-headless
+<world>`, under Xvfb), the harness's `POST /world/screenshot`, or the
+`--stream` web viewer — see [Web Streaming](web-streaming.md).

@@ -544,7 +544,40 @@ def _handle(msg: dict) -> dict | None:
             "error": {"code": -32601, "message": f"method not found: {method}"}}
 
 
+def _cli_help() -> int:
+    """Answer --help/--version without entering the stdio loop.
+
+    `main()` ignored argv entirely, so `omnisim-mcp --help` -- the obvious way
+    to sanity-check an install -- printed a startup line and then blocked
+    forever on a TTY reading stdin. A server that hangs when asked for help
+    reads as a broken install.
+    """
+    print("omnisim-mcp %s -- MCP server over the OmniSim harness." % SERVER_INFO["version"])
+    print()
+    print("It is a PROXY. It needs a running harness, which needs a built engine:")
+    print("  python -m omnisim doctor      # is this install able to run a world?")
+    print("  python -m omnisim harness     # start the harness on :6789")
+    print()
+    print("harness: %s  (override with OMNISIM_HARNESS_URL)" % DEFAULT_HARNESS)
+    print("tools (%d): %s" % (len(TOOLS), ", ".join(sorted(TOOLS))))
+    print()
+    print("Normally you do not run this by hand -- an MCP client spawns it and")
+    print("speaks JSON-RPC over stdin/stdout. See packages/omnisim-mcp/README.md.")
+    return 0
+
+
 def main(argv=None) -> int:
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if "--version" in argv or "-V" in argv:
+        print(SERVER_INFO["version"])
+        return 0
+    if "--help" in argv or "-h" in argv:
+        return _cli_help()
+    if "--self-test" in argv:
+        # Validate the install without an MCP client: does the harness answer?
+        result = _tools_call({"name": "harness_status", "arguments": {}})
+        print(json.dumps(result, indent=2))
+        return 0 if not result.get("isError") else 1
     log(f"starting; harness = {DEFAULT_HARNESS}. Reading MCP stdio.")
     # Line-delimited JSON on stdin; one JSON response line per request on stdout.
     for line in sys.stdin:

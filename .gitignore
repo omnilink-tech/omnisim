@@ -196,6 +196,12 @@ distribution/generated_worlds/mars_small.wbt
 # outputs, one-off Python analysis scripts, ad-hoc PNGs).
 projects/_scratch/
 /_scratch/
+
+# Agent/tool session scratch (`outputs/<session-uuid>/`), including a symlinked
+# node_modules. Local run output, never source -- and it can hold working data
+# that must not enter git history.
+/outputs/
+
 # OmniSim per-world perspective files (viewpoint position, dock layout,
 # scene-tree expansion state) written when a world is saved in the GUI.
 # Generated, not source. DUAL-READ / SINGLE-WRITE: `.wbproj` is the legacy
@@ -342,3 +348,20 @@ resources/fonts/Courier New*.ttf
 # Empty local scaffolding directories at the repo root.
 /headcheck/
 /youtube_videos/
+
+# Local release/verification scratch (added 2026-08-26, omnisim-mcp packaging).
+#
+# Each is a throwaway working area produced while preparing a release, and each
+# was untracked-but-unignored at the repo root, i.e. one `git add -A` away from
+# being committed. `.local-release-tools/` is a 65 MB build/publish virtualenv,
+# `.local-wheel-check/` is a clean-install target used to prove the built wheel
+# imports, and `.public-release-worktree/` is a git worktree of the public
+# snapshot -- a whole second checkout that must never nest inside this one.
+/.local-release-tools/
+/.local-wheel-check/
+/.public-release-worktree/
+
+# Python build artifacts for the packaged sidecars. The wheel and sdist are
+# rebuilt by `python -m build` and published from CI (Trusted Publishing), so a
+# committed copy is stale the moment the source changes.
+packages/*/dist/

@@ -1,31 +1,57 @@
 ## Verifying your Graphics Driver Installation
 
+### What OmniSim actually needs
+
+OmniSim renders through **wgpu-native**, which targets Vulkan on Linux and
+D3D12 on Windows. Since WREN was deleted on 2026-08-23 (commit `976b9449d`) it
+is the only renderer, so the requirement is **a GPU and driver supporting
+Vulkan 1.2 or D3D12** — not an OpenGL version. There is no OpenGL path left to
+fall back to.
+
+The failure mode is worth knowing before you debug the wrong thing: if
+wgpu-native cannot initialise, OmniSim logs one line and keeps running with
+**no renderer at all**. Physics and controllers work; nothing draws. A black or
+absent 3D view with a healthy-looking simulation is this, not a world bug.
+
 ### Supported Graphics Cards
 
-OmniSim officially supports only recent NVIDIA and AMD graphics adapters.
-So it is recommended to run OmniSim on computers equipped with such graphics adapters and up-to-date drivers provided by the card manufacturer (i.e., NVIDIA or AMD).
-Such drivers are often bundled with the operating system (Windows, Linux and Mac OS X), but in some cases, it may be necessary to fetch it from the website of the card manufacturer.
+Recent NVIDIA and AMD adapters with up-to-date vendor drivers are the tested
+configuration. Such drivers are often bundled with the operating system
+(Windows, Linux), but in some cases it may be necessary to fetch one from the
+card manufacturer's website.
 
 ### Unsupported Graphics Cards
 
-OmniSim may nevertheless work with other graphics adapters, in particular the Intel graphics adapters.
-However, this is unsupported and may or may not work, without any guarantee.
-Some users reported success with some Intel graphics cards after installing the latest version of the driver.
+OmniSim may nevertheless work with other graphics adapters, in particular Intel
+integrated graphics — modern Intel parts generally satisfy Vulkan 1.2, but they
+are not tested here and carry no guarantee.
 Graphics drivers from Intel may be obtained from the [Intel download center website](http://downloadcenter.intel.com).
-Linux graphics drivers from Intel may be obtained from the [Intel Linux Graphics website](http://intellinuxgraphics.org).
-If some graphical bugs subsist, disabling shadows or anti-aliasing from the OmniSim *OpenGL* preferences tab may fix the problems.
-However, this may also impact the visual quality.
+If graphical bugs persist, reducing render quality from the OmniSim
+[preferences](preferences.md) may help, at some cost to visual quality.
 
 ### Upgrading your Graphics Driver
 
-On Linux and Windows, you should make sure that the latest graphics driver is installed.
-On the Mac, the latest graphics drivers are automatically installed by the *Software Update*, so Mac users are not concerned by this section.
-Note that OmniSim can run up to 10x slower without the appropriate driver.
+On Linux and Windows, you should make sure that the latest graphics driver is
+installed. (macOS is not supported: there is no package, no verified build, and
+Newton physics is unverified — use Windows or Ubuntu 24.04.)
+Note that OmniSim can run far slower, or not render at all, without a driver
+that exposes Vulkan 1.2 or D3D12.
 Updating your driver may also solve various problems, i.e., odd graphics rendering or OmniSim crashes.
 
 #### Upgrading the GPU Driver on Linux
 
-On Linux, use this command to check if a hardware accelerated driver is installed:
+On Linux, the direct check is Vulkan, since that is what wgpu-native uses:
+
+```sh
+$ vulkaninfo --summary        # from the vulkan-tools package
+```
+
+It must report a real GPU under `deviceName`. If it reports `llvmpipe`, or
+fails outright, you are on a software rasteriser or have no Vulkan ICD, and
+OmniSim will come up with no renderer.
+
+`glxinfo` remains a quick way to confirm that *some* hardware driver is loaded
+at all, even though OmniSim no longer uses OpenGL:
 
 ```sh
 $ glxinfo | grep OpenGL

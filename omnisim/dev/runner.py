@@ -62,7 +62,17 @@ def require_world(path: str) -> str:
     if not world.is_absolute():
         world = REPO_ROOT / world
     if not world.exists():
-        raise SystemExit(f"World not found: {world}")
+        # DUAL-READ (AGENTS.md): OmniSim reads .omniworld and .wbt
+        # interchangeably and indefinitely -- the tree migrated 661 of its own
+        # worlds, so every older tutorial, script and bookmark names a .wbt that
+        # is now a .omniworld. The engine honours that; the Python side did not,
+        # and a bare exists() turned a renamed file into a hard "World not
+        # found". docker/Dockerfile.train shipped exactly that bug for months.
+        _twin = {".wbt": ".omniworld", ".omniworld": ".wbt"}.get(world.suffix)
+        if _twin and world.with_suffix(_twin).exists():
+            world = world.with_suffix(_twin)
+        else:
+            raise SystemExit(f"World not found: {world}")
     return str(world)
 
 
@@ -158,6 +168,17 @@ def omnisim_env() -> dict[str, str]:
         bundled_python = msys_bin / "newton-runtime" / "python.exe"
         if bundled_python.exists():
             env["PATH"] = f"{env['PATH']}{os.pathsep}{bundled_python.parent}"
+    # On LINUX every one of these subprocesses spawns bin/omnisim-bin directly,
+    # bypassing the omnisim-linux.sh launcher shell that would export the Qt
+    # runtime vars. Without LD_LIBRARY_PATH=$OMNISIM_HOME/lib/webots the bundled
+    # Qt-6.5.3 xcb plugin's transitive libQt6XcbQpa.so.6 resolves against a
+    # system Qt and the engine aborts with "version 'Qt_6.10' not found".
+    # run-headless / harness / capture each called linux_runtime_env for
+    # themselves; run-world, run-agent and test-world -- the GUI verbs README
+    # and BETA lead with -- did not. Applying it here fixes every caller at
+    # once, and it is a no-op off Linux.
+    from ..paths import linux_runtime_env
+    env = linux_runtime_env(REPO_ROOT, env)
     return env
 
 

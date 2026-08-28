@@ -17,12 +17,22 @@
 #
 # Builds OmniSim from source on a stock Ubuntu (+ NVIDIA CUDA) machine and
 # brings up the Newton (mujoco_warp) physics backend so the in-engine RL
-# trainers can run. Verified end-to-end on:
-#   * a RunPod community pod  (RTX A4000, Ubuntu 22.04.5, engine embeds py3.10)
-#   * WSL2                    (RTX 5070 Ti, Ubuntu 26.04,  engine embeds py3.14)
+# trainers can run.
+#
+# SUPPORTED TARGET: Ubuntu 24.04 (system Python 3.12).
+#
+# The two venues this header used to name as "verified end-to-end" are both
+# unsupported now, and naming them was misleading:
+#   * Ubuntu 22.04.5 / py3.10 -- REFUSED by phase_gpu's own guard below, because
+#     newton 1.5.0 raises TypeError at ModelBuilder() on 3.10. A build there
+#     loads worlds and nothing moves.
+#   * Ubuntu 26.04 / py3.14   -- passes that guard but is wheel-fragile; the
+#     pinned physics stack has no guaranteed 3.14 wheels.
+# Both are measured by .github/workflows/physics-runtime-check.yml.
 #
 #   bash scripts/install/linux_bootstrap.sh deps    # apt prerequisites
 #   bash scripts/install/linux_bootstrap.sh fetch   # clone repo + glm/stb submodules
+#   bash scripts/install/linux_bootstrap.sh wgpu    # wgpu-native: the ONLY renderer
 #   bash scripts/install/linux_bootstrap.sh build   # make release (fetches its own Qt 6.5.3)
 #   bash scripts/install/linux_bootstrap.sh gpu     # torch/warp/newton/mujoco_warp -> SYSTEM python3
 #   bash scripts/install/linux_bootstrap.sh smoke   # headless demo world under Xvfb  <-- acceptance test
@@ -37,7 +47,10 @@
 #   — so the engine links libpython3.10 and a plain `python3 -m pip` puts
 #   the wheels where the engine will never look. The gpu phase therefore
 #   reads `ldd bin/omnisim-bin` and installs into the LINKED interpreter.
-#   Ubuntu 22.04 (py3.10) and 24.04 (py3.12) are the safest wheel targets.
+#   Ubuntu 24.04 (py3.12) is the target. 22.04 (py3.10) is NOT usable any
+#   more: newton 1.5.0 raises at ModelBuilder() on 3.10 even though the wheel
+#   declares Requires-Python >=3.10 (measured both ways by the
+#   physics-runtime-check workflow). The guard in phase_gpu below refuses it.
 #
 # NOTE — no separate Qt phase:
 #   `make release` runs dependencies/Makefile.linux's own aqtinstall target
@@ -56,7 +69,15 @@ REPO_URL="${REPO_URL:-https://github.com/omnilink-tech/omnisim.git}"
 # /workspace is the RunPod-style network volume and is the right home on a pod.
 # On an ordinary desktop it does not exist, and defaulting there sends the clone
 # somewhere the user typically cannot create — so pick the home from the machine.
-if [ -d /workspace ]; then
+# If we are ALREADY standing in an OmniSim checkout, that checkout is the home.
+# This script ships inside the repo, so "clone it and run the bootstrap" is the
+# common case -- and the old default appended /omnisim to $PWD, which collides
+# with the repo's own omnisim/ CLI package directory: git refuses to clone into
+# a non-empty dir and `set -euo pipefail` aborts the only Linux install command
+# the README documents, with an error naming nothing the user did.
+if [ -d "$PWD/.git" ] && [ -f "$PWD/AGENTS.md" ] && [ -d "$PWD/src/omnisim" ]; then
+  _DEFAULT_HOME="$PWD"
+elif [ -d /workspace ]; then
   _DEFAULT_HOME=/workspace/omnisim
 else
   _DEFAULT_HOME="$PWD/omnisim"
@@ -91,11 +112,26 @@ phase_deps() {
   export DEBIAN_FRONTEND=noninteractive
   $SUDO apt-get update
   # No qt6-*-dev here on purpose: the build vendors its own Qt 6.5.3 (see header).
+  #
+  # libdbus is NOT optional and was a known, self-documented hole in this list:
+  # docker/Dockerfile.train:82 records that the vendored libQt6DBus needs it AT
+  # LINK TIME and that the build dies after ~6 minutes of compiling without it.
+  # The list got away with it because CI runners and ML base images ship libdbus
+  # already; a minimal Ubuntu cloud image does not.
+  #
+  # libvulkan1 + mesa-vulkan-drivers give wgpu-native a software Vulkan adapter
+  # (lavapipe). Since the WREN deletion wgpu is the ONLY renderer, and a
+  # wgpu-native failure is a non-unwinding Rust panic across the C FFI boundary
+  # -- it aborts the process rather than returning an error the engine could
+  # degrade on. docker/Dockerfile.runtime installs both for exactly this.
   $SUDO apt-get install -y --no-install-recommends \
     build-essential make git wget curl unzip zip pkg-config ca-certificates \
     cmake swig libglu1-mesa-dev libglib2.0-dev libfreeimage3 libfreetype-dev \
     libxml2-dev libboost-dev libssh-gcrypt-dev libzip-dev libreadline-dev \
     libopenal-dev libssl-dev libgl1-mesa-dev libxi-dev libxrandr-dev pbzip2 \
+    libfontconfig1-dev libxkbcommon-dev libxkbcommon-x11-dev \
+    libdbus-1-dev libdbus-1-3 \
+    libvulkan1 mesa-vulkan-drivers \
     python3 python3-pip python3-dev python-is-python3 \
     xvfb x11-utils \
     libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
@@ -128,6 +164,25 @@ phase_fetch() {
   log "fetch: OK  (glm $(cd src/glm && git describe --tags 2>/dev/null || echo '?'))"
 }
 
+phase_wgpu() {
+  # The ONE step the user recipe omitted and CI added privately.
+  #
+  # src/omnisim/Makefile auto-discovers WGPU_NATIVE_HOME from exactly one path,
+  # $OMNISIM_HOME/_scratch/wgpu-native, and the only thing that creates it is
+  # setup_wgpu_native.sh. Without it WB_WGPU_NATIVE_AVAILABLE is never defined,
+  # every wgpu call compiles out, and since the WREN deletion (976b9449d) there
+  # is no second renderer -- so the build is green and nothing draws: no
+  # screenshots, no capture service, no Camera device.
+  #
+  # linux-build.yml runs this before the build and asserts the .so afterwards.
+  # That workflow says its purpose is that "a green tick here is evidence about
+  # THEIR experience", so the step belongs in the script the user runs.
+  log "wgpu: fetching wgpu-native (the only renderer since the WREN deletion)"
+  cd "$OMNISIM_HOME"
+  bash scripts/dev/setup_wgpu_native.sh
+  log "wgpu: OK"
+}
+
 phase_build() {
   log "build: make release -j$JOBS  (first build: 10-25 min; fetches Qt 6.5.3 itself)"
   cd "$OMNISIM_HOME"
@@ -137,6 +192,11 @@ phase_build() {
   BIN="$OMNISIM_HOME/bin/omnisim-bin"
   [ -x "$BIN" ] || BIN="$(find "$OMNISIM_HOME" -maxdepth 3 -name 'omnisim-bin' -type f -perm -u+x | head -1)"
   [ -n "$BIN" ] && [ -x "$BIN" ] || die "omnisim-bin not produced"
+  # A build can succeed and still have no renderer: the wgpu link is conditional
+  # on WGPU_NATIVE_HOME resolving. Fail loudly here rather than letting the user
+  # discover it later as an empty screenshot.
+  [ -f "$OMNISIM_HOME/lib/webots/libwgpu_native.so" ] \
+    || die "libwgpu_native.so is not in lib/webots -- this build has NO renderer. Run: bash scripts/install/linux_bootstrap.sh wgpu   and then rebuild."
   log "build: OK -> $BIN"
 }
 
@@ -158,8 +218,17 @@ linked_python() {
 
 pip_flags_for() {
   # PEP-668 pips demand --break-system-packages; older pips reject the flag.
+  #
+  # --ignore-installed rides along on the SAME condition, and it is not
+  # optional on a distro-managed interpreter: apt ships some of these wheels
+  # itself (python3-typing-extensions on Ubuntu 24.04), and an apt-installed
+  # package has no RECORD file, so pip cannot uninstall it to upgrade:
+  #   ERROR: Cannot uninstall typing_extensions 4.10.0, RECORD file not found.
+  #          Hint: The package was installed by debian.
+  # That aborts the whole physics install. --ignore-installed makes pip install
+  # over the distro copy instead of trying to remove it.
   if "$1" -m pip install --help 2>/dev/null | grep -q break-system-packages; then
-    echo "--break-system-packages"
+    echo "--break-system-packages --ignore-installed"
   fi
 }
 
@@ -182,12 +251,45 @@ phase_gpu() {
   # `newton` (NOT `newton-physics`).
   PY=$(linked_python)
   PIPFLAGS=$(pip_flags_for "$PY")
+  # ⛔ Refuse 3.10 loudly rather than install a stack that cannot run. newton
+  # 1.5.0 raises "Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool]."
+  # at ModelBuilder() on CPython 3.10, so the engine comes up with NO physics --
+  # the world loads and stands still, which is far harder to diagnose than a
+  # failed install. Measured on 3.10.12 (fails) and 3.12.3 (works), same wheels.
+  PYV_GPU=$("$PY" -c 'import sys;print("%d.%d"%sys.version_info[:2])' 2>/dev/null || echo "?")
+  case "$PYV_GPU" in
+    3.10|3.9|3.8|3.7)
+      die "the engine links Python $PYV_GPU, but newton 1.5.0 needs >= 3.11 in practice (it raises at ModelBuilder() on 3.10 despite declaring >=3.10). Use Ubuntu 24.04 (python 3.12), or rebuild the engine against a newer interpreter with PYTHON_HOME=." ;;
+  esac
   log "gpu: torch / warp / newton / mujoco_warp into $PY (the interpreter the binary links)"
   # $SUDO_H, not --user: the wheels have to land in the SYSTEM interpreter the
   # binary links. --user would install somewhere this script cannot prove the
   # embedded interpreter reads, and a wheel the engine cannot see fails silently
   # -- exactly the onnxruntime failure documented above.
-  $SUDO_H "$PY" -m pip install $PIPFLAGS torch --index-url https://download.pytorch.org/whl/cu128
+  # torch is TRAINING-ONLY: `import torch` appears nowhere under src/ or
+  # lib/controller/, and this script already says a miss is a warning, not a
+  # failure. It is also ~2.5 GB from the CUDA index, which a GPU-less CI runner
+  # can neither use nor afford. OMNISIM_SKIP_TORCH=1 opts out; the hard
+  # inference dependency (onnxruntime) is installed either way below.
+  # Default to AUTO rather than "install it": on a machine with no NVIDIA GPU
+  # this is ~2.5 GB from the CUDA index for a package the engine never imports,
+  # and it is by far the largest item in the install. The variable existed but
+  # appeared in exactly two files -- this script and linux-build.yml -- and in
+  # no document, so no interactive user ever set it.
+  if [ "${OMNISIM_SKIP_TORCH:-auto}" = "auto" ]; then
+    if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi -L >/dev/null 2>&1; then
+      OMNISIM_SKIP_TORCH=0
+    else
+      OMNISIM_SKIP_TORCH=1
+      log "gpu: no CUDA device visible -- skipping torch (training-only, ~2.5 GB)."
+      log "gpu: set OMNISIM_SKIP_TORCH=0 to install it anyway."
+    fi
+  fi
+  if [ "${OMNISIM_SKIP_TORCH:-0}" = "1" ]; then
+    log "gpu: SKIPPING torch (OMNISIM_SKIP_TORCH=1) -- training-only, ~2.5 GB"
+  else
+    $SUDO_H "$PY" -m pip install $PIPFLAGS torch --index-url https://download.pytorch.org/whl/cu128
+  fi
   # ⛔ PIN the physics stack to the repo's single source of truth
   # (scripts/packaging/newton_runtime_pins.py). An unpinned install broke a pod
   # on 2026-07-17: PyPI's newton had moved to 1.4.0, whose ModelBuilder.add_link()
@@ -202,7 +304,10 @@ phase_gpu() {
   else
     # repo not fetched yet (gpu phase run standalone) — frozen copy of the SSOT;
     # keep in sync with newton_runtime_pins.py (tests/test_newton_pins_parity.py)
-    PHYS_SPECS="warp-lang==1.16.0 mujoco-warp==3.11.0 newton==1.5.0 usd-core==26.5"
+    # Kept identical to scripts/packaging/newton_runtime_pins.py. It had drifted:
+    # newton-usd-schemas was added to the SSOT and not here, and without it
+    # newton.add_usd hard-fails on this path.
+    PHYS_SPECS="warp-lang==1.16.0 mujoco-warp==3.11.0 mujoco==3.11.0 newton==1.5.0 usd-core==26.5 newton-usd-schemas==0.5.0"
   fi
   log "gpu: physics stack pinned: $PHYS_SPECS"
   # `mujoco` is NOT in the SSOT (it arrives transitively via mujoco-warp), so it
@@ -212,9 +317,13 @@ phase_gpu() {
 
   log "gpu: verifying $PY can import the stack"
   "$PY" - <<'PY_EOF'
-import torch, warp, newton, mujoco
-print("torch    ", torch.__version__, "cuda:", torch.cuda.is_available(),
-      torch.cuda.get_device_name(0) if torch.cuda.is_available() else "")
+import warp, newton, mujoco
+try:
+    import torch
+    print("torch    ", torch.__version__, "cuda:", torch.cuda.is_available(),
+          torch.cuda.get_device_name(0) if torch.cuda.is_available() else "")
+except ImportError:
+    print("torch     NOT INSTALLED (training-only; fine unless you load .pt policies)")
 print("warp     ", warp.config.version)
 print("newton   ", getattr(newton, "__version__", "?"))
 print("mujoco   ", mujoco.__version__)
@@ -313,9 +422,10 @@ phase_smoke() {
 case "$PHASE" in
   deps)  phase_deps ;;
   fetch) phase_fetch ;;
+  wgpu)  phase_wgpu ;;
   build) phase_build ;;
   gpu)   phase_gpu ;;
   smoke) phase_smoke ;;
-  all)   phase_deps; phase_fetch; phase_build; phase_gpu; phase_smoke ;;
-  *)     die "unknown phase: $PHASE (deps|fetch|build|gpu|smoke|all)" ;;
+  all)   phase_deps; phase_fetch; phase_wgpu; phase_build; phase_gpu; phase_smoke ;;
+  *)     die "unknown phase: $PHASE (deps|fetch|wgpu|build|gpu|smoke|all)" ;;
 esac

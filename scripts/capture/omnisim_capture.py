@@ -675,14 +675,17 @@ class CaptureServiceState:
             except OSError as exc:
                 return {"ok": False, "error": f"could not write capture sibling: {exc}", "load_ms": 0}
 
-            cmd = [
-                str(self.binary),
-                str(self.current_sibling),
-                "--batch",
-                "--mode=fast",
-                "--stdout",
-                "--stderr",
-            ]
+            cmd = [str(self.binary), str(self.current_sibling)]
+            # The deterministic Camera-device render does not depend on a
+            # visible main window.  Keep batch mode as the service default, but
+            # allow a visible-window recovery path for hosts whose Qt platform
+            # plugin cannot establish a sane hidden viewport geometry (for
+            # example a QWIDGETSIZE_MAX-sized DIB on Windows).  This is an
+            # explicit opt-in because opening a window is observable to the
+            # desktop user.
+            if not os.environ.get("OMNISIM_CAPTURE_SHOW_GUI"):
+                cmd.append("--batch")
+            cmd.extend(["--mode=fast", "--stdout", "--stderr"])
             env = os.environ.copy()
             env["OMNISIM_HOME"] = str(self.omnisim_home)
             # Pin the engine's log to OUR file. This assignment also overrides
@@ -698,7 +701,30 @@ class CaptureServiceState:
             env["OMNISIM_CAPTURE_SUPERVISOR_HOST"] = SUPERVISOR_HOST
             env["OMNISIM_CAPTURE_SUPERVISOR_PORT"] = str(SUPERVISOR_PORT)
             if sys.platform == "win32":
-                env["PATH"] = str(self.binary.parent) + ";" + env.get("PATH", "")
+                # Directly spawning omnisim-bin.exe bypasses the normal Windows
+                # launcher, which is also responsible for making the bundled
+                # controller interpreter discoverable.  The release bundle
+                # keeps that interpreter one level down in `newton-runtime/`,
+                # not beside the engine binary.  Without this entry every
+                # Python controller (including capture_supervisor itself) fails
+                # with `"python.exe" was not found`, even though Newton's
+                # embedded interpreter can initialise successfully.
+                runtime = self.binary.parent / "newton-runtime"
+                path_entries = [str(self.binary.parent)]
+                if (runtime / "python.exe").is_file():
+                    path_entries.append(str(runtime))
+                    # The embeddable bundle stores third-party modules beside
+                    # Lib/ rather than under Lib/site-packages.  A controller
+                    # launched through runtime/python.exe therefore needs this
+                    # explicit path; preserve any caller-provided paths after
+                    # the bundled one so project-specific dependencies still
+                    # work.
+                    site_packages = runtime / "site-packages"
+                    if site_packages.is_dir():
+                        env["PYTHONPATH"] = str(site_packages) + ";" + env.get(
+                            "PYTHONPATH", ""
+                        )
+                env["PATH"] = ";".join(path_entries) + ";" + env.get("PATH", "")
             # Linux: spawning omnisim-bin directly bypasses the `webots`
             # launcher shell — supply the runtime env it would otherwise miss
             # (bundled-Qt LD_LIBRARY_PATH, QT_QPA_PLATFORM, WEBOTS_TMPDIR,
