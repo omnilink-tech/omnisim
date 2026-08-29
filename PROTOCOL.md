@@ -782,8 +782,21 @@ Liveness probe; does not touch the simulator subprocess.
 ```json
 { "ok": true, "world": "...", "load_ms": 1040,
   "exit_code": null, "supervisor": "connected",
-  "hot_reloaded": true, "diagnostics": [] }
+  "hot_reloaded": true, "diagnostics": [],
+  "tracking": { "light": false, "mode": "full", "hint": "FULL tracking (the backward-compatible default): ..." } }
 ```
+
+`tracking` (added 2026-08-29, every supervised load) names the tracking mode
+this load runs in and what it costs, so a client learns the full-mode step tax
+from the response rather than from a timeout: `mode` is `full` (the default —
+the supervisor walks the scene every basic step for `contact.*` / `grip.*` /
+`joint.limit_hit` events and `/sim/grips`) or `light` (`{"light": true}` on the
+request — those trackers are dropped; `/sim/contacts` still answers). Measured
+on the 10-Husky `husky_fleet_arena` world (309 nodes, CPU `mj_step`,
+2026-08-29): `/sim/step 1` ≈ 0.6 s full vs 6–35 ms light (~17×), 10 steps ≈ 3 s
+vs ≈ 60 ms (~47×). A client MAY ignore the block; a client that steps more than
+a handful of times SHOULD pass `light: true` unless it needs the tracker-fed
+surfaces.
 
 **Response (422 on a load failure; 400 on a malformed request):**
 

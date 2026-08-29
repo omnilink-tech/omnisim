@@ -21,4 +21,4 @@ The canonical Python entry point. Run `python -m omnisim --help` for the CLI.
 # src/omnisim/core/OmApplicationInfo.cpp by publish_snapshot.sh, which now
 # rewrites BOTH. (It used to bump only the C++ string, and this one silently
 # went stale -- `omnisim doctor` reported 5.1.1 during the v5.3.0 prep.)
-__version__ = "8.1.9"
+__version__ = "8.1.10"

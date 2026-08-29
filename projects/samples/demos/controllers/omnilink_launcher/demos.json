@@ -248,6 +248,12 @@
       "description": "Self-running visual showcases — sit back and watch, or follow a robot with F5.",
       "demos": [
         {
+          "id": "metazoa_reef",
+          "name": "Metazoa (robot cells that grow into robots)",
+          "world": "projects/metazoa/worlds/metazoa_watch.omniworld",
+          "blurb": "Identical 12 cm hinge-cell robots dock face to face into walking organisms: a head rudder steers, a pitch wave inchworms, bodies back into free cells to recruit them, divide at eight cells, and every cell is conserved. Physics-real welds, one supervisor."
+        },
+        {
           "id": "alife_ecosystem",
           "name": "Living ecosystem (alife)",
           "world": "projects/alife/worlds/alife_life.omniworld",

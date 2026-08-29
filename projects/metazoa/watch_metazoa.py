@@ -122,10 +122,12 @@ def regenerate(edir, world=WORLD):
         json.dump(reef, f, indent=1)
     with open(os.path.join(RUN, "config.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(config, f, indent=1)
+    arena = config.get("arena", reef.get("arena", 18.0))
+    # SAME physics as the epoch driver (metazoa.py): v3 roller cells, 4
+    # substeps. Without these the watch world was a different machine.
     W.write_world(reef["cells"], world,
-                  scene_lines=S.scene_lines(config.get("arena", reef.get("arena", 18.0)),
-                                            config.get("n_patches", N_PATCHES), CONTROLLER),
-                  controller=CONTROLLER)
+                  scene_lines=S.scene_lines(arena, config.get("n_patches", N_PATCHES), CONTROLLER),
+                  controller=CONTROLLER, rollers="v3", substeps=4, arena=arena)
     bal = S.brace_balance(open(world, encoding="utf-8").read())
     if not bal["balanced"]:
         sys.exit("generated world has unbalanced braces: %s" % bal)

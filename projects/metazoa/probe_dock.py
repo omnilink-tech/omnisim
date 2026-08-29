@@ -60,11 +60,18 @@ def main():
         c = reef["cells"][cid]
         c["pos"][0], c["pos"][1] = -(n - 1 - k) * pitch, 0.0
         c["yaw"] = 0.0
+        c["roll"] = math.pi / 2.0 if k >= n - 2 else 0.0        # head rudder PAIR (measured 2026-08-29)
+        c["dock_rotation"] = 1 if k >= n - 2 else 0
     free = [c for c in reef["cells"] if c["organism"] is None and not c["parked"]][0]
-    # the free cell's TAIL face (-x of its own frame at yaw 0) must face the head
-    free["pos"][0] = args.ahead + 0.06 if not args.behind else -(n - 1) * pitch - args.ahead - 0.06
+    # TAIL DOCKING (P2 redesign): the organism backs into the free cell, whose
+    # NOSE face (+x of its own frame at yaw 0) must face the organism's tail.
+    # The organism's tail is at x = -(n-1)*pitch; the free cell sits `ahead`
+    # metres behind it, nose toward +x. --behind puts it in FRONT of the head
+    # instead (the organism must turn around first).
+    tail_x = -(n - 1) * pitch
+    free["pos"][0] = tail_x - args.ahead - 0.06 if not args.behind else args.ahead + 0.06
     free["pos"][1] = args.lateral
-    free["yaw"] = 0.0
+    free["yaw"] = 0.0 if not args.behind else math.pi
     free["roll"] = 0.0
     free["dock_rotation"] = 0
     for c in reef["cells"]:
@@ -78,7 +85,11 @@ def main():
                   controller=MZ.CONTROLLER, rollers="v3", substeps=4, arena=10.0)
     print("probe: organism %s cells %s at x<=0, free cell %d at (%.2f, %.2f)"
           % (org["id"], members, free["id"], free["pos"][0], free["pos"][1]))
-    res = MZ.run_epoch(0, int(args.epoch_s * 1.9) + 45, log=print)
+    try:
+        os.remove(os.path.join(MZ.RUN, "world.log"))     # the supervisor appends; keep this run's events alone
+    except OSError:
+        pass
+    MZ.run_epoch(0, int(args.epoch_s * 1.9) + 45, log=print)
     tele = json.load(open(os.path.join(MZ.RUN, "telemetry.json"), encoding="utf-8"))
     print("\nresult:", "recruits", tele["recruits"], "dock", tele["dock_stats"], "welds", tele["welds_held"])
     om = tele["organisms_measured"]

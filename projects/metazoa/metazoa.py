@@ -277,10 +277,15 @@ def build_reef(lineages, n_cells, arena, epoch, rng, mods=None, n_free=FREE_CELL
         a = 2.0 * math.pi * k / max(1, n_org)
         head = (r_ring * math.cos(a), r_ring * math.sin(a))
         yaw = a + math.pi / 2.0                          # tangential heading
-        pattern = ln["bodyplan"].get("dock_rotation_pattern") or [0]
-        # cycle the body plan pattern over the whole chain: chain_placement does not,
-        # and [0, 1] on four cells came out pitch/yaw/pitch/PITCH (measured)
-        pattern_n = [pattern[k % len(pattern)] for k in range(seed_len)] if pattern else [0] * seed_len
+        # HEAD RUDDER (measured, probe_wave.py): a pitch spine with one wave-free
+        # yaw cell at the head steers cleanly; the alternating pattern the
+        # contract assumed spins in place, and a second rudder at the tail cuts
+        # speed 4x and brakes every turn. Whatever the body plan says, the
+        # seeded body is [pitch]*(n-1) + [yaw]; a divided rear half re-rolls
+        # its new head into a rudder.
+        # RUDDER PAIR (probe_wave 2026-08-29): [..., 1, 1] turns 1.8-2.0 rad
+        # per 15 s (radius ~0.3 m) against 0.62 for a single head rudder.
+        pattern_n = [0] * (seed_len - 2) + [1, 1] if seed_len >= 3 else [0] * (seed_len - 1) + [1]
         placed = chain_placement(CELL, head, yaw, seed_len, pattern_n, note=note)
         oid = "%s_e%d" % (ln["id"], epoch)
         members = []
@@ -296,15 +301,22 @@ def build_reef(lineages, n_cells, arena, epoch, rng, mods=None, n_free=FREE_CELL
 
     free = []
     taken = [(c["pos"][0], c["pos"][1]) for c in cells]
-    lim = inner - 0.5
+    # A free cell is docked by an organism reversing down the runway beyond its
+    # NOSE (L + RUNWAY_FAR_M ~ 3.9 m, then a ~2 m-radius turn), so a seed cell
+    # whose nose faces a nearby wall is unreachable (measured, epoch 7 in a
+    # 12 m arena: 15 wall events, 0 locks). Seed free cells inside a smaller
+    # box with the nose pointing inward (+-0.6 rad); cells shed later land
+    # where they fall and the supervisor's dockable() filter handles those.
+    lim = max(1.0, inner - 1.5)
     for _ in range(n_free):
         for _try in range(200):
             x, y = rng.uniform(-lim, lim), rng.uniform(-lim, lim)
             if all((x - tx) ** 2 + (y - ty) ** 2 > 0.6 ** 2 for tx, ty in taken):
                 break
         taken.append((x, y))
+        inward = math.atan2(-y, -x) + rng.uniform(-0.6, 0.6)
         cells.append({"id": next_id, "pos": [round(x, 4), round(y, 4), spawn_z(CELL)],
-                      "yaw": round(rng.uniform(-math.pi, math.pi), 4), "roll": 0.0,
+                      "yaw": round(math.atan2(math.sin(inward), math.cos(inward)), 4), "roll": 0.0,
                       "dock_rotation": 0, "organism": None, "parked": False,
                       "charge_wh": CHARGE_START_WH})
         free.append(next_id)

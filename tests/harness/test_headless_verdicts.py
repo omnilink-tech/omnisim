@@ -31,7 +31,9 @@ from headless_runner import (  # noqa: E402
     RUNAWAY_WINDOW,
     connect_sidecar_failures,
     controller_start_failures,
+    early_exit_cause_lines,
     looks_like_startup_race,
+    platform_plugin_hint,
     read_runaway_samples,
     runaway_coverage_gap,
     runaway_verdict,
@@ -277,3 +279,47 @@ def test_sibling_world_is_a_sibling_and_carries_the_watchdog(tmp_path):
     assert "synchronization FALSE" in text         # must never stall the world
     assert "--period-steps=4" in text
     assert "\\" not in text.split("--out=")[1].split('"')[0]   # posix path in .wbt
+
+
+# ---- Early-exit cause (public issue #6) -------------------------------------
+# The engine's Qt platform-plugin abort is recorded ONLY in the log, as a
+# "Qt Fatal:" line with a header-only log around it; the runner used to print
+# just "simulator exited early with code 3". Measured 2026-08-29 on Windows
+# with QT_QPA_PLATFORM=xcb -- this is that log, verbatim.
+
+_XCB_ABORT_LOG = (
+    "=== OmniSim Log Started (pid=1560): 2026-08-29 13:10:49 ===\n"
+    "Qt Warning: Could not find the Qt platform plugin \"xcb\" in \"\"\n"
+    "Qt Fatal: This application failed to start because no Qt platform plugin "
+    "could be initialized. Reinstalling the application may fix this problem.\n"
+    "\n"
+    "Available platform plugins are: minimal, windows.\n"
+)
+
+
+def test_early_exit_cause_surfaces_the_qt_fatal_line():
+    causes = early_exit_cause_lines(_XCB_ABORT_LOG)
+    assert len(causes) == 1
+    assert causes[0].startswith("Qt Fatal: This application failed to start")
+
+
+def test_early_exit_cause_keeps_log_order_and_caps_a_flood():
+    text = "\n".join(["INFO: noise"] + [f"ERROR: e{i}" for i in range(40)] + ["FATAL: last"])
+    causes = early_exit_cause_lines(text, limit=5)
+    assert causes == [f"ERROR: e{i}" for i in range(5)]
+
+
+def test_early_exit_cause_is_empty_for_a_clean_log():
+    assert early_exit_cause_lines("=== OmniSim Log Started ===\nINFO: fine\nWARNING: meh\n") == []
+
+
+def test_platform_plugin_hint_fires_only_on_the_signature():
+    hint = platform_plugin_hint(_XCB_ABORT_LOG)
+    assert hint and hint[0].startswith("QT PLATFORM PLUGIN FAILED")
+    assert any("BEFORE the world was opened" in ln for ln in hint)
+    assert platform_plugin_hint("ERROR: 'x.omniworld': Failed to load due to syntax error(s).") == []
+
+
+def test_platform_plugin_abort_is_not_the_startup_race():
+    # A header-only log with a Qt Fatal line must never be retried as "the flake".
+    assert looks_like_startup_race(_XCB_ABORT_LOG) is False

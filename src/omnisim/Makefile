@@ -361,10 +361,11 @@ endif
 #   * WB_WGPU_NATIVE_AVAILABLE  -- set only when WGPU_NATIVE_HOME points at a real
 #     wgpu-native lib (below); every wgpu* API call lives behind it.
 # So with the flag ON but WGPU_NATIVE_HOME unset (the plain-`make` case on a box
-# without wgpu-native), every wgpu* call compiles out, isAvailable() reports
-# false, and the binary is byte-equivalent to a WREN-only build -- no link
-# against wgpu_native, no runtime change. OMNISIM_WITH_VULKAN=OFF restores the
-# pre-flip build. (The "vulkan" name is historical; the backend is wgpu-native --
+# without wgpu-native), every wgpu* call compiles out and isAvailable() reports
+# false. HISTORICAL: that used to leave a WREN-only binary; WREN is deleted, so
+# it now leaves a binary with NO renderer, which the guard below REFUSES to
+# build unless OMNISIM_RENDERERLESS=ON names it. OMNISIM_WITH_VULKAN=OFF is the
+# same rendererless build under the same guard. (The "vulkan" name is historical; the backend is wgpu-native --
 # the rename is a Phase-ζ cleanup, engine-migration-plan.md §14.3.)
 OMNISIM_WITH_VULKAN ?= ON
 ifeq ($(OMNISIM_WITH_VULKAN),ON)
@@ -401,8 +402,10 @@ ifeq ($(OMNISIM_WITH_VULKAN),ON)
   # scripts/dev/setup_wgpu_native.sh already installs to ONE canonical place
   # ($REPO_ROOT/_scratch/wgpu-native, its INSTALL_DIR).  Read it.  Discovery
   # only fires when the variable is genuinely undefined, so an explicit
-  # `WGPU_NATIVE_HOME=` on the command line still selects the WREN-only build
-  # deliberately rather than by omission.
+  # `WGPU_NATIVE_HOME=` on the command line still opts out deliberately rather
+  # than by omission -- and since 2026-08-29 that opt-out is REFUSED unless
+  # OMNISIM_RENDERERLESS=ON is passed too (see the block after this one): there
+  # is no WREN to fall back to any more, only a binary that draws nothing.
   ifeq ($(origin WGPU_NATIVE_HOME),undefined)
     OM_WGPU_DEFAULT := $(OMNISIM_PATH)/_scratch/wgpu-native
     ifneq ($(wildcard $(OM_WGPU_DEFAULT)/include/webgpu/webgpu.h),)
@@ -427,6 +430,53 @@ ifeq ($(OMNISIM_WITH_VULKAN),ON)
         endif
       endif
     endif
+  endif
+endif
+
+# ---- THERE IS NO SECOND RENDERER: a build without wgpu-native must be DELIBERATE ----
+# Since the WREN deletion (976b9449d, 2026-08-23) wgpu-native is the ONLY renderer.
+# Until 2026-08-29 a tree where WGPU_NATIVE_HOME did not resolve -- no
+# scripts/dev/setup_wgpu_native.sh run yet, an explicit `WGPU_NATIVE_HOME=`, or
+# OMNISIM_WITH_VULKAN=OFF -- built GREEN and shipped a binary that draws nothing:
+# no main view, no screenshots, no Camera device, no capture service. Physics and
+# controllers still ran, so the hole surfaced later as an empty screenshot
+# (public issue #7). A missing MANDATORY subsystem is a configuration error, not a
+# build variant, so refuse at parse time, before one TU compiles. The compute-only
+# build stays available, but only by name:
+#     make release OMNISIM_RENDERERLESS=ON
+# which also defines -DOMNISIM_RENDERERLESS so the binary can say what it is
+# (OmRenderBackend.cpp logs it on the first render request). Goals that never
+# need a renderer (clean, linker-info, bundle-newton-runtime) are exempt.
+OMNISIM_RENDERERLESS ?= OFF
+OM_WGPU_RESOLVED :=
+ifeq ($(OMNISIM_WITH_VULKAN),ON)
+  ifneq ($(WGPU_NATIVE_HOME),)
+    OM_WGPU_RESOLVED := $(wildcard $(WGPU_NATIVE_HOME)/include/webgpu/webgpu.h)
+  endif
+endif
+# Empty MAKECMDGOALS is the default goal, which builds -- treat it as building.
+OM_RENDER_BUILD_GOALS := $(if $(MAKECMDGOALS),$(filter-out clean linker-info bundle-newton-runtime,$(MAKECMDGOALS)),default)
+ifeq ($(OM_WGPU_RESOLVED),)
+  ifeq ($(OMNISIM_RENDERERLESS),ON)
+    CFLAGS   += -DOMNISIM_RENDERERLESS
+    CXXFLAGS += -DOMNISIM_RENDERERLESS
+    ifneq ($(OM_RENDER_BUILD_GOALS),)
+      $(warning OmniSim: building WITHOUT a renderer (OMNISIM_RENDERERLESS=ON) -- no main view, no screenshots, no Camera devices, no capture service)
+    endif
+  else ifneq ($(OM_RENDER_BUILD_GOALS),)
+    define OM_NO_RENDERER_MSG
+
+ERROR: wgpu-native was not found, and OmniSim has NO alternative renderer.
+  $(if $(WGPU_NATIVE_HOME),WGPU_NATIVE_HOME=$(WGPU_NATIVE_HOME) has no include/webgpu/webgpu.h.,WGPU_NATIVE_HOME is unset and $(OMNISIM_PATH)/_scratch/wgpu-native does not exist.)$(if $(filter ON,$(OMNISIM_WITH_VULKAN)),,
+  OMNISIM_WITH_VULKAN=$(OMNISIM_WITH_VULKAN) compiles the only renderer out.)
+  A green build here would ship a binary that draws nothing: no main view, no
+  screenshots, no Camera devices, no capture service (physics still runs).
+  Fix:         bash scripts/dev/setup_wgpu_native.sh
+               (installs to _scratch/wgpu-native, which this Makefile auto-discovers)
+  Deliberate:  make release OMNISIM_RENDERERLESS=ON
+               (compute-only binary; it logs at runtime that it has no renderer)
+    endef
+    $(error $(OM_NO_RENDERER_MSG))
   endif
 endif
 

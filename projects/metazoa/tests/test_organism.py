@@ -102,8 +102,8 @@ def test_random_bodyplan_valid():
 
 def test_mutate_bodyplan_stays_valid():
     rng = random.Random(5)
-    bp = make_bodyplan((0, 1), target_length=2)
-    before = {"target_length": 2, "dock_rotation_pattern": [0, 1], "branch_rule": "none"}
+    bp = make_bodyplan((0, 1), target_length=4)
+    before = {"target_length": 4, "dock_rotation_pattern": [0, 1], "branch_rule": "none"}
     child = bp
     lengths = set()
     for _ in range(500):
@@ -115,8 +115,8 @@ def test_mutate_bodyplan_stays_valid():
 
 
 def test_validate_bodyplan_rejects():
-    assert O.validate_bodyplan(make_bodyplan(target_length=9)) != []
-    assert O.validate_bodyplan(make_bodyplan(target_length=1)) != []
+    assert O.validate_bodyplan(make_bodyplan(target_length=O.TARGET_LENGTH[1] + 1)) != []
+    assert O.validate_bodyplan(make_bodyplan(target_length=O.TARGET_LENGTH[0] - 1)) != []
     assert O.validate_bodyplan(make_bodyplan(pattern=())) != []
     assert O.validate_bodyplan(make_bodyplan(pattern=(0, 4))) != []
     assert O.validate_bodyplan(make_bodyplan(pattern=(0, 1, 2, 3, 0))) != []
@@ -349,6 +349,6 @@ def test_heading_error_sign_and_wrap():
 def test_steer_from_error():
     assert O.steer_from_error(0.05) == 0.0
     assert O.steer_from_error(None) == 0.0
-    assert O.steer_from_error(0.3) == pytest.approx(0.5)
+    assert O.steer_from_error(0.3) == pytest.approx(0.3 / O.STEER_ERR_FULL)
     assert O.steer_from_error(-2.0) == -1.0
-    assert O.steer_from_error(0.3, sign=-1.0) == pytest.approx(-0.5)
+    assert O.steer_from_error(0.3, sign=-1.0) == pytest.approx(-0.3 / O.STEER_ERR_FULL)

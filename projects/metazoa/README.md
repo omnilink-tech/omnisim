@@ -290,3 +290,142 @@ should be sized to.
   `--tag c` cost lane), `_run/probe_p1_<tag>.json` for the A/B and sweep
   arms above; engine logs + sidecars alongside. `worlds/probe_p1*.omniworld`
   are the generated worlds (`_b` = v2, `_c3` / `_cost_c` = v3).
+
+
+## P2 — wave direction and steering (probe_wave.py, one welded 4-chain, 15 s phases)
+
+Index 0 = tail, 3 = head; cells placed along +x from index 0. `along_spine` is
+the chain centroid's displacement projected on its own tail->head axis.
+
+| chain pattern | phase | along spine | lateral | yaw change |
+|---|---|---|---|---|
+| `[0,0,0,0]` all pitch | +dphi | −0.868 m | +0.012 | +0.01 rad |
+| | −dphi | +0.814 m | 0.000 | 0.00 |
+| | +dphi steer ±1 | −0.95 / −0.90 | 0.00 | 0.00 |
+| `[0,1,0,1]` alternating | +dphi | −0.097 | +0.055 | **+2.31** |
+| | −dphi | +0.107 | +0.071 | −1.16 |
+| **`[0,0,0,1]` head rudder** (yaw cell wave-free) | −dphi steer 0 | **+1.413** | −0.040 | −0.08 |
+| | −dphi steer +1 | +1.020 | **+0.632** | **+0.97** |
+| | −dphi steer −1 | +1.011 | **−0.610** | **−0.92** |
+| `[1,0,0,0]` tail rudder | −dphi steer ±1 | +0.81 / +0.91 | ±0.05 | ±0.17 |
+
+Three facts that fix the organism design: (1) the travelling wave propels a
+chain toward its **low-index** end (run it with −dphi to travel head-first);
+(2) the alternating pitch/yaw chain the contract assumed is a bad walker —
+0.007 m/s and it spins 2.3 rad on its own; (3) a pitch inchworm with one
+**wave-free yaw cell at the head** is a real steerable walker: 0.094 m/s
+straight, ±0.95 rad per 15 s with steer ±1 while still moving at 0.068 m/s
+(turn radius ≈ 1 m). A rudder at the tail is 5× weaker. Consequences: the
+organism travels rudder-first, and grows by backing into free cells at its
+tail (a straight reverse needs no steering).
+
+Reef runs before this measurement (12 cells, 300 s): 6/6 seeded welds held
+for the whole epoch, chains crawled at 0.07 m/s, but every recruiter backed
+AWAY from its target because the wave was run tail-first and the head's 1 s
+travel heading was wobble-dominated — the spine axis is now the heading.
+
+
+## P2 — tail docking on the engine (probe_dock.py, 2026-08-29)
+
+One 4-cell organism (head rudder, pitch spine), one free cell 0.9 m behind
+its tail with its nose toward the tail, charge 70 % so the ecology recruits
+at once. Trace (`_run/metazoa/world.log`): runway → ALIGNED (tail face
+lateral 0.000, spine error 0.00 rad) → REVERSE (+dphi, no steer) at
+0.04–0.07 m/s → capture assist at 0.220 m → **lock written at 9.7 mm /
+0.000 rad** → verified → `recruit(at_tail=True)`; 4 welds held, the organism
+crawled on as 5 cells at up to 0.14 m/s. First recruitment under the final
+organism design, end to end, on the engine.
+
+Two implementation facts: the engine discards a controller's stderr, so the
+supervisor now writes uncaught tracebacks to `world.log` (the rework had
+dropped a helper and read as a bare "exited with status 1"); seeded welds are
+written at tick 25, not 0 (bodies are not registered at tick 0).
+
+
+## P2 — off-axis docking (probe_dock.py --lateral 1.0, 2026-08-29)
+
+Free cell 1.2 m behind and 1.0 m beside the organism's tail. Four measured
+failures shaped the manoeuvre: (1) alignment at 0.5 rad let the body reverse
+2.5 m and drift 0.35 m off-axis (×4 loops) → align at 0.12 rad / 0.10 m and
+only near the bay; (2) a near/far runway pair 0.65 m apart could never
+straighten a body with a ~1 m turn radius; (3) line-following INTO the bay
+converges perfectly — and arrives head-first, the wrong way to back in
+(spine_err 2.5 rad, ×4); (4) at full speed the body orbits a turn-in point
+inside its turning circle forever (26 trace rows). Final: drive to a turn-in
+point just outside the bay, follow the nose normal OUTWARD to straighten with
+the tail toward the cell, reverse in; the wave amplitude scales down with
+|steer| (turn radius = speed / yaw rate); rudder polarity pinned to the
+measured convention (the wiggle read b = 0.0008 on a rudder body). Result:
+ALIGNED at spine_err 0.12 → capture at 0.220 m → **lock 9.1 mm / 0.001 rad**
+→ verified → recruited, 4 → 5 cells, in ~200 s of sim.
+
+
+## P2 — six-cell bodies, one rudder or two (probe_wave.py, N_CELLS=6, 2026-08-29)
+
+| pattern | straight (15 s) | steer +1 / −1 |
+|---|---|---|
+| `[1,0,0,0,0,1]` two rudders | 0.40 m (0.027 m/s) | **0.02 / 0.03 m, no turn** — the tail rudder anchors the body |
+| `[0,0,0,0,0,1]` head rudder | **1.63 m (0.109 m/s)** | 1.25 / 1.14 m with yaw +0.62 / −0.43 rad |
+
+A second rudder at the tail costs 4× the speed even when held flat and
+brakes every turn, so bodies carry ONE rudder at the head. A division then
+leaves the rear half rudderless; its new head performs a **dock-face
+rotation** (90° about the spine, in place, junction released for one tick
+and re-engaged) to become the rudder — the connector rotation real
+reconfigurable modules have (Roombots, M-TRAN). Turn slowdown was cut from
+0.6 to 0.25: a rudder only turns a moving body, and at 0.6 a full-lock turn
+starved itself (6-cell reef bodies sat at 0.005 m/s with zero yaw rate).
+
+
+## P3 — recruits inside full reef epochs (metazoa.py, 14 cells / 2 organisms / seed 4, 2026-08-29)
+
+| epoch | sim s | recruits (attempts) | what stopped it |
+|---|---|---|---|
+| 1 | 420 | **2** (5, 1 failed verify at 0.0806 m) | both bodies ended pinned on the arena wall: one at 0.003 m/s in `line_out` for 250 s, the other driving AWAY from its target for 100 s with the rudder swinging ±1 every few seconds (target dead astern: the error wraps at ±π) |
+| 2 | 480 | **3** (7, 0 failed) | turn commitment + wall aim: the pinned body still could not turn — nose in the wall at 4.71 m, a 0.06 m/s head wobble, no way on |
+| 3 | 480 | **3** (7, 0 failed) | back-off added: it limit-cycled at 0.87 m off the wall (reverse until clear of the 0.9 m margin, forward straight back in) — now a latched rev → turn → clear state machine |
+
+Every lock so far was written at **9.3–9.8 mm / 0.000 rad** and every recruit
+holds (welds 8–9 of 8–9 at epoch end); cells are conserved in every epoch
+(free + members = 14). Recruits cost ~150 s each, which is why a 4-cell seed
+never reaches the 8-cell division threshold inside one epoch — the demo seeds
+6-cell bodies. Engine cost with the supervisor: 8.1–9.0 ms/step median at
+14 cells, dt 8 ms (the 3.4 ms figure above is the bare engine).
+
+### Rudder angle sweep (probe_wave, 6 cells, `[0,0,0,0,0,1]`, 15 s phases)
+
+| steer_gain (rad at full lock) | straight | steer +1 | steer −1 |
+|---|---|---|---|
+| 0.3 | 1.63 m | 1.43 m, +0.46 rad | 0.96 m, −0.21 rad |
+| **0.5** | 1.63 m | **1.25 m, +0.62 rad** | **1.14 m, −0.43 rad** |
+| 0.7 | 1.63 m | 0.80 m, +0.25 rad | 1.14 m, −0.49 rad |
+| 1.0 | 1.63 m | 0.73 m, +0.25 rad | 0.79 m, −0.15 rad |
+
+The reef genomes were seeded at 0.9–1.1 (an unmeasured guess) — that is why
+epoch 4's bodies (16 cells, 6-cell seeds) sat at the wall at 0.005–0.05 m/s
+with the rudder at full lock and recruited nothing. Seeds are now 0.45–0.55,
+the mutation range 0–0.8, and the supervisor caps the rudder at 0.6 rad.
+Turn radius at 0.5: 0.083 m/s ÷ 0.041 rad/s ≈ **2 m** — a body needs ~4 m of
+lateral room to turn around, which sizes the arena and the wall back-off.
+
+Amplitude does not tighten the turn (gain 0.5): A 0.6 → 0.13 rad/15 s over
+0.60 m (radius 4.6 m), A 0.45 → no yaw at all. So `TURN_SLOWDOWN` is 0 — a
+turn runs the full wave — and the wall back-off is 2.6 m, sized to the 2 m
+radius. (The earlier "slowdown 0.6 starved the rudder" finding was measured
+under the 1.0 rad over-steer and is superseded.)
+
+### Rudder layout sweep (probe_wave, 6 cells, gain 0.5, 15 s phases)
+
+| pattern | straight | steer +1 | steer −1 | turn radius |
+|---|---|---|---|---|
+| `[0,0,0,0,0,1]` single head rudder | 1.63 m | 1.25 m, +0.62 rad | 1.14 m, −0.43 rad | ~2 m |
+| `[0,0,0,1,0,1]` spaced | 1.47 m | 1.28 m, +1.33 rad | 0.80 m, −1.22 rad | ~0.9 m |
+| **`[0,0,0,0,1,1]` head PAIR** | 1.22 m | **0.61 m, +1.81 rad** | **0.64 m, −2.02 rad** | **~0.3 m** |
+
+Reef bodies now carry a rudder pair (three times the yaw rate of one rudder
+for a 25 % straight-line cost), the supervisor commands the steer on the two
+head yaw cells, and a division re-rolls both the rear half's new head and the
+cell behind it. Reef epochs 4–7 (6-cell seeds, single rudder) recruited
+nothing in 540–600 s: with a 2 m turn radius every approach ended at a wall
+(15 wall events in epoch 7). Both reef genomes replayed on the probe walk at
+0.08–0.12 m/s, so the failure was the turn, not the gait.

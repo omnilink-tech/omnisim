@@ -214,10 +214,18 @@ present.
   `$OMNISIM_HOME` instead.
 - **Xvfb is mandatory, not decorative.** The engine constructs a Qt main window
   for any world-running invocation, so an XCB context exists even under
-  `--no-rendering`. Without a display it dies with an *empty log* while the
-  launcher still exits 0. The window-free modes are not usable:
-  `OMNISIM_NO_WINDOW` deadlocks Newton's embedded CPython at
-  `add_joint_revolute`, and `OMNISIM_NO_GL` does not reliably step.
+  `--no-rendering`. Without a display the engine aborts in Qt's platform-plugin
+  init with a header-only log. ⚠ This paragraph used to say "while the launcher
+  still exits 0" — that was measured on 2026-07-25 against a `run-headless` that
+  predated `03e988c58` (2026-07-26); `run-headless` now FAILs (exit 1, "simulator
+  exited early"), and since 2026-08-29 it also prints the engine's `Qt Fatal:`
+  line and the fix, and the raw `bin/omnisim` launcher propagates the engine's
+  own exit status (public issue #6). Of the window-free modes,
+  `OMNISIM_NO_WINDOW=1` **works** (the Linux CI smokes run under it; the
+  "deadlocks Newton at `add_joint_revolute`" note was a stale 2026-05 finding,
+  public issue #5) and is the natural mode for a container — this image keeps
+  Xvfb because the default `--minimize` path still realises a main window;
+  `OMNISIM_NO_GL` does not reliably step.
 - **`src/omnisim/physics/*.py` is kept in the image on purpose.** The engine
   probes `$OMNISIM_HOME/src/omnisim/physics/` for `omnisim_newton_runtime.py`
   and puts it on `sys.path`. Pruning `src/` wholesale would leave a world that

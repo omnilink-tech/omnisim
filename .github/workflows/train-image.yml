@@ -4,7 +4,7 @@
 # OmniSim built from a tagged release, so a GPU box can train immediately instead
 # of spending ~10 minutes reinstalling the identical stack every time.
 #
-# Trigger manually:  gh workflow run train-image.yml -f omnisim_tag=v8.1.9
+# Trigger manually:  gh workflow run train-image.yml -f omnisim_tag=v8.1.10
 name: train-image
 
 on:
@@ -20,7 +20,7 @@ on:
       omnisim_tag:
         description: "Release tag to build the engine from"
         required: true
-        default: "v8.1.9"
+        default: "v8.1.10"
 
 concurrency:
   group: train-image-${{ github.ref }}
@@ -54,7 +54,7 @@ jobs:
       # `inputs` is EMPTY on a push trigger -- only workflow_dispatch populates it.
       # Without this fallback the tag renders as "omnisim-train:" and buildx dies
       # with "invalid reference format". Resolve it once, here, for both triggers.
-      OMNISIM_TAG: ${{ inputs.omnisim_tag || 'v8.1.9' }}
+      OMNISIM_TAG: ${{ inputs.omnisim_tag || 'v8.1.10' }}
 
     steps:
       - uses: actions/checkout@v4

@@ -97,6 +97,24 @@ These showcase **OmniSim's own engine** — the URDF importer, the Newton/MuJoCo
 
 > **Honest status is canonical.** Every one-liner below is sourced from [`docs/developer/rl-current-state.md`](docs/developer/rl-current-state.md) — the single source of truth for OmniSim RL. "Stands" ≠ "stands via RL"; "walks" ≠ "walks durably". Read it before quoting any robot result.
 
+### Metazoa (robot cells that grow into robots) ⭐ *flagship modular-robot ecosystem*
+
+| World | Path | Controller |
+|---|---|---|
+| Metazoa reef — hinge-cell robots dock into walking organisms, recruit, divide | [`metazoa_watch.omniworld`](projects/metazoa/worlds/metazoa_watch.omniworld) | [`metazoa_world`](projects/metazoa/controllers/metazoa_world/) (one supervisor drives every cell; docking is a real engine weld) |
+
+Every robot is the same 12 cm two-block hinge cell with four docking faces.
+Organisms are chains of them: a wave-free yaw cell at the head is the rudder,
+the pitch cells inchworm on passive rollers (~0.1 m/s), and a body grows by
+backing its tail face onto a free cell's nose and locking (measured lock
+9.7 mm / 0.000 rad). Cells are conserved; energy comes from light patches.
+Build + watch: `python projects/metazoa/metazoa.py --epochs 1 --cells 14
+--organisms 2 --seed-length 4 --epoch-s 480 --arena 10` then
+`python projects/metazoa/watch_metazoa.py` (lean render profile; never leave
+a second engine running). Plan, design and every measurement:
+[`projects/metazoa/PLAN.md`](projects/metazoa/PLAN.md),
+[`README.md`](projects/metazoa/README.md).
+
 ### Living ecosystem (alife) ⭐ *flagship artificial-life demo*
 
 | Demo | World | Controller |

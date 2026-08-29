@@ -31,9 +31,20 @@ Engine facts this file is written against (projects/metazoa/README.md, P1):
     on a cell rolled 90 deg (a yaw hinge) positive bends the nose to the
     cell's RIGHT. The polarity of the steering channel is NOT assumed: every
     organism calibrates it once with a wiggle (the alife method).
-  * docking is the docking cell's `f_tail.isLocked` <- TRUE (the ACTIVE side,
-    `Reef.junctions()`); the engine welds only when a partner face is within
+  * the ORGANISM (P2, probe_wave): the head (spine[-1]) is a yaw cell driven
+    as a RUDDER only -- hinge = bias_yaw + steer_gain*steer, no wave; every
+    other spine cell is pitch and carries the wave with -|dphi|, which moves
+    the chain HEAD-FIRST (0.094 m/s straight, steer +-1 -> +-0.95 rad per
+    15 s, turn radius ~1 m). +|dphi| runs it TAIL-FIRST (the reverse gear).
+    Any mid-spine yaw cell is held at bias_yaw (wave-free). Axes are MEASURED.
+  * GROWTH IS AT THE TAIL: a recruit's f_nose meets spine[0]'s f_tail; the
+    lock is written on the free cell's f_nose (symmetric connectors, the free
+    cell is inert). The engine welds only when a partner face is within
     tolerance, so a lock write is a request and the read-back is the answer.
+    Trailer manoeuvre: run head-first onto the free cell's nose normal beyond
+    it (runway R1 then R2), back up (reverse wave) tail-first, capture assist
+    inside CAPTURE_M / CAPTURE_AXIS, lock, verify while still reversing,
+    `Reef.recruit(at_tail=True)`, wave back in head-first.
   * lone cells do not move (Finding 3): free cells get NO actuation.
   * teleport = translation + rotation + resetPhysics(), NEVER setVelocity()
     (alife: a velocity reset freezes a Newton body for ~2 s).
@@ -91,18 +102,70 @@ DOCK_GAP = C.DEFAULT_GAP    # 0.01 m authored face gap of a docked pair
 LOCK_SEP = C.DISTANCE_TOLERANCE      # 0.03: write the lock when the faces are this close
 LOCK_AXIS = C.AXIS_TOLERANCE         # 0.45 rad: ... and the normals are opposed this well
 VERIFY_S = 0.5              # after a lock write, the faces must stay inside VERIFY_SEP this long
-VERIFY_SEP = LOCK_SEP + 0.01         # ... while the body keeps crawling; a weld that took tracks,
+VERIFY_SEP = 0.08           # a welded recruit stays this close while the body moves (measured 0.0407 under reverse pull)
                                      # a face that was merely near is left behind / pushed away
-BACKOFF_M = 0.2
-BACKOFF_S = 3.0
-STANDOFF_M = 0.30           # line up on the free face's normal this far out before the run-in
-LATERAL_MAX_M = 0.12        # off the approach axis by more than this -> back to the standoff
-GO_AROUND_M = 0.6           # swing this wide when the head is behind the free face
-LOOKAHEAD_M = 0.15          # pure-pursuit point ahead on the approach axis during the run-in
-FACE_CHECK_M = 0.30         # read the two face nodes only when the member is this close
-CAPTURE_M = 0.22            # capture assist range (see dock_step)
-CAPTURE_AXIS = 0.9          # ... and alignment
-RECRUIT_TIMEOUT_S = 90.0    # a forced /recruit that has not docked by then is dropped
+BACKOFF_S = 3.0             # after a failed verify: head-first away for this long, then the runway again
+# Trailer manoeuvre geometry (n = the free cell's NOSE normal, N = free nose face position,
+# L = organism length from its tail FACE to its head ROOT):
+RUNWAY_R1_M = 0.35          # R1 = N + n*(L + 0.35): the head here puts the tail face 0.35 m off the nose
+RUNWAY_R2_M = 1.0           # (legacy) R2 = N + n*(L + 1.0)
+RUNWAY_FAR_M = 2.2          # aligned window ends here (was 3.2 for the 2 m-radius single rudder; the pair turns in 0.3 m and a long unsteered reverse drifts: measured +0.31 m lateral after 1.2 m of reverse)
+R_FAR_REACHED_M = 0.45
+RUNWAY_NEAR_M = 0.7         # P_NEAR = N + n*(L + 0.7): the turn-in point just outside the bay
+P_NEAR_REACHED_M = 0.3
+TURN_SLOWDOWN = 0.0         # MEASURED (probe_wave 2026-08-29, gain 0.5): a smaller wave does NOT tighten the turn -- A 0.6 gives 0.13 rad/15 s at 0.6 m (radius 4.6 m), A 0.45 none; full A gives 0.62 rad at 1.25 m (radius 2 m). Earlier "0.6 starved the rudder" was measured with the 1.0 rad over-steer.
+LOOKAHEAD_LINE_M = 0.4      # line-following aim point ahead of the head's projection on the axis (0.6 converged over ~3 m -- too slow for the runway)
+LINE_ERR_FULL_RAD = 0.6     # full lock at this heading error while following the axis (the roaming law saturates at 1.2)
+LINE_ABORT_LATERAL_M = 2.5  # the U-turn at R_FAR swings ~2 m wide at a 1 m turn radius (measured
+                            # 0.9 aborted every U-turn); only a real runaway backs out
+LINE_ABORT_ALONG_M = 1.8    # ... or heading further out than R_FAR by this much
+R1_REACHED_M = 0.30         # the head is "at" R1 inside this radius (then it aims at R2)
+R2_OVERSHOOT_M = 0.25       # head past R2 by this without alignment -> go around and retry
+GO_AROUND_SIDE_M = 1.6      # go-around loop point: R1 + side*perp*1.6 - n*0.8 (turn radius ~1 m)
+GO_AROUND_BACK_M = 0.8
+ALIGN_TAIL_LATERAL_M = 0.10 # reverse when the tail face is within this of the normal ...
+ALIGN_SPINE_RAD = 0.12      # ... and the spine (tail->head) is within this of n (0.5 let a 0.47 rad
+                            # misalignment reverse 2.5 m and drift 0.35 m off-axis, measured x4) ...
+ALIGN_TAIL_ALONG_M = 0.15   # ... and the tail face is at least this far beyond the nose
+REVERSE_ABORT_LATERAL_M = 0.35   # reversing with the tail this far off the normal -> runway again
+REVERSE_TIMEOUT_S = 60.0    # a reverse that has not captured by then -> runway again
+FACE_CHECK_M = 0.35         # read the two face nodes only when the tail root is this close
+CAPTURE_M = 0.22            # capture assist range (tail face <-> free nose face)
+CAPTURE_AXIS = 0.9          # ... and alignment (rad, normals opposed)
+MAX_DOCK_ATTEMPTS = 5       # then the cell is blacklisted for this organism for BLACKLIST_S
+BLACKLIST_S = 60.0
+POLARITY_WINDOW_S = 10.0    # heading-error growth window that flips the steering sign
+RECRUIT_TIMEOUT_S = 90.0
+# ARENA + STUCK HANDLING (measured 2026-08-29, 14-cell reef, 420 s): both
+# organisms recruited once and then ended the epoch pinned against the arena
+# wall -- one stalled at 0.003 m/s in line_out for 250 s, the other drove AWAY
+# from its target for 100 s with the rudder swinging +-1 every few seconds as
+# the heading error wrapped at +-pi (a target dead astern has no turn
+# direction; alternating full lock nets zero turn).
+RUDDER_MAX_RAD = 0.6        # hard cap on the head rudder angle (see drive_organism)
+# K-TURN (measured, probe_dock off-axis 2026-08-29): a target inside the
+# turning circle is ORBITED -- the body circled P_NEAR at d 0.8-2.0 m for
+# 100 s with |err| pinned at 1.7-2.2 rad and full lock. A vehicle whose
+# target is closer than its turn radius backs up first.
+KTURN_DIST_M = 1.1          # aim closer than this ...
+KTURN_ERR_RAD = 1.4         # ... and more than this off the heading -> reverse for KTURN_S
+KTURN_S = 7.0
+KTURN_COOLDOWN_S = 6.0      # forward driving between two K-turn reverses
+RUDDER_CELLS = 2            # yaw cells at the head that carry the steer command. MEASURED
+                            # (probe_wave, 6 cells, gain 0.5, 2026-08-29): one rudder turns
+                            # 0.62 rad/15 s at 0.083 m/s (radius 2 m); a HEAD PAIR turns
+                            # 1.8-2.0 rad/15 s over 0.61 m (radius ~0.3 m) at 0.081 m/s straight
+TURN_COMMIT_RAD = 2.3       # |err| beyond this: commit to one turn direction ...
+TURN_RELEASE_RAD = 1.8      # ... until the error is back inside this
+WALL_MARGIN_M = 0.9         # head this close to a wall and heading at it -> aim at the centre
+WALL_BACKOFF_M = 1.2        # ... and this close: REVERSE until the head is this far off the wall (rudder PAIR turn radius ~0.3 m; was 2.6 for the single rudder)
+                            # (measured: a body pressed nose-first into the wall at 4.71 m kept a
+                            # 0.06 m/s head wobble and never turned -- a rudder needs way on)
+WALL_LOOK_M = 2.2           # a wall this far ahead is "the wall ahead" for the state machine
+WALL_LOG_S = 20.0
+STUCK_SPEED = 0.015         # m/s over a STUCK_S window (head wobble defeats a 1 s speed) ...
+STUCK_S = 25.0
+UNSTICK_S = 8.0             # ... -> reverse gear, no steering, for this long    # a forced /recruit that has not docked by then is dropped
 UPRIGHT_MIN = 0.35          # tail-block up-vector z below this = on its side (reported, not righted)
 LOCK_SETTLE_TICKS = 25      # 0.2 s: seeded welds wait for the first registered step; at 1 s a
                             # side-roller (yaw) cell had time to tip flat before its weld took (measured)
@@ -235,16 +298,34 @@ class CellNodes:
     def set_ring(self, rgb):
         self.ring_field.setSFColor([float(v) for v in rgb])
 
-    def teleport(self, x, y, yaw, z=None):
-        """Robot fields in the Pose's frame; roll back to 0 (flat), hinge 0,
-        resetPhysics. No velocity write (see module docstring)."""
+    def teleport(self, x, y, yaw, z=None, roll=0.0):
+        """Robot fields in the Pose's frame; roll about the cell's own x (0 =
+        flat, pi/2 = a yaw cell), hinge 0, resetPhysics. No velocity write
+        (see module docstring)."""
         z = self.spawn_z if z is None else float(z)
         c, s = math.cos(-self.pose_yaw), math.sin(-self.pose_yaw)
         dx, dy, dz = x - self.pose_t[0], y - self.pose_t[1], z - self.pose_t[2]
         self.tr_field.setSFVec3f([c * dx - s * dy, s * dx + c * dy, dz])
-        self.rot_field.setSFRotation([0.0, 0.0, 1.0, wrap(yaw - self.pose_yaw)])
+        self.rot_field.setSFRotation(axis_angle_zx(wrap(yaw - self.pose_yaw), float(roll)))
         self.pos_field.setSFFloat(0.0)
         self.robot.resetPhysics()
+
+
+def axis_angle_zx(yaw, roll):
+    """Axis-angle of Rz(yaw) * Rx(roll) (a yaw in the Pose frame, then a roll
+    about the cell's own x). Quaternion product, then back to axis-angle."""
+    cy, sy = math.cos(yaw / 2.0), math.sin(yaw / 2.0)
+    cr, sr = math.cos(roll / 2.0), math.sin(roll / 2.0)
+    # q = qz * qx  (w, x, y, z)
+    w = cy * cr
+    x = cy * sr
+    y = sy * sr
+    z = sy * cr
+    n = math.sqrt(x * x + y * y + z * z)
+    if n < 1e-12:
+        return [0.0, 0.0, 1.0, 0.0]
+    ang = 2.0 * math.atan2(n, w)
+    return [x / n, y / n, z / n, ang]
 
 
 # ================================================================== the director
@@ -310,6 +391,8 @@ class Director:
         self.org = {}              # oid -> dict (ramp_t0, cal, hist, dock, ...)
         self.targets = {}          # oid -> (x, y) from this tick's "target" actions
         self.forced = {}           # oid -> {"cell": j, "since": t}  (/recruit)
+        self._relock = []          # [(junction, due_tick)] from reroll actions
+        self._excluded_logged = set()
         self.free_relaxed = set()  # free cells whose hinge was written 0 once
         self.welds = set()         # (i, face, j) locks this supervisor wrote and did not release
         self.positions = {}        # i -> (x, y, z) read THIS tick (alive cells)
@@ -317,7 +400,7 @@ class Director:
         self.ups = {}
         self.axis_z = {}           # i -> |world z of the hinge axis| (1 = yaw hinge)
         self.dock_stats = {"attempts": 0, "locks_written": 0, "recruits": 0,
-                           "failed_verify": 0, "forced": 0}
+                           "failed_verify": 0, "forced": 0, "captures": 0}
         self._tbuf = {}
 
         # ---- HTTP bridge -----------------------------------------------------
@@ -417,6 +500,14 @@ class Director:
                         self.welds.add(key)
                     else:
                         self.welds.discard(key)
+                if kind == "unlock":
+                    # A tail recruit was locked on the RECRUIT's f_nose, while the
+                    # ecology's junction list names the front cell's f_tail as the
+                    # active side: release every face this supervisor locked
+                    # between the two cells, whichever side carried the write.
+                    for key in [k for k in self.welds if {k[0], k[2]} == {int(i), int(j)}]:
+                        self.cells[key[0]].lock(key[1], False)
+                        self.welds.discard(key)
                 self.ramp(self.reef.cells[i].organism)
                 self.ramp(self.reef.cells[j].organism)
                 if kind == "unlock":
@@ -427,6 +518,27 @@ class Director:
             elif kind == "unlimp":
                 cn = self.cells[v]
                 cn.set_torque(cn.max_torque if cn.max_torque is not None else C.MAX_TORQUE)
+            elif kind == "reroll":
+                # DOCK-FACE ROTATION: a cell re-orients 90 deg about the spine
+                # in place so it becomes a rudder (a divided rear half has
+                # none). Real reconfigurable modules rotate their connectors
+                # relative to neighbours (Roombots, M-TRAN). Bounded: zero
+                # displacement, the junction weld is released for one tick
+                # and re-engaged, and the engine's tolerance decides.
+                i, roll, junction = v          # junction = (active_cell, face, partner), a list of them, or None
+                cn = self.cells[i]
+                p = self.cell_pose(i)
+                if p is not None:
+                    junctions = [] if junction is None else (
+                        list(junction) if isinstance(junction, list) else [junction])
+                    for a, face, b in junctions:
+                        self.cells[a].lock(face, False)
+                        self.welds.discard((int(a), face, int(b)))
+                    cn.teleport(p[0], p[1], p[2], roll=float(roll))
+                    for j in junctions:
+                        self._relock.append((j, self.tick + 2))
+                    self.dock_stats["rerolls"] = self.dock_stats.get("rerolls", 0) + 1
+                    log("reroll CELL_%d to roll %.2f (junction %s)" % (i, float(roll), junction))
             elif kind == "teleport":
                 i, x, y, yaw = v
                 self.cells[i].teleport(float(x), float(y), float(yaw))
@@ -507,6 +619,23 @@ class Director:
             if d > TRAVEL_MIN_M:
                 st["heading"] = math.atan2(dy, dx)
                 st["travel_vs_nose"] = math.cos(wrap(st["heading"] - hp[2]))
+        # SPINE HEADING. The head's 1 s travel history is dominated by the
+        # lateral wobble of an undulating body (measured: heading error swinging
+        # +-2 rad every ~16 s at 0.1 m/s, the recruiter never converging). The
+        # tail->head spine axis is stable; a chain travels along it, with a
+        # sign this learns from the travel direction whenever the body is
+        # clearly moving.
+        if len(o.spine) >= 2:
+            tp = self.cell_pose(o.spine[0])
+            if tp is not None:
+                sx, sy = hp[0] - tp[0], hp[1] - tp[1]
+                if math.hypot(sx, sy) > 0.05:
+                    spine = math.atan2(sy, sx)
+                    if st["travel_vs_nose"] is not None and st["speed"] > 0.03 and not st.get("reverse"):
+                        agree = math.cos(wrap(st["heading"] - spine))
+                        st["spine_sign"] = 1.0 if agree >= 0.0 else -1.0
+                    sgn = st.get("spine_sign", 1.0)
+                    st["heading"] = wrap(spine + (0.0 if sgn > 0 else math.pi))
 
     def effective_bodyplan(self, o, st):
         """B's chain_targets reads the hinge axis class from the body plan's
@@ -567,13 +696,47 @@ class Director:
             return None
         return CAL_STEER if cal["phase"] == "plus" else -CAL_STEER
 
-    def dock_member(self, o):
-        """(member cell, member face) the next recruit's f_tail meets."""
-        slot = o.open_branch_slot()
-        if slot is not None:
-            k, side = slot
-            return o.spine[k], ORG.BRANCH_SIDE_FACE[side]
-        return o.head, "f_nose"
+    def spine_geometry(self, o):
+        """(tail_root, head_root, spine_dir (unit tail->head), L) from this
+        tick's poses, or None. L = tail FACE to head ROOT along the spine."""
+        tp, hp = self.cell_pose(o.spine[0]), self.cell_pose(o.head)
+        if tp is None or hp is None:
+            return None
+        if len(o.spine) == 1:
+            ux, uy = math.cos(tp[2]), math.sin(tp[2])
+        else:
+            sx, sy = hp[0] - tp[0], hp[1] - tp[1]
+            m = math.hypot(sx, sy)
+            if m < 1e-6:
+                ux, uy = math.cos(tp[2]), math.sin(tp[2])
+            else:
+                ux, uy = sx / m, sy / m
+        L = (len(o.spine) - 1) * (C.CELL_LENGTH + DOCK_GAP) + C.HALF
+        return tp, hp, (ux, uy), L
+
+    def runway(self, fp, L):
+        """The trailer geometry for a free cell at pose fp: N (its nose face),
+        n (nose normal), R1, R2 (head aim points on the normal beyond it)."""
+        nx_, ny_, nyaw = ORG.face_pose(fp, "f_nose")
+        n = (math.cos(nyaw), math.sin(nyaw))
+        R1 = (nx_ + n[0] * (L + RUNWAY_R1_M), ny_ + n[1] * (L + RUNWAY_R1_M))
+        R2 = (nx_ + n[0] * (L + RUNWAY_R2_M), ny_ + n[1] * (L + RUNWAY_R2_M))
+        return (nx_, ny_), n, R1, R2
+
+    def _fail_attempt(self, o, st, d, j, why):
+        d["attempts"] += 1
+        self.dock_stats["attempts"] += 1
+        st["reverse"] = False
+        if d["attempts"] >= MAX_DOCK_ATTEMPTS:
+            st.setdefault("blacklist", {})[j] = self.t + BLACKLIST_S
+            self.forced.pop(o.id, None)
+            log("%s gave up on CELL_%d after %d attempts (%s); blacklisted %.0f s"
+                % (o.id, j, d["attempts"], why, BLACKLIST_S))
+            st["dock"] = None
+            return
+        d["state"], d["phase"], d["until"] = "backoff", "backoff", self.t + BACKOFF_S
+        log("%s dock attempt %d failed (%s): head-first away for %.0f s, then the runway again"
+            % (o.id, d["attempts"], why, BACKOFF_S))
 
     def recruit_target_of(self, o):
         """The free cell this organism is trying to dock, forced (/recruit)
@@ -592,169 +755,401 @@ class Director:
         return None
 
     def docking(self, o, st, hp, j):
-        """One tick of the recruit-and-dock manoeuvre. Returns (aim_xy,
-        member_mode, member): the point the head steers at, how the docking
-        member's own hinge is driven this tick ("wave" = its normal gait
-        target, "dock" = no wave: steer bias only on a yaw member, flat on a
-        pitch member -- the face must be where approach_pose assumes) and
-        that member.
+        """One tick of the trailer manoeuvre onto free cell j. Returns
+        (aim_xy, reverse): the point the head steers at (None = no steering)
+        and whether the wave runs tail-first this tick.
 
-        States: approach (pure pursuit onto the free face's normal: the
-        standoff point while far or off-axis, then a look-ahead point on the
-        axis; the lock is written when the two faces are within LOCK_SEP with
-        normals opposed within LOCK_AXIS), verify (the body keeps crawling
-        for VERIFY_S; the faces must stay within VERIFY_SEP, then the ecology
-        recruits; a weld that did not take is released), backoff (aim
-        BACKOFF_M further out for BACKOFF_S, then retry)."""
-        member, mface = self.dock_member(o)
-        mp = self.cell_pose(member)
+        States: runway (head-first: aim R1, then R2; the moment the tail face
+        is within ALIGN_TAIL_LATERAL_M of the free nose normal, the spine is
+        within ALIGN_SPINE_RAD of it and the tail is beyond the nose ->
+        reverse), go_around (the head overshot R2 unaligned: loop back to R1
+        via a side point), reverse (+|dphi|, no steering; capture assist
+        inside CAPTURE_M / CAPTURE_AXIS draws the inert free cell onto the
+        tail face; lock when inside the engine tolerance), verify (still
+        reversing VERIFY_S; faces within VERIFY_SEP -> Reef.recruit(at_tail),
+        else release + backoff), backoff (head-first away for BACKOFF_S)."""
+        geo = self.spine_geometry(o)
         fp = self.cell_pose(j)
-        if mp is None or fp is None:
-            return None, "wave", member
+        if geo is None or fp is None:
+            return None, False
+        tp, _hp, (ux, uy), L = geo
+        tail = o.spine[0]
         d = st["dock"]
-        if d is None or d["cell"] != j or d["member"] != member:
-            d = {"cell": j, "member": member, "face": mface, "state": "approach",
-                 "since": self.t, "attempts": 0, "backoff_until": 0.0, "lock_t": None,
-                 "sep": None, "axis_err": None, "sep_lock": None}
+        if d is None or d["cell"] != j:
+            d = {"cell": j, "tail": tail, "state": "runway", "phase": "to_R1", "since": self.t,
+                 "attempts": 0, "until": 0.0, "lock_t": None, "sep": None, "axis_err": None,
+                 "captures": 0}
             st["dock"] = d
             self.dock_stats["attempts"] += 1
-        goal = ORG.approach_pose(fp, "f_tail", DOCK_GAP, head_face=mface)   # member root pose
-        _fx, _fy, fyaw = ORG.face_pose(fp, "f_tail")                        # free face outward normal
-        nx, ny = math.cos(fyaw), math.sin(fyaw)
-        rx, ry = mp[0] - goal[0], mp[1] - goal[1]
-        along = rx * nx + ry * ny                 # + = outside the free face, along its normal
-        lateral = abs(-rx * ny + ry * nx)
-        d["dist_goal"], d["along"], d["lateral"] = ORG.distance_xy(mp, goal), along, lateral
-        far_aim = (goal[0] + nx * (STANDOFF_M + BACKOFF_M), goal[1] + ny * (STANDOFF_M + BACKOFF_M))
-        standoff = (goal[0] + nx * STANDOFF_M, goal[1] + ny * STANDOFF_M)
+            log("%s docking CELL_%d: runway (L=%.2f m, tail=CELL_%d)" % (o.id, j, L, tail))
+        d["tail"] = tail
+        N, n, R1, R2 = self.runway(fp, L)
+        px, py = -n[1], n[0]                               # perp (left of n)
+        # tail FACE position from the tail root (the f_tail origin is -HALF along the cell's +x)
+        tfx, tfy = tp[0] - C.HALF * math.cos(tp[2]), tp[1] - C.HALF * math.sin(tp[2])
+        rx, ry = tfx - N[0], tfy - N[1]
+        tail_along, tail_lat = rx * n[0] + ry * n[1], rx * px + ry * py
+        hx_, hy_ = hp[0] - N[0], hp[1] - N[1]
+        head_along, head_lat = hx_ * n[0] + hy_ * n[1], hx_ * px + hy_ * py
+        spine_err = abs(wrap(math.atan2(uy, ux) - math.atan2(n[1], n[0])))
+        d.update({"along": tail_along, "lateral": tail_lat, "head_along": head_along,
+                  "head_lateral": head_lat, "spine_err": spine_err, "dist_goal": ORG.distance_xy(tp, fp),
+                  "R1": [round(R1[0], 3), round(R1[1], 3)], "R2": [round(R2[0], 3), round(R2[1], 3)]})
+        # ...and only from the near end of the runway: a body 2.5 m out that
+        # happens to be aligned has 2.5 m of unsteered reverse ahead of it
+        aligned = (abs(tail_lat) <= ALIGN_TAIL_LATERAL_M and spine_err <= ALIGN_SPINE_RAD
+                   and ALIGN_TAIL_ALONG_M <= tail_along <= RUNWAY_FAR_M)
+
         if d["state"] == "backoff":
-            if self.t < d["backoff_until"]:
-                return far_aim, "wave", member
-            d["state"] = "approach"
-        if d["state"] == "approach":
-            if along < -0.05 and ORG.distance_xy(mp, fp) < GO_AROUND_M:
-                # The head is BEHIND the free face (on the wrong side of the
-                # cell): pure pursuit toward the standoff would push straight
-                # through the cell. Measured: three organisms parked at
-                # along -1.3 / -2.9 / -1.8 m for a whole epoch. Swing wide to
-                # the side the head is already on, then come back in front.
-                side = 1.0 if (-rx * ny + ry * nx) >= 0.0 else -1.0
-                d["phase"] = "go_around"
-                aim = (fp[0] + nx * (STANDOFF_M * 0.5) - side * ny * GO_AROUND_M,
-                       fp[1] + ny * (STANDOFF_M * 0.5) + side * nx * GO_AROUND_M)
-                return aim, "wave", member
-            if along > STANDOFF_M + 0.05 or along < -0.05 or lateral > LATERAL_MAX_M:
-                d["phase"] = "standoff"
-                return standoff, "wave", member
-            d["phase"] = "run_in"
-            s_ahead = max(0.0, along - LOOKAHEAD_M)
-            aim = (goal[0] + nx * s_ahead, goal[1] + ny * s_ahead)
-            if ORG.distance_xy(mp, fp) <= FACE_CHECK_M:
-                (ax, ay, ayaw), _pa = self.cells[member].face_pose2d(mface)
-                (bx, by, byaw), _pb = self.cells[j].face_pose2d("f_tail")
-                sep = math.hypot(ax - bx, ay - by)
-                axis_err = abs(wrap(ayaw - byaw - math.pi))
-                d["sep"], d["axis_err"] = sep, axis_err
-                # CAPTURE ASSIST. An undulating head cannot hold a 3 cm / 0.45
-                # rad tolerance by itself (measured: it reaches the face plane
-                # 19 cm off-axis). Real docking mechanisms capture with magnets
-                # or guide cones over a short range; here, inside CAPTURE_M and
-                # roughly aligned, the INERT free cell is drawn onto the socket
-                # (a bounded teleport of the passive part; the engine's own
-                # weld tolerance still decides whether the lock takes).
-                if sep <= CAPTURE_M and axis_err <= CAPTURE_AXIS and (sep > LOCK_SEP or axis_err > LOCK_AXIS):
-                    nx2, ny2 = math.cos(ayaw), math.sin(ayaw)
-                    off = DOCK_GAP + C.BLOCK / 2.0
-                    self.cells[j].teleport(ax + nx2 * off, ay + ny2 * off, ayaw)
-                    self.dock_stats["captures"] = self.dock_stats.get("captures", 0) + 1
-                    log("%s capture assist: CELL_%d drawn onto CELL_%d.%s (sep %.3f, axis %.2f rad)"
-                        % (o.id, j, member, mface, sep, axis_err))
-                    return aim, "dock", member          # lock on the next tick, after the step
-                if sep <= LOCK_SEP and axis_err <= LOCK_AXIS:
-                    self.cells[j].lock("f_tail", True)
-                    self.welds.add((j, "f_tail", member))
-                    self.dock_stats["locks_written"] += 1
-                    d["state"], d["lock_t"], d["sep_lock"] = "verify", self.t, sep
-                    log("%s lock written: CELL_%d.f_tail -> CELL_%d.%s (sep %.4f, axis %.3f rad)"
-                        % (o.id, j, member, mface, sep, axis_err))
-            return aim, "dock", member
-        if d["state"] == "verify":
-            (ax, ay, _), _pa = self.cells[member].face_pose2d(mface)
-            (bx, by, _), _pb = self.cells[j].face_pose2d("f_tail")
+            if self.t < d["until"]:
+                return R2, False
+            d["state"], d["phase"] = "runway", "to_R1"
+            log("%s runway again (attempt %d)" % (o.id, d["attempts"] + 1))
+
+        if d["state"] == "runway":
+            if aligned:
+                d["state"], d["phase"], d["until"] = "reverse", "reverse", self.t + REVERSE_TIMEOUT_S
+                d["reverse_t0"] = self.t
+                st["reverse"] = True
+                self.ramp(o.id)
+                log("%s ALIGNED: tail face lat %+.3f along %.3f spine_err %.2f rad -> REVERSE (+dphi, no steer)"
+                    % (o.id, tail_lat, tail_along, spine_err))
+                return None, True
+            # RUNWAY, redesigned after four measured loops of "at R1 unaligned ->
+            # overshoot -> go-around": with a ~1 m turn radius the old R1/R2 pair
+            # (0.65 m apart, near point FIRST) could never straighten the body.
+            # Now: (far) drive to R_FAR well out on the free cell's nose normal,
+            # then (line) follow the normal back toward the cell -- the aim is a
+            # point on the axis LOOKAHEAD ahead of the head's projection, so the
+            # body converges onto the line -- and the aligned test above fires
+            # near R1. Passing R1 still unaligned sends it back out to R_FAR.
+            # RUNWAY v3 (measured twice): line-following INTO the cell converges
+            # beautifully -- and arrives head-first, i.e. facing the wrong way to
+            # back in (spine_err ~2.5 rad at R1 every time). A trailer is parked
+            # by driving PAST the bay and reversing, so: (near) drive to P_NEAR,
+            # a point on the free cell's nose normal just outside the bay; then
+            # (line_out) follow the axis OUTWARD -- the aim is a point on the axis
+            # LOOKAHEAD beyond the head's projection -- which straightens the body
+            # with its tail toward the cell; the aligned test above then fires
+            # and the reverse leg backs straight in.
+            P_NEAR = (N[0] + n[0] * (L + RUNWAY_NEAR_M), N[1] + n[1] * (L + RUNWAY_NEAR_M))
+            if d["phase"] not in ("near", "line_out"):
+                d["phase"] = "near"
+            if d["phase"] == "near":
+                if ORG.distance_xy(hp, P_NEAR) <= P_NEAR_REACHED_M:
+                    d["phase"] = "line_out"
+                    log("%s at P_NEAR (head lat %+.2f along %.2f, spine_err %.2f): following the axis OUT"
+                        % (o.id, head_lat, head_along, spine_err))
+                else:
+                    return P_NEAR, False
+            if d["phase"] == "line_out":
+                if head_along > L + RUNWAY_FAR_M + LINE_ABORT_ALONG_M or abs(head_lat) > LINE_ABORT_LATERAL_M:
+                    d["phase"] = "near"
+                    log("%s ran out of runway unaligned (head lat %+.2f along %.2f, spine_err %.2f): back to P_NEAR"
+                        % (o.id, head_lat, head_along, spine_err))
+                    return P_NEAR, False
+                s_aim = head_along + LOOKAHEAD_LINE_M
+                st["line_follow"] = True
+                return (N[0] + n[0] * s_aim, N[1] + n[1] * s_aim), False
+            return P_NEAR, False
+
+        if d["state"] in ("reverse", "verify"):
+            # abort conditions
+            if d["state"] == "reverse":
+                if abs(tail_lat) > REVERSE_ABORT_LATERAL_M or tail_along < -0.05 or self.t > d["until"]:
+                    self._fail_attempt(o, st, d, j, "reverse drifted (tail lat %+.2f along %.2f) or timed out"
+                                       % (tail_lat, tail_along))
+                    return R2, False
+            if ORG.distance_xy(tp, fp) > FACE_CHECK_M and d["state"] == "reverse":
+                return None, True
+            (ax, ay, ayaw), _pa = self.cells[tail].face_pose2d("f_tail")
+            (bx, by, byaw), _pb = self.cells[j].face_pose2d("f_nose")
             sep = math.hypot(ax - bx, ay - by)
-            d["sep"] = sep
+            axis_err = abs(wrap(ayaw - byaw - math.pi))
+            d["sep"], d["axis_err"] = sep, axis_err
+            if d["state"] == "reverse":
+                # CAPTURE ASSIST. A reversing chain cannot hold a 3 cm / 0.45 rad
+                # tolerance by itself (measured). Real docking mechanisms capture
+                # with magnets or guide cones over a short range; here, inside
+                # CAPTURE_M and roughly aligned, the INERT free cell is drawn onto
+                # the tail socket: its nose face DOCK_GAP in front of the tail face
+                # with the normals opposed, so its ROOT (the tail block, 0.09 m
+                # behind its nose face at hinge 0) sits at
+                #   tail_face + m*(DOCK_GAP + NOSE_FACE_X), yaw = tail normal + pi
+                # (m = the tail face's outward normal). Bounded: once per attempt,
+                # counted in dock_stats["captures"]; the engine's own weld
+                # tolerance still decides whether the lock takes.
+                if (sep <= CAPTURE_M and axis_err <= CAPTURE_AXIS and (sep > LOCK_SEP or axis_err > LOCK_AXIS)
+                        and d["captures"] == 0):
+                    mx, my = math.cos(ayaw), math.sin(ayaw)
+                    off = DOCK_GAP + C.NOSE_FACE_X
+                    self.cells[j].teleport(ax + mx * off, ay + my * off, wrap(ayaw + math.pi))
+                    d["captures"] += 1
+                    self.dock_stats["captures"] = self.dock_stats.get("captures", 0) + 1
+                    log("%s capture assist: CELL_%d drawn onto CELL_%d.f_tail (sep %.3f, axis %.2f rad)"
+                        % (o.id, j, tail, sep, axis_err))
+                    return None, True                  # lock on the next tick, after the step
+                if sep <= LOCK_SEP and axis_err <= LOCK_AXIS:
+                    self.cells[j].lock("f_nose", True)
+                    self.welds.add((j, "f_nose", tail))
+                    self.dock_stats["locks_written"] += 1
+                    d["state"], d["phase"], d["lock_t"] = "verify", "verify", self.t
+                    log("%s lock written: CELL_%d.f_nose -> CELL_%d.f_tail (sep %.4f, axis %.3f rad)"
+                        % (o.id, j, tail, sep, axis_err))
+                return None, True
+            # verify: keep reversing, the faces must stay together
             held = self.t - d["lock_t"]
             if sep <= VERIFY_SEP and held < VERIFY_S:
-                return (goal[0], goal[1]), "dock", member      # keep crawling, keep watching
+                return None, True
             if sep <= VERIFY_SEP:
                 try:
-                    acts = self.reef.recruit(o.id, j)
-                except ValueError as exc:
+                    acts = self.reef.recruit(o.id, j, at_tail=True)
+                except (ValueError, TypeError) as exc:
                     log("%s recruit of CELL_%d refused by the ecology: %s" % (o.id, j, exc))
                     acts = None
                 if acts is not None:
                     for a in acts:
                         self.execute(a)
-                    self.welds.discard((j, "f_tail", member))
                     self.dock_stats["recruits"] += 1
                     self.forced.pop(o.id, None)
                     self.free_relaxed.discard(j)
-                    log("%s RECRUITED CELL_%d at t=%.2f (junction sep %.4f m held %.2f s, %d attempt(s), "
-                        "now %d cells)" % (o.id, j, self.t, sep, held, d["attempts"] + 1, len(o)))
+                    st["reverse"] = False
+                    self.ramp(o.id)
+                    log("%s RECRUITED CELL_%d at the tail, t=%.2f (junction sep %.4f m held %.2f s, %d attempt(s), "
+                        "spine %s)" % (o.id, j, self.t, sep, held, d["attempts"] + 1, o.spine))
                     st["dock"] = None
-                    return None, "wave", member
-            # the weld did not take (the faces drifted apart while the body moved): release, back off
-            self.cells[j].lock("f_tail", False)
-            self.welds.discard((j, "f_tail", member))
+                    return None, False
+            self.cells[j].lock("f_nose", False)
+            self.welds.discard((j, "f_nose", tail))
             self.dock_stats["failed_verify"] += 1
-            d["attempts"] += 1
-            d["state"], d["backoff_until"] = "backoff", self.t + BACKOFF_S
-            log("%s dock verify FAILED (sep %.4f > %.3f after %.2f s): unlocked, backing off %.1f m for %.0f s"
-                % (o.id, sep, VERIFY_SEP, held, BACKOFF_M, BACKOFF_S))
-            self.ramp(o.id)
-            return far_aim, "wave", member
-        return None, "wave", member
+            self._fail_attempt(o, st, d, j, "verify: sep %.4f > %.3f after %.2f s" % (sep, VERIFY_SEP, held))
+            return R2, False
+        return None, False
+
+    def clamp_aim(self, aim):
+        if aim is None:
+            return None
+        h = self.ARENA / 2.0 - WALL_MARGIN_M * 0.6
+        return (ORG.clamp(float(aim[0]), -h, h), ORG.clamp(float(aim[1]), -h, h))
+
+    def wall_ahead(self, hp, st):
+        """(nx, ny, dist): the nearest arena wall within WALL_LOOK_M that the
+        measured heading points at (outward normal, distance), else None."""
+        h = self.ARENA / 2.0
+        heading = st["heading"] if st["heading"] is not None else hp[2]
+        cx, cy = math.cos(heading), math.sin(heading)
+        best = None
+        for nx_, ny_, d_, into in ((1.0, 0.0, h - hp[0], cx), (-1.0, 0.0, hp[0] + h, -cx),
+                                   (0.0, 1.0, h - hp[1], cy), (0.0, -1.0, hp[1] + h, -cy)):
+            if d_ < WALL_LOOK_M and into > 0.2 and (best is None or d_ < best[2]):
+                best = (nx_, ny_, d_)
+        return best
+
+    def dockable(self, j):
+        """A free cell whose docking runway (the turn-in point beyond its nose,
+        for a typical 0.7 m body) lies outside the arena cannot be docked: the
+        organism would have to stand inside the wall to line up on it."""
+        fp = self.cell_pose(j)
+        if fp is None:
+            return False
+        nx_, ny_, nyaw = ORG.face_pose(fp, "f_nose")
+        # the WHOLE runway: the organism drives to the far end of the axis
+        # (L + RUNWAY_FAR_M beyond the nose) and reverses down it; measured
+        # (epoch 7, 12 m arena): checking only the turn-in point let bodies
+        # chase cells whose runway ended in a wall -- 15 wall events, 0 locks
+        r = 0.7 + RUNWAY_FAR_M
+        px, py = nx_ + math.cos(nyaw) * r, ny_ + math.sin(nyaw) * r
+        h = self.ARENA / 2.0 - 0.3
+        return abs(px) <= h and abs(py) <= h
 
     def drive_organism(self, o):
         st = self.org_state(o.id)
         hp = self.head_pose(o)
         if hp is None:
             return
+        st["line_follow"] = False
         self.update_travel(o, st)
         forced_steer = self.calibrate(o, st, hp)
         steer = 0.0
-        member_mode, member = "wave", None
+        reverse = False
         j = self.recruit_target_of(o)
         if j is not None:
-            aim, member_mode, member = self.docking(o, st, hp, j)
+            aim, reverse = self.docking(o, st, hp, j)
         else:
-            st["dock"] = None
+            if st.get("dock") is not None:
+                st["dock"] = None
+            st["reverse"] = False
             aim = self.targets.get(o.id)
-        if forced_steer is not None:
+        # WALL AVOIDANCE + STUCK RECOVERY (see the constants). Aim points are
+        # clamped into the arena; a head inside WALL_MARGIN_M of a wall and
+        # heading at it aims at the centre instead; a body driving forward at
+        # under STUCK_SPEED for STUCK_S backs off in reverse gear for UNSTICK_S.
+        aim = self.clamp_aim(aim)
+        st["mode"] = ""
+        if not reverse:
+            # WALL STATE MACHINE (measured: a margin-only rule limit-cycled at
+            # 0.87 m off the wall for 300 s -- reverse until clear of the
+            # margin, forward straight back into it). None -> "rev" (inside
+            # WALL_MARGIN_M and heading at the wall; back off until
+            # WALL_BACKOFF_M, a rudder needs way on) -> "turn" (aim at the
+            # centre, turn commitment does the rest) -> None once the heading
+            # no longer points at a wall within WALL_LOOK_M.
+            wall = self.wall_ahead(hp, st)
+            ws = st.get("wall_state")
+            if ws is None and wall is not None and wall[2] < WALL_MARGIN_M:
+                ws = "rev" if wall[2] < WALL_BACKOFF_M else "turn"
+                st["turn_dir"] = None
+                self.dock_stats["wall_events"] = self.dock_stats.get("wall_events", 0) + 1
+                log("%s at the wall (%.2f, %.2f) heading %.2f, %.2f m off it: %s"
+                    % (o.id, hp[0], hp[1], st["heading"] if st["heading"] is not None else hp[2],
+                       wall[2], "backing off" if ws == "rev" else "turning to the centre"))
+            if ws == "rev":
+                if wall is None or wall[2] >= WALL_BACKOFF_M:
+                    ws = "turn"
+                    st["turn_dir"] = None
+                else:
+                    reverse, aim = True, None
+                    st["mode"] = "WALL_REV"
+            if ws == "turn":
+                if wall is None:
+                    ws = None
+                elif wall[2] < WALL_BACKOFF_M * 0.4:
+                    ws = "rev"
+                    reverse, aim = True, None
+                    st["mode"] = "WALL_REV"
+                else:
+                    aim = (0.0, 0.0)
+                    st["mode"] = "WALL"
+            st["wall_state"] = ws
+        if self.t < st.get("kturn_until", 0.0):
+            reverse, aim = True, None
+            st["mode"] = "KTURN"
+        elif (not reverse and aim is not None and st["heading"] is not None
+              and self.t >= st.get("kturn_next", 0.0)
+              and ORG.distance_xy(hp, aim) < KTURN_DIST_M
+              and abs(ORG.heading_error((hp[0], hp[1], st["heading"]), aim)) > KTURN_ERR_RAD):
+            st["kturn_until"] = self.t + KTURN_S
+            st["kturn_next"] = self.t + KTURN_S + KTURN_COOLDOWN_S
+            st["turn_dir"] = None
+            self.dock_stats["kturns"] = self.dock_stats.get("kturns", 0) + 1
+            log("%s K-TURN: aim %.2f m away, %.2f rad off the heading -> reverse %.0f s"
+                % (o.id, ORG.distance_xy(hp, aim),
+                   ORG.heading_error((hp[0], hp[1], st["heading"]), aim), KTURN_S))
+            reverse, aim = True, None
+            st["mode"] = "KTURN"
+        if self.t < st.get("unstick_until", 0.0):
+            reverse, aim = True, None
+            st["mode"] = "UNSTICK"
+        elif not reverse:
+            # STUCK: head displacement over a STUCK_S window (the 1 s speed is
+            # dominated by the wobble of an undulating body pressed on something)
+            ref = st.get("stuck_ref")
+            if ref is None or self.t - st["ramp_t0"] < FADE_S + 2.0:
+                st["stuck_ref"] = (self.t, hp[0], hp[1])
+            elif self.t - ref[0] >= STUCK_S:
+                moved = math.hypot(hp[0] - ref[1], hp[1] - ref[2])
+                st["stuck_ref"] = (self.t, hp[0], hp[1])
+                if moved < STUCK_SPEED * STUCK_S:
+                    st["unstick_until"] = self.t + UNSTICK_S
+                    st["turn_dir"] = None
+                    self.dock_stats["unsticks"] = self.dock_stats.get("unsticks", 0) + 1
+                    log("%s STUCK (%.2f m in %.0f s at (%.2f, %.2f)): reverse gear for %.0f s"
+                        % (o.id, moved, STUCK_S, hp[0], hp[1], UNSTICK_S))
+                    reverse, aim = True, None
+                    st["mode"] = "UNSTICK"
+        else:
+            st["stuck_ref"] = None
+        if reverse:
+            steer = 0.0                                  # no steering in the reverse gear
+        elif forced_steer is not None:
             steer = forced_steer
         elif aim is not None:
-            # steer on the MEASURED travel heading (alife: a gait may carry a
-            # body sideways or backwards; the nose is the fallback)
+            # steer on the MEASURED heading (spine axis, signed by travel)
             head_for_error = (hp[0], hp[1], st["heading"] if st["heading"] is not None else hp[2])
             err = ORG.heading_error(head_for_error, aim)
-            steer = ORG.steer_from_error(err, sign=st["cal"]["sign"])
+            # TURN COMMITMENT: a target dead astern wraps err at +-pi and the
+            # proportional law flips the rudder every sample (measured, above).
+            td = st.get("turn_dir")
+            if td is None and abs(err) >= TURN_COMMIT_RAD:
+                td = 1.0 if err >= 0.0 else -1.0
+            elif td is not None and abs(err) < TURN_RELEASE_RAD:
+                td = None
+            st["turn_dir"] = td
+            if td is not None:
+                steer = st["cal"]["sign"] * td
+            else:
+                err_full = LINE_ERR_FULL_RAD if st.pop("line_follow", False) else ORG.STEER_ERR_FULL
+                steer = ORG.steer_from_error(err, err_full=err_full, sign=st["cal"]["sign"])
+            # POLARITY WATCH (the alife lesson, applied online): the wiggle
+            # calibration is weak on some bodies (b ~ +0.07 rad). If the heading
+            # error keeps GROWING while the command is saturated, the sign is
+            # wrong -- flip it. Measured: a recruiter sat 156 s in standoff at
+            # 0.007 m/s pivoting away from its target.
+            pw = st.setdefault("polarity", {"t0": None, "e0": None})
+            if st.get("rudder") is not None:
+                st["cal"]["sign"] = 1.0          # measured convention for a head rudder (probe_wave)
+                pw["t0"] = None
+            elif abs(steer) >= 0.99:
+                if pw["t0"] is None:
+                    pw["t0"], pw["e0"] = self.t, abs(err)
+                elif self.t - pw["t0"] >= POLARITY_WINDOW_S:
+                    if abs(err) > pw["e0"] + 0.15:
+                        st["cal"]["sign"] = -st["cal"]["sign"]
+                        log("%s polarity flipped -> %+d (|err| %.2f -> %.2f rad over %.0f s at full steer)"
+                            % (o.id, int(st["cal"]["sign"]), pw["e0"], abs(err), POLARITY_WINDOW_S))
+                    pw["t0"], pw["e0"] = self.t, abs(err)
+            else:
+                pw["t0"] = None
+            st["err"] = err
         st["steer"] = steer
         st["aim"] = aim
+        st["reverse"] = bool(reverse)
+        # HEAD RUDDER + PITCH WAVE (probe_wave, measured). The wave is computed
+        # for an all-pitch spine and travels toward the LOW-index end of its
+        # phase ramp: -|dphi| moves the chain head-first, +|dphi| tail-first
+        # (the reverse gear). Every MEASURED yaw cell is then overridden: the
+        # head is the rudder (bias_yaw + steer_gain*steer), any other yaw cell
+        # is held at bias_yaw -- neither carries the wave.
         bp = self.effective_bodyplan(o, st)
+        all_pitch = dict(bp, dock_rotation_pattern=[0])
         branches = [side for (_k, side) in sorted(o.branches)]
         buf = self._tbuf.setdefault(o.id, [])
-        targets = ORG.chain_targets(o.genome, bp, len(o.spine), self.t, steer,
+        wave = dict(o.genome)
+        wave["dphi"] = abs(o.genome["dphi"]) if reverse else -abs(o.genome["dphi"])
+        # TURN RADIUS = speed / yaw rate. The rudder's yaw rate is fixed by the
+        # physics, so a hard turn must SLOW the wave: measured, at full speed the
+        # body orbits a target inside its ~1 m turning circle forever (26 trace
+        # rows circling P_NEAR at 0.75-2.5 m). Scaling the amplitude down with
+        # |steer| roughly halves the radius at full lock.
+        if not reverse:
+            wave["A"] = o.genome["A"] * (1.0 - TURN_SLOWDOWN * min(1.0, abs(steer)))
+        targets = ORG.chain_targets(wave, all_pitch, len(o.spine), self.t, 0.0,
                                     branches=branches, out=buf)
+        g = o.genome
+        # RUDDER_MAX_RAD: measured (probe_wave, 6 cells) a 1.0 rad head is an
+        # anchor -- half the speed, half the yaw rate of 0.5 rad.
+        rudder = ORG.clamp(g["bias_yaw"] + g["steer_gain"] * steer, -RUDDER_MAX_RAD, RUDDER_MAX_RAD)
+        n_spine = len(o.spine)
+        for k in range(n_spine):
+            if self.axis_z.get(o.spine[k], 0.0) > 0.7:
+                targets[k] = rudder if k >= n_spine - RUDDER_CELLS else g["bias_yaw"]
+        head_up = self.axis_z.get(o.head, 0.0)
+        st["rudder"] = rudder if head_up > 0.7 else None
+        # RUDDER WATCH: a head cell knocked off its side (hinge axis no longer
+        # vertical) leaves the body with no steering at all -- log the
+        # transitions, they explain every "polarity flipped" on a rudder body.
+        had = st.get("rudder_ok")
+        has = st["rudder"] is not None
+        if had is not None and had != has:
+            self.dock_stats["rudder_lost" if not has else "rudder_back"] =                 self.dock_stats.get("rudder_lost" if not has else "rudder_back", 0) + 1
+            log("%s RUDDER %s: head CELL_%d hinge-axis |z| = %.2f at t=%.1f"
+                % (o.id, "LOST" if not has else "back", o.head, head_up, self.t))
+        st["rudder_ok"] = has
+        st["head_up"] = head_up
         fade = min(1.0, max(0.0, (self.t - st["ramp_t0"]) / FADE_S)) if FADE_S > 0 else 1.0
         members = o.members()
         for idx, i in enumerate(members):
             v = targets[idx] * fade if idx < len(targets) else 0.0
-            if member_mode == "dock" and i == member:
-                # no wave on the docking member: its face must sit where
-                # approach_pose assumes. A yaw member keeps the steer bias
-                # (it may be the body's only steering hinge); a pitch member
-                # is held flat.
-                v = (o.genome["steer_gain"] * steer) if self.axis_z.get(i, 0.0) > 0.7 else 0.0
             cn = self.cells.get(i)
             if cn is not None and cn.pos_field is not None:
                 cn.set_hinge(v)
@@ -842,20 +1237,25 @@ class Director:
             self.dock_stats["forced"] += 1
             st = self.org_state(oid)
             st["dock"] = None
-            member, mface = self.dock_member(o)
+            st.get("blacklist", {}).pop(j, None)
 
-            def fin(j=j, member=member, mface=mface):
-                mp, fp = self.cell_pose(member), self.cell_pose(j)
-                if mp is None or fp is None:
+            def fin(j=j):
+                geo, fp = self.spine_geometry(o), self.cell_pose(j)
+                if geo is None or fp is None:
                     return 409, {"ok": False, "error": "unmeasured", "organism": oid, "cell": j}
-                goal = ORG.approach_pose(fp, "f_tail", DOCK_GAP, head_face=mface)
+                tp, hp, _u, L = geo
+                N, n, R1, R2 = self.runway(fp, L)
                 return 200, {"ok": True, "accepted": True, "organism": oid, "cell": j,
-                             "member": member, "member_face": mface,
-                             "distance_measured": round(ORG.distance_xy(mp, fp), 4),
-                             "approach_pose": [round(v, 4) for v in goal],
-                             "state": "approaching",
-                             "note": "docking completes when the faces mate and the weld is "
-                                     "read back; watch /census organisms[%s].dock" % oid}
+                             "tail": o.spine[0], "tail_face": "f_tail", "recruit_face": "f_nose",
+                             "distance_measured": round(ORG.distance_xy(tp, fp), 4),
+                             "runway": {"nose_face": [round(v, 4) for v in N],
+                                        "normal": [round(v, 4) for v in n],
+                                        "R1": [round(v, 4) for v in R1], "R2": [round(v, 4) for v in R2],
+                                        "L_org": round(L, 4)},
+                             "state": "runway",
+                             "note": "trailer manoeuvre: head-first to R1 then R2, reverse tail-first onto "
+                                     "the nose, capture assist, lock, verify, recruit at the tail; watch "
+                                     "/census organisms[%s].dock" % oid}
             return self.queue.defer(cmd, tick + VERIFY_TICKS, fin)
         return 400, {"ok": False, "error": "unknown_verb", "verb": cmd.verb}
 
@@ -882,8 +1282,10 @@ class Director:
                 "upright": all(self.ups.get(i, 1.0) >= UPRIGHT_MIN for i in o.members()),
                 "wave_speed_estimate": round(ORG.wave_speed_estimate(o.genome), 4),
                 "forced_recruit": self.forced.get(oid, {}).get("cell"),
+                "reverse": bool(st.get("reverse")),
+                "rudder": round(st["rudder"], 3) if st.get("rudder") is not None else None,
                 "dock": None if d is None else {k: (round(v, 4) if isinstance(v, float) else v)
-                                                for k, v in d.items()},
+                                                for k, v in d.items() if k != "G"},
             }
         return out
 
@@ -932,8 +1334,19 @@ class Director:
             self.pending_initial = []
 
         self.read_cells()
+        for junction, due in list(self._relock):
+            if self.tick >= due:
+                if junction is not None:
+                    a, face, b = junction
+                    if self.cells[a].lock(face, True):
+                        self.welds.add((int(a), face, int(b)))
+                self._relock.remove((junction, due))
         self.targets.clear()
-        for a in self.reef.step(self.DT_S, self.positions, moving_free=set()):
+        excluded = {c.i for c in self.reef.cells if c.free and c.i in self.positions and not self.dockable(c.i)}
+        if excluded != self._excluded_logged:
+            log("undockable free cells (runway outside the arena): %s" % sorted(excluded))
+            self._excluded_logged = set(excluded)
+        for a in self.reef.step(self.DT_S, self.positions, moving_free=set(), excluded=excluded):
             self.execute(a)
         # organisms born / retired this tick
         for oid in list(self.org):
@@ -957,6 +1370,19 @@ class Director:
                        self.reef.divisions, self.reef.recruits, self.reef.sheds, self.reef.deaths,
                        self.reef.recycles, self.reef.watchdog_kills, self.dock_stats["recruits"],
                        self.dock_stats["attempts"], self.step_median()))
+                for o in self.reef.organisms.values():
+                    st = self.org.get(o.id)
+                    if not st or o.state not in ("recruit", "seek_light"):
+                        continue
+                    d = st.get("dock") or {}
+                    log("  %s %s spd=%.3f up=%.2f err=%+.2f steer=%+.2f sign=%+d %s%s%s d=%.2f tail_along=%.2f "
+                        "tail_lat=%+.2f spine_err=%.2f sep=%s"
+                        % (o.id, o.state, st.get("speed") or 0.0, st.get("head_up") or 0.0, st.get("err") or 0.0, st.get("steer") or 0.0,
+                           int(st["cal"]["sign"]), d.get("phase", "-"), " REV" if st.get("reverse") else "",
+                           (" " + st["mode"]) if st.get("mode") else "",
+                           d.get("dist_goal", 0.0) or 0.0, d.get("along", 0.0) or 0.0,
+                           d.get("lateral", 0.0) or 0.0, d.get("spine_err", 0.0) or 0.0,
+                           None if d.get("sep") is None else round(d["sep"], 3)))
         if not self.epoch_written and self.t >= self.EPOCH_S:
             self.finish_epoch()
             if not self.WATCH:
@@ -994,7 +1420,19 @@ def main():
         sup.step(int(sup.getBasicTimeStep()))
         return 1
     d = Director(sup, reef, cfg)
-    code = d.run()
+    try:
+        code = d.run()
+    except Exception:                                   # noqa: BLE001
+        # The engine discards a controller's stderr on Windows: an uncaught
+        # exception here read as "exited with status: 1" and nothing else.
+        import traceback
+        log("CRASH " + traceback.format_exc())
+        try:
+            sup.simulationQuit(1)
+            sup.step(d.DT)
+        except Exception:                               # noqa: BLE001
+            pass
+        return 1
     if code:
         sup.step(d.DT)      # let simulationQuit reach the engine
     return code

@@ -32,7 +32,8 @@ one-key dict so the supervisor can `for a in actions: k, v = next(iter(a.items()
     {"lock":     (i, face, j)}   write cell i's Connector `face`.isLocked TRUE;
                                  j is the partner cell (its face is implied:
                                  f_nose for a spine junction, f_left / f_right
-                                 for a branch -- see Reef.junctions()).
+                                 for a branch -- see Reef.junctions(); a
+                                 tail recruit locks (new, "f_nose", old_tail)).
     {"unlock":   (i, face, j)}   the same tuple, isLocked FALSE.
     {"limp":     i}              motor maxTorque -> 0 (dead cell).
     {"unlimp":   i}              motor maxTorque -> back to 0.6 (recycled cell).
@@ -114,7 +115,8 @@ GENOME_RANGES = {
     "branch_phase": (-math.pi, math.pi), "branch_scale": (0.0, 1.0),   # wrapped, not clamped
     "steer_gain": (0.0, 0.6),
 }
-TARGET_LENGTH_RANGE = (2, 8)
+TARGET_LENGTH_RANGE = (4, 12)
+DIVIDE_MIN_CELLS = 8          # halves of 4 are the measured walker; 2-cell halves are immobile (0.005 m/s)
 
 _MUTATE_GENOME = None          # resolved lazily by _resolve_mutation()
 _MUTATE_BODYPLAN = None
@@ -395,7 +397,7 @@ class Cell:
 class Organism:
     __slots__ = ("id", "spine", "branches", "genome", "bodyplan", "lineage",
                  "parent", "born_at", "died_at", "cause", "state", "target",
-                 "recruit_target", "divisions", "recruited", "sheds",
+                 "recruit_target", "_recruit_prev", "divisions", "recruited", "sheds",
                  "light_wh", "last_shed_at", "generation")
 
     def __init__(self, oid, spine, genome, bodyplan, lineage, born_at=0.0,
@@ -413,6 +415,7 @@ class Organism:
         self.state = "roam"
         self.target = None
         self.recruit_target = None
+        self._recruit_prev = None
         self.divisions = 0
         self.recruited = 0
         self.sheds = 0
@@ -846,10 +849,17 @@ class Reef:
             out.append({"unlimp": c.i})
             self._ring_action(c, out, force=True)
 
-    def recruit(self, oid, i):
+    def recruit(self, oid, i, at_tail=False):
         """Dock free cell i onto organism oid at the next open face (a body-plan
         branch face if one is open, else the head's nose). Returns the actions
-        (lock + ring), or raises ValueError when the rule forbids it."""
+        (lock + ring), or raises ValueError when the rule forbids it.
+
+        `at_tail=True` (P2, measured: a chain travels head-first and docks by
+        backing its TAIL onto the recruit's NOSE) inserts the cell at spine[0]
+        instead: the recruit's f_nose meets the old tail's f_tail, the lock is
+        written on the recruit's f_nose (the free cell is inert; connectors
+        are symmetric so either side may lock), branch indices shift by one,
+        and `shed` -- which removes spine[0] -- sheds the newest recruit first."""
         o = self.organisms.get(oid)
         if o is None:
             raise ValueError("no organism %s" % oid)
@@ -857,8 +867,13 @@ class Reef:
         if not c.free:
             raise ValueError("cell %d is not free" % i)
         out = []
-        slot = o.open_branch_slot()
-        if slot is not None:
+        slot = None if at_tail else o.open_branch_slot()
+        if at_tail:
+            partner = o.spine[0]
+            o.spine.insert(0, i)
+            o.branches = {(k + 1, side): b for (k, side), b in o.branches.items()}
+            out.append({"lock": (i, "f_nose", partner)})
+        elif slot is not None:
             k, side = slot
             o.branches[(k, side)] = i
             out.append({"lock": (i, "f_tail", o.spine[k])})
@@ -913,6 +928,27 @@ class Reef:
         rear, front = o.spine[:k], o.spine[k:]
         rear_br = {kk: c for kk, c in o.branches.items() if kk[0] < k}
         front_br = {(kk[0] - k, kk[1]): c for kk, c in o.branches.items() if kk[0] >= k}
+        # Bodies carry a rudder (yaw cell) at BOTH ends so that each half keeps
+        # one. The rear half's rudder is at ITS spine[0]; the supervisor drives
+        # spine[-1] as the front, so reverse the rear half's spine (the supervisor
+        # reads hinge axes from the world, so the swap costs nothing physical).
+        rear = list(reversed(rear))
+        rear_br = {(k - 1 - kk[0], kk[1]): c for kk, c in rear_br.items()}
+        # The rear half's new head (old spine[0]) is a pitch cell; a body needs
+        # a yaw RUDDER at its head to steer (measured: a two-rudder body is 4x
+        # slower and a tail rudder brakes it), so it rotates its dock face 90
+        # deg in place. Its junction weld: old spine[1].f_tail onto old
+        # spine[0].f_nose (the docking cell's tail is the active side).
+        # RUDDER PAIR (measured: two yaw cells at the head turn 3x faster than
+        # one, radius ~0.3 m vs 2 m): the new head and the cell behind it
+        # both re-roll. A cell's junctions are the welds on both its faces.
+        new_head = rear[-1]
+        junction = (rear[-2], "f_tail", new_head) if len(rear) >= 2 else None
+        out.append({"reroll": (new_head, math.pi / 2.0, junction)})
+        if len(rear) >= 3:
+            second = rear[-2]
+            out.append({"reroll": (second, math.pi / 2.0,
+                                   [(second, "f_tail", new_head), (rear[-3], "f_tail", second)])})
         o.divisions += 1
         self.divisions += 1
         self._retire(o, "divided")
@@ -950,7 +986,7 @@ class Reef:
             if head_xy is not None and self.patches:
                 p = min(self.patches, key=lambda q: math.hypot(q.pos[0] - head_xy[0], q.pos[1] - head_xy[1]))
                 o.target = (p.pos[0], p.pos[1])
-        elif len(o) >= o.target_length and frac > DIVIDE_FRAC and len(o.spine) >= 2:
+        elif len(o) >= max(o.target_length, DIVIDE_MIN_CELLS) and frac > DIVIDE_FRAC and len(o.spine) >= 2:
             o.state = "divide"
             _rear, _front, acts = self.divide(o.id)
             out.extend(acts)
@@ -958,8 +994,19 @@ class Reef:
         elif frac > RECRUIT_FRAC and len(o) < o.target_length:
             o.state = "recruit"
             if head_xy is not None:
-                free = [c.i for c in self.cells if c.free and c.i not in claimed]
-                j, d = self._nearest(head_xy, free, positions)
+                # TARGET HYSTERESIS: keep the current recruit while it is still
+                # free and unclaimed. Re-picking the nearest every tick made a
+                # crawling body flip targets 36 times in one epoch and never
+                # finish an approach (measured, 0 locks).
+                prev = getattr(o, "_recruit_prev", None)
+                keep = (prev is not None and prev not in claimed
+                        and 0 <= prev < len(self.cells) and self.cells[prev].free)
+                if keep:
+                    j, d = prev, self._nearest(head_xy, [prev], positions)[1]
+                else:
+                    free = [c.i for c in self.cells if c.free and c.i not in claimed]
+                    j, d = self._nearest(head_xy, free, positions)
+                o._recruit_prev = j
                 if j is not None:
                     claimed.add(j)
                     o.recruit_target = j
@@ -987,7 +1034,7 @@ class Reef:
                 best, bd = (px, py), d
         return best
 
-    def step(self, dt_s, cell_positions=None, moving_free=None):
+    def step(self, dt_s, cell_positions=None, moving_free=None, excluded=None):
         """Advance the ecology by dt_s simulated seconds. Returns the action
         list (see the module docstring for every shape). `moving_free` is the
         set of free cells the supervisor is currently flipping (they pay the
@@ -1003,7 +1050,7 @@ class Reef:
         dead = self._energy_tick(dt_s, cell_positions, moving_free)
         self._kill_cells(dead, out, "starved")
         self._recycle_tick(out)
-        claimed = set()
+        claimed = set(excluded or ())   # free cells the supervisor reports as undockable
         for oid in sorted(self.organisms):
             o = self.organisms.get(oid)
             if o is None:            # retired earlier this tick

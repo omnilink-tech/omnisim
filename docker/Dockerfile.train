@@ -4,7 +4,7 @@
 # the in-engine RL trainers run with no further setup. Published to GHCR by
 # .github/workflows/train-image.yml.
 #
-#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v8.1.9 bash
+#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v8.1.10 bash
 #   # inside:
 #   xvfb-run -a bash projects/policies/training/run_quad_walk_rl.sh 600 mytag train headless
 #
@@ -51,7 +51,7 @@
 ARG CUDA_TAG=12.8.1-devel-ubuntu24.04
 FROM nvidia/cuda:${CUDA_TAG}
 
-ARG OMNISIM_TAG=v8.1.9
+ARG OMNISIM_TAG=v8.1.10
 ARG REPO_URL=https://github.com/omnilink-tech/omnisim.git
 ARG GPU_VERIFY=0
 ARG JOBS=8
@@ -87,8 +87,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
 #    Docker quirk.
 #
 #    The XCB runtime libs ARE required even headless: the engine still creates a
-#    Qt/XCB context under --no-rendering, and a partial set makes it die with an
-#    EMPTY log while the launcher still exits 0.
+#    Qt/XCB context under --no-rendering, and a partial set makes it abort in
+#    Qt's platform-plugin init with a header-only log. run-headless FAILs on
+#    that (non-zero; "the launcher still exits 0" predates 03e988c58) and since
+#    2026-08-29 prints the Qt Fatal line and the fix (public issue #6).
 # ---------------------------------------------------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential make git wget curl unzip zip pkg-config ca-certificates rsync \

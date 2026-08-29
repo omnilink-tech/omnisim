@@ -109,9 +109,9 @@ cd "$OMNISIM_HOME"
 bash scripts/dev/setup_wgpu_native.sh
 ```
 
-Run this once per clone, **before** the first build. wgpu-native is the only renderer — WREN was deleted on 2026-08-23 (`976b9449d`), along with `src/wren` and `src/omnisim/wren` — and the link against it is conditional: `src/omnisim/Makefile` defines `WB_WGPU_NATIVE_AVAILABLE` only when `WGPU_NATIVE_HOME` resolves, and every `wgpu*` call lives behind that macro. Skip this step and the build is *green* and nothing draws — no main view, no screenshots, no capture service, no Camera device. `setup_wgpu_native.sh` installs to the one path the Makefile auto-discovers (`$OMNISIM_HOME/_scratch/wgpu-native`), so you do not need to export `WGPU_NATIVE_HOME` yourself. Details: [wgpu-native-setup.md](wgpu-native-setup.md).
+Run this once per clone, **before** the first build. wgpu-native is the only renderer — WREN was deleted on 2026-08-23 (`976b9449d`), along with `src/wren` and `src/omnisim/wren` — and the link against it is conditional: `src/omnisim/Makefile` defines `WB_WGPU_NATIVE_AVAILABLE` only when `WGPU_NATIVE_HOME` resolves, and every `wgpu*` call lives behind that macro. Skip this step and — until 2026-08-29 — the build was *green* and nothing drew: no main view, no screenshots, no capture service, no Camera device (public issue #7). **The Makefile now refuses that build at parse time**, before one TU compiles, with the setup command in the message; a deliberately compute-only binary is still available by name, `make release OMNISIM_RENDERERLESS=ON`, and it logs at runtime that it has no renderer. `setup_wgpu_native.sh` installs to the one path the Makefile auto-discovers (`$OMNISIM_HOME/_scratch/wgpu-native`), so you do not need to export `WGPU_NATIVE_HOME` yourself. Details: [wgpu-native-setup.md](wgpu-native-setup.md).
 
-⚠ An **explicit empty** `WGPU_NATIVE_HOME=` on the make command line still opts out — but since the WREN deletion that no longer selects "the other renderer", it selects a binary with no renderer at all.
+⚠ An **explicit empty** `WGPU_NATIVE_HOME=` on the make command line (or `OMNISIM_WITH_VULKAN=OFF`) still opts out — but since the WREN deletion that no longer selects "the other renderer", it selects a binary with no renderer at all, so the Makefile **refuses it** unless you also pass `OMNISIM_RENDERERLESS=ON`. `clean`, `linker-info` and `bundle-newton-runtime` are exempt from the check.
 
 ### The build itself
 
@@ -205,7 +205,7 @@ export PATH="$OMNISIM_HOME"/msys64/mingw64/bin:/mingw64/bin:$PATH
 
 ### Headless run (no window)
 
-For agent loops, CI, or any time you don't want an OmniSim window to open, use the headless runner. It launches `omnisim-bin.exe` with `--minimize --batch --no-rendering --mode=fast --stdout --stderr` (`--no-window` is deliberately *not* used: it skips main-window realization but deadlocks Newton's embedded CPython FFI on multi-articulation worlds, so `--minimize` is the safe headless default):
+For agent loops, CI, or any time you don't want an OmniSim window to open, use the headless runner. It launches `omnisim-bin.exe` with `--minimize --batch --no-rendering --mode=fast --stdout --stderr` (`--minimize` is the long-standing default; `--no-window` — `OMNISIM_NO_WINDOW=1`, zero widget construction, camera devices still render offscreen through wgpu — was recorded here as deadlocking Newton's embedded CPython on multi-articulation worlds. **That claim was stale (public issue #5): it dates from a 2026-05-28 XPBD-era measurement, the Linux CI smokes have run under `OMNISIM_NO_WINDOW=1` since the 22.04 work, and on 2026-08-29 the 8-Husky swarm (40 dynamic bodies, 9 controllers) and the G1 humanoid both finalised and stepped under `--no-window` on Windows, byte-for-byte the same finalize/step lines as the `--minimize` control.** Pass `--no-window` for containers and GPU-less hosts, where a main view has nothing to draw on):
 
 ```bash
 # Load check -- stops the moment Newton finalises and writes its sidecar.

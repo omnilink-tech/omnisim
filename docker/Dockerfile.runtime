@@ -164,11 +164,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
 #
 #   xvfb            : MANDATORY, not optional. The engine constructs a Qt main
 #                     window for any world-running invocation, so an XCB context
-#                     exists even under --no-rendering. Without a display it dies
-#                     with an EMPTY log while the launcher still exits 0. The
-#                     window-free modes are not usable: OMNISIM_NO_WINDOW
-#                     deadlocks Newton's embedded CPython at add_joint_revolute,
-#                     and OMNISIM_NO_GL does not reliably step.
+#                     exists even under --no-rendering. Without a display the
+#                     engine aborts in Qt's platform-plugin init with a
+#                     header-only log; run-headless FAILs on it (non-zero, and
+#                     since 2026-08-29 it prints the Qt Fatal line + the fix --
+#                     public issue #6; "the launcher still exits 0" was a
+#                     pre-03e988c58 measurement). OMNISIM_NO_WINDOW=1 WORKS
+#                     (Linux CI smokes run under it; the add_joint_revolute
+#                     deadlock note was stale -- public issue #5); the default
+#                     --minimize path still realises a window, hence Xvfb.
+#                     OMNISIM_NO_GL does not reliably step.
 #   xcb libs        : required EVEN HEADLESS; a partial set kills the engine with
 #                     an EMPTY log while the launcher still exits 0.
 #   mesa-vulkan-drivers + libvulkan1 : lavapipe, so wgpu-native has a software

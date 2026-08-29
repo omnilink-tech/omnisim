@@ -120,6 +120,30 @@ def test_conservation_recruit():
     assert_conserved(reef)
 
 
+def test_recruit_at_tail_inserts_at_spine0_and_locks_the_recruits_nose():
+    reef = make_reef(n_cells=8, spines=((0, 1, 2),))
+    o = reef.organisms["org_0"]
+    o.bodyplan["branch_rule"] = {"at": 1, "sides": ["L"]}
+    reef.recruit("org_0", 3)                       # a branch on spine[1]
+    assert o.branches == {(1, "L"): 3}
+    acts = reef.recruit("org_0", 4, at_tail=True)
+    assert o.spine == [4, 0, 1, 2]
+    assert acts[0] == {"lock": (4, "f_nose", 0)}
+    assert o.branches == {(2, "L"): 3}             # the branch still hangs off cell 1
+    assert (0, "f_tail", 4, "f_nose") in o.junctions()
+    assert (3, "f_tail", 1, "f_left") in o.junctions()
+    assert reef.cells[4].organism == "org_0" and o.recruited == 2
+    assert census(reef) == (3, 5, 0)
+    assert_conserved(reef)
+    # shed removes the newest recruit first
+    acts = reef.shed("org_0")
+    assert acts[0] == {"unlock": (0, "f_tail", 4)}
+    assert o.spine == [0, 1, 2] and o.branches == {(1, "L"): 3}
+    assert_conserved(reef)
+    with pytest.raises(ValueError):
+        reef.recruit("org_0", 3, at_tail=True)    # already a member
+
+
 def test_conservation_divide():
     reef = make_reef(n_cells=6, spines=((0, 1, 2, 3),))
     rear, front, acts = reef.divide("org_0")
@@ -162,7 +186,8 @@ def test_conservation_checker_catches_tampering():
         reef.step(DT, far_positions(6))
 
 
-def test_conservation_long_random_run_exercises_every_transition():
+def test_conservation_long_random_run_exercises_every_transition(monkeypatch):
+    monkeypatch.setattr(E, "DIVIDE_MIN_CELLS", 2)
     """Random charges, cells clustered under drifting light, auto-docking:
     over 4000 ticks every transition fires and the count never moves."""
     rng = random.Random(7)
@@ -275,8 +300,9 @@ def test_division_splits_spine_at_midpoint(n, rear, front):
     parent = reef.organisms["org_0"]
     pg, pbp = dict(parent.genome), dict(parent.bodyplan)
     r, f, acts = reef.divide("org_0")
-    assert acts == [{"unlock": (front[0], "f_tail", rear[-1])}]
-    assert r.spine == rear and f.spine == front
+    assert acts[0] == {"unlock": (front[0], "f_tail", rear[-1])}
+    assert "reroll" in acts[1] and acts[1]["reroll"][0] == rear[0]   # the rear half's new head
+    assert r.spine == list(reversed(rear)) and f.spine == front   # rear half reversed: its rudder leads
     assert "org_0" not in reef.organisms and parent.cause == "divided"
     assert parent.divisions == 1 and reef.divisions == 1
     for kid in (r, f):
@@ -310,7 +336,7 @@ def test_division_reassigns_branches_to_the_half_that_holds_them():
     o.branches = {(0, "L"): 4, (3, "R"): 5}
     reef.cells[4].organism = reef.cells[5].organism = "org_0"
     r, f, _ = reef.divide("org_0")
-    assert r.branches == {(0, "L"): 4}
+    assert r.branches == {(1, "L"): 4}          # rear half reversed: index 0 -> 1 of 2
     assert f.branches == {(1, "R"): 5}
     assert_conserved(reef)
 
@@ -462,7 +488,8 @@ def test_seek_light_targets_the_nearest_patch():
     assert only(acts, "target") == [("org_0", nearest.pos)]
 
 
-def test_recruit_targets_nearest_free_cell_and_auto_docks_in_reach():
+def test_recruit_targets_nearest_free_cell_and_auto_docks_in_reach(monkeypatch):
+    monkeypatch.setattr(E, "DIVIDE_MIN_CELLS", 2)
     reef = make_reef(n_cells=5, spines=((0, 1),), dock_reach=0.2)
     set_charge(reef, 0.7)
     pos = {0: (0.0, 0.0), 1: (0.12, 0.0), 2: (3.0, 0.0), 3: (1.0, 0.0), 4: (2.0, 2.0)}
@@ -484,7 +511,8 @@ def test_recruit_targets_nearest_free_cell_and_auto_docks_in_reach():
     acts = reef.step(DT, pos)
     assert "org_0" not in reef.organisms and reef.divisions == 1
     assert only(acts, "unlock") == [(3, "f_tail", 1)]
-    assert sorted(x.spine for x in reef.organisms.values()) == [[0, 1], [3, 2]]
+    assert only(acts, "reroll")[0][0] == 0
+    assert sorted(x.spine for x in reef.organisms.values()) == [[1, 0], [3, 2]]   # rear half reversed
     assert_conserved(reef)
 
 
@@ -576,13 +604,13 @@ def test_step_ignores_non_positive_dt_and_genome_helpers_clamp():
     assert g["A"] == 1.2 and g["omega"] == 2.0 and -math.pi < g["branch_phase"] <= math.pi
     bp = E.clamp_bodyplan({"target_length": 99, "dock_rotation_pattern": [5, -1],
                            "branch_rule": {"at": 1, "sides": ["L", "X"]}})
-    assert bp["target_length"] == 8 and bp["dock_rotation_pattern"] == [1, 3]
+    assert bp["target_length"] == E.TARGET_LENGTH_RANGE[1] and bp["dock_rotation_pattern"] == [1, 3]
     assert bp["branch_rule"] == {"at": 1, "sides": ["L"]}
     assert E.clamp_bodyplan({"branch_rule": {"sides": ["L"]}})["branch_rule"] == "none"
     rng = random.Random(0)
     for _ in range(50):
         m = E.mutate_bodyplan_fallback(bp, rng)
-        assert 2 <= m["target_length"] <= 8
+        assert E.TARGET_LENGTH_RANGE[0] <= m["target_length"] <= E.TARGET_LENGTH_RANGE[1]
         assert all(0 <= r <= 3 for r in m["dock_rotation_pattern"])
 
 

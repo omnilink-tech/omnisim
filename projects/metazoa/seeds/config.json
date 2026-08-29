@@ -1,0 +1,14 @@
+{
+ "arena": 10.0,
+ "n_patches": 5,
+ "epoch_s": 480,
+ "watch": false,
+ "epoch": 0,
+ "cells": 14,
+ "organisms": 2,
+ "free_cells": 12,
+ "seed": 7,
+ "dim": 1.0,
+ "time_scale": 20.0,
+ "controller": "metazoa_world"
+}

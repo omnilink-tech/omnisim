@@ -12,9 +12,12 @@
 #
 #  2. Provide an X server. This is not optional: the engine constructs a Qt
 #     main window for any world-running invocation, so a Qt/XCB context exists
-#     even under --no-rendering. Without a display the engine dies with an
-#     EMPTY log while the launcher still exits 0 -- the worst failure shape
-#     there is.
+#     even under --no-rendering. Without a display the engine aborts in Qt's
+#     platform-plugin init with a header-only log. (This used to add "while the
+#     launcher still exits 0" -- a pre-03e988c58 measurement; run-headless now
+#     FAILs on it and names the cause, public issue #6. OMNISIM_NO_WINDOW=1
+#     would avoid the window entirely; Xvfb stays because the default
+#     --minimize path still realises one.)
 set -euo pipefail
 
 cd "${OMNISIM_HOME:-/opt/omnisim}"

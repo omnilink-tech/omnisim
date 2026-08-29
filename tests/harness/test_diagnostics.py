@@ -292,3 +292,25 @@ def test_classify_text_drops_info_and_banner(world_load_log):
     for diag in diags:
         assert "OmniSim Log Started" not in diag.get("message", "")
         assert diag["severity"] in ("warning", "error", "fatal")
+
+
+# ---- Qt platform-plugin abort (public issue #6) -----------------------------
+
+def test_qt_fatal_header_is_fatal():
+    diag = classify_line("Qt Fatal: something Qt could not survive.")
+    assert diag is not None
+    assert diag["severity"] == "fatal"
+
+
+def test_platform_plugin_failure_gets_its_own_code():
+    # Verbatim from a 2026-08-29 Windows run with QT_QPA_PLATFORM=xcb (exit 3,
+    # header-only log). On Linux the same line means no display / partial libxcb.
+    diag = classify_line("Qt Fatal: This application failed to start because no Qt platform "
+                         "plugin could be initialized. Reinstalling the application may fix this problem.")
+    assert diag["code"] == "QT_PLATFORM_PLUGIN_FAILED"
+    assert diag["severity"] == "fatal"
+
+
+def test_qt_warning_lines_are_still_ignored():
+    # Only Qt FATAL is promoted; Qt warnings fire in healthy runs.
+    assert classify_line("Qt Warning: Could not find the Qt platform plugin \"xcb\" in \"\"") is None

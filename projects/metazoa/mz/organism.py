@@ -91,7 +91,7 @@ GENOME_RANGES = {
     "bias_yaw": (-0.3, 0.3),
     "branch_phase": (-math.pi, math.pi),   # an angle: wrapped, not clamped
     "branch_scale": (0.0, 1.0),
-    "steer_gain": (0.0, 0.6),
+    "steer_gain": (0.0, 0.8),     # beyond ~0.7 rad the rudder stalls the body (measured)
 }
 GENOME_KEYS = tuple(GENOME_RANGES)
 # per-key gaussian creep sigma at rate 1.0 (about 1/10 of the range)
@@ -101,13 +101,13 @@ GENOME_SIGMA = {
 }
 
 # --- body plan ranges ------------------------------------------------------
-TARGET_LENGTH = (2, 8)
+TARGET_LENGTH = (4, 12)
 PATTERN_LEN = (1, 4)         # entries in dock_rotation_pattern (cycled)
 ROTATIONS = (0, 1, 2, 3)     # quarter turns about the chain x
 SIDES = ("L", "R")
 
 # --- steering --------------------------------------------------------------
-STEER_ERR_FULL = 0.6         # rad of heading error at which steer saturates
+STEER_ERR_FULL = 1.2       # rad of heading error at full steer (0.6 over-steered: +-2 rad oscillation, measured)
 STEER_DEADBAND = 0.1         # rad; inside it the organism goes straight
 
 
@@ -135,10 +135,18 @@ def _creep(rng, v, sigma, lo, hi):
 # GENOME_RANGES and every organism crawled at <0.02 m/s with a -0.26 pitch
 # bias arching it onto its side. Mutation still explores the full ranges.
 SEED_WINDOW = {
-    "A": (0.8, 1.0), "omega": (4.0, 5.0), "dphi": (1.0, 1.4),
-    "bias_pitch": (-0.08, 0.08), "bias_yaw": (-0.08, 0.08),
+    # MEASURED (probe_wave, 6 cells, gain 0.5, 2026-08-29): the yaw rate is
+    # genome-sensitive -- A .9/w 4.5/dphi 1.2 turns 0.62 rad per 15 s, the
+    # reef's own draws A .85/w 4.55/dphi 1.02 0.36 and A .86/w 4.15/dphi 1.26
+    # 0.17 (all walk 0.08-0.12 m/s straight). Seeds sit on the measured
+    # walker; mutation (GENOME_RANGES) explores from there.
+    "A": (0.88, 0.92), "omega": (4.4, 4.6), "dphi": (1.15, 1.25),
+    "bias_pitch": (-0.04, 0.04), "bias_yaw": (-0.04, 0.04),
     "branch_phase": (-math.pi, math.pi), "branch_scale": (0.3, 0.7),
-    "steer_gain": (0.3, 0.5),
+    "steer_gain": (0.45, 0.55),   # rudder angle (rad at full lock). MEASURED on the 6-cell probe
+                                  # (probe_wave, 2026-08-29): 0.5 -> +0.62/-0.43 rad per 15 s at 0.08 m/s;
+                                  # 1.0 halves the speed AND the yaw rate (a 57 deg head is an anchor);
+                                  # the 0.9-1.1 window this used to hold was never measured
 }
 
 
@@ -195,7 +203,7 @@ def validate(genome):
 def random_bodyplan(rng):
     """target_length 2-8, a 1-4 entry rotation pattern, and a branch pair on
     30 % of draws."""
-    n = rng.randint(max(4, TARGET_LENGTH[0]), TARGET_LENGTH[1])
+    n = rng.randint(8, TARGET_LENGTH[1])
     # rotations {0,1} only: a roll of 2/3 puts every roller in the air (cell v3);
     # seed the two patterns P1c measured -- pitch chain (fast) or alternating (steers)
     # always alternating: a pitch-only chain has no steering channel and cannot

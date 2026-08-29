@@ -29,6 +29,81 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.10] — 2026-08-29
+
+The first five issues filed on the public repository (#3–#7), each reproduced
+before anything was changed. Two were real defects; three were our own stale
+documentation being quoted back at us. Every number below names its machine
+(`9722d23d12a3`, RTX 3060 laptop, Windows) and its binary date (2026-08-29).
+
+### Build
+
+- **A build without wgpu-native is now refused, not silently produced** (#7).
+  Since the WREN deletion there is no second renderer, yet `make release` with
+  `WGPU_NATIVE_HOME=` empty, `OMNISIM_WITH_VULKAN=OFF`, or a clone that never
+  ran `setup_wgpu_native.sh` dry-ran green with zero `-lwgpu_native` — a binary
+  that runs physics and draws nothing. `src/omnisim/Makefile` now `$(error)`s
+  at parse time with the setup command in the message. The compute-only build
+  stays available by name, `make release OMNISIM_RENDERERLESS=ON`, which also
+  defines `-DOMNISIM_RENDERERLESS` so the binary logs
+  `THIS BINARY WAS BUILT WITHOUT A RENDERER` on its first render request.
+  `clean`, `linker-info` and `bundle-newton-runtime` are exempt.
+
+### Headless runner
+
+- **An early engine exit now names its cause** (#6). The Qt platform-plugin
+  abort (no display or a partial libxcb set on Linux; a stale
+  `QT_QPA_PLATFORM` anywhere) is recorded only in the engine log —
+  `omnisim-bin.exe` is a GUI-subsystem binary, so its stderr is discarded — and
+  `run-headless` printed only `simulator exited early with code 3`. It now
+  surfaces the log's `Qt Fatal:` / `FATAL:` / `ERROR:` lines and, for this
+  signature, the fix (`xvfb-run -a`, `linux_bootstrap.sh deps`). The harness
+  classifier gained a `Qt Fatal:` header and a `QT_PLATFORM_PLUGIN_FAILED`
+  code. The "launcher still exits 0" sentence in `docker/` was measured one day
+  before `03e988c58` made the runner fail this case; it is corrected in all
+  five places, and both raw launchers were verified to propagate the engine's
+  exit status.
+- **`--no-window` does not deadlock Newton** (#5). The claim dated from a
+  2026-05-28 XPBD-era measurement and had been copied into six documents while
+  the Linux CI smokes ran under `OMNISIM_NO_WINDOW=1`. Measured: the 8-Husky
+  swarm (40 dynamic bodies, 9 controllers) and the G1 humanoid finalise and
+  step under `--no-window` with the same finalize/step lines as the
+  `--minimize` control. All six documents retracted; `--minimize` stays the
+  default only as the longer-trodden desktop path.
+- **The startup race did not reproduce on this binary** (#3): 0 of 80 launches
+  (raw back-to-back, raw with overlapping teardown, via the runner with a
+  pinned port, via the runner rotating heavier worlds) against "1 in 3"
+  (2026-07) and 3-of-10 (2026-08-15) on the same machine. The rate is
+  build-dependent and the root cause unattributed, so the retry stays. New:
+  `scripts/dev/launch_race_stress.py` measures the rate and prints the binary
+  sha256 and machine with every summary, so numbers from two boxes can be
+  compared.
+
+### Harness
+
+- **The 790× tracking figure was stale** (#4). Re-measured on the same
+  10-Husky world (309 nodes, CPU `mj_step`): full-mode `/sim/step 1`
+  573–606 ms vs 6–35 ms light (~17×), 10 steps 2855–3187 ms vs 48–67 ms
+  (~47×), load 12.1 s vs 4.1 s — the 27 s / 790× predates `3b952b61d`. Every
+  supervised `POST /world/load` response now carries a `tracking` block naming
+  the mode and this cost (PROTOCOL.md). The default stays full: it is the only
+  mode that produces `contact.*` / `grip.*` / `joint.limit_hit` events.
+
+### Metazoa
+
+- Rudder steering measured on the engine: a single head rudder at 0.5 rad
+  turns and 1.0 rad anchors; a rudder **pair** at the head gives 3× the yaw rate
+  and a 0.3 m turn radius, with wall back-off sized to it. Tail docking and
+  off-axis recruit docking are verified on the engine; bodies divide at 8+
+  cells with the rear half reversed; seed genomes come from the measured walker
+  and free cells seed nose-inward. The catalogued watch world is registered as
+  a demo.
+
+### Licensing
+
+- Apache headers on the 63 OmniLink-authored files the public provenance gate
+  flagged.
+
 ## [v8.1.9] — 2026-08-28
 
 ### Linux

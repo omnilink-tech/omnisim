@@ -220,6 +220,20 @@ def controller_start_failures(log_text: str) -> list[str]:
 # reader looking for a defect in their world (measured: a `--port=1300` run was
 # reported as "port forwarding is broken in the headless lane" when a rerun of
 # the identical command passed), so we name the race instead.
+#
+# RATE, DATED (public issue #3 asked for it): the "one in three" above is the
+# AgentBench adapter's 2026-07 figure and batch_validate.py saw 1-of-19 and
+# 3-of-10 on 2026-08-15 -- both on this same machine (9722d23d12a3), both on
+# older binaries. Re-measured 2026-08-29 on the then-current binary: 0 of 80
+# (25 raw back-to-back, 25 raw with the next engine starting while the previous
+# was still tearing down, 15 through this runner with --port pinned, 15 through
+# this runner rotating the 8-Husky swarm / warehouse_husky / husky smoke worlds).
+# So the rate is NOT stable across builds, the root cause has never been
+# attributed (the signature is Qt's, not ours: a QThread torn down with a
+# waiter still on it at exit), and the retry below stays because a 0-of-80 on
+# one box is not a proof of absence. Re-measure on YOUR binary with
+# scripts/dev/launch_race_stress.py -- it names the binary and machine in its
+# output so the number can be compared later.
 _STARTUP_RACE_MARKS = (
     "QWaitCondition: Destroyed while threads are still waiting",
     "QThreadStorage: entry",
@@ -256,6 +270,70 @@ def looks_like_startup_race(log_text: str) -> bool:
         if line.startswith("ERROR:") or line.startswith("FATAL:"):
             return False
     return True
+
+
+# ── EARLY-EXIT CAUSE (public issue #6) ───────────────────────────────────────
+#
+# When the engine exits before the world loads, the reason is usually in the
+# engine LOG, not on stderr -- and on Windows omnisim-bin.exe is a GUI-subsystem
+# binary, so its stderr is discarded outright. The canonical case: Qt cannot
+# initialise a platform plugin (no display / a partial libxcb set on Linux, a
+# stale QT_QPA_PLATFORM anywhere). The engine's Qt message handler writes that
+# as `Qt Fatal: This application failed to start because no Qt platform plugin
+# could be initialized.` and abort()s (exit 3 on Windows, SIGABRT/134 on Linux)
+# with a header-only log. This runner already FAILed on that (03e988c58) --
+# but it printed only "simulator exited early with code N", which sent the
+# reader to the world. Surface the lines that say why, then the fix.
+_EARLY_EXIT_CAUSE_PREFIXES = ("Qt Fatal:", "Qt Critical:", "FATAL:", "ERROR:")
+_PLATFORM_PLUGIN_MARK = "no Qt platform plugin could be initialized"
+
+
+def early_exit_cause_lines(log_text: str, limit: int = 12) -> list[str]:
+    """The engine-log lines that say WHY an early exit happened, in log order.
+
+    Qt Fatal / Qt Critical / FATAL / ERROR lines only; capped at `limit` so a
+    flood cannot bury the first one, which is nearly always the cause.
+    """
+    out = []
+    for line in log_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(_EARLY_EXIT_CAUSE_PREFIXES):
+            out.append(stripped)
+            if len(out) >= limit:
+                break
+    return out
+
+
+def platform_plugin_hint(log_text: str) -> list[str]:
+    """Actionable lines when the early exit is Qt failing to start a platform plugin.
+
+    Empty when the signature is absent. The advice is what this tree has
+    actually verified: the Linux CI smokes run under `xvfb-run -a` with the
+    libxcb set `linux_bootstrap.sh deps` installs, and the runtime container
+    wraps every invocation in xvfb-run for the same reason.
+    """
+    if _PLATFORM_PLUGIN_MARK not in log_text:
+        return []
+    qpa = os.environ.get("QT_QPA_PLATFORM")
+    lines = [
+        "QT PLATFORM PLUGIN FAILED: the engine aborted inside Qt's platform-plugin init,",
+        "  BEFORE the world was opened. No simulation was executed; this says nothing about the world.",
+    ]
+    if sys.platform.startswith("linux"):
+        lines += [
+            "  The engine constructs a Qt application even under --no-rendering / --no-window, so it",
+            "  needs a display. Run it under a virtual one:   xvfb-run -a python -m omnisim run-headless ...",
+            "  and make sure the Qt xcb plugin's libraries are installed:   bash scripts/install/linux_bootstrap.sh deps",
+            "  (libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 ...).",
+        ]
+    else:
+        lines += [
+            "  On this platform the usual cause is a QT_QPA_PLATFORM value naming a plugin this build",
+            "  does not ship (the log's 'Available platform plugins are:' line lists what it has).",
+        ]
+    if qpa:
+        lines.append(f"  QT_QPA_PLATFORM is currently set to '{qpa}' in this environment -- unset it unless you mean it.")
+    return lines
 
 
 # Distinct exit code for "every attempt hit the startup race". 75 is
@@ -1002,18 +1080,22 @@ def run_once(args) -> int:
 
     # `--minimize` keeps the main window in a normal Qt event loop while
     # hiding it via the OS taskbar minimize. The alternative `--no-window`
-    # mode skips main-window realization entirely, but Newton's embedded
-    # CPython FFI deadlocks at the first few add_joint_revolute calls
-    # under --no-window (confirmed for G1 + 20-husky multi-articulation
-    # worlds — see engine-migration-plan.md §15 entry 2026-05-28). Until
-    # the underlying main-loop / Python-event-loop interaction is fixed,
-    # --minimize is the safe default for headless runs that involve
-    # Newton-backed Solids. `--batch --no-rendering` keep the run cheap
-    # despite the (minimized) window being technically present.
+    # mode skips main-window realization entirely. This comment used to say
+    # that mode "deadlocks Newton's embedded CPython FFI at the first few
+    # add_joint_revolute calls" (G1 + 20-husky, engine-migration-plan.md §15,
+    # 2026-05-28) -- STALE, public issue #5: that was the XPBD-era engine. The
+    # Linux CI smokes have run under OMNISIM_NO_WINDOW=1 since the 22.04 work,
+    # and on 2026-08-29 (machine 9722d23d12a3, Windows) the 8-Husky swarm
+    # (40 dynamic bodies, 9 controllers, --duration 12) and the G1 humanoid
+    # (--until-finalized) both finalised and stepped under --no-window with
+    # the same finalize/step lines as the --minimize control. --minimize stays
+    # the default only because it is the longer-trodden path on desktops;
+    # --no-window is the right call for containers and GPU-less hosts.
+    # `--batch --no-rendering` keep the run cheap either way.
     mode = "--mode=realtime" if args.realtime else "--mode=fast"
     if args.gui:
         # Visible window: drop --minimize/--batch/--no-rendering so the 3D view
-        # realises. Newton works in a full window (only --no-window deadlocks it).
+        # realises. (This line used to add "only --no-window deadlocks it" -- stale, see above.)
         cmd = [str(binary), str(launch_world), mode, "--stdout", "--stderr"]
     else:
         cmd = [
@@ -1049,8 +1131,8 @@ def run_once(args) -> int:
     # (--no-window/--no-gl vs --gui conflicts are rejected once, in main().)
     if args.no_window:
         env["OMNISIM_NO_WINDOW"] = "1"
-        print("[headless] NO-WINDOW: zero GUI construction (bare WREN surface, "
-              "~20% less RSS; Phase Q1 first slice).")
+        print("[headless] NO-WINDOW: zero GUI construction (no main view; camera devices "
+              "still render offscreen through wgpu; ~20% less RSS).")
     if args.no_gl:
         env["OMNISIM_NO_GL"] = "1"
         print("[headless] NO-GL: compute-only (no window, no GL, no WREN; ~35% less RSS). "
@@ -1199,6 +1281,17 @@ def run_once(args) -> int:
                     early_log = log_path.read_text(errors="replace") if log_path.exists() else ""
                 except OSError:
                     early_log = ""
+                # Name the cause from the LOG (the engine's stderr is discarded on
+                # Windows, and the Qt platform-plugin abort lives only there).
+                causes = early_exit_cause_lines(early_log)
+                if causes:
+                    print(f"[headless]   the engine log names the cause ({log_path}):")
+                    for ln in causes:
+                        print(f"[headless]     {ln}")
+                elif not early_log.strip():
+                    print("[headless]   the engine wrote NO log line at all before exiting.")
+                for ln in platform_plugin_hint(early_log):
+                    print(f"[headless]   {ln}")
                 raced = looks_like_startup_race(early_log)
                 if raced:
                     print("[headless]   KNOWN ENGINE STARTUP RACE, not a fault in this "

@@ -144,10 +144,22 @@ namespace OmRenderBackendRegistry {
     // renderer. Warn loudly, once, and hand back the (unavailable) wgpu backend -- callers
     // branch on isAvailable() and degrade to producing no frames rather than crashing.
     static const bool kWarnedNoRenderer = []() {
+#ifdef OMNISIM_RENDERERLESS
+      // The build named this state: `make release OMNISIM_RENDERERLESS=ON` compiled every
+      // wgpu call out (src/omnisim/Makefile refuses a missing wgpu-native otherwise, public
+      // issue #7). Say so, instead of sending the reader to debug a wgpu-native install that
+      // this binary would never load.
+      OmLog::warning(QString("[render] THIS BINARY WAS BUILT WITHOUT A RENDERER (OMNISIM_RENDERERLESS=ON): "
+                             "wgpu-native was compiled out and the legacy WREN renderer is deleted (D1.4), so the "
+                             "main view, screenshots, the capture service and every Camera/RangeFinder/Lidar device "
+                             "produce no frames. Physics and controllers are unaffected. Rebuild with wgpu-native "
+                             "(bash scripts/dev/setup_wgpu_native.sh, then make release) for a renderer."));
+#else
       OmLog::warning(QString("[render] wgpu-native is UNAVAILABLE on this host and the legacy WREN renderer was "
                              "DELETED (D1.4, wren-deletion-runbook.md): this session has NO renderer -- the main "
                              "view and every wgpu-rendered device will produce no frames. Fix the wgpu-native "
                              "install (see the [OmWgpuBackend] line above for why it failed)."));
+#endif
       return true;
     }();
     (void)kWarnedNoRenderer;

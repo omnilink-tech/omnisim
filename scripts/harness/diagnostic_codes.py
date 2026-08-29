@@ -75,6 +75,13 @@ _TAG_KV = re.compile(r'(\w+)=(?:"((?:[^"\\]|\\.)*)"|(\S+))')
 # Header-stripping for legacy lines from OmLog.cpp.
 _HEADER_PATTERNS: tuple[tuple[str, str], ...] = (
     ("FATAL: ", FATAL),
+    # The engine's Qt message handler (gui/main.cpp) writes qFatal() output as
+    # "Qt Fatal: <msg>" and then abort()s -- always fatal, never benign, and the
+    # only place the Qt platform-plugin failure (no display / partial libxcb set)
+    # is recorded, since omnisim-bin's stderr is discarded on Windows. Public
+    # issue #6: before this header the classifier saw NOTHING in that log, so
+    # /world/load reported the generic SIMULATOR_EXITED_NONZERO.
+    ("Qt Fatal: ", FATAL),
     ("ERROR: ", ERROR),
     ("WARNING: ", WARNING),
     # INFO is parsed but NOT passed through unmatched -- see `classify_line`.
@@ -116,6 +123,15 @@ CUDA_CODES: tuple[str, ...] = (
 # with updates here; the test in tests/harness/test_diagnostics.py will catch
 # rules that no longer match.
 _RULES: tuple[_Rule, ...] = (
+    # ---- Qt platform init (Qt itself, via the handler in gui/main.cpp) ----
+    # The engine aborts BEFORE opening the world: no display (Linux), a partial
+    # libxcb set, or a QT_QPA_PLATFORM naming a plugin this build does not ship.
+    # Verified 2026-08-29: QT_QPA_PLATFORM=xcb on Windows -> exit 3, header-only
+    # log carrying exactly this line. Fix on Linux: xvfb-run -a + the libxcb set
+    # from `linux_bootstrap.sh deps`.
+    _r(FATAL, r"^This application failed to start because no Qt platform plugin could be initialized",
+       "QT_PLATFORM_PLUGIN_FAILED"),
+
     # ---- World file gating (OmApplication.cpp) ----
     # Dual-read: the engine names '.omniworld' and mentions the legacy '.wbt'.
     # The older single-extension wording is still matched so this classifier keeps

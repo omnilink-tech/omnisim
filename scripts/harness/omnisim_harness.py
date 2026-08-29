@@ -45,7 +45,18 @@ Endpoints:
                               10-Husky world under Newton (machine
                               9722d23d12a3): /sim/step 27.0 s -> 0.034 s per
                               step, a 10-step advance 120.0 s -> 0.19 s
-                              (~790x / ~630x). What light mode actually costs
+                              (~790x / ~630x). ⚠ THOSE ARE PRE-3b952b61d
+                              FIGURES (public issue #4 quoted them back at
+                              us). Re-measured 2026-08-29 on the same world
+                              (husky_fleet_arena, 309 nodes, CPU mj_step,
+                              same machine): full /sim/step 1 = 573-606 ms vs
+                              light 6-35 ms (~17x); 10 steps 2855-3187 ms vs
+                              48-67 ms (~47x); the load itself 12.1 s vs
+                              4.1 s. Smaller, still an order of magnitude,
+                              so the advice stands. Every supervised
+                              /world/load response now carries a `tracking`
+                              block naming the mode and this cost.
+                              What light mode actually costs
                               you: /sim/grips returns an empty list with
                               tracking.enabled=false, and the contact / grip /
                               joint-limit EVENT types stop being produced.
@@ -3009,6 +3020,23 @@ class HarnessState:
             result = self._load_world_locked(
                 world, wait_s, with_supervisor, light,
                 source_text=source_at_request)
+            # Public issue #4: say which tracking mode this load runs in and what
+            # it costs, IN the response -- an agent that never read the docstring
+            # otherwise learns about the full-mode tax only by timing out.
+            if isinstance(result, dict) and with_supervisor and "error" not in result:
+                result["tracking"] = {
+                    "light": bool(light),
+                    "mode": "light" if light else "full",
+                    "hint": (
+                        "light mode: /sim/grips is empty and contact.*/grip.*/joint.limit_hit "
+                        "events are not produced; /sim/contacts still answers."
+                        if light else
+                        "FULL tracking (the backward-compatible default): the supervisor walks the "
+                        "scene every basic step for contact / grip / joint-limit events. Measured on "
+                        "the 10-Husky world (309 nodes, CPU mj_step, 2026-08-29): /sim/step 1 ~0.6 s "
+                        "vs ~0.01-0.03 s light (17x), 10 steps ~3 s vs ~0.06 s (47x). Pass "
+                        "{\"light\": true} unless you need /sim/grips or those events."),
+                }
             if result.get("ok") and result.get("load_state") != "failed":
                 with self.lock:
                     if self.current_world == str(world):

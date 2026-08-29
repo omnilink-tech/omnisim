@@ -1,0 +1,277 @@
+{
+ "epoch": 0,
+ "arena": 10.0,
+ "n_cells": 14,
+ "cells": [
+  {
+   "pos": [
+    2.2,
+    0.0,
+    0.032
+   ],
+   "yaw": 1.5708,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "id": 0,
+   "organism": "L0_e0",
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "pos": [
+    2.2,
+    0.13,
+    0.032
+   ],
+   "yaw": 1.5708,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "id": 1,
+   "organism": "L0_e0",
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "pos": [
+    2.2,
+    0.26,
+    0.032
+   ],
+   "yaw": 1.5708,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "id": 2,
+   "organism": "L0_e0",
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "pos": [
+    2.2,
+    0.39,
+    0.032
+   ],
+   "yaw": 1.5708,
+   "roll": 1.5708,
+   "dock_rotation": 1,
+   "id": 3,
+   "organism": "L0_e0",
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "pos": [
+    -2.2,
+    0.0,
+    0.032
+   ],
+   "yaw": 4.7124,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "id": 4,
+   "organism": "L1_e0",
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "pos": [
+    -2.2,
+    -0.13,
+    0.032
+   ],
+   "yaw": 4.7124,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "id": 5,
+   "organism": "L1_e0",
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "pos": [
+    -2.2,
+    -0.26,
+    0.032
+   ],
+   "yaw": 4.7124,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "id": 6,
+   "organism": "L1_e0",
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "pos": [
+    -2.2,
+    -0.39,
+    0.032
+   ],
+   "yaw": 4.7124,
+   "roll": 1.5708,
+   "dock_rotation": 1,
+   "id": 7,
+   "organism": "L1_e0",
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "id": 8,
+   "pos": [
+    3.5243,
+    -3.3553,
+    0.032
+   ],
+   "yaw": 2.2523,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "organism": null,
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "id": 9,
+   "pos": [
+    -1.5569,
+    -2.6325,
+    0.032
+   ],
+   "yaw": -2.4015,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "organism": null,
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "id": 10,
+   "pos": [
+    -1.4172,
+    2.3393,
+    0.032
+   ],
+   "yaw": -2.0061,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "organism": null,
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "id": 11,
+   "pos": [
+    0.6038,
+    1.028,
+    0.032
+   ],
+   "yaw": -0.8017,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "organism": null,
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "id": 12,
+   "pos": [
+    0.3533,
+    -3.2354,
+    0.032
+   ],
+   "yaw": -2.7671,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "organism": null,
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "id": 13,
+   "pos": [
+    -2.1759,
+    1.335,
+    0.032
+   ],
+   "yaw": -0.455,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "organism": null,
+   "parked": false,
+   "charge_wh": 6.0
+  }
+ ],
+ "organisms": [
+  {
+   "id": "L0_e0",
+   "lineage": "L0",
+   "members": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "genome": {
+    "A": 0.8647665529666325,
+    "omega": 4.150849173924502,
+    "dphi": 1.2603737892159415,
+    "bias_pitch": -0.06841019413319316,
+    "bias_yaw": 0.005741120689070275,
+    "branch_phase": -0.8439014238462192,
+    "branch_scale": 0.3231995699098827,
+    "steer_gain": 1.001487146637884
+   },
+   "bodyplan": {
+    "target_length": 8,
+    "dock_rotation_pattern": [
+     0,
+     1
+    ],
+    "branch_rule": {
+     "at": 1,
+     "sides": [
+      "R"
+     ]
+    }
+   },
+   "parent": null
+  },
+  {
+   "id": "L1_e0",
+   "lineage": "L1",
+   "members": [
+    4,
+    5,
+    6,
+    7
+   ],
+   "genome": {
+    "A": 0.848132600025405,
+    "omega": 4.551047253791386,
+    "dphi": 1.0236442024315957,
+    "bias_pitch": 0.010472591070892753,
+    "bias_yaw": 0.071591952113198,
+    "branch_phase": 0.8207468344625295,
+    "branch_scale": 0.5331987617841629,
+    "steer_gain": 0.9123724096672281
+   },
+   "bodyplan": {
+    "target_length": 12,
+    "dock_rotation_pattern": [
+     0,
+     1
+    ],
+    "branch_rule": "none"
+   },
+   "parent": null
+  }
+ ],
+ "free": [
+  8,
+  9,
+  10,
+  11,
+  12,
+  13
+ ],
+ "parked": []
+}
