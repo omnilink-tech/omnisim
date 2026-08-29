@@ -55,6 +55,14 @@ jobs:
     # A fork that wants the image builds it locally -- docker/README.md says how.
     if: github.repository_owner == 'omnilink-tech'
     runs-on: ubuntu-latest
+    # Three consecutive runs (2026-08-28 14:23, 2026-08-29 12:25 and 13:02) never
+    # got past the doctor smoke: the first sat for the runner's full 6 hours
+    # before GitHub cancelled it, the others until the next push cancelled them.
+    # A hung `docker run` produces no log while it hangs, so nothing was
+    # learned. A from-source build plus the smokes measures ~35 min; 75 is the
+    # ceiling, and every docker run below carries its own `timeout` so the
+    # step that hangs is the one that gets named.
+    timeout-minutes: 75
     permissions:
       contents: read
       packages: write
@@ -111,12 +119,29 @@ jobs:
       # 1. The command README.md and BETA.md open with. This is the exact step
       #    that fails on the shipped Windows installer with "No module named
       #    omnisim", so assert it here rather than assume.
-      - name: Smoke - doctor runs and finds the binary
+      #    This step HUNG for 6 hours on every run through 2026-08-29 and had
+      #    printed nothing when it was cancelled, because `$(...)` swallowed
+      #    stdout. Split it: the doctor itself needs no display, so gate on it
+      #    WITHOUT the entrypoint's xvfb-run; then exercise the entrypoint path
+      #    separately, under a timeout, with xvfb-run's own error file on
+      #    stderr, so that if the display server is what hangs, the log finally
+      #    says so.
+      - name: Smoke - doctor runs and finds the binary (no display needed)
         run: |
-          out="$(docker run --rm "$LOCAL_TAG" doctor)"
-          echo "$out"
-          echo "$out" | grep -qi 'omnisim-bin' \
+          timeout 300 docker run --rm --entrypoint python3 -e OMNISIM_HOME=/opt/omnisim \
+            -w /opt/omnisim "$LOCAL_TAG" -m omnisim doctor | tee /tmp/doctor.txt
+          grep -qi 'omnisim-bin' /tmp/doctor.txt \
             || (echo "FAIL: doctor did not resolve the engine binary" && exit 1)
+
+      - name: Probe - the entrypoint (xvfb-run) starts, runs a command and EXITS
+        run: |
+          echo "--- xvfb-run alone, 60 s ceiling, its error file on stderr:"
+          timeout 60 docker run --rm --entrypoint bash "$LOCAL_TAG" \
+            -c 'xvfb-run -a -e /dev/stderr xdpyinfo 2>&1 | head -5; echo "xvfb-run rc=${PIPESTATUS[0]}"' \
+            || echo "TIMED OUT or failed: rc=$?  <-- xvfb-run is what hangs the doctor smoke"
+          echo "--- the real entrypoint running doctor, 300 s ceiling:"
+          timeout 300 docker run --rm "$LOCAL_TAG" doctor | tail -3 \
+            || (echo "FAIL: the entrypoint path did not exit (rc=$?) -- see the xvfb-run probe above" && exit 1)
 
       # 2. Physics actually drove a world. The ONLY race-free proof is the
       #    Newton verdict sidecar -- "imports OK" proves the runtime loaded,
@@ -124,7 +149,7 @@ jobs:
       #    a physics one (AGENTS.md 3b).
       - name: Smoke - a real world finalises under Newton, on CPU, with no GPU
         run: |
-          docker run --rm --entrypoint /usr/local/bin/omnisim-entrypoint "$LOCAL_TAG" \
+          timeout 1500 docker run --rm --entrypoint /usr/local/bin/omnisim-entrypoint "$LOCAL_TAG" \
             --exec bash -lc '
               set -euo pipefail
               cd "$OMNISIM_HOME"
@@ -149,7 +174,7 @@ jobs:
       - name: Probe - which render adapter does a GPU-less host get?
         continue-on-error: true
         run: |
-          docker run --rm --entrypoint /usr/local/bin/omnisim-entrypoint "$LOCAL_TAG" \
+          timeout 900 docker run --rm --entrypoint /usr/local/bin/omnisim-entrypoint "$LOCAL_TAG" \
             --exec bash -lc '
               cd "$OMNISIM_HOME"
               export OMNISIM_WGPU_INITLOG=/tmp/wgpu.log
