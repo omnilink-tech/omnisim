@@ -178,8 +178,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
 #   xcb libs        : required EVEN HEADLESS; a partial set kills the engine with
 #                     an EMPTY log while the launcher still exits 0.
 #   mesa-vulkan-drivers + libvulkan1 : lavapipe, so wgpu-native has a software
-#                     Vulkan adapter on a GPU-less host. UNVERIFIED -- read the
-#                     OMNISIM_WGPU_INITLOG output before claiming screenshots work.
+#                     Vulkan adapter on a GPU-less host. MEASURED 2026-08-29
+#                     (run 33267809386): adapter backend=Vulkan device=llvmpipe
+#                     (LLVM 20.1.2), ALL OK instance+adapter+device+queue.
 #   ffmpeg          : capture/cinema encode; without it those services return 503.
 # USER: a container has no login session, so nothing sets it, and the engine
 # logs `ERROR: USER or USERNAME environment variable not set, falling back to

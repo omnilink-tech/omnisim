@@ -31,9 +31,15 @@ rather than as supported.
 
 ### Status
 
-⚠️ **Not published yet.** [`runtime-image.yml`](../.github/workflows/runtime-image.yml)
-exists but has never run, so no `ghcr.io/omnilink-tech/omnisim` tag is on the
-registry. Until it has run, build locally (below). Publish it with:
+✅ **Published 2026-08-29** — `ghcr.io/omnilink-tech/omnisim:latest`
+(digest `sha256:9fd2159d…`, workflow run 33267809386), the first push after four
+runs that never got past the doctor smoke. What that run **measured** on a
+GPU-less runner: the doctor exits in 0 s through the entrypoint (tini as PID 1;
+without it every xvfb-run arrangement hangs before running anything), a real
+world finalises **and steps** on the CPU solver with the Newton sidecar reading
+`degraded: false`, and wgpu selects **Vulkan / llvmpipe (LLVM 20.1.2)** with
+`ALL OK (instance+adapter+device+queue)`. The workflow gates every push on the
+first two and prints the third. To republish:
 
 ```bash
 gh workflow run runtime-image.yml -f omnisim_tag=v8.1.6
@@ -165,14 +171,13 @@ present.
 - **Cloth and soft-body worlds are unusably slow on CPU** — forced-CPU cloth is
   measured at 51.9 ms/step, about 0.15x real time. Do not demo them from this
   image.
-- **Whether screenshots work is UNVERIFIED.** The image installs wgpu-native
-  (which `Dockerfile.train` does not, so the *published training image contains
-  a binary with no renderer at all*) plus `mesa-vulkan-drivers` for a software
-  Vulkan adapter. wgpu's `request_adapter` should fall through to lavapipe when
-  it is the only device — but that is **reasoned from wgpu semantics and has
-  never been measured here**. The workflow prints the adapter actually chosen
-  via `OMNISIM_WGPU_INITLOG`; read that output before claiming
-  `/world/screenshot` works. If there is no renderer, physics is unaffected and
+- **The renderer comes up on a GPU-less host — measured, not reasoned.** The
+  image installs wgpu-native (as does `Dockerfile.train` since 2026-08-29) plus
+  `mesa-vulkan-drivers`, and on the CI runner wgpu's `request_adapter` selected
+  **Vulkan / llvmpipe (LLVM 20.1.2)** and reached `ALL OK
+  (instance+adapter+device+queue)` (run 33267809386). What is NOT measured is a
+  screenshot's *content* through that adapter; the workflow prints the adapter
+  via `OMNISIM_WGPU_INITLOG` on every run. If there is no renderer, physics is unaffected and
   screenshot calls degrade to a clean `502 SCREENSHOT_EMPTY` rather than
   crashing.
 - **CPU-only is asserted, not yet fully measured.** OmniBench lane 4c measures

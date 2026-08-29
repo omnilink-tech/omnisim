@@ -173,6 +173,23 @@ or move a patch), `/split {organism}`, `/recruit {organism, cell}`,
 Every phase produces numbers into `projects/metazoa/README.md`, including
 the failures — the alife README is the model.
 
+### Status, measured (2026-08-30; every number is in the README)
+
+| phase | status | what the engine showed |
+|---|---|---|
+| P1 | **passed, with two amendments** | welds engage only when aligned (lock at 9–10 mm / 0.000 rad, a 10 cm gap never welds); 24 cells 3.4 ms/step bare engine. *Amended:* a 4-chain walks at 0.06–0.11 m/s, not > 0.15 (the belly-roller cell is what makes it move at all); a lone symmetric cell cannot flip — free cells are inert by design and organisms come to them |
+| P2 | **passed** | pitch spine + head rudder steers (single rudder radius 2 m; a head PAIR 0.3 m); tail docking recruits on-axis and 0.6 m off-axis in one attempt; **division yields two moving halves** (0.069 / 0.121 m/s) via dock-face re-rolls |
+| P3 | **partly** | conservation holds in every one of 13 reef epochs (free + members = cells); recruits happen inside the ecology (2 per 600–900 s epoch on 2 bodies); light patches feed bodies. *Not yet observed live:* starvation shed, death/recycle (bodies never ran down), a division inside a reef epoch |
+| P4 | **not started** | `metazoa.py` runs multi-epoch with lineage scoring; no ≥ 8-epoch evolution run and no deterministic re-score yet |
+| P5 | **partly** | launcher entry + DEMOS.md + a seed reef and watch world ship; charge rings live; no follow camera, no cinema clip |
+
+What every failure between P2 and P3 turned out to be, in order: the arena
+wall (bodies with a 2 m turn radius end every approach at a wall), an
+unmeasured rudder angle (1.0 rad anchors the body; 0.5 turns it), a target
+inside the turning circle (orbiting), an open-loop reverse that drifts, and a
+reverse-steering sign that was inverted. Each was measured on a probe before
+it was fixed, and each fix is a number in the README.
+
 ## What we keep from the two earlier attempts
 
 From **alife**: the supervisor-drives-everything architecture, batched

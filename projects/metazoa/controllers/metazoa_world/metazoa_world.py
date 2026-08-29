@@ -109,22 +109,22 @@ BACKOFF_S = 3.0             # after a failed verify: head-first away for this lo
 # L = organism length from its tail FACE to its head ROOT):
 RUNWAY_R1_M = 0.35          # R1 = N + n*(L + 0.35): the head here puts the tail face 0.35 m off the nose
 RUNWAY_R2_M = 1.0           # (legacy) R2 = N + n*(L + 1.0)
-RUNWAY_FAR_M = 3.0          # aligned window ends here (line_out converges a 0.6 m offset in ~1.5 m of runway, measured; the reverse leg is now steered) (was 3.2 for the 2 m-radius single rudder; the pair turns in 0.3 m and a long unsteered reverse drifts: measured +0.31 m lateral after 1.2 m of reverse)
+RUNWAY_FAR_M = 6.0          # aligned window ends here. MEASURED (epoch 12): a 7-cell body arriving at P_NEAR facing inward U-turns with a 1.9 m tail swing and is back on the axis only at 5.7 m; the steered reverse holds 1 cm, 6 m is ~100 s
 R_FAR_REACHED_M = 0.45
 RUNWAY_NEAR_M = 0.7         # P_NEAR = N + n*(L + 0.7): the turn-in point just outside the bay
 P_NEAR_REACHED_M = 0.7      # >= the pair's turning radius (0.3 m orbited P_NEAR at 0.5-0.6 m, 14 K-turns, no arrival)
 TURN_SLOWDOWN = 0.0         # MEASURED (probe_wave 2026-08-29, gain 0.5): a smaller wave does NOT tighten the turn -- A 0.6 gives 0.13 rad/15 s at 0.6 m (radius 4.6 m), A 0.45 none; full A gives 0.62 rad at 1.25 m (radius 2 m). Earlier "0.6 starved the rudder" was measured with the 1.0 rad over-steer.
 LOOKAHEAD_LINE_M = 0.4      # line-following aim point ahead of the head's projection on the axis (0.6 converged over ~3 m -- too slow for the runway)
-LINE_ERR_FULL_RAD = 0.6     # full lock at this heading error while following the axis (the roaming law saturates at 1.2)
+LINE_ERR_FULL_RAD = 0.3     # full lock beyond this heading error while following the axis (0.6: a 0.6 m offset took ~4 m of runway to converge -- the rudder only turns the body decisively near full lock)
 LINE_ABORT_LATERAL_M = 2.5  # the U-turn at R_FAR swings ~2 m wide at a 1 m turn radius (measured
                             # 0.9 aborted every U-turn); only a real runaway backs out
-LINE_ABORT_ALONG_M = 1.8    # ... or heading further out than R_FAR by this much
+LINE_ABORT_ALONG_M = 1.5    # ... or heading further out than R_FAR by this much
 R1_REACHED_M = 0.30         # the head is "at" R1 inside this radius (then it aims at R2)
 R2_OVERSHOOT_M = 0.25       # head past R2 by this without alignment -> go around and retry
 GO_AROUND_SIDE_M = 1.6      # go-around loop point: R1 + side*perp*1.6 - n*0.8 (turn radius ~1 m)
 GO_AROUND_BACK_M = 0.8
-ALIGN_TAIL_LATERAL_M = 0.10 # reverse when the tail face is within this of the normal ...
-ALIGN_SPINE_RAD = 0.12      # ... and the spine (tail->head) is within this of n (0.5 let a 0.47 rad
+ALIGN_TAIL_LATERAL_M = 0.15 # reverse when the tail face is within this of the normal (the reverse leg is steered now; 0.10 with a 0.12 rad spine gate missed a body that was on the axis at 5.4 m) ...
+ALIGN_SPINE_RAD = 0.20      # ... and the spine (tail->head) is within this of n (an undulating body wobbles +-0.1 rad)
                             # misalignment reverse 2.5 m and drift 0.35 m off-axis, measured x4) ...
 ALIGN_TAIL_ALONG_M = 0.15   # ... and the tail face is at least this far beyond the nose
 REVERSE_ABORT_LATERAL_M = 0.45   # reversing with the tail this far off the normal -> runway again
@@ -137,10 +137,16 @@ REVERSE_ABORT_LATERAL_M = 0.45   # reversing with the tail this far off the norm
 REV_LOOKAHEAD_M = 0.5
 REV_ERR_FULL_RAD = 0.8
 REV_STEER_MAX = 0.6
+REV_GENTLE_ALONG_M = 0.6    # inside this (tail face to free nose) the reverse runs at the genome's A
 REV_A = 1.2                 # reverse-gear wave amplitude (rad). MEASURED (probe_wave REVERSE=1, pair):
                             # A 0.9 reverses 0.37 m / 15 s, A 1.2 reverses 0.87 m (2.4x) and still steers
-REVERSE_TIMEOUT_S = 150.0   # the pair reverses at ~0.025 m/s (measured): 3 m of runway is 120 s    # a reverse that has not captured by then -> runway again
+REVERSE_TIMEOUT_S = 200.0   # the pair reverses at ~0.025 m/s (measured): 3 m of runway is 120 s    # a reverse that has not captured by then -> runway again
 FACE_CHECK_M = 0.35         # read the two face nodes only when the tail root is this close
+CAPTURE_SETTLE_TICKS = 1    # ticks between the capture teleport and the lock write. MEASURED
+                            # (epochs 9-10): a lock written the tick after the capture welded the
+                            # cell at a STALE pose -- sep read a constant 0.122 m (root on the tail
+                            # face) while the body moved; the retry without capture held at 0.04-0.05
+CAPTURE_LOCK_SEP = 0.011    # after a capture, lock only at the captured gap (see the stale-pose note)
 CAPTURE_M = 0.22            # capture assist range (tail face <-> free nose face)
 CAPTURE_AXIS = 0.9          # ... and alignment (rad, normals opposed)
 MAX_DOCK_ATTEMPTS = 5       # then the cell is blacklisted for this organism for BLACKLIST_S
@@ -158,9 +164,17 @@ RUDDER_MAX_RAD = 0.6        # hard cap on the head rudder angle (see drive_organ
 # turning circle is ORBITED -- the body circled P_NEAR at d 0.8-2.0 m for
 # 100 s with |err| pinned at 1.7-2.2 rad and full lock. A vehicle whose
 # target is closer than its turn radius backs up first.
+# BASK (measured, epoch 14): a roaming body aims at the patch CENTRE, reaches
+# it, and then chases a point under its own head -- 0.007 m/s for 350 s,
+# K-turns, no light gained. A body within BASK_M of its roam target lies
+# still on the patch (wave amplitude 0, no steer) until the ecology gives it
+# something to do; leaving the target more than BASK_LEAVE_M away resumes.
+BASK_M = 0.6
+BASK_LEAVE_M = 1.2
 KTURN_DIST_M = 0.9          # aim closer than this ...
 KTURN_ERR_RAD = 1.4         # ... and more than this off the heading -> reverse for KTURN_S
-KTURN_S = 12.0              # ~0.35 m of reverse; 7 s (0.2 m) re-entered the circle every time (measured)
+KTURN_S = 25.0              # ceiling; the K-turn ends when the aim is KTURN_CLEAR_M away (or reached)
+KTURN_CLEAR_M = 1.5
 KTURN_COOLDOWN_S = 6.0      # forward driving between two K-turn reverses
 RUDDER_CELLS = 2            # yaw cells at the head that carry the steer command. MEASURED
                             # (probe_wave, 6 cells, gain 0.5, 2026-08-29): one rudder turns
@@ -190,7 +204,16 @@ def log(msg):
     stdout on Windows, so without the file the docking trace is unreadable."""
     global _LOG_FH
     line = "[reef] %s" % msg
-    print(line, flush=True)
+    # stdout carries EVENTS only, never the per-2 s trace: four long runs ended
+    # with omnisim-bin at exit code 1 and no diagnostic, each earlier than the
+    # last (336, 72, 40, 14 s) as the trace volume grew -- the controller's
+    # stdout pipe is the one per-tick load that changed. And print() must
+    # never raise into a tick.
+    if not msg.startswith("  "):
+        try:
+            print(line, flush=True)
+        except Exception:                            # noqa: BLE001
+            pass
     try:
         if _LOG_FH is None:
             _LOG_FH = open(os.path.join(os.environ.get("METAZOA_RUN_DIR", RUN), "world.log"), "a", encoding="utf-8")
@@ -736,6 +759,9 @@ class Director:
 
     def _fail_attempt(self, o, st, d, j, why):
         d["attempts"] += 1
+        d["captures"] = 0
+        d.pop("cap_root", None)
+        d.pop("cap_face", None)
         self.dock_stats["attempts"] += 1
         st["reverse"] = False
         if d["attempts"] >= MAX_DOCK_ATTEMPTS:
@@ -877,8 +903,11 @@ class Director:
                 aim_x, aim_y = N[0] + n[0] * s_aim, N[1] + n[1] * s_aim
                 rev_heading = wrap(math.atan2(uy, ux) + math.pi)        # the tail travels along -spine
                 rev_err = ORG.heading_error((tfx, tfy, rev_heading), (aim_x, aim_y))
-                st["rev_steer"] = ORG.clamp(ORG.steer_from_error(rev_err, err_full=REV_ERR_FULL_RAD),
-                                            -REV_STEER_MAX, REV_STEER_MAX)
+                # SIGN MEASURED on the engine (probe_dock --behind, 2026-08-29): the
+                # tail moves the OTHER way from the head for a given rudder in
+                # reverse -- +0.6 took the tail from +0.08 to +0.39 m off the axis.
+                st["rev_steer"] = -ORG.clamp(ORG.steer_from_error(rev_err, err_full=REV_ERR_FULL_RAD),
+                                             -REV_STEER_MAX, REV_STEER_MAX)
                 d["rev_err"] = rev_err
             if ORG.distance_xy(tp, fp) > FACE_CHECK_M and d["state"] == "reverse":
                 return None, True
@@ -903,13 +932,37 @@ class Director:
                         and d["captures"] == 0):
                     mx, my = math.cos(ayaw), math.sin(ayaw)
                     off = DOCK_GAP + C.NOSE_FACE_X
-                    self.cells[j].teleport(ax + mx * off, ay + my * off, wrap(ayaw + math.pi))
+                    root = (ax + mx * off, ay + my * off, wrap(ayaw + math.pi))
+                    self.cells[j].teleport(*root)
+                    d["cap_root"] = root
+                    d["cap_face"] = (ax + mx * DOCK_GAP, ay + my * DOCK_GAP)   # where the nose face should land
                     d["captures"] += 1
                     self.dock_stats["captures"] = self.dock_stats.get("captures", 0) + 1
                     log("%s capture assist: CELL_%d drawn onto CELL_%d.f_tail (sep %.3f, axis %.2f rad)"
                         % (o.id, j, tail, sep, axis_err))
-                    return None, True                  # lock on the next tick, after the step
-                if sep <= LOCK_SEP and axis_err <= LOCK_AXIS:
+                    d["lock_after"] = self.tick + CAPTURE_SETTLE_TICKS
+                    return None, True
+                # STALE-POSE WELD (measured 5x, epochs 9-12): every lock written after
+                # a capture with sep > 0.011 welded the cell 0.12 m off; every one at
+                # <= 0.0097 held (and un-captured locks at 0.03 hold). So after a
+                # capture, re-capture rather than lock a drifted gap.
+                if (d["captures"] and "cap_face" in d and CAPTURE_LOCK_SEP < sep <= CAPTURE_M
+                        and d["captures"] < 4 and self.tick >= d.get("lock_after", 0)):
+                    # the landed face is off by a residual (measured 2-10 mm); the
+                    # next teleport is the intended root minus that residual
+                    tx, ty = d["cap_face"]
+                    rx, ry = bx - tx, by - ty
+                    rx0, ry0, ryaw = d["cap_root"]
+                    root = (rx0 - rx, ry0 - ry, ryaw)
+                    self.cells[j].teleport(*root)
+                    d["cap_root"] = root
+                    log("%s re-capture %d: nose face landed %.1f mm off (residual %+.4f, %+.4f), sep %.4f"
+                        % (o.id, d["captures"], 1000.0 * math.hypot(rx, ry), rx, ry, sep))
+                    d["captures"] += 1
+                    d["lock_after"] = self.tick + CAPTURE_SETTLE_TICKS
+                    self.dock_stats["recaptures"] = self.dock_stats.get("recaptures", 0) + 1
+                    return None, True
+                if sep <= LOCK_SEP and axis_err <= LOCK_AXIS and self.tick >= d.get("lock_after", 0):
                     self.cells[j].lock("f_nose", True)
                     self.welds.add((j, "f_nose", tail))
                     self.dock_stats["locks_written"] += 1
@@ -919,8 +972,8 @@ class Director:
                 return None, True
             # verify: keep reversing, the faces must stay together
             held = self.t - d["lock_t"]
-            if sep <= VERIFY_SEP and held < VERIFY_S:
-                return None, True
+            if held < VERIFY_S and sep <= 1.5 * VERIFY_SEP:
+                return None, True          # judged at VERIFY_S; only a gross gap fails early
             if sep <= VERIFY_SEP:
                 try:
                     acts = self.reef.recruit(o.id, j, at_tail=True)
@@ -977,7 +1030,7 @@ class Director:
         # (L + RUNWAY_FAR_M beyond the nose) and reverses down it; measured
         # (epoch 7, 12 m arena): checking only the turn-in point let bodies
         # chase cells whose runway ended in a wall -- 15 wall events, 0 locks
-        r = 0.7 + RUNWAY_FAR_M
+        r = 0.7 + 3.0                  # the runway a body actually needs to line up (not the full window)
         px, py = nx_ + math.cos(nyaw) * r, ny_ + math.sin(nyaw) * r
         h = self.ARENA / 2.0 - 0.3
         return abs(px) <= h and abs(py) <= h
@@ -1006,6 +1059,22 @@ class Director:
         # under STUCK_SPEED for STUCK_S backs off in reverse gear for UNSTICK_S.
         aim = self.clamp_aim(aim)
         st["mode"] = ""
+        bask = False
+        if o.state == "roam" and aim is not None and j is None:
+            da = ORG.distance_xy(hp, aim)
+            if st.get("basking"):
+                bask = da <= BASK_LEAVE_M
+            else:
+                bask = da <= BASK_M
+            if bask and not st.get("basking"):
+                self.dock_stats["basks"] = self.dock_stats.get("basks", 0) + 1
+                log("%s basking on the patch at (%.2f, %.2f)" % (o.id, aim[0], aim[1]))
+            st["basking"] = bask
+        else:
+            st["basking"] = False
+        if bask:
+            aim = None
+            st["mode"] = "BASK"
         if not reverse:
             # WALL STATE MACHINE (measured: a margin-only rule limit-cycled at
             # 0.87 m off the wall for 300 s -- reverse until clear of the
@@ -1042,8 +1111,12 @@ class Director:
                     st["mode"] = "WALL"
             st["wall_state"] = ws
         if self.t < st.get("kturn_until", 0.0):
-            reverse, aim = True, None
-            st["mode"] = "KTURN"
+            da = ORG.distance_xy(hp, aim) if aim is not None else None
+            if da is not None and (da >= KTURN_CLEAR_M or da <= P_NEAR_REACHED_M * 0.7):
+                st["kturn_until"] = 0.0          # geometry changed: resume
+            else:
+                reverse, aim = True, None
+                st["mode"] = "KTURN"
         elif (not reverse and aim is not None and st["heading"] is not None
               and not st.get("line_follow")     # line_out from a wrong-way arrival IS a U-turn; let it turn
               and self.t >= st.get("kturn_next", 0.0)
@@ -1138,8 +1211,15 @@ class Director:
         buf = self._tbuf.setdefault(o.id, [])
         wave = dict(o.genome)
         wave["dphi"] = abs(o.genome["dphi"]) if reverse else -abs(o.genome["dphi"])
+        if st.get("basking") and not reverse:
+            wave["A"] = 0.0
         if reverse:
-            wave["A"] = max(o.genome["A"], REV_A)
+            # fast reverse on the runway, the genome's own amplitude inside the
+            # bay: a lock written at 12 mm under the A 1.2 reverse read 122 mm
+            # 0.22 s later (probe_dock --behind), while every lock under A 0.9 held
+            d_ = st.get("dock") or {}
+            near_bay = d_.get("state") in ("reverse", "verify") and (d_.get("along") or 9.0) < REV_GENTLE_ALONG_M
+            wave["A"] = o.genome["A"] if near_bay else max(o.genome["A"], REV_A)
         # TURN RADIUS = speed / yaw rate. The rudder's yaw rate is fixed by the
         # physics, so a hard turn must SLOW the wave: measured, at full speed the
         # body orbits a target inside its ~1 m turning circle forever (26 trace
@@ -1158,7 +1238,21 @@ class Director:
             if self.axis_z.get(o.spine[k], 0.0) > 0.7:
                 targets[k] = rudder if k >= n_spine - RUDDER_CELLS else g["bias_yaw"]
         head_up = self.axis_z.get(o.head, 0.0)
-        st["rudder"] = rudder if head_up > 0.7 else None
+        # hysteresis + persistence: the A 1.2 reverse rocks a 4-cell body's head
+        # to |z| 0.63-0.72 for a sample or two (measured, division probe: 47
+        # spurious "lost" flips in 240 s); a rudder is lost below 0.6 for 1 s
+        # and back above 0.75
+        low_since = st.get("rudder_low_since")
+        if head_up < 0.6:
+            if low_since is None:
+                st["rudder_low_since"] = self.t
+            elif self.t - low_since >= 1.0:
+                st["rudder_down"] = True
+        else:
+            st["rudder_low_since"] = None
+            if head_up > 0.75:
+                st["rudder_down"] = False
+        st["rudder"] = None if st.get("rudder_down") else rudder
         # RUDDER WATCH: a head cell knocked off its side (hinge axis no longer
         # vertical) leaves the body with no steering at all -- log the
         # transitions, they explain every "polarity flipped" on a rudder body.
@@ -1370,8 +1464,11 @@ class Director:
         if excluded != self._excluded_logged:
             log("undockable free cells (runway outside the arena): %s" % sorted(excluded))
             self._excluded_logged = set(excluded)
-        for a in self.reef.step(self.DT_S, self.positions, moving_free=set(), excluded=excluded):
-            self.execute(a)
+        # the ecology acts only once the seeded welds are in (a division at
+        # t=0 re-rolled cells whose junction welds did not exist yet, measured)
+        if self.tick > LOCK_SETTLE_TICKS + 2:
+            for a in self.reef.step(self.DT_S, self.positions, moving_free=set(), excluded=excluded):
+                self.execute(a)
         # organisms born / retired this tick
         for oid in list(self.org):
             if oid not in self.reef.organisms:
@@ -1396,7 +1493,7 @@ class Director:
                        self.dock_stats["attempts"], self.step_median()))
                 for o in self.reef.organisms.values():
                     st = self.org.get(o.id)
-                    if not st or o.state not in ("recruit", "seek_light"):
+                    if not st:
                         continue
                     d = st.get("dock") or {}
                     log("  %s %s spd=%.3f up=%.2f err=%+.2f steer=%+.2f sign=%+d %s%s%s d=%.2f tail_along=%.2f "
@@ -1418,8 +1515,31 @@ class Director:
     def run(self):
         if not self.setup():
             return 1
-        while self.tick_once():
-            pass
+        # RESILIENCE + EVIDENCE: three long runs ended with the engine at exit
+        # code 1 and no CRASH line (epochs 5, 15, 16). The only exit-1 path is
+        # this controller's own crash handler, and its log() can itself fail
+        # silently -- so a tick that raises is recorded to crash.txt with a
+        # plain file write and skipped; only a run that keeps raising quits.
+        self.tick_errors = 0
+        while True:
+            try:
+                if not self.tick_once():
+                    break
+            except Exception:                           # noqa: BLE001
+                import traceback
+                self.tick_errors += 1
+                text = "tick %d t=%.2f" % (self.tick, self.t) + chr(10) + traceback.format_exc()
+                try:
+                    with open(os.path.join(self.run_dir, "crash.txt"), "a", encoding="utf-8") as fh:
+                        fh.write(text + chr(10))
+                except OSError:
+                    pass
+                log("TICK ERROR %d (skipped): %s" % (self.tick_errors, text.splitlines()[-1]))
+                if self.tick_errors > 50:
+                    raise
+                self.tick += 1
+                if self.sup.step(self.DT) == -1:
+                    break
         return self.quit_code or 0
 
 

@@ -660,7 +660,9 @@ class CaptureServiceState:
                     "error": (
                         f"capture supervisor port {SUPERVISOR_HOST}:{SUPERVISOR_PORT} is "
                         "still in use after killing our prior subprocess — possibly an "
-                        "orphan from a previous run. On Windows: `taskkill /F /IM omnisim-bin.exe`."
+                        "orphan from a previous run. Find it with scripts/capture/render.py's "
+                        "detect_orphan_sim() (parent process gone) and kill THAT pid only -- never "
+                        "`taskkill /F /IM omnisim-bin.exe`, which ends every other session's engine."
                     ),
                     "load_ms": 0,
                 }

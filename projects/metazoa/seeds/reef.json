@@ -1,11 +1,11 @@
 {
  "epoch": 0,
- "arena": 10.0,
- "n_cells": 14,
+ "arena": 14.0,
+ "n_cells": 16,
  "cells": [
   {
    "pos": [
-    2.2,
+    3.08,
     0.0,
     0.032
    ],
@@ -19,7 +19,7 @@
   },
   {
    "pos": [
-    2.2,
+    3.08,
     0.13,
     0.032
    ],
@@ -33,7 +33,7 @@
   },
   {
    "pos": [
-    2.2,
+    3.08,
     0.26,
     0.032
    ],
@@ -47,13 +47,13 @@
   },
   {
    "pos": [
-    2.2,
+    3.08,
     0.39,
     0.032
    ],
    "yaw": 1.5708,
-   "roll": 1.5708,
-   "dock_rotation": 1,
+   "roll": 0.0,
+   "dock_rotation": 0,
    "id": 3,
    "organism": "L0_e0",
    "parked": false,
@@ -61,36 +61,36 @@
   },
   {
    "pos": [
-    -2.2,
-    0.0,
+    3.08,
+    0.52,
     0.032
    ],
-   "yaw": 4.7124,
-   "roll": 0.0,
-   "dock_rotation": 0,
+   "yaw": 1.5708,
+   "roll": 1.5708,
+   "dock_rotation": 1,
    "id": 4,
-   "organism": "L1_e0",
+   "organism": "L0_e0",
    "parked": false,
    "charge_wh": 6.0
   },
   {
    "pos": [
-    -2.2,
-    -0.13,
+    3.08,
+    0.65,
     0.032
    ],
-   "yaw": 4.7124,
-   "roll": 0.0,
-   "dock_rotation": 0,
+   "yaw": 1.5708,
+   "roll": 1.5708,
+   "dock_rotation": 1,
    "id": 5,
-   "organism": "L1_e0",
+   "organism": "L0_e0",
    "parked": false,
    "charge_wh": 6.0
   },
   {
    "pos": [
-    -2.2,
-    -0.26,
+    -3.08,
+    0.0,
     0.032
    ],
    "yaw": 4.7124,
@@ -103,82 +103,82 @@
   },
   {
    "pos": [
-    -2.2,
-    -0.39,
+    -3.08,
+    -0.13,
     0.032
    ],
    "yaw": 4.7124,
-   "roll": 1.5708,
-   "dock_rotation": 1,
+   "roll": 0.0,
+   "dock_rotation": 0,
    "id": 7,
    "organism": "L1_e0",
    "parked": false,
    "charge_wh": 6.0
   },
   {
+   "pos": [
+    -3.08,
+    -0.26,
+    0.032
+   ],
+   "yaw": 4.7124,
+   "roll": 0.0,
+   "dock_rotation": 0,
    "id": 8,
-   "pos": [
-    3.5243,
-    -3.3553,
-    0.032
-   ],
-   "yaw": 2.2523,
-   "roll": 0.0,
-   "dock_rotation": 0,
-   "organism": null,
+   "organism": "L1_e0",
    "parked": false,
    "charge_wh": 6.0
   },
   {
+   "pos": [
+    -3.08,
+    -0.39,
+    0.032
+   ],
+   "yaw": 4.7124,
+   "roll": 0.0,
+   "dock_rotation": 0,
    "id": 9,
-   "pos": [
-    -1.5569,
-    -2.6325,
-    0.032
-   ],
-   "yaw": -2.4015,
-   "roll": 0.0,
-   "dock_rotation": 0,
-   "organism": null,
+   "organism": "L1_e0",
    "parked": false,
    "charge_wh": 6.0
   },
   {
+   "pos": [
+    -3.08,
+    -0.52,
+    0.032
+   ],
+   "yaw": 4.7124,
+   "roll": 1.5708,
+   "dock_rotation": 1,
    "id": 10,
-   "pos": [
-    -1.4172,
-    2.3393,
-    0.032
-   ],
-   "yaw": -2.0061,
-   "roll": 0.0,
-   "dock_rotation": 0,
-   "organism": null,
+   "organism": "L1_e0",
    "parked": false,
    "charge_wh": 6.0
   },
   {
-   "id": 11,
    "pos": [
-    0.6038,
-    1.028,
+    -3.08,
+    -0.65,
     0.032
    ],
-   "yaw": -0.8017,
-   "roll": 0.0,
-   "dock_rotation": 0,
-   "organism": null,
+   "yaw": 4.7124,
+   "roll": 1.5708,
+   "dock_rotation": 1,
+   "id": 11,
+   "organism": "L1_e0",
    "parked": false,
    "charge_wh": 6.0
   },
   {
    "id": 12,
    "pos": [
-    0.3533,
-    -3.2354,
+    4.4768,
+    -4.2621,
     0.032
    ],
-   "yaw": -2.7671,
+   "yaw": 2.8109,
    "roll": 0.0,
    "dock_rotation": 0,
    "organism": null,
@@ -188,11 +188,39 @@
   {
    "id": 13,
    "pos": [
-    -2.1759,
-    1.335,
+    -1.9777,
+    -3.344,
     0.032
    ],
-   "yaw": -0.455,
+   "yaw": 0.5781,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "organism": null,
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "id": 14,
+   "pos": [
+    -1.8003,
+    2.9716,
+    0.032
+   ],
+   "yaw": -1.4092,
+   "roll": 0.0,
+   "dock_rotation": 0,
+   "organism": null,
+   "parked": false,
+   "charge_wh": 6.0
+  },
+  {
+   "id": 15,
+   "pos": [
+    0.767,
+    1.3058,
+    0.032
+   ],
+   "yaw": -2.255,
    "roll": 0.0,
    "dock_rotation": 0,
    "organism": null,
@@ -208,17 +236,19 @@
     0,
     1,
     2,
-    3
+    3,
+    4,
+    5
    ],
    "genome": {
-    "A": 0.8647665529666325,
-    "omega": 4.150849173924502,
-    "dphi": 1.2603737892159415,
-    "bias_pitch": -0.06841019413319316,
-    "bias_yaw": 0.005741120689070275,
+    "A": 0.8929533105933265,
+    "omega": 4.430169834784901,
+    "dphi": 1.2150934473039854,
+    "bias_pitch": -0.03420509706659658,
+    "bias_yaw": 0.0028705603445351377,
     "branch_phase": -0.8439014238462192,
     "branch_scale": 0.3231995699098827,
-    "steer_gain": 1.001487146637884
+    "steer_gain": 0.500743573318942
    },
    "bodyplan": {
     "target_length": 8,
@@ -239,20 +269,22 @@
    "id": "L1_e0",
    "lineage": "L1",
    "members": [
-    4,
-    5,
     6,
-    7
+    7,
+    8,
+    9,
+    10,
+    11
    ],
    "genome": {
-    "A": 0.848132600025405,
-    "omega": 4.551047253791386,
-    "dphi": 1.0236442024315957,
-    "bias_pitch": 0.010472591070892753,
-    "bias_yaw": 0.071591952113198,
+    "A": 0.889626520005081,
+    "omega": 4.5102094507582775,
+    "dphi": 1.155911050607899,
+    "bias_pitch": 0.005236295535446377,
+    "bias_yaw": 0.035795976056599,
     "branch_phase": 0.8207468344625295,
     "branch_scale": 0.5331987617841629,
-    "steer_gain": 0.9123724096672281
+    "steer_gain": 0.45618620483361405
    },
    "bodyplan": {
     "target_length": 12,
@@ -266,12 +298,10 @@
   }
  ],
  "free": [
-  8,
-  9,
-  10,
-  11,
   12,
-  13
+  13,
+  14,
+  15
  ],
  "parked": []
 }

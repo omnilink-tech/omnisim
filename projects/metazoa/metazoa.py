@@ -96,6 +96,7 @@ CHARGE_START_WH = float(os.environ.get("METAZOA_START_WH", CHARGE_START_WH))   #
 # cold disk. `run-headless --duration` is a wall-clock SLEEP, so the
 # director's simulationQuit(0) is what actually ends the run early.
 DURATION_SLACK_S = 45
+DURATION_FACTOR = 3.0       # wall-clock per sim second; a 16-cell pair reef ran 13 ms/step (0.6x realtime) and 1.9 cut epoch 9 at 488 of 600 s
 GPU_LIMIT_C = 70.0
 GPU_POLL_S = 60.0
 
@@ -285,7 +286,9 @@ def build_reef(lineages, n_cells, arena, epoch, rng, mods=None, n_free=FREE_CELL
         # its new head into a rudder.
         # RUDDER PAIR (probe_wave 2026-08-29): [..., 1, 1] turns 1.8-2.0 rad
         # per 15 s (radius ~0.3 m) against 0.62 for a single head rudder.
-        pattern_n = [0] * (seed_len - 2) + [1, 1] if seed_len >= 3 else [0] * (seed_len - 1) + [1]
+        # morphology by size (ECO.PAIR_MIN_CELLS): a pair at the head from 6 cells, one rudder below
+        pair = seed_len >= (mods.get("ecology").PAIR_MIN_CELLS if mods and mods.get("ecology") else 6)
+        pattern_n = [0] * (seed_len - 2) + [1, 1] if pair and seed_len >= 3 else [0] * (seed_len - 1) + [1]
         placed = chain_placement(CELL, head, yaw, seed_len, pattern_n, note=note)
         oid = "%s_e%d" % (ln["id"], epoch)
         members = []
@@ -585,7 +588,7 @@ def _untuple(x):
 
 def dry_run(args, lineages, next_epoch, next_n, mods, rng):
     # a moving v3 reef runs ~1.5-2x slower than realtime at 16-24 cells
-    duration = int(args.epoch_s * 1.9) + DURATION_SLACK_S
+    duration = int(args.epoch_s * DURATION_FACTOR) + DURATION_SLACK_S
     print("DRY RUN -- nothing is written, no engine is launched.")
     print("plan: %d epoch(s) starting at epoch %d; %d cells = %d organisms x 2 + %d free "
           "+ %d parked; arena %g m, %d light patches, epoch %d s (+%d s slack)"
@@ -665,7 +668,7 @@ def main(argv=None):
 
     W, S = mods["worldgen"], mods["scene"]
     # a moving v3 reef runs ~1.5-2x slower than realtime at 16-24 cells
-    duration = int(args.epoch_s * 1.9) + DURATION_SLACK_S
+    duration = int(args.epoch_s * DURATION_FACTOR) + DURATION_SLACK_S
     t_start = time.time()
     for epoch in range(next_epoch, next_epoch + args.epochs):
         print("\n=== epoch %d  (%d cells, %d lineages, %d s sim) ===" % (

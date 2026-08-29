@@ -228,12 +228,32 @@ def controller_start_failures(log_text: str) -> list[str]:
 # (25 raw back-to-back, 25 raw with the next engine starting while the previous
 # was still tearing down, 15 through this runner with --port pinned, 15 through
 # this runner rotating the 8-Husky swarm / warehouse_husky / husky smoke worlds).
-# So the rate is NOT stable across builds, the root cause has never been
-# attributed (the signature is Qt's, not ours: a QThread torn down with a
-# waiter still on it at exit), and the retry below stays because a 0-of-80 on
-# one box is not a proof of absence. Re-measure on YOUR binary with
+# So the rate is NOT stable across builds, and the retry below stays because a
+# 0-of-80 on one box is not a proof of absence. Re-measure on YOUR binary with
 # scripts/dev/launch_race_stress.py -- it names the binary and machine in its
 # output so the number can be compared later.
+#
+# ATTRIBUTED, 2026-08-29 (the same evening as the 0-of-80): the 0-of-80 was
+# measured with engines started one AFTER another; started AGAINST an engine
+# that was already running (`launch_race_stress.py --concurrent 2 --stagger 12`)
+# the failure came back at 3 of 7 rounds, and it was never Qt's. On Windows the
+# engine (a GUI-subsystem binary) used to AttachConsole() to its launcher's
+# console whenever its stdout was anything but a pipe -- so an engine handed
+# the null device or a FILE threw that handle away for a console it did not own
+# and shared with every other process that launcher had spawned. In some of
+# those engines fd 1 was dead by the time the embedded Python interpreter first
+# wrote to it: warp's greeting raised "[Errno 9] Bad file descriptor" out of
+# newton.ModelBuilder(), the FFI smoke read that as a broken runtime, FATAL,
+# exit 1 -- and the Qt teardown marks are simply what any exit(1) during
+# startup prints. The 2026-07 "1 in 3" is the same family: the cold-launch
+# `Fatal Python error: init_sys_streams` (OmNewtonBackend.cpp) also came from
+# CPython building sys.stdout on a console the engine had attached to. Fixed
+# two ways in the engine: it no longer attaches when the launcher gave it ANY
+# stdout (main.cpp RedirectIOToConsole), and the interpreter's stdio probe is
+# now os.fstat() rather than a zero-length write that could not fail
+# (OmNewtonBackend.cpp). The retry here still catches the Qt-marked shape on
+# older binaries; a FATAL from the FFI smoke is an ERROR line and is correctly
+# NOT retried -- on a fixed binary it is a real broken install.
 _STARTUP_RACE_MARKS = (
     "QWaitCondition: Destroyed while threads are still waiting",
     "QThreadStorage: entry",

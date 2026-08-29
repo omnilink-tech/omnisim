@@ -451,3 +451,81 @@ Reverse amplitude: at A 1.2 the pair reverses **0.87 m / 15 s** (2.4× the
 reverse gear runs at `REV_A = 1.2` regardless of genome. (Three further
 probe runs in that sweep died at engine step 480 and `probe_wave` re-printed
 the previous `result.json` — it now deletes it first and fails loudly.)
+
+### Tail docking with the pair body (probe_dock, 6 cells, 14 m arena, 2026-08-29)
+
+| case | result |
+|---|---|
+| free cell 0.9 m behind the tail, on axis | RECRUITED, lock 9.1 mm / 0.000 rad |
+| 0.6 m off-axis | **RECRUITED in one attempt**, lock 9.5 mm / 0.000 rad (P_NEAR → line_out U-turn → aligned at 1.6 m → steered reverse → capture → lock) |
+| free cell in FRONT of the head (turn around first) | 3 attempts in 300 s: lock at 12 mm read 122 mm 0.22 s later under the A 1.2 reverse (fixed: genome amplitude inside 0.6 m of the bay); third attempt was at 51 mm / 0.07 rad when time ran out |
+
+The first closed-loop reverse had the steering sign inverted (measured:
+steer +0.6 took the tail from +0.08 to +0.39 m off the axis) — the tail
+moves the other way from the head for a given rudder in reverse.
+
+## P3 — pair-body reef epochs (16 cells, 2 organisms, 6-cell seeds)
+
+| epoch | arena | sim s | recruits (attempts) | notes |
+|---|---|---|---|---|
+| 9 | 12 m | 488 of 600 (wall clock ran out) | **1** (5) | first pair-body recruit in a reef: `[14,0,1,2,3,4,5]` at t=323; a lock written the tick after the capture teleport welded at a stale pose (sep constant 0.122 m while the body moved), the retry held |
+| 10 | 14 m | 600 | **2** (6, 1 stale-pose verify fail) | both bodies at 7 cells; L1's capture → lock held at 9.7 mm first time; zero wall events |
+
+| 11 | 14 m | 900 | **2** (6) | replays epoch 10 to the tick (deterministic), then misses twice with the body ON the axis at 5.4 m — the 4 m window had closed |
+| 12 | 14 m | 900 | **2** (6) | a 7-cell body arriving at P_NEAR facing inward U-turns with a **1.9 m tail swing** and is back on the axis only at 5.7 m → window 6 m |
+| 13 | 14 m | 900 | **3** (6) | **first 8-cell body in a reef** (`[14,15,0,1,2,3,4,5]`, t=545); a 5 m steered reverse held within 4 cm; no division — charge 0.63 < the 0.80 threshold (now 0.65) |
+
+The stale-pose weld (three times now, always 0.120–0.123 m ≈ the cell's
+nose offset) is a race between the capture teleport and the lock write in
+the same engine step; the supervisor now waits four ticks between them.
+
+### Morphology by size
+
+A body of **6 or more cells carries a rudder pair** at its head; a smaller
+body carries **one** (measured: `[0,0,0,1]` walks at 0.094 m/s, a 4-cell
+body with two yaw cells has two pitch cells left and was chaotic). Bodies
+cross the threshold by recruiting (the sixth cell re-rolls the cell behind
+the head to yaw) or by dividing (an 8-cell parent splits into two 4-cell
+singles: the rear half's new head re-rolls to yaw, the front half's second
+yaw cell re-rolls back to pitch). Every re-roll is the same dock-face
+rotation: the junction welds are released for two ticks, the cell is
+re-posed in place about the spine, and the welds re-engage.
+
+## P4 — division on the engine (probe: one 8-cell body at 92 % charge, 14 m arena, 240 s)
+
+| rule | halves | result |
+|---|---|---|
+| old (rear half re-rolls a head PAIR, front keeps its pair) | `[3,2,1,0]` 2 pitch + pair, `[4,5,6,7]` 2 pitch + pair | **neither walks**: 0.011 / 0.013 m/s, 18 stuck-recoveries |
+| morphology by size (one rudder below 6 cells) | `[3,2,1,0]` head CELL_0 re-rolled to yaw, `[4,5,6,7]` CELL_6 re-rolled back to pitch | **both walk**: 0.069 and 0.121 m/s, welds 3 + 3 |
+
+Two dock-face rotations, each: junction welds released, the cell re-posed
+about the spine in place, welds re-engaged two ticks later — 6 of 6 welds
+held for the rest of the run. The ecology now acts only after the seeded
+welds (a division at t = 0 had re-rolled cells whose welds did not exist
+yet). The head of the faster half dips to hinge-axis |z| 0.63–0.72 for a
+sample or two during the A 1.2 wall back-off — a rudder now counts as lost
+only below 0.6 for a full second.
+
+### Engine exits — attributed (updated the same evening)
+
+Five runs ended with `omnisim-bin` at exit code 1 and no diagnostic
+(epochs 5, 15, 16, 17, 18, the last four at 72 → 40 → 14 → 3.8 s). The cause
+was outside this project: a **parallel agent lane was launching engines of
+its own** (a capture pipeline in `--mode=fast`, starts at 18:42:55, 18:51:24,
+18:53:49 …) and **every one of my exits coincided with one of its launches**.
+With no concurrent launch a bare 60 s headless run of the same world PASSes;
+with one it exits at step 6. Two engines *running* coexist (the multi-instance
+contract holds); two engines *starting* at the same moment do not, and the
+loser dies silently. Long epochs are therefore launched only when no other
+engine has started for several minutes — and the pair of engines also took the
+GPU to 73 °C, past the owner's ceiling.
+
+#### The original note, kept for the record
+
+Epoch 5 (t = 336 s) and epoch 15 (t = 72 s) ended with `omnisim-bin` exit
+code 1: no ERROR line, empty stdout/stderr, a log truncated mid-step, a
+healthy `.newton.json` sidecar, nothing in the Windows Application log, and
+nothing unusual in the supervisor's last ticks. Neither reproduced — epoch 6
+replayed epoch 5's configuration to completion. The epoch driver treats it
+as a failed epoch (`--resume` re-runs it); the rate is recorded here so a
+future run does not mistake it for a world defect.

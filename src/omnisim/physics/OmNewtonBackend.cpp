@@ -184,7 +184,7 @@ namespace {
   // Split out of reportPyError() so the FATAL sibling below can reuse the
   // same fetch: there is exactly one live Python error and it has to be
   // consumed exactly once, whichever severity ends up reporting it.
-  bool takePyError(std::string &detail) {
+  bool takePyError(std::string &detail, bool withTraceback = false) {
     detail.clear();
     if (!PyErr_Occurred())
       return false;
@@ -199,6 +199,30 @@ namespace {
           detail = cstr;
         Py_DECREF(str);
       }
+    }
+    // The str() of an exception is the WRONG thing to diagnose a startup
+    // failure from: "[Errno 9] Bad file descriptor" names neither the file nor
+    // the frame. Callers that report a whole-backend loss ask for the frames.
+    if (withTraceback && type != nullptr) {
+      PyObject *tracebackModule = PyImport_ImportModule("traceback");
+      if (tracebackModule != nullptr) {
+        PyObject *lines = PyObject_CallMethod(tracebackModule, "format_exception", "OOO", type,
+                                             value ? value : Py_None, tb ? tb : Py_None);
+        if (lines != nullptr) {
+          PyObject *sep = PyUnicode_FromString("");
+          PyObject *joined = sep ? PyUnicode_Join(sep, lines) : nullptr;
+          if (joined != nullptr) {
+            const char *cstr = PyUnicode_AsUTF8(joined);
+            if (cstr != nullptr)
+              detail += std::string("\n") + cstr;
+            Py_DECREF(joined);
+          }
+          Py_XDECREF(sep);
+          Py_DECREF(lines);
+        }
+        Py_DECREF(tracebackModule);
+      }
+      PyErr_Clear();  // a failure to FORMAT the error must not become the new error
     }
     Py_XDECREF(type);
     Py_XDECREF(value);
@@ -219,9 +243,9 @@ namespace {
   //
   // For the failures where the world ends up with NO physics AT ALL, use
   // reportPyErrorFatal() instead.
-  int reportPyError(const char *step) {
+  int reportPyError(const char *step, bool withTraceback = false) {
     std::string detail;
-    if (takePyError(detail))
+    if (takePyError(detail, withTraceback))
       newtonWarning(QString::fromStdString(std::string("[OmNewtonBackend] ") + step + " raised: " + detail));
     else
       newtonWarning(QString::fromStdString(std::string("[OmNewtonBackend] ") + step + " failed (no Python error)"));
@@ -465,20 +489,48 @@ namespace {
     // Python has writable stdio (devnull when the parent's is None/broken)
     // so the banner write succeeds harmlessly. No-op when stdio is already
     // writable, so GUI / normal-stdout runs are byte-unchanged.
+    //
+    // ⚠ THE PROBE MUST BE A REAL ONE. Until 2026-08-29 it was `_s.write('')`,
+    // and a ZERO-LENGTH write never touches the descriptor -- it returned
+    // success on a stream whose fd 1 was closed, so the repair never fired and
+    // warp's greeting print then raised "[Errno 9] Bad file descriptor" out of
+    // newton.ModelBuilder(), which the FFI smoke read as "the runtime is
+    // broken" -> FATAL -> exit 1. Measured: 3 of 7 engines started against an
+    // already-running engine died exactly that way (launch_race_stress.py
+    // --concurrent 2 --stagger 12), every one a healthy install. os.fstat()
+    // asks the OS whether the descriptor exists without writing a byte.
     PyRun_SimpleString(
       "import os as _os, sys as _sys\n"
+      "_repaired = []\n"
       "for _n in ('stdout', 'stderr'):\n"
       "    _s = getattr(_sys, _n, None)\n"
       "    _ok = False\n"
       "    if _s is not None:\n"
       "        try:\n"
-      "            _s.write(''); _s.flush(); _ok = True\n"
+      "            _os.fstat(_s.fileno()); _s.write(''); _s.flush(); _ok = True\n"
       "        except Exception:\n"
       "            _ok = False\n"
       "    if not _ok:\n"
-      "        try: setattr(_sys, _n, open(_os.devnull, 'w'))\n"
-      "        except Exception: pass\n");
+      "        try: setattr(_sys, _n, open(_os.devnull, 'w')); _repaired.append(_n)\n"
+      "        except Exception: pass\n"
+      "_sys.__omnisim_stdio_repaired = _repaired\n");
     PyErr_Clear();
+    {
+      PyObject *sysModule = PyImport_ImportModule("sys");
+      PyObject *repaired = sysModule ? PyObject_GetAttrString(sysModule, "__omnisim_stdio_repaired") : nullptr;
+      if (repaired && PyList_Check(repaired) && PyList_Size(repaired) > 0) {
+        QStringList names;
+        for (Py_ssize_t i = 0; i < PyList_Size(repaired); ++i)
+          names << QString::fromUtf8(PyUnicode_AsUTF8(PyList_GetItem(repaired, i)));
+        newtonWarning(QString("[OmNewtonBackend] the embedded interpreter's sys.%1 had no usable descriptor (os.fstat "
+                              "refused it); pointed at the null device so warp/newton's startup prints cannot take the "
+                              "physics backend down with them. The prints are lost; nothing else is.")
+                        .arg(names.join(" and sys.")));
+      }
+      Py_XDECREF(repaired);
+      Py_XDECREF(sysModule);
+      PyErr_Clear();
+    }
 
     PyObject *warp = PyImport_ImportModule("warp");
     if (warp == nullptr) {
@@ -531,7 +583,18 @@ namespace {
         // other process created the directory first). Once it exists, the
         // same smoke call succeeds; retry once instead of permanently marking
         // Newton broken for this process.
-        PyErr_Clear();
+        //
+        // ⚠ The first attempt's error is REPORTED, never just cleared. Until
+        // 2026-08-29 it was PyErr_Clear()'d here, so when the retry failed too
+        // the log carried only the SECOND error -- and the second attempt
+        // re-runs warp.init() on a half-built runtime, so its error ("[Errno 9]
+        // Bad file descriptor", plus a "Kernel cache artifacts from a previous
+        // Warp version" warning that only fires on a re-init) described the
+        // retry, not the fault. Two of three engines started against an
+        // already-running engine died that way with the real cause invisible.
+        reportPyError("FFI smoke (newton.ModelBuilder()) attempt 1 of 2 -- retrying once in 20 ms; the fault below is "
+                      "the one that matters if the retry fails too",
+                      true);
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
       }
     }
@@ -539,7 +602,7 @@ namespace {
     if (builder == nullptr) {
       gNewtonUnavailable = NewtonUnavailable::Broken;
       gNewtonUnavailableDetail = "the FFI smoke check failed";
-      reportPyError("FFI smoke (newton.ModelBuilder())");
+      reportPyError("FFI smoke (newton.ModelBuilder()) attempt 2 of 2", true);
       Py_DECREF(newton);
       return false;
     }

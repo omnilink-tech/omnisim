@@ -58,15 +58,66 @@ __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 #ifdef NDEBUG
 #include <stdio.h>
 #include <wincon.h>
+// What RedirectIOToConsole() decided, logged once the file log exists. The
+// decision is invisible otherwise (this binary has no console to say it on),
+// and it is the difference between an embedded interpreter whose sys.stdout
+// works and one whose fd 1 is CLOSED -- see the freopen note below.
+static QString gConsoleRedirectNote;
+
 static void RedirectIOToConsole() {
-  long int file_type = GetFileType(GetStdHandle(STD_OUTPUT_HANDLE));
-  if (file_type != FILE_TYPE_PIPE) {
-    if (!AttachConsole(ATTACH_PARENT_PROCESS))
-      return;  // attempt to use the parent's console
-    (void)freopen("CONOUT$", "w", stdout);
-    (void)freopen("CONOUT$", "w", stderr);
-    (void)freopen("CONIN$", "r", stdin);
+  const HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
+  const DWORD file_type = (out == NULL || out == INVALID_HANDLE_VALUE) ? FILE_TYPE_UNKNOWN : GetFileType(out);
+  // ⚠ ATTACH TO THE PARENT'S CONSOLE ONLY WHEN THE PARENT GAVE US NO STDOUT AT
+  // ALL. Until 2026-08-29 the test was "not a pipe", so an engine handed the
+  // null device (Popen(stdout=DEVNULL)) or a FILE (run-headless, the capture
+  // service) threw that handle away and attached to whatever console its
+  // launcher happened to have -- a console it does not own, shared with every
+  // other engine and controller that launcher's console tree had spawned. Two
+  // consequences, both measured with scripts/dev/launch_race_stress.py
+  // --concurrent 2 --stagger 12 on machine 9722d23d12a3: the file the runner
+  // gave us received NOTHING (every print went to the console instead), and in
+  // 3 of 7 rounds the engine started against an already-running engine found
+  // its fd 1 dead by the time the embedded interpreter first wrote to it
+  // (os.fstat refused it in some, WriteFile returned ERROR_INVALID_HANDLE in
+  // others) -- warp's greeting raised EBADF out of newton.ModelBuilder(), the
+  // FFI smoke called the runtime broken, FATAL, exit 1. The same rounds with
+  // stdout as a pipe (this branch) ran 8 of 8 clean. A GUI-subsystem binary
+  // started from a console WITHOUT redirection gets no std handles at all
+  // (they are NULL), which is the one case attaching was written for, and it
+  // still takes it.
+  if (file_type != FILE_TYPE_UNKNOWN) {
+    gConsoleRedirectNote = QString("stdout inherited from the launcher (handle type %1: 1=file 2=char/null 3=pipe); "
+                                   "stdio left as given, no console attached")
+                             .arg(file_type);
+    return;
   }
+  if (!AttachConsole(ATTACH_PARENT_PROCESS)) {  // attempt to use the parent's console
+    gConsoleRedirectNote = QString("no parent console to attach (AttachConsole error %1); stdio left as inherited "
+                                   "(stdout handle type %2)")
+                             .arg(GetLastError())
+                             .arg(file_type);
+    return;
+  }
+  // ⚠ freopen() CLOSES the stream before it tries to open the new file, so a
+  // failed freopen("CONOUT$") leaves fd 1 closed -- and everything that later
+  // writes to fd 1 gets EBADF, including the embedded Python interpreter's
+  // sys.stdout, whose first real write (warp's greeting) then raises out of
+  // newton.ModelBuilder() and takes the physics backend down. A stream that
+  // cannot reach the console must land on the null device, never on nothing.
+  const bool outOk = freopen("CONOUT$", "w", stdout) != nullptr;
+  if (!outOk)
+    (void)freopen("NUL", "w", stdout);
+  const bool errOk = freopen("CONOUT$", "w", stderr) != nullptr;
+  if (!errOk)
+    (void)freopen("NUL", "w", stderr);
+  const bool inOk = freopen("CONIN$", "r", stdin) != nullptr;
+  if (!inOk)
+    (void)freopen("NUL", "r", stdin);
+  gConsoleRedirectNote = QString("attached to the parent console (stdout handle type %1); stdout=%2 stderr=%3 stdin=%4")
+                           .arg(file_type)
+                           .arg(outOk ? "CONOUT$" : "NUL (CONOUT$ refused)")
+                           .arg(errOk ? "CONOUT$" : "NUL (CONOUT$ refused)")
+                           .arg(inOk ? "CONIN$" : "NUL (CONIN$ refused)");
 }
 #endif
 #else
@@ -154,6 +205,10 @@ int main(int argc, char *argv[]) {
 
   // Initialize file logging to WEBOTS_HOME/omnisim_log.txt
   OmLog::initFileLog(omnisimDirPath + "/omnisim_log.txt");
+#if defined(_WIN32) && defined(NDEBUG)
+  if (!gConsoleRedirectNote.isEmpty())
+    OmLog::info("[main] stdio: " + gConsoleRedirectNote);
+#endif
 
   // Begin the process-wide Newton import at the earliest safe point. There is
   // substantial renderer/Qt/application setup below before the first world

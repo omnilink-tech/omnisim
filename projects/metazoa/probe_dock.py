@@ -47,7 +47,7 @@ def main():
     mods = MZ.load_modules(True, note=print)
     lineages = [{"id": "L0", "genome": MZ.random_genome(mods.get("organism") if mods else None, rng),
                  "bodyplan": {"target_length": 8, "dock_rotation_pattern": [0, 1], "branch_rule": "none"}}]
-    reef = MZ.build_reef(lineages, 7, 10.0, 0, rng, mods, n_free=1, seed_len=6, note=print)
+    reef = MZ.build_reef(lineages, 7, 14.0, 0, rng, mods, n_free=1, seed_len=6, note=print)
     MZ.check_conserved(reef)
 
     # Re-place by hand: organism spine along +x with the head at x = 0
@@ -77,12 +77,12 @@ def main():
     for c in reef["cells"]:
         c["charge_wh"] = 8.4                              # 70 %: recruit at once
 
-    cfg = {"arena": 10.0, "n_patches": 5, "epoch_s": args.epoch_s, "watch": False, "epoch": 0,
+    cfg = {"arena": 14.0, "n_patches": 5, "epoch_s": args.epoch_s, "watch": False, "epoch": 0,
            "cells": 7, "organisms": 1, "free_cells": 1, "seed": args.seed, "dim": 1.0,
            "time_scale": 20.0, "controller": MZ.CONTROLLER}
     MZ.write_inputs(reef, cfg)
-    W.write_world(reef["cells"], MZ.WORLD, scene_lines=S.scene_lines(10.0, 5, MZ.CONTROLLER),
-                  controller=MZ.CONTROLLER, rollers="v3", substeps=4, arena=10.0)
+    W.write_world(reef["cells"], MZ.WORLD, scene_lines=S.scene_lines(14.0, 5, MZ.CONTROLLER),
+                  controller=MZ.CONTROLLER, rollers="v3", substeps=4, arena=14.0)
     print("probe: organism %s cells %s at x<=0, free cell %d at (%.2f, %.2f)"
           % (org["id"], members, free["id"], free["pos"][0], free["pos"][1]))
     try:

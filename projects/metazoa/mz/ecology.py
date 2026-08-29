@@ -89,7 +89,8 @@ TIME_SCALE = 30.0             # battery seconds per simulated second (first live
 DEBRIS_RECYCLE_S = 20.0       # simulated seconds a dead cell lies as debris
 SEEK_LIGHT_FRAC = 0.40
 RECRUIT_FRAC = 0.55
-DIVIDE_FRAC = 0.80
+DIVIDE_FRAC = 0.60            # a well-fed body divides. 0.80 was never reached in 13 reef epochs:
+                              # a body that just recruited a 45 % cell sits near 0.63 (epoch 13, 8 cells)
 SHED_FRAC = 0.10
 SHED_COOLDOWN_S = 10.0        # at most one autotomy per organism per this
 EDGE_INSET = 0.6              # the recycling edge ring, inside the walls (D)
@@ -360,6 +361,29 @@ def edge_point(arena, s):
 
 
 # ================================================================== cell
+# MORPHOLOGY BY SIZE (measured, probe_wave / probe_dock 2026-08-29): a body
+# of PAIR_MIN_CELLS or more carries a rudder PAIR at its head (two yaw cells:
+# 1.8-2.0 rad/15 s, radius ~0.3 m); a smaller body carries ONE (a 4-cell body
+# with two yaw cells has only two pitch cells left for the wave and was
+# chaotic, while [0,0,0,1] walks at 0.094 m/s). Bodies cross the threshold by
+# recruiting or dividing, and the cell behind the head re-rolls 90 deg
+# either way -- the same dock-face rotation a divided rear half uses to
+# grow a rudder.
+PAIR_MIN_CELLS = 6
+
+
+def _junctions(spine, k):
+    """The welds on both faces of spine[k]: (active_cell, face, partner)
+    tuples as the supervisor wrote them (each cell's f_tail is locked onto
+    the cell behind it, i.e. spine[k].f_tail -> spine[k-1].f_nose)."""
+    out = []
+    if k >= 1:
+        out.append((spine[k], "f_tail", spine[k - 1]))
+    if k + 1 < len(spine):
+        out.append((spine[k + 1], "f_tail", spine[k]))
+    return out
+
+
 class Cell:
     """One robot. Three states: free (alive, organism None), member (alive,
     organism set), debris (not alive, debris_since set). The index `i` is the
@@ -886,6 +910,9 @@ class Reef:
         o.recruited += 1
         o.recruit_target = None
         self.recruits += 1
+        if at_tail and len(o.spine) == PAIR_MIN_CELLS:
+            k2 = len(o.spine) - 2
+            out.append({"reroll": (o.spine[k2], math.pi / 2.0, _junctions(o.spine, k2))})
         self.peak_length = max(self.peak_length, len(o))
         self._check_conservation()
         return out
@@ -945,10 +972,15 @@ class Reef:
         new_head = rear[-1]
         junction = (rear[-2], "f_tail", new_head) if len(rear) >= 2 else None
         out.append({"reroll": (new_head, math.pi / 2.0, junction)})
-        if len(rear) >= 3:
-            second = rear[-2]
-            out.append({"reroll": (second, math.pi / 2.0,
-                                   [(second, "f_tail", new_head), (rear[-3], "f_tail", second)])})
+        if len(rear) >= PAIR_MIN_CELLS:
+            k2 = len(rear) - 2
+            out.append({"reroll": (rear[k2], math.pi / 2.0, _junctions(rear, k2))})
+        # the front half keeps the parent's head pair; below PAIR_MIN_CELLS it
+        # turns the second yaw cell back into a pitch cell (2 pitch + 2 yaw
+        # cannot walk, measured)
+        if 3 <= len(front) < PAIR_MIN_CELLS:
+            k2 = len(front) - 2
+            out.append({"reroll": (front[k2], 0.0, _junctions(front, k2))})
         o.divisions += 1
         self.divisions += 1
         self._retire(o, "divided")

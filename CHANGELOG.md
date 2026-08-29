@@ -29,6 +29,62 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.13] — 2026-08-29
+
+### Engine
+
+- **The startup race is attributed and fixed, and it was never Qt's** (#3).
+  The 0-of-80 of v8.1.10 was measured with engines started one *after*
+  another; started *against an engine already running* (`launch_race_stress.py
+  --concurrent 2 --stagger 12`) it came back at 3 of 7 rounds, with 0 of 8
+  when the engine's stdout was a pipe. On Windows `omnisim-bin.exe` attached
+  to its launcher's console whenever its stdout was not a pipe -- the null
+  device and a FILE both qualified -- so it threw the handle it was given away
+  for a console it did not own, the file received nothing, and an engine
+  could find its fd 1 dead by the time the embedded interpreter first wrote
+  to it: warp's greeting raised `[Errno 9] Bad file descriptor` out of
+  `newton.ModelBuilder()`, the FFI smoke called the runtime broken, FATAL,
+  exit 1. The Qt teardown marks are what any `exit(1)` mid-startup prints.
+  Fixed twice over: the engine keeps any stdout it was given and attaches
+  only when it has none (`main.cpp`), and the interpreter's stdio probe is a
+  real `os.fstat()` instead of a zero-length write that could not fail
+  (`OmNewtonBackend.cpp`); the FFI smoke's first-attempt error is now logged
+  with its traceback instead of cleared. `launch_race_stress.py` gained
+  `--concurrent`, `--stagger`, `--stdio {devnull,pipe,file}` and per-engine
+  port recording, and the log opens with a `[main] stdio:` line naming the
+  branch taken. What is *not* covered by this: a running engine dying when
+  another lane starts one. That was measured five times the same day and
+  was a kill, not a race -- see the capture entry below.
+
+### Capture
+
+- **`detect_orphan_sim()` returns orphans only, never another session's live
+  engine.** It listed every `omnisim-bin` on the host and its refuse-and-tell
+  message said "kill the specific PID(s) and retry", so a second agent lane
+  starting a capture `taskkill /F`'d the first lane's live engine -- exit
+  code 1, nothing in the victim's log, indistinguishable from a crash
+  (measured: five 15-minute headless epochs lost that way on 2026-08-29).
+  An engine whose launcher is alive is a session; running engines coexist by
+  contract (AGENTS.md §3e now carries the rule, and the
+  `taskkill /F /IM omnisim-bin.exe` advice is gone).
+
+### Linux runtime image (`docker/Dockerfile.runtime`, `runtime-image.yml`)
+
+- **The image builds, runs and exits.** Four fixes measured on the CI runner:
+  `tini` as PID 1 (the entrypoint `exec`'d `xvfb-run` into PID 1, which drops
+  every signal it has no handler for, so `docker run <image> doctor` never
+  returned -- six hours until GitHub killed the first run); `libpython3-dev`
+  in the runtime stage (the engine is linked against a shared libpython the
+  `python3` package does not carry -- `error while loading shared libraries:
+  libpython3.12.so.1.0`, exit 127); `USER` set in the image env (its absence
+  is one ERROR line, which alone fails every log-verdict lane); and the
+  Newton smoke runs the CPU-solver sibling copy of `warehouse_husky` that
+  `linux-build.yml` uses, because the world declares `mujoco_warp` and the
+  runner has no GPU. The workflow carries a 75-minute ceiling and per-step
+  timeouts, the doctor gate bypasses `xvfb-run` (the doctor needs no
+  display), and the five-row PID-1 probe matrix reads `PIPESTATUS[0]` so a
+  killed row is reported as killed rather than "exited normally".
+
 ## [v8.1.12] — 2026-08-29
 
 ### Containers

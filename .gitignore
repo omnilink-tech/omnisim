@@ -370,3 +370,6 @@ resources/fonts/Courier New*.ttf
 # rebuilt by `python -m build` and published from CI (Trusted Publishing), so a
 # committed copy is stale the moment the source changes.
 packages/*/dist/
+
+# Session scratch at the repo root (downloaded PDFs, review contact sheets) -- never repo content.
+/tmp/

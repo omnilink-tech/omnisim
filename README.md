@@ -317,6 +317,16 @@ trademarks ([TRADEMARKS.md](TRADEMARKS.md)) — open code, protected brand: fork
 modified fork. Bugs go to [GitHub Issues](../../issues/new/choose); sponsorship funds the engine work
 ([Sponsor](https://github.com/sponsors/omnilink-tech) · [SPONSORS.md](SPONSORS.md)).
 
+### Repository provenance
+
+This public repository is a curated release mirror. Its visible commit graph is
+the history of the published mirror, not the complete private development
+history, so commit count and first-public-commit dates should not be used as a
+measure of total engineering work. For auditable public provenance, use the
+tagged [releases](https://github.com/omnilink-tech/omnisim/releases),
+[CHANGELOG](CHANGELOG.md), source commit recorded by `python -m omnisim doctor`,
+and the binary/world hashes carried by the benchmark artifacts.
+
 ### Attribution
 
 Built on [Webots](https://github.com/cyberbotics/webots) (Cyberbotics Ltd., open-sourced under

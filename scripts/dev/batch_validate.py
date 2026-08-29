@@ -55,7 +55,8 @@ startup.
 
 ⚠ AND IT IS NOT ONLY SPEED -- look at the ok counts above. Spawning fresh
 engines back-to-back loses worlds to the documented engine startup race
-("roughly one launch in three" on this machine, see looks_like_startup_race in
+("roughly one launch in three" on this machine -- attributed and fixed in the
+engine on 2026-08-29, see the comment block above looks_like_startup_race in
 headless_runner.py): 18/19 here, and 7/10 on an earlier 10-world corpus where
 all three casualties PASS when run individually. Every reuse configuration
 scored 19/19. Reusing the engine sidesteps the race entirely, which on a
