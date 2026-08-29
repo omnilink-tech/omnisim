@@ -188,7 +188,7 @@ OmVulkanBackend::OmVulkanBackend() : mAvailable(false) {
   WGPUInstance instance = wgpuCreateInstance(&instDesc);
   if (!instance) {
     note("FAIL: wgpuCreateInstance returned NULL");
-    OmLog::info("[OmWgpuBackend] wgpuCreateInstance returned NULL; falling back to WREN");
+    OmLog::info("[OmWgpuBackend] wgpuCreateInstance returned NULL; there is no other renderer (WREN is deleted)");
     return;
   }
   note("instance OK");
@@ -300,11 +300,11 @@ OmVulkanBackend::OmVulkanBackend() : mAvailable(false) {
   }
 
   if (!mAvailable) {
-    note("FAIL: gave up after retries -> WREN");
+    note("FAIL: gave up after retries -> NO renderer");
     // Loud, always-on signal: stderr is captured into omnisim_log.txt even on
     // the windows-subsystem binary (where OmLog::info is not).
     fprintf(stderr,
-            "[OmWgpuBackend] wgpu init FAILED after %d attempts; falling back to WREN. "
+            "[OmWgpuBackend] wgpu init FAILED after %d attempts; there is NO other renderer. "
             "Set OMNISIM_WGPU_INITLOG=<file> for the per-stage reason (most common: a "
             "GPU adapter/device the driver transiently refused -- a fresh process/boot "
             "usually clears it).\n",

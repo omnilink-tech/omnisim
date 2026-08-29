@@ -44,6 +44,7 @@ class WindowsOmniSimPackage(OmniSimPackage):
 
         self.add_folder_recursively(os.path.join(self.omnisim_home, 'msys64'))
         self.check_newton_runtime_bundle()
+        self.check_wgpu_native_bundle()
 
         print('creating ISS descriptor')
 
@@ -229,6 +230,28 @@ class WindowsOmniSimPackage(OmniSimPackage):
         ).check_returncode()
 
         print('Done.')
+
+    def check_wgpu_native_bundle(self):
+        """Report whether wgpu_native.dll -- the ONLY renderer since the WREN
+        deletion -- is staged next to the binary. Like the Newton bundle it rides
+        the recursive msys64/ copy, so its presence at packaging time is the whole
+        question. Without it a clean install simulates and shows a white viewport
+        with '[render] wgpu-native is UNAVAILABLE' on every world (public issue
+        #8: v8.1.5-v8.1.9 all shipped this way, because the release workflow never
+        ran scripts/dev/setup_wgpu_native.sh). Set OMNISIM_REQUIRE_RENDERER_BUNDLE=1
+        for every public package so that state is fatal rather than a warning."""
+        bin_dir = os.path.join(self.omnisim_home, 'msys64', 'mingw64', 'bin')
+        dll = os.path.join(bin_dir, 'wgpu_native.dll')
+        if os.path.isfile(dll):
+            print('  \033[1;32mwgpu-native bundled (wgpu_native.dll next to the binary) -- '
+                  'stock install will render\033[0m')
+            return
+        msg = ('wgpu_native.dll is NOT next to the binary (' + dll + '). This installer has '
+               'NO renderer on a clean box: white viewport, no screenshots, no Camera devices. '
+               'Run `bash scripts/dev/setup_wgpu_native.sh` and rebuild before packaging.')
+        if os.environ.get('OMNISIM_REQUIRE_RENDERER_BUNDLE') == '1':
+            print_error_message_and_exit(msg)
+        print('  \033[1;33mWARNING: ' + msg + '\033[0m')
 
     def check_newton_runtime_bundle(self):
         """Report whether the Newton runtime (warp/newton + the _pth redirect) is

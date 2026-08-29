@@ -43,10 +43,31 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           update: false
+          # curl + unzip are what scripts/dev/setup_wgpu_native.sh fetches and
+          # unpacks the wgpu-native release with.
+          install: curl unzip
 
       - name: Install build and packaging tools
         shell: powershell
         run: choco install innosetup --no-progress -y
+
+      # wgpu-native is the ONLY renderer, and this workflow never installed it:
+      # every installer from v8.1.5 to v8.1.9 was built with the backend compiled
+      # OUT (WB_WGPU_NATIVE_AVAILABLE undefined), shipped no wgpu_native.dll, and
+      # showed a white viewport with "[render] wgpu-native is UNAVAILABLE" on
+      # every machine -- public issue #8, reported from an Intel UHD 620 laptop
+      # that had been told to fix its driver. The Makefile guard added for
+      # public issue #7 is what finally failed this job (v8.1.10) instead of
+      # letting it build green. The script installs to _scratch/wgpu-native,
+      # which src/omnisim/Makefile auto-discovers, and copies the DLL next to
+      # the binary; the assertion below is so a silent failure of THAT cannot
+      # ship either.
+      - name: Install wgpu-native (the only renderer)
+        run: |
+          bash scripts/dev/setup_wgpu_native.sh
+          test -f _scratch/wgpu-native/include/webgpu/webgpu.h
+          test -f msys64/mingw64/bin/wgpu_native.dll
+          ls -l msys64/mingw64/bin/wgpu_native.dll
 
       - name: Build OmniSim and bundle Newton
         run: |
@@ -77,6 +98,7 @@ jobs:
       - name: Build physics-capable installer
         env:
           OMNISIM_REQUIRE_NEWTON_BUNDLE: '1'
+          OMNISIM_REQUIRE_RENDERER_BUNDLE: '1'
           INNO_SETUP_HOME: /c/Program Files (x86)/Inno Setup 6
         run: |
           export OMNISIM_HOME="$GITHUB_WORKSPACE"
@@ -129,6 +151,11 @@ jobs:
             exit 1
           fi
           echo "OK: every documented entry point is in the payload"
+          # The renderer itself. The msys64/ tree is shipped recursively with an
+          # absolute Source path, so match on the suffix. Public issue #8.
+          grep -qF '\msys64\mingw64\bin\wgpu_native.dll"' "$ISS" \
+            || { echo "MISSING FROM PACKAGE: msys64\mingw64\bin\wgpu_native.dll -- this installer has NO renderer (public issue #8)"; exit 1; }
+          echo "OK: wgpu_native.dll is in the payload"
 
       - name: List release asset
         run: ls -lh distribution/*.exe

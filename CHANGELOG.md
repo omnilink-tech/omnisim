@@ -29,6 +29,26 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.11] — 2026-08-29
+
+### Windows installer
+
+- **Every installer from v8.1.5 to v8.1.10 shipped WITHOUT a renderer** (#8,
+  reported from an Intel UHD 620 laptop as a white viewport with
+  `[render] wgpu-native is UNAVAILABLE` on every world). The release workflow
+  never ran `scripts/dev/setup_wgpu_native.sh`, so the engine was compiled with
+  the wgpu backend out and no `wgpu_native.dll` was packaged — the exact
+  configuration #7 described, in production. Placing an upstream
+  `wgpu_native.dll` next to the binary cannot help such a build: the code that
+  would load it was never compiled. The v8.1.10 release build was the first to
+  **fail** on this, because of the Makefile guard added for #7; it produced no
+  installer. This release restores the renderer: the workflow installs
+  wgpu-native before building, the packager refuses (under
+  `OMNISIM_REQUIRE_RENDERER_BUNDLE=1`) to write an installer without
+  `wgpu_native.dll` beside `omnisim-bin.exe`, and the payload assertion greps
+  the generated `.iss` for it. The two remaining "falling back to WREN" log
+  strings in the wgpu backend now say there is no other renderer.
+
 ## [v8.1.10] — 2026-08-29
 
 The first five issues filed on the public repository (#3–#7), each reproduced
