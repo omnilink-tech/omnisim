@@ -47,7 +47,7 @@ def main():
     mods = MZ.load_modules(True, note=print)
     lineages = [{"id": "L0", "genome": MZ.random_genome(mods.get("organism") if mods else None, rng),
                  "bodyplan": {"target_length": 8, "dock_rotation_pattern": [0, 1], "branch_rule": "none"}}]
-    reef = MZ.build_reef(lineages, 5, 10.0, 0, rng, mods, n_free=1, seed_len=4, note=print)
+    reef = MZ.build_reef(lineages, 7, 10.0, 0, rng, mods, n_free=1, seed_len=6, note=print)
     MZ.check_conserved(reef)
 
     # Re-place by hand: organism spine along +x with the head at x = 0
@@ -78,7 +78,7 @@ def main():
         c["charge_wh"] = 8.4                              # 70 %: recruit at once
 
     cfg = {"arena": 10.0, "n_patches": 5, "epoch_s": args.epoch_s, "watch": False, "epoch": 0,
-           "cells": 5, "organisms": 1, "free_cells": 1, "seed": args.seed, "dim": 1.0,
+           "cells": 7, "organisms": 1, "free_cells": 1, "seed": args.seed, "dim": 1.0,
            "time_scale": 20.0, "controller": MZ.CONTROLLER}
     MZ.write_inputs(reef, cfg)
     W.write_world(reef["cells"], MZ.WORLD, scene_lines=S.scene_lines(10.0, 5, MZ.CONTROLLER),

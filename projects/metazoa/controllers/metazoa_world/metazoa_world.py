@@ -109,10 +109,10 @@ BACKOFF_S = 3.0             # after a failed verify: head-first away for this lo
 # L = organism length from its tail FACE to its head ROOT):
 RUNWAY_R1_M = 0.35          # R1 = N + n*(L + 0.35): the head here puts the tail face 0.35 m off the nose
 RUNWAY_R2_M = 1.0           # (legacy) R2 = N + n*(L + 1.0)
-RUNWAY_FAR_M = 2.2          # aligned window ends here (was 3.2 for the 2 m-radius single rudder; the pair turns in 0.3 m and a long unsteered reverse drifts: measured +0.31 m lateral after 1.2 m of reverse)
+RUNWAY_FAR_M = 3.0          # aligned window ends here (line_out converges a 0.6 m offset in ~1.5 m of runway, measured; the reverse leg is now steered) (was 3.2 for the 2 m-radius single rudder; the pair turns in 0.3 m and a long unsteered reverse drifts: measured +0.31 m lateral after 1.2 m of reverse)
 R_FAR_REACHED_M = 0.45
 RUNWAY_NEAR_M = 0.7         # P_NEAR = N + n*(L + 0.7): the turn-in point just outside the bay
-P_NEAR_REACHED_M = 0.3
+P_NEAR_REACHED_M = 0.7      # >= the pair's turning radius (0.3 m orbited P_NEAR at 0.5-0.6 m, 14 K-turns, no arrival)
 TURN_SLOWDOWN = 0.0         # MEASURED (probe_wave 2026-08-29, gain 0.5): a smaller wave does NOT tighten the turn -- A 0.6 gives 0.13 rad/15 s at 0.6 m (radius 4.6 m), A 0.45 none; full A gives 0.62 rad at 1.25 m (radius 2 m). Earlier "0.6 starved the rudder" was measured with the 1.0 rad over-steer.
 LOOKAHEAD_LINE_M = 0.4      # line-following aim point ahead of the head's projection on the axis (0.6 converged over ~3 m -- too slow for the runway)
 LINE_ERR_FULL_RAD = 0.6     # full lock at this heading error while following the axis (the roaming law saturates at 1.2)
@@ -127,8 +127,19 @@ ALIGN_TAIL_LATERAL_M = 0.10 # reverse when the tail face is within this of the n
 ALIGN_SPINE_RAD = 0.12      # ... and the spine (tail->head) is within this of n (0.5 let a 0.47 rad
                             # misalignment reverse 2.5 m and drift 0.35 m off-axis, measured x4) ...
 ALIGN_TAIL_ALONG_M = 0.15   # ... and the tail face is at least this far beyond the nose
-REVERSE_ABORT_LATERAL_M = 0.35   # reversing with the tail this far off the normal -> runway again
-REVERSE_TIMEOUT_S = 60.0    # a reverse that has not captured by then -> runway again
+REVERSE_ABORT_LATERAL_M = 0.45   # reversing with the tail this far off the normal -> runway again
+# REVERSE STEERING (measured, probe_wave REVERSE=1, 6 cells, pair, gain 0.5):
+# the trailing pair steers the reverse gear with the SAME sign as forward
+# (steer+ -> +0.52 rad, steer- -> -0.97 rad per 15 s) at a speed cost (0.37 m
+# straight, 0.16 m at steer+). A single trailing rudder has none (0.00 rad).
+# So the reverse leg is closed-loop: the TAIL face pursues a point on the
+# axis REV_LOOKAHEAD_M ahead of it (toward the free nose), gently.
+REV_LOOKAHEAD_M = 0.5
+REV_ERR_FULL_RAD = 0.8
+REV_STEER_MAX = 0.6
+REV_A = 1.2                 # reverse-gear wave amplitude (rad). MEASURED (probe_wave REVERSE=1, pair):
+                            # A 0.9 reverses 0.37 m / 15 s, A 1.2 reverses 0.87 m (2.4x) and still steers
+REVERSE_TIMEOUT_S = 150.0   # the pair reverses at ~0.025 m/s (measured): 3 m of runway is 120 s    # a reverse that has not captured by then -> runway again
 FACE_CHECK_M = 0.35         # read the two face nodes only when the tail root is this close
 CAPTURE_M = 0.22            # capture assist range (tail face <-> free nose face)
 CAPTURE_AXIS = 0.9          # ... and alignment (rad, normals opposed)
@@ -147,9 +158,9 @@ RUDDER_MAX_RAD = 0.6        # hard cap on the head rudder angle (see drive_organ
 # turning circle is ORBITED -- the body circled P_NEAR at d 0.8-2.0 m for
 # 100 s with |err| pinned at 1.7-2.2 rad and full lock. A vehicle whose
 # target is closer than its turn radius backs up first.
-KTURN_DIST_M = 1.1          # aim closer than this ...
+KTURN_DIST_M = 0.9          # aim closer than this ...
 KTURN_ERR_RAD = 1.4         # ... and more than this off the heading -> reverse for KTURN_S
-KTURN_S = 7.0
+KTURN_S = 12.0              # ~0.35 m of reverse; 7 s (0.2 m) re-entered the circle every time (measured)
 KTURN_COOLDOWN_S = 6.0      # forward driving between two K-turn reverses
 RUDDER_CELLS = 2            # yaw cells at the head that carry the steer command. MEASURED
                             # (probe_wave, 6 cells, gain 0.5, 2026-08-29): one rudder turns
@@ -860,6 +871,15 @@ class Director:
                     self._fail_attempt(o, st, d, j, "reverse drifted (tail lat %+.2f along %.2f) or timed out"
                                        % (tail_lat, tail_along))
                     return R2, False
+            if d["state"] == "reverse":
+                # closed-loop reverse: the tail face pursues the axis toward N
+                s_aim = max(0.0, tail_along - REV_LOOKAHEAD_M)
+                aim_x, aim_y = N[0] + n[0] * s_aim, N[1] + n[1] * s_aim
+                rev_heading = wrap(math.atan2(uy, ux) + math.pi)        # the tail travels along -spine
+                rev_err = ORG.heading_error((tfx, tfy, rev_heading), (aim_x, aim_y))
+                st["rev_steer"] = ORG.clamp(ORG.steer_from_error(rev_err, err_full=REV_ERR_FULL_RAD),
+                                            -REV_STEER_MAX, REV_STEER_MAX)
+                d["rev_err"] = rev_err
             if ORG.distance_xy(tp, fp) > FACE_CHECK_M and d["state"] == "reverse":
                 return None, True
             (ax, ay, ayaw), _pa = self.cells[tail].face_pose2d("f_tail")
@@ -1025,6 +1045,7 @@ class Director:
             reverse, aim = True, None
             st["mode"] = "KTURN"
         elif (not reverse and aim is not None and st["heading"] is not None
+              and not st.get("line_follow")     # line_out from a wrong-way arrival IS a U-turn; let it turn
               and self.t >= st.get("kturn_next", 0.0)
               and ORG.distance_xy(hp, aim) < KTURN_DIST_M
               and abs(ORG.heading_error((hp[0], hp[1], st["heading"]), aim)) > KTURN_ERR_RAD):
@@ -1060,7 +1081,8 @@ class Director:
         else:
             st["stuck_ref"] = None
         if reverse:
-            steer = 0.0                                  # no steering in the reverse gear
+            d_ = st.get("dock") or {}
+            steer = st.get("rev_steer", 0.0) if (d_.get("state") == "reverse" and st["mode"] == "") else 0.0
         elif forced_steer is not None:
             steer = forced_steer
         elif aim is not None:
@@ -1116,6 +1138,8 @@ class Director:
         buf = self._tbuf.setdefault(o.id, [])
         wave = dict(o.genome)
         wave["dphi"] = abs(o.genome["dphi"]) if reverse else -abs(o.genome["dphi"])
+        if reverse:
+            wave["A"] = max(o.genome["A"], REV_A)
         # TURN RADIUS = speed / yaw rate. The rudder's yaw rate is fixed by the
         # physics, so a hard turn must SLOW the wave: measured, at full speed the
         # body orbits a target inside its ~1 m turning circle forever (26 trace

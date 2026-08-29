@@ -31,12 +31,20 @@ os.makedirs(RUN, exist_ok=True)
 # chain_poses puts index 0 at the head pose and walks +x; we call index 0 the TAIL and index 3 the HEAD
 rudder = os.environ.get("RUDDER", "0") == "1"
 phases = [["-dphi steer0", -1.0, 0.0], ["-dphi steer+", -1.0, 1.0], ["-dphi steer-", -1.0, -1.0], ["-dphi steer0b", -1.0, 0.0]] if rudder else None
+if rudder and os.environ.get("REVERSE", "0") == "1":     # the reverse gear: +dphi, rudder(s) trailing
+    phases = [["+dphi steer0", 1.0, 0.0], ["+dphi steer+", 1.0, 1.0], ["+dphi steer-", 1.0, -1.0], ["+dphi steer0b", 1.0, 0.0]]
 cfg = {"spine": list(range(n)), "pattern": pat, "genome": gen, "phase_s": 15.0, "rudder": rudder}
 if phases: cfg["phases"] = phases
 json.dump(cfg, open(os.path.join(RUN, "config.json"), "w"), indent=1)
 W.write_world(cells, WORLD, scene_lines=S.scene_lines(10.0, 0, "metazoa_probe_wave"), controller="metazoa_probe_wave", rollers="v3", substeps=4, arena=10.0)
 env = dict(os.environ); env["OMNISIM_LOG_PATH"] = os.path.join(RUN, "engine.log")
+try:
+    os.remove(os.path.join(RUN, "result.json"))     # a run that dies early must not re-print the last result (it did: 3 of 4 in one sweep)
+except OSError:
+    pass
 subprocess.run([sys.executable, "-m", "omnisim", "run-headless", os.path.relpath(WORLD, REPO), "--duration", "110"], cwd=REPO, env=env, timeout=300, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+if not os.path.exists(os.path.join(RUN, "result.json")):
+    sys.exit("probe_wave: the engine produced no result.json (exited early) -- rerun")
 res = json.load(open(os.path.join(RUN, "result.json")))
 print("pattern", pat, "| n =", n, "cell k at x = k*0.13 (index 0 = tail, index n-1 = head)")
 print("%-14s %12s %10s %8s %10s" % ("phase", "along_spine", "lateral", "dist", "yaw_chg"))

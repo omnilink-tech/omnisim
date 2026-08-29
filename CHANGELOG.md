@@ -29,6 +29,28 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.12] — 2026-08-29
+
+### Containers
+
+- **The training image (`omnisim-train`) now installs wgpu-native before the
+  build**, as the runtime image already did. Every training image published
+  before this one carried a binary with the wgpu backend compiled out — no
+  renderer, no Camera device — the same omission as the Windows installer in
+  v8.1.11 (#8). The Makefile guard from #7 refused that build for v8.1.10 and
+  v8.1.11; this release lets the image build again, with the renderer, and
+  asserts `libwgpu_native.so` was staged. The engine source is unchanged from
+  v8.1.11.
+
+### Windows installer
+
+- **v8.1.11 has no installer asset**: its build compiled the renderer in and
+  the packager's own check saw `wgpu_native.dll` beside the binary, but the
+  new payload assertion then failed on its own grep (it anchored a leading
+  backslash the packager's relative `Source:` line does not carry). The grep
+  is corrected; this release carries the first installer with a renderer since
+  v8.1.4.
+
 ## [v8.1.11] — 2026-08-29
 
 ### Windows installer

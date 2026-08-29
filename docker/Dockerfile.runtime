@@ -17,9 +17,9 @@
 #     inference gate is onnxruntime, not torch (linux_bootstrap.sh:245-250).
 #   - Multi-stage, so the source tree, build objects and Qt headers stay in the
 #     builder and never reach the shipped layers.
-#   - It installs wgpu-native. Dockerfile.train does not, and since the WREN
-#     deletion that means the published training image contains a binary with
-#     NO RENDERER at all. See stage 1.
+#   - It installs wgpu-native. (Dockerfile.train did not until 2026-08-29, so
+#     every training image before then carried a binary with NO RENDERER; the
+#     Makefile now refuses such a build and both images install it. See stage 1.)
 #
 # WHAT IT CAN AND CANNOT DO — read this before promising anything
 #   The default solver is CPU mj_step and needs no GPU: WorldInfo.wrl:36 leaves

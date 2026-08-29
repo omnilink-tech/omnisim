@@ -429,3 +429,25 @@ cell behind it. Reef epochs 4–7 (6-cell seeds, single rudder) recruited
 nothing in 540–600 s: with a 2 m turn radius every approach ended at a wall
 (15 wall events in epoch 7). Both reef genomes replayed on the probe walk at
 0.08–0.12 m/s, so the failure was the turn, not the gait.
+
+### Reverse gear (probe_wave `REVERSE=1`, 6 cells, gain 0.5, 15 s phases)
+
+| pattern | reverse straight | steer +1 | steer −1 |
+|---|---|---|---|
+| `[0,0,0,0,0,1]` single rudder | 1.02 m (0.068 m/s) | 1.00 m, **0.00 rad** | 1.02 m, 0.00 rad |
+| `[0,0,0,0,1,1]` pair | 0.37 m (0.025 m/s) | 0.16 m, +0.52 rad | 0.50 m, −0.97 rad |
+
+Two trailing yaw cells drag (2.7× slower in reverse than one) but they
+steer the reverse with the same sign as forward, so the docking reverse
+leg is closed-loop: the tail face pursues the runway axis (lookahead
+0.5 m, full lock at 0.8 rad, |steer| ≤ 0.6). Off-axis docking before this
+(pair, open-loop reverse): the body orbited P_NEAR inside its own turning
+circle (fixed by a 0.7 m arrival radius and a 12 s K-turn), then converged
+onto the axis in ~1.5 m of line_out — just past the old 2.2 m alignment
+window (now 3.0 m, reverse timeout 150 s).
+
+Reverse amplitude: at A 1.2 the pair reverses **0.87 m / 15 s** (2.4× the
+0.37 m at the genome's 0.9) and still steers (+0.53 / −0.96 rad), so the
+reverse gear runs at `REV_A = 1.2` regardless of genome. (Three further
+probe runs in that sweep died at engine step 480 and `probe_wave` re-printed
+the previous `result.json` — it now deletes it first and fails loudly.)

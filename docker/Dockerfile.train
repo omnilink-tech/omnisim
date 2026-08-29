@@ -4,7 +4,7 @@
 # the in-engine RL trainers run with no further setup. Published to GHCR by
 # .github/workflows/train-image.yml.
 #
-#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v8.1.11 bash
+#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v8.1.12 bash
 #   # inside:
 #   xvfb-run -a bash projects/policies/training/run_quad_walk_rl.sh 600 mytag train headless
 #
@@ -51,7 +51,7 @@
 ARG CUDA_TAG=12.8.1-devel-ubuntu24.04
 FROM nvidia/cuda:${CUDA_TAG}
 
-ARG OMNISIM_TAG=v8.1.11
+ARG OMNISIM_TAG=v8.1.12
 ARG REPO_URL=https://github.com/omnilink-tech/omnisim.git
 ARG GPU_VERIFY=0
 ARG JOBS=8
@@ -163,10 +163,24 @@ RUN git clone --depth 1 --branch "${OMNISIM_TAG}" "${REPO_URL}" "${OMNISIM_HOME}
     && git clone -q --depth 1 --branch 1.0.1 https://github.com/g-truc/glm.git src/glm \
     && git clone -q --depth 1 -b patch-1 https://github.com/omichel/stb.git src/stb
 
+# wgpu-native BEFORE the build, exactly as Dockerfile.runtime does. This image
+# skipped it until 2026-08-29, so every published training image carried a
+# binary with the wgpu backend compiled OUT -- no renderer, no Camera device
+# (public issue #8 is the Windows-installer form of the same omission). The
+# Makefile now REFUSES that build (public issue #7), which is what broke the
+# v8.1.12 train-image job; a training image that cannot render is also the
+# wrong thing to ship for vision-in-the-loop work. The script installs to
+# _scratch/wgpu-native (auto-discovered by src/omnisim/Makefile) and stages
+# libwgpu_native.so into lib/webots, the binary's own DT_RUNPATH.
+RUN cd "${OMNISIM_HOME}" && bash scripts/dev/setup_wgpu_native.sh
+
 # `make release` fetches Qt 6.5.3 on its own — there is no header-mirroring step
 # to do here, and adding one only invents a second way for the build to be wrong.
 RUN cd "${OMNISIM_HOME}" && make -j"${JOBS}" release \
     && test -x "${OMNISIM_HOME}/bin/omnisim-bin"
+
+RUN test -f "${OMNISIM_HOME}/lib/webots/libwgpu_native.so" \
+    || (echo "FATAL: libwgpu_native.so not staged into lib/webots — this image would have no renderer." && exit 1)
 
 # The engine must link the interpreter the wheels went into. Verify it from the
 # ELF rather than assume — this is the invariant the whole image rests on.

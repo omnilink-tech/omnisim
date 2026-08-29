@@ -151,9 +151,12 @@ jobs:
             exit 1
           fi
           echo "OK: every documented entry point is in the payload"
-          # The renderer itself. The msys64/ tree is shipped recursively with an
-          # absolute Source path, so match on the suffix. Public issue #8.
-          grep -qF '\msys64\mingw64\bin\wgpu_native.dll"' "$ISS" \
+          # The renderer itself. The msys64/ tree is shipped recursively; match
+          # the path suffix up to the closing quote, whatever prefix the packager
+          # wrote (v8.1.11's build compiled the renderer in and the packager's own
+          # check saw the DLL, then THIS grep failed because it anchored a leading
+          # backslash that the relative Source line does not carry). Public issue #8.
+          grep -qF 'msys64\mingw64\bin\wgpu_native.dll"' "$ISS" \
             || { echo "MISSING FROM PACKAGE: msys64\mingw64\bin\wgpu_native.dll -- this installer has NO renderer (public issue #8)"; exit 1; }
           echo "OK: wgpu_native.dll is in the payload"
 
