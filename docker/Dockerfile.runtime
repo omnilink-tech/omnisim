@@ -181,7 +181,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 #                     OMNISIM_WGPU_INITLOG output before claiming screenshots work.
 #   ffmpeg          : capture/cinema encode; without it those services return 503.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        python3 python3-pip python-is-python3 \
+        python3 python3-pip python-is-python3 libpython3-dev \
         ca-certificates curl git tini \
         xvfb x11-utils \
         libglu1-mesa-dev libglib2.0-dev libfreeimage3 libfreetype-dev \
@@ -194,6 +194,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /opt/omnisim /opt/omnisim
+
+# The engine must be LOADABLE here, not only in the builder. Measured on the
+# first run that ever reached the Newton smoke (2026-08-29, run 33265748559):
+# `omnisim-bin: error while loading shared libraries: libpython3.12.so.1.0`,
+# exit 127 -- the runtime stage installed `python3` (a static interpreter that
+# does not pull the shared libpython) while the builder linked the engine
+# against python3-dev's. `libpython3-dev` above is the version-stable name that
+# drags in the right libpython3.X runtime on 22.04 and 24.04 alike (the t64
+# renames make hand-listing it a 404 on one of them). This check turns that
+# class of gap into a BUILD failure that names the library.
+RUN if ldd /opt/omnisim/bin/omnisim-bin | grep -q 'not found'; then \
+        echo "FATAL: omnisim-bin cannot be loaded in the runtime stage:"; \
+        ldd /opt/omnisim/bin/omnisim-bin | grep 'not found'; exit 1; \
+    fi
 
 # The physics stack, pinned from the repo's own SSOT
 # (scripts/packaging/newton_runtime_pins.py) rather than a hand-copied list, so
@@ -233,12 +247,16 @@ LABEL org.opencontainers.image.source="https://github.com/omnilink-tech/omnisim"
 # tini as PID 1, NOT the entrypoint script. The script `exec`s xvfb-run, which
 # made xvfb-run PID 1 of the container -- and PID 1 gets special signal
 # semantics (a signal with no handler is dropped; children orphaned below it
-# must be reaped by it). Measured on the CI runner (2026-08-29, three runs):
-# `docker run <image> doctor` never returned -- the runner's full six hours the
-# first time -- while the identical `xvfb-run -a python3 -m omnisim doctor`
-# under a bash PID 1 ran and exited, and the doctor WITHOUT xvfb-run ran and
-# exited in under a second. tini forwards signals and reaps, and the entrypoint
-# is unchanged. The runtime-image workflow keeps a probe matrix that records
-# which PID-1 arrangement hangs, so this stays a measurement, not folklore.
+# must be reaped by it). MEASURED on the CI runner, run 33265748559
+# (2026-08-29): with tini in front, `docker run <image> doctor` exits in 1 s;
+# without it, FOUR arrangements -- xvfb-run as PID 1 via exec, the old script
+# as PID 1, xvfb-run running `xdpyinfo`, and even xvfb-run under a bash PID 1
+# -- all hung past a 90 s ceiling with no output at all, i.e. before the
+# command ran, so the hang is inside xvfb-run's Xvfb-readiness handshake and
+# not in what it runs. (An earlier probe that "showed" the bash-PID-1 form
+# working had ended by SIGPIPE from a `| head`, not by exiting.) The doctor
+# WITHOUT xvfb-run exits in under a second. The exact signal/reaping mechanism
+# is not attributed; the measurement is. The runtime-image workflow keeps the
+# probe matrix so this stays a measurement, not folklore.
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/omnisim-entrypoint"]
 CMD ["doctor"]

@@ -148,11 +148,15 @@ jobs:
             local name="$1"; shift
             echo "=== $name"
             local t0=$SECONDS
-            if timeout -k 5 90 docker run --rm --name "pid1-$name" "$@" 2>&1 | tail -2; then
-              echo "    -> exited normally in $((SECONDS-t0)) s"
-            else
-              echo "    -> DID NOT EXIT within 90 s (rc=$?)  <-- this arrangement hangs"
+            # Test timeout's status, not tail's: `if cmd | tail` reports tail (always 0),
+            # which labelled four 95 s kills "exited normally" on run 33265748559.
+            timeout -k 5 90 docker run --rm --name "pid1-$name" "$@" 2>&1 | tail -2
+            local rc=${PIPESTATUS[0]}
+            if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
+              echo "    -> DID NOT EXIT within 90 s (killed, rc=$rc)  <-- this arrangement hangs"
               docker rm -f "pid1-$name" >/dev/null 2>&1 || true
+            else
+              echo "    -> exited (rc=$rc) in $((SECONDS-t0)) s"
             fi
           }
           probe tini-entrypoint          "$LOCAL_TAG" doctor
