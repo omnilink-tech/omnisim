@@ -133,15 +133,40 @@ jobs:
           grep -qi 'omnisim-bin' /tmp/doctor.txt \
             || (echo "FAIL: doctor did not resolve the engine binary" && exit 1)
 
-      - name: Probe - the entrypoint (xvfb-run) starts, runs a command and EXITS
+      # PID-1 PROBE MATRIX. Measured 2026-08-29 run 33262186510: the doctor
+      # without xvfb-run exits in <1 s; `xvfb-run -a ... xdpyinfo` under a bash
+      # PID 1 exits; `docker run <image> doctor` -- the entrypoint exec'ing
+      # xvfb-run, so xvfb-run IS PID 1 -- never returned, and `timeout 300`
+      # could not stop it (SIGTERM to the docker CLI is forwarded to a PID 1
+      # that ignores it). Hence tini in the image, and hence the ceilings below
+      # are `timeout -k` on the CLI plus `docker rm -f` on a named container.
+      # Every row is continue-on-error: this records WHICH arrangement hangs.
+      - name: Probe - which PID-1 arrangement hangs (recorded, not gated)
+        continue-on-error: true
         run: |
-          echo "--- xvfb-run alone, 60 s ceiling, its error file on stderr:"
-          timeout 60 docker run --rm --entrypoint bash "$LOCAL_TAG" \
-            -c 'xvfb-run -a -e /dev/stderr xdpyinfo 2>&1 | head -5; echo "xvfb-run rc=${PIPESTATUS[0]}"' \
-            || echo "TIMED OUT or failed: rc=$?  <-- xvfb-run is what hangs the doctor smoke"
-          echo "--- the real entrypoint running doctor, 300 s ceiling:"
-          timeout 300 docker run --rm "$LOCAL_TAG" doctor | tail -3 \
-            || (echo "FAIL: the entrypoint path did not exit (rc=$?) -- see the xvfb-run probe above" && exit 1)
+          probe() {  # name, then the docker args after `docker run --rm --name`
+            local name="$1"; shift
+            echo "=== $name"
+            local t0=$SECONDS
+            if timeout -k 5 90 docker run --rm --name "pid1-$name" "$@" 2>&1 | tail -2; then
+              echo "    -> exited normally in $((SECONDS-t0)) s"
+            else
+              echo "    -> DID NOT EXIT within 90 s (rc=$?)  <-- this arrangement hangs"
+              docker rm -f "pid1-$name" >/dev/null 2>&1 || true
+            fi
+          }
+          probe tini-entrypoint          "$LOCAL_TAG" doctor
+          probe bash-pid1-xvfbrun        --entrypoint bash "$LOCAL_TAG" -c 'cd /opt/omnisim; xvfb-run -a python3 -m omnisim doctor'
+          probe xvfbrun-pid1-exec        --entrypoint bash "$LOCAL_TAG" -c 'cd /opt/omnisim; exec xvfb-run -a python3 -m omnisim doctor'
+          probe xvfbrun-pid1-xdpyinfo    --entrypoint bash "$LOCAL_TAG" -c 'exec xvfb-run -a xdpyinfo'
+          probe script-pid1-no-tini      --entrypoint /usr/local/bin/omnisim-entrypoint "$LOCAL_TAG" doctor
+
+      # The shipped path itself, GATED: what a user gets from `docker run <image>`.
+      - name: Smoke - the entrypoint runs doctor and EXITS
+        run: |
+          timeout -k 5 120 docker run --rm --name gate-doctor "$LOCAL_TAG" doctor | tail -3 \
+            || { docker rm -f gate-doctor >/dev/null 2>&1 || true
+                 echo "FAIL: docker run <image> doctor did not exit -- see the PID-1 probe matrix above"; exit 1; }
 
       # 2. Physics actually drove a world. The ONLY race-free proof is the
       #    Newton verdict sidecar -- "imports OK" proves the runtime loaded,
@@ -149,7 +174,7 @@ jobs:
       #    a physics one (AGENTS.md 3b).
       - name: Smoke - a real world finalises under Newton, on CPU, with no GPU
         run: |
-          timeout 1500 docker run --rm --entrypoint /usr/local/bin/omnisim-entrypoint "$LOCAL_TAG" \
+          timeout -k 5 1500 docker run --rm --name smoke-newton "$LOCAL_TAG" \
             --exec bash -lc '
               set -euo pipefail
               cd "$OMNISIM_HOME"
@@ -174,7 +199,7 @@ jobs:
       - name: Probe - which render adapter does a GPU-less host get?
         continue-on-error: true
         run: |
-          timeout 900 docker run --rm --entrypoint /usr/local/bin/omnisim-entrypoint "$LOCAL_TAG" \
+          timeout -k 5 900 docker run --rm --name probe-adapter "$LOCAL_TAG" \
             --exec bash -lc '
               cd "$OMNISIM_HOME"
               export OMNISIM_WGPU_INITLOG=/tmp/wgpu.log
