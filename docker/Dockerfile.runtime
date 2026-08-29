@@ -154,7 +154,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LIBGL_ALWAYS_SOFTWARE=1 \
     OMNISIM_REQUIRE_NEWTON=1 \
     PYTHONUNBUFFERED=1 \
-    TAR_OPTIONS=--no-same-owner
+    TAR_OPTIONS=--no-same-owner \
+    USER=omnisim
 
 # Package names use the -dev spelling on purpose. Ubuntu 24.04's t64 transition
 # renamed many runtime libraries (libssl3 -> libssl3t64, libzip4 -> libzip4t64,
@@ -180,6 +181,11 @@ ENV DEBIAN_FRONTEND=noninteractive \
 #                     Vulkan adapter on a GPU-less host. UNVERIFIED -- read the
 #                     OMNISIM_WGPU_INITLOG output before claiming screenshots work.
 #   ffmpeg          : capture/cinema encode; without it those services return 503.
+# USER: a container has no login session, so nothing sets it, and the engine
+# logs `ERROR: USER or USERNAME environment variable not set, falling back to
+# 'default' username` on every world -- one ERROR line, which is enough for
+# run-headless to FAIL the world (measured, run 33266830797). Harmless to the
+# physics; fatal to every log-verdict lane. Set it in the image.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 python3-pip python-is-python3 libpython3-dev \
         ca-certificates curl git tini \

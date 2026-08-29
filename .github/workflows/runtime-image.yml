@@ -183,9 +183,16 @@ jobs:
               set -euo pipefail
               cd "$OMNISIM_HOME"
               export OMNISIM_LOG_PATH=/tmp/smoke.txt
-              python3 -m omnisim run-headless \
-                projects/samples/demos/worlds/showcase/warehouse_husky.omniworld \
-                --until-finalized
+              # The shipped world declares newtonSolver "mujoco_warp" (GPU). On a
+              # runner with no GPU that path finalises and then never steps
+              # (measured, run 33266830797: sidecar written, zero step lines,
+              # FAIL). Same swap linux-build.yml makes: a sibling copy on the
+              # CPU solver, next to the original so its relative assets resolve.
+              W=projects/samples/demos/worlds/showcase/warehouse_husky.ci_cpu.omniworld
+              sed "s/newtonSolver \"mujoco_warp\"/newtonSolver \"mujoco\"/" \
+                projects/samples/demos/worlds/showcase/warehouse_husky.omniworld > "$W"
+              grep -q "newtonSolver \"mujoco\"" "$W" || { echo "FAIL: CPU-solver copy not written"; exit 1; }
+              python3 -m omnisim run-headless "$W" --until-finalized
               test -f /tmp/smoke.txt.newton.json \
                 || (echo "FAIL: no Newton sidecar - the world never reached finalize" && exit 1)
               cat /tmp/smoke.txt.newton.json
