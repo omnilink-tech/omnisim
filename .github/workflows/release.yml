@@ -163,9 +163,12 @@ jobs:
           # installer used to put it only under bin\cpp, where nothing but the
           # exe launcher's PATH edit could find it, so `omnisim.bat demo` died in
           # three "DLL not found" dialogs. Match Source suffix + DestDir exactly.
+          # Show the packager's own lines for these three first, so a pattern
+          # mistake in THIS step (v8.1.14: `\$d` was a literal dollar) is visible.
+          grep -F 'libstdc++-6.dll' "$ISS" || true
           for d in libstdc++-6.dll libgcc_s_seh-1.dll libwinpthread-1.dll; do
-            grep -qF "\mingw64\bin\$d\"; DestDir: \"{app}\msys64\mingw64\bin\"" "$ISS" \
-              || { echo "MISSING FROM PACKAGE: msys64\mingw64\bin\$d beside omnisim-bin.exe (public issue #9)"; exit 1; }
+            grep -qF "\mingw64\bin\\$d\"; DestDir: \"{app}\msys64\mingw64\bin\"" "$ISS" \
+              || { echo "MISSING FROM PACKAGE: msys64\mingw64\bin\\$d beside omnisim-bin.exe (public issue #9)"; exit 1; }
           done
           echo "OK: the MinGW runtime DLLs sit beside omnisim-bin.exe"
 
