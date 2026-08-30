@@ -29,6 +29,42 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.14] — 2026-08-29
+
+### Windows installer
+
+- **`omnisim.bat demo` no longer dies in three "DLL not found" dialogs** (#9,
+  v8.1.12 on a Dell Latitude 5310: `doctor` READY, `demo` blocked, empty
+  startup logs; v8.1.13 has the same layout). The installer put
+  `libstdc++-6.dll`, `libgcc_s_seh-1.dll` and `libwinpthread-1.dll` only under
+  `msys64\mingw64\bin\cpp` — a layout inherited from upstream Webots, whose
+  exe launcher prepends that directory to `PATH`. Every other way of starting
+  the engine spawns `omnisim-bin.exe` directly: the conformance gate behind
+  `demo`, `run-headless`, the HTTP harness, the capture service, the MCP
+  server. On a stock install those all hit `0xC0000135` before a log line was
+  written; the dev tree never showed it because the toolchain's copies sit in
+  `mingw64\bin` there. The three DLLs now ship beside `omnisim-bin.exe` as well
+  (the application directory is first in the Windows DLL search order, so this
+  holds whatever `PATH` says), the payload assertion checks for them there, and
+  the headless runner also adds `bin\cpp` to the engine's `PATH` for installs
+  that already exist. The GUI path through `omnisimw.exe` was never affected,
+  which is why #8's confirmation on v8.1.12 and this report are both true.
+
+### Containers
+
+- **`ghcr.io/omnilink-tech/omnisim` is published for the first time.** The
+  runtime-image job had never got past its first smoke: the entrypoint
+  `exec`'d `xvfb-run` into PID 1 and the container never exited (measured: with
+  `tini` as PID 1 the doctor exits in 0 s; without it every xvfb-run arrangement
+  hangs before running anything). Behind that sat three more latent defects,
+  each reachable only once the previous one was fixed: no shared `libpython` in
+  the runtime stage (exit 127; now `libpython3-dev` plus a build-time `ldd`
+  check), `USER` unset (one `ERROR` line, which fails every log verdict), and a
+  smoke world on the GPU solver. Measured on the GPU-less runner: a CPU-solver
+  world finalises and steps with `degraded: false`, and wgpu selects
+  Vulkan / llvmpipe with instance, adapter, device and queue all OK. The job
+  now has a 75-minute ceiling and kill-proof per-step timeouts.
+
 ## [v8.1.13] — 2026-08-29
 
 ### Engine

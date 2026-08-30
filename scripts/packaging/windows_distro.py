@@ -396,6 +396,22 @@ class WindowsOmniSimPackage(OmniSimPackage):
             if file in ['\\mingw64\\bin\\libstdc++-6.dll',
                         '\\mingw64\\bin\\libgcc_s_seh-1.dll',
                         '\\mingw64\\bin\\libwinpthread-1.dll']:
+                # The MinGW runtime the engine links. Upstream Webots shipped these
+                # ONLY under bin\cpp and relied on its exe launcher prepending that
+                # directory to PATH (launcher.c). Every other way of starting the
+                # engine -- `omnisim.bat demo` (the conformance gate -> headless
+                # runner), the HTTP harness, the capture service, the MCP server, a
+                # bare omnisim-bin.exe -- spawns the binary directly, and on a
+                # stock install Windows then raises three "DLL not found" dialogs
+                # and exits 0xC0000135 before a log line is written. Public issue
+                # #9 (v8.1.12): `doctor` READY, `demo` blocked. The dev tree never
+                # showed it because the toolchain's copies sit in mingw64\bin
+                # there. Ship them BESIDE the exe as well: the application
+                # directory is first in the Windows DLL search order, so this
+                # works whatever PATH the launcher did or did not set. bin\cpp is
+                # kept for the launcher and the bundled compiler.
+                self.iss_script.write('Source: "' + root + file + '"; '
+                                      'DestDir: "{app}\\msys64' + os.path.dirname(file) + '"\n')
                 self.iss_script.write('Source: "' + root + file + '"; '
                                       'DestDir: "{app}\\msys64' + os.path.dirname(file) + '\\cpp"\n')
             else:

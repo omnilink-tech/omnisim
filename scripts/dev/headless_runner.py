@@ -1182,6 +1182,17 @@ def run_once(args) -> int:
         path_prefix = [str(binary.parent)]
         if mingw_bin.is_dir() and mingw_bin != binary.parent:
             path_prefix.append(str(mingw_bin))
+        # "Those live in msys64\mingw64\bin" above was true of the DEV tree
+        # only. The v8.1.5-v8.1.13 installers put libstdc++-6 / libgcc_s_seh-1 /
+        # libwinpthread-1 under msys64\mingw64\bin\cpp and nothing but the exe
+        # launcher (launcher.c) adds that directory to PATH -- so this runner,
+        # reached from `omnisim.bat demo` through the conformance gate, launched
+        # an engine that died in three "DLL not found" dialogs with no log
+        # (public issue #9). The packager now ships copies beside the exe; this
+        # covers the installs that already exist.
+        mingw_cpp = mingw_bin / "cpp"
+        if mingw_cpp.is_dir():
+            path_prefix.append(str(mingw_cpp))
         # Release builds keep the bundled controller interpreter below the
         # engine directory.  Direct omnisim-bin launches bypass the launcher
         # that normally exposes it, so include it explicitly; otherwise every

@@ -159,6 +159,15 @@ jobs:
           grep -qF 'msys64\mingw64\bin\wgpu_native.dll"' "$ISS" \
             || { echo "MISSING FROM PACKAGE: msys64\mingw64\bin\wgpu_native.dll -- this installer has NO renderer (public issue #8)"; exit 1; }
           echo "OK: wgpu_native.dll is in the payload"
+          # The MinGW runtime must land BESIDE the engine (public issue #9): the
+          # installer used to put it only under bin\cpp, where nothing but the
+          # exe launcher's PATH edit could find it, so `omnisim.bat demo` died in
+          # three "DLL not found" dialogs. Match Source suffix + DestDir exactly.
+          for d in libstdc++-6.dll libgcc_s_seh-1.dll libwinpthread-1.dll; do
+            grep -qF "\mingw64\bin\$d\"; DestDir: \"{app}\msys64\mingw64\bin\"" "$ISS" \
+              || { echo "MISSING FROM PACKAGE: msys64\mingw64\bin\$d beside omnisim-bin.exe (public issue #9)"; exit 1; }
+          done
+          echo "OK: the MinGW runtime DLLs sit beside omnisim-bin.exe"
 
       - name: List release asset
         run: ls -lh distribution/*.exe
