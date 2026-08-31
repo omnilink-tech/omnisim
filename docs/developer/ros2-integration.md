@@ -242,10 +242,28 @@ unit-tested under Humble but has **not** run under a live `controller_manager`,
 and **MoveIt has still never been brought up** — say "unblocked", never
 "working".
 
-**Nav2** now has everything it consumes — `/odom`, `/cmd_vel`, `/tf`,
-`use_sim_time`, `ros2_control` — but **no Nav2 stack has been brought up against
-OmniSim**. Treat it as unblocked, not as working. OmniSim is also still absent
-from the `ros2_control` simulator registry.
+**Nav2 ✅ brought up end-to-end (2026-08-31).** The first Nav2 stack (ROS 2
+**Jazzy**) ever run against OmniSim drove the Husky autonomously to a
+`NavigateToPose` goal — `(0,0) → (1.3, 0)`, `SUCCEEDED` in ~10–12 s, pose read out
+of the simulator. It ships as its own colcon package,
+[`packages/omnisim-ros2/src/omnisim_ros2_nav2/`](../../packages/omnisim-ros2/src/omnisim_ros2_nav2/)
+(runbook + beta-feedback report), layered on the Tier-2 sidecar with **no** new
+OmniSim surface. Two paths were tried — a Windows-engine + WSL-ROS split (reached
+M1–M5, then stalled on tunnels / `wslrelay` / firewall / ephemeral-port
+exhaustion) and **all-in-WSL** (OmniSim built and run inside the *same* Ubuntu
+24.04 as ROS 2, everything on `localhost`); the all-in-WSL path is the one that
+closed M6 and is the documented, supported path going forward. Winning
+configuration: CPU `mj_step` solver (`OMNISIM_NEWTON_MODEL_DEVICE=cpu`, needed for
+the Lidar rays), a no-window headless sim (`OMNISIM_NO_WINDOW=1`), **CycloneDDS**
+as the RMW on every node (FastDDS discovery is unreliable in WSL2), a static
+identity `map→odom` (OmniSim `/odom` is ground truth, so no SLAM/AMCL), and a lean
+five-server Nav2 launch. ⚠ **Scope it exactly: this demonstrates planning and goal
+execution ONLY — not a full localization or obstacle-avoidance benchmark.** The
+winning config uses a rolling costmap with no `static_layer`, and `lidar_layer:=0`
+sees open space because this short-wall test world's walls are only 0.1 m tall; a
+world with taller walls would exercise real obstacle avoidance. The package is
+written to generalize to any well-defined differential-drive robot, not just the
+Husky. OmniSim is also still absent from the `ros2_control` simulator registry.
 
 ---
 
@@ -322,16 +340,20 @@ full parameter list: [`packages/omnisim-ros2/README.md`](../../packages/omnisim-
 
 ## When to use something else
 
-Still honest, with one clause narrowed. **If your stack *is* ROS 2 end to end —
+Still honest, with two clauses narrowed. **If your stack *is* ROS 2 end to end —
 Nav2, MoveIt, the whole graph — [Gazebo](https://gazebosim.org) remains the
 better-integrated choice today**, and upstream
 [Webots](https://github.com/cyberbotics/webots) + `webots_ros2` is the supported
 path if you want Webots' robot models with a mature bridge. What changed is that
-`ros2_control` is no longer on that list for a velocity-commanded base: a
-`SystemInterface` ships and `diff_drive_controller` is verified. What has not
-changed is everything above it — **MoveIt is unblocked (the arm bridge grew its
-servo verb, 2026-08-19) but has never been brought up here, Nav2 has never been
-brought up here, and OmniSim is not in the `ros2_control` simulator registry.**
+`ros2_control` is no longer on that list for a velocity-commanded base (a
+`SystemInterface` ships and `diff_drive_controller` is verified), and **Nav2 is no
+longer either**: a full Nav2 stack (ROS 2 Jazzy) now drives the Husky to a goal —
+but only for **planning + goal execution** on the all-in-WSL path, not as a
+localization or obstacle-avoidance benchmark (see the Nav2 note above and
+[`packages/omnisim-ros2/src/omnisim_ros2_nav2/`](../../packages/omnisim-ros2/src/omnisim_ros2_nav2/)).
+What has not changed is the rest — **MoveIt is unblocked (the arm bridge grew its
+servo verb, 2026-08-19) but has never been brought up here, and OmniSim is not in
+the `ros2_control` simulator registry.**
 
 What OmniSim offers instead is the agent-native surface — the harness, MCP,
 structured load diagnostics, the capture/cinema pipeline — with ROS 2 now
@@ -340,6 +362,7 @@ available on top rather than instead.
 ## See also
 
 - [`packages/omnisim-ros2/`](../../packages/omnisim-ros2/) — the package, its README and tests
+- [`packages/omnisim-ros2/src/omnisim_ros2_nav2/`](../../packages/omnisim-ros2/src/omnisim_ros2_nav2/) — the Nav2 (Jazzy) Husky bring-up: runbook + beta-feedback report (M1–M6)
 - [PROTOCOL.md](../../PROTOCOL.md) — the HTTP/JSON surface underneath
 - [scripts/harness/README.md](../../scripts/harness/README.md) — the World Harness
 - [simulator-comparison.md](simulator-comparison.md) — where OmniSim stands
