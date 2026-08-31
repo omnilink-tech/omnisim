@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>omnisim_ros2_nav2</name>
+  <version>0.1.0</version>
+  <description>
+    Nav2 (ROS 2 Jazzy) bring-up for the OmniSim Husky, layered on the omnisim_ros2
+    Tier-2 sidecar. Ships Nav2 + slam_toolbox parameters reconciled to OmniSim's measured
+    ROS 2 surface, launch files (full bring-up, SLAM, and a lean 5-server launch), a
+    cmd_vel relay, and a beta-feedback report. Reached milestones M1-M6 (M6 on the
+    all-in-WSL Linux path). The OmniSim engine itself carries no ROS dependency.
+  </description>
+
+  <maintainer email="info@omnilink-agents.com">OmniLink</maintainer>
+  <license>Apache-2.0</license>
+
+  <url type="repository">https://github.com/omnilink-tech/omnisim</url>
+  <url type="bugtracker">https://github.com/omnilink-tech/omnisim/issues</url>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>omnisim_ros2</exec_depend>
+  <exec_depend>nav2_bringup</exec_depend>
+  <exec_depend>nav2_controller</exec_depend>
+  <exec_depend>nav2_planner</exec_depend>
+  <exec_depend>nav2_behaviors</exec_depend>
+  <exec_depend>nav2_bt_navigator</exec_depend>
+  <exec_depend>nav2_smoother</exec_depend>
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
+  <exec_depend>nav2_smac_planner</exec_depend>
+  <exec_depend>nav2_mppi_controller</exec_depend>
+  <exec_depend>slam_toolbox</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

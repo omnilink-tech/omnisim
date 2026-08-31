@@ -1,0 +1,466 @@
+# ==============================================================================
+# OmniSim Nav2 parameters - Clearpath Husky (diff-drive) in OmniSim
+# ROS 2 Jazzy  |  consumed by stock nav2_bringup:
+#   localization_launch.py (amcl)  +  navigation_launch.py (the rest)
+# ==============================================================================
+#
+# Key reconciliations against OmniSim's measured ROS 2 surface:
+#   * Laser frame is `base_laser` (NOT laser_frame / base_scan); robot base is
+#     `base_link` (NOT base_footprint). TF tree: map -> odom -> base_link -> base_laser.
+#   * OmniSim publishes plain geometry_msgs/Twist on /cmd_vel, so
+#     `enable_stamped_cmd_vel: false` everywhere it applies (controller_server,
+#     velocity_smoother).
+#   * The sim runs at ~13x realtime and TF only publishes at ~5 Hz, so transform
+#     tolerances are deliberately generous (~1.0 s) in AMCL, controller/MPPI, and
+#     BOTH costmaps.
+#   * /clock is provided by the sim -> every node sets `use_sim_time: true`.
+#   * /odom is simulator ground-truth pose (effectively drift-free).
+#   * Jazzy plugin forms used: amcl motion model as a plugin class string,
+#     amcl set_initial_pose/initial_pose, bt_navigator auto-loaded BT libs.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# AMCL - Adaptive Monte Carlo Localization
+# ------------------------------------------------------------------------------
+amcl:
+  ros__parameters:
+    use_sim_time: true
+
+    # Frames / topics (OmniSim ground truth)
+    base_frame_id: "base_link"
+    odom_frame_id: "odom"
+    global_frame_id: "map"
+    scan_topic: "/scan"
+
+    # Jazzy plugin form for the motion model (NOT the Humble "differential" string)
+    robot_model_type: "nav2_amcl::DifferentialMotionModel"
+
+    # Particle filter sizing
+    min_particles: 500
+    max_particles: 2000
+
+    # Generous for ~13x sim time / ~5 Hz TF
+    transform_tolerance: 1.0
+
+    # Jazzy: seed the filter with a known initial pose at the world origin
+    set_initial_pose: true
+    initial_pose:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      yaw: 0.0
+
+    # Differential-drive odometry noise model (standard defaults)
+    alpha1: 0.2
+    alpha2: 0.2
+    alpha3: 0.2
+    alpha4: 0.2
+    alpha5: 0.2
+
+    # Laser / update / resample defaults so this file is self-sufficient
+    laser_model_type: "likelihood_field"
+    laser_max_range: 100.0
+    laser_min_range: -1.0
+    max_beams: 60
+    resample_interval: 1
+    update_min_a: 0.2
+    update_min_d: 0.25
+    z_hit: 0.5
+    z_short: 0.05
+    z_max: 0.05
+    z_rand: 0.5
+    sigma_hit: 0.2
+    lambda_short: 0.1
+    laser_likelihood_max_dist: 2.0
+    pf_err: 0.05
+    pf_z: 0.99
+    recovery_alpha_slow: 0.0
+    recovery_alpha_fast: 0.0
+    do_beamskip: false
+    beam_skip_distance: 0.5
+    beam_skip_threshold: 0.3
+    beam_skip_error_threshold: 0.9
+    tf_broadcast: true
+    always_reset_initial_pose: false
+
+# ------------------------------------------------------------------------------
+# BT Navigator - behavior-tree orchestration
+# ------------------------------------------------------------------------------
+bt_navigator:
+  ros__parameters:
+    use_sim_time: true
+    global_frame: "map"
+    robot_base_frame: "base_link"
+    odom_topic: "/odom"
+    transform_tolerance: 1.0
+    # NOTE: In Jazzy the BT node plugin libraries are auto-loaded, so the
+    # `plugin_lib_names` list from Humble is no longer required here.
+    # Default BTs shipped with nav2_bt_navigator are used unless overridden
+    # via the navigate_to_pose / navigate_through_poses goals.
+
+# ------------------------------------------------------------------------------
+# Controller Server - local trajectory tracking (MPPI)
+# ------------------------------------------------------------------------------
+controller_server:
+  ros__parameters:
+    use_sim_time: true
+    controller_frequency: 10.0
+    # OmniSim publishes a plain geometry_msgs/Twist on /cmd_vel:
+    enable_stamped_cmd_vel: false
+    odom_topic: "/odom"
+
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.5
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 0.3
+
+    controller_plugins: ["FollowPath"]
+    progress_checker_plugins: ["progress_checker"]
+    goal_checker_plugins: ["goal_checker"]
+
+    # Progress checker
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.5
+      movement_time_allowance: 10.0
+
+    # Goal checker
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.25
+      stateful: true
+
+    # ------------------------------------------------------------------
+    # FollowPath = MPPI controller, tuned for the Husky diff-drive base
+    # ------------------------------------------------------------------
+    FollowPath:
+      plugin: "nav2_mppi_controller::MPPIController"
+      time_steps: 56
+      # model_dt MUST be >= controller period (1/controller_frequency = 0.1 s here),
+      # else MPPI aborts configure with "Controller period more then model dt".
+      model_dt: 0.1
+      batch_size: 2000
+      vx_std: 0.2
+      vy_std: 0.0
+      wz_std: 0.4
+      vx_max: 0.5
+      vx_min: 0.0          # forward-only: MPPI kept choosing reverse for forward goals
+      vy_max: 0.0
+      wz_max: 1.0
+      iteration_count: 1
+      prune_distance: 1.7
+      transform_tolerance: 1.0
+      temperature: 0.3
+      gamma: 0.015
+      motion_model: "DiffDrive"
+      visualize: false
+      reset_period: 1.0
+      regenerate_noises: false
+
+      TrajectoryVisualizer:
+        trajectory_step: 5
+        time_step: 3
+
+      AckermannConstraints:
+        min_turning_r: 0.40
+
+      critics: ["ConstraintCritic", "ObstaclesCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic", "PathAngleCritic", "PreferForwardCritic"]
+
+      ConstraintCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 4.0
+
+      GoalCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 1.4
+
+      GoalAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.0
+        threshold_to_consider: 0.5
+
+      PreferForwardCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 0.5
+
+      ObstaclesCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 1.0
+        repulsion_weight: 1.5
+        critical_weight: 20.0
+        consider_footprint: false
+        collision_cost: 10000.0
+        collision_margin_distance: 0.1
+        near_goal_distance: 0.5
+
+      PathAlignCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 14.0
+        max_path_occupancy_ratio: 0.05
+        trajectory_point_step: 4
+        threshold_to_consider: 0.5
+        offset_from_furthest: 20
+        use_path_orientations: false
+
+      PathFollowCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        offset_from_furthest: 5
+        threshold_to_consider: 1.4
+
+      PathAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 2.0
+        offset_from_furthest: 4
+        threshold_to_consider: 0.5
+        max_angle_to_furthest: 1.0
+        mode: 0
+
+# ------------------------------------------------------------------------------
+# Planner Server - global path planning (SmacPlanner2D)
+# ------------------------------------------------------------------------------
+planner_server:
+  ros__parameters:
+    use_sim_time: true
+    expected_planner_frequency: 1.0
+    planner_plugins: ["GridBased"]
+
+    # SmacPlanner2D: holonomic grid planner. The Husky is diff-drive (can turn in
+    # place), so the 2D planner's straight grid paths are followed cleanly by MPPI.
+    # SmacPlannerHybrid (Dubin/car-like, minimum_turning_radius) produced reverse
+    # maneuvers on the diff-drive base — see the commented block below to switch back.
+    GridBased:
+      plugin: "nav2_smac_planner::SmacPlanner2D"
+      tolerance: 0.5
+      allow_unknown: true
+      max_iterations: 1000000
+      max_on_approach_iterations: 1000
+      max_planning_time: 5.0
+      use_astar: true
+      downsample_costmap: false
+      downsampling_factor: 1
+      cost_travel_multiplier: 2.0
+
+    # --------------------------------------------------------------------------
+    # ALTERNATIVE (COMMENTED OUT): SmacPlannerHybrid (curvature-constrained /
+    # car-like). Use only if you need Dubin/Reeds-Shepp paths; on this diff-drive
+    # base it produced reverse maneuvers that never reached the goal. To use it,
+    # replace the GridBased block above with this one:
+    # --------------------------------------------------------------------------
+    # GridBased:
+    #   plugin: "nav2_smac_planner::SmacPlannerHybrid"
+    #   tolerance: 0.5
+    #   allow_unknown: true
+    #   max_iterations: 1000000
+    #   max_on_approach_iterations: 1000
+    #   max_planning_time: 5.0
+    #   motion_model_for_search: "DUBIN"
+    #   cost_travel_multiplier: 2.0
+    #   angle_quantization_bins: 72
+    #   analytic_expansion_ratio: 3.5
+    #   minimum_turning_radius: 0.40
+    #   reverse_penalty: 2.0
+    #   non_straight_penalty: 1.2
+    #   smooth_path: true
+
+# ------------------------------------------------------------------------------
+# Local Costmap - rolling window around the robot (obstacle avoidance)
+# ------------------------------------------------------------------------------
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      use_sim_time: true
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      global_frame: "odom"
+      robot_base_frame: "base_link"
+      rolling_window: true
+      width: 3
+      height: 3
+      resolution: 0.05
+      robot_radius: 0.30
+      transform_tolerance: 1.0
+      plugins: ["obstacle_layer", "inflation_layer"]
+
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: true
+        observation_sources: scan
+        scan:
+          topic: /scan
+          sensor_frame: base_laser
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          data_type: "LaserScan"
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 2.5
+          obstacle_min_range: 0.0
+
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 3.0
+        inflation_radius: 0.55
+
+      always_send_full_costmap: true
+
+# ------------------------------------------------------------------------------
+# Global Costmap - full map used for global planning
+# ------------------------------------------------------------------------------
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      use_sim_time: true
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      global_frame: "map"
+      robot_base_frame: "base_link"
+      robot_radius: 0.30
+      resolution: 0.05
+      # false => unknown cells count as FREE, so the planner finds a path in the
+      # rolling no-map costmap (with true + a horizontal lidar that sees nothing,
+      # the whole costmap stays unknown and SmacPlanner2D returns an empty plan).
+      track_unknown_space: false
+      transform_tolerance: 1.0
+      # Rolling window centered on the robot: works WITHOUT a saved map / map_server
+      # (OmniSim /odom is ground-truth, so a static identity map->odom is enough).
+      # With SLAM/AMCL running, the static_layer still layers the received /map
+      # inside this 20 m window. Drop rolling_window (and set width/height to the
+      # map size) if you want a fixed map-sized global costmap.
+      rolling_window: true
+      width: 20
+      height: 20
+      # No static_layer here: with no map_server the static layer keeps the costmap
+      # unknown/lethal and the planner returns an empty plan. Add "static_layer" back
+      # (and set map_subscribe_transient_local) when running SLAM/AMCL with a /map.
+      plugins: ["obstacle_layer", "inflation_layer"]
+
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: true
+
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: true
+        observation_sources: scan
+        scan:
+          topic: /scan
+          sensor_frame: base_laser
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          data_type: "LaserScan"
+          raytrace_max_range: 6.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 5.0
+          obstacle_min_range: 0.0
+
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 3.0
+        inflation_radius: 0.55
+
+      always_send_full_costmap: true
+
+# ------------------------------------------------------------------------------
+# Velocity Smoother - smooths /cmd_vel before it reaches the base
+# ------------------------------------------------------------------------------
+velocity_smoother:
+  ros__parameters:
+    use_sim_time: true
+    smoothing_frequency: 20.0
+    scale_velocities: false
+    feedback: "OPEN_LOOP"
+    # [vx, vy, wz] - vy pinned to 0 for diff-drive
+    max_velocity: [0.5, 0.0, 1.0]
+    min_velocity: [-0.5, 0.0, -1.0]
+    max_accel: [2.5, 0.0, 3.2]
+    max_decel: [-2.5, 0.0, -3.2]
+    odom_topic: "/odom"
+    odom_duration: 0.1
+    # OmniSim consumes plain geometry_msgs/Twist:
+    enable_stamped_cmd_vel: false
+
+# ------------------------------------------------------------------------------
+# Smoother Server - path smoother (the default nav-to-pose BT calls SmoothPath).
+# ------------------------------------------------------------------------------
+smoother_server:
+  ros__parameters:
+    use_sim_time: true
+    smoother_plugins: ["simple_smoother"]
+    simple_smoother:
+      plugin: "nav2_smoother::SimpleSmoother"
+      tolerance: 1.0e-10
+      max_its: 1000
+      do_refinement: true
+
+# ------------------------------------------------------------------------------
+# Collision Monitor - Jazzy's navigation_launch.py ALWAYS starts this node, and
+# lifecycle bringup ABORTS if it has no valid config. Chain (launch remaps
+# cmd_vel->cmd_vel_nav): controller -> cmd_vel_nav -> velocity_smoother ->
+# cmd_vel_smoothed -> collision_monitor -> cmd_vel (what OmniSim's command_node reads).
+# ------------------------------------------------------------------------------
+collision_monitor:
+  ros__parameters:
+    use_sim_time: true
+    base_frame_id: "base_link"
+    odom_frame_id: "odom"
+    cmd_vel_in_topic: "cmd_vel_smoothed"
+    cmd_vel_out_topic: "cmd_vel"
+    state_topic: "collision_monitor_state"
+    transform_tolerance: 1.0
+    source_timeout: 5.0
+    base_shift_correction: true
+    stop_pub_timeout: 2.0
+    enable_stamped_cmd_vel: false      # OmniSim uses plain Twist
+    polygons: ["PolygonStop"]
+    PolygonStop:
+      type: "circle"
+      radius: 0.35
+      action_type: "stop"
+      min_points: 4
+      visualize: false
+      enabled: true
+    observation_sources: ["scan"]
+    scan:
+      type: "scan"
+      topic: "/scan"
+      min_height: 0.15
+      max_height: 2.0
+      enabled: true
+
+# ------------------------------------------------------------------------------
+# Behavior Server - recovery behaviors (spin / backup / wait)
+# ------------------------------------------------------------------------------
+behavior_server:
+  ros__parameters:
+    use_sim_time: true
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "wait"]
+
+    spin:
+      plugin: "nav2_behaviors::Spin"
+    backup:
+      plugin: "nav2_behaviors::BackUp"
+    wait:
+      plugin: "nav2_behaviors::Wait"
+
+    # Frames for Jazzy behavior_server (recoveries run in the odom frame)
+    local_frame: "odom"
+    global_frame: "odom"
+    robot_base_frame: "base_link"
+    transform_tolerance: 1.0

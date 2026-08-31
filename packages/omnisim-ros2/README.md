@@ -215,10 +215,29 @@ never been brought up against OmniSim** — the servo lane unblocks a
 `joint_trajectory_controller`, but no end-to-end run exists; treat arms as
 unblocked, never as working.
 
-**Nav2**: `/odom`, `/cmd_vel`, `/tf`, `use_sim_time` and now `ros2_control` all
-exist, which is everything a Nav2 bring-up consumes — but **no Nav2 stack has
-been brought up against OmniSim**, so treat it as unblocked, not as working.
-OmniSim is also still absent from the `ros2_control` simulator registry.
+**Nav2 ✅ brought up end-to-end (2026-08-31) — planning + goal execution on a
+diff-drive base.** The first Nav2 stack (ROS 2 **Jazzy**) ever run against OmniSim
+drove the Husky autonomously from `(0,0)` to a `NavigateToPose` goal — `SUCCEEDED`
+in ~10–12 s, pose read out of the simulator. It ships as its own colcon package,
+[`src/omnisim_ros2_nav2/`](src/omnisim_ros2_nav2/) (runbook README + beta-feedback
+REPORT), layered on this Tier-2 sidecar with **no** new OmniSim surface. Two paths
+were tried: a **Windows-engine + WSL-ROS split** (reached M1–M5, then stalled on
+tunnels / `wslrelay` / firewall / ephemeral-port exhaustion) and **all-in-WSL**
+(OmniSim built and run inside the *same* Ubuntu 24.04 as ROS 2, everything on
+`localhost`, no tunnels). The **all-in-WSL path is the one that closed M6** and is
+the documented, supported path going forward. Winning configuration: CPU `mj_step`
+solver (`OMNISIM_NEWTON_MODEL_DEVICE=cpu`, required for the Lidar rays), a no-window
+headless sim (`OMNISIM_NO_WINDOW=1`), **CycloneDDS** as the RMW on every node
+(FastDDS discovery is unreliable in WSL2), a **static identity `map→odom`** (OmniSim
+`/odom` is ground truth, so no SLAM/AMCL), and a **lean five-server Nav2 launch**.
+⚠ **Scope this exactly: it demonstrates planning and goal execution ONLY — it must
+not be read as a full localization or obstacle-avoidance benchmark.** The winning
+config uses a **rolling costmap with no `static_layer`**, and `lidar_layer:=0` sees
+open space because this short-wall test world's walls are only 0.1 m tall (the
+down-angled layer would fill the costmap with phantom floor obstacles); a world with
+taller walls would exercise real obstacle avoidance. The package is written to
+generalize to any well-defined differential-drive robot, not just the Husky. OmniSim
+is also still absent from the `ros2_control` simulator registry.
 
 ---
 
@@ -551,8 +570,10 @@ Declared through the feature flags **and** repeated in
   bridge's servo verb when advertised (Tier 3 above), which unblocks
   `joint_trajectory_controller` — but **no trajectory controller or MoveIt
   bringup has been run end-to-end**, so treat arms as unblocked, not working.
-  A Nav2 bring-up has never been run against OmniSim, and OmniSim is not in the
-  `ros2_control` simulator registry.
+  A Nav2 bring-up now runs end-to-end on the Husky (see the Tier 3 Nav2 note above
+  and [`src/omnisim_ros2_nav2/`](src/omnisim_ros2_nav2/)) — planning + goal
+  execution on the all-in-WSL path, **not** a localization/obstacle-avoidance
+  benchmark. OmniSim is not in the `ros2_control` simulator registry.
 - **No effort interfaces anywhere.** OmniSim exposes no joint effort on any
   surface, so `effort` is neither a state nor a command interface, and the plugin
   rejects a URDF that asks for one instead of exporting a fabricated zero.
@@ -760,14 +781,22 @@ packages/omnisim-ros2/
     │   └── sensor_node.py     # Tier 2 — Imu / LaserScan / GPS
     │   ├── launch/
     │   └── test/
-    └── omnisim_ros2_control/       # Tier 3 (ament_cmake, C++)
-        ├── src/omnisim_system.cpp  # the SystemInterface itself
-        ├── src/http_client.cpp     # blocking HTTP/1.1, keep-alive if granted
-        ├── src/json_lite.cpp       # ~200-line reader, no external dependency
-        ├── description/husky_omnisim.urdf.xacro   # kinematics + <ros2_control>
-        ├── config/husky_controllers.yaml
-        ├── launch/husky_diff_drive.launch.py
-        └── test/                   # gtest: JSON reader + diff-drive fold
+    ├── omnisim_ros2_control/       # Tier 3 (ament_cmake, C++)
+    │   ├── src/omnisim_system.cpp  # the SystemInterface itself
+    │   ├── src/http_client.cpp     # blocking HTTP/1.1, keep-alive if granted
+    │   ├── src/json_lite.cpp       # ~200-line reader, no external dependency
+    │   ├── description/husky_omnisim.urdf.xacro   # kinematics + <ros2_control>
+    │   ├── config/husky_controllers.yaml
+    │   ├── launch/husky_diff_drive.launch.py
+    │   └── test/                   # gtest: JSON reader + diff-drive fold
+    └── omnisim_ros2_nav2/          # Nav2 (Jazzy) Husky bring-up (ament_python)
+        ├── params/                 # reconciled Nav2 + slam_toolbox params
+        ├── launch/                 # full / SLAM / lean 5-server launches
+        ├── config/fastdds_profile.xml   # cross-host DDS fallback
+        ├── omnisim_ros2_nav2/cmd_vel_relay.py
+        ├── test/                   # packaging/static checks (no ROS, no sim)
+        ├── README.md               # runbook (Windows-split + all-in-WSL paths)
+        └── REPORT.md               # beta-feedback: milestones M1–M6
 ```
 
 `harness_client.py`, `bridge_client.py`, `conversions.py`, `entities.py` and
@@ -776,6 +805,7 @@ and reusable without a ROS environment.
 
 ## See also
 
+- [src/omnisim_ros2_nav2/](src/omnisim_ros2_nav2/) — Nav2 (Jazzy) Husky bring-up: runbook + beta-feedback report (milestones M1–M6)
 - [docs/developer/ros2-integration.md](../../docs/developer/ros2-integration.md) — the policy history and full picture
 - [PROTOCOL.md](../../PROTOCOL.md) — the OmniSim Wire Protocol this sits on
 - [scripts/harness/README.md](../../scripts/harness/README.md) — the harness itself
