@@ -52,12 +52,16 @@ motion, e.g. `[1.579,0,0]`) → `base_link→base_laser` (static, `[0.201,0,0.50
    `LAUNCHER_DLL_NOT_FOUND` until PATH includes `cpp\`.
    → **Suggest:** ship those three DLLs in `mingw64\bin` (as the other runtime DLLs are),
    or have `omnisim.bat`/the harness add `mingw64\bin\cpp` to PATH.
+   > **Update (post-v8.1.13):** already fixed upstream — the DLL packaging landed in
+   > **v8.1.14** (public issue #9), after this v8.1.13 test window.
 2. **The harness needs the `omniworld` Python package, which the release does not ship.**
    `scripts/harness/omnisim_harness.py` → `spatial.py` → `from omniworld import viewpoint`;
    run under the user's system Python it raises `ModuleNotFoundError: No module named
    'omniworld'` and exits. The package exists only in the source tree at
    `src/python/omniworld/`. Workaround: `PYTHONPATH=<source>\src\python`.
    → **Suggest:** include `src/python/omniworld` in the packaged harness, or lazy-import it.
+   > **Update (post-v8.1.13):** already fixed upstream — the harness now ships `omniworld`
+   > as of **v8.1.16** (public issue #11), after this v8.1.13 test window.
 
 ### 2.2 Harness — the throughput & mode limits are the M6 wall
 3. **Hardcoded `--mode=fast` (~13× real time); no API to request real time.**
