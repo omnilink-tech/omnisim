@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "title": "My OmniSim Agent Build",
+  "slug": "my_omnisim_agent_build",
+  "repository": "github.com/omnilink-tech/omnisim",
+  "story": {
+    "question": "What measurable robotics question does this build answer?",
+    "claim": "What does the controlled comparison support?",
+    "boundary": "What does this simulation not establish?"
+  },
+  "evidence": [
+    "evidence/result.json",
+    "evidence/controller.log",
+    "worlds/build.omniworld"
+  ],
+  "delivery": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "voice": {
+    "script": "agent_build_narration.txt",
+    "wav": "build/narration.wav",
+    "voice": "am_michael",
+    "blocks": [
+      {"start_s": 10.0, "window_end_s": 20.0, "speed": 0.98},
+      {"start_s": 22.0, "window_end_s": 32.0, "speed": 0.97},
+      {"start_s": 34.0, "window_end_s": 44.0, "speed": 0.97},
+      {"start_s": 46.0, "window_end_s": 56.0, "speed": 0.97},
+      {"start_s": 58.0, "window_end_s": 68.0, "speed": 0.97},
+      {"start_s": 70.0, "window_end_s": 78.0, "speed": 0.97},
+      {"start_s": 80.0, "window_end_s": 87.5, "speed": 0.97}
+    ]
+  },
+  "segments": [
+    {
+      "id": "build_question",
+      "beat": "question",
+      "kind": "clip",
+      "duration_s": 12.0,
+      "source": "captures/question.mp4",
+      "source_in_s": 0,
+      "purpose": "Begin on the real robot or object and make the measurable question judgeable.",
+      "overlay": {
+        "eyebrow": "MY BUILD LOG · QUESTION",
+        "headline": "ONE BUILD. ONE TEST.",
+        "accent": "cyan"
+      }
+    },
+    {
+      "id": "first_attempt",
+      "beat": "attempt",
+      "kind": "clip",
+      "duration_s": 12.0,
+      "source": "captures/attempt.mp4",
+      "source_in_s": 0,
+      "purpose": "Show the apparent success in a locked, judgeable frame."
+    },
+    {
+      "id": "controlled_failure",
+      "beat": "control",
+      "kind": "clip",
+      "duration_s": 12.0,
+      "source": "captures/control.mp4",
+      "source_in_s": 0,
+      "purpose": "Change one variable and show the controlled failure.",
+      "overlay": {
+        "eyebrow": "NEGATIVE CONTROL",
+        "headline": "ONE VARIABLE CHANGED",
+        "accent": "amber"
+      }
+    },
+    {
+      "id": "evidence",
+      "beat": "evidence",
+      "kind": "plate",
+      "duration_s": 10.0,
+      "eyebrow": "WHAT THE COMPARISON EARNED",
+      "headline": "THE RESULT BECAME EVIDENCE",
+      "body": "Success and control are readable only together.",
+      "purpose": "State the bounded claim supported by the comparison.",
+      "rows": [
+        {"label": "SUCCESS", "detail": "Describe the observed result", "accent": "green"},
+        {"label": "CONTROL", "detail": "Describe the opposite outcome", "accent": "amber"},
+        {"label": "BOUNDARY", "detail": "State what remains unproven", "accent": "red"}
+      ]
+    },
+    {
+      "id": "agent_method",
+      "beat": "method",
+      "kind": "plate",
+      "duration_s": 12.0,
+      "eyebrow": "HOW I WORK AS AN AI AGENT",
+      "headline": "DESCRIBE · INSPECT · EDIT · RUN · MEASURE · REFINE",
+      "body": "Evidence decides the next edit.",
+      "purpose": "Reveal the repeatable agent workflow."
+    },
+    {
+      "id": "claim_boundary",
+      "beat": "boundary",
+      "kind": "plate",
+      "duration_s": 10.0,
+      "eyebrow": "THE CONDITION I CANNOT HIDE",
+      "headline": "SUPPORT CHANGES THE CLAIM",
+      "body": "Put the relevant simulation limitation on screen.",
+      "purpose": "Make claim limits part of the story.",
+      "claim_boundary": "Replace with the exact build-specific boundary."
+    },
+    {
+      "id": "conclusion",
+      "beat": "conclusion",
+      "kind": "plate",
+      "duration_s": 10.0,
+      "eyebrow": "ONE METHOD · MANY BUILDS",
+      "headline": "THE PATTERN TRANSFERS",
+      "body": "The question changes. The evidence loop stays the same.",
+      "purpose": "Conclude with the reusable build method, not a capability montage."
+    }
+  ]
+}

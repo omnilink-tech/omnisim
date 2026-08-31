@@ -22,6 +22,9 @@ Subcommands:
   looks                                List all named looks
   subjects                             List all known subject profiles
   inspect  <world.omniworld>                 Load world, list robots/poses, exit
+  agent-build-new                           Print the locked Agent Build manifest
+  agent-build-render <film.json>            Assemble the evidence-led film
+  agent-build-verify <film.json>            Run the fail-closed release gate
 
 The render path expects an existing capture service on 127.0.0.1:6791.
 Start it once with `python -m omnisim capture --port 6791` and keep it
@@ -37,7 +40,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-from . import beats, camera, director, looks, storyboard, subjects
+from . import agent_build, agent_build_voice, beats, camera, director, looks, storyboard, subjects
 
 
 def _cmd_render(args: argparse.Namespace) -> int:
@@ -122,6 +125,54 @@ def _cmd_inspect(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_agent_build_new(args: argparse.Namespace) -> int:
+    print(json.dumps(agent_build.template(args.title), indent=2))
+    return 0
+
+
+def _cmd_agent_build_validate(args: argparse.Namespace) -> int:
+    spec = agent_build.parse(Path(args.manifest))
+    print(json.dumps({
+        "valid": True, "style": "agent_build_v6", "title": spec.title,
+        "duration_s": spec.duration_s, "segments": len(spec.segments),
+        "locked_intro": {"disclosure_s": [0, 5], "story_signature_s": [5, 10],
+                           "voiceover": False},
+        "locked_outro": agent_build.GITHUB_DESTINATION,
+    }, indent=2))
+    return 0
+
+
+def _cmd_agent_build_voice_setup(args: argparse.Namespace) -> int:
+    root = agent_build_voice.setup_runtime(Path(args.runtime) if args.runtime else None)
+    print(f"Agent Build voice runtime ready: {root}")
+    return 0
+
+
+def _cmd_agent_build_voice(args: argparse.Namespace) -> int:
+    spec = agent_build.parse(Path(args.manifest))
+    wav, timings = agent_build_voice.generate(
+        spec, Path(args.runtime) if args.runtime else None,
+    )
+    print(f"NARRATION: {wav}")
+    print(f"TIMINGS:   {timings}")
+    return 0
+
+
+def _cmd_agent_build_render(args: argparse.Namespace) -> int:
+    spec = agent_build.parse(Path(args.manifest))
+    result = agent_build.render(spec, Path(args.out).resolve() if args.out else None)
+    for label, path in result.items():
+        print(f"{label.upper():>12}: {path}")
+    return 0
+
+
+def _cmd_agent_build_verify(args: argparse.Namespace) -> int:
+    spec = agent_build.parse(Path(args.manifest))
+    report = agent_build.verify(spec, Path(args.out).resolve() if args.out else None)
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="omnisim cinema",
                                 description="Agent-driven cinematic capture pipeline.")
@@ -157,6 +208,33 @@ def main(argv: list[str] | None = None) -> int:
     pi = sp.add_parser("inspect", help="Load a world and dump its robots")
     pi.add_argument("world", help="Path to .wbt")
     pi.set_defaults(func=_cmd_inspect)
+
+    pan = sp.add_parser("agent-build-new", help="Print a starter Agent Build Film manifest")
+    pan.add_argument("--title", default="My OmniSim Agent Build")
+    pan.set_defaults(func=_cmd_agent_build_new)
+
+    pav = sp.add_parser("agent-build-validate", help="Validate story/style contracts before rendering")
+    pav.add_argument("manifest", help="Path to Agent Build Film JSON")
+    pav.set_defaults(func=_cmd_agent_build_validate)
+
+    pavs = sp.add_parser("agent-build-voice-setup", help="Install the pinned local natural-voice runtime")
+    pavs.add_argument("--runtime", default=None, help="Optional runtime directory")
+    pavs.set_defaults(func=_cmd_agent_build_voice_setup)
+
+    pavr = sp.add_parser("agent-build-voice", help="Render natural narration from manifest windows")
+    pavr.add_argument("manifest", help="Path to Agent Build Film JSON")
+    pavr.add_argument("--runtime", default=None, help="Optional runtime directory")
+    pavr.set_defaults(func=_cmd_agent_build_voice)
+
+    par = sp.add_parser("agent-build-render", help="Assemble the locked Agent Build Film style")
+    par.add_argument("manifest", help="Path to Agent Build Film JSON")
+    par.add_argument("--out", default=None, help="Output directory")
+    par.set_defaults(func=_cmd_agent_build_render)
+
+    pave = sp.add_parser("agent-build-verify", help="Run the fail-closed Agent Build release gate")
+    pave.add_argument("manifest", help="Path to Agent Build Film JSON")
+    pave.add_argument("--out", default=None, help="Output directory used by render")
+    pave.set_defaults(func=_cmd_agent_build_verify)
 
     args = p.parse_args(argv)
     return args.func(args)

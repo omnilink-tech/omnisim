@@ -41,6 +41,11 @@ Accelerometer / GPS nodes when OMNISIM_URDF_USE_SENSORS=1 is set.
       </geometry>
     </collision>
     <inertial>
+      <!-- Keep the CoM at the link origin: an inertial-origin offset here made
+           the imported body EXPLODE at rest under Newton (measured in issue
+           #10: tumbling at 2.8 m/s in idle with zero applied force, then
+           NaN-teleports to spawn). The hover thrust-centroid balance is
+           handled in the bridge's mavic_dynamics.py instead. -->
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="0.9"/>
       <inertia ixx="0.005" ixy="0" ixz="0" iyy="0.010" iyz="0" izz="0.012"/>
@@ -49,6 +54,13 @@ Accelerometer / GPS nodes when OMNISIM_URDF_USE_SENSORS=1 is set.
 
   <!-- =========================================================
        Propellers — 4 continuous joints, anchor offsets from PROTO
+       NOTE: the propeller links carry NO <collision> on purpose
+       (public issue #10): the rear discs hang 7 mm below the belly
+       box, so the craft rested on two thin spinning discs, jittered,
+       and flipped upside down within seconds while IDLE on the
+       ground. A real Mavic rests on its body; the belly box is the
+       ground contact. Lift comes from the bridge's RotorDynamics,
+       not from these links, so nothing physical is lost.
        ========================================================= -->
   <joint name="front left propeller" type="continuous">
     <parent link="base_link"/>
@@ -68,12 +80,6 @@ Accelerometer / GPS nodes when OMNISIM_URDF_USE_SENSORS=1 is set.
         <color rgba="0.1 0.1 0.1 1.0"/>
       </material>
     </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.12" length="0.005"/>
-      </geometry>
-    </collision>
     <inertial>
       <mass value="0.02"/>
       <inertia ixx="7.3e-05" ixy="0" ixz="0" iyy="7.3e-05" iyz="0" izz="1.4e-04"/>
@@ -96,12 +102,6 @@ Accelerometer / GPS nodes when OMNISIM_URDF_USE_SENSORS=1 is set.
       </geometry>
       <material name="prop_dark"/>
     </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.12" length="0.005"/>
-      </geometry>
-    </collision>
     <inertial>
       <mass value="0.02"/>
       <inertia ixx="7.3e-05" ixy="0" ixz="0" iyy="7.3e-05" iyz="0" izz="1.4e-04"/>
@@ -124,12 +124,6 @@ Accelerometer / GPS nodes when OMNISIM_URDF_USE_SENSORS=1 is set.
       </geometry>
       <material name="prop_dark"/>
     </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.12" length="0.005"/>
-      </geometry>
-    </collision>
     <inertial>
       <mass value="0.02"/>
       <inertia ixx="7.3e-05" ixy="0" ixz="0" iyy="7.3e-05" iyz="0" izz="1.4e-04"/>
@@ -152,12 +146,6 @@ Accelerometer / GPS nodes when OMNISIM_URDF_USE_SENSORS=1 is set.
       </geometry>
       <material name="prop_dark"/>
     </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <cylinder radius="0.12" length="0.005"/>
-      </geometry>
-    </collision>
     <inertial>
       <mass value="0.02"/>
       <inertia ixx="7.3e-05" ixy="0" ixz="0" iyy="7.3e-05" iyz="0" izz="1.4e-04"/>

@@ -189,7 +189,62 @@ except Exception:
 # stable hover first; a 2% change in K_VERTICAL_THRUST tips the system.
 
 K_VERTICAL_THRUST = 68.5   # propeller thrust at hover
-K_VERTICAL_OFFSET = 0.6    # vertical PID setpoint offset
+# Attitude rescale paired with the k_thrust recalibration (public issue #10):
+# k went 0.00026 -> 0.00054 so the 1.0333 kg URDF can hover at omega = 68.5,
+# and attitude torque per unit motor-delta scales linearly with k. Multiply the
+# attitude inputs by k_old/k_new so the verbatim mavic2pro.py tuning keeps the
+# torque scale it was calibrated for. Measured without this: lift-off to 0.87 m,
+# then |roll| -> pi and a 22 m skid.
+ATT_SCALE = 0.00026 / 0.00054
+# Rate-damping gain on the IMU-differenced roll/pitch rates (rad/s). The
+# classic law used the Gyro's rate with an implicit gain of 1.0; the Gyro is
+# dead under Newton (constant zeros), and 1.0 was underdamped anyway once the
+# rates come from clean IMU differencing. Tuned by measurement in issue #10.
+K_ATT_D = 10.0
+# The URDF prop joints declare velocity=576 rad/s; the real motor clamps there,
+# but RotorDynamics computes thrust from the COMMANDED input, so an unclamped
+# mixer output (D-term spikes reached thousands of rad/s) produced unbounded
+# force -- measured: ~1900 N and a 0.1 -> 37 m "rocket" in 1.3 s. Clamp what we
+# both command and model to the motor's physical range; floor at 0 because a
+# fixed-pitch quad never reverses its props (and reverse thrust on the ground
+# is how the airframe flipped).
+MOTOR_MAX_RAD_S = 576.0
+# IMU-differenced rates spike across Euler-angle flips (|roll| near pi, yaw
+# wraps); clamp them so one bad tick cannot dominate the mixer.
+MAX_ATT_RATE = 15.0
+# Yaw rate damping (the classic law has NO yaw stabilisation beyond the
+# steering disturbance, and the URDF craft spins freely about z). Sized
+# against MAX_YAW_DISTURBANCE = 0.4: at 30 the terminal commanded yaw rate was
+# 0.013 rad/s and the craft could never turn back to its hover point (measured
+# 223 m of drift in 25 s); at 2 the terminal rate is 0.2 rad/s.
+K_YAW_D = 2.0
+# Vertical climb-rate damping: the classic vertical law is a cubed-P on
+# altitude with NO rate term, i.e. a double integrator under bang thrust --
+# it overshot a 1.0 m target to 3+ m. Rate from sim-tick altitude differencing.
+K_VERT_D = 8.0
+# Slow altitude integrator. The classic cubed-P law can only null steady-state
+# error if hover thrust matches the weight to ~1e-7 in k_thrust (the cube root
+# magnifies any bias: a 0.3% thrust deficit measured as a 0.34 m sag). The
+# integrator trims that out; clamped hard so it can never fly the craft away.
+K_VERT_I = 0.4
+VERT_I_CLAMP = 3.0
+# Horizontal position hold (public issue #10). The classic law had none: once
+# "arrived" it stopped commanding xy entirely, so any trim tilt accelerated the
+# craft for ever (measured: 220 m of drift in 25 s of hover); and its far-field
+# dash braked with a fixed +0.1 nose-up that pushes WITH a backward drift.
+# Near the target (< POS_HOLD_RADIUS_M) command tilt from position error +
+# velocity damping instead; far from it, keep the classic yaw-and-dash but add
+# the same velocity damping so speed stays bounded. Gains are in the mixer's
+# input units (the same scale the disturbances always used).
+POS_HOLD_RADIUS_M = 3.0
+K_POS = 3.0        # input units per metre of position error
+K_XY_V = 3.0       # input units per m/s of velocity (always on)
+MAX_HOLD_TILT = 8.0  # clamp on the hold branch's roll/pitch command
+K_VERTICAL_OFFSET = 0.0    # was 0.6: a standing bias for the era when hover
+                           # thrust was short of the weight; k_thrust is now
+                           # calibrated so omega=68.5 hovers exactly, and the
+                           # 0.6 just parked the craft 0.25 m ABOVE every target
+                           # (measured in issue #10).
 K_VERTICAL_P = 3.0
 K_ROLL_P = 50.0
 K_PITCH_P = 30.0
@@ -405,6 +460,8 @@ class BridgeState:
         self.y = 0.0
         self.z = 0.0
         self.roll = 0.0
+        self.prev_rp = None  # (roll, pitch, yaw, altitude) one sim tick ago
+        self.vert_i = 0.0    # altitude-error integrator (K_VERT_I)
         self.pitch = 0.0
         self.yaw = 0.0
         # Velocities — derived from successive poses each tick.
@@ -1070,7 +1127,9 @@ def main():
     # Enable sensors.
     camera = supervisor.getDevice("camera")
     if camera is None:
-        print("[mavic_omnilink_bridge] ERROR: no 'camera' device — Mavic2Pro cameraSlot empty?")
+        print("[mavic_omnilink_bridge] ERROR: no 'camera' device. The Mavic is a URDFRobot, and "
+              "the importer emits its <gazebo> sensors only when the world was loaded with "
+              "OMNISIM_URDF_USE_SENSORS=1 in the ENGINE's environment. Set it and relaunch.")
         return
     camera.enable(time_step)
     cam_w = camera.getWidth()
@@ -1172,7 +1231,37 @@ def main():
     def _flight_step():
         roll, pitch, yaw = imu.getRollPitchYaw()
         x_pos, y_pos, altitude = gps.getValues()
-        roll_acc, pitch_acc, _ = gyro.getValues()
+        # The Gyro device reads a constant (0,0,0) under Newton (engine defect,
+        # documented in AGENTS.md: device-type-specific -- the InertialUnit in
+        # the same carrier tracks angles to 4 decimals). The classic law's only
+        # damping was the gyro rate, so the attitude loop flew UNDAMPED and
+        # flipped on lift-off (public issue #10). Derive the rates from the IMU
+        # angles across one SIM tick instead; dt is the basic time step, not
+        # wall clock, so --mode=fast does not distort them.
+        dt_sim = max(time_step / 1000.0, 1e-4)
+        prev_rp = state.prev_rp
+        if prev_rp is None:
+            roll_rate = pitch_rate = 0.0
+        else:
+            roll_rate = clamp(wrap_pi(roll - prev_rp[0]) / dt_sim, -MAX_ATT_RATE, MAX_ATT_RATE)
+            pitch_rate = clamp(wrap_pi(pitch - prev_rp[1]) / dt_sim, -MAX_ATT_RATE, MAX_ATT_RATE)
+        if prev_rp is None:
+            yaw_rate = 0.0
+            climb_rate = 0.0
+            vx_w = vy_w = 0.0
+        else:
+            yaw_rate = clamp(wrap_pi(yaw - prev_rp[2]) / dt_sim, -MAX_ATT_RATE, MAX_ATT_RATE)
+            climb_rate = clamp((altitude - prev_rp[3]) / dt_sim, -10.0, 10.0)
+            vx_w = clamp((x_pos - prev_rp[4]) / dt_sim, -20.0, 20.0)
+            vy_w = clamp((y_pos - prev_rp[5]) / dt_sim, -20.0, 20.0)
+        state.prev_rp = (roll, pitch, yaw, altitude, x_pos, y_pos)
+        # World -> body-horizontal: forward is the yaw heading, right is 90 deg
+        # clockwise from it (z-up).
+        cy, sy = math.cos(yaw), math.sin(yaw)
+        v_fwd = vx_w * cy + vy_w * sy
+        v_right = vx_w * sy - vy_w * cy
+        roll_acc = K_ATT_D * roll_rate
+        pitch_acc = K_ATT_D * pitch_rate
 
         # Update measured velocities from successive poses.
         now = time.time()
@@ -1204,30 +1293,45 @@ def main():
         pitch_disturbance = 0.0
         yaw_disturbance = 0.0
 
-        if mode in ("takeoff", "hover", "goto", "land") and target_altitude > 0.05:
+        # `land` sets target_altitude to 0, which used to drop the whole xy
+        # block and let trim tilt carry the craft ~6 m sideways on the way down
+        # (measured in issue #10) -- the land action stores the touchdown point
+        # in target_x/y, so keep holding it.
+        if mode in ("takeoff", "hover", "goto", "land") and (target_altitude > 0.05 or mode == "land"):
             # Climb until at altitude before touching xy.
-            if altitude > target_altitude - 1.0 and target_x is not None and target_y is not None:
+            if (mode == "land" or altitude > target_altitude - 1.0) and target_x is not None and target_y is not None:
                 # Heading-to-target in world frame.
                 dx = target_x - x_pos
                 dy = target_y - y_pos
                 dist_xy = math.hypot(dx, dy)
-                if dist_xy > WAYPOINT_REACH_TOL_M:
+                # One law at every distance (public issue #10). The classic
+                # far-field "turn toward the target, then dash nose-down, brake
+                # with a fixed +0.1" cannot work with this airframe's steering
+                # authority -- measured: a 12 m hop crawled 44 m the WRONG way.
+                # A quad is holonomic: command tilt from the body-frame position
+                # error + velocity damping, clamped, and the clamp IS the cruise
+                # limit (MAX_HOLD_TILT / K_XY_V = ~2.7 m/s). Yaw steering stays
+                # only so the camera faces the direction of travel.
+                e_fwd = dx * cy + dy * sy
+                e_right = dx * sy - dy * cy
+                # +pitch_input lifts the FRONT pair -> nose up -> backward.
+                pitch_disturbance = clamp(-K_POS * e_fwd + K_XY_V * v_fwd,
+                                          -MAX_HOLD_TILT, MAX_HOLD_TILT)
+                # +roll_input lifts the RIGHT pair (FR/RR faster) -> rolls left.
+                roll_disturbance = clamp(-K_POS * e_right + K_XY_V * v_right,
+                                         -MAX_HOLD_TILT, MAX_HOLD_TILT)
+                if dist_xy > POS_HOLD_RADIUS_M:
                     desired_heading = math.atan2(dy, dx)
                     angle_left = wrap_pi(desired_heading - yaw)
                     yaw_disturbance = MAX_YAW_DISTURBANCE * angle_left / (2.0 * math.pi)
-                    pitch_disturbance = clamp(
-                        math.log10(abs(angle_left) + 1e-3),
-                        MAX_PITCH_DISTURBANCE, 0.1,
-                    )
                     if mode == "takeoff":
                         with state.lock:
                             state.mode = "goto"
                 else:
-                    # Arrived — switch to hover. yaw disturbance from optional set_yaw.
                     if target_yaw is not None:
                         ye = wrap_pi(target_yaw - yaw)
                         yaw_disturbance = MAX_YAW_DISTURBANCE * ye / (2.0 * math.pi)
-                    if mode in ("goto", "takeoff"):
+                    if mode in ("goto", "takeoff") and dist_xy <= WAYPOINT_REACH_TOL_M:
                         with state.lock:
                             state.mode = "hover"
             elif target_yaw is not None:
@@ -1246,19 +1350,29 @@ def main():
                 return
 
         # Stabiliser PID (verbatim from mavic2pro.py — don't rebalance).
-        roll_input = K_ROLL_P * clamp(roll, -1, 1) + roll_acc + roll_disturbance
-        pitch_input = K_PITCH_P * clamp(pitch, -1, 1) + pitch_acc + pitch_disturbance
-        yaw_input = yaw_disturbance
+        roll_input = ATT_SCALE * (K_ROLL_P * clamp(roll, -1, 1) + roll_acc + roll_disturbance)
+        pitch_input = ATT_SCALE * (K_PITCH_P * clamp(pitch, -1, 1) + pitch_acc + pitch_disturbance)
+        yaw_input = yaw_disturbance - K_YAW_D * yaw_rate
         # Read target_altitude AFTER the land branch may have set it to 0.
         with state.lock:
             t_alt = state.target_altitude
         clamped_diff_alt = clamp(t_alt - altitude + K_VERTICAL_OFFSET, -1, 1)
-        vertical_input = K_VERTICAL_P * (clamped_diff_alt ** 3.0)
+        # Integrate only when airborne with a live setpoint; freeze the trim on
+        # the ground / while landed so it cannot wind up pre-takeoff.
+        if t_alt > 0.05:
+            state.vert_i = clamp(state.vert_i + K_VERT_I * clamped_diff_alt * dt_sim,
+                                 -VERT_I_CLAMP, VERT_I_CLAMP)
+        else:
+            state.vert_i = 0.0
+        # Linear P (the classic cube has ~zero gain near the target, which left
+        # the integrator alone in charge and produced a slow limit cycle).
+        vertical_input = (2.0 * K_VERTICAL_P * clamped_diff_alt
+                          + state.vert_i - K_VERT_D * climb_rate)
 
-        front_left_input = K_VERTICAL_THRUST + vertical_input - yaw_input + pitch_input - roll_input
-        front_right_input = K_VERTICAL_THRUST + vertical_input + yaw_input + pitch_input + roll_input
-        rear_left_input = K_VERTICAL_THRUST + vertical_input + yaw_input - pitch_input - roll_input
-        rear_right_input = K_VERTICAL_THRUST + vertical_input - yaw_input - pitch_input + roll_input
+        front_left_input = clamp(K_VERTICAL_THRUST + vertical_input - yaw_input + pitch_input - roll_input, 0.0, MOTOR_MAX_RAD_S)
+        front_right_input = clamp(K_VERTICAL_THRUST + vertical_input + yaw_input + pitch_input + roll_input, 0.0, MOTOR_MAX_RAD_S)
+        rear_left_input = clamp(K_VERTICAL_THRUST + vertical_input + yaw_input - pitch_input - roll_input, 0.0, MOTOR_MAX_RAD_S)
+        rear_right_input = clamp(K_VERTICAL_THRUST + vertical_input - yaw_input - pitch_input + roll_input, 0.0, MOTOR_MAX_RAD_S)
 
         # Idle motors when the bridge is purely passive (no takeoff requested).
         if mode == "idle" or mode == "landed":

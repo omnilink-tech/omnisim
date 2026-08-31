@@ -41,6 +41,13 @@ EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
 WorldInfo {
   basicTimeStep 8
   title "OmniLink — Mavic 2 Pro (perimeter survey)"
+  # The Mavic's base_link needs ITS OWN collider: without this the engine
+  # substitutes the robot-wrapper placeholder (sphere r=0.001), the drone
+  # balances on a 1 mm point, tips to |roll|=pi while still on the ground,
+  # and tunnels through the floor on a hard landing (public issue #10).
+  # A quadcopter has no wheels to starve, so the chassis-collider caveat
+  # that keeps this FALSE by default does not apply here.
+  newtonRobotColliders TRUE
   defaultDamping Damping {
     linear 0.5
     angular 0.5

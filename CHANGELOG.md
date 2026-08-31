@@ -29,6 +29,40 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.15] — 2026-08-31
+
+### Demos
+
+- **The Mavic demo flies** (#10). It could not leave the ground: the bridge's
+  rotor model kept the legacy PROTO's `k_thrust 0.00026` while flying the
+  1.0333 kg URDF airframe, so hover thrust at the controller's own setpoint was
+  4.88 N against 10.14 N of weight — exactly the reporter's arithmetic. Behind
+  that first wall sat six more defects, each measured and fixed in turn:
+  thrust was computed from the *commanded* motor speed, unclamped and unsigned
+  (a mixer spike produced ~1900 N and a 37 m "rocket"; now `k·u·|u|` clamped to
+  the URDF's 576 rad/s motor limit); the craft rested on two 7 mm-proud
+  propeller collision discs and flipped upside down while *idle* (prop links
+  no longer carry colliders; the world opts into `newtonRobotColliders` so the
+  belly box is the ground contact instead of a 1 mm placeholder sphere); the
+  prop anchors' thrust centroid sat 6.1 cm behind the CoM, a standing
+  ~0.6 N·m nose-up torque beyond the stabiliser's whole authority (the force
+  anchors are now centroid-balanced — an inertial-origin offset in the URDF
+  explodes the imported body at rest, so the correction lives on the force
+  side); the attitude loop had NO damping, because the `Gyro` device reads a
+  constant zero under Newton — rates now come from IMU differencing per sim
+  tick, with yaw-rate damping added; the vertical law gained rate damping, a
+  clamped integrator and a linear P (the classic cubed-P + 0.6 m offset parked
+  the craft 0.25 m high, then 0.34 m low); and the far-field
+  turn-then-dash navigation — which flew a 12 m hop 44 m the wrong way — is
+  replaced by one clamped error+velocity tilt law at every distance, active
+  through landing (descent used to drift 6 m sideways).
+  **Measured after** (CPU `mj_step`, `--mode=fast` and realtime): hover at
+  1.0 m settles at 1.019±0.003 m; climb to 1.5 m settles at 1.515±0.002 m —
+  steady-state altitude error **+0.015 m**, the number the beta task asks
+  for — max tilt 0.048 rad, drift bounded at 0.73 m; a 12 m `goto_waypoint`
+  arrives 0.40 m from target; `land` touches down upright 0.9 m from its mark.
+  The bridge's no-camera error now names `OMNISIM_URDF_USE_SENSORS=1`.
+
 ## [v8.1.14] — 2026-08-29
 
 ### Windows installer

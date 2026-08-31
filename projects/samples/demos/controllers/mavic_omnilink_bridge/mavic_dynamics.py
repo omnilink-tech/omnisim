@@ -41,12 +41,19 @@ from __future__ import annotations
 from typing import Tuple
 
 
-# Propeller anchor offsets in the base_link frame (must match the URDF
-# joint origins exactly).
-_PROP_FL: Tuple[float, float, float] = (0.054854, 0.151294, -0.003)
-_PROP_FR: Tuple[float, float, float] = (0.054854, -0.151294, -0.003)
-_PROP_RL: Tuple[float, float, float] = (-0.177179, 0.127453, -0.032)
-_PROP_RR: Tuple[float, float, float] = (-0.177179, -0.127453, -0.032)
+# FORCE anchor offsets in the base_link frame. The x values are the URDF joint
+# origins MINUS their centroid (-0.061163), NOT the raw origins: the URDF's CoM
+# sits at the link origin, and applying hover thrust at the raw anchors put a
+# constant ~0.6 N*m nose-up torque on the airframe -- more than the
+# stabiliser's whole authority, so every takeoff pitched over (public issue
+# #10). A real quad's CoM sits at the prop-rectangle centre by design; the
+# URDF cannot express that here (an inertial-origin offset explodes the
+# imported body at rest, measured in the same issue), so the correction lives
+# on the force side: same spans, centroid moved onto the CoM.
+_PROP_FL: Tuple[float, float, float] = (0.116017, 0.151294, -0.003)
+_PROP_FR: Tuple[float, float, float] = (0.116017, -0.151294, -0.003)
+_PROP_RL: Tuple[float, float, float] = (-0.116016, 0.127453, -0.032)
+_PROP_RR: Tuple[float, float, float] = (-0.116016, -0.127453, -0.032)
 
 
 class RotorDynamics:
@@ -59,10 +66,18 @@ class RotorDynamics:
     """
 
     # Lift coefficient per Webots Propeller convention: F = K * ω².
-    # PROTO had thrustConstants ±0.00026 — sign was paired with prop
-    # spin direction; here we always treat lift as a scalar magnitude
-    # and apply it along +z body axis.
-    k_thrust: float = 0.00026
+    # ⚠ NOT the PROTO's 0.00026 any more (public issue #10): that constant was
+    # paired with the legacy PROTO's airframe, and this bridge flies the URDF,
+    # whose authored masses sum to 1.0333 kg (10.14 N). At the controller's
+    # hover setpoint ω = K_VERTICAL_THRUST = 68.5 rad/s, 0.00026 gives
+    # 4 × 0.00026 × 68.5² = 4.88 N — 48% of the weight — so the demo sat on
+    # the ground for ever (measured: z pinned at ~0.12 m, tipped to |roll|=π,
+    # skidded 6.5 m). Calibrate k to the airframe instead of the other way
+    # round: k = m g / (4 ω_h²) = 1.0333 × 9.81 / (4 × 68.5²) = 0.00054, so
+    # ω = 68.5 hovers exactly and the verbatim mavic2pro.py control law keeps
+    # its operating point. Attitude torque per unit motor-delta scales with k
+    # (×2.08); the measured hover/climb after this change is in issue #10.
+    k_thrust: float = 0.00054
 
     # Reaction-torque coefficient. PROTO had torqueConstants 0.0000052
     # for all four props (yaw resolved by spin-direction signs at the
@@ -80,10 +95,16 @@ class RotorDynamics:
         front_right, rear_left, rear_right). Signs are preserved so the
         yaw-torque term inherits the bridge's CW/CCW convention.
         """
-        fl2 = fl * fl
-        fr2 = fr * fr
-        rl2 = rl * rl
-        rr2 = rr * rr
+        # SIGNED squared velocity, u·|u| -- the Webots Propeller convention
+        # (thrust = thrustConstants[0] · ω · |ω|). The old u² made a NEGATIVE
+        # mixer output lift UPWARD: the stabiliser's corrections saturate
+        # through zero under a large attitude error, so the side that should
+        # have pushed down pushed up, and every big correction amplified
+        # itself (public issue #10's ±2 rad oscillation).
+        fl2 = fl * abs(fl)
+        fr2 = fr * abs(fr)
+        rl2 = rl * abs(rl)
+        rr2 = rr * abs(rr)
 
         # Per-propeller lift. addForceWithOffset(force, offset, relative=True)
         # applies the force in body coordinates at the body-relative offset.
