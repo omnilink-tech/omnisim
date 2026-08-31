@@ -228,7 +228,7 @@ controller_server:
         mode: 0
 
 # ------------------------------------------------------------------------------
-# Planner Server - global path planning (Smac Hybrid-A*)
+# Planner Server - global path planning (SmacPlanner2D)
 # ------------------------------------------------------------------------------
 planner_server:
   ros__parameters:
@@ -251,39 +251,28 @@ planner_server:
       downsample_costmap: false
       downsampling_factor: 1
       cost_travel_multiplier: 2.0
-      # --- other SmacPlannerHybrid defaults ---
-      downsample_costmap: false
-      downsampling_factor: 1
-      analytic_expansion_max_length: 3.0
-      reverse_penalty: 2.0
-      change_penalty: 0.0
-      non_straight_penalty: 1.2
-      retrospective_penalty: 0.015
-      lookup_table_size: 20.0
-      cache_obstacle_heuristic: false
-      allow_primitive_interpolation: false
-      smooth_path: true
-      smoother:
-        max_iterations: 1000
-        w_smooth: 0.3
-        w_data: 0.2
-        tolerance: 1.0e-10
-        do_refinement: true
-        refinement_num: 2
 
     # --------------------------------------------------------------------------
-    # ALTERNATIVE (COMMENTED OUT): 2D Smac planner.
-    # The Husky is diff-drive and CAN turn in place, so it does not truly need a
-    # curvature-constrained (Hybrid) plan. Switch GridBased to this if Hybrid's
-    # minimum_turning_radius causes planning failures in tight maps.
+    # ALTERNATIVE (COMMENTED OUT): SmacPlannerHybrid (curvature-constrained /
+    # car-like). Use only if you need Dubin/Reeds-Shepp paths; on this diff-drive
+    # base it produced reverse maneuvers that never reached the goal. To use it,
+    # replace the GridBased block above with this one:
     # --------------------------------------------------------------------------
     # GridBased:
-    #   plugin: "nav2_smac_planner::SmacPlanner2D"
+    #   plugin: "nav2_smac_planner::SmacPlannerHybrid"
     #   tolerance: 0.5
     #   allow_unknown: true
     #   max_iterations: 1000000
+    #   max_on_approach_iterations: 1000
     #   max_planning_time: 5.0
-    #   use_astar: true
+    #   motion_model_for_search: "DUBIN"
+    #   cost_travel_multiplier: 2.0
+    #   angle_quantization_bins: 72
+    #   analytic_expansion_ratio: 3.5
+    #   minimum_turning_radius: 0.40
+    #   reverse_penalty: 2.0
+    #   non_straight_penalty: 1.2
+    #   smooth_path: true
 
 # ------------------------------------------------------------------------------
 # Local Costmap - rolling window around the robot (obstacle avoidance)

@@ -11,8 +11,7 @@ If you don't run collision_monitor (or it won't hold ACTIVE under load), the fin
 `/cmd_vel` is never published and the robot won't move on nav goals. Run this node to
 forward the smoothed command straight to `/cmd_vel`:
 
-    ros2 run rclpy ...   # or simply:
-    python3 cmd_vel_relay.py
+    ros2 run omnisim_ros2_nav2 cmd_vel_relay
 
 OmniSim publishes/consumes plain geometry_msgs/Twist (enable_stamped_cmd_vel: false),
 so this relays Twist.

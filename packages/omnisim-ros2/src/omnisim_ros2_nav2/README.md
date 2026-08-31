@@ -2,13 +2,20 @@
 
 Bring up **Nav2** (ROS 2 **Jazzy**) driving the OmniSim **Husky** — the first Nav2
 stack ever run against OmniSim. Everything here sits **on top of** the existing
-Tier‑2 ROS 2 sidecar ([`../src/omnisim_ros2`](../src/omnisim_ros2)); it adds **no**
-new OmniSim surface and edits **no** existing file.
+Tier‑2 ROS 2 sidecar ([`../omnisim_ros2`](../omnisim_ros2)); it adds **no**
+new OmniSim surface. This is a standalone colcon package **`omnisim_ros2_nav2`** (a
+sibling of `omnisim_ros2` and `omnisim_ros2_control`).
 
 - **Platform:** Windows 10/11 (engine) + WSL2 **Ubuntu 24.04** (ROS 2 Jazzy)
 - **Robot:** Clearpath Husky, diff‑drive, 2D LiDAR (`/scan`) — no cameras
 - **Sensor fusion:** none. `/odom` from the bridge is simulator ground truth
   (drift‑free), and the IMU's gyro/accel are dead, so there is no EKF.
+
+> **⭐ The path that reached all 6 milestones (incl. M6 autonomous nav) is the
+> all‑in‑WSL Linux one** — OmniSim built and run *inside* the same Ubuntu 24.04 as ROS 2,
+> everything on `localhost` (no tunnels). Full recipe + Linux findings: [`REPORT.md`](REPORT.md) §4.
+> §§0–6 below document the Windows‑engine + WSL‑ROS split (reached M1–M5); §7 has the
+> verified results and the Linux fixes.
 
 > **Why no "cross‑host DDS"?** The Tier‑2 sidecar is the ROS publisher and it talks
 > to the Windows engine over **HTTP**. Run **all** ROS 2 nodes inside WSL and DDS
@@ -23,7 +30,7 @@ Windows-native (prebuilt release)              WSL Ubuntu 24.04 (ROS 2 Jazzy)
 │ husky mobile bridge :8765 │   dials INTO    │        /odom /scan /imu/data       │
 │ world: chat/omnilink_husky│   WSL)          │   sub: /cmd_vel  (plain Twist)     │
 └───────────────────────────┘                 │ slam_toolbox → map→odom            │
-                                              │ Nav2 (MPPI + SmacPlannerHybrid)    │
+                                              │ Nav2 (MPPI + SmacPlanner2D)        │
                                               └────────────────────────────────────┘
 ```
 
@@ -32,18 +39,25 @@ Windows-native (prebuilt release)              WSL Ubuntu 24.04 (ROS 2 Jazzy)
 ## Contents
 
 ```
-nav2/
+src/omnisim_ros2_nav2/                     ament_python colcon package
+├── package.xml  setup.py  setup.cfg  resource/omnisim_ros2_nav2
 ├── README.md                              ← this runbook
+├── REPORT.md                              beta-feedback for OmniSim devs (§4 = the winning Linux path)
 ├── params/
 │   ├── omnisim_nav2_params.yaml           Nav2 stack (amcl, bt, controller/MPPI,
-│   │                                      planner/Smac, costmaps, smoother, behaviors)
+│   │                                      planner/SmacPlanner2D, costmaps, smoother, behaviors)
 │   └── mapper_params_online_async.yaml    slam_toolbox online-async mapping
 ├── config/
 │   └── fastdds_profile.xml                cross-host DDS fallback (normally unused)
-└── launch/
-    ├── omnisim_slam.launch.py             slam_toolbox + our params, use_sim_time
-    └── omnisim_nav2_bringup.launch.py     nav2 navigation (+ optional AMCL) + our params
+├── launch/
+│   ├── omnisim_slam.launch.py             slam_toolbox + our params, use_sim_time
+│   ├── omnisim_nav2_bringup.launch.py     full nav2 navigation (+ optional AMCL) + our params
+│   └── omnisim_nav2_lean.launch.py        LEAN 5-server launch — the one that closed M6
+└── omnisim_ros2_nav2/
+    └── cmd_vel_relay.py                   `ros2 run omnisim_ros2_nav2 cmd_vel_relay`
 ```
+After `colcon build` (below), launch by package name:
+`ros2 launch omnisim_ros2_nav2 <name>.launch.py`.
 
 Everything is reconciled to OmniSim's **measured** ROS 2 surface — see
 [§ Reconciliation](#reconciliation-guide--omnisim-reality) for the specifics.
@@ -81,19 +95,20 @@ sudo apt update && sudo apt install -y \
 > ```
 > Optional DDS fallback: `sudo apt install -y ros-jazzy-rmw-cyclonedds-cpp`.
 
-### Build the Tier‑2 sidecar (once, inside WSL)
-Build on the **native** WSL filesystem (avoid `--symlink-install` on `/mnt/*`):
+### Build the ROS 2 packages (once, inside WSL)
+Build on the **native** WSL filesystem (the sidecar `omnisim_ros2` + this `omnisim_ros2_nav2`;
+the C++ Tier‑3 `omnisim_ros2_control` is not needed for Nav2):
 ```bash
-cp -r /mnt/e/Proyectos/OmniSim/omnisim/packages/omnisim-ros2 ~/omnisim-ros2
-cd ~/omnisim-ros2
+mkdir -p ~/omni_ws/src
+cp -r /mnt/e/Proyectos/OmniSim/omnisim/packages/omnisim-ros2/src/omnisim_ros2       ~/omni_ws/src/
+cp -r /mnt/e/Proyectos/OmniSim/omnisim/packages/omnisim-ros2/src/omnisim_ros2_nav2  ~/omni_ws/src/
+cd ~/omni_ws
 source /opt/ros/jazzy/setup.bash
-# Tier 2 only — we do NOT need the C++ ros2_control package (Tier 3) for Nav2:
-colcon build --packages-select omnisim_ros2
+colcon build --packages-select omnisim_ros2 omnisim_ros2_nav2
 source install/setup.bash
 ```
-The `nav2/` folder (this directory) does **not** need building — its launch files run
-by absolute path. Reference them from the checkout, e.g.
-`/mnt/e/Proyectos/OmniSim/omnisim/packages/omnisim-ros2/nav2/launch/…`.
+Now `ros2 launch omnisim_ros2_nav2 <name>.launch.py` and
+`ros2 run omnisim_ros2_nav2 cmd_vel_relay` are available.
 
 ---
 
@@ -140,7 +155,7 @@ is the bridge.
 
 ## 2 · Phase A — Husky baseline  (Milestone M1)
 
-Every ROS terminal below first: `source /opt/ros/jazzy/setup.bash && source ~/omnisim-ros2/install/setup.bash`.
+Every ROS terminal below first: `source /opt/ros/jazzy/setup.bash && source ~/omni_ws/install/setup.bash`.
 
 ```bash
 # Tier-2 sidecar → /clock /tf /tf_static /odom /scan /imu/data ; subscribes /cmd_vel
@@ -167,8 +182,7 @@ If `/scan` is missing, the harness was started without `OMNISIM_URDF_USE_SENSORS
 ## 3 · Phase B — SLAM mapping  (Milestone M2)
 
 ```bash
-NAV2=/mnt/e/Proyectos/OmniSim/omnisim/packages/omnisim-ros2/nav2
-ros2 launch $NAV2/launch/omnisim_slam.launch.py use_sim_time:=true
+ros2 launch omnisim_ros2_nav2 omnisim_slam.launch.py use_sim_time:=true
 ```
 Drive the Husky around with teleop to build the map, then save it:
 ```bash
@@ -186,13 +200,13 @@ saving/AMCL (SLAM‑first flow).
 ### Flow A — SLAM‑first (recommended, fewest moving parts)
 Keep `omnisim_slam.launch.py` running (it owns `map→odom`), then:
 ```bash
-ros2 launch $NAV2/launch/omnisim_nav2_bringup.launch.py \
+ros2 launch omnisim_ros2_nav2 omnisim_nav2_bringup.launch.py \
   use_sim_time:=true localization:=false
 ```
 
 ### Flow B — saved map + AMCL (no SLAM)
 ```bash
-ros2 launch $NAV2/launch/omnisim_nav2_bringup.launch.py \
+ros2 launch omnisim_ros2_nav2 omnisim_nav2_bringup.launch.py \
   use_sim_time:=true localization:=true map:=$HOME/omnisim_husky_map.yaml
 ```
 
@@ -260,7 +274,7 @@ OmniSim.**
   `/odom`, `/clock`, `/imu/data`, `/tf` + `/tf_static`, `/husky/joint_states`.
 - TF chain complete and correct: `odom→base_link` tracks motion,
   `base_link→base_laser` = `[0.201, 0, 0.505]`.
-**Milestone results (5 of 6 reached):**
+**Milestone results (all 6 reached — M6 on the all‑in‑WSL Linux path):**
 
 | # | Result | Evidence |
 |---|--------|----------|
@@ -340,10 +354,10 @@ ros2 launch omnisim_ros2 omnisim_bringup.launch.py \
 | `cmd_vel` maybe stamped | plain `geometry_msgs/Twist` | `enable_stamped_cmd_vel: false` |
 | real time | harness ~**13× realtime**, TF ~5 Hz | `use_sim_time: true` + `transform_tolerance` ≈ 1.0 |
 | full IMU for EKF | orientation only; gyro/accel dead | no EKF; use `/odom` (ground‑truth) |
-| `/scan` normal | single layer auto‑picked from a 4‑layer LiDAR | sidecar `lidar_layer:=-1` (default) |
+| `/scan` normal | 4‑layer LiDAR; `-1` auto‑picks layer 3 = the FLOOR | use `lidar_layer:=0` for Nav2 (this world's walls are 0.1 m tall so the horizontal layer is open; layer 3 would fill the costmap with phantom floor obstacles) |
 | AMCL `differential` | Jazzy plugin form | `nav2_amcl::DifferentialMotionModel` |
 
-**Planner note:** the config ships **SmacPlannerHybrid** (per the guide). The Husky is
-diff‑drive and can turn in place, so if Hybrid's `minimum_turning_radius` causes
-planning failures in tight maps, switch `GridBased` to the commented‑out
-**SmacPlanner2D** block in `params/omnisim_nav2_params.yaml`.
+**Planner note:** the config ships **SmacPlanner2D**. The diff‑drive Husky turns in place, and
+SmacPlannerHybrid (Dubin / car‑like, `minimum_turning_radius`) made it perform reverse
+maneuvers that never reached the goal. The Hybrid block is kept commented in
+`params/omnisim_nav2_params.yaml` if you need curvature‑constrained planning.

@@ -1,4 +1,4 @@
-"""Lean Nav2 navigation launch for the OmniSim Husky (M6-oriented).
+"""Lean Nav2 navigation launch for the OmniSim Husky (the launch that closed M6).
 
 Jazzy's stock `nav2_bringup/navigation_launch.py` also starts `collision_monitor`,
 `docking_server`, `route_server` and `waypoint_follower` — each ABORTS the whole
@@ -19,21 +19,20 @@ simulator ground truth, so a static identity map→odom is enough:
 
 Then:
 
-    ros2 launch /abs/path/to/omnisim_nav2_lean.launch.py use_sim_time:=true
+    ros2 launch omnisim_ros2_nav2 omnisim_nav2_lean.launch.py use_sim_time:=true
     ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
         "{pose: {header: {frame_id: map}, pose: {position: {x: 1.5}, orientation: {w: 1.0}}}}"
 """
-import os
-
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    default_params = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "params", "omnisim_nav2_params.yaml")
+    default_params = PathJoinSubstitution(
+        [FindPackageShare("omnisim_ros2_nav2"), "params", "omnisim_nav2_params.yaml"]
     )
 
     use_sim_time = LaunchConfiguration("use_sim_time")

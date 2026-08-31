@@ -1,11 +1,13 @@
 # OmniSim × Nav2 (Jazzy) — Bring-up Report & Beta Feedback
 
-**First Nav2 stack ever brought up against OmniSim.** Milestones **M1–M5 reached**,
-M6 (autonomous execution) in progress. This document is written for the **OmniSim
-developers**: every measured value, every engine/harness/bridge/sidecar behaviour, and
-every fix needed to get here. Reproduction commands are in [`README.md`](README.md).
+**First Nav2 stack ever brought up against OmniSim — all milestones M1–M6 reached.**
+M1–M5 came up on the Windows-engine + WSL-ROS split; **M6 (autonomous execution) closed
+by running OmniSim *and* ROS 2 together inside WSL Ubuntu 24.04 (Linux) — see §4.** This
+document is written for the **OmniSim developers**: every measured value, every
+engine/harness/bridge/sidecar behaviour, and every fix needed to get here. Reproduction
+commands are in [`README.md`](README.md).
 
-- **Date:** 2026-08-29 / 30
+- **Date:** 2026-08-29 → 31 (31st: restructured into the colcon package + re-verified end-to-end, §5.1)
 - **Host:** Windows 10 Pro 19045 + WSL2 **Ubuntu 24.04** (noble)
 - **Engine:** OmniSim **v8.1.13** prebuilt (`omnisim-v8.1.13_setup.exe`, Inno Setup, ~590 MB), installed to `E:\Proyectos\OmniSim\_engine`
 - **ROS:** ROS 2 **Jazzy**; sidecar `omnisim_ros2` (Tier 2) colcon-built in WSL
@@ -15,7 +17,7 @@ every fix needed to get here. Reproduction commands are in [`README.md`](README.
 Windows-native (prebuilt engine)         WSL Ubuntu 24.04 (ROS 2 Jazzy)
  harness :6789  ── reverse tunnel ──►  omnisim_ros2 sidecar → /scan /odom /clock /tf /imu
  husky bridge :8765                    slam_toolbox → map→odom
- Newton physics                        Nav2 (MPPI + SmacPlannerHybrid + costmaps)
+ Newton physics                        Nav2 (MPPI + SmacPlanner2D + costmaps)
    (WSL dials 127.0.0.1:16789/18765 → wsl_harness_link → 127.0.0.1:6789/8765)
 ```
 
@@ -30,7 +32,7 @@ Windows-native (prebuilt engine)         WSL Ubuntu 24.04 (ROS 2 Jazzy)
 | **M3** | Localization (`map→odom`) | ✅ PASS | slam_toolbox broadcast `map→odom` = `[-0.520, 0, 0]` (needs `tf2_echo ... -p use_sim_time:=true`) |
 | **M4** | Costmaps populate | ✅ PASS | local costmap **60×60 @ 0.05** (3 m rolling), global **207×242 @ 0.05**, obstacle layer subscribed to `scan` |
 | **M5** | Nav2 plans a path | ✅ PASS | `ComputePathToPose` (GridBased/SmacPlannerHybrid) → **`SUCCEEDED`, `error_code: 0`**, path returned |
-| **M6** | Nav2 executes | ✅ **PASS (Linux)** | On the all-in-WSL Linux build: `NavigateToPose` drove the Husky **(0,0) → (1.30, 0)**, MPPI cmd_vx **+0.26**, `SUCCEEDED`, reached in ~12 s — see §5 |
+| **M6** | Nav2 executes | ✅ **PASS (Linux)** | On the all-in-WSL Linux build: `NavigateToPose` drove the Husky **(0,0) → (1.30, 0)**, MPPI cmd_vx **+0.26**, `SUCCEEDED`, reached in ~12 s — see §4 |
 
 **TF chain (verified correct):** `map→odom` (SLAM) → `odom→base_link` (odom_node, tracks
 motion, e.g. `[1.579,0,0]`) → `base_link→base_laser` (static, `[0.201,0,0.505]`).
@@ -131,7 +133,7 @@ motion, e.g. `[1.579,0,0]`) → `base_link→base_laser` (static, `[0.201,0,0.50
     lifecycle bringup aborts if it has no params → added a `collision_monitor:` section.
 18. **cmd_vel chain (Jazzy):** controller → `cmd_vel_nav` (launch remap) → velocity_smoother
     → `cmd_vel_smoothed` → collision_monitor → `cmd_vel` (what the OmniSim command_node reads).
-    When collision_monitor isn't active, `tools/cmd_vel_relay.py` bridges
+    When collision_monitor isn't active, `ros2 run omnisim_ros2_nav2 cmd_vel_relay` bridges
     `/cmd_vel_smoothed → /cmd_vel` to close it.
 19. **Jazzy's `navigation_launch.py` bundles OPTIONAL nodes that abort the WHOLE lifecycle
     bringup if unconfigured.** Beyond the core servers it also starts `collision_monitor`
@@ -141,9 +143,10 @@ motion, e.g. `[1.579,0,0]`) → `base_link→base_laser` (static, `[0.201,0,0.50
     a **lean custom launch** that instantiates only controller/planner/bt/behavior/
     velocity_smoother + costmaps + a lifecycle_manager over just those is the robust path.
 
-### 2.7 Why M6 (autonomous execution) didn't close on this host
-Reached **transient** activation (controller MPPI + planner Smac + costmaps + a plan —
-M4/M5), but never a **stable** running stack that executes a goal. Three compounding causes,
+### 2.7 Why M6 stalled on the Windows-engine + WSL-ROS split (Linux fixed it — §4)
+On the split setup M6 never closed: reached **transient** activation (controller MPPI +
+planner Smac + costmaps + a plan — M4/M5), but never a **stable** running stack that
+executes a goal. Three compounding causes,
 all setup-level (not Nav2-config): **(a)** the heavyweight bundled launch (finding 19) means
 the stock `lifecycle_manager` aborts, so activation must be driven manually; **(b)** under
 resource contention the manual `ros2 lifecycle set` / discovery calls intermittently return
@@ -174,7 +177,7 @@ config and TF are already correct — this is an infrastructure/scale gap, not a
 
 ---
 
-## 5 · The winning path — everything inside WSL Ubuntu 24.04 (Linux), M6 reached
+## 4 · The winning path — everything inside WSL Ubuntu 24.04 (Linux), M6 reached
 
 Running OmniSim **and** ROS 2 in the *same* Ubuntu 24.04 removed ~70% of the pain
 (no tunnels, no `wslrelay`, no firewall, no portproxy, no ephemeral-port exhaustion,
@@ -222,8 +225,45 @@ though warp used `cuda:0` when present). Smoke test passed (Newton verdict
 
 ---
 
-## 4 · What ships in this deliverable
-`packages/omnisim-ros2/nav2/` (new folder, **zero edits to existing repo files**):
-`README.md` (runbook), `params/omnisim_nav2_params.yaml` (reconciled + M5 fixes),
-`params/mapper_params_online_async.yaml`, `config/fastdds_profile.xml`,
-`launch/omnisim_slam.launch.py`, `launch/omnisim_nav2_bringup.launch.py`, and this `REPORT.md`.
+## 5 · What ships in this deliverable
+`packages/omnisim-ros2/src/omnisim_ros2_nav2/` — a new **ament_python colcon package**
+(sibling of `omnisim_ros2` / `omnisim_ros2_control`), **zero edits to existing repo files**.
+Build: `colcon build --packages-select omnisim_ros2 omnisim_ros2_nav2`. Contents:
+- `package.xml` / `setup.py` / `setup.cfg` / `resource/omnisim_ros2_nav2` — package metadata
+- `README.md` — runbook (Windows-split + all-in-WSL Linux paths)
+- `REPORT.md` — this beta-feedback report
+- `params/omnisim_nav2_params.yaml` — reconciled Nav2 stack + all M1–M6 fixes
+- `params/mapper_params_online_async.yaml` — slam_toolbox online-async
+- `config/fastdds_profile.xml` — cross-host DDS fallback
+- `launch/omnisim_slam.launch.py`, `launch/omnisim_nav2_bringup.launch.py` — SLAM + full Nav2
+- `launch/omnisim_nav2_lean.launch.py` — **the lean 5-server launch that closed M6**
+- `omnisim_ros2_nav2/cmd_vel_relay.py` — `ros2 run omnisim_ros2_nav2 cmd_vel_relay` (`/cmd_vel_smoothed → /cmd_vel`)
+
+Machine-specific re-launch scripts (harness + ROS + goal + teardown) and a step-by-step
+`STARTUP.md` are saved outside the repo at `E:\Proyectos\OmniSim\_bringup\`.
+
+### 5.1 · Package re-verification (2026-08-31)
+
+After moving the deliverable from a plain folder to the ament_python colcon package
+above, the whole stack was rebuilt and re-run end-to-end to confirm nothing broke:
+
+- **Build:** `colcon build --packages-select omnisim_ros2_nav2` → exit 0; `ros2 pkg prefix
+  omnisim_ros2_nav2` resolves, `ros2 pkg executables omnisim_ros2_nav2` lists `cmd_vel_relay`.
+- **Launch by package name:** `ros2 launch omnisim_ros2_nav2 omnisim_nav2_lean.launch.py`
+  `--show-args` shows `params_file` defaulting to
+  `FindPackageShare('omnisim_ros2_nav2')/params/omnisim_nav2_params.yaml` — installed
+  share resolution works, no absolute paths.
+- **End-to-end:** harness + Husky world + sidecar + static `map→odom` + the package lean
+  launch → **19 nodes, all 5 core servers `active [3]`**, costmaps up, `/scan` (`base_laser`)
+  publishing. `NavigateToPose (1.5, 0)` drove the Husky **(0,0) → (1.257, 0)** and the action
+  returned **`SUCCEEDED`, `error_code: 0`** in ~10 s. Same result as the pre-package M6 — the
+  restructure changed packaging only.
+
+**Two bring-up-script robustness fixes made during this re-verification** (in
+`_bringup/2_start_ros.sh`, not the package):
+- Removed `set -u` — ROS's `setup.bash` references unbound vars (`AMENT_TRACE_SETUP_FILES`)
+  and aborts under `set -u` when the script is run non-interactively (`wsl -- bash ...`).
+- `nohup … &` → **`setsid … </dev/null &`** for each launch. A `nohup`'d launch started
+  moments before a non-interactive `wsl -- bash` session exits is torn down with the session
+  (observed: the sidecar survived, the later nav2 launch did not, leaving an empty log);
+  `setsid` detaches each into its own session so all three persist.
