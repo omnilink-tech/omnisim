@@ -29,6 +29,29 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.17] — 2026-08-31
+
+### ROS 2
+
+- **Nav2 has been brought up against OmniSim** — the first time, and by an
+  outside contributor (@luisxavierxd, #12). A full Nav2 stack (ROS 2 Jazzy)
+  drove the Husky autonomously to a `NavigateToPose` goal, shipped as the new
+  [`packages/omnisim-ros2/src/omnisim_ros2_nav2/`](packages/omnisim-ros2/src/omnisim_ros2_nav2/)
+  colcon package: params reconciled to OmniSim's measured ROS surface, a lean
+  five-server launch (Jazzy's stock bringup aborts on unconfigured optional
+  nodes), SLAM launch, runbook, and a 19-finding beta report. Scope it exactly
+  as its own README does: **planning + goal execution on the all-in-WSL path**,
+  not a localization or obstacle-avoidance benchmark. The engine stays
+  ROS-free; the package layers on the Tier-2 sidecar and adds no OmniSim
+  surface.
+- **The harness can run in real time**: `--engine-mode {fast,realtime}` /
+  `OMNISIM_HARNESS_ENGINE_MODE` (#13, filed from that bring-up — the harness
+  pinned a literal `--mode=fast`, and at ~13× real time the `/clock` cadence
+  breaks `slam_toolbox`'s scan↔TF alignment). Flag beats env var; unknown
+  values warn and fall back to fast; every supervised `/world/load` response
+  now reports `engine_mode`. Measured: realtime paces at 1.00× wall clock,
+  the default at 12.51×.
+
 ## [v8.1.16] — 2026-08-31
 
 ### Windows installer

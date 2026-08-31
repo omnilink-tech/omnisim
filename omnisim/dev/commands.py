@@ -192,7 +192,7 @@ def run_headless(
 
 
 def harness(host: str = "127.0.0.1", port: int = 6789, supervisor_port: int | None = None,
-            auto_port: bool = False) -> int:
+            auto_port: bool = False, engine_mode: str | None = None) -> int:
     """Start the agent-facing validation harness (foreground).
 
     ``auto_port`` forwards ``--auto-port``: if the requested (port, port+1) pair
@@ -210,4 +210,6 @@ def harness(host: str = "127.0.0.1", port: int = 6789, supervisor_port: int | No
         cmd.append("--auto-port")
     if supervisor_port is not None:
         cmd.extend(["--supervisor-port", str(supervisor_port)])
+    if engine_mode:
+        cmd.extend(["--engine-mode", engine_mode])
     return run(cmd, env=omnisim_env())

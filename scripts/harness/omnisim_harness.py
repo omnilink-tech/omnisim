@@ -236,6 +236,34 @@ if str(REPO_ROOT) not in sys.path:
 from omnisim.paths import linux_runtime_env  # noqa: E402
 
 DEFAULT_HOST = "127.0.0.1"
+
+# Engine run mode (public issue #13). The harness pinned a literal --mode=fast
+# (~13x real time on machine 9722d23d12a3) with no way to ask for real time --
+# and sensor-driven ROS 2 stacks (Nav2 / slam_toolbox) need wall-clock-paced
+# /clock and /scan: at 13x, the clock cadence the HTTP surface sustains lands
+# ~8 s of sim time apart and slam_toolbox's scan<->TF alignment breaks (the
+# first Nav2 bring-up patched this file by hand; measured in that campaign:
+# fast ~13x, realtime ~0.6x). Resolution order: --engine-mode flag beats
+# OMNISIM_HARNESS_ENGINE_MODE, which beats the "fast" default. An unknown
+# value warns and falls back to fast rather than refusing to serve.
+ENGINE_MODES = ("fast", "realtime")
+
+
+def resolve_engine_mode(flag_value: str | None, env_value: str | None) -> tuple[str, str | None]:
+    """(mode, warning-or-None) from the CLI flag and the env var."""
+    for source, value in (("--engine-mode", flag_value),
+                          ("OMNISIM_HARNESS_ENGINE_MODE", env_value)):
+        if value is None or value == "":
+            continue
+        v = value.strip().lower()
+        if v in ENGINE_MODES:
+            return v, None
+        return "fast", (f"{source}={value!r} is not one of {ENGINE_MODES}; "
+                        f"running --mode=fast")
+    return "fast", None
+
+
+ENGINE_MODE = "fast"  # set once in main(); read where the engine command line is built
 DEFAULT_PORT = 6789
 # Supervised loads return as soon as the supervisor binds, so a generous
 # default only costs time when something is genuinely slow or broken. A
@@ -3024,6 +3052,7 @@ class HarnessState:
             # it costs, IN the response -- an agent that never read the docstring
             # otherwise learns about the full-mode tax only by timing out.
             if isinstance(result, dict) and with_supervisor and "error" not in result:
+                result["engine_mode"] = ENGINE_MODE
                 result["tracking"] = {
                     "light": bool(light),
                     "mode": "light" if light else "full",
@@ -3282,7 +3311,7 @@ class HarnessState:
                 str(self.binary),
                 str(target_world),
                 "--batch",
-                "--mode=fast",
+                "--mode=" + ENGINE_MODE,
                 "--minimize",
                 "--stdout",
                 "--stderr",
@@ -5703,6 +5732,18 @@ def main() -> int:
         ),
     )
     p.add_argument(
+        "--engine-mode",
+        choices=list(ENGINE_MODES),
+        default=None,
+        help=(
+            "Engine run mode (default: fast, ~13x real time -- also settable via "
+            "OMNISIM_HARNESS_ENGINE_MODE). Pass 'realtime' for wall-clock-paced "
+            "simulation: sensor-driven ROS 2 stacks (Nav2, slam_toolbox) need it, "
+            "because at 13x the /clock cadence this HTTP surface sustains lands "
+            "seconds of sim time apart and scan<->TF alignment breaks (issue #13)."
+        ),
+    )
+    p.add_argument(
         "--auto-port",
         action="store_true",
         help=(
@@ -5713,6 +5754,13 @@ def main() -> int:
         ),
     )
     args = p.parse_args()
+    global ENGINE_MODE
+    ENGINE_MODE, mode_warning = resolve_engine_mode(
+        args.engine_mode, os.environ.get("OMNISIM_HARNESS_ENGINE_MODE"))
+    if mode_warning:
+        print(f"[harness] WARNING: {mode_warning}", file=sys.stderr)
+    if ENGINE_MODE != "fast":
+        print(f"[harness] engine mode: {ENGINE_MODE}", file=sys.stderr)
     supervisor_port = args.supervisor_port if args.supervisor_port is not None else args.port + 1
     return serve(args.host, args.port, supervisor_port, auto_port=args.auto_port)
 

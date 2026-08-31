@@ -292,7 +292,8 @@ def _validate_worlds(args: argparse.Namespace) -> int:
 
 def _harness(args: argparse.Namespace) -> int:
     return dev.harness(host=args.host, port=args.port, supervisor_port=args.supervisor_port,
-                       auto_port=getattr(args, "auto_port", False))
+                       auto_port=getattr(args, "auto_port", False),
+                       engine_mode=getattr(args, "engine_mode", None))
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -456,6 +457,9 @@ def _build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("harness", help="Start the agent-facing validation harness (HTTP, foreground).")
     p.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1).")
     p.add_argument("--port", type=int, default=6789, help="Bind port (default: 6789).")
+    p.add_argument("--engine-mode", choices=["fast", "realtime"], default=None,
+                   help="Engine run mode (default fast, ~13x real time; 'realtime' for "
+                        "wall-clock pacing -- what sensor-driven ROS 2 stacks need).")
     p.add_argument(
         "--supervisor-port",
         type=int,
