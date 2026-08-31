@@ -212,14 +212,10 @@ resources/web/streaming_viewer/style.css
 resources/web/templates/
 resources/web/templates/w3d_playback.html
 resources/web/templates/w3d_playback.css
-resources/web/wwi/
-resources/web/wwi/protoVisualizer/
-resources/web/wwi/protoVisualizer/*.js
-resources/web/wwi/protoVisualizer/templating/
-resources/web/wwi/protoVisualizer/templating/jsTemplate.js
-resources/web/wwi/protoVisualizer/templating/modules/
-resources/web/wwi/protoVisualizer/templating/modules/webots/
-resources/web/wwi/protoVisualizer/templating/modules/webots/*.js
+# Robot windows load the shared WWI runtime from this tree at run time.
+# Shipping only protoVisualizer made installed robot windows fail with 404s
+# for RobotWindow.js and its dependencies (v8.1.14).
+resources/web/wwi [recurse]
 # glad is statically linked into omnisim-bin (libglad.a, src/omnisim/Makefile),
 # so its MIT notice has to travel with a BINARY distribution the same way
 # resources/wren/LICENSE does. src/glad/ is otherwise not shipped, which is
@@ -258,6 +254,11 @@ projects/guided_tour.txt
 
 omnisim [recurse]
 scripts/dev [recurse]
+# `omnisim verify-install` launches scripts/dev/omniworld.py for its HARD
+# determinism canary. That launcher imports omniworld.cli from src/python;
+# shipping the launcher without this package makes every clean install fail
+# its first-run gate before a demo can start (v8.1.14).
+src/python/omniworld [recurse]
 scripts/harness [recurse]
 scripts/capture [recurse]
 scripts/cinema [recurse]

@@ -140,6 +140,8 @@ jobs:
           LICENSE
           launch.bat
           projects\guided_tour.txt
+          src\python\omniworld\cli.py
+          resources\web\wwi\RobotWindow.js
           scripts\harness\omnisim_harness.py
           packages\omnisim-mcp\src\omnisim_mcp\server.py
           projects\samples\demos\worlds\flagship\omniarm6_real_pick_place.omniworld

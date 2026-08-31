@@ -61,6 +61,10 @@ DOCUMENTED_ENTRY_POINTS = {
     "launch.bat": "the Windows launcher AGENTS.md documents",
     "projects/guided_tour.txt": "the first-run welcome menu is empty without it",
     "scripts/dev": "run-headless / omnisim_dev live here",
+    "src/python/omniworld": (
+        "scripts/dev/omniworld.py imports omniworld.cli during the install-conformance canary"
+    ),
+    "resources/web/wwi": "robot windows require RobotWindow.js and the shared WWI runtime",
     "scripts/harness": "the agent-facing harness; the MCP server proxies it",
     "packages/omnisim-mcp": "README tells a package user to connect it",
     "plugins/omnisim": "README links the Codex plugin",

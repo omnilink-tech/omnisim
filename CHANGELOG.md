@@ -29,6 +29,24 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.1.16] — 2026-08-31
+
+### Windows installer
+
+- **Two more payload gaps, found by the same beta tester who caught #9** (#11).
+  The install-conformance gate's `omniworld_determinism` canary runs
+  `scripts\dev\omniworld.py` — shipped — whose first import is the
+  `omniworld` package from `src\python\omniworld` — never shipped — so every
+  clean install failed its first-run gate with a `ModuleNotFoundError` before a
+  demo could start. And installed robot windows 404'd on `RobotWindow.js`:
+  only `resources\web\wwi\protoVisualizer` was listed, not the shared WWI
+  runtime the windows load at run time. Both directories now ship
+  (`[recurse]`), both are pinned in `tests/packaging/test_onboarding_payload.py`,
+  and the release build's payload assertion greps the generated installer
+  script for `omniworld\cli.py` and `RobotWindow.js` — the same check class
+  that caught #8 and #9 — so this genre of gap now fails the build instead of
+  reaching an installer. Engine and demos are unchanged from v8.1.15.
+
 ## [v8.1.15] — 2026-08-31
 
 ### Demos
