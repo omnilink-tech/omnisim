@@ -1127,11 +1127,18 @@ void OmGranularGroup::collectColliders(std::vector<float> &out,
     bs->computeSphereInGlobalCoordinates(center, radius);
     if (radius <= 0.0 || radius > maxAcceptableRadius)
       continue;
-    // Skip colliders without a dynamic ODE body. Use body() not
-    // bodyMerger() because the latter asserts on static solids that have
-    // neither a kinematic flag nor a solid-merger (the RectangleArena
-    // walls hit this — body() just returns NULL for them).
-    if (solid->body() == NULL)
+    // Skip colliders without a dynamic body. The ODE-era gate was
+    // `solid->body() == NULL`, which is provably always NULL since the ODE
+    // deletion (OmSolidMerger::mBody is only ever assigned NULL), so EVERY
+    // collider was skipped and granular beds collided with nothing. The
+    // Newton-era equivalent of "has a dynamic body of its own": the Solid is
+    // dynamic (statics like the RectangleArena walls register Newton bodies
+    // too, but are deliberately excluded here, exactly as ODE's body()
+    // returned NULL for them) AND it is registered with Newton — checked
+    // merger-aware via effectiveNewtonBodyIndex(), the same registration test
+    // OmBasicJoint uses when wiring endpoints (a fold non-leader resolves to
+    // its leader's body, which is where the reverse force belongs).
+    if (!solid->isDynamic() || solid->effectiveNewtonBodyIndex() < 0)
       continue;
     // Skip the OmRobot root: its bounding sphere encompasses the WHOLE
     // robot (chassis + every wheel), giving a "force field" effect that

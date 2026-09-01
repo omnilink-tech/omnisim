@@ -2,16 +2,17 @@
 
 This guide explains how to keep the edit-build-run loop as short as possible without lying about what the current make-based build really does.
 
+> ✅ **WREN was DELETED on 2026-08-23** (commit `976b9449d`: `src/wren` + `include/wren` + `src/omnisim/wren`). There is no separate renderer library any more — the wgpu backend compiles **into the engine** from `src/omnisim/render/`, so renderer changes rebuild through `build core` / `build gui`, and `build renderer` refuses with an explanation instead of building nothing. (Doc updated 2026-09-01.)
+
 ## Current Build Topology
 
 The top-level build still behaves like a product build:
 
 1. resolve platform dependencies
 2. build `src/glad`
-3. build `src/wren`
-4. build `src/omnisim`
-5. build controller libraries
-6. build resources and projects
+3. build `src/omnisim` (which includes the wgpu renderer in `src/omnisim/render`)
+4. build controller libraries
+5. build resources and projects
 
 The important consequence is that OmniSim is not yet split into small independently linked runtime modules. The public fast-path targets are wrappers over this structure.
 
@@ -33,13 +34,12 @@ Runs the top-level `omnisim_target` path. Today that means:
 
 - dependencies
 - `src/glad`
-- `src/wren`
 - `src/omnisim`
 
 Use this when:
 
 - you changed runtime code and want a safe rebuild
-- you changed code in `src/wren` or `src/omnisim`
+- you changed code in `src/omnisim` (renderer code in `src/omnisim/render` included)
 - you do not want to rely on a stale static library or stale dependency artifact
 
 ### `python scripts/dev/omnisim_dev.py build gui`
@@ -48,24 +48,13 @@ Builds only `src/omnisim`.
 
 Use this when:
 
-- you changed files under `src/omnisim`
-- you did not change `src/glad` or `src/wren`
+- you changed files under `src/omnisim` (including renderer code under `src/omnisim/render`)
+- you did not change `src/glad`
 - you want the narrowest practical rebuild of the main simulator binary
 
-### `python scripts/dev/omnisim_dev.py build renderer`
+### `python scripts/dev/omnisim_dev.py build renderer` — RETIRED (refuses)
 
-Builds only `src/wren`.
-
-Use this when:
-
-- you are iterating on the renderer library itself
-- you want to catch compile errors quickly in `src/wren`
-
-Important:
-
-- `build renderer` updates the static renderer library
-- it does not by itself relink the desktop simulator binary
-- after renderer changes that affect the running simulator, follow with `build gui` or `build core`
+⚠️ Its recipe was `make -C src/wren`, deleted with WREN on 2026-08-23. As of 2026-08-24 the subcommand **refuses with an explanation and a non-zero exit** rather than routing to a target with no recipe behind it (which printed `Nothing to be done` and exited 0 — a build command reporting success while building nothing). There is no separate renderer subsystem: rebuild renderer code with `build core` or `build gui`.
 
 ### `python scripts/dev/omnisim_dev.py build controller-libs`
 
@@ -87,7 +76,7 @@ These wrapper targets exist at the repository root:
 
 - `make sim-core`
 - `make sim-gui`
-- `make renderer`
+- `make renderer` — ⚠️ a dead name: it survives in the top-level Makefile's `.PHONY` list with no recipe behind it, prints `Nothing to be done for 'renderer'` and exits 0. Do not use it; renderer code rebuilds through `make sim-core` / `make sim-gui`.
 - `make controller-libs`
 - `make tests-smoke`
 - `make benchmarks`
@@ -119,20 +108,13 @@ Safer rebuild:
 python scripts/dev/omnisim_dev.py build core
 ```
 
-Use the safer rebuild if the change touches runtime behavior that depends on `src/wren`, generated resource state, or static-link integration details.
+Use the safer rebuild if the change touches runtime behavior that depends on generated resource state or static-link integration details.
 
-### If you changed `src/wren`
+### If you changed `src/omnisim/render` (the wgpu renderer)
 
-Fast compile-only check:
-
-```bash
-python scripts/dev/omnisim_dev.py build renderer
-```
-
-Runnable simulator rebuild:
+Renderer code is part of the engine target, so this is the ordinary engine loop:
 
 ```bash
-python scripts/dev/omnisim_dev.py build renderer
 python scripts/dev/omnisim_dev.py build gui
 ```
 
@@ -159,7 +141,6 @@ Usually no rebuild is required. Run validation directly with `--nomake` when app
 ### Renderer loop
 
 ```bash
-python scripts/dev/omnisim_dev.py build renderer
 python scripts/dev/omnisim_dev.py build gui
 python scripts/dev/omnisim_dev.py test-world tests/rendering/worlds/normals.omniworld --nomake
 ```
@@ -285,8 +266,8 @@ that) and maps edited headers/sources through `build/release/.deps/*.d`. It does
 not relink unless asked. Build-system edits conservatively select a full GUI
 build because flags and source membership may have changed.
 
-All public logical targets pass through the top-level Makefile, so `build gui`,
-`renderer`, and `controller-libs` do not bypass ccache. On Windows the CLI adds
+All public logical targets pass through the top-level Makefile, so `build gui`
+and `controller-libs` do not bypass ccache. On Windows the CLI adds
 the compiler and MSYS make directories to `PATH`, and carries a checkout-local
 `_scratch/wgpu-native` SDK into incremental relinks when present.
 
@@ -326,7 +307,7 @@ cross-machine guarantee.
 ## What Still Makes Builds Slow
 
 - `src/omnisim` is still a very large target with a broad include surface
-- the main simulator links statically against `src/wren`
+- the renderer compiles inside that same target, so renderer edits pay the engine link
 - many headers pull in more of the product than they need
 - runtime, desktop shell, parser, and renderer code still share a large build boundary
 

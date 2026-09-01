@@ -94,9 +94,10 @@ The convention is enforced by [`tests/sources/test_license.py`](../../tests/sour
 python -m unittest tests.sources.test_license
 ```
 
-It walks `src/controller/{c,cpp,launcher}`, `src/omnisim`, `src/wren`, `projects`,
-`include/controller`, `include/plugins` and `scripts` (`*.c *.cpp *.h *.hpp *.py
-*.java Makefile`) and asserts the header sits at the **very start** of the file —
+It walks `src/controller/{c,cpp,launcher}`, `src/omnisim`, `projects`,
+`include/controller`, `include/plugins`, `scripts`, `packages`, `omnisim` and
+`agents` (`*.c *.cpp *.h *.hpp *.py *.java Makefile`; list re-synced with the
+test 2026-09-01 — `src/wren` left it with the WREN deletion) and asserts the header sits at the **very start** of the file —
 for Python and Makefiles, immediately after an optional `#!/usr/bin/env python[23]`
 shebang. A UTF-8 BOM makes the check impossible to satisfy, so source files must not
 carry one.

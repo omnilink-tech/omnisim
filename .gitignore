@@ -373,3 +373,41 @@ packages/*/dist/
 
 # Session scratch at the repo root (downloaded PDFs, review contact sheets) -- never repo content.
 /tmp/
+
+# Coding-agent scratch workspaces at the repo root (Codex sessions). Working
+# material only -- anything worth keeping gets moved into a real repo path.
+/.codex-tmp/
+/.tmp-governed-swarm-review/
+/.tmp-localappdata/
+/.tmp-outreach-candidates/
+/.tmp-warp-cache/
+
+# Outreach-pilot workspaces (social/launch/pilots/*): local virtualenvs,
+# tool caches, build products, and clones of the recipient's own repos
+# (name-<hash> checkouts). The pilot's evidence (README, traces, results,
+# scripts) is tracked; the third-party source and rebuildables are not.
+/social/launch/pilots/**/.venv/
+/social/launch/pilots/**/.pytest-cache/
+/social/launch/pilots/**/.pytest-tmp/
+/social/launch/pilots/**/__pycache__/
+/social/launch/pilots/**/build/
+/social/launch/pilots/**/upstream-*/
+/social/launch/pilots/**/firmware-[0-9a-f]*/
+/social/launch/pilots/**/hardware-[0-9a-f]*/
+/social/launch/pilots/**/robot-[0-9a-f]*/
+/social/launch/pilots/**/simulation-[0-9a-f]*/
+/social/launch/pilots/luis_nav2/fork/
+/social/launch/pilots/orion/.controller-python-shim/
+# PPO pilot: keep each seed's best checkpoint (the eval input); the periodic
+# intermediate checkpoints and tensorboard logs are training residue.
+/social/launch/pilots/ppo_robot_controller/results/training/**/model_update*.pt
+/social/launch/pilots/ppo_robot_controller/results/training/**/logs/
+
+# Reply-wave workspaces (social/launch/pilots/replies_*): each recipient's
+# own repo is cloned as a sibling of evaluations/. Our evaluation worlds,
+# controllers, and results are tracked; the third-party clones are not.
+/social/launch/pilots/replies_*/*/
+!/social/launch/pilots/replies_*/evaluations/
+
+# Warp JIT kernel caches left next to pilot evaluation runs.
+/social/launch/pilots/**/warp_cache_*/

@@ -545,6 +545,20 @@ public:
   // summed over every sheet. 0 when there is none -- the ordinary case for
   // every existing world -- and -1 when the runtime is unavailable.
   int particleCount() const;
+
+  // RUN phase. Aggregate STATS over one node's half-open particle range
+  // [particleStart, particleEnd) in the shared particle arrays -- the
+  // supervisor particle-stats verb's engine half
+  // (C_SUPERVISOR_NODE_PARTICLE_STATS). ONE FFI crossing returns 80 packed
+  // bytes (the runtime's particle_stats_packed -- '<ii9d': int32 count, int32
+  // non-finite, then min[3]/max[3]/centroid[3] as float64) instead of the
+  // whole cloud, so a 100k-particle bed costs 80 bytes, not 1.2 MB.
+  // Non-finite particles are COUNTED into *nonFiniteOut and skipped by the
+  // aggregates (all three outputs are 0.0 when no particle in range is
+  // finite). Returns 0 on success; -1 when the runtime is unavailable, the
+  // range is invalid, or the call failed.
+  int particleStats(int particleStart, int particleEnd, int *countOut, int *nonFiniteOut,
+                    double minOut[3], double maxOut[3], double centroidOut[3]) const;
   // W3.1 external-wrench injection (newton-ode-replacement-plan.md): queue a per-tick WORLD-frame force
   // (fx,fy,fz) + torque (tx,ty,tz) on a Newton body (about the body's reference point). step() sums these
   // into state.body_f and clears them after the tick -- ODE addBodyForce semantics (re-applied each tick).
@@ -716,6 +730,13 @@ public:
   // target_ke > 0 (position-spring + damping config). Drives the
   // joint toward this angle each tick. 0/-1.
   int setJointTargetPosition(int jointIdx, double pos);
+  // W1.4 servo promotion (2026-09-01): post-finalize per-(joint, dof)
+  // actuator gain change. Writes mj_model.actuator_gainprm/biasprm directly
+  // -- the model-array route (joint_target_ke/kd) is baked into MJCF
+  // actuators at conversion and a post-finalize write there does nothing.
+  // 0 ok / -1 error / -2 unsupported (mujoco_warp bakes gains; the caller
+  // warns once rather than silently no-opping).
+  int setJointGains(int jointIdx, int dof, double ke, double kd);
   // Sets a per-step raw joint TORQUE (Nm) via control.joint_f (applied
   // generalized force). Additive over the PD; for pure torque control build
   // the joint in EFFORT mode (OMNISIM_NEWTON_TORQUE_MODE). Re-send every tick.

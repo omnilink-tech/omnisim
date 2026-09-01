@@ -236,6 +236,12 @@ int main(int argc, char *argv[]) {
                              strcmp(argv[i], "--version") == 0);
   if (!informationalTaskOnly)
     OmPhysicsBackendRegistry::startNewtonRuntimePreload();
+  else
+    // Same pre-scan, second consumer: the OmGuiApplication constructor skips the
+    // GUI chrome (widget style, application font, stylesheet) for these
+    // print-and-exit tasks. Expected 20-60 ms of the 0.36 s --version baseline
+    // above; measured by the parent's --version N=10 timing A/B.
+    OmGuiApplication::skipStartupChromeForInformationalTask();
 
   // PPM dump helper for R3.6 golden-image harness. PPM is the
   // simplest binary image format that round-trips lossless: 3-line

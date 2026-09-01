@@ -1573,11 +1573,13 @@ static void warnRetiredMainviewForce() {
 }
 
 bool OmView3D::renderMainFrameViaWgpu(bool culling, bool offScreen) {
-  // R4 3c-B (increment 1b: the real wgpu main-view render). When the active Viewpoint selects wgpu AND the
-  // backend is available, render the live world OFFSCREEN via wgpu → RGBA, then blit that into this WREN
-  // window's GL framebuffer (offscreen render → GL blit; the HWND keeps its OpenGL pixel format, so there
-  // is no surface-type conflict — safe + reversible). WREN stays the default; any failure pins the view
-  // back to WREN (sticky) so the worst case degrades to a normal WREN frame.
+  // R4 3c-B (increment 1b: the real wgpu main-view render), updated post-WREN-deletion (976b9449d,
+  // 2026-08-23): render the live world OFFSCREEN via wgpu → RGBA, then blit that into this window's GL
+  // framebuffer (offscreen render → GL blit; the HWND keeps its OpenGL pixel format, so there is no
+  // surface-type conflict). This is now the ONLY main-view render path — WREN is deleted, so every
+  // `return false` below means NO main-view frame is drawn this paint, not a fallback: a sticky failure
+  // (mWgpuMainViewUnavailable) leaves the view permanently blank, and the transient guards (mid-reload,
+  // suspended, offscreen/sensor/screenshot) just skip this paint.
   (void)culling;
   if (offScreen || mWgpuMainViewUnavailable || mWgpuMainViewSuspended)
     return false;  // offscreen/sensor/screenshot or mid-(re)load → stay on WREN; a prior failure → WREN
@@ -1606,11 +1608,11 @@ bool OmView3D::renderMainFrameViaWgpu(bool culling, bool offScreen) {
   // The sustained-use VRAM OOM that formerly gated this (the ~30 s "0xC0000409 after ~2000 frames"
   // fault) was an APP-LEVEL texture-cache key bug — shared-file textures re-uploaded once per
   // PROTO-instance — fixed by path-keying the cache (a4fec74b, OmWgpuSceneRenderer::stableTexId), and
-  // verified by a 6-world sustained soak (75 s+, texture count plateaus, 0 wgpu errors). Default worlds
-  // keep `renderBackend "wren"` (the Viewpoint.wrl default), so this branch is unreachable for them and
-  // the WREN path stays byte-identical. The wgpu render is functional + leak-free but not yet at full
-  // lighting parity (~75%); flipping the DEFAULT to wgpu (Phase ζ) stays gated on §5.2 parity +
-  // cross-platform surfaces. OMNISIM_WGPU_MAINVIEW_FORCE (above) still forces any world for testing.
+  // verified by a 6-world sustained soak (75 s+, texture count plateaus, 0 wgpu errors).
+  // HISTORICAL, corrected 2026-09-01: the rest of this comment described the pre-flip world --
+  // Viewpoint.wrl now defaults `renderBackend` to "wgpu" (the 2026-08-19 default flip), WREN was
+  // deleted on 2026-08-23 (976b9449d), and this branch is the ONLY main-view render path.
+  // OMNISIM_WGPU_MAINVIEW_FORCE (above) is a RETIRED, warned no-op -- it forces nothing.
 
   // Lazily create the wgpu render resources the first time a Viewpoint selects wgpu.
   if (!mWgpuBackend) {

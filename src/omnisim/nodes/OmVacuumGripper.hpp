@@ -57,6 +57,14 @@ public:
   // this gripper's merge-leader body; idempotent, no-op when the gate is off
   // or the leader owns no Newton body.
   void ensureNewtonWeldSlot(OmNewtonBackend *newton);
+  // W1.7 mid-run physics rebuild: forget the slot (old-world index). Returns
+  // true when the grip was ENGAGED and is therefore dropped (warned loudly).
+  bool resetNewtonWeldSlotForRebuild() {
+    const bool wasEngaged = mNewtonWeldActive;
+    mNewtonWeldSlot = -1;
+    mNewtonWeldActive = false;
+    return wasEngaged;
+  }
 
 private:
   // fields

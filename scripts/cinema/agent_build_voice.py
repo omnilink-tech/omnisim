@@ -31,7 +31,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .agent_build import AgentBuildSpec, REPO_ROOT, parse
+from .agent_build import AgentBuildSpec, REPO_ROOT, parse, preflight
 
 
 DEFAULT_RUNTIME = REPO_ROOT / ".tmp" / "agent_build_voice"
@@ -41,6 +41,7 @@ MODEL_FILES = {
     "kokoro-v1.0.fp16.onnx": "f3a290d384fbb27966d462905c71a46cef9e5fd00516b40df32a0b4afe77ac96",
     "voices-v1.0.bin": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d",
 }
+VOICE_CACHE_VERSION = 1
 
 
 def _runtime_root(runtime: Path | None = None) -> Path:
@@ -98,8 +99,17 @@ def _output_path(spec: AgentBuildSpec, value: str) -> Path:
     return path.resolve() if path.is_absolute() else (spec.source_path.parent / path).resolve()
 
 
-def generate(spec: AgentBuildSpec, runtime: Path | None = None) -> tuple[Path, Path]:
+def _stable_hash(payload: object) -> str:
+    body = json.dumps(payload, sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=True).encode("utf-8")
+    return hashlib.sha256(body).hexdigest()
+
+
+def generate(spec: AgentBuildSpec, runtime: Path | None = None, *,
+             preflight_checked: bool = False) -> tuple[Path, Path]:
     """Generate the manifest's narration WAV and timing receipt locally."""
+    if not preflight_checked:
+        preflight(spec)
     root = _runtime_root(runtime)
     deps, model, voices = _runtime_paths(root)
     missing = [path for path in (deps, model, voices) if not path.exists()]
@@ -112,30 +122,79 @@ def generate(spec: AgentBuildSpec, runtime: Path | None = None) -> tuple[Path, P
     if len(blocks) != len(spec.voice.blocks):
         raise ValueError(f"narration has {len(blocks)} blocks; manifest declares {len(spec.voice.blocks)} windows")
 
-    sys.path.insert(0, str(deps))
-    os.environ.setdefault("ORT_LOG_SEVERITY_LEVEL", "3")
-    import onnxruntime as ort  # type: ignore  # noqa: PLC0415
-    import soundfile as sf  # type: ignore  # noqa: PLC0415
-    from kokoro_onnx import Kokoro  # type: ignore  # noqa: PLC0415
+    output = _output_path(spec, spec.voice.wav)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    timings = output.with_suffix(".segments.json")
+    cache_dir = output.parent / ".voice_cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    block_inputs = [{
+        "text": text, "voice": spec.voice.voice, "speed": window.speed,
+        "sentence_pause_s": window.sentence_pause_s,
+        "clause_pause_s": window.clause_pause_s,
+    } for text, window in zip(blocks, spec.voice.blocks)]
+    build_key = _stable_hash({
+        "version": VOICE_CACHE_VERSION, "duration_s": spec.duration_s,
+        "model": MODEL_FILES, "blocks": block_inputs,
+        "windows": [window.__dict__ for window in spec.voice.blocks],
+    })
+    try:
+        previous = json.loads(timings.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        previous = {}
+    if (previous.get("build_key") == build_key and output.exists()
+            and output.stat().st_size > 0):
+        previous["cache"] = {"hits": len(blocks), "misses": 0, "master_hit": True}
+        timings.write_text(json.dumps(previous, indent=2) + "\n", encoding="utf-8")
+        print(f"[agent-build voice] master cache hit: {output}")
+        return output, timings
 
-    ort.set_default_logger_severity(3)
-    kokoro = Kokoro(str(model), str(voices))
+    sys.path.insert(0, str(deps))
+    import soundfile as sf  # type: ignore  # noqa: PLC0415
+
+    kokoro = None
     sample_rate = 24000
     master = np.zeros(round(spec.duration_s * sample_rate), dtype=np.float32)
     records: list[dict[str, object]] = []
     overlong: list[str] = []
+    cache_hits = 0
+    cache_misses = 0
     for index, (text, window) in enumerate(zip(blocks, spec.voice.blocks), 1):
-        audio, rate = kokoro.create(
-            text, voice=spec.voice.voice, speed=window.speed, lang="en-us",
-            sentence_pause=window.sentence_pause_s, clause_pause=window.clause_pause_s,
-            continuous=False,
-        )
+        cache_key = _stable_hash({
+            "version": VOICE_CACHE_VERSION, "model": MODEL_FILES,
+            **block_inputs[index - 1],
+        })
+        cached_wav = cache_dir / f"{cache_key}.wav"
+        cached_meta = cache_dir / f"{cache_key}.json"
+        if cached_wav.exists() and cached_meta.exists():
+            samples, rate = sf.read(str(cached_wav), dtype="float32")
+            samples = np.asarray(samples, dtype=np.float32)
+            cache_hit = True
+            cache_hits += 1
+        else:
+            if kokoro is None:
+                os.environ.setdefault("ORT_LOG_SEVERITY_LEVEL", "3")
+                import onnxruntime as ort  # type: ignore  # noqa: PLC0415
+                from kokoro_onnx import Kokoro  # type: ignore  # noqa: PLC0415
+                ort.set_default_logger_severity(3)
+                kokoro = Kokoro(str(model), str(voices))
+            audio, rate = kokoro.create(
+                text, voice=spec.voice.voice, speed=window.speed, lang="en-us",
+                sentence_pause=window.sentence_pause_s, clause_pause=window.clause_pause_s,
+                continuous=False,
+            )
+            samples = np.asarray(audio, dtype=np.float32)
+            samples -= float(np.mean(samples))
+            peak = float(np.max(np.abs(samples))) or 1.0
+            samples *= min(1.0, 0.86 / peak)
+            sf.write(str(cached_wav), samples, rate, subtype="PCM_24")
+            cached_meta.write_text(json.dumps({
+                "key": cache_key, "text": text, "sample_rate": rate,
+                "samples": len(samples),
+            }, indent=2) + "\n", encoding="utf-8")
+            cache_hit = False
+            cache_misses += 1
         if rate != sample_rate:
             raise RuntimeError(f"unexpected Kokoro sample rate: {rate}")
-        samples = np.asarray(audio, dtype=np.float32)
-        samples -= float(np.mean(samples))
-        peak = float(np.max(np.abs(samples))) or 1.0
-        samples *= min(1.0, 0.86 / peak)
         duration = len(samples) / sample_rate
         if window.start_s + duration > window.window_end_s:
             overlong.append(f"block {index}: {duration:.2f}s in {window.window_end_s - window.start_s:.2f}s")
@@ -147,18 +206,20 @@ def generate(spec: AgentBuildSpec, runtime: Path | None = None) -> tuple[Path, P
             "window_end_s": window.window_end_s, "speed": window.speed,
             "sentence_pause_s": window.sentence_pause_s,
             "clause_pause_s": window.clause_pause_s, "text": text,
+            "cache_key": cache_key, "cache_hit": cache_hit,
         })
-        print(f"[agent-build voice] {index:02d} {window.start_s:6.2f}-{window.start_s + duration:6.2f}s")
+        print(f"[agent-build voice] {index:02d} {window.start_s:6.2f}-"
+              f"{window.start_s + duration:6.2f}s "
+              f"({'cache' if cache_hit else 'generated'})")
     if overlong:
         raise RuntimeError("shorten copy rather than forcing an unnatural pace — " + ", ".join(overlong))
 
-    output = _output_path(spec, spec.voice.wav)
-    output.parent.mkdir(parents=True, exist_ok=True)
     sf.write(str(output), master, sample_rate, subtype="PCM_24")
-    timings = output.with_suffix(".segments.json")
     timings.write_text(json.dumps({
         "engine": "kokoro-onnx", "model": model.name, "voice": spec.voice.voice,
         "local_generation": True, "master_duration_s": spec.duration_s,
+        "build_key": build_key,
+        "cache": {"hits": cache_hits, "misses": cache_misses, "master_hit": False},
         "performance_direction": "calm first-person expert; conversational emphasis; natural chapter pauses",
         "segments": records,
     }, indent=2) + "\n", encoding="utf-8")

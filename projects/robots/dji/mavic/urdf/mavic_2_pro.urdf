@@ -192,7 +192,9 @@ Accelerometer / GPS nodes when OMNISIM_URDF_USE_SENSORS=1 is set.
   </joint>
   <link name="camera_roll_link">
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <!-- Keep the housing behind the optical origin. With the box centred at
+           the sensor origin the Camera renders the inside of its own body. -->
+      <origin xyz="-0.020 0 0" rpy="0 0 0"/>
       <geometry>
         <box size="0.025 0.020 0.022"/>
       </geometry>
@@ -207,10 +209,25 @@ Accelerometer / GPS nodes when OMNISIM_URDF_USE_SENSORS=1 is set.
     </inertial>
   </link>
 
+  <!-- Put the optical origin in front of the gimbal housing and airframe.
+       A sensor attached at camera_roll_link's origin is physically inside the
+       imported robot mesh and renders the housing instead of the scene. -->
+  <joint name="camera optical mount" type="fixed">
+    <parent link="camera_roll_link"/>
+    <child link="camera_optical_link"/>
+    <origin xyz="0.15 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="camera_optical_link">
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="1e-08" ixy="0" ixz="0" iyy="1e-08" iyz="0" izz="1e-08"/>
+    </inertial>
+  </link>
+
   <!-- =========================================================
        Sensors (require OMNISIM_URDF_USE_SENSORS=1 to materialise)
        ========================================================= -->
-  <gazebo reference="camera_roll_link">
+  <gazebo reference="camera_optical_link">
     <sensor name="camera" type="camera">
       <camera>
         <horizontal_fov>0.7854</horizontal_fov>

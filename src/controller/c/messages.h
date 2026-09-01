@@ -163,6 +163,22 @@
 // these opcodes are positional wire contract, never renumber.
 #define C_SUPERVISOR_NODE_SOLVE_IK 104
 
+// W1.7 mid-run physics rebuild: tear down the live Newton world and
+// re-register the scene at its current poses on the next step, so
+// runtime-spawned nodes gain physics and runtime-deleted nodes lose it.
+// ctr -> sim, fire-and-forget (a refusal is reported as an engine WARNING,
+// which reaches the harness's diagnostics/events surfaces).
+#define C_SUPERVISOR_SIMULATION_REBUILD_PHYSICS 105
+
+// Node-scoped particle-state readback (Cloth / SoftBody / GranularBed /
+// GranularGroup): stats-first (count, min/max/centroid, non-finite count),
+// sample-optional (sampleStride > 0 additionally returns every stride-th
+// particle's xyz as float32). ctr -> sim: uint32 nodeId + int32 sampleStride
+// (0 = stats only); sim -> ctr: int32 status, int32 count, 9 doubles
+// (min[3], max[3], centroid[3]), int32 nonFinite, int32 sampled,
+// float xyz[3 * sampled]. Same APPEND-ONLY rule as above.
+#define C_SUPERVISOR_NODE_PARTICLE_STATS 106
+
 // for the abstract camera device
 // sim -> ctr
 #define C_ABSTRACT_CAMERA_SERIAL_IMAGE 0

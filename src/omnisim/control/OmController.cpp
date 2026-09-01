@@ -1247,10 +1247,51 @@ int OmController::streamSizeManagement(OmDataStream &stream) {
 // this function matches with the reception of a datagram
 // Warning: several OmniSim packets can be into a datagram, and
 // a OmniSim packet can be splitted into several datagrams
+// Immediate-burst fast path (OMNISIM_IMMEDIATE_BURST, default ON, "0"/"false"
+// reverts): a supervisor doing a read walk (getPosition per node, field reads)
+// issues its next request within microseconds of reading our answer, but each
+// request used to pay a full Qt event-loop wakeup (~1-7 ms measured) because
+// readRequest() returned after every packet. Lingering ~1 ms for the follow-up
+// request serves the whole burst at pipe speed. Measured on the 309-node
+// husky_fleet_arena (light session): 3.4-7.4 ms/read before.
+static bool immediateBurstEnabled() {
+  static const bool enabled = []() {
+    const QByteArray v = qgetenv("OMNISIM_IMMEDIATE_BURST");
+    return !(v == "0" || v.compare("false", Qt::CaseInsensitive) == 0 || v.compare("off", Qt::CaseInsensitive) == 0);
+  }();
+  return enabled;
+}
+
 void OmController::readRequest() {
-  mProcessingRequest = true;
-  if ((mSocket == NULL && mTcpSocket == NULL) || mRobot == NULL)
+  // waitForReadyRead() in the burst loop below can synchronously re-emit
+  // readyRead; the outer invocation will drain the new data itself.
+  if (mProcessingRequest)
     return;
+  mProcessingRequest = true;
+  if ((mSocket == NULL && mTcpSocket == NULL) || mRobot == NULL) {
+    mProcessingRequest = false;
+    return;
+  }
+
+  const bool needToBlockRegeneration = robot()->supervisor();
+  if (needToBlockRegeneration)
+    OmTemplateManager::instance()->blockRegeneration(true);
+
+  bool immediateMessagesPending = false;
+  QElapsedTimer burstTimer;
+  burstTimer.start();
+  int burstIdleWaits = 0;
+  bool packetProcessedSinceCheck = false;
+  do {
+
+  // The sockets and the robot can die MID-BURST: waitForReadyRead below can
+  // synchronously emit disconnected() (which nulls mSocket) when the
+  // controller process exits, and world teardown can null mRobot. The
+  // entry-time check does not cover later iterations, so re-check here --
+  // skipping this was an access violation at engine exit (0xC0000005 after
+  // the test's own OK verdict).
+  if ((mSocket == NULL && mTcpSocket == NULL) || mRobot == NULL)
+    break;
 
   // concat all the data which has not been parsed
   if (mTcpSocket)
@@ -1258,11 +1299,6 @@ void OmController::readRequest() {
   else
     mRequest += mSocket->readAll();
 
-  const bool needToBlockRegeneration = robot()->supervisor();
-  if (needToBlockRegeneration)
-    OmTemplateManager::instance()->blockRegeneration(true);
-
-  bool immediateMessagesPending = false;
   while (true) {
     const unsigned int requestSize = mRequest.size();
     unsigned int packetSize = 0;
@@ -1333,8 +1369,38 @@ void OmController::readRequest() {
     if (immediateMessagesPending)
       writeAnswer(true);
 
-    OmControlledWorld::instance()->checkIfReadRequestCompleted();
+    packetProcessedSinceCheck = true;
   }
+
+  // Once per drain rather than once per packet: the completion check loops
+  // every controller and emits a state signal, which multiplied by the
+  // packet count was a real per-read cost on multi-robot worlds.
+  if (packetProcessedSinceCheck) {
+    OmControlledWorld::instance()->checkIfReadRequestCompleted();
+    packetProcessedSinceCheck = false;
+  }
+
+  // Burst continuation: only while the last packet was an immediate
+  // message (a step request ends the burst), bounded so a flood can
+  // never starve the event loop.
+  if (!immediateBurstEnabled() || !immediateMessagesPending || burstTimer.elapsed() > 250)
+    break;
+  {
+    QIODevice *const dev = mSocket ? static_cast<QIODevice *>(mSocket) : static_cast<QIODevice *>(mTcpSocket);
+    if (dev == NULL)
+      break;
+    if (dev->bytesAvailable() == 0) {
+      const bool got = mSocket ? mSocket->waitForReadyRead(1) : mTcpSocket->waitForReadyRead(1);
+      if (!got) {
+        ++burstIdleWaits;
+        if (burstIdleWaits >= 2)
+          break;
+        continue;
+      }
+    }
+    burstIdleWaits = 0;
+  }
+  } while (true);
 
   OmPerformanceLog *log = OmPerformanceLog::instance();
   if (log && !immediateMessagesPending)

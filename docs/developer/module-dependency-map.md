@@ -2,11 +2,13 @@
 
 This document explains where code should live today, where the current build graph leaks across subsystem boundaries, and how to keep future changes from making rebuild scope and validation cost worse.
 
+> ✅ **WREN was DELETED on 2026-08-23** (commit `976b9449d`: `src/wren` + `include/wren` + `src/omnisim/wren`). The wgpu backend is compiled into the engine from `src/omnisim/render/` (plus `src/omnisim/nodes/OmWgpuSceneRenderer.*`); there is no separate renderer library or `build renderer` target any more. WREN mentions below that describe the historical leak surface are kept where the lesson still applies. (Banner added 2026-09-01.)
+
 Use it when:
 
 - deciding which directory should own a new feature
 - reviewing an include or dependency addition
-- splitting code so `build core` or `build renderer` can stay narrow
+- splitting code so `build core` can stay narrow
 - planning the longer move toward a true simulation-core boundary
 
 ## Why This Matters
@@ -29,7 +31,7 @@ In practice the current layers look like this:
 - `core`: common Qt/core services, process state, networking utilities, application-wide helpers
 - `util`: mixed support code used by runtime and content handling
 - `vrml`: tokenizer, parser, and low-level world description handling
-- `wren`: rendering bridge and WREN-facing code
+- `render`: the wgpu-native rendering backend (`src/omnisim/render`; the `wren` module was deleted 2026-08-23)
 - `physics`: physics backend integration (Newton / `SolverMuJoCo`)
 - `plugins`: plugin-side integration hooks
 - `engine`: simulation runtime orchestration
@@ -44,7 +46,7 @@ That looks reasonable at a distance, but the details matter more than the labels
 
 ### `nodes` is not a clean runtime-core layer
 
-`WB_NODES_INCLUDE` currently pulls in Qt Core, Qt Network, Qt GUI, controller headers, OIS, FreeType, WREN, stb, Assimp, and local includes from `app`, `plugins`, `sound`, `util`, and `vrml`.
+`WB_NODES_INCLUDE` currently pulls in Qt Core, Qt Network, Qt GUI, controller headers, OIS, FreeType, stb, Assimp, CUDA, and local includes from `app`, `core`, `engine`, `render`, `sound`, `util`, and `vrml` (re-read from `src/omnisim/Makefile` 2026-09-01; the WREN include left the list with the 2026-08-23 deletion).
 
 ✅ 2026-08-08 — one entry left this list for real: **ODE headers are no longer in the `nodes` include closure.** `bdc02139` deleted `src/ode` + `include/ode` (106,283 lines), so node-level code can no longer drag in a physics-engine header at all. That is a genuine reduction in the leak surface described below, not a relabelling. Campaign record: [ode-retirement-campaign.md](ode-retirement-campaign.md).
 
@@ -100,16 +102,14 @@ Primary directories today:
 
 Owns:
 
-- WREN integration
-- OpenGL-side state
+- wgpu-native integration (surfaces, render targets, shaders, mesh/texture caches)
 - render-target and overlay management
 - viewport and sensor rendering mechanics
 
 Primary directories today:
 
-- `src/wren`
-- `src/omnisim/wren`
-- render-facing parts of `src/omnisim/nodes`
+- `src/omnisim/render`
+- render-facing parts of `src/omnisim/nodes` (notably `OmWgpuSceneRenderer.*`)
 
 ### 3. Desktop shell
 
@@ -181,7 +181,7 @@ These are good phase-two refactor candidates because they improve both architect
 
 ### Narrow `OmImageTexture` dependencies
 
-`OmImageTexture` currently reaches into image loading, cache behavior, and WREN texture creation. The file is a boundary hotspot because a node-level change can affect GUI, asset, and renderer behavior together.
+`OmImageTexture` currently reaches into image loading, cache behavior, and renderer (wgpu) texture creation. The file is a boundary hotspot because a node-level change can affect GUI, asset, and renderer behavior together.
 
 Near-term direction:
 
@@ -223,7 +223,7 @@ If a refactor only claims to improve simulation-core boundaries but still requir
 
 A healthy dependency map has these properties:
 
-- a change in `src/wren` does not force unrelated desktop code to rebuild
+- a change in `src/omnisim/render` does not force unrelated desktop code to rebuild
 - a parser or node-graph change can be validated headlessly
 - GUI code observes simulation state instead of shaping it
 - coding agents can infer "edit here when changing X" without reading half the repo first

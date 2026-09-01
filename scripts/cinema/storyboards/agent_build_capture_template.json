@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "world": "projects/samples/demos/worlds/flagship/build.omniworld",
+  "load": {
+    "wait_s": 75,
+    "width": 1920,
+    "height": 1080,
+    "fov": 0.785398
+  },
+  "settle_steps": 30,
+  "checkpoints": [
+    {
+      "name": "capture_start",
+      "from": "capture_start",
+      "after_steps": 0
+    }
+  ],
+  "shots": [
+    {
+      "id": "build_question",
+      "output": "captures/question.mp4",
+      "restore": "capture_start",
+      "pre_steps": 0,
+      "sequence": {
+        "duration_s": 8.0,
+        "fps": 30,
+        "codec": "h264",
+        "crf": 12,
+        "preset": "slow",
+        "keep_frames": false,
+        "path_keyframes": [
+          {
+            "t": 0.0,
+            "position": [4.0, -4.0, 2.0],
+            "target": [0.0, 0.0, 0.5]
+          },
+          {
+            "t": 1.0,
+            "position": [4.0, -4.0, 2.0],
+            "target": [0.0, 0.0, 0.5]
+          }
+        ]
+      }
+    }
+  ]
+}

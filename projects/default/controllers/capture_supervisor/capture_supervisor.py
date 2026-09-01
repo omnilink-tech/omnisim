@@ -42,6 +42,9 @@ movie_start       -> {path, width, height, codec, fps}
                                                             acceleration?: int, caption?: bool}
 movie_stop        -> {path, ready, failed}
 movie_status      -> {ready, failed}
+sim_snapshot      -> {name, sim_time_ms, names}      args: {name: str}
+sim_restore       -> {name, sim_time_ms, boundary}   args: {name: str}
+sim_snapshots     -> {snapshots: [{name, sim_time_ms}]}
 
 The Camera device's resolution is fixed at world-load time by the sibling
 stanza the capture service writes; it is read here for `sim_state` so the
@@ -209,6 +212,9 @@ class CaptureState:
         self.movie_codec = 0
         self.movie_fps = 0
         self.frame_counter = 0
+        # Checkpoints live only for the loaded world and intentionally restore
+        # engine scene state, not arbitrary Python controller memory.
+        self.snapshots: dict[str, float] = {}
 
 
 def axis_angle_to_target(position: list[float], target: list[float],
@@ -577,6 +583,36 @@ def cmd_movie_status(state: CaptureState, _args: dict) -> dict:
     }
 
 
+def cmd_snapshot(state: CaptureState, sim_time_ms: float, args: dict) -> dict:
+    name = str(args.get("name", "")).strip()
+    if not name or name.startswith("__"):
+        raise CommandError("snapshot name is required and may not start with '__'")
+    root = state.supervisor.getRoot()
+    if root is None:
+        raise CommandError("scene root unavailable")
+    root.saveState(name)
+    state.snapshots[name] = sim_time_ms
+    return {"name": name, "sim_time_ms": sim_time_ms,
+            "names": sorted(state.snapshots),
+            "boundary": "scene state only; controller process memory is not rewound"}
+
+
+def cmd_restore(state: CaptureState, sim_time_ms: float, args: dict) -> dict:
+    name = str(args.get("name", "")).strip()
+    if name not in state.snapshots:
+        raise CommandError(
+            f"no snapshot named {name!r} in this capture session "
+            f"(have: {', '.join(sorted(state.snapshots)) or 'none'})"
+        )
+    root = state.supervisor.getRoot()
+    if root is None:
+        raise CommandError("scene root unavailable")
+    root.loadState(name)
+    return {"name": name, "sim_time_ms": sim_time_ms,
+            "snapshot_sim_time_ms": state.snapshots[name],
+            "boundary": "scene state restored; controller process memory and clock were not rewound"}
+
+
 def dispatch(state: CaptureState, sim_time_ms: float, cmd: str, args: dict) -> dict:
     if cmd == "ping":
         return {}
@@ -593,6 +629,7 @@ def dispatch(state: CaptureState, sim_time_ms: float, cmd: str, args: dict) -> d
             },
             "movie_active": state.movie_active,
             "frame_counter": state.frame_counter,
+            "snapshots": sorted(state.snapshots),
         }
     if cmd == "step":
         steps = int(args.get("steps", 1))
@@ -620,6 +657,15 @@ def dispatch(state: CaptureState, sim_time_ms: float, cmd: str, args: dict) -> d
         return cmd_movie_stop(state, args)
     if cmd == "movie_status":
         return cmd_movie_status(state, args)
+    if cmd == "sim_snapshot":
+        return cmd_snapshot(state, sim_time_ms, args)
+    if cmd == "sim_restore":
+        return cmd_restore(state, sim_time_ms, args)
+    if cmd == "sim_snapshots":
+        return {"snapshots": [
+            {"name": name, "sim_time_ms": snapshot_time}
+            for name, snapshot_time in sorted(state.snapshots.items())
+        ], "boundary": "snapshots are session-local scene state only"}
     if cmd == "reset":
         state.supervisor.simulationReset()
         state.frame_counter = 0

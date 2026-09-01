@@ -30,7 +30,7 @@ machine is a cheap detector for that, and on 2026-08-17 it found one:
 # render the matrix from THIS machine, with another machine's rows beside it
 python .../report.py --cross tests/benchmarks/omnibench/results/<id>/<date>/lane4
 
-# replace one probe's row without re-running the other 44 (recomputes the
+# replace one probe's row without re-running the other 50 (recomputes the
 # derived summary; leaves every other row byte-identical)
 python .../merge_coverage.py /tmp/relidar.jsonl
 
@@ -124,11 +124,51 @@ what a load-only smoke test reports as PASS.
 
 ### Scope
 
-Rigid-body simulation. Rendering quality is out of OmniBench's scope by design;
-the Camera and Lidar probes assert only that an image *exists* and is
-non-degenerate. Those two probes drop `--no-rendering` (a render-dependent
-device otherwise blocks on a frame that never arrives) and say so in their
-`deviations`.
+Rigid-body simulation, plus — since round 3 (2026-09-01) — the particle nodes,
+measured through the `getParticleStats` supervisor readback below. Rendering
+quality is out of OmniBench's scope by design; the Camera and Lidar probes
+assert only that an image *exists* and is non-degenerate. Those two probes
+drop `--no-rendering` (a render-dependent device otherwise blocks on a frame
+that never arrives) and say so in their `deviations`.
+
+### The particle readback (`particles:DEF`, round 3)
+
+Until 2026-09-01 the particle nodes (`Cloth`, `SoftBody`, `GranularGroup`,
+`GranularBed`) had **no supervisor accessor for particle state**, so their
+rows were capped at `degraded` on an engine self-report (the "registered N
+particles" log line — proof the node reached a solver, not that the solver
+did anything right). The `Node.getParticleStats(sample_stride=0)` binding
+closes that: the prober's `particles:DEF` measure spec records one stats
+frame per step — `{status, count, min[3], max[3], centroid[3], non_finite}` —
+and the assertions now measure the drape / squash / settle **in metres**
+(cloth z-extent growth with the pinned edge held, soft-body fall + arrest +
+deformation, granular centroid drop + extent collapse + arrest).
+
+Discipline, per the prober's standing robustness contract: the read is
+**getattr-guarded**, so a libController that predates the binding records a
+problem and the row lands on `inconclusive` — and a readback that *refuses*
+(`status != 0`, `count == 0`) is an environment/instrument condition, **never
+`broken`**. Two status codes are load-bearing: `-9` (stale libController) →
+`inconclusive`; `-5` (GranularGroup CUDA-inert) → `absent` on that one probe,
+because "requires engine CUDA; this build reports it unavailable" is a scope
+statement the engine also logs in prose (`GranularGroup is inert: CUDA is not
+available`). The MPM sibling (`object.granular_bed_mpm`, new in round 3) gets
+its no-CUDA `absent` from the runtime's own **named refusal** (`GranularBed
+requires CUDA`, captured via `log_capture`) — the runtime refuses the world
+rather than degrading, by design.
+
+Round 3 also gave the prober one new act verb, `rebuild_physics:T` →
+`supervisor.simulationRebuildPhysics()` (getattr-guarded the same way, with
+an `acted_rebuild_physics` premise record), which is what turned
+`phenomenon.runtime_node_deletion` into the honest two-arm probe: the default
+arm documents the frozen-model phantom (a deleted floor still holds the box),
+the rebuild arm proves the 2026-09-01 verb releases it, and the verdict is
+`works` only when the rebuild arm passes. `device.connector_weld` gained the
+mating pair its old probe deliberately lacked: a gravity-hang (bodiless
+active Connector on a static anchor welds the passive side's body to the
+world) asserted against an in-run control twin that must fall. All of the
+new assertion arms are covered by `capabilities.py --self-test`, in both
+directions.
 
 ---
 
@@ -342,6 +382,24 @@ before it produced a right one about the engine.
     `Accelerometer` while its `InertialUnit` works — which is precisely the
     asymmetry the ROS lane reported. The `Gyro` device is not broken; its
     carrier is not a body.
+
+12. **Before publishing `absent` — or leaving a capability out of the matrix
+    entirely — grep `tests/*/worlds/` and `tests/smoke/smoke_worlds.json` for
+    it: a SKIPPED test is evidence of known-broken.**
+    `tests/api/worlds/accelerometer.omniworld` carried a red, correctly
+    diagnosed assertion for years ("Parent of Accelerometer node has no
+    physics" — the folded-carrier defect of rule 11) behind `skip: true` in
+    the smoke set, whose `skip_reason` even named the mechanism — while this
+    matrix had **no accelerometer row at all**. So a capability that was
+    documented, measured and known broken was reported by the matrix as
+    merely untested: a matrix that cannot see skipped tests silently
+    downgrades "known broken" to "no data", which is the opposite of the
+    `broken`-vs-`absent` distinction the lane exists to make. The check is
+    one grep, it was first done on 2026-09-01, and it produced
+    `device.accelerometer` (the device on a real body, gravity kept ON so a
+    dead device's zeros cannot fake the at-rest 9.81) and
+    `device.imu_nested_carrier` (the folded-carrier arm, expected broken
+    today and required to go green when the carrierBodyHandle fix lands).
 
 ---
 

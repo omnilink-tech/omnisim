@@ -2,6 +2,8 @@
 
 This guide covers the performance instrumentation that already exists in the tree and how to use it consistently.
 
+> ✅ **WREN was DELETED on 2026-08-23** (commit `976b9449d`); wgpu-native is the only renderer, compiled into the engine from `src/omnisim/render/`. Some hooks below keep WREN-era *names* (e.g. `logWrenStatistics()`), but the render path they instrument is wgpu. (Banner added 2026-09-01.)
+
 See also:
 
 - [benchmark-authoring.md](benchmark-authoring.md)
@@ -32,12 +34,12 @@ The current log includes measurements for:
 
 ## FPS Logging Notes
 
-Average FPS is part of the log format and is populated by the WREN-side hook in `src/omnisim/gui/OmView3D.cpp`: `logWrenStatistics()` accumulates frames during the main render path (`++mRenderedFrameCount`) and calls `OmPerformanceLog::setAvgFPS(...)`. It is flushed from `OmMainWindow.cpp` on world unload and on shutdown.
+Average FPS is part of the log format and is populated by the renderer-side hook in `src/omnisim/gui/OmView3D.cpp`: `logWrenStatistics()` (a legacy name — the path it instruments is wgpu) accumulates frames during the main render path (`++mRenderedFrameCount`) and calls `OmPerformanceLog::setAvgFPS(...)`. It is flushed from `OmMainWindow.cpp` on world unload and on shutdown.
 
 Interpretation:
 
 - `mainFPS` is present in the output format (the log column is `<mainFPS>`)
-- it reflects the desktop GUI main viewport, since frames only accumulate when the WREN render path runs
+- it reflects the desktop GUI main viewport, since frames only accumulate when the main-view render path runs
 - in headless / `--no-rendering` runs that path is skipped, so FPS is not a meaningful metric there — rely on `mainRendering`, `gpuMemoryTransfer`, and world-specific before/after comparisons instead
 
 ## Useful Commands
@@ -174,14 +176,14 @@ Use headless profiling when:
 Use desktop profiling when:
 
 - the change is visual
-- the change affects WREN, post-processing, shadows, or sensor rendering
+- the change affects the renderer, post-processing, shadows, or sensor rendering
 - you need to measure the main viewport path
 
 ## Gaps To Close Later
 
 The next instrumentation upgrades should be:
 
-- extend FPS logging to headless / `--no-rendering` runs (today it only accumulates on the desktop WREN render path)
+- extend FPS logging to headless / `--no-rendering` runs (today it only accumulates on the desktop main-view render path)
 - split `loading` into parse, asset download, template regeneration, and finalization
 - add a first-frame metric
 - add a dedicated sensor-heavy frame benchmark

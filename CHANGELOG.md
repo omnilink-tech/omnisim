@@ -29,6 +29,87 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.2.0] — 2026-09-01
+
+The performance release. Every number below is measured on machine
+`9722d23d12a3` (RTX 3060 laptop, Windows) with interleaved A/B arms; every
+change carries an exact-revert switch or is disclosed in the API response.
+
+### Performance
+
+- **Supervisor reads are ~12× faster on busy scenes.** The engine served one
+  controller request per Qt event-loop wakeup, and the per-packet completion
+  check walked every controller — so a supervisor read walk on the 10-Husky
+  fleet arena (309 nodes, 11 controllers) paid **3.4–7.4 ms per read**, which
+  is what priced `GET /scene/tree` at 4.4 s and `GET /robots` at 7.1 s per
+  call. The engine now drains a controller's immediate-request burst at pipe
+  speed (bounded linger, one completion check per drain): **~0.6 ms per read**
+  on the same scene. `GET /debug/read_bench` measures it on any live session;
+  `OMNISIM_IMMEDIATE_BURST=0` reverts.
+- **The harness speaks HTTP/1.1 with keep-alive** — and so do all the robot
+  bridges, whose shared base classes got the same two attributes. Measured on
+  the flip (229 requests): connection reuse 0/229 → 229/229, `TIME_WAIT`
+  growth +221 → +6, `GET /healthz` **5.09 → 0.31 ms** (196 → 3222 req/s). A
+  50 Hz ROS 2 publish loop no longer exhausts the Windows ephemeral-port
+  range. `OMNISIM_ROS2_KEEPALIVE=0` reverts the ROS client for A/Bs.
+- **The Newton runtime's step path is leaner**, each change A/B'd off-engine:
+  `get_contacts()` memoized per step so its three per-tick consumers share
+  one build (206 → 107 µs/call at 30 contacts), constraint readbacks
+  vectorized (72.7 → 16.2 µs at nefc=240), touch capture idles out after the
+  last read instead of running for ever, raycast marshalling vectorized
+  (inputs byte-identical), 11 per-tick env-var gates cached
+  (12.3 → 0.6 µs/tick), and warp kernels compile forward-only.
+- **Headless loads skip texture decode when nothing will read a pixel** (no
+  Camera, no infra-red DistanceSensor, no Pen — the three genuine headless
+  consumers): warehouse_industrial wall time **16.4 → 10.1 s (−39%)**,
+  husky_maze **10.6 → 7.7 s (−28%)**. One INFO line names the skip;
+  `OMNISIM_EAGER_TEXTURE_DECODE=1` is the exact revert.
+
+### Harness
+
+- **Per-tracker toggles** (#4): `POST /world/load` takes
+  `{"tracking": {"contacts": false, "joint_limits": false, "grips": false}}`
+  — each flag drops exactly one per-step tracker (`light` still drops all
+  three; dropping contacts implies dropping grips, whose tracker consumes the
+  contact pairs). `GET /capabilities` reports the suppressed event types for
+  any combination and the load response's `tracking.mode` reads
+  `light`/`partial`/`full`. Measured on the 10-Husky world: partial mode
+  steps at light-mode cost (~10 ms vs ~600 ms full) while keeping the tracker
+  you asked for. Every load response also names the mode and its measured
+  cost, and errors across the surface now carry structured codes.
+- **Mid-run physics rebuild** (W1.7): `POST /sim/rebuild_physics` (or
+  `{"physics": "rebuild"}` on `/scene/spawn`/`/scene/delete`) tears down and
+  re-registers the Newton world at current poses in **97–267 ms**, so runtime
+  spawns and deletes finally reach the solver — a spawned box lands
+  bit-identically to its authored control, a deleted floor genuinely stops
+  colliding, an 8-Husky world drives through it at unchanged speed. Refused
+  (`409 REBUILD_REFUSED`) on Cloth/SoftBody/GranularBed worlds; engaged welds
+  are dropped with a loud warning; default spawn/delete behaviour unchanged.
+  Also exposed as the MCP server's 31st tool.
+
+### Engine and devices
+
+- **`Gyro` and `Accelerometer` are alive on URDF-imported robots.** Both read
+  their folded carrier's body now (the importer's nested IMU carrier owns no
+  Newton body of its own), so the ROS 2 sidecar publishes real
+  `angular_velocity` / `linear_acceleration` on `sensor_msgs/Imu` for the
+  first time instead of the `-1` "not available" covariances.
+- A motor with no authored limits is **promoted to a position servo** when
+  `setPosition()` is called on it (it was silently a velocity wheel that
+  ignored the call), and a `particle-stats` supervisor verb makes
+  cloth/FEM/granular states measurable.
+- Crash and correctness fixes: the GUI's Mass tab no longer crashes
+  (`inertiaMatrix()` NULL since the ODE deletion), a physics-pane
+  out-of-bounds read is gone, propeller inflow and granular colliders are
+  corrected.
+
+### Measurements
+
+- The OmniBench lane-4 capability matrix moved **77% → 96%** over the day —
+  each flipped row re-measured on the current binary, including the
+  motorised `BallJoint` verdict (the old `broken` was the probe commanding a
+  zero-lever-arm axis; the corrected probe measures it working).
+
 ## [v8.1.17] — 2026-08-31
 
 ### ROS 2

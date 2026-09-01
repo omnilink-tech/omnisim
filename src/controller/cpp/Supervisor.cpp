@@ -58,6 +58,10 @@ void Supervisor::simulationResetPhysics() {
   wb_supervisor_simulation_reset_physics();
 }
 
+void Supervisor::simulationRebuildPhysics() {
+  wb_supervisor_simulation_rebuild_physics();
+}
+
 void Supervisor::simulationReset() {
   wb_supervisor_simulation_reset();
 }

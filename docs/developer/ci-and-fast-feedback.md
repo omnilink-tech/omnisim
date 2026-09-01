@@ -26,17 +26,13 @@ Fast CI is not about skipping quality. It is about ordering checks by cost and c
 
 ## What Exists Today
 
-Two workflow files already point in the right direction. Both currently live under `.github/workflows.disabled/` as templates rather than active checks (the only workflows under the active `.github/workflows/` are `g1-spec-conformance.yml` and `update_sponsors.yml`):
+(Rewritten 2026-09-01 — the previous version of this section claimed only two active workflows and recommended promoting a template that is now superseded.)
 
-- `.github/workflows.disabled/developer_fast_path.yml`
-- `.github/workflows.disabled/smoke_linux_fast.yml`
+The active set under `.github/workflows/` is **ten** workflows: `dco.yml`, `g1-spec-conformance.yml`, `licence-provenance.yml`, `linux-build.yml`, `physics-runtime-check.yml`, `publish-omnisim-mcp.yml`, `release.yml`, `runtime-image.yml`, `train-image.yml`, and `update_sponsors.yml`. The most important for fast feedback is **`linux-build.yml`** (active since 2026-08-27): it drives `scripts/install/linux_bootstrap.sh` itself, so a green run is evidence about the documented user path, not about a private CI recipe. Before it existed, two Linux-breaking defects shipped and survived for weeks because nothing compiled this tree on Linux (see `.github/workflows.disabled/README.md` for the record).
 
-They demonstrate two important ideas:
+Four inherited templates remain under `.github/workflows.disabled/` (`developer_fast_path.yml`, `smoke_linux_fast.yml`, `tests_sources.yml`, `tests_sources_with_latest_cppcheck.yml`). ⚠️ **`smoke_linux_fast.yml` is superseded by `linux-build.yml` and must not be re-enabled as written** — its own README entry documents four defects, including never installing the Newton runtime (so the smoke suite would run with no physics) and never installing wgpu-native (and since the WREN deletion there is no second renderer to fall back to).
 
-- repository surface and command contracts can be validated cheaply
-- a Linux fast-path build with `ccache` and a small smoke suite can provide much earlier signal than a full package job
-
-Those ideas should become the default structure, not exceptions.
+The ideas the templates demonstrated — cheap surface validation, and a Linux fast-path build with `ccache` plus a small smoke suite — are the right structure, and `linux-build.yml` is the live realisation of the second one.
 
 ## Recommended CI Lanes
 
@@ -96,7 +92,7 @@ Purpose:
 
 Examples:
 
-- renderer-focused build for `src/wren` and `src/omnisim/wren`
+- renderer-focused build for `src/omnisim/render` (compiled into the engine — WREN and its separate library were deleted 2026-08-23)
 - controller-library lane for `src/controller`
 - parser or world-load lane for `src/omnisim/vrml` and `src/omnisim/nodes`
 
@@ -158,7 +154,6 @@ Prefer workflows that call stable commands such as:
 
 - `make sim-core`
 - `make sim-gui`
-- `make renderer`
 - `make tests-smoke`
 - `make benchmarks`
 
@@ -199,7 +194,7 @@ Broad package and regression jobs should confirm that the change is ready to mer
 
 These mappings keep CI proportional to the change.
 
-- `src/wren/**`, `src/omnisim/wren/**`: renderer build, renderer smoke, benchmark lane if rendering-sensitive
+- `src/omnisim/render/**`, `src/omnisim/nodes/OmWgpuSceneRenderer.*`: engine build (`sim-gui`), renderer smoke, benchmark lane if rendering-sensitive
 - `src/controller/**`: controller-libs build, controller smoke
 - `src/omnisim/vrml/**`, `src/omnisim/nodes/**`: sim-core build, headless smoke, world-load benchmark
 - `src/omnisim/gui/**`, `src/omnisim/scene_tree/**`, `src/omnisim/editor/**`: sim-gui build, desktop smoke
@@ -224,7 +219,7 @@ An agent cannot optimize the repo well if every experiment requires the full des
 
 Short-term work that gives real value:
 
-- promote the `developer_fast_path.yml` and `smoke_linux_fast.yml` templates out of `.github/workflows.disabled/` into active checks, then keep them green and documented
+- ✅ the Linux fast-path lane exists: `linux-build.yml` has been active since 2026-08-27 and supersedes the `smoke_linux_fast.yml` template (do not promote that template — its README entry documents why it would pass dishonestly); `developer_fast_path.yml`'s surface checks are still worth promoting or folding into an active workflow
 - add path-aware targeted lanes instead of one broad default lane
 - standardize benchmark result collection on a small world set
 - cache heavy environment setup more aggressively

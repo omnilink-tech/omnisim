@@ -2,11 +2,12 @@
 
 This file is written for coding agents and for humans working in an "agent-like" mode. It is intentionally direct and operational.
 
+> ✅ **WREN was DELETED on 2026-08-23** (commit `976b9449d`: `src/wren` + `include/wren` + `src/omnisim/wren`, ~31k lines). wgpu-native is the only renderer, and it is compiled **into the engine** from `src/omnisim/render/` (plus `src/omnisim/nodes/OmWgpuSceneRenderer.*` for camera-family devices) — there is no separate renderer subsystem. Any `src/wren` path in an older doc or session memory is dead. (Banner added 2026-09-01.)
+
 ## Source of Truth
 
 Edit first:
-- `src/omnisim`: simulator product code
-- `src/wren`: renderer core
+- `src/omnisim`: simulator product code (the wgpu renderer lives inside it, under `src/omnisim/render/`)
 - `src/controller`: controller runtime and APIs
 - `tests`: validation inputs and harnesses
 - `resources`: runtime assets and metadata
@@ -88,8 +89,8 @@ Search:
 
 ### rendering, sensors, visual effects
 Search:
-- `src/wren`
-- `src/omnisim/wren`
+- `src/omnisim/render` (the wgpu backend: surfaces, targets, shaders, mesh/texture caches)
+- `src/omnisim/nodes/OmWgpuSceneRenderer.*` (offscreen rendering for Camera/RangeFinder/Lidar devices)
 - `src/omnisim/gui/OmView3D.*`
 
 ### texture lifetime, overlays, and memory-heavy rendering paths
@@ -97,7 +98,7 @@ Search:
 - `src/omnisim/nodes/OmImageTexture.*`
 - `src/omnisim/nodes/OmBackground.*`
 - `src/omnisim/nodes/OmCamera.*`
-- `src/omnisim/wren/OmWrenTextureOverlay.*`
+- `src/omnisim/render/OmWgpuTextureCache.*` and `src/omnisim/render/OmWgpuImageAdapter.*`
 
 ### scene tree/editor behavior
 Search:
@@ -119,7 +120,7 @@ Search:
 ### Build
 - full product: `python scripts/dev/omnisim_dev.py build all`
 - core/runtime-oriented path: `python scripts/dev/omnisim_dev.py build core`
-- renderer only: `python scripts/dev/omnisim_dev.py build renderer`
+- renderer: there is no separate renderer build any more — `build renderer` refuses with an explanation (the wgpu backend compiles into the engine, so use `build core` / `build gui`)
 - desktop shell: `python scripts/dev/omnisim_dev.py build gui`
 - controller libs: `python scripts/dev/omnisim_dev.py build controller-libs`
 
@@ -143,7 +144,7 @@ Search:
 - `src/omnisim/vrml/*`
 - `src/omnisim/nodes/utils/OmWorld.*`
 - `src/omnisim/nodes/utils/OmTemplateManager.*`
-- rendering/runtime interactions between `src/omnisim/engine` and `src/omnisim/wren`
+- rendering/runtime interactions between `src/omnisim/engine` and `src/omnisim/render`
 - broad headers such as `src/omnisim/vrml/OmNode.hpp`, `src/omnisim/nodes/OmBaseNode.hpp`, and `src/omnisim/engine/OmSimulationWorld.hpp`
 
 These areas affect broad behavior. Prefer targeted validation plus smoke coverage after edits.

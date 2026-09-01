@@ -6,8 +6,8 @@
 # probe : joint.ball_motor
 # family: joint
 # claim : BallJoint with motors -- 3-DoF spherical actuation
-# doc   : AGENTS.md -- motorised BallJoint does NOT actuate (measured 2026-08-17)
-# docs currently claim this is: broken (lane 4 raises a finding if the measurement disagrees)
+# doc   : AGENTS.md -- claims motorised BallJoint does NOT actuate; the 2026-08-17 measurement behind that claim commanded axis 1, which the arm lies along (geometrically blind) -- axis-corrected 2026-09-01, re-measure
+# docs currently claim this is: works (lane 4 raises a finding if the measurement disagrees)
 
 WorldInfo {
   gravity 0
@@ -33,7 +33,7 @@ DEF OMNIBENCH_PROBER Robot {
     "--label=joint.ball_motor"
     "--duration=3"
     "--measure=jointpos:JP;pos:SUBJECT"
-    "--act=motor_position:m:0.8:0.0"
+    "--act=motor_position:m3:0.8:0.0;motor_position:m:0.8:0.0"
   ]
   supervisor TRUE
   children [

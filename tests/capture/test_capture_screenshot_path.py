@@ -172,8 +172,34 @@ def post(base: str, path: str, body: dict):
         return exc.code, exc.read(), dict(exc.headers)
 
 
+def get(base: str, path: str):
+    try:
+        with urllib.request.urlopen(base + path, timeout=10) as response:
+            return response.status, response.read(), dict(response.headers)
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read(), dict(exc.headers)
+
+
 def as_json(payload: bytes) -> dict:
     return json.loads(payload.decode("utf-8") or "{}")
+
+
+def test_capture_checkpoint_routes_forward_to_the_persistent_supervisor(service):
+    code, _payload, _headers = post(service.base, "/sim/snapshot", {"name": "hero"})
+    assert code == 200
+    code, _payload, _headers = post(service.base, "/sim/restore", {"name": "hero"})
+    assert code == 200
+    code, _payload, _headers = get(service.base, "/sim/snapshots")
+    assert code == 200
+    assert ("sim_snapshot", {"name": "hero"}) in service.sup.calls
+    assert ("sim_restore", {"name": "hero"}) in service.sup.calls
+    assert ("sim_snapshots", {}) in service.sup.calls
+
+
+def test_capture_checkpoint_name_is_validated_before_supervisor_rpc(service):
+    code, payload, _headers = post(service.base, "/sim/snapshot", {"name": ""})
+    assert code == 400
+    assert "name is required" in as_json(payload)["error"]
 
 
 # --------------------------------------------------------------------------

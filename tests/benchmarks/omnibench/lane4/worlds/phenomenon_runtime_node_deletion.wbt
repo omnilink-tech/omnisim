@@ -5,9 +5,9 @@
 #
 # probe : phenomenon.runtime_node_deletion
 # family: phenomenon
-# claim : A node deleted at runtime stops colliding
-# doc   : AGENTS.md -- 'a deleted wall still stops a robot and a deleted floor still holds a body up, silently'
-# docs currently claim this is: broken (lane 4 raises a finding if the measurement disagrees)
+# claim : A node deleted at runtime stops colliding (via simulationRebuildPhysics, 2026-09-01)
+# doc   : AGENTS.md -- 'a deleted wall still stops a robot and a deleted floor still holds a body up, silently' (the default arm); wb_supervisor_simulation_rebuild_physics (2026-09-01, the fix arm)
+# docs currently claim this is: works (lane 4 raises a finding if the measurement disagrees)
 
 WorldInfo {
   gravity 9.81
@@ -57,9 +57,9 @@ DEF OMNIBENCH_PROBER Robot {
   controller "omnibench_prober"
   controllerArgs [
     "--label=phenomenon.runtime_node_deletion"
-    "--duration=4"
+    "--duration=5"
     "--measure=pos:SUBJECT"
-    "--act=delete_node:FLOOR:1.5"
+    "--act=delete_node:FLOOR:1.5;rebuild_physics:3.0"
   ]
   supervisor TRUE
   children [

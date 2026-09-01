@@ -391,6 +391,8 @@ integrator for its own inertia tensors** — `OmSolid.cpp:3392-3396` feeds
 > default flips (elliptic cone + impratio, limitless-servo tracking), not
 > regressions.
 
+> **2026-09-01 update:** `test_newton_servo_without_limits.py` is no longer aspirational — the limit-less servo promotion shipped (wire-level latch + direct mj_model gain write) and both of its arms PASS on the current binary; it is now tracked in the test set. `test_newton_friction_cone_default.py` remains the one aspirational pin.
+
 There is also no build switch. `Makefile:171-174` builds `src/ode` in every
 target; the only flag is `OMNISIM_WITH_NEWTON=OFF`. The tree can build ODE-only
 and cannot build Newton-only.

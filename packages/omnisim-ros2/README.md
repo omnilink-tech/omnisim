@@ -122,17 +122,39 @@ reads:
 | `GPS` | ✅ **live** | `/gps/local` x `0.0000 → +5.5918` over a drive |
 | `Lidar` | ✅ **live** | 541 rays; finite returns `541 → 190`, min range `5.828 → 5.438` |
 | `PositionSensor` | ✅ live | wheel angle reached 34.5 rad |
-| `Gyro` | ⛔ **dead** | read exactly `[0,0,0]` while yaw travelled `0 → 0.136 rad` |
-| `Accelerometer` | ⛔ **dead** | never produced a sample at all — not even gravity |
+| `Gyro` | ✅ fixed 2026-09-01 | was dead (read `[0,0,0]` while yaw travelled `0 → 0.136 rad`); engine `bde550489` |
+| `Accelerometer` | ✅ fixed 2026-09-01 | was dead (no sample, not even gravity); engine `bde550489` |
 
-So `sensor_msgs/Imu` goes out with a **real orientation** and with
-`angular_velocity_covariance[0]` and `linear_acceleration_covariance[0]` set to
-**`-1`** — the ROS-wide convention for "this component is not available". That
-is deliberate: a zero there would claim the robot is neither rotating nor
-accelerating, which nothing measured. The genuine yaw *rate* is on `/odom`
-(`twist.twist.angular.z`), differenced from pose by the bridge — it is not
-copied into the Imu message, because an `Imu` blending two sources is exactly
-the kind of quiet mix a later reader would over-trust.
+**Imu covariance semantics (updated 2026-09-01).** The gyro/accelerometer
+outage was an engine defect — the devices read their carrier Solid's Newton
+body handle, and the URDF importer's nested IMU carrier owns no body. Engine
+commit `bde550489` resolves them via the new `carrierBodyHandle()` (the
+ancestor-walking read welds already used); OmniBench lane-4 probes
+`device.accelerometer` and `device.imu_nested_carrier` both measure `works`,
+and a body-less Accelerometer now publishes gravity-only instead of NaN.
+`sensor_node` therefore now reads both devices through the bridge's
+`/read_sensor` and publishes, **per component and per message**:
+
+- `covariance[0] = 0.0` ("available, accuracy unknown") when that message's
+  `angular_velocity` / `linear_acceleration` was populated from **three finite
+  device values**;
+- `covariance[0] = -1` ("not available") when the device is absent, still
+  warming up, or returned non-finite values — a stale pre-fix engine still
+  yields zeros-or-NaN, and only the NaN half of that is detectable client-side,
+  so pair this node with a current engine.
+
+⚠ **Code-verified, not live-verified (2026-09-01):** this re-point was made
+against the engine fix without running an engine or a ROS 2 stack; the WSL
+bringup lane owns the live check. That check would assert
+`angular_velocity.z` tracking a commanded turn (against `/odom`'s
+pose-differenced yaw rate) and `linear_acceleration` magnitude ≈ 9.81 m/s²
+at rest, with both `covariance[0]` entries at `0.0`.
+
+The bridge's own pose-differenced yaw *rate* stays on `/odom`
+(`twist.twist.angular.z`) and is still never copied into the Imu message —
+`angular_velocity` comes from the Gyro device or not at all, because an `Imu`
+blending two sources is exactly the kind of quiet mix a later reader would
+over-trust.
 
 ⛔ **No camera, and no `Image`/`CameraInfo`.** No URDF in this tree declares a
 `<sensor type="camera">`, so nothing was there to publish. `/read_sensor`
@@ -426,8 +448,13 @@ Reading that honestly: the IMU is **correct** to stay at identity through the
 straight drive (`y` never left `0.0000`), and it tracks the turn to 4 decimals
 against the bridge's own yaw — `+0.1300` vs `0.1300`, with `z=0.0650` giving
 `2·asin(0.0650) = 0.1301 rad`. The lidar responds to both translation and
-rotation. The `-1` covariances are the gyro and accelerometer being declared
-absent, every tick, by design.
+rotation. The `-1` covariances in that transcript are the gyro and
+accelerometer being declared absent, every tick — correct **on that date**:
+the capture predates the 2026-09-01 engine fix (`bde550489`) and the
+sensor-node re-point, after which a current engine should show finite
+`angular_velocity` / `linear_acceleration` with `cov[0]=+0`. No post-fix
+transcript exists yet (the change is code-verified only; see the covariance
+note above).
 
 `/tf_static` carries the measured mounts:
 
@@ -577,13 +604,14 @@ Declared through the feature flags **and** repeated in
 - **No effort interfaces anywhere.** OmniSim exposes no joint effort on any
   surface, so `effort` is neither a state nor a command interface, and the plugin
   rejects a URDF that asks for one instead of exporting a fabricated zero.
-- **Sensor topics ship for orientation, range and position only** (see Tier 2
-  above). Three device types are genuinely unavailable and are declared as such
-  rather than published as zeros:
-  - **`Gyro` reads a constant `[0,0,0]`** even while the robot rotates, so
-    `Imu.angular_velocity` carries `covariance[0] = -1`.
-  - **`Accelerometer` never produces a sample**, so `Imu.linear_acceleration`
-    carries `covariance[0] = -1`.
+- **Sensor topics ship for orientation, rates, acceleration, range and
+  position** (see Tier 2 above). Since 2026-09-01, `Imu.angular_velocity` and
+  `Imu.linear_acceleration` are populated from the Gyro / Accelerometer with
+  `covariance[0] = 0.0` when the reading is finite, and keep the `-1`
+  ("not available") declaration per message when the device is absent,
+  warming up, or non-finite — this requires the 2026-09-01 engine
+  (`bde550489`) and is code-verified, not yet live-verified under ROS 2.
+  Still genuinely unavailable:
   - **No camera anywhere in the tree**, so no `Image` / `CameraInfo`. Adding a
     `<sensor type="camera">` to a URDF is enough for the importer; the ROS side
     would then need an image-transport path, which `/read_sensor` deliberately
@@ -730,7 +758,7 @@ straight at the services with `harness_url:=` / `bridge_url:=`.
 cd packages/omnisim-ros2/src/omnisim_ros2 && python3 -m pytest test/ -q
 ```
 
-**96 tests, no ROS node, no simulator, no network beyond loopback.** They cover:
+**110 tests, no ROS node, no simulator, no network beyond loopback.** They cover:
 
 - **Rotation conversions**, including the 180° branch where the naive trace
   formula suffers catastrophic cancellation, and the two encodings OmniSim uses

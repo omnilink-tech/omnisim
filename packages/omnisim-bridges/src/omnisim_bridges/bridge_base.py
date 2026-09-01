@@ -173,6 +173,15 @@ def _make_handler(
     trusted = trusted_origins or allowed_origins()
 
     class _H(BaseHTTPRequestHandler):
+        # HTTP/1.1 keep-alive (back-ported from the mobile bridge, which
+        # shipped it first): safe here only because every response path sets
+        # an accurate Content-Length. If you add a response path, it MUST set
+        # Content-Length or the client will hang waiting for a body. The
+        # timeout reaps idle persistent connections so they do not park
+        # ThreadingHTTPServer threads forever.
+        protocol_version = "HTTP/1.1"
+        timeout = 30
+
         def log_message(self, *args, **kwargs):
             return
 

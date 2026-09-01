@@ -41,6 +41,12 @@ public:
   int exec();
   void restart();
   static void setWindowsDarkMode(QWidget *);
+  // Called from main.cpp's informational-flag pre-scan (--help / --sysinfo /
+  // --version, the same spellings that skip the Newton runtime preload) BEFORE
+  // this class is constructed: the constructor then skips the GUI chrome
+  // (widget style, application font, stylesheet) that only a shown window
+  // needs. Any other launch never calls this, so GUI mode is byte-identical.
+  static void skipStartupChromeForInformationalTask();
 
   enum Task { NORMAL, SYSINFO, HELP, VERSION, UPDATE_WORLD, INVALID_LOGIN, FAILURE, QUIT, CONVERT };
   OmApplication *application() const { return mApplication; };

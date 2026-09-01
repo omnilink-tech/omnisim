@@ -8,7 +8,8 @@
 # engages a proximity-triggered suction capture.  OMNISIM_INTERCEPT_MODE=fixed
 # holds B on the nominal centreline and is the negative control.
 
-EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
 EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
 EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
 
@@ -47,7 +48,11 @@ PointLight {
   radius 2.2
   attenuation 0 0 1
 }
-OmniLinkStage { floorSize 7 5 }
+RectangleArena {
+  floorSize 7 5
+  wallHeight 0.05
+  floorAppearance Asphalt { colorOverride 0.16 0.18 0.21 }
+}
 
 # Thrower: native certified toss motion, with its projected landing target
 # moved through OMNIARM6_TC_THROW_X by the launch script.
@@ -80,6 +85,15 @@ Robot {
   name "deflection_observer"
   supervisor TRUE
   controller "adaptive_intercept_observer"
+}
+
+# Film-only supervisor. It is inert unless OMNISIM_INTERCEPT_CAPTURE_DIR is set.
+# Its direct-cut story profile supplies a workspace master, thrower detail,
+# bird's-eye flight reference, and catcher detail without a chase camera.
+Robot {
+  name "adaptive_intercept_film_camera"
+  supervisor TRUE
+  controller "adaptive_intercept_film_camera"
 }
 
 DEF PEDESTAL Solid {

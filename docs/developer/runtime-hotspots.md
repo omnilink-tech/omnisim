@@ -10,7 +10,7 @@ At a high level the simulator still behaves like one large application boundary:
 2. `src/omnisim/nodes/utils/OmWorld.*` and `src/omnisim/vrml/*` load the world model
 3. `src/omnisim/engine/OmSimulationWorld.*` owns world startup, mode transitions, and the main simulation step
 4. `src/omnisim/control/OmControlledWorld.*` and `src/omnisim/control/OmController.*` synchronize controller traffic with stepping
-5. `src/omnisim/wren` and `src/wren` handle main rendering and sensor rendering
+5. `src/omnisim/render` (and `src/omnisim/nodes/OmWgpuSceneRenderer.*`) handle main rendering and sensor rendering — WREN (`src/wren` + `src/omnisim/wren`) was deleted 2026-08-23 (`976b9449d`)
 
 This is why the codebase still feels "product-shaped" rather than "simulation-core-shaped".
 

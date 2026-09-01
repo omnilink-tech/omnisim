@@ -41,6 +41,9 @@ POST /capture/sequence       {"path_keyframes": [...], "duration_s": float, "fps
                                "keep_frames"?}
 POST /sim/step               {"steps"?: int}
 POST /sim/reset
+POST /sim/snapshot          {"name": str}
+POST /sim/restore           {"name": str}
+GET  /sim/snapshots
 GET  /sim/state
 GET  /healthz
 
@@ -242,7 +245,7 @@ def resolve_omnisim_binary(omnisim_home: Path) -> Path:
             omnisim_home / "msys64" / "mingw64" / "bin" / "webots.exe",
         ]
     elif sys.platform == "darwin":
-        candidates = [omnisim_home / "Contents" / "MacOS" / "webots"]
+        candidates = [omnisim_home / "Contents" / "MacOS" / "omnisim", omnisim_home / "Contents" / "MacOS" / "webots"]
     else:
         candidates = [omnisim_home / "bin" / "omnisim-bin", omnisim_home / "webots"]
     for candidate in candidates:
@@ -999,8 +1002,40 @@ def _render_sequence(
 
 def make_handler(state: CaptureServiceState):
     class Handler(BaseHTTPRequestHandler):
+        # HTTP/1.1 keep-alive, mirroring the validation harness: pooled
+        # clients reuse one TCP connection; every response sets
+        # Content-Length. The fence turns an unhandled handler exception
+        # into a coded 500 + connection close instead of an empty reply
+        # that desyncs a pooled connection.
+        protocol_version = "HTTP/1.1"
+        timeout = 30
+
         def log_message(self, fmt, *args):
             pass
+
+        def do_GET(self):  # noqa: N802
+            self._fenced(self._route_GET)
+
+        def do_POST(self):  # noqa: N802
+            self._fenced(self._route_POST)
+
+        def _fenced(self, route) -> None:
+            te = (self.headers.get("Transfer-Encoding") or "").lower()
+            if "chunked" in te:
+                self.close_connection = True
+                self._json(411, {"ok": False, "code": "LENGTH_REQUIRED",
+                                 "error": "chunked Transfer-Encoding is not "
+                                          "supported; send Content-Length"})
+                return
+            try:
+                route()
+            except Exception as exc:  # noqa: BLE001 - last-resort fence
+                self.close_connection = True
+                try:
+                    self._json(500, {"ok": False, "code": "CAPTURE_INTERNAL",
+                                     "error": f"{type(exc).__name__}: {exc}"})
+                except Exception:  # noqa: BLE001 - headers already sent
+                    pass
 
         def _json(self, code: int, obj: dict) -> None:
             # Strict JSON at the boundary: the supervisor forwards whatever
@@ -1069,7 +1104,7 @@ def make_handler(state: CaptureServiceState):
                 self._json(503, {"error": str(exc)})
                 return None
 
-        def do_GET(self):  # noqa: N802
+        def _route_GET(self):  # noqa: N802
             path = self.path
             if path == "/healthz":
                 self._json(200, {"ok": True, "uptime_s": time.time() - state.started_at,
@@ -1077,6 +1112,11 @@ def make_handler(state: CaptureServiceState):
                 return
             if path == "/sim/state":
                 self._json(200, state.sim_state())
+                return
+            if path == "/sim/snapshots":
+                result = self._supervisor_call("sim_snapshots")
+                if result is not None:
+                    self._json(200, result)
                 return
             if path == "/capture/movie/status":
                 result = self._supervisor_call("movie_status")
@@ -1090,7 +1130,7 @@ def make_handler(state: CaptureServiceState):
                 return
             self._json(404, {"error": f"not found: {path}"})
 
-        def do_POST(self):  # noqa: N802
+        def _route_POST(self):  # noqa: N802
             path = self.path
 
             try:
@@ -1127,6 +1167,17 @@ def make_handler(state: CaptureServiceState):
 
             if path == "/sim/reset":
                 result = self._supervisor_call("reset")
+                if result is not None:
+                    self._json(200, result)
+                return
+
+            if path in ("/sim/snapshot", "/sim/restore"):
+                name = body.get("name")
+                if not isinstance(name, str) or not name.strip():
+                    self._json(400, {"error": "name is required"})
+                    return
+                command = "sim_snapshot" if path.endswith("snapshot") else "sim_restore"
+                result = self._supervisor_call(command, {"name": name.strip()})
                 if result is not None:
                     self._json(200, result)
                 return

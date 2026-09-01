@@ -159,8 +159,13 @@ void OmAccelerometer::computeValue() {
   // override; Newton-backed Solids now get real point-velocity
   // reads via the Newton override (was previously reading bridge-
   // proxy state via the ODE backend, which was stale or zero).
+  // carrierBodyHandle, not bodyHandle: an accelerometer on a FOLDED carrier
+  // (nested Solid, no joint to its parent -- the URDF importer's IMU emission
+  // pattern) owns no body of its own; the fold leader's body is the physically
+  // correct read, and the point-velocity query below passes the SENSOR's own
+  // world position, so the lever arm inside the rigid fold is right.
   OmSolid *const us = upperSolid();
-  const OmBodyHandle upperHandle = us ? us->bodyHandle() : nullptr;
+  const OmBodyHandle upperHandle = us ? us->carrierBodyHandle() : nullptr;
   if (upperHandle) {
     // ⚠ THE RETURN VALUE IS LOAD-BEARING AND WAS BEING DISCARDED. getBodyPointVel
     // returns -1 WITHOUT WRITING v[] whenever the Newton world is not running --
@@ -188,8 +193,10 @@ void OmAccelerometer::computeValue() {
       warn(tr("Parent of Accelerometer node has no physics: measurements may be wrong."));
       mWarningWasPrinted = true;
     }
-    mValues[0] = mValues[1] = mValues[2] = NAN;
-    return;
+    // No body to difference velocities against, but the gravity term computed
+    // above is still real: fall through and publish it via the same
+    // sensor-frame projection the success path uses. A body-less accelerometer
+    // at rest must read -g in its own frame, not NaN.
   }
 
   const OmVector3 &result = acceleration * matrix();

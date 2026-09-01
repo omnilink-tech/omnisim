@@ -12,7 +12,7 @@ Every `.wbt` in the repo classified by purpose. Use this when you have a world f
 
 | Category | Root | Worlds | Purpose |
 |---|---|---|---|
-| [Demo worlds](#1-demo-worlds) | `projects/samples/demos/worlds/{chat,flagship,physics,showcase,environments,rendering,dev,misc}/` + the flat `omnilink_launcher.omniworld` | **73** dev / **61** public | User-facing showcases, chat demos, plus renderer-smoke & dev worlds. 12 are held with their robot packages (2 chat, 10 flagship) |
+| [Demo worlds](#1-demo-worlds) | `projects/samples/demos/worlds/{chat,flagship,physics,showcase,environments,rendering,dev,misc,starter,portability}/` + the flat `omnilink_launcher.omniworld` | **115** (114 `.omniworld` + the 1 dual-read-proof `.wbt`) | User-facing showcases, chat demos, plus renderer-smoke & dev worlds. All ship publicly (`publish_deny.txt` holds no entry under this tree) |
 | [Generated worlds](#2-generated-worlds) | `distribution/generated_worlds/` | 9 | Procedural scaffolds from the omniworld library (the `mars_small/big/max.wbt` scale variants are gitignored — regenerate them) |
 | [Device sample worlds](#3-device-sample-worlds) | `projects/samples/devices/worlds/` | 45 | One world per sensor/actuator — pedagogical tour |
 | [Rendering sample worlds](#4-rendering-sample-worlds) | `projects/samples/rendering/worlds/` | 2 | PBR reference + Sponza scene |
@@ -34,11 +34,11 @@ Every `.wbt` in the repo classified by purpose. Use this when you have a world f
 User-facing showcases. Cross-referenced in [DEMOS.md](DEMOS.md).
 
 ### 1a. Chat demos *(one robot, talk to it)*
-`projects/samples/demos/worlds/chat/` — one `omnilink_<robot>.wbt` per URDF robot, incl. the 3-arm `omnilink_multi_arm.omniworld`. *(Count check: `git ls-files projects/samples/demos/worlds/chat/ | grep -c '\.wbt$'` → **15** in this dev tree, **13** on the public snapshot: robot packages held from public distribution take their chat worlds with them. Of the 15, **14** are `omnilink_<robot>.wbt`.)* See the [chat demos section in DEMOS.md](DEMOS.md#1-chat-demos--single-robot-natural-language-console) and the in-folder guide [`chat/OMNILINK_CHAT_DEMOS.md`](projects/samples/demos/worlds/chat/OMNILINK_CHAT_DEMOS.md).
+`projects/samples/demos/worlds/chat/` — one `omnilink_<robot>.omniworld` per URDF robot, incl. the 3-arm `omnilink_multi_arm.omniworld`. *(Count check: `git ls-files projects/samples/demos/worlds/chat/ | grep -c '\.omniworld$'` → **16**. Of the 16, **15** are `omnilink_<robot>.omniworld`; the sixteenth is `omniarm6_talk.omniworld`. All 16 ship publicly — [`scripts/release/publish_deny.txt`](scripts/release/publish_deny.txt) holds no entry under this directory.)* See the [chat demos section in DEMOS.md](DEMOS.md#1-chat-demos--single-robot-natural-language-console) and the in-folder guide [`chat/OMNILINK_CHAT_DEMOS.md`](projects/samples/demos/worlds/chat/OMNILINK_CHAT_DEMOS.md).
 
-### 1b. Flagship — `worlds/flagship/` (18 dev / **8** public)
+### 1b. Flagship — `worlds/flagship/` (**24** worlds, all public)
 
-*(Count check: `git ls-files projects/samples/demos/worlds/flagship/ | grep -c '\.wbt$'` → 18. Ten ride on robot packages held from public distribution and are stripped with them — ten worlds in total — leaving 8 on the public snapshot: the five `husky_maze*`, `omnilink_husky_swarm`, `omnilink_smart_house`, `warehouse_industrial`.)*
+*(Count check: `git ls-files projects/samples/demos/worlds/flagship/ | grep -c '\.omniworld$'` → **24**. [`scripts/release/publish_deny.txt`](scripts/release/publish_deny.txt) holds no entry under this directory, so all 24 ship publicly — the old "18 dev / 8 public" split predates the OmniArm replacement of the held robot packages and is gone. The table below lists the highlights; the rest are the `omniarm6_*` manipulation set, `husky_unseen_maze`, and `warehouse_omnilink`.)*
 
 | World | Demo |
 |---|---|

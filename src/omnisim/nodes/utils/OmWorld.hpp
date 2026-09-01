@@ -69,6 +69,13 @@ public:
   void setIsCleaning(bool cleaning) { mIsCleaning = cleaning; }
   bool wasWorldLoadingCanceled() { return mWorldLoadingCanceled; }
 
+  // Headless texture-decode gate (see OmImageTexture::updateUrl): does this world
+  // contain any node whose SIMULATION output depends on decoded texture pixels
+  // (Camera, infra-red DistanceSensor, Pen)? Defaults to true (decode) and is
+  // computed by a pre-finalize scan in OmSimulationWorld; conservative by design.
+  bool needsTextures() const { return mNeedsTexturesForSensors; }
+  void setNeedsTextures(bool needs) { mNeedsTexturesForSensors = needs; }
+
   bool isVideoRecording() const { return mIsVideoRecording; }
 
   static bool isW3dStreaming() { return cW3dStreaming; }
@@ -201,6 +208,7 @@ private:
   bool mIsLoading;
   bool mIsCleaning;
   bool mIsVideoRecording;
+  bool mNeedsTexturesForSensors = true;  // headless texture-decode gate; see needsTextures()
 
   void checkPresenceOfMandatoryNodes();
   // Frames the auto-inserted Viewpoint on the scene. No-op unless mViewpointAutoInserted.

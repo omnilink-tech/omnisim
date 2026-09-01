@@ -7,7 +7,7 @@
 # family: object
 # claim : Deformable surfaces (cloth / membranes)
 # doc   : resources/nodes/Cloth.wrl (field contract) + docs/developer/cloth-simulation.md (the solver requirement is section 0)
-# docs currently claim this is: degraded (lane 4 raises a finding if the measurement disagrees)
+# docs currently claim this is: works (lane 4 raises a finding if the measurement disagrees)
 
 WorldInfo {
   gravity 9.81
@@ -66,7 +66,7 @@ DEF OMNIBENCH_PROBER Robot {
   controllerArgs [
     "--label=object.deformable_cloth"
     "--duration=3"
-    "--measure=pos:SUBJECT;node_exists:SHEET"
+    "--measure=pos:SUBJECT;node_exists:SHEET;particles:SHEET"
   ]
   supervisor TRUE
   children [

@@ -142,6 +142,11 @@ public:
   // simulated. False means "inert AND invisible" -- unlike a Cloth, there is no
   // rest-pose surface to draw without newton (see point 2 above).
   bool isSimulated() const { return mParticleStart >= 0; }
+  // This block's half-open particle range [start, end) in the Newton world's
+  // SHARED particle arrays (start is -1 when not simulated). Consumed by the
+  // supervisor particle-stats verb (C_SUPERVISOR_NODE_PARTICLE_STATS).
+  int particleRangeStart() const { return mParticleStart; }
+  int particleRangeEnd() const { return mParticleEnd; }
 
   // Per-frame entry point, called by OmDeformableFrameListener exactly as
   // OmCloth::animateMesh is. Reads this frame's particle positions back from

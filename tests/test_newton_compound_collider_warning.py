@@ -19,9 +19,10 @@ WHY THIS EXISTS (internal parity plan, item W1.6)
 `boundingObject Group { children [ A B C ] }` registers ONLY `A` with the
 physics engine unless WorldInfo.newtonCompoundColliders is TRUE (the default is
 FALSE). B and C are dropped -- no warning, no error, world loads clean, the
-body has a collider. 120 compound objects with >= 2 children across 91 files are
-in this state; a Chair.proto collides today as a floating seat slab with no
-legs, and this just bit a shipped sample world.
+body has a collider. ~108 compound objects with >= 2 children across ~77 tracked
+files are in this state (regex recount 2026-09-01; originally 120/91); a
+Chair.proto collides today as a floating seat slab with no legs, and this just
+bit a shipped sample world.
 
 WHAT THIS TEST DOES AND DOES NOT PIN. It pins the DISCLOSURE, not a fix. The
 default is deliberately NOT flipped: the same flag also selects the inertia

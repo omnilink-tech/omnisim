@@ -23,6 +23,11 @@ Subcommands:
   subjects                             List all known subject profiles
   inspect  <world.omniworld>                 Load world, list robots/poses, exit
   agent-build-new                           Print the locked Agent Build manifest
+  agent-build-preflight <film.json>          Probe all media/evidence/voice inputs
+  agent-build-proxy <film.json>              Render the exact fast editorial proxy
+  agent-build-review <film.json>             Run local proxy critique + cut sheets
+  agent-build-capture <capture.json>         Run/resume one persistent shot session
+  agent-build-make <film.json>               Cached, proxy-gated end-to-end workflow
   agent-build-render <film.json>            Assemble the evidence-led film
   agent-build-verify <film.json>            Run the fail-closed release gate
 
@@ -40,7 +45,19 @@ import time
 import urllib.request
 from pathlib import Path
 
-from . import agent_build, agent_build_voice, beats, camera, director, looks, storyboard, subjects
+from . import (
+    agent_build,
+    agent_build_capture,
+    agent_build_pipeline,
+    agent_build_review,
+    agent_build_voice,
+    beats,
+    camera,
+    director,
+    looks,
+    storyboard,
+    subjects,
+)
 
 
 def _cmd_render(args: argparse.Namespace) -> int:
@@ -133,12 +150,20 @@ def _cmd_agent_build_new(args: argparse.Namespace) -> int:
 def _cmd_agent_build_validate(args: argparse.Namespace) -> int:
     spec = agent_build.parse(Path(args.manifest))
     print(json.dumps({
-        "valid": True, "style": "agent_build_v6", "title": spec.title,
+        "valid": True, "style": agent_build.STYLE_VERSION, "title": spec.title,
         "duration_s": spec.duration_s, "segments": len(spec.segments),
+        "structure": spec.structure or "evidence_arc",
+        "simulator_footage_ratio": round(spec.simulator_footage_ratio, 3),
         "locked_intro": {"disclosure_s": [0, 5], "story_signature_s": [5, 10],
                            "voiceover": False},
         "locked_outro": agent_build.GITHUB_DESTINATION,
     }, indent=2))
+    return 0
+
+
+def _cmd_agent_build_preflight(args: argparse.Namespace) -> int:
+    spec = agent_build.parse(Path(args.manifest))
+    print(json.dumps(agent_build.preflight(spec), indent=2))
     return 0
 
 
@@ -163,6 +188,51 @@ def _cmd_agent_build_render(args: argparse.Namespace) -> int:
     result = agent_build.render(spec, Path(args.out).resolve() if args.out else None)
     for label, path in result.items():
         print(f"{label.upper():>12}: {path}")
+    return 0
+
+
+def _cmd_agent_build_proxy(args: argparse.Namespace) -> int:
+    spec = agent_build.parse(Path(args.manifest))
+    result = agent_build.render(
+        spec, Path(args.out).resolve() if args.out else None,
+        profile=agent_build.PROXY_PROFILE,
+    )
+    for label, path in result.items():
+        print(f"{label.upper():>12}: {path}")
+    return 0
+
+
+def _cmd_agent_build_review(args: argparse.Namespace) -> int:
+    spec = agent_build.parse(Path(args.manifest))
+    result = agent_build_review.review_proxy(
+        spec, Path(args.out).resolve() if args.out else None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_agent_build_capture_new(args: argparse.Namespace) -> int:
+    print(json.dumps(agent_build_capture.template(args.world), indent=2))
+    return 0
+
+
+def _cmd_agent_build_capture(args: argparse.Namespace) -> int:
+    result = agent_build_capture.run(
+        Path(args.plan), service=args.svc,
+        receipt_path=Path(args.receipt).resolve() if args.receipt else None,
+    )
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def _cmd_agent_build_make(args: argparse.Namespace) -> int:
+    spec = agent_build.parse(Path(args.manifest))
+    result = agent_build_pipeline.make(
+        spec, out_dir=Path(args.out).resolve() if args.out else None,
+        capture_plan=Path(args.capture_plan).resolve() if args.capture_plan else None,
+        service=args.svc, target_minutes=args.target_minutes,
+    )
+    print(json.dumps(result, indent=2))
     return 0
 
 
@@ -217,6 +287,10 @@ def main(argv: list[str] | None = None) -> int:
     pav.add_argument("manifest", help="Path to Agent Build Film JSON")
     pav.set_defaults(func=_cmd_agent_build_validate)
 
+    pap = sp.add_parser("agent-build-preflight", help="Probe captures, ranges, evidence, and voice budgets")
+    pap.add_argument("manifest", help="Path to Agent Build Film JSON")
+    pap.set_defaults(func=_cmd_agent_build_preflight)
+
     pavs = sp.add_parser("agent-build-voice-setup", help="Install the pinned local natural-voice runtime")
     pavs.add_argument("--runtime", default=None, help="Optional runtime directory")
     pavs.set_defaults(func=_cmd_agent_build_voice_setup)
@@ -230,6 +304,33 @@ def main(argv: list[str] | None = None) -> int:
     par.add_argument("manifest", help="Path to Agent Build Film JSON")
     par.add_argument("--out", default=None, help="Output directory")
     par.set_defaults(func=_cmd_agent_build_render)
+
+    papr = sp.add_parser("agent-build-proxy", help="Render the exact fast editorial proxy")
+    papr.add_argument("manifest", help="Path to Agent Build Film JSON")
+    papr.add_argument("--out", default=None, help="Output directory")
+    papr.set_defaults(func=_cmd_agent_build_proxy)
+
+    parc = sp.add_parser("agent-build-review", help="Run the deterministic proxy critique gate")
+    parc.add_argument("manifest", help="Path to Agent Build Film JSON")
+    parc.add_argument("--out", default=None, help="Output directory")
+    parc.set_defaults(func=_cmd_agent_build_review)
+
+    pacn = sp.add_parser("agent-build-capture-new", help="Print a resumable capture-plan template")
+    pacn.add_argument("--world", default="projects/samples/demos/worlds/flagship/build.omniworld")
+    pacn.set_defaults(func=_cmd_agent_build_capture_new)
+
+    pac = sp.add_parser("agent-build-capture", help="Run or resume one persistent capture session")
+    pac.add_argument("plan", help="Path to capture plan JSON")
+    pac.add_argument("--receipt", default=None, help="Optional receipt path")
+    pac.set_defaults(func=_cmd_agent_build_capture)
+
+    pam = sp.add_parser("agent-build-make", help="Run the cached proxy-gated production workflow")
+    pam.add_argument("manifest", help="Path to Agent Build Film JSON")
+    pam.add_argument("--capture-plan", default=None, help="Optional resumable capture plan")
+    pam.add_argument("--out", default=None, help="Output directory")
+    pam.add_argument("--target-minutes", type=float,
+                     default=agent_build_pipeline.BENCHMARK_TARGET_MINUTES)
+    pam.set_defaults(func=_cmd_agent_build_make)
 
     pave = sp.add_parser("agent-build-verify", help="Run the fail-closed Agent Build release gate")
     pave.add_argument("manifest", help="Path to Agent Build Film JSON")

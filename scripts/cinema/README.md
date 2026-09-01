@@ -55,17 +55,33 @@ the Agent Build Film workflow instead of the ordinary title/end-card branding:
 ```bash
 python -m omnisim cinema agent-build-new --title "What I built with OmniQuad" > agent_build.json
 python -m omnisim cinema agent-build-validate agent_build.json
-python -m omnisim cinema agent-build-voice agent_build.json
-python -m omnisim cinema agent-build-render agent_build.json
-python -m omnisim cinema agent-build-verify agent_build.json
+python -m omnisim cinema agent-build-make agent_build.json
 ```
 
 This layer consumes real captures from `scripts/capture/` or the Cinema
-director and applies the approved evidence-led story, silent 0–10 second
-signature, direct-cut grammar, safe information cards, natural local voice,
-restrained score, claim boundaries, GitHub-only outro, provenance hashes, and
-fail-closed delivery gate. The exact workflow and editorial rules are in
+director and applies the approved simulator-first three-act story, silent 0–10
+second signature, purposeful direct-cut grammar, sparse information cards,
+natural local voice, restrained score, claim boundaries, GitHub-only outro,
+provenance hashes, and fail-closed delivery gate. The validator requires at
+least 75 percent real simulator footage and an Act III simulator climax. The
+exact workflow and editorial rules are in
 [`AGENT_BUILD_FILMS.md`](AGENT_BUILD_FILMS.md).
+
+`agent-build-make` is the benchmark path. It probes every source range and
+narration budget, reuses unchanged narration blocks and edit parts, renders the
+exact 720p15 proxy, checks motion/exposure/framing/cut boundaries, writes the
+overview and exact cut-pair sheets, and only then unlocks the 1080p30 release
+render. The ready-simulation target is 35 minutes; normal revisions target five
+minutes. A cached benchmark proxy rebuild measures about two seconds on the
+reference Windows workstation.
+
+For a new shot list, keep one capture service alive and use a resumable plan:
+
+```bash
+python -m omnisim capture
+python -m omnisim cinema agent-build-capture-new --world worlds/build.omniworld > capture_plan.json
+python -m omnisim cinema agent-build-make agent_build.json --capture-plan capture_plan.json
+```
 
 ## The storyboard DSL
 

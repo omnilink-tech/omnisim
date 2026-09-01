@@ -63,6 +63,15 @@ public:
   // active side welds the passive side's body to the world), exactly like
   // ODE's one-joint-per-connection ownership.
   void ensureNewtonWeldSlot(OmNewtonBackend *newton);
+  // W1.7 mid-run physics rebuild: forget the slot (it indexed the OLD Newton
+  // world). Returns true when a weld was ENGAGED and is therefore dropped --
+  // the caller warns loudly; re-engagement across a rebuild is future work.
+  bool resetNewtonWeldSlotForRebuild() {
+    const bool wasEngaged = mNewtonWeldActive;
+    mNewtonWeldSlot = -1;
+    mNewtonWeldActive = false;
+    return wasEngaged;
+  }
 
 private:
   // fields

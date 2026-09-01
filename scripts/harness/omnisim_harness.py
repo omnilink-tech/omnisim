@@ -198,6 +198,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import functools
 import inspect
 import hashlib
 import json
@@ -213,6 +214,7 @@ import tempfile
 import textwrap
 import threading
 import time
+import traceback
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -364,6 +366,11 @@ IDEMPOTENT_SUPERVISOR_COMMANDS = frozenset({
     # writes solver state; nothing in the scene moves), so a transparent
     # replay after a dead socket is safe — it just re-answers.
     "solve_ik",
+    # particle_stats is a PURE READ off the engine's per-step particle caches
+    # (the same _particle_q_cache the render readback shares; the GranularGroup
+    # arm reads the host buffer the wgpu draw reads). Nothing in the scene
+    # moves, so a transparent replay after a dead socket just re-answers.
+    "particle_stats",
 })
 
 
@@ -581,14 +588,25 @@ OMNISIM_WIRE_VERSION = "1.1"
 # check is the whole reason this table is trustworthy: the last hand-maintained
 # copy of it (PROTOCOL.md §7) was missing eight endpoints.
 ROUTES: tuple[dict, ...] = (
-    {"method": "GET", "path": "/capabilities", "summary": "This document: backend, limits, event types, what is not supported."},
+    {"method": "GET", "path": "/capabilities", "summary": "This document: backend, limits, event types, what is not supported.",
+     "params": ["probe_step"]},
     {"method": "GET", "path": "/healthz", "summary": "Liveness; never touches the simulator."},
+    {"method": "GET", "path": "/debug/read_bench",
+     "summary": "Diagnostic: measured cost of one supervisor read on this session, free-running vs paused.",
+     "params": ["n"]},
     {"method": "GET", "path": "/world/diagnostics", "summary": "Structured diagnostics from the current load."},
     {"method": "GET", "path": "/world/render_stats", "summary": "Exposure statistics of a fresh render (0-255 scale)."},
     {"method": "GET", "path": "/scene/tree", "summary": "Flat node list; ?bounds=1 attaches world-space bounds.",
      "params": ["bounds"]},
     {"method": "GET", "path": "/scene/node/<def>", "summary": "Field dump + contacts for one node.",
      "params": ["bounds", "probe"]},
+    {"method": "GET", "path": "/scene/node/<def>/particles",
+     "summary": "Particle stats for one Cloth/SoftBody/GranularBed/GranularGroup node: count, "
+                "world-frame min/max/centroid over the FINITE particles, and non_finite (a "
+                "diverging cloth reads as a rising non_finite, never a NaN centroid). PURE READ "
+                "off the engine's per-step particle cache; ?sample=N adds every N-th particle's "
+                "xyz.",
+     "params": ["sample"]},
     {"method": "GET", "path": "/scene/viewpoint", "summary": "Read the live camera back, with resolved per-axis FOV."},
     {"method": "GET", "path": "/scene/visible", "summary": "What is on screen now: frustum test, pixel bbox, angular offset.",
      "params": ["defs", "all", "limit"]},
@@ -621,7 +639,7 @@ ROUTES: tuple[dict, ...] = (
     {"method": "GET", "path": "/robot/damage/events", "summary": "Filtered view of damage.* events.",
      "params": ["since", "limit"]},
     {"method": "POST", "path": "/world/load", "summary": "Load or hot-reload a world (.omniworld or legacy .wbt); structured diagnostics.",
-     "body": ["path", "wait_s", "with_supervisor", "light"]},
+     "body": ["path", "wait_s", "with_supervisor", "light", "tracking"]},
     {"method": "POST", "path": "/world/sync",
      "summary": "Default agent edit loop: live-apply proven root pose-only changes; safely reload everything else.",
      "body": ["path", "settle_steps", "reset_physics", "wait_s", "light"]},
@@ -654,6 +672,13 @@ ROUTES: tuple[dict, ...] = (
      "body": ["def", "defs", "settle_steps"]},
     {"method": "POST", "path": "/scene/set_pose", "summary": "Move an existing node by DEF.",
      "body": ["def", "translation", "rotation", "reset_physics", "settle_steps"]},
+    {"method": "POST", "path": "/sim/rebuild_physics",
+     "summary": "W1.7: rebuild the Newton world at the scene's CURRENT poses -- runtime-spawned "
+                "nodes gain physics, deleted ones lose it. Refused (409 REBUILD_REFUSED) on "
+                "cloth/soft/granular worlds. ~0.3-0.7 s. Engaged Connector/VacuumGripper welds "
+                "are DROPPED (re-lock from the controller). Also available as "
+                "{\"physics\": \"rebuild\"} on /scene/spawn and /scene/delete.",
+     "body": ["settle_steps"]},
     {"method": "POST", "path": "/sim/step", "summary": "Advance N basic timesteps.", "body": ["steps"]},
     {"method": "POST", "path": "/sim/reset",
      "summary": "Rewind the clock and restore the authored state. ⚠ ALSO RE-PINS EVERY MOTOR and "
@@ -853,7 +878,8 @@ ENGINE_NOT_SUPPORTED: list[dict] = [
      "source": "src/omnisim/nodes/utils/OmObjectDetection.cpp (working); the gap is the absence of "
                "any removeBody/unregister path in src/omnisim/physics/OmNewtonBackend.hpp",
      "diagnostic": "OCCLUSION_RAYS_UNANSWERED",
-     "workaround": "reload the world (POST /world/load) after removing collidable nodes. This is "
+     "workaround": "POST /sim/rebuild_physics after removing collidable nodes (W1.7, 2026-09-01; "
+                   "97-267 ms, refused on particle worlds), or reload the world. This is "
                    "NOT limited to rays: CONTACTS against a deleted static are affected too, "
                    "MEASURED 2026-08-08 -- a body resting on an elevated floor stayed at z=0.5999 "
                    "for 61,440 steps after the floor was deleted, and the engine's own step log "
@@ -880,11 +906,19 @@ ENGINE_NOT_SUPPORTED: list[dict] = [
      "diagnostic": "SILENT engine-side; this harness attaches `physics_warning` "
                    "RUNTIME_MUTATION_NOT_IN_SOLVER to every successful /scene/spawn and "
                    "/scene/delete response, and emits one world.warning per verb per world-load",
-     "workaround": "use /scene/spawn for cameras, markers and visual props, or to stage a scene "
-                   "you then persist and reload; for anything that must fall, collide, block rays "
-                   "or be picked up, write the node into the world file and POST /world/load (or "
-                   "/world/sync) -- a reload rebuilds the solver model from the current scene. "
-                   "/scene/set_pose is unaffected (it moves a body the solver already knows)."},
+     "workaround": "FIXED 2026-09-01 (W1.7): POST /sim/rebuild_physics -- or pass "
+                   "{\"physics\": \"rebuild\"} on /scene/spawn / /scene/delete -- rebuilds the "
+                   "Newton world at the scene's CURRENT poses in 97-267 ms (measured), so spawned "
+                   "nodes gain physics and deleted ones lose it. Verified: a spawned box landed "
+                   "bit-identical to its authored twin (0.599892258644104) and an 8-robot world "
+                   "drove through a mid-run rebuild at unchanged speed. Caveats: 409 "
+                   "REBUILD_REFUSED on Cloth/SoftBody/GranularBed worlds (they re-register from "
+                   "authored state -- reload those); engaged Connector/VacuumGripper welds are "
+                   "DROPPED with a loud warning (re-lock from the controller); bitwise "
+                   "step-for-step continuation across a rebuild is not claimed. The DEFAULT "
+                   "spawn/delete behaviour is unchanged (this entry stays so the default's "
+                   "physics_warning remains explained); /scene/set_pose is unaffected (it moves "
+                   "a body the solver already knows)."},
     {"feature": "solid.setInertiaMatrixFromBoundingObject",
      "scope": "engine",
      "reason": "computing an inertia matrix from the bounding object is unavailable -- it ran ODE's "
@@ -1018,6 +1052,7 @@ _HARNESS_CODE_RE = re.compile(r'"code":\s*"([A-Z][A-Z0-9_]+)"')
 _LOG_TYPE_RE = re.compile(r'"type":\s*"([a-z_]+\.[a-z_]+)"|type_ = "([a-z_]+\.[a-z_]+)"')
 
 
+@functools.lru_cache(maxsize=4)
 def verify_routes(handler_source: str) -> dict:
     """Cross-check the declared ROUTES table against the handler source.
 
@@ -1045,6 +1080,7 @@ def verify_routes(handler_source: str) -> dict:
     }
 
 
+@functools.lru_cache(maxsize=4)
 def verify_log_event_types(source: str) -> dict:
     """Cross-check LOG_EVENT_TYPES against what LogRingBuffer actually emits."""
     found = sorted({a or b for a, b in _LOG_TYPE_RE.findall(source) if (a or b)})
@@ -1070,11 +1106,20 @@ HARNESS_DIAGNOSTIC_CODES = (
 )
 
 
+_OWN_SOURCE_CACHE: str | None = None
+
+
 def _own_source() -> str:
-    try:
-        return Path(__file__).read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return ""
+    # Memoised: the file cannot change meaning in-process, and /capabilities
+    # used to re-read this ~300 KB source (twice) on every call.
+    global _OWN_SOURCE_CACHE
+    if _OWN_SOURCE_CACHE is None:
+        try:
+            _OWN_SOURCE_CACHE = Path(__file__).read_text(
+                encoding="utf-8", errors="replace")
+        except OSError:
+            _OWN_SOURCE_CACHE = ""
+    return _OWN_SOURCE_CACHE
 
 
 def known_diagnostic_codes() -> list[str]:
@@ -1094,6 +1139,7 @@ def known_diagnostic_codes() -> list[str]:
     return sorted(codes)
 
 
+@functools.lru_cache(maxsize=1)
 def known_request_error_codes() -> list[str]:
     """Machine-branchable `code` values on 4xx request-error bodies.
 
@@ -1216,6 +1262,8 @@ def read_newton_verdict(log_path: Path) -> dict:
     return out
 
 
+_BODY_CENSUS_CACHE: dict = {}
+
 _BODY_CENSUS_RE = re.compile(
     r"\[(?:Wb|Om)NewtonBackend\] registered (\d+) dynamic \+ (\d+) static Newton bodies")
 
@@ -1242,6 +1290,17 @@ def read_body_census(log_path: Path) -> dict:
     out: dict = {"dynamic_bodies_registered": None,
                  "static_bodies_registered": None,
                  "source": "engine_log_census"}
+    # Cached on (path, mtime_ns, size): the log only grows between reloads,
+    # and /capabilities used to re-read + re-regex the whole file per call.
+    try:
+        st = log_path.stat()
+        cache_key = (str(log_path), st.st_mtime_ns, st.st_size)
+    except OSError:
+        out["source"] = "log_unreadable"
+        return out
+    cached = _BODY_CENSUS_CACHE.get("entry")
+    if cached is not None and cached[0] == cache_key:
+        return dict(cached[1])
     try:
         text = log_path.read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -1254,6 +1313,7 @@ def read_body_census(log_path: Path) -> dict:
             "the engine logged no registration census. It is written on the tick that "
             "builds the world, so this means the world never got that far (or nothing "
             "registered at all) -- NOT that the count is zero.")
+        _BODY_CENSUS_CACHE["entry"] = (cache_key, dict(out))
         return out
     dynamic, static = matches[-1]
     out["dynamic_bodies_registered"] = int(dynamic)
@@ -1265,6 +1325,7 @@ def read_body_census(log_path: Path) -> dict:
             "one it authored fell out of the simulation and nothing will move, fall or "
             "collide. Read the load diagnostics: NO_PHYSICS_BACKEND, "
             "NEWTON_RUNTIME_ABSENT/BROKEN, SOLID_ODE_PIN_INERT, NEWTON_ENFORCE_REFUSED.")
+    _BODY_CENSUS_CACHE["entry"] = (cache_key, dict(out))
     return out
 
 
@@ -2039,8 +2100,31 @@ def sibling_path_for(world: Path) -> Path:
     return world.with_name(f".harness_{world.name}")
 
 
+def supervisor_controller_args(light: bool = False,
+                               tracking: dict | None = None) -> list[str]:
+    """controllerArgs for the injected supervisor.
+
+    --light drops all three per-step trackers; the per-tracker flags
+    (public issue #4) drop exactly one each. GripTracker consumes
+    ContactTracker's pairs, so contacts=false implies grips off too
+    (the supervisor enforces that; the flag list stays explicit).
+    """
+    if light:
+        return ["--light"]
+    t = tracking or {}
+    args: list[str] = []
+    if t.get("contacts") is False:
+        args.append("--no-contacts")
+    if t.get("joint_limits") is False:
+        args.append("--no-joint-limits")
+    if t.get("grips") is False:
+        args.append("--no-grips")
+    return args
+
+
 def write_sibling_world(original: Path, light: bool = False,
-                        source_text: str | None = None) -> Path:
+                        source_text: str | None = None,
+                        tracking: dict | None = None) -> Path:
     """Write a sibling copy with the generic supervisor Robot appended.
 
     ``source_text`` pins the exact source captured by the load/sync request so
@@ -2056,7 +2140,21 @@ def write_sibling_world(original: Path, light: bool = False,
                else original.read_text(encoding="utf-8", errors="replace"))
     if not content.endswith("\n"):
         content += "\n"
-    content += SUPERVISOR_INJECT_STANZA_LIGHT if light else SUPERVISOR_INJECT_STANZA
+    args = supervisor_controller_args(light, tracking)
+    if not args:
+        content += SUPERVISOR_INJECT_STANZA
+    elif args == ["--light"]:
+        content += SUPERVISOR_INJECT_STANZA_LIGHT
+    else:
+        quoted = " ".join(f'"{a}"' for a in args)
+        content += (
+            "\nRobot {\n"
+            f'  name "{HARNESS_SUPERVISOR_NAME}"\n'
+            f'  controller "{HARNESS_SUPERVISOR_NAME}"\n'
+            f"  controllerArgs [ {quoted} ]\n"
+            "  supervisor TRUE\n"
+            "  synchronization FALSE\n"
+            "}\n")
     sibling.write_text(content, encoding="utf-8")
     return sibling
 
@@ -2323,6 +2421,10 @@ def _pump_pipe(pipe, stream_name: str, log_buffer: LogRingBuffer,
 class HarnessState:
     """Owns the OmniSim subprocess, sibling file lifecycle, and supervisor RPC."""
 
+    # Class-level default so test stubs built via __new__ resolve it too;
+    # __init__ shadows it per instance.
+    tracking_supervisor: dict | None = None
+
     def __init__(
         self,
         omnisim_home: Path,
@@ -2334,6 +2436,9 @@ class HarnessState:
         # Default for the injected supervisor's --light flag. A load may
         # override per request; the hot-reload path reuses this value.
         self.light_supervisor = env_flag("OMNISIM_HARNESS_LIGHT")
+        # Per-tracker toggles for the injected supervisor (public issue #4);
+        # set per /world/load request, reused by hot reload and /world/sync.
+        self.tracking_supervisor: dict | None = None
         # Honour OMNISIM_LOG_PATH: the engine writes its log there when set
         # (OmLog reads it as an override), so the harness must read the same
         # file or diagnostics/progress tracking silently watch the wrong
@@ -2834,7 +2939,8 @@ class HarnessState:
         log_mark_before = self._log_size()
         try:
             new_sibling = write_sibling_world(
-                world, self.light_supervisor, source_text=source_text)
+                world, self.light_supervisor, source_text=source_text,
+                tracking=self.tracking_supervisor)
         except OSError:
             return None
 
@@ -3053,13 +3159,21 @@ class HarnessState:
             # otherwise learns about the full-mode tax only by timing out.
             if isinstance(result, dict) and with_supervisor and "error" not in result:
                 result["engine_mode"] = ENGINE_MODE
+                per_tracker = supervisor_controller_args(False, self.tracking_supervisor)
                 result["tracking"] = {
                     "light": bool(light),
-                    "mode": "light" if light else "full",
+                    "mode": ("light" if light else
+                             ("partial" if per_tracker else "full")),
+                    "disabled_flags": (["--light"] if light else per_tracker),
                     "hint": (
                         "light mode: /sim/grips is empty and contact.*/grip.*/joint.limit_hit "
                         "events are not produced; /sim/contacts still answers."
                         if light else
+                        ("partial tracking: " + " ".join(per_tracker) + " -- the disabled "
+                         "trackers' event types go quiet (GET /capabilities -> "
+                         "event_types_detail.suppressed names them); /sim/contacts always "
+                         "answers regardless.")
+                        if per_tracker else
                         "FULL tracking (the backward-compatible default): the supervisor walks the "
                         "scene every basic step for contact / grip / joint-limit events. Measured on "
                         "the 10-Husky world (309 nodes, CPU mj_step, 2026-08-29): /sim/step 1 ~0.6 s "
@@ -3279,7 +3393,8 @@ class HarnessState:
             if with_supervisor:
                 try:
                     self.current_sibling = write_sibling_world(
-                        world, light, source_text=source_text)
+                        world, light, source_text=source_text,
+                        tracking=self.tracking_supervisor)
                     target_world = self.current_sibling
                 except OSError as exc:
                     # Every /world/load with a supervisor -- the default, and
@@ -3904,6 +4019,7 @@ class HarnessState:
                 "host": self.supervisor_host,
                 "port": self.supervisor_port,
                 "light": light,
+                "tracking": (sup or {}).get("tracking"),
                 "error": sup_error,
                 "commands": (sup or {}).get("commands"),
                 "commands_source": (sup or {}).get("commands_source"),
@@ -4184,8 +4300,54 @@ def make_handler(state: HarnessState):
         return _source_cache["src"]
 
     class Handler(BaseHTTPRequestHandler):
+        # HTTP/1.1 with keep-alive: pooled clients (the ROS bridge client,
+        # the MCP wrapper, any http.client user) reuse one TCP connection
+        # instead of paying connect + TIME_WAIT per request. Every response
+        # path sets Content-Length (_json/_png), which keep-alive requires.
+        protocol_version = "HTTP/1.1"
+        # Without a timeout an idle keep-alive client parks a server thread
+        # in rfile.readline() forever; socket.timeout is turned into
+        # close_connection by handle_one_request.
+        timeout = 30
+
         def log_message(self, fmt, *args):
             pass
+
+        def do_GET(self):  # noqa: N802
+            self._fenced(self._route_GET)
+
+        def do_POST(self):  # noqa: N802
+            self._fenced(self._route_POST)
+
+        def _fenced(self, route) -> None:
+            """Run a router with a last-resort exception fence.
+
+            Under HTTP/1.0 an unhandled handler exception produced an empty
+            reply (RemoteDisconnected, zero diagnostics); under keep-alive it
+            would additionally desync a pooled connection. Turn it into a
+            coded 500 and close this connection so the stream can never be
+            left mid-body.
+            """
+            te = (self.headers.get("Transfer-Encoding") or "").lower()
+            if "chunked" in te:
+                # _read_json honours Content-Length only; silently treating a
+                # chunked body as empty would also leave the chunks on the
+                # wire and poison the next request on this connection.
+                self.close_connection = True
+                self._json(411, {"ok": False, "code": "LENGTH_REQUIRED",
+                                 "error": "chunked Transfer-Encoding is not "
+                                          "supported; send Content-Length"})
+                return
+            try:
+                route()
+            except Exception as exc:  # noqa: BLE001 - last-resort fence
+                self.close_connection = True
+                try:
+                    self._json(500, {"ok": False, "code": "HARNESS_INTERNAL",
+                                     "error": f"{type(exc).__name__}: {exc}",
+                                     "traceback": traceback.format_exc(limit=8)})
+                except Exception:  # noqa: BLE001 - headers already sent
+                    pass
 
         def _json(self, code: int, obj: dict) -> None:
             # Strict JSON at the boundary: the supervisor can forward NaN /
@@ -4229,11 +4391,10 @@ def make_handler(state: HarnessState):
                     pass
 
         def _supervisor_call(self, cmd: str, args: dict | None = None) -> dict | None:
-            try:
-                return state.supervisor_call(cmd, args)
-            except SupervisorRPCError as exc:
-                self._json(503, {"error": str(exc)})
-                return None
+            # Delegates to the coded classifier: a wrong DEF is the caller's
+            # mistake (4xx + branchable code), not a simulator outage, and
+            # every error body carries a machine-branchable `code`.
+            return self._supervisor_call_coded(cmd, args)
 
         def _supervisor_call_coded(self, cmd: str, args: dict | None = None) -> dict | None:
             """Like _supervisor_call, but classifies the failure instead of
@@ -4320,10 +4481,10 @@ def make_handler(state: HarnessState):
                     center = [float(v) for v in target]
                     radius = float(body.get("radius", 1.0))
                 except (TypeError, ValueError):
-                    self._json(400, {"error": "target/radius must be numbers"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "target/radius must be numbers"})
                     return None
                 if radius <= 0.0:
-                    self._json(400, {"error": "radius must be > 0"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "radius must be > 0"})
                     return None
                 return {"center": center, "radius": radius,
                         "bbox_min": [center[i] - radius for i in range(3)],
@@ -4343,12 +4504,18 @@ def make_handler(state: HarnessState):
             try:
                 camera = state.camera_context()
             except SupervisorRPCError as exc:
-                self._json(503, {"error": str(exc)})
+                self._json(503, {"ok": False, "code": "SUPERVISOR_UNAVAILABLE", "error": str(exc)})
                 return
-            aspect = float(body.get("aspect") or camera["aspect"])
-            fov = float(body.get("fov") or camera["field_of_view"])
-            margin = float(body.get("margin") or spatial.DEFAULT_MARGIN)
-            radius = float(body.get("radius_override") or subject["radius"])
+            try:
+                aspect = float(body.get("aspect") or camera["aspect"])
+                fov = float(body.get("fov") or camera["field_of_view"])
+                margin = float(body.get("margin") or spatial.DEFAULT_MARGIN)
+                radius = float(body.get("radius_override") or subject["radius"])
+            except (TypeError, ValueError):
+                self._json(400, {"ok": False, "code": "BAD_REQUEST",
+                                 "error": "aspect/fov/margin/radius_override "
+                                          "must be numbers"})
+                return
             rotation = subject.get("rotation") if body.get(
                 "subject_relative", True) else None
             try:
@@ -4358,7 +4525,7 @@ def make_handler(state: HarnessState):
                     subject_rotation=rotation,
                 )
             except ValueError as exc:
-                self._json(400, {"error": str(exc), "code": "BAD_VIEW_MODE"})
+                self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": str(exc), "code": "BAD_VIEW_MODE"})
                 return
 
             push = bool(body.get("push", True))
@@ -4399,7 +4566,7 @@ def make_handler(state: HarnessState):
             try:
                 camera = state.camera_context()
             except SupervisorRPCError as exc:
-                self._json(503, {"error": str(exc)})
+                self._json(503, {"ok": False, "code": "SUPERVISOR_UNAVAILABLE", "error": str(exc)})
                 return
             eye = camera["position"]
             orientation = camera["orientation"]
@@ -4414,7 +4581,7 @@ def make_handler(state: HarnessState):
                 try:
                     center = [float(v) for v in raw_center]
                 except (TypeError, ValueError):
-                    self._json(400, {"error": "center must be 3 numbers"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "center must be 3 numbers"})
                     return
                 center_source = "explicit center"
             elif isinstance(body.get("def"), str) and body["def"]:
@@ -4427,7 +4594,7 @@ def make_handler(state: HarnessState):
                 try:
                     distance = float(body.get("distance", 10.0))
                 except (TypeError, ValueError):
-                    self._json(400, {"error": "distance must be a number"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "distance must be a number"})
                     return
                 forward = camera["forward"]
                 center = [eye[i] + forward[i] * distance for i in range(3)]
@@ -4442,7 +4609,7 @@ def make_handler(state: HarnessState):
                     pan=body.get("pan"),
                 )
             except (TypeError, ValueError) as exc:
-                self._json(400, {"error": f"bad orbit parameter: {exc}"})
+                self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": f"bad orbit parameter: {exc}"})
                 return
 
             push = bool(body.get("push", True))
@@ -4471,7 +4638,7 @@ def make_handler(state: HarnessState):
             try:
                 camera = state.camera_context()
             except SupervisorRPCError as exc:
-                self._json(503, {"error": str(exc)})
+                self._json(503, {"ok": False, "code": "SUPERVISOR_UNAVAILABLE", "error": str(exc)})
                 return
             defs_csv = qs.get("defs", [None])[0]
             wanted = [d for d in defs_csv.split(",") if d] if defs_csv else None
@@ -4479,7 +4646,7 @@ def make_handler(state: HarnessState):
             try:
                 limit = int(qs.get("limit", ["200"])[0])
             except ValueError:
-                self._json(400, {"error": "'limit' must be an integer"})
+                self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "'limit' must be an integer"})
                 return
             limit = max(1, min(limit, 2000))
 
@@ -4558,7 +4725,7 @@ def make_handler(state: HarnessState):
                 "pixel_basis": camera["viewport"]["source"],
             })
 
-        def do_GET(self):  # noqa: N802
+        def _route_GET(self):  # noqa: N802
             path = self.path
             if path == "/healthz":
                 self._json(200, {"ok": True, "uptime_s": time.time() - state.started_at})
@@ -4614,7 +4781,7 @@ def make_handler(state: HarnessState):
                 try:
                     self._json(200, state.camera_context())
                 except SupervisorRPCError as exc:
-                    self._json(503, {"error": str(exc)})
+                    self._json(503, {"ok": False, "code": "SUPERVISOR_UNAVAILABLE", "error": str(exc)})
                 return
 
             if parsed_early.path == "/scene/visible":
@@ -4623,8 +4790,11 @@ def make_handler(state: HarnessState):
             if path == "/world/render_stats":
                 if not _HAS_PIL:
                     self._json(503, {
+                        "ok": False,
+                        "code": "PILLOW_MISSING",
                         "error": "Pillow is not installed; render stats require it. "
-                                 "pip install Pillow"
+                                 "pip install Pillow (an install gap on the "
+                                 "harness host, not a simulator outage)"
                     })
                     return
                 fd, name = tempfile.mkstemp(prefix="omnisim_harness_stats_", suffix=".png")
@@ -4646,14 +4816,46 @@ def make_handler(state: HarnessState):
                 try:
                     stats = compute_render_stats(image_bytes)
                 except RuntimeError as exc:
-                    self._json(503, {"error": str(exc)})
+                    self._json(503, {"ok": False, "code": "SUPERVISOR_UNAVAILABLE", "error": str(exc)})
                     return
                 self._json(200, stats)
                 return
             if parsed_early.path.startswith("/scene/node/"):
+                # /scene/node/<def>/particles — matched by path SEGMENT (the
+                # /robot/<def>/joints convention) BEFORE the generic
+                # /scene/node/<def> handler below, which would otherwise
+                # swallow "<def>/particles" as a DEF.
+                _pparts = parsed_early.path[1:].split("/")
+                if len(_pparts) == 4 and _pparts[3] == "particles":
+                    def_name = _pparts[2]
+                    if not def_name:
+                        self._json(400, {"ok": False, "code": "BAD_REQUEST",
+                                         "error": "missing DEF in /scene/node/<def>/particles"})
+                        return
+                    qs = parse_qs(parsed_early.query)
+                    sample = 0
+                    if "sample" in qs:
+                        try:
+                            sample = int(qs["sample"][0])
+                        except ValueError:
+                            self._json(400, {"ok": False, "code": "BAD_REQUEST",
+                                             "error": "'sample' must be an integer stride "
+                                                      "(0 = stats only)"})
+                            return
+                    t0 = time.perf_counter()
+                    # Coded: an unknown DEF is a 404 and a non-particle node a
+                    # 4xx, not a simulator outage.
+                    result = self._supervisor_call_coded(
+                        "particle_stats", {"def": def_name, "sample_stride": sample})
+                    if result is None:
+                        return
+                    result["rpc_ms"] = round((time.perf_counter() - t0) * 1000.0, 1)
+                    self._json(200, result)
+                    return
+            if parsed_early.path.startswith("/scene/node/"):
                 def_name = parsed_early.path[len("/scene/node/"):]
                 if not def_name:
-                    self._json(400, {"error": "missing DEF in /scene/node/<def>"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "missing DEF in /scene/node/<def>"})
                     return
                 qs = parse_qs(parsed_early.query)
                 args: dict = {"def": def_name}
@@ -4696,13 +4898,13 @@ def make_handler(state: HarnessState):
                     try:
                         args["since"] = int(qs["since"][0])
                     except ValueError:
-                        self._json(400, {"error": "'since' must be an integer"})
+                        self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "'since' must be an integer"})
                         return
                 if "limit" in qs:
                     try:
                         args["limit"] = int(qs["limit"][0])
                     except ValueError:
-                        self._json(400, {"error": "'limit' must be an integer"})
+                        self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "'limit' must be an integer"})
                         return
                 result = self._supervisor_call("damage_events", args)
                 if result is not None:
@@ -4757,7 +4959,7 @@ def make_handler(state: HarnessState):
                         try:
                             args["settle_steps"] = int(qs["settle_steps"][0])
                         except ValueError:
-                            self._json(400, {"error": "'settle_steps' must be an integer"})
+                            self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "'settle_steps' must be an integer"})
                             return
                 # wake=1 advances the sim, so it is NOT the idempotent read the
                 # transparent-retry list assumes; _supervisor_call is still the
@@ -4785,6 +4987,8 @@ def make_handler(state: HarnessState):
                     limit = int(qs.get("limit", ["256"])[0])
                 except ValueError:
                     self._json(400, {
+                        "ok": False,
+                        "code": "BAD_REQUEST",
                         "error": "since/log_since/limit must be integers",
                     })
                     return
@@ -4828,13 +5032,27 @@ def make_handler(state: HarnessState):
                 next_log_since = (
                     log_events[-1]["seq"] if log_events else log_since
                 )
-                self._json(200, {
+                payload = {
                     "events": events,
                     "next_since": sup_result.get("next_seq", sup_since),
                     "next_log_since": next_log_since,
                     "dropped_sup": sup_result.get("dropped", 0),
                     "dropped_log": state.log_buffer.dropped,
-                })
+                }
+                if types_list:
+                    # The filter is an exact-match allowlist; an unknown or
+                    # suppressed type yields an empty stream, not an error.
+                    # Name the misses so a silent empty result explains
+                    # itself. Supervisor types come from the RPC result when
+                    # connected (event_bus.SUPERVISOR_EVENT_TYPES); offline,
+                    # only log-side types can be checked.
+                    known = set(sup_result.get("types") or ()) | set(
+                        LOG_EVENT_TYPES)
+                    if known - set(LOG_EVENT_TYPES):
+                        unmatched = [t for t in types_list if t not in known]
+                        if unmatched:
+                            payload["unmatched_types"] = unmatched
+                self._json(200, payload)
                 return
 
             # /robot/<def>/joints, /robot/<def>/devices,
@@ -4871,6 +5089,8 @@ def make_handler(state: HarnessState):
                         # positions == PositionSensor values).
                         sensor_name = "/".join(parts[3:])
                         self._json(501, {
+                            "ok": False,
+                            "code": "SENSOR_NOT_SUPERVISOR_READABLE",
                             "error": (
                                 "live sensor reads not supported from the "
                                 "supervisor (OmniSim restricts device APIs "
@@ -4885,25 +5105,38 @@ def make_handler(state: HarnessState):
                         })
                         return
 
-            self._json(404, {"error": f"not found: {path}"})
+            if path.startswith("/debug/read_bench"):
+                # Diagnostic (declared in ROUTES since 2026-09-01; PROTOCOL.md
+                # §7.35): measures the per-read cost of
+                # one supervisor getter, free-running vs paused.
+                qs = parse_qs(urlparse(path).query)
+                n = int(qs.get("n", ["50"])[0])
+                result = self._supervisor_call("diag_read_bench", {"n": n})
+                if result is not None:
+                    self._json(200, result)
+                return
 
-        def do_POST(self):  # noqa: N802
+            self._json(404, {"ok": False, "code": "UNKNOWN_ROUTE",
+                             "error": f"not found: {path}"})
+
+        def _route_POST(self):  # noqa: N802
             path = self.path
             if path == "/world/sync":
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 world_path = body.get("path")
                 if world_path is not None and (not isinstance(world_path, str)
                                                or not world_path):
-                    self._json(400, {"error": "path must be a non-empty string"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "path must be a non-empty string"})
                     return
                 try:
                     wait_s = float(body.get("wait_s", DEFAULT_LOAD_WAIT_S))
                 except (TypeError, ValueError):
-                    self._json(400, {"error": "wait_s must be a number"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "wait_s must be a number"})
                     return
                 light = body.get("light")
                 result = state.sync_world(
@@ -4921,11 +5154,12 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 world_path = body.get("path")
                 if not isinstance(world_path, str) or not world_path:
-                    self._json(400, {"error": "path is required"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "path is required"})
                     return
                 with_supervisor = bool(body.get("with_supervisor", True))
                 light = bool(body.get("light", state.light_supervisor))
@@ -4934,22 +5168,67 @@ def make_handler(state: HarnessState):
                 try:
                     wait_s = float(wait_s)
                 except (TypeError, ValueError):
-                    self._json(400, {"error": "wait_s must be a number"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "wait_s must be a number"})
                     return
+                tracking = body.get("tracking")
+                if tracking is not None:
+                    if (not isinstance(tracking, dict)
+                            or not set(tracking) <= {"contacts", "joint_limits", "grips"}
+                            or not all(isinstance(v, bool) for v in tracking.values())):
+                        self._json(400, {
+                            "ok": False, "code": "BAD_REQUEST",
+                            "error": ("'tracking' must be a dict with boolean "
+                                      "values for any of: contacts, "
+                                      "joint_limits, grips")})
+                        return
                 state.light_supervisor = light
+                state.tracking_supervisor = tracking
                 result = state.load_world(world_path, wait_s, with_supervisor, light)
                 self._json(200 if result.get("ok") else 422, result)
+                return
+
+            if path == "/sim/rebuild_physics":
+                try:
+                    body = self._read_json()
+                except Exception as exc:  # noqa: BLE001
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
+                    return
+                log_mark = state.log_buffer.total
+                rb = self._supervisor_call_coded(
+                    "rebuild_physics",
+                    {"settle_steps": body.get("settle_steps", 8)})
+                if rb is None:
+                    return
+                # Surface any refusal WARNING the engine logged during the
+                # settle window, so the caller does not have to poll events.
+                state._drain_world_log_into_buffer()
+                refusals = [e.get("message") for e in state.log_buffer.since(
+                            log_mark, 1024, types=["world.warning"])
+                            if "physics rebuild REFUSED" in (e.get("message") or "")]
+                out = {"ok": True, **rb}
+                if refusals:
+                    out["ok"] = False
+                    out["code"] = "REBUILD_REFUSED"
+                    out["error"] = refusals[-1]
+                self._json(200 if out["ok"] else 409, out)
                 return
 
             if path == "/sim/step":
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
-                steps = int(body.get("steps", 1))
+                try:
+                    steps = int(body.get("steps", 1))
+                except (TypeError, ValueError):
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST",
+                                     "error": "steps must be an integer"})
+                    return
                 if steps < 1:
-                    self._json(400, {"error": "steps must be >= 1"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "steps must be >= 1"})
                     return
                 t0 = time.time()
                 result = self._supervisor_call("step", {"steps": steps})
@@ -4968,7 +5247,8 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 args: dict = {}
                 if "restore" in body:
@@ -4979,7 +5259,7 @@ def make_handler(state: HarnessState):
                     try:
                         args["settle_steps"] = int(body["settle_steps"])
                     except (TypeError, ValueError):
-                        self._json(400, {"error": "'settle_steps' must be an integer"})
+                        self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "'settle_steps' must be an integer"})
                         return
                 # Coded: `{"restore": 7}` is the caller's mistake, and it used
                 # to come back as a 503 that urllib/requests RAISE on, so the
@@ -5017,18 +5297,19 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 name = body.get("name", "default")
                 if not isinstance(name, str) or not name:
-                    self._json(400, {"error": "'name' must be a non-empty string"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "'name' must be a non-empty string"})
                     return
                 args = {"name": name}
                 if "settle_steps" in body:
                     try:
                         args["settle_steps"] = int(body["settle_steps"])
                     except (TypeError, ValueError):
-                        self._json(400, {"error": "'settle_steps' must be an integer"})
+                        self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "'settle_steps' must be an integer"})
                         return
                 cmd = "sim_snapshot" if path == "/sim/snapshot" else "sim_restore"
                 result = self._supervisor_call_coded(cmd, args)
@@ -5040,7 +5321,8 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 vrml = ""
                 if isinstance(body.get("clone"), str) and body["clone"]:
@@ -5057,7 +5339,7 @@ def make_handler(state: HarnessState):
                     try:
                         vrml, def_name = compose_spawn_vrml(body, REPO_ROOT)
                     except ValueError as exc:
-                        self._json(400, {"error": str(exc), "code": "SPAWN_SPEC_INVALID"})
+                        self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": str(exc), "code": "SPAWN_SPEC_INVALID"})
                         return
                     args = {"vrml": vrml}
                     if def_name:
@@ -5104,7 +5386,15 @@ def make_handler(state: HarnessState):
                 # not the composer's). Unconditional on purpose: the harness
                 # finalizes the world before serving, so there is no
                 # mid-session spawn that reaches the solver.
-                result["physics_warning"] = state.runtime_mutation_warning("spawn")
+                if body.get("physics") == "rebuild":
+                    rb = self._supervisor_call_coded(
+                        "rebuild_physics",
+                        {"settle_steps": body.get("rebuild_settle_steps", 8)})
+                    if rb is None:
+                        return
+                    result["physics"] = {"mode": "rebuild", **rb}
+                else:
+                    result["physics_warning"] = state.runtime_mutation_warning("spawn")
                 self._json(200, result)
                 return
 
@@ -5112,7 +5402,8 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 args = {}
                 if isinstance(body.get("defs"), list):
@@ -5120,16 +5411,25 @@ def make_handler(state: HarnessState):
                 elif isinstance(body.get("def"), str) and body["def"]:
                     args["def"] = body["def"]
                 else:
-                    self._json(400, {"error": "provide 'def' (string) or 'defs' (list of strings)"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "provide 'def' (string) or 'defs' (list of strings)"})
                     return
                 if "settle_steps" in body:
                     args["settle_steps"] = body["settle_steps"]
                 result = self._supervisor_call_coded("scene_delete", args)
                 if result is not None:
                     result = dict(result)
-                    # Honest interim for W1.7: the node left the scene graph
-                    # but its colliders remain in the frozen solver model.
-                    result["physics_warning"] = state.runtime_mutation_warning("delete")
+                    if body.get("physics") == "rebuild":
+                        rb = self._supervisor_call_coded(
+                            "rebuild_physics",
+                            {"settle_steps": body.get("rebuild_settle_steps", 8)})
+                        if rb is None:
+                            return
+                        result["physics"] = {"mode": "rebuild", **rb}
+                    else:
+                        # Honest interim for W1.7: the node left the scene
+                        # graph but its colliders remain in the frozen solver
+                        # model until a rebuild.
+                        result["physics_warning"] = state.runtime_mutation_warning("delete")
                     self._json(200, result)
                 return
 
@@ -5137,10 +5437,11 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 if not isinstance(body.get("def"), str) or not body["def"]:
-                    self._json(400, {"error": "'def' is required"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "'def' is required"})
                     return
                 args = {"def": body["def"]}
                 for key in ("translation", "rotation", "reset_physics", "settle_steps"):
@@ -5168,7 +5469,8 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 joints = body.get("joints")
                 if joints is None and isinstance(body.get("names"), list) \
@@ -5222,7 +5524,8 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 if not isinstance(body.get("effector"), str) or not body["effector"]:
                     self._json(400, {
@@ -5266,18 +5569,19 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 part = body.get("part")
                 if not isinstance(part, str) or not part:
-                    self._json(400, {"error": "'part' is required"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "'part' is required"})
                     return
                 args: dict = {"part": part}
                 if "hp_delta" in body:
                     try:
                         args["hp_delta"] = float(body["hp_delta"])
                     except (TypeError, ValueError):
-                        self._json(400, {"error": "'hp_delta' must be a number"})
+                        self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "'hp_delta' must be a number"})
                         return
                 if "state" in body:
                     args["state"] = body["state"]
@@ -5291,21 +5595,22 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 position = body.get("position")
                 target = body.get("target")
                 if not isinstance(position, list) or len(position) != 3:
-                    self._json(400, {"error": "position must be a list of 3 numbers"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "position must be a list of 3 numbers"})
                     return
                 if not isinstance(target, list) or len(target) != 3:
-                    self._json(400, {"error": "target must be a list of 3 numbers"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "target must be a list of 3 numbers"})
                     return
                 try:
                     pos_f = [float(x) for x in position]
                     tgt_f = [float(x) for x in target]
                 except (TypeError, ValueError) as exc:
-                    self._json(400, {"error": f"bad number: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": f"bad number: {exc}"})
                     return
                 orientation = compute_look_at_orientation(pos_f, tgt_f)
                 push = bool(body.get("push", True))
@@ -5328,7 +5633,8 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
                 if path == "/scene/frame":
                     self._handle_frame(body)
@@ -5340,9 +5646,15 @@ def make_handler(state: HarnessState):
                 try:
                     body = self._read_json()
                 except Exception as exc:  # noqa: BLE001
-                    self._json(400, {"error": f"bad json: {exc}"})
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
                     return
-                quality = int(body.get("quality", 90))
+                try:
+                    quality = int(body.get("quality", 90))
+                except (TypeError, ValueError):
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST",
+                                     "error": "quality must be an integer"})
+                    return
                 user_path = body.get("path")
                 tmp_path: Path
                 if isinstance(user_path, str) and user_path:
@@ -5462,7 +5774,11 @@ def make_handler(state: HarnessState):
                                          if render.get("warning") else None))
                 return
 
-            self._json(404, {"error": f"not found: {path}"})
+            # Keep-alive: an unread request body would poison the next
+            # request on this connection, so drain before answering.
+            self._drain_body()
+            self._json(404, {"ok": False, "code": "UNKNOWN_ROUTE",
+                             "error": f"not found: {path}"})
 
     return Handler
 

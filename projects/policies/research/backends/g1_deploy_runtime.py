@@ -36,9 +36,28 @@ drift from the deploy. Regenerate with _gen_deploy_runtime.py.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import warp as wp
+import os as _os
+
+# PERF: nothing in this engine differentiates through the simulation, and
+# warp's default generates a BACKWARD (adjoint) kernel next to every forward
+# one -- roughly doubling codegen / JIT work on every cold kernel cache.
+# Disable it BEFORE `import newton` so newton's own kernel modules are built
+# forward-only too. OMNISIM_NEWTON_ENABLE_BACKWARD=1/true (value-parsed)
+# restores warp's default for anyone who does want adjoints. hasattr-guarded
+# so an older warp without the knob is a no-op, never a broken runtime.
+try:
+    if hasattr(wp, "config") and hasattr(wp.config, "enable_backward"):
+        _bw = (_os.environ.get("OMNISIM_NEWTON_ENABLE_BACKWARD") or "").strip().lower()
+        wp.config.enable_backward = _bw in ("1", "true")
+        del _bw
+except Exception:  # noqa: BLE001
+    pass
+
 import newton
 import json as _json
-import os as _os
+import struct as _struct
+import numpy as _np_mod   # hard dependency of warp/newton -- already loaded
+from math import sqrt as _msqrt
 from time import perf_counter as _perf
 
 # ---- PRE-IMPORT mujoco / mujoco_warp ---------------------------------------
@@ -2554,15 +2573,24 @@ class World:
             return mujoco.mj_ray(m, d, p, v, None, 1, -1, geomid)
 
         out = []
-        for i in range(0, len(rays), 7):
-            pnt = np.array(rays[i:i + 3], np.float64)
-            vec = np.array(rays[i + 3:i + 6], np.float64)
-            maxlen = float(rays[i + 6])
-            n = np.linalg.norm(vec)
+        # PERF: one bulk float64 conversion + one vectorized norm pass instead
+        # of two np.array() constructions and an np.linalg.norm per ray, and
+        # two preallocated buffers reused across rays. Inputs handed to mj_ray
+        # are numerically identical: the norm is sqrt((vx*vx+vy*vy)+vz*vz),
+        # the same sequential order linalg.norm's ddot uses on a 3-vector.
+        rm = np.asarray(rays, np.float64).reshape(-1, 7)
+        _vx, _vy, _vz = rm[:, 3], rm[:, 4], rm[:, 5]
+        norms = np.sqrt(_vx * _vx + _vy * _vy + _vz * _vz)
+        pnt = np.empty(3, np.float64)
+        vec = np.empty(3, np.float64)
+        for i in range(rm.shape[0]):
+            maxlen = float(rm[i, 6])
+            n = norms[i]
             if n < 1e-12:
                 out.extend((-1.0, -1, 0.0, 0.0, 0.0))
                 continue
-            vec = vec / n
+            pnt[:] = rm[i, 0:3]
+            np.divide(rm[i, 3:6], n, out=vec)
             base = 0.0
             hit = (-1.0, -1, 0.0, 0.0, 0.0)
             for _ in range(max_skips):
@@ -2574,7 +2602,7 @@ class World:
                 shp = int(g2s[gi]) if 0 <= gi < len(g2s) else -1
                 body = int(sb[shp]) if 0 <= shp < len(sb) else -1
                 if body in excl:
-                    pnt = pnt + (t + 1e-6) * vec
+                    pnt += (t + 1e-6) * vec
                     base += t + 1e-6
                     continue
                 hit = (base + t, body,
@@ -2608,12 +2636,32 @@ class World:
         # signed gap (negative = penetration), frame[0:3] is the world normal,
         # and mj_contactForce is the force the constraint solver actually
         # applied. OMNISIM_NEWTON_MJ_CONTACTS=0 reverts to the newton path.
-        try:
-            import os as _cco
-            _cc_on = _cco.environ.get("OMNISIM_NEWTON_MJ_CONTACTS", "1").strip().lower()
-        except Exception:
-            _cc_on = "1"
+        # PERF: env gate read once per World instance (a launch-environment
+        # switch; every world (re)build rolls a fresh instance, so a new load
+        # re-reads it).
+        _cc_on = getattr(self, "_mj_contacts_env", None)
+        if _cc_on is None:
+            try:
+                _cc_on = _os.environ.get("OMNISIM_NEWTON_MJ_CONTACTS", "1").strip().lower()
+            except Exception:
+                _cc_on = "1"
+            self._mj_contacts_env = _cc_on
         _csv = self._mjc_solver()
+        # PERF: per-step memo. Three C++ consumers (VacuumGripper, TouchSensor
+        # bumper, supervisor contact tracking) each call get_contacts() every
+        # tick; mjData.contact only changes when the tick advances (mj_step /
+        # the end-of-tick mj_step1 refresh -- nothing else touches the CPU
+        # solver's mj_data between ticks), so the list is identical within a
+        # tick. Keyed on (step counter, solver identity) AND cleared
+        # explicitly in _step_impl the moment the physics has advanced, so a
+        # mid-tick internal caller (OMNISIM_DEBUG_CONTACTS) can never see the
+        # previous tick's list. Only the mj_data path stores the memo: the
+        # newton narrow-phase fallback re-collides live state and is left
+        # recomputing per call, exactly as before.
+        _memo = getattr(self, "_contacts_memo", None)
+        if (_memo is not None and _memo[1] is _csv
+                and _memo[0] == getattr(self, "_stepn", 0)):
+            return _memo[2]
         _cm = getattr(_csv, "mj_model", None) if _csv is not None else None
         _cd = getattr(_csv, "mj_data", None) if _csv is not None else None
         # ⚠ CPU mj_step ONLY -- see _gpu_readback_declined. Under mujoco_warp
@@ -2638,6 +2686,7 @@ class World:
                 _cg2s, _csb = self._raycast_maps()
                 _cn = int(_cd.ncon)
                 if _cn <= 0:
+                    self._contacts_memo = (getattr(self, "_stepn", 0), _csv, [])
                     return []
                 _ccon = _cd.contact
                 _cgeo = getattr(_ccon, "geom", None)
@@ -2645,25 +2694,41 @@ class World:
                     _cg1, _cg2 = _ccon.geom1, _ccon.geom2
                 else:
                     _cg1, _cg2 = _cgeo[:, 0], _cgeo[:, 1]
-                _cpos, _cdist, _cfrm = _ccon.pos, _ccon.dist, _ccon.frame
+                # PERF: bulk .tolist() conversions (exact float64 -> Python
+                # float, identical values to per-element float()) instead of
+                # six scalar numpy indexing reads per contact.
+                _cg1l = _cnp.asarray(_cg1[:_cn]).tolist()
+                _cg2l = _cnp.asarray(_cg2[:_cn]).tolist()
+                _cposl = _cnp.asarray(_ccon.pos[:_cn]).tolist()
+                _cfrml = _cnp.asarray(_ccon.frame[:_cn])[:, 0:3].tolist()
+                _cdistl = _cnp.asarray(_ccon.dist[:_cn]).tolist()
+                _ng2s = len(_cg2s)
+                _nsb = len(_csb)
                 _cf = _cnp.zeros(6, dtype=_cnp.float64)
                 _cout = []
                 for i in range(_cn):
-                    _a, _b = int(_cg1[i]), int(_cg2[i])
-                    _sa = int(_cg2s[_a]) if 0 <= _a < len(_cg2s) else -1
-                    _sb2 = int(_cg2s[_b]) if 0 <= _b < len(_cg2s) else -1
-                    _ba = int(_csb[_sa]) if 0 <= _sa < len(_csb) else -1
-                    _bb = int(_csb[_sb2]) if 0 <= _sb2 < len(_csb) else -1
+                    _a, _b = int(_cg1l[i]), int(_cg2l[i])
+                    _sa = int(_cg2s[_a]) if 0 <= _a < _ng2s else -1
+                    _sb2 = int(_cg2s[_b]) if 0 <= _b < _ng2s else -1
+                    _ba = int(_csb[_sa]) if 0 <= _sa < _nsb else -1
+                    _bb = int(_csb[_sb2]) if 0 <= _sb2 < _nsb else -1
                     try:
                         _cmj.mj_contactForce(_cm, _cd, i, _cf)
-                        _fm = float(_cnp.linalg.norm(_cf[:3]))
+                        # inline sqrt((f0*f0+f1*f1)+f2*f2): same sequential
+                        # order as linalg.norm's ddot on a 3-vector, so the
+                        # value is bit-identical.
+                        _f0 = _cf[0]; _f1 = _cf[1]; _f2 = _cf[2]
+                        _fm = _msqrt(_f0 * _f0 + _f1 * _f1 + _f2 * _f2)
                     except Exception:
                         _fm = 0.0
-                    _dg = float(_cdist[i])
+                    _dg = _cdistl[i]
+                    _p = _cposl[i]
+                    _fr = _cfrml[i]
                     _cout.extend((_ba, _bb,
-                                  float(_cpos[i][0]), float(_cpos[i][1]), float(_cpos[i][2]),
-                                  float(_cfrm[i][0]), float(_cfrm[i][1]), float(_cfrm[i][2]),
+                                  _p[0], _p[1], _p[2],
+                                  _fr[0], _fr[1], _fr[2],
                                   -_dg if _dg < 0.0 else 0.0, _fm))
+                self._contacts_memo = (getattr(self, "_stepn", 0), _csv, _cout)
                 return _cout
             except Exception:
                 pass            # fall through to the newton narrow-phase below
@@ -2725,6 +2790,11 @@ class World:
             # honest for resolved contacts. The damage tracker keys on closing velocity, not depth. Impact-
             # penetration is a follow-up (would need the pre-solve overlap or a solver that reports it).
             depth = 0.0
+            # NOTE deliberately NOT inlined as sqrt(x*x+y*y+z*z): frc is a
+            # float32 warp readback, and numpy's norm computes sdot + sqrt in
+            # FLOAT32 -- a float64 inline sqrt of the float32 sum widens the
+            # sqrt and is not bit-identical. The mj_data path above (float64
+            # buffers) is where the inline win is taken.
             out.extend((a_bd, b_bd, px, py, pz, nx, ny, nz, depth, float(_np.linalg.norm(frc[i]))))
         return out
 
@@ -2952,6 +3022,15 @@ class World:
         if not hasattr(self, "_touch_bodies"):
             self._touch_bodies = set()
         self._touch_bodies.add(int(body_idx))
+        # Track the read cadence for the capture gate (see
+        # _capture_constraint_readbacks): remember when the last read
+        # happened and the gap between the last two reads, so the per-tick
+        # cfrc capture keeps running exactly while a consumer is live.
+        _now = getattr(self, "_stepn", 0)
+        _prev = getattr(self, "_touch_last_read_step", None)
+        if _prev is not None and _now > _prev:
+            self._touch_read_gap = _now - _prev
+        self._touch_last_read_step = _now
         snap = getattr(self, "_cfrc_snap", None)
         if snap is None:
             return [0.0] * 6
@@ -2987,20 +3066,46 @@ class World:
             eq_rows = {}
             eq_watch = set(eng.values())
             eq_t = int(_mj.mjtConstraint.mjCNSTR_EQUALITY)
-            for i in range(int(d.nefc)):
-                if int(d.efc_type[i]) != eq_t:
-                    continue
-                eid = int(d.efc_id[i])
-                if eid in eq_watch:
-                    eq_rows.setdefault(eid, []).append(float(d.efc_force[i]))
+            # PERF: numpy mask instead of a scalar loop over every efc row
+            # (d.efc_type / efc_id / efc_force are already numpy arrays).
+            # Mask indexing preserves row order, so per-eq force lists are
+            # identical to the scalar loop's; nefc==0 and no-equality-row
+            # cases fall through to the same all-zero snap.
+            _ne = int(d.nefc)
+            if _ne > 0:
+                _mask = d.efc_type[:_ne] == eq_t
+                if _mask.any():
+                    _ids = d.efc_id[:_ne][_mask].tolist()
+                    _fs = d.efc_force[:_ne][_mask].tolist()
+                    for eid, _f in zip(_ids, _fs):
+                        if eid in eq_watch:
+                            eq_rows.setdefault(eid, []).append(_f)
             snap = {}
             for slot, eq in eng.items():
                 r = eq_rows.get(eq, [])
                 snap[slot] = (r + [0.0] * 6)[:6]
             self._weld_force_snap = snap
         if touch:
-            _mj.mj_rnePostConstraint(m, d)
-            self._cfrc_snap = d.cfrc_int.copy()
+            # PERF gate: _touch_bodies grows permanently (a body is never
+            # unregistered), so this used to run mj_rnePostConstraint +
+            # cfrc_int.copy() every tick for ever after the first touch_force
+            # read. Capture only while a consumer is live: a read in the last
+            # max(8, last observed inter-read gap, capped 64) ticks. A sensor
+            # sampled every k <= 64 ticks keeps a fresh snapshot (the window
+            # tracks its own period); after reads stop the per-tick cost
+            # stops within the window. NOT recomputed lazily on a stale read:
+            # the end-of-tick mj_step1 refresh re-instantiates the efc arrays
+            # UNSOLVED (see weld_force), so a between-ticks
+            # mj_rnePostConstraint would read zero constraint forces -- the
+            # exact phantom-zero this pre-refresh snapshot exists to avoid.
+            # A read after a longer idle returns the last captured snapshot
+            # once and re-arms the capture for the next tick.
+            _lr = getattr(self, "_touch_last_read_step", None)
+            if _lr is not None:
+                _win = max(8, min(int(getattr(self, "_touch_read_gap", 0)), 64))
+                if (getattr(self, "_stepn", 0) - _lr) <= _win:
+                    _mj.mj_rnePostConstraint(m, d)
+                    self._cfrc_snap = d.cfrc_int.copy()
 
     def add_joint_revolute(self, parent_idx, child_idx,
                            ax, ay, az,
@@ -5691,6 +5796,7 @@ class World:
                                         key=lambda sc: sc[0]):
                 idx = self._add_revolute_to_builder(self.pending_revolutes[slot])
                 self.slot_to_real_idx[slot] = idx
+                self._rbp_slot_map = None   # readback_packed's cached mapping
                 self.joint_indices.append(idx)
                 queue.append(child)
 
@@ -5709,6 +5815,7 @@ class World:
                 already_rooted.add(p)
             idx = self._add_revolute_to_builder(j)
             self.slot_to_real_idx[slot] = idx
+            self._rbp_slot_map = None   # readback_packed's cached mapping
             self.joint_indices.append(idx)
 
         # FREE joints for any body that participates in no revolute at
@@ -8794,6 +8901,35 @@ class World:
             self._newton_log("cloth attach: disabled after error: %r" % (e,))
             self._cloth_attach_path = None
 
+    def _step_env(self):
+        # PERF: the per-tick env-var gates of _step_impl, read ONCE per World
+        # instance instead of via os.environ.get every tick. These are
+        # launch-environment switches: nothing in the engine mutates
+        # os.environ mid-run, no doc promises flip-at-runtime semantics for
+        # any of them, and every world (re)build rolls a FRESH World instance
+        # (see _constraint_maps), so a new load re-reads them. Vars that are
+        # only read inside rarely-taken / one-shot branches (OMNISIM_HOME,
+        # MPC_K/MPC_H, OMNISIM_NEWTON_LOG, OMNISIM_NEWTON_SEED_POSE, the
+        # finalize-time knobs) deliberately stay live reads.
+        c = getattr(self, "_step_env_cache", None)
+        if c is None:
+            g = _os.environ.get
+            c = {
+                "seed_q": g("OMNISIM_NEWTON_SEED_Q"),
+                "debug_joints": g("OMNISIM_DEBUG_JOINTS"),
+                "mpc_loco": g("OMNISIM_INENGINE_MPC_LOCO"),
+                "pymod": g("OMNISIM_INENGINE_PYMOD"),
+                "pymod_ss": g("OMNISIM_INENGINE_PYMOD_SS"),
+                "wbc": g("OMNISIM_INENGINE_WBC"),
+                "tsid": g("OMNISIM_INENGINE_TSID"),
+                "tsid_tick": g("TSID_TICK"),
+                "no_odd_graph": g("OMNISIM_NEWTON_NO_ODD_GRAPH"),
+                "debug_contacts": g("OMNISIM_DEBUG_CONTACTS"),
+                "contact_diag": g("OMNISIM_NEWTON_CONTACT_DIAG"),
+            }
+            self._step_env_cache = c
+        return c
+
     def _step_impl(self, dt):
         # One-time pose seed: write the initial POSITION targets straight
         # into joint_q so the robot spawns in its commanded pose (Spot's
@@ -8805,8 +8941,9 @@ class World:
         # in ~0.7s regardless of stiffness). Opt-in via OMNISIM_NEWTON_SEED_POSE;
         # only touches position-target joints, so velocity-driven robots
         # (Husky wheels use joint_targets, not joint_targets_pos) are unaffected.
-        import os as _seedos
-        _seed_q_env = _seedos.environ.get("OMNISIM_NEWTON_SEED_Q")
+        _senv = self._step_env()   # per-tick env gates, cached (PERF item 4)
+        _seedos = _os              # alias kept: the seed branch below uses it
+        _seed_q_env = _senv["seed_q"]
         if (not getattr(self, "_pose_seeded", False)
                 and (self.joint_targets_pos or _seed_q_env)
                 and self.model is not None):
@@ -9024,8 +9161,7 @@ class World:
         # target (control.joint_target_pos) vs the actual joint_q and the effective ke, overwriting each step.
         # Localizes Spot's leg collapse: target==crouch & q==collapsed -> actuator too weak; target==0/wrong ->
         # the setpoint isn't reaching the DoF. Gated -> inert when unset.
-        import os as _jdbg
-        _jf = _jdbg.environ.get("OMNISIM_DEBUG_JOINTS")
+        _jf = _senv["debug_joints"]
         if _jf and self.control is not None and self._ctl_target_pos() is not None:
             try:
                 if not hasattr(self, "_q_start_cache"):
@@ -9106,7 +9242,7 @@ class World:
         # substep loop reads self.control. Falls back silently to the plain hold.
         # Flag cached at first use (item 3): this ran an os.environ lookup
         # every tick on every world, MPC or not.
-        import os as _impco   # alias is used by later lines in this method
+        _impco = _os   # alias is used by later lines in this method
         if not hasattr(self, "_inengine_mpc_on"):
             self._inengine_mpc_on = bool(_impco.environ.get("OMNISIM_INENGINE_MPC"))
         if self._inengine_mpc_on:
@@ -9117,7 +9253,7 @@ class World:
         # In-engine quad LOCOMOTION MPC (OMNISIM_INENGINE_MPC_LOCO=1). The logic
         # lives in an external module so it can be iterated WITHOUT a C++ rebuild;
         # this hook just imports + calls it. Additive + env-gated (default off).
-        if _impco.environ.get("OMNISIM_INENGINE_MPC_LOCO"):
+        if _senv["mpc_loco"]:
             try:
                 import sys as _ls
                 _lr = _impco.environ.get("OMNISIM_HOME")
@@ -9133,11 +9269,11 @@ class World:
         # the module full live mujoco dynamics + the joint_f torque sink. For iterating
         # control logic (e.g. the deterministic torque-WBC walking controller) WITHOUT a
         # C++ rebuild -- edit the .py, re-launch. Additive + env-gated (default off).
-        _pymod = _impco.environ.get("OMNISIM_INENGINE_PYMOD")
+        _pymod = _senv["pymod"]
         # PER-SUBSTEP mode (OMNISIM_INENGINE_PYMOD_SS=1): stiff TORQUE control is
         # unstable at the 62.5Hz tick (overshoot -> divergence); run the module in the
         # substep loop (250Hz) instead. Disables the CUDA graph (Python in the loop).
-        _pymod_ss = bool(_pymod) and _impco.environ.get("OMNISIM_INENGINE_PYMOD_SS") not in (None, "", "0")
+        _pymod_ss = bool(_pymod) and _senv["pymod_ss"] not in (None, "", "0")
         if _pymod:
             try:
                 if not hasattr(self, "_pymod_fn"):
@@ -9152,7 +9288,7 @@ class World:
                     self._pymod_fn(self)
             except Exception as _e:
                 self._mpc_log("pymod error: %r" % (_e,))
-        if _impco.environ.get("OMNISIM_INENGINE_WBC"):
+        if _senv["wbc"]:
             try:
                 self.wbc_stand_step()
             except Exception as _e:
@@ -9165,8 +9301,8 @@ class World:
         #    bounded balance correction ADDED on top of a position servo that already
         #    gives per-substep stability, so the FF can run once per tick (zero-order
         #    held across the substeps). This keeps the CUDA graph -> fast sim.
-        _tsid_any = _impco.environ.get("OMNISIM_INENGINE_TSID") not in (None, "", "0")
-        _tsid_tick = _tsid_any and _impco.environ.get("TSID_TICK") not in (None, "", "0")
+        _tsid_any = _senv["tsid"] not in (None, "", "0")
+        _tsid_tick = _tsid_any and _senv["tsid_tick"] not in (None, "", "0")
         _tsid_on = _tsid_any and not _tsid_tick   # per-substep (graph-disabling) path
         if _tsid_tick:
             try:
@@ -9289,7 +9425,7 @@ class World:
         # workaround was to declare an even substep count, which buys the graph
         # at the price of doubling the physics; this buys it at the price of one
         # state copy. OMNISIM_NEWTON_NO_ODD_GRAPH=1 restores the even-only gate.
-        _odd_graph_ok = not _os.environ.get("OMNISIM_NEWTON_NO_ODD_GRAPH")
+        _odd_graph_ok = not _senv["no_odd_graph"]
         _can_graph = (_ext_bf is None
                       and not _pymod_ss           # per-substep module also recomputes in the loop
                       and not _tsid_on            # TSID recomputes torque per-substep (Python in loop)
@@ -9478,12 +9614,16 @@ class World:
             self._refresh_mj_cartesian(self._mjc_solver())
         if _ext:
             self._ext_wrench = {}  # consumed this tick; re-applied next tick by the controller
+        # PERF (get_contacts memo): this tick's physics has advanced -- drop
+        # the per-step contact memo so the next consumer (including the
+        # OMNISIM_DEBUG_CONTACTS dump below) rebuilds from the fresh mj_data.
+        self._contacts_memo = None
         self._contact_friction_probe()   # env-gated one-shot; inert unless asked
         if self.solver_soft is not None:
             self._cloth_overflow_check()
         # In-engine MPC latency probe (one-shot, gated by OMNISIM_INENGINE_MPC_SELFTEST).
         # Runs after a few warm-up ticks so the live solver state is populated.
-        import os as _mpco   # alias is used by later lines in this method
+        _mpco = _os   # alias is used by later lines in this method
         if not hasattr(self, "_mpc_selftest_on"):
             self._mpc_selftest_on = bool(_mpco.environ.get("OMNISIM_INENGINE_MPC_SELFTEST"))
         if (not getattr(self, "_mpc_selftest_done", False)
@@ -9498,8 +9638,7 @@ class World:
                     self._mpc_log("selftest error: %r" % (_e,))
         # W4.1 verification dump (OMNISIM_DEBUG_CONTACTS=<file>): overwrite the file each step with this step's
         # native contacts so a fixture can confirm the readback works in the binary. Gated -> zero cost off.
-        import os as _cdbg
-        _cf = _cdbg.environ.get("OMNISIM_DEBUG_CONTACTS")
+        _cf = _senv["debug_contacts"]
         if _cf:
             try:
                 flat = self.get_contacts()
@@ -9834,10 +9973,11 @@ class World:
         # append the MUJOCO-side contact count + solver flags to the newton
         # log. Tells "mujoco never sees the ground" apart from "contacts
         # exist but are soft" when a world misbehaves.
-        import os as _cdo
-        if _cdo.environ.get("OMNISIM_NEWTON_CONTACT_DIAG"):
+        _cdiag = _senv["contact_diag"]
+        if _cdiag:
+            _cdo = _os   # alias used by the log-path reads inside this branch
             _sn0 = getattr(self, "_stepn", 0)
-            _every = 1 if _cdo.environ.get("OMNISIM_NEWTON_CONTACT_DIAG") == "2" else 60
+            _every = 1 if _cdiag == "2" else 60
             if _sn0 % _every == 0:
                 try:
                     _ncon = "n/a"
@@ -10071,6 +10211,144 @@ class World:
         # view, but a strided sub-range would otherwise pack wrong.
         return np.ascontiguousarray(cache[lo:hi, 0:3], dtype=np.float32).tobytes()
 
+
+    def _actuator_pair(self, dof_idx):
+        """(position_actuator, velocity_actuator) MuJoCo actuator ids for a
+        newton DoF, or (None, None). Inverts mjc_actuator_to_newton_idx using
+        its documented sign encoding (kernels.py: v >= 0 -> position actuator
+        for DoF v; v <= -2 -> velocity actuator for DoF -(v+2)), gated on
+        mjc_actuator_ctrl_source == 0 (JOINT_TARGET). Cached per World -- a
+        rebuild rolls a fresh World, so staleness cannot leak."""
+        cache = getattr(self, "_actuator_pair_cache", None)
+        if cache is None:
+            cache = {}
+            sv = self._mjc_solver()
+            if sv is not None:
+                try:
+                    a2n = sv.mjc_actuator_to_newton_idx.numpy()
+                    src = sv.mjc_actuator_ctrl_source.numpy()
+                    for a in range(len(a2n)):
+                        if int(src[a]) != 0:
+                            continue
+                        v = int(a2n[a])
+                        if v >= 0:
+                            cache.setdefault(v, [None, None])[0] = a
+                        elif v <= -2:
+                            cache.setdefault(-(v + 2), [None, None])[1] = a
+                except Exception:
+                    cache = {}
+            self._actuator_pair_cache = cache
+        pair = cache.get(int(dof_idx))
+        if pair is None:
+            return (None, None)
+        return (pair[0], pair[1])
+
+    def set_joint_gains(self, slot_id, dof, ke, kd):
+        """W1.4 servo promotion: post-finalize per-(joint, dof) gain write.
+
+        Writes mj_model.actuator_gainprm / actuator_biasprm DIRECTLY (the
+        weld_engage / set_kinematic_pose precedent): the model arrays
+        (joint_target_ke/kd) are read once at conversion and baked into MJCF
+        actuators, so writing them post-finalize does nothing -- and the
+        use_mujoco_cpu mirror-back does not cover actuator gains either.
+        POSITION_VELOCITY mode builds TWO actuators per DoF: position
+        (gainprm[0]=ke, biasprm[1]=-ke) and velocity (gainprm[0]=kd,
+        biasprm[2]=-kd). No mj_setConst needed (FIXED gain + AFFINE bias
+        feed no derived constants).
+
+        Returns 0 ok, -1 error, -2 unsupported (mujoco_warp bakes its gains
+        into the warp mirror; a phase-2 GPU path would use
+        notify_model_changed(JOINT_DOF_PROPERTIES) and is deliberately not
+        bolted on here)."""
+        sv = self._mjc_solver()
+        if sv is None:
+            return -1
+        if not getattr(sv, "use_mujoco_cpu", False):
+            return -2
+        m = getattr(sv, "mj_model", None)
+        if m is None:
+            return -1
+        real = self.slot_to_real_idx.get(int(slot_id))
+        if real is None:
+            return -1
+        qd_cache = getattr(self, "_qd_start_cache_sjg", None)
+        if qd_cache is None:
+            qd_cache = self.model.joint_qd_start.numpy()
+            self._qd_start_cache_sjg = qd_cache
+        dof_idx = int(qd_cache[real]) + int(dof)
+        a_pos, a_vel = self._actuator_pair(dof_idx)
+        if a_pos is None:
+            return -1
+        m.actuator_gainprm[a_pos, 0] = float(ke)
+        m.actuator_biasprm[a_pos, 1] = -float(ke)
+        if a_vel is not None:
+            m.actuator_gainprm[a_vel, 0] = float(kd)
+            m.actuator_biasprm[a_vel, 2] = -float(kd)
+        return 0
+
+    def particle_stats_packed(self, particle_start=-1, particle_end=-1):
+        # Node-scoped particle STATS for the supervisor readback verb
+        # (C_SUPERVISOR_NODE_PARTICLE_STATS): one FFI crossing returns the
+        # AGGREGATE instead of the whole cloud, so a 100k-particle bed costs
+        # 80 bytes, not 1.2 MB. Serves Cloth, SoftBody and GranularBed alike
+        # -- they share ONE particle list, and each engine node passes its own
+        # half-open [start, end) range recorded at registration.
+        #
+        # PACKED LAYOUT (struct '<ii9d', 80 bytes, little-endian standard
+        # sizes -- parsed by OmNewtonBackend::particleStats with a memcpy;
+        # keep the two in lockstep):
+        #   int32   count       particles in the clamped [start, end) range
+        #   int32   non_finite  particles with ANY non-finite component
+        #   f64[3]  min         componentwise min over FINITE particles
+        #   f64[3]  max         componentwise max over FINITE particles
+        #   f64[3]  centroid    mean over FINITE particles
+        # min/max/centroid are 0.0 when no particle in the range is finite.
+        # NaN-skip semantics follow _cloth_telemetry: non-finite values are
+        # COUNTED, never propagated into the aggregates (one NaN would
+        # otherwise poison every field silently).
+        #
+        # Returns b"" -- never an exception -- when there is no particle state
+        # at all (no state_a / no particle_q), which the C++ side reports as
+        # "unavailable". An EMPTY clamped range still packs count=0 honestly.
+        # Served off the same per-step _particle_q_cache as
+        # particle_positions_packed above -- one GPU->CPU transfer per tick
+        # shared with the render readback, invalidated by step(). Unlike that
+        # method there is NO -1 = "all cloth" sentinel here: the caller always
+        # names an explicit node range, and a negative bound clamps to empty.
+        import struct
+        import numpy as np
+        if self.state_a is None:
+            return b""
+        cache = getattr(self, "_particle_q_cache", None)
+        if cache is None:
+            pq = getattr(self.state_a, "particle_q", None)
+            if pq is None:
+                return b""
+            try:
+                cache = pq.numpy()
+            except Exception:                     # noqa: BLE001
+                return b""
+            self._particle_q_cache = cache
+        n = len(cache)
+        lo = max(0, min(int(particle_start), n))
+        hi = max(lo, min(int(particle_end), n))
+        count = hi - lo
+        if count <= 0:
+            return struct.pack("<ii9d", 0, 0, *([0.0] * 9))
+        a = np.asarray(cache[lo:hi, 0:3], dtype=np.float64)
+        finite = np.isfinite(a).all(axis=1)
+        non_finite = count - int(np.count_nonzero(finite))
+        f = a[finite] if non_finite else a
+        if f.shape[0] == 0:
+            return struct.pack("<ii9d", count, non_finite, *([0.0] * 9))
+        mn = f.min(axis=0)
+        mx = f.max(axis=0)
+        cen = f.mean(axis=0)
+        return struct.pack("<ii9d", count, non_finite,
+                           float(mn[0]), float(mn[1]), float(mn[2]),
+                           float(mx[0]), float(mx[1]), float(mx[2]),
+                           float(cen[0]), float(cen[1]), float(cen[2]))
+
     def cloth_topology_packed(self, grid_index=0):
         # The triangle index buffer for one authored cloth sheet, as tight
         # int32 triples, so the renderer can build its mesh ONCE at load and
@@ -10131,8 +10409,7 @@ class World:
         # still one GPU->CPU transfer per array per tick, and a blob
         # built here is bitwise-consistent with any per-call fallback
         # read made in the same tick.
-        import numpy as np
-        import struct
+        np = _np_mod   # PERF: module-level bindings, no per-call imports
         bq = getattr(self, "_body_q_cache", None)
         if bq is None:
             bq = self.state_a.body_q.numpy()
@@ -10159,18 +10436,35 @@ class World:
                     except AttributeError:
                         q_arr = self.model.joint_q.numpy()
                     self._joint_q_cache = q_arr
-                angles = np.zeros(max(self.slot_to_real_idx) + 1,
-                                  dtype=np.float64)
-                for slot, real_idx in self.slot_to_real_idx.items():
-                    if real_idx < len(q_start):
-                        q_idx = int(q_start[real_idx])
-                        if q_idx < len(q_arr):
-                            angles[slot] = q_arr[q_idx]
+                # PERF: the slot -> q index mapping is pure finalize-time
+                # topology; build the index arrays once and reuse them
+                # (invalidated at every slot_to_real_idx write site). The
+                # per-call guard against q_idx >= len(q_arr) stays a mask,
+                # so the contract (0.0 for missing mapping / idx out of
+                # range) is value-identical to the scalar loop.
+                mp = getattr(self, "_rbp_slot_map", None)
+                if mp is None:
+                    _slots = []
+                    _qidx = []
+                    _nqs = len(q_start)
+                    for slot, real_idx in self.slot_to_real_idx.items():
+                        if real_idx < _nqs:
+                            _slots.append(slot)
+                            _qidx.append(int(q_start[real_idx]))
+                    mp = (max(self.slot_to_real_idx) + 1,
+                          np.asarray(_slots, dtype=np.intp),
+                          np.asarray(_qidx, dtype=np.intp))
+                    self._rbp_slot_map = mp
+                _nslot, _slots_a, _qidx_a = mp
+                angles = np.zeros(_nslot, dtype=np.float64)
+                if len(_qidx_a):
+                    _ok = _qidx_a < len(q_arr)
+                    angles[_slots_a[_ok]] = q_arr[_qidx_a[_ok]]
         except Exception:
             # Same posture as the per-call path: a joint-side hiccup
             # yields 0.0 angles, never a failed body readback.
             angles = np.zeros(0, dtype=np.float64)
-        return (struct.pack("<qq", n, len(angles))
+        return (_struct.pack("<qq", n, len(angles))
                 + body.tobytes() + angles.tobytes())
 
 

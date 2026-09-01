@@ -281,8 +281,16 @@ def test_escape_hatch_turns_statics_back_off(probe):
     bisecting a physics change against the previous default, or for a world
     that was tuned around the phantom plane. The variable's VALUE has to be
     read for that: testing only that it is non-empty makes `=0` mean ON.
+
+    Since 2026-08-12 the implicit plane is no longer unconditional (it only
+    substitutes for an authored Plane collider), so reproducing the exact
+    pre-flip behaviour takes BOTH hatches -- OMNISIM_NEWTON_STATICS=0 and
+    OMNISIM_NEWTON_GROUND_PLANE=1 -- exactly as AGENTS.md documents. The
+    assertion is still discriminating: with statics ON the ball would rest on
+    the floor at ~0.65, not on the phantom plane at ~0.10.
     """
-    heights = _run(probe, "off", env_extra={"OMNISIM_NEWTON_STATICS": "0"})
+    heights = _run(probe, "off", env_extra={"OMNISIM_NEWTON_STATICS": "0",
+                                            "OMNISIM_NEWTON_GROUND_PLANE": "1"})
     assert abs(heights["ball_z"] - REST_ON_PHANTOM_PLANE) < TOL, _explain(
         "off", heights, REST_ON_PHANTOM_PLANE) + (
         "\n\nOMNISIM_NEWTON_STATICS=0 did not turn static registration off. If "

@@ -98,8 +98,17 @@ python scripts/capture/render.py shotlist.yaml --ad-hoc
 | `POST /capture/sequence {path_keyframes, duration_s, fps, output, codec?, crf?, ease?, warmup_steps?, settle_steps_per_frame?, keep_frames?}` | The cinematic offline path: walk the camera path frame-by-frame, dump PNGs from the Camera device, ffmpeg-encode. |
 | `POST /sim/step {steps?}` | Advance N basic timesteps. |
 | `POST /sim/reset` | Reset the simulation to t=0. |
+| `POST /sim/snapshot {name}` | Save a named, session-local engine scene checkpoint. |
+| `POST /sim/restore {name}` | Restore a named scene checkpoint without restarting the capture service. |
+| `GET  /sim/snapshots` | List checkpoints in the currently loaded capture world. |
 | `GET  /sim/state` | Current world, camera resolution, supervisor connection. |
 | `GET  /healthz` | Liveness + ffmpeg-resolution status. |
+
+Capture checkpoints restore engine scene state only. They do not rewind the
+simulation clock or arbitrary private memory in a robot controller process.
+Use a fresh world load when controller-memory identity is part of the evidence.
+The Agent Build capture runner records this boundary and also resumes safely at
+completed, hash-bound shot boundaries.
 
 ### Output paths, and what the status codes mean
 

@@ -7,7 +7,7 @@
 # family: device
 # claim : Propeller thrust decays with axial airspeed (thrustConstants[1], the speed-of-advance term)
 # doc   : docs/reference/propeller.md -- 'THE INFLOW (SPEED-OF-ADVANCE) TERM IS NOT SIMULATED, so thrustConstants[1] and torqueConstants[1] have NO EFFECT'; OmPropeller.cpp:229-234 pins V = 0.0 with the ODE point-velocity read gone
-# docs currently claim this is: broken (lane 4 raises a finding if the measurement disagrees)
+# docs currently claim this is: works (lane 4 raises a finding if the measurement disagrees)
 
 WorldInfo {
   gravity 9.81

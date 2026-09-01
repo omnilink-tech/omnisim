@@ -105,6 +105,22 @@ docker run --rm -it ghcr.io/omnilink-tech/omnisim:latest bash
 docker run --rm ghcr.io/omnilink-tech/omnisim:latest --exec python3 -c 'import newton; print(newton.__version__)'
 ```
 
+The world harness on `6789` and a robot bridge on `8765` are different
+services. The harness loads and inspects worlds; a robot world can expose its
+own command surface on `8765`. On a running mobile bridge, `GET /` or
+`GET /help` lists the useful routes, including natural-language control:
+
+```bash
+curl http://127.0.0.1:8765/help
+curl -X POST -H 'Content-Type: application/json' \
+  -d '{"text":"drive forward one metre"}' \
+  http://127.0.0.1:8765/prompt
+```
+
+Publish `8765` explicitly when the bridge runs inside a container
+(`-p 127.0.0.1:8765:8765`). A headless load check may exit as soon as the
+world finalises, so keep the process running while using the bridge.
+
 **The two `-p` forms are not equivalent.** `-p 6789:6789` binds every host
 interface, publishing an endpoint that loads arbitrary world files and spawns
 controller processes to anything that can reach the machine. `--host 0.0.0.0`

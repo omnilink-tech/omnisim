@@ -74,6 +74,12 @@ public:
   void powerOn(bool) override;
 
   bool isPIDPositionControl() const { return (!mUserControl && mMotorForceOrTorque != 0.0 && !std::isinf(mTargetPosition)); }
+  // W1.4 servo promotion: TRUE only after the CONTROLLER sent a finite
+  // wb_motor_set_position over the wire (cleared by setPosition(inf), i.e.
+  // wheel mode). Deliberately NOT derived from isPIDPositionControl(), which
+  // is true from world load on every motor (preFinalize seeds a finite
+  // target) and flips true again on reset -- neither is a controller intent.
+  bool controllerCommandedFinitePosition() const { return mControllerCommandedFinitePosition; }
   bool isConfigureDone() const;
 
   bool hasMuscles() const { return !mMuscles->isEmpty(); }
@@ -207,6 +213,7 @@ private:
   double mCurrentVelocity;
   double mRawInput;
   bool mUserControl;
+  bool mControllerCommandedFinitePosition;
   bool mHasAllocatedJointFeedback;
   void setMaxAcceleration(double acc);
   void setMaxVelocity(double v);

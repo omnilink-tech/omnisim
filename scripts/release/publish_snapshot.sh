@@ -99,7 +99,12 @@ set -euo pipefail
 # where the repo is checked out.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-WORKTREE_DIR="$REPO_ROOT/.build_tmp/release-publish"
+# The throwaway snapshot worktree. Overridable because it materializes the
+# WHOLE tracked tree (~GBs): on 2026-09-01 the repo drive hit 100% full and the
+# v8.2.0 cut died at `unable to create file ... No space left on device` --
+# pointing the worktree at any drive with room unblocks a publish with zero
+# deletions (git worktrees work across drives; the .git link points home).
+WORKTREE_DIR="${OMNISIM_PUBLISH_WORKTREE_DIR:-$REPO_ROOT/.build_tmp/release-publish}"
 
 err() { printf 'error: %s\n' "$*" >&2; exit 1; }
 log() { printf '==> %s\n' "$*" >&2; }

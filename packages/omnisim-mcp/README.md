@@ -142,15 +142,17 @@ answers but the `contact.*` / `grip.*` / `joint.limit_hit` **events** go quiet �
 
 ## Tools
 
-18 tools, each one HTTP call to the harness — the surface mirrors
+31 tools, each one HTTP call to the harness — the surface mirrors
 [`AGENTS.md` §5](../../AGENTS.md#5-iterating-on-worlds-with-the-validation-harness) and
 [`PROTOCOL.md`](../../PROTOCOL.md) so it stays honest to the real endpoints. The live list is
 `python -m omnisim_mcp --help`.
 
 | Tool | Harness endpoint | Purpose |
 |---|---|---|
-| `harness_status` | `GET /healthz`, `/sim/state` | Is the harness up, and on what world? Start here — but see the warning above about what it does *not* prove. |
+| `harness_status` | `GET /sim/state` | Is the harness up, and on what world? Start here — but see the warning above about what it does *not* prove. |
+| `get_capabilities` | `GET /capabilities` | What this harness can and will not do: verified physics backend, measured step cost + recommended step budget (`probe_step=true` measures one), event types (with what light mode suppresses), every endpoint and every gap under `not_supported`. The harness docs say to call it first. |
 | `load_world` | `POST /world/sync` (or `/world/load`) | Default safe iteration path: batch live pose-only edits, automatically reload anything else; `force_reload=true` restarts deliberately. |
+| `world_sync` | `POST /world/sync` | The sync semantics by name: live pose batch (`mode=live_pose`) or automatic hot reload (`mode=full_reload`); also `no_change` / `rejected` / `busy`. |
 | `get_scene_tree` | `GET /scene/tree` | Every node's type, DEF, pose. |
 | `get_scene_node` | `GET /scene/node/<def>` | Full field dump + contacts for one node. |
 | `get_viewpoint` | `GET /scene/viewpoint` | **Read** the live camera: position, orientation, FOV, near/far, plus derived forward/up/right and the resolved FOV for the real viewport aspect. Every other camera tool writes to a camera you otherwise cannot read. |
@@ -160,12 +162,23 @@ answers but the `contact.*` / `grip.*` / `joint.limit_hit` **events** go quiet �
 | `look_at` | `POST /scene/look_at` | Aim the Viewpoint from an explicit position at a target. Use when you already know both points. |
 | `screenshot` | `POST /world/screenshot` | Render PNG — returned **inline** (so a vision agent sees it) or written to a path. |
 | `render_stats` | `GET /world/render_stats` | Exposure/brightness stats — catch blown-out lighting without eyeballing. **Needs Pillow** (see Prerequisites). |
+| `scene_spawn` | `POST /scene/spawn` | Import a node from VRML, a type+fields spec, or a clone of a DEF. ⛔ A scene-graph verb, **not** a physics verb: the spawned node has NO physics until the world is reloaded (the response's `physics_warning` says so). |
+| `scene_delete` | `POST /scene/delete` | Remove nodes by DEF. ⛔ The frozen solver model keeps the deleted colliders as phantoms until reload — a deleted wall still blocks, a deleted floor still holds bodies up. |
+| `scene_set_pose` | `POST /scene/set_pose` | Move an existing node (velocity reset + settle by default). ⚠ Nothing checks interpenetration — check bounds first. |
 | `sim_step` | `POST /sim/step` | Advance N basic timesteps. |
-| `sim_reset` | `POST /sim/reset` | Reset to t=0 without re-parsing. |
+| `rebuild_physics` | `POST /sim/rebuild_physics` | W1.7: rebuild the Newton world at the scene's **current** poses (~0.1-0.3 s) so runtime-spawned nodes gain physics and deleted ones lose it; 409 `REBUILD_REFUSED` on cloth/soft/granular worlds; engaged welds are dropped loudly. |
+| `sim_reset` | `POST /sim/reset` | Reset to t=0 **and restore the authored scene** without re-parsing; forwards `restore`/`verify`/`settle_steps`. |
+| `sim_snapshot` | `POST /sim/snapshot` | Save a named engine-side state snapshot — a rollback point that is not t=0. |
+| `sim_restore` | `POST /sim/restore` | Restore a named snapshot without rewinding the clock; reports how far it landed. Unknown names are refused (on purpose). |
+| `list_snapshots` | `GET /sim/snapshots` | The named snapshots taken in this world. |
 | `get_events` | `GET /sim/events` | Unified event stream (`controller.log`, `contact.*`, `joint.limit_hit`, `damage.*`). |
 | `list_robots` | `GET /robots` | Every Robot with pose + joint count. |
 | `get_robot_joints` | `GET /robot/<def>/joints` | Per-joint position/velocity/limits. |
+| `robot_devices` | `GET /robot/<def>/devices` | Device inventory of a robot's subtree. |
+| `robot_joints_set` | `POST /robot/<def>/joints/set` | Command joint position targets, settle-and-verify: measured `{commanded, achieved, error}` per joint, never the argument echoed back. |
+| `robot_ik` | `POST /robot/<def>/ik` | Batched IK **preview** against the exact model the solver steps — nothing moves; per-target `residual_m`, apply via `robot_joints_set`. |
 | `get_contacts` | `GET /sim/contacts` | Global contact set. |
+| `get_grips` | `GET /sim/grips` | Inferred grips. ⚠ Empty in a light-mode session (the tracker is dropped). |
 | `get_diagnostics` | `GET /world/diagnostics` | Re-fetch the current load's diagnostics. |
 
 The four camera tools (`get_viewpoint`, `frame`, `orbit`, `visible`) are the ones
@@ -191,7 +204,8 @@ Before these existed, `--help` printed a startup line and then blocked forever r
 | Env var | Default | Meaning |
 |---|---|---|
 | `OMNISIM_HARNESS_URL` | `http://127.0.0.1:6789` | Base URL of the running harness. |
-| `OMNISIM_MCP_TIMEOUT` | `60` | Per-request HTTP timeout (seconds). |
+| `OMNISIM_MCP_TIMEOUT_S` | `130` | Per-request HTTP timeout (seconds). Deliberately **above** the harness's own 120 s supervisor-RPC timeout, so the wrapper never abandons a request the harness is still faithfully serving (which would silently desync the agent's world-model). `OMNISIM_MCP_TIMEOUT` is the accepted legacy spelling. |
+| `OMNISIM_MCP_KEEPALIVE` | `1` | Pool one `http.client` connection per harness (`0` = a fresh connection per request, for an A/B). The harness speaks HTTP/1.0 today, so the pool degrades to per-request automatically until it grows keep-alive. |
 
 ## Notes & limits
 
@@ -206,5 +220,8 @@ Before these existed, `--help` printed a startup line and then blocked forever r
 - **Protocol.** Implements the tools-only MCP subset (`initialize` / `tools/list` /
   `tools/call`) over newline-delimited JSON-RPC on stdio. Tested against protocol versions
   `2024-11-05` and `2025-06-18`.
+- **Responsive under long calls.** Tool calls run serialized on one worker thread; the
+  reader thread answers `ping` / `initialize` / `tools/list` immediately, so a 13 s world
+  load no longer makes the server read as dead to the client's keep-alive.
 
 Run the tests with `PYTHONPATH=src python -m pytest packages/omnisim-mcp/tests -q`.

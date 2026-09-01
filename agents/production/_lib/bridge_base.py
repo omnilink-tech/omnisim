@@ -228,6 +228,13 @@ class OmniSimBridgeServer:
         outer = self
 
         class Handler(BaseHTTPRequestHandler):
+            # HTTP/1.1 keep-alive (back-ported from the mobile bridge): safe
+            # only because every response path sets an accurate
+            # Content-Length -- a new response path MUST set it too. The
+            # timeout reaps idle persistent connections.
+            protocol_version = "HTTP/1.1"
+            timeout = 30
+
             def log_message(self, fmt, *args):  # noqa: ARG002
                 pass
 

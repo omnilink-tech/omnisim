@@ -4,9 +4,18 @@
   "slug": "my_omnisim_agent_build",
   "repository": "github.com/omnilink-tech/omnisim",
   "story": {
+    "duration_policy": "story_driven",
     "question": "What measurable robotics question does this build answer?",
     "claim": "What does the controlled comparison support?",
     "boundary": "What does this simulation not establish?"
+  },
+  "editorial": {
+    "structure": "three_act",
+    "simulator_footage_ratio_min": 0.75,
+    "climax_segment": "climax",
+    "spatial_reorientation_required": true,
+    "max_consecutive_detail": 2,
+    "wide_reference_segments": ["build_question", "climax"]
   },
   "evidence": [
     "evidence/result.json",
@@ -35,6 +44,8 @@
   "segments": [
     {
       "id": "build_question",
+      "act": 1,
+      "coverage": "wide",
       "beat": "question",
       "kind": "clip",
       "duration_s": 12.0,
@@ -49,6 +60,8 @@
     },
     {
       "id": "first_attempt",
+      "act": 1,
+      "coverage": "detail",
       "beat": "attempt",
       "kind": "clip",
       "duration_s": 12.0,
@@ -58,6 +71,8 @@
     },
     {
       "id": "controlled_failure",
+      "act": 2,
+      "coverage": "wide",
       "beat": "control",
       "kind": "clip",
       "duration_s": 12.0,
@@ -72,9 +87,10 @@
     },
     {
       "id": "evidence",
+      "act": 2,
       "beat": "evidence",
       "kind": "plate",
-      "duration_s": 10.0,
+      "duration_s": 6.0,
       "eyebrow": "WHAT THE COMPARISON EARNED",
       "headline": "THE RESULT BECAME EVIDENCE",
       "body": "Success and control are readable only together.",
@@ -87,33 +103,47 @@
     },
     {
       "id": "agent_method",
+      "act": 2,
+      "coverage": "detail",
       "beat": "method",
-      "kind": "plate",
+      "kind": "clip",
       "duration_s": 12.0,
-      "eyebrow": "HOW I WORK AS AN AI AGENT",
-      "headline": "DESCRIBE · INSPECT · EDIT · RUN · MEASURE · REFINE",
-      "body": "Evidence decides the next edit.",
-      "purpose": "Reveal the repeatable agent workflow."
+      "source": "captures/method.mp4",
+      "source_in_s": 0,
+      "purpose": "Narrate the build method over purposeful simulator footage."
+    },
+    {
+      "id": "climax",
+      "act": 3,
+      "coverage": "wide",
+      "beat": "evidence",
+      "kind": "clip",
+      "duration_s": 32.0,
+      "source": "captures/climax.mp4",
+      "source_in_s": 0,
+      "purpose": "Stay with the robot through the decisive continuous run to the result."
     },
     {
       "id": "claim_boundary",
+      "act": 3,
+      "coverage": "wide",
       "beat": "boundary",
-      "kind": "plate",
+      "kind": "clip",
       "duration_s": 10.0,
-      "eyebrow": "THE CONDITION I CANNOT HIDE",
-      "headline": "SUPPORT CHANGES THE CLAIM",
-      "body": "Put the relevant simulation limitation on screen.",
+      "source": "captures/boundary.mp4",
+      "source_in_s": 0,
       "purpose": "Make claim limits part of the story.",
       "claim_boundary": "Replace with the exact build-specific boundary."
     },
     {
       "id": "conclusion",
+      "act": 3,
+      "coverage": "detail",
       "beat": "conclusion",
-      "kind": "plate",
+      "kind": "clip",
       "duration_s": 10.0,
-      "eyebrow": "ONE METHOD · MANY BUILDS",
-      "headline": "THE PATTERN TRANSFERS",
-      "body": "The question changes. The evidence loop stays the same.",
+      "source": "captures/conclusion.mp4",
+      "source_in_s": 0,
       "purpose": "Conclude with the reusable build method, not a capability montage."
     }
   ]

@@ -210,12 +210,25 @@ void OmPropeller::prePhysicsStep(double ms) {
     // Computes thrust and torque
     const OmPose *const up = upperPose();
     const OmVector3 &cot = up->matrix() * mCenterOfThrust->value();
-    // ODE removed: the body point-velocity read at the thrust centre is gone, so
-    // the axial inflow speed V is now pinned to zero and the INFLOW TERM of the
-    // thrust/torque model (thrustConstants[1], torqueConstants[1]) is
-    // UNIMPLEMENTED -- only the omega^2 term survives. Zero is what the inert
-    // stub already produced, so this preserves the current numbers exactly.
-    const double V = 0.0;
+    // World-space thrust axis (mNormalizedAxis is unit-length and the rotation
+    // preserves it). Computed here because the inflow term below needs it.
+    const OmMatrix3 &m3 = up->rotationMatrix();
+    const OmVector3 &axisVector = m3 * mNormalizedAxis;
+    // Axial inflow speed V: the component of the body's point velocity at the
+    // centre of thrust along the thrust axis. The Newton backend implements
+    // getBodyPointVel (OmNewtonBackend), so the INFLOW TERM of the
+    // thrust/torque model (thrustConstants[1], torqueConstants[1]) is live
+    // again -- T = t1*|omega|*omega - t2*|omega|*V. On a failed read (Newton
+    // world not running, NEWTON=OFF build) V stays 0, which reproduces the
+    // omega^2-only behaviour. carrierBodyHandle resolves the fold leader's
+    // body when the propeller's own Solid does not carry one.
+    double V = 0.0;
+    {
+      double vp[3] = {0.0, 0.0, 0.0};
+      const double pt[3] = {cot.x(), cot.y(), cot.z()};
+      if (us->physicsBackend()->getBodyPointVel(us->carrierBodyHandle(), pt, vp) == 0)
+        V = axisVector.x() * vp[0] + axisVector.y() * vp[1] + axisVector.z() * vp[2];
+    }
 
     const OmVector2 &tcs = mTorqueConstants->value();
     mCurrentTorque = tcs.x() * velocity * absoluteVelocity - tcs.y() * absoluteVelocity * V;
@@ -227,8 +240,6 @@ void OmPropeller::prePhysicsStep(double ms) {
     mCurrentThrust = fcs.x() * velocity * absoluteVelocity - fcs.y() * absoluteVelocity * V;
 
     // Applies thrust and torque
-    const OmMatrix3 &m3 = up->rotationMatrix();
-    const OmVector3 &axisVector = m3 * mNormalizedAxis;
     const OmVector3 &thrustVector = mCurrentThrust * axisVector;
     const OmVector3 &torqueVector = -mCurrentTorque * axisVector;
     // W3.1 (newton-ode-replacement-plan.md): deliver the wrench to NEWTON --

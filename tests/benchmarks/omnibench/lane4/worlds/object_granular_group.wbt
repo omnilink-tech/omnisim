@@ -5,8 +5,9 @@
 #
 # probe : object.granular_group
 # family: object
-# claim : GranularGroup -- bulk particulate media (sand/gravel)
-# doc   : src/omnisim/nodes/OmGranularGroup.cpp
+# claim : GranularGroup -- bulk particulate media (sand/gravel, CUDA kernel)
+# doc   : src/omnisim/nodes/OmGranularGroup.cpp + resources/nodes/GranularGroup.wrl (CUDA-inert contract)
+# docs currently claim this is: works (lane 4 raises a finding if the measurement disagrees)
 
 WorldInfo {
   gravity 9.81
@@ -36,12 +37,11 @@ DEF FLOOR Solid {
   boundingObject USE FLOOR_SHAPE
 }
 DEF SUBJECT_GRAINS GranularGroup {
-  translation 0 0 1.2
   count 64
   radius 0.02
 }
 DEF SUBJECT Solid {
-  translation 0 0 1.2
+  translation -2 0 1.2
   name "subject"
   children [
     DEF SUBJECT_SHAPE Shape {
@@ -61,8 +61,8 @@ DEF OMNIBENCH_PROBER Robot {
   controller "omnibench_prober"
   controllerArgs [
     "--label=object.granular_group"
-    "--duration=3"
-    "--measure=pos:SUBJECT;node_exists:SUBJECT_GRAINS"
+    "--duration=4"
+    "--measure=pos:SUBJECT;node_exists:SUBJECT_GRAINS;particles:SUBJECT_GRAINS"
   ]
   supervisor TRUE
   children [

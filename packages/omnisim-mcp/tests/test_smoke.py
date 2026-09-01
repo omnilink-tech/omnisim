@@ -100,6 +100,46 @@ def test_load_world_tool_uses_safe_sync_by_default(monkeypatch):
                       {"path": "scene.wbt", "settle_steps": 12})]
 
 
+def test_new_endpoint_tools_are_listed():
+    resp = server._handle({"jsonrpc": "2.0", "id": 7, "method": "tools/list"})
+    names = {t["name"] for t in resp["result"]["tools"]}
+    assert {"get_capabilities", "world_sync", "scene_spawn", "scene_delete",
+            "scene_set_pose", "sim_snapshot", "sim_restore", "list_snapshots",
+            "get_grips", "robot_devices", "robot_joints_set", "robot_ik"} <= names
+
+
+def test_sim_reset_forwards_its_arguments(monkeypatch):
+    calls = []
+    monkeypatch.setattr(server, "_json_call",
+                        lambda method, path, body=None: calls.append((method, path, body)) or {"ok": True})
+    server.t_sim_reset({"restore": None, "verify": True, "settle_steps": 3})
+    assert calls == [("POST", "/sim/reset",
+                      {"restore": None, "verify": True, "settle_steps": 3})]
+
+
+def test_screenshot_path_passes_harness_json_through(monkeypatch):
+    # The harness answers a server-side write with measured JSON
+    # ({path, bytes, pixels, ...}); the tool must pass it through, never
+    # fabricate {"written": <echoed arg>, "bytes": <len of the JSON body>}.
+    harness_body = {"path": "C:/real/shot.png", "bytes": 123456,
+                    "pixels": [1280, 720]}
+    monkeypatch.setattr(
+        server, "_request",
+        lambda method, path, body=None, base=None:
+            (200, {"Content-Type": "application/json"},
+             json.dumps(harness_body).encode()))
+    out = server.t_screenshot({"path": "asked/for.png"})
+    payload = json.loads(out[0]["text"])
+    assert payload == harness_body
+    assert "written" not in payload
+
+
+def test_ping_is_answered_from_the_reader_path():
+    # ping must never be routed through the tool worker queue
+    resp = server._handle({"jsonrpc": "2.0", "id": 9, "method": "ping"})
+    assert resp == {"jsonrpc": "2.0", "id": 9, "result": {}}
+
+
 def test_load_world_tool_can_force_controller_restarting_reload(monkeypatch):
     calls = []
     monkeypatch.setattr(server, "_json_call",

@@ -13,15 +13,26 @@ import io
 import json
 import sys
 import tempfile
+import threading
 import unittest
+import urllib.request
+from http.server import ThreadingHTTPServer
 from pathlib import Path
+from unittest import mock
+
+import numpy as np
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "capture"))
 
 from cinema import agent_build  # noqa: E402
+from cinema import agent_build_capture  # noqa: E402
+from cinema import agent_build_pipeline  # noqa: E402
+from cinema import agent_build_review  # noqa: E402
 from cinema import cli as cinema_cli  # noqa: E402
+import omnisim_capture as capture_service  # noqa: E402
 
 
 class AgentBuildContractTests(unittest.TestCase):
@@ -31,7 +42,16 @@ class AgentBuildContractTests(unittest.TestCase):
         self.assertEqual(spec.fps, 30)
         self.assertEqual((spec.width, spec.height), (1920, 1080))
         self.assertEqual(spec.repository, "github.com/omnilink-tech/omnisim")
+        self.assertEqual(agent_build.STYLE_VERSION, "agent_build_v8")
         self.assertEqual(spec.voice.blocks[0].start_s, 10.0)
+        self.assertEqual(spec.structure, "three_act")
+        self.assertGreaterEqual(spec.simulator_footage_ratio, 0.75)
+        self.assertEqual(spec.climax_segment, "climax")
+        self.assertTrue(spec.spatial_reorientation_required)
+        self.assertEqual(spec.max_consecutive_detail, 2)
+        self.assertEqual(spec.wide_reference_segments, ("build_question", "climax"))
+        self.assertLess(agent_build.INTRO_SCORE_GAIN, agent_build.STORY_SCORE_GAIN)
+        self.assertLess(agent_build.INTRO_MASTER_GAIN, 1.0)
         self.assertEqual(list(agent_build.REQUIRED_BEATS), [
             "question", "attempt", "control", "evidence", "method", "boundary", "conclusion"
         ])
@@ -126,6 +146,205 @@ class AgentBuildContractTests(unittest.TestCase):
             "disclosure_s": [0, 5], "story_signature_s": [5, 10], "voiceover": False,
         })
         self.assertEqual(result["locked_outro"], agent_build.GITHUB_DESTINATION)
+        self.assertEqual(result["structure"], "three_act")
+        self.assertGreaterEqual(result["simulator_footage_ratio"], 0.75)
+
+    def test_three_act_and_simulator_first_contracts_fail_closed(self) -> None:
+        payload = agent_build.template()
+        payload["segments"][1]["act"] = 3
+        with self.assertRaisesRegex(ValueError, "ordered 1 -> 2 -> 3"):
+            agent_build.parse(payload)
+
+        payload = agent_build.template()
+        evidence_plate = next(item for item in payload["segments"] if item["kind"] == "plate")
+        evidence_plate["duration_s"] = 400
+        with self.assertRaisesRegex(ValueError, "simulator footage ratio"):
+            agent_build.parse(payload)
+
+        payload = agent_build.template()
+        climax = next(item for item in payload["segments"] if item["id"] == "climax")
+        climax["duration_s"] = 8
+        with self.assertRaisesRegex(ValueError, "climax clip must be at least 12 seconds"):
+            agent_build.parse(payload)
+
+    def test_spatial_reorientation_contract_fails_closed(self) -> None:
+        payload = agent_build.template()
+        payload["segments"][0].pop("coverage")
+        with self.assertRaisesRegex(ValueError, "coverage on every clip"):
+            agent_build.parse(payload)
+
+        payload = agent_build.template()
+        payload["segments"][0]["coverage"] = "detail"
+        with self.assertRaisesRegex(ValueError, "must name a wide simulator clip"):
+            agent_build.parse(payload)
+
+        payload = agent_build.template()
+        clips = [item for item in payload["segments"] if item["kind"] == "clip"]
+        clips[0]["coverage"] = "wide"
+        clips[1]["coverage"] = "detail"
+        clips[2]["coverage"] = "detail"
+        clips[3]["coverage"] = "detail"
+        with self.assertRaisesRegex(ValueError, "too many consecutive detail clips"):
+            agent_build.parse(payload)
+
+    def test_artifact_cache_reuses_only_matching_nonempty_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            output = root / "part.mp4"
+            cache = agent_build.ArtifactCache(root, agent_build.PROXY_PROFILE)
+            key = cache.key("clip", {"source": "abc", "range": [1, 2]})
+            self.assertFalse(cache.hit("part", key, output))
+            output.write_bytes(b"media")
+            cache.store("part", key, output)
+
+            resumed = agent_build.ArtifactCache(root, agent_build.PROXY_PROFILE)
+            self.assertTrue(resumed.hit("part", key, output))
+            output.write_bytes(b"corrupt")
+            self.assertFalse(resumed.hit("part", key, output))
+            self.assertFalse(resumed.hit("part", resumed.key("clip", {"source": "changed"}), output))
+
+    def test_preflight_rejects_impossible_source_range_before_render(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            payload = agent_build.template()
+            for source in {item.get("source") for item in payload["segments"] if item.get("source")}:
+                path = root / str(source)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"capture")
+            for evidence in payload["evidence"]:
+                path = root / evidence
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("evidence", encoding="utf-8")
+            (root / "narration.txt").write_text("\n\n".join(["Short line."] * 7), encoding="utf-8")
+            manifest = root / "film.json"
+            manifest.write_text(json.dumps(payload), encoding="utf-8")
+            spec = agent_build.parse(manifest)
+            facts = {"sha256": "a" * 64, "duration_s": 5.0, "width": 1920,
+                     "height": 1080, "fps": 30.0, "frames": 150}
+            with mock.patch.object(agent_build, "probe_media", side_effect=lambda path: {
+                    "path": str(path), **facts}):
+                with self.assertRaisesRegex(ValueError, "requests 0.000-12.000s"):
+                    agent_build.preflight(spec)
+
+    def test_declared_tail_hold_makes_short_source_explicit(self) -> None:
+        payload = agent_build.template()
+        payload["segments"][0]["source_tail_hold_s"] = 1.0
+        segment = agent_build.parse(payload).segments[0]
+        self.assertEqual(segment.source_tail_hold_s, 1.0)
+        payload["segments"][0]["source_tail_hold_s"] = 3.1
+        with self.assertRaisesRegex(ValueError, "source_tail_hold_s"):
+            agent_build.parse(payload)
+
+    def test_proxy_motion_metric_separates_held_frame_from_small_moving_subject(self) -> None:
+        still = np.full((180, 320, 3), 80, dtype=np.uint8)
+        held_score, _ = agent_build_review._motion([still, still.copy()])
+        moved = still.copy()
+        moved[80:90, 100:110] = 255
+        moved_again = still.copy()
+        moved_again[80:90, 120:130] = 255
+        moving_score, _ = agent_build_review._motion([moved, moved_again])
+        self.assertEqual(held_score, 0.0)
+        self.assertGreater(moving_score, held_score)
+
+    def test_make_never_reaches_full_render_before_proxy_approval(self) -> None:
+        spec = agent_build.parse(agent_build.template())
+        order: list[str] = []
+
+        def fake_render(_spec, _out, *, profile, **_kwargs):
+            order.append(f"render:{profile.name}")
+            return {"master": Path(f"{profile.name}.mp4")}
+
+        with tempfile.TemporaryDirectory() as temp, \
+                mock.patch.object(agent_build_pipeline, "preflight", return_value={"valid": True}), \
+                mock.patch.object(agent_build_pipeline.agent_build_voice, "generate",
+                                  return_value=(Path("voice.wav"), Path("voice.json"))), \
+                mock.patch.object(agent_build_pipeline, "render", side_effect=fake_render), \
+                mock.patch.object(agent_build_pipeline.agent_build_review, "review_proxy",
+                                  side_effect=lambda *_: order.append("review") or {"approved": True}), \
+                mock.patch.object(agent_build_pipeline, "verify", return_value={"approved": True}):
+            report = agent_build_pipeline.make(spec, out_dir=Path(temp))
+
+        self.assertTrue(report["complete"])
+        self.assertEqual(order, ["render:proxy", "review", "render:final"])
+
+    def test_capture_plan_requires_a_complete_sequence_contract(self) -> None:
+        plan = agent_build_capture.template("world.omniworld")
+        agent_build_capture._validate(plan)
+        del plan["shots"][0]["sequence"]["fps"]
+        with self.assertRaisesRegex(ValueError, "path_keyframes, duration_s, and fps"):
+            agent_build_capture._validate(plan)
+
+    def test_capture_checkpoint_http_routes_use_one_supervisor_session(self) -> None:
+        class State:
+            started_at = 0.0
+
+            def __init__(self):
+                self.calls: list[tuple[str, dict]] = []
+
+            def supervisor_call(self, command, args=None):
+                self.calls.append((command, args or {}))
+                return {"ok": True}
+
+            def sim_state(self):
+                return {"running": True}
+
+        state = State()
+        server = ThreadingHTTPServer(("127.0.0.1", 0), capture_service.make_handler(state))
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        base = f"http://127.0.0.1:{server.server_address[1]}"
+        try:
+            for endpoint in ("snapshot", "restore"):
+                request = urllib.request.Request(
+                    f"{base}/sim/{endpoint}", data=b'{"name":"hero"}',
+                    headers={"Content-Type": "application/json"}, method="POST",
+                )
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    self.assertEqual(response.status, 200)
+            with urllib.request.urlopen(f"{base}/sim/snapshots", timeout=5) as response:
+                self.assertEqual(response.status, 200)
+        finally:
+            server.shutdown()
+            server.server_close()
+        self.assertEqual(state.calls, [
+            ("sim_snapshot", {"name": "hero"}),
+            ("sim_restore", {"name": "hero"}),
+            ("sim_snapshots", {}),
+        ])
+
+    def test_completed_capture_session_resumes_without_contacting_service(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            world = root / "world.omniworld"
+            world.write_text("world", encoding="utf-8")
+            plan = agent_build_capture.template(str(world))
+            plan["settle_steps"] = 0
+            plan_path = root / "capture_plan.json"
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            receipt = root / "receipt.json"
+
+            def fake_request(_service, path, payload=None, timeout_s=0):
+                if path == "/healthz":
+                    return {"ok": True}
+                if path == "/world/load":
+                    return {"ok": True}
+                if path == "/capture/sequence":
+                    Path(payload["output"]).parent.mkdir(parents=True, exist_ok=True)
+                    Path(payload["output"]).write_bytes(b"captured")
+                    return {"ok": True}
+                return {"ok": True}
+
+            with mock.patch.object(agent_build_capture, "_request", side_effect=fake_request):
+                first = agent_build_capture.run(plan_path, receipt_path=receipt)
+            self.assertTrue(first["complete"])
+            self.assertEqual(first["cache"], {"hits": 0, "misses": 1})
+
+            with mock.patch.object(
+                    agent_build_capture, "_request",
+                    side_effect=AssertionError("cached resume touched service")):
+                resumed = agent_build_capture.run(plan_path, receipt_path=receipt)
+            self.assertFalse(resumed["service_contacted"])
+            self.assertEqual(resumed["cache"], {"hits": 1, "misses": 0})
 
 
 if __name__ == "__main__":

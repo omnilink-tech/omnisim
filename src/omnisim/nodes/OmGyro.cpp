@@ -45,6 +45,7 @@ void OmGyro::init() {
   mResolution = findSFDouble("resolution");
 
   mNeedToReconfigure = false;
+  mWarningWasPrinted = false;
 }
 
 OmGyro::OmGyro(OmTokenizer *tokenizer) : OmSolidDevice("Gyro", tokenizer) {
@@ -152,8 +153,12 @@ void OmGyro::computeValue() {
   // P1.5 + Newton integration: dispatch through whichever backend owns
   // the gyro's parent Solid. Newton-backed Solids now read true Newton
   // angular velocity instead of the bridge-proxy ODE state.
+  // carrierBodyHandle, not bodyHandle: a gyro on a FOLDED carrier (nested
+  // Solid, no joint to its parent -- the URDF importer's IMU emission
+  // pattern) owns no body of its own; the fold leader's body is the
+  // physically correct read (omega is identical throughout a rigid fold).
   OmSolid *const us = upperSolid();
-  const OmBodyHandle bodyHandle = us ? us->bodyHandle() : nullptr;
+  const OmBodyHandle bodyHandle = us ? us->carrierBodyHandle() : nullptr;
 
   if (bodyHandle) {
     // ⚠ CHECK THE RETURN -- it was being discarded. getBodyAngularVel returns -1
@@ -182,6 +187,12 @@ void OmGyro::computeValue() {
       if (mZAxis->isTrue())
         mValues[2] = OmMathsUtilities::discretize(mValues[2], mResolution->value());
     }
-  } else
-    parsingWarn(tr("this node or its parents requires a 'physics' field to be functional."));
+  } else {
+    // Latched like OmAccelerometer's no-body warning: computeValue runs every
+    // sensor refresh, so an unlatched warn floods the log at the refresh rate.
+    if (!mWarningWasPrinted) {
+      parsingWarn(tr("this node or its parents requires a 'physics' field to be functional."));
+      mWarningWasPrinted = true;
+    }
+  }
 }

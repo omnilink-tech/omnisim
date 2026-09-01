@@ -492,6 +492,7 @@ static int simulation_quit_status = 0;
 static bool simulation_reset = false;
 static bool world_reload = false;
 static bool simulation_reset_physics = false;
+static bool simulation_rebuild_physics = false;
 static bool simulation_change_mode = false;
 static int imported_node_id = -1;
 static const char *world_to_load = NULL;
@@ -586,6 +587,27 @@ static void free_solve_ik_results() {
   solve_ik_result_n_targets = 0;
 }
 
+// particle_stats request (pending while non-NULL node ref) + last answer
+// (C_SUPERVISOR_NODE_PARTICLE_STATS). The sample buffer is owned here and
+// stays valid until the next call, matching solve_ik's buffer-lifetime
+// convention above.
+static WbNodeRef particle_stats_node_ref = NULL;
+static int particle_stats_sample_stride = 0;
+static int particle_stats_status = -9;  // -9 = "the engine did not answer"
+static int particle_stats_count = 0;
+static int particle_stats_non_finite = 0;
+static double particle_stats_min[3] = {0.0, 0.0, 0.0};
+static double particle_stats_max[3] = {0.0, 0.0, 0.0};
+static double particle_stats_centroid[3] = {0.0, 0.0, 0.0};
+static int particle_stats_sampled = 0;
+static float *particle_stats_sample = NULL;
+
+static void free_particle_stats_results() {
+  free(particle_stats_sample);
+  particle_stats_sample = NULL;
+  particle_stats_sampled = 0;
+}
+
 static void supervisor_cleanup(WbDevice *d) {
   clean_field_request_garbage_collector();
   while (field_list) {
@@ -628,6 +650,7 @@ static void supervisor_cleanup(WbDevice *d) {
   free(movie_filename);
   free(save_filename);
   free_solve_ik_results();
+  free_particle_stats_results();
 }
 
 static void supervisor_write_request(WbDevice *d, WbRequest *r) {
@@ -651,6 +674,9 @@ static void supervisor_write_request(WbDevice *d, WbRequest *r) {
   } else if (simulation_reset_physics) {
     request_write_uchar(r, C_SUPERVISOR_SIMULATION_RESET_PHYSICS);
     simulation_reset_physics = false;
+  } else if (simulation_rebuild_physics) {
+    request_write_uchar(r, C_SUPERVISOR_SIMULATION_REBUILD_PHYSICS);
+    simulation_rebuild_physics = false;
   } else if (world_to_load) {
     request_write_uchar(r, C_SUPERVISOR_LOAD_WORLD);
     request_write_string(r, world_to_load);
@@ -1027,6 +1053,11 @@ static void supervisor_write_request(WbDevice *d, WbRequest *r) {
         request_write_double(r, solve_ik_tool_offset[i]);
     request_write_int32(r, solve_ik_iterations);
   }
+  if (particle_stats_node_ref) {
+    request_write_uchar(r, C_SUPERVISOR_NODE_PARTICLE_STATS);
+    request_write_uint32(r, particle_stats_node_ref->id);
+    request_write_int32(r, particle_stats_sample_stride);
+  }
 }
 
 static void supervisor_read_answer(WbDevice *d, WbRequest *r) {
@@ -1347,6 +1378,38 @@ static void supervisor_read_answer(WbDevice *d, WbRequest *r) {
         solve_ik_result_residuals = malloc(n_targets * sizeof(double));
         for (i = 0; i < n_targets; i++)
           solve_ik_result_residuals[i] = request_read_double(r);
+      }
+      break;
+    }
+    case C_SUPERVISOR_NODE_PARTICLE_STATS: {
+      // Fixed shape: status, count, min[3], max[3], centroid[3], nonFinite,
+      // sampled, then 3 * sampled floats. The engine always answers a
+      // particle_stats request, failures included, so a stale -9 "did not
+      // answer" can only mean the exchange itself died.
+      particle_stats_status = request_read_int32(r);
+      particle_stats_count = request_read_int32(r);
+      for (i = 0; i < 3; i++)
+        particle_stats_min[i] = request_read_double(r);
+      for (i = 0; i < 3; i++)
+        particle_stats_max[i] = request_read_double(r);
+      for (i = 0; i < 3; i++)
+        particle_stats_centroid[i] = request_read_double(r);
+      particle_stats_non_finite = request_read_int32(r);
+      const int n_sampled = request_read_int32(r);
+      free_particle_stats_results();
+      // Bounded STORE, full CONSUME (the solve_ik convention on the engine
+      // side): a corrupt count off the wire must not drive a multi-GB malloc,
+      // but every float the engine wrote must still be read or the stream
+      // desyncs for the next message. 2^20 particles is far beyond any sane
+      // sample and still cheap to stream.
+      const int safe_sampled = n_sampled < 0 ? 0 : (n_sampled > 1048576 ? 1048576 : n_sampled);
+      if (safe_sampled > 0)
+        particle_stats_sample = malloc(3 * (size_t)safe_sampled * sizeof(float));
+      particle_stats_sampled = particle_stats_sample ? safe_sampled : 0;
+      for (i = 0; i < 3 * n_sampled; i++) {
+        const float v = request_read_float(r);
+        if (particle_stats_sample && i < 3 * safe_sampled)
+          particle_stats_sample[i] = v;
       }
       break;
     }
@@ -1886,6 +1949,16 @@ void wb_supervisor_simulation_reset_physics() {
 
   robot_mutex_lock();
   simulation_reset_physics = true;
+  wb_robot_flush_unlocked(__FUNCTION__);
+  robot_mutex_unlock();
+}
+
+void wb_supervisor_simulation_rebuild_physics() {
+  if (!robot_check_supervisor(__FUNCTION__))
+    return;
+
+  robot_mutex_lock();
+  simulation_rebuild_physics = true;
   wb_robot_flush_unlocked(__FUNCTION__);
   robot_mutex_unlock();
 }
@@ -3037,6 +3110,73 @@ int wb_supervisor_node_solve_ik(WbNodeRef node, int n_targets, const double *tar
       *angles = solve_ik_result_angles;
     if (residuals)
       *residuals = solve_ik_result_residuals;
+  }
+  robot_mutex_unlock();
+  return status;
+}
+
+int wb_supervisor_node_get_particle_stats(WbNodeRef node, int sample_stride, int *count, double min[3], double max[3],
+                                          double centroid[3], int *non_finite, int *sampled, const float **sample_xyz) {
+  int i;
+  if (count)
+    *count = 0;
+  if (non_finite)
+    *non_finite = 0;
+  if (sampled)
+    *sampled = 0;
+  if (sample_xyz)
+    *sample_xyz = NULL;
+  if (min)
+    for (i = 0; i < 3; ++i)
+      min[i] = 0.0;
+  if (max)
+    for (i = 0; i < 3; ++i)
+      max[i] = 0.0;
+  if (centroid)
+    for (i = 0; i < 3; ++i)
+      centroid[i] = 0.0;
+
+  if (!robot_check_supervisor(__FUNCTION__))
+    return -10;
+
+  if (!is_node_ref_valid(node)) {
+    if (!robot_is_quitting())
+      fprintf(stderr, "Error: %s() called with a NULL or invalid 'node' argument.\n", __FUNCTION__);
+    return -10;
+  }
+
+  // Clamp rather than refuse: 0 = stats only, and past 4096 the stride buys
+  // nothing a smaller one does not (mirrors solve_ik's 4096 bound).
+  if (sample_stride < 0)
+    sample_stride = 0;
+  if (sample_stride > 4096)
+    sample_stride = 4096;
+
+  robot_mutex_lock();
+  particle_stats_node_ref = node;
+  particle_stats_sample_stride = sample_stride;
+  particle_stats_status = -9;  // overwritten by the answer; survives only if none arrives
+  wb_robot_flush_unlocked(__FUNCTION__);
+  particle_stats_node_ref = NULL;
+  const int status = particle_stats_status;
+  if (status == 0) {
+    if (count)
+      *count = particle_stats_count;
+    if (min)
+      for (i = 0; i < 3; ++i)
+        min[i] = particle_stats_min[i];
+    if (max)
+      for (i = 0; i < 3; ++i)
+        max[i] = particle_stats_max[i];
+    if (centroid)
+      for (i = 0; i < 3; ++i)
+        centroid[i] = particle_stats_centroid[i];
+    if (non_finite)
+      *non_finite = particle_stats_non_finite;
+    if (sampled)
+      *sampled = particle_stats_sampled;
+    if (sample_xyz)
+      *sample_xyz = particle_stats_sample;
   }
   robot_mutex_unlock();
   return status;

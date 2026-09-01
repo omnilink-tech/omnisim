@@ -18,10 +18,14 @@
 
 #include "OmAbstractCamera.hpp"
 #include "OmApplication.hpp"
+#include "OmSimulationWorld.hpp"
+#include "OmCloth.hpp"
 #include "OmDataStream.hpp"
 #include "OmDevice.hpp"
 #include "OmDictionary.hpp"
 #include "OmField.hpp"
+#include "OmGranularBed.hpp"
+#include "OmGranularGroup.hpp"
 #include "OmFieldModel.hpp"
 #include "OmJoint.hpp"
 #include "OmJointParameters.hpp"
@@ -48,6 +52,7 @@
 #include "OmSFNode.hpp"
 #include "OmSFVector2.hpp"
 #include "OmSelection.hpp"
+#include "OmSoftBody.hpp"
 #include "OmStandardPaths.hpp"
 #include "OmSolidMerger.hpp"
 #include "OmTemplateManager.hpp"
@@ -62,6 +67,7 @@
 
 #include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
+#include <cmath>
 #include <vector>
 
 #include <QtCore/QCoreApplication>
@@ -338,6 +344,9 @@ void OmSupervisorUtilities::initControllerRequests() {
   mSolveIkRotations.clear();
   mSolveIkToolOffset.clear();
   mSolveIkIterations = 64;
+  mParticleStatsRequested = false;
+  mParticleStatsNode = NULL;
+  mParticleStatsSampleStride = 0;
   mNodeExportStringRequest = false;
   mIsProtoRegenerated = false;
   mShouldRemoveNode = false;
@@ -680,6 +689,18 @@ void OmSupervisorUtilities::handleMessage(QDataStream &stream) {
     case C_SUPERVISOR_SIMULATION_RESET_PHYSICS:
       OmApplication::instance()->resetPhysics();
       return;
+    case C_SUPERVISOR_SIMULATION_REBUILD_PHYSICS: {
+      // W1.7 mid-run physics rebuild. Fire-and-forget on the wire; refusals
+      // are loud (a WARNING names the reason, and the harness's diagnostics
+      // and /sim/events surfaces both carry warnings).
+      QString whyNot;
+      OmSimulationWorld *const sw = OmSimulationWorld::instance();
+      if (sw == nullptr)
+        mRobot->warn(tr("physics rebuild REFUSED: no simulation world is loaded."));
+      else if (sw->requestNewtonRebuild(&whyNot) != 0)
+        mRobot->warn(tr("physics rebuild REFUSED: %1").arg(whyNot));
+      return;
+    }
     case C_SUPERVISOR_SIMULATION_CHANGE_MODE: {
       int newMode;
       stream >> newMode;
@@ -1039,6 +1060,19 @@ void OmSupervisorUtilities::handleMessage(QDataStream &stream) {
       mSolveIkRequested = true;
       if (!mSolveIkSolid)
         mRobot->warn(tr("wb_supervisor_node_solve_ik() can exclusively be used with a Solid (the end effector)"));
+      return;
+    }
+    case C_SUPERVISOR_NODE_PARTICLE_STATS: {
+      // Fixed-size request (uint32 nodeId + int32 sampleStride), so the
+      // whole-request-consumed rule solve_ik needs a loop for is satisfied by
+      // the two reads regardless of node validity. The answer is computed in
+      // writeAnswer (pushParticleStatsToStream), which always streams a
+      // status so the blocked libController call returns.
+      unsigned int id;
+      stream >> id;
+      stream >> mParticleStatsSampleStride;
+      mParticleStatsNode = getProtoParameterNodeInstance(id, "wb_supervisor_node_get_particle_stats()");
+      mParticleStatsRequested = true;  // set ALWAYS -- a bad node is answered -2, never left silent
       return;
     }
     case C_SUPERVISOR_NODE_SET_VELOCITY: {
@@ -2207,6 +2241,155 @@ void OmSupervisorUtilities::pushSolveIkToStream(OmDataStream &stream) {
     stream << (double)residuals[i];
 }
 
+void OmSupervisorUtilities::pushParticleStatsToStream(OmDataStream &stream) {
+  // wb_supervisor_node_get_particle_stats answer
+  // (C_SUPERVISOR_NODE_PARTICLE_STATS). A PURE READ off the engine's per-step
+  // particle caches -- nothing in the scene moves. Status codes mirror the
+  // public header:
+  //   0 ok, -1 no Newton runtime / world not running / the node never
+  //   registered with the particle solver, -2 not a particle node, -5 a
+  //   GranularGroup whose CUDA state was never allocated (honestly inert).
+  // The answer is ALWAYS streamed -- the libController side selectively
+  // blocks on it, and a silent no-answer would read as -9 forever.
+  int status = 0;
+  int count = 0;
+  int nonFinite = 0;
+  double mn[3] = {0.0, 0.0, 0.0};
+  double mx[3] = {0.0, 0.0, 0.0};
+  double cen[3] = {0.0, 0.0, 0.0};
+  std::vector<float> sample;  // 3 * sampled, tightly packed xyz
+  const int stride = qBound(0, mParticleStatsSampleStride, 4096);
+
+  OmPhysicsBackend *const raw = OmPhysicsBackendRegistry::newtonBackend();
+  OmNewtonBackend *const newton =
+    (raw != nullptr && raw->isAvailable()) ? static_cast<OmNewtonBackend *>(raw) : nullptr;
+
+  OmGranularGroup *const group = dynamic_cast<OmGranularGroup *>(mParticleStatsNode);
+  if (mParticleStatsNode == nullptr) {
+    status = -2;
+    mRobot->warn(tr("wb_supervisor_node_get_particle_stats(): unknown node"));
+  } else if (group != nullptr) {
+    // The CUDA granular demo keeps its own device state (it is NOT in the
+    // Newton particle arrays), so its stats are aggregated engine-side from
+    // the same stride-4 (xyzr) host buffer the wgpu draw reads. A group whose
+    // DeviceState was never allocated (no CUDA on this build/host) is
+    // honestly inert by design -- report that as -5 instead of a zero heap.
+    const float *xyzr = nullptr;
+    int n = 0;
+    group->refreshHostPositions();
+    if (!group->wgpuParticles(xyzr, n)) {
+      status = -5;
+    } else {
+      double sum[3] = {0.0, 0.0, 0.0};
+      int finiteCount = 0;
+      count = n;
+      for (int i = 0; i < n; ++i) {
+        const double x = xyzr[4 * i];
+        const double y = xyzr[4 * i + 1];
+        const double z = xyzr[4 * i + 2];
+        // NaN-skip: non-finite particles are COUNTED, never propagated into
+        // the aggregates (one NaN would otherwise poison every field).
+        if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) {
+          ++nonFinite;
+          continue;
+        }
+        if (finiteCount == 0) {
+          mn[0] = mx[0] = x;
+          mn[1] = mx[1] = y;
+          mn[2] = mx[2] = z;
+        } else {
+          mn[0] = qMin(mn[0], x); mx[0] = qMax(mx[0], x);
+          mn[1] = qMin(mn[1], y); mx[1] = qMax(mx[1], y);
+          mn[2] = qMin(mn[2], z); mx[2] = qMax(mx[2], z);
+        }
+        sum[0] += x;
+        sum[1] += y;
+        sum[2] += z;
+        ++finiteCount;
+      }
+      if (finiteCount > 0)
+        for (int a = 0; a < 3; ++a)
+          cen[a] = sum[a] / finiteCount;
+      if (stride > 0)
+        for (int i = 0; i < n; i += stride) {
+          sample.push_back(xyzr[4 * i]);
+          sample.push_back(xyzr[4 * i + 1]);
+          sample.push_back(xyzr[4 * i + 2]);
+        }
+    }
+  } else {
+    // The Newton-hosted particle systems share ONE particle list; each node
+    // records its own half-open [start, end) range at registration.
+    int start = -1;
+    int end = -1;
+    bool particleNode = true;
+    if (OmCloth *const cloth = dynamic_cast<OmCloth *>(mParticleStatsNode)) {
+      start = cloth->particleRangeStart();
+      end = cloth->particleRangeEnd();
+    } else if (OmSoftBody *const soft = dynamic_cast<OmSoftBody *>(mParticleStatsNode)) {
+      start = soft->particleRangeStart();
+      end = soft->particleRangeEnd();
+    } else if (OmGranularBed *const bed = dynamic_cast<OmGranularBed *>(mParticleStatsNode)) {
+      start = bed->particleRangeStart();
+      end = bed->particleRangeEnd();
+    } else {
+      particleNode = false;
+    }
+    if (!particleNode) {
+      status = -2;
+      mRobot->warn(tr("wb_supervisor_node_get_particle_stats() can exclusively be used with a Cloth, "
+                      "SoftBody, GranularBed or GranularGroup node"));
+    } else if (newton == nullptr) {
+      status = -1;
+    } else if (start < 0 || end <= start) {
+      // The node parsed but never registered (no runtime, no VBD solver, or a
+      // failed registration) -- the same "not simulated" its isSimulated()
+      // reports, distinct from "wrong node type".
+      status = -1;
+      mRobot->warn(tr("wb_supervisor_node_get_particle_stats(): the node is not registered with the "
+                      "particle solver (is the Newton runtime up, and did registration succeed?)"));
+    } else {
+      // ONE FFI crossing for the aggregate; the (heavier) position snapshot is
+      // paid only when a sample was asked for.
+      const int rc = newton->particleStats(start, end, &count, &nonFinite, mn, mx, cen);
+      if (rc != 0) {
+        status = -1;
+        mRobot->warn(tr("wb_supervisor_node_get_particle_stats(): the runtime stats read failed -- "
+                        "see the engine log"));
+      } else if (stride > 0 && count > 0) {
+        std::vector<float> buf(3 * (size_t)(end - start));
+        const int got = newton->snapshotParticlePositions(start, end, buf.data());
+        for (int i = 0; i < got; i += stride) {
+          sample.push_back(buf[3 * i]);
+          sample.push_back(buf[3 * i + 1]);
+          sample.push_back(buf[3 * i + 2]);
+        }
+      }
+    }
+  }
+
+  if (status != 0) {
+    count = 0;
+    nonFinite = 0;
+    sample.clear();
+  }
+  const int sampled = (int)(sample.size() / 3);
+  stream << (short unsigned int)0;
+  stream << (unsigned char)C_SUPERVISOR_NODE_PARTICLE_STATS;
+  stream << (int)status;
+  stream << (int)count;
+  for (int i = 0; i < 3; ++i)
+    stream << (double)mn[i];
+  for (int i = 0; i < 3; ++i)
+    stream << (double)mx[i];
+  for (int i = 0; i < 3; ++i)
+    stream << (double)cen[i];
+  stream << (int)nonFinite;
+  stream << (int)sampled;
+  for (int i = 0; i < 3 * sampled; ++i)
+    stream << (float)sample[i];
+}
+
 void OmSupervisorUtilities::writeAnswer(OmDataStream &stream) {
   if (!mUpdatedNodeIds.isEmpty()) {
     foreach (int id, mUpdatedNodeIds) {
@@ -2343,6 +2526,12 @@ void OmSupervisorUtilities::writeAnswer(OmDataStream &stream) {
     mSolveIkTargets.clear();
     mSolveIkRotations.clear();
     mSolveIkToolOffset.clear();
+  }
+  if (mParticleStatsRequested) {
+    pushParticleStatsToStream(stream);
+    mParticleStatsRequested = false;
+    mParticleStatsNode = NULL;
+    mParticleStatsSampleStride = 0;
   }
   if (mNodeGetStaticBalance) {
     stream << (short unsigned int)0;

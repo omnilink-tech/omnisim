@@ -2351,6 +2351,22 @@ int OmNewtonBackend::setJointTargetPosition(int jointIdx, double pos) {
   return 0;
 }
 
+int OmNewtonBackend::setJointGains(int jointIdx, int dof, double ke, double kd) {
+  if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr)
+    return -1;
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "set_joint_gains", "(iidd)", jointIdx, dof, ke, kd);
+  if (r == nullptr) {
+    const int err = reportPyError("set_joint_gains");
+    PyGILState_Release(gstate);
+    return err;
+  }
+  const int rc = (int)PyLong_AsLong(r);
+  Py_DECREF(r);
+  PyGILState_Release(gstate);
+  return rc;
+}
+
 int OmNewtonBackend::setJointForce(int jointIdx, double tau) {
   if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr)
     return -1;
@@ -3431,6 +3447,72 @@ int OmNewtonBackend::particleCount() const {
   return static_cast<int>(n);
 }
 
+int OmNewtonBackend::particleStats(int particleStart, int particleEnd, int *countOut, int *nonFiniteOut,
+                                   double minOut[3], double maxOut[3], double centroidOut[3]) const {
+  // The supervisor particle-stats verb's runtime read: one FFI crossing for the
+  // AGGREGATE (80 bytes), against snapshotParticlePositions' whole cloud.
+  //
+  // PACKED LAYOUT (must stay in lockstep with the runtime's
+  // particle_stats_packed, struct '<ii9d', 80 bytes, little-endian standard
+  // sizes -- identical to this memcpy parse on every supported platform, all of
+  // which are little-endian):
+  //   bytes  0..3   int32   count       particles in the clamped range
+  //   bytes  4..7   int32   non-finite  particles with ANY non-finite component
+  //   bytes  8..79  f64[9]  min[3], max[3], centroid[3] over FINITE particles
+  if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr || !mRuntime->running)
+    return -1;
+  if (countOut == nullptr || nonFiniteOut == nullptr || minOut == nullptr || maxOut == nullptr ||
+      centroidOut == nullptr)
+    return -1;
+  if (particleStart < 0 || particleEnd <= particleStart)
+    return -1;
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "particle_stats_packed", "(ii)",
+                                    particleStart, particleEnd);
+  if (r == nullptr) {
+    const int err = reportPyError("particle_stats_packed");
+    PyGILState_Release(gstate);
+    return err;
+  }
+  if (!PyBytes_Check(r)) {
+    Py_DECREF(r);
+    PyGILState_Release(gstate);
+    OmLog::warning("[OmNewtonBackend] particle_stats_packed: return not bytes");
+    return -1;
+  }
+  const Py_ssize_t n = PyBytes_Size(r);
+  if (n == 0) {
+    // The runtime's honest "no particle state at all" (no state_a / no
+    // particle_q) -- unavailable, not a wire error, so no warning.
+    Py_DECREF(r);
+    PyGILState_Release(gstate);
+    return -1;
+  }
+  if (n != 2 * (Py_ssize_t)sizeof(std::int32_t) + 9 * (Py_ssize_t)sizeof(double)) {
+    Py_DECREF(r);
+    PyGILState_Release(gstate);
+    OmLog::warning("[OmNewtonBackend] particle_stats_packed: bad size");
+    return -1;
+  }
+  const char *src = PyBytes_AsString(r);
+  std::int32_t count32 = 0;
+  std::int32_t nonFinite32 = 0;
+  double vals[9];
+  std::memcpy(&count32, src, sizeof(count32));
+  std::memcpy(&nonFinite32, src + 4, sizeof(nonFinite32));
+  std::memcpy(vals, src + 8, sizeof(vals));
+  Py_DECREF(r);
+  PyGILState_Release(gstate);
+  *countOut = static_cast<int>(count32);
+  *nonFiniteOut = static_cast<int>(nonFinite32);
+  for (int i = 0; i < 3; ++i) {
+    minOut[i] = vals[i];
+    maxOut[i] = vals[3 + i];
+    centroidOut[i] = vals[6 + i];
+  }
+  return 0;
+}
+
 // ---- Dispatcher overrides (ON path) ---------------------------------
 
 int OmNewtonBackend::getBodyPosition(OmBodyHandle body, double pos[3]) const {
@@ -3575,6 +3657,7 @@ int OmNewtonBackend::addClothMesh(const double *, const double *, const double *
                                   double, double, int *) { return -1; }
 int OmNewtonBackend::snapshotParticlePositions(int, int, float *) const { return -1; }
 int OmNewtonBackend::particleCount() const { return -1; }
+int OmNewtonBackend::particleStats(int, int, int *, int *, double *, double *, double *) const { return -1; }
 // Same contract for the volumetric soft body: -1 makes an OmSoftBody node inert
 // (parses, warns once, renders nothing) rather than fatal on a NEWTON=OFF build.
 int OmNewtonBackend::addSoftGrid(const double *, const double *, int, int, int,
@@ -3617,6 +3700,7 @@ int OmNewtonBackend::addJointPrismatic(int, int, double, double, double,
                                        double, double) { return -1; }
 int OmNewtonBackend::setJointTargetVelocity(int, double) { return -1; }
 int OmNewtonBackend::setJointTargetPosition(int, double) { return -1; }
+int OmNewtonBackend::setJointGains(int, int, double, double) { return -1; }
 int OmNewtonBackend::setJointForce(int, double) { return -1; }
 double OmNewtonBackend::getJointAngle(int) const { return 0.0; }
 void OmNewtonBackend::resetBodyPose(int, double, double, double, double, double, double, double) {}

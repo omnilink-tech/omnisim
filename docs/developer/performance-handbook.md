@@ -37,10 +37,9 @@ The normal release path still means:
 
 1. platform dependencies
 2. `src/glad`
-3. `src/wren`
-4. `src/omnisim`
-5. controller libraries
-6. resources and projects
+3. `src/omnisim` (the wgpu renderer compiles inside it, from `src/omnisim/render/` — the separate `src/wren` stage was deleted with WREN on 2026-08-23, `976b9449d`)
+4. controller libraries
+5. resources and projects
 
 That means code organization and header hygiene still have a direct impact on edit-time speed.
 

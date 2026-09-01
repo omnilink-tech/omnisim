@@ -87,6 +87,15 @@ public:
   // own Newton body index has been allocated.
   static void flushPendingNewtonRegistrations();
 
+  // W1.7 mid-run physics rebuild: forget every joint's Newton registration,
+  // clear the joint-index-keyed registries (motorized list, force-mode sets,
+  // one-shot log sets -- all keyed by indices of the OLD Newton world), and
+  // re-queue every eligible joint so the next flush re-registers them into
+  // the fresh world. Eligibility is the same predicate postFinalize uses
+  // (wantsNewtonRegistration), so the two cannot drift.
+  static void requeueAllNewtonJointsForRebuild();
+  bool wantsNewtonRegistration() const;
+
   // P3.8.b: per-tick drive for any registered Newton hinge with a motor.
   // Reads each motor's targetVelocity() and pushes it through
   // backend->setJointTargetVelocity. Called from OmSimulationWorld::step

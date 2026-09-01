@@ -64,7 +64,8 @@ Three minutes on Windows. About half an hour on Linux, because you build it.
    ```
 
    That is the real friction-grasp demo above. `python -m omnisim demos` lists
-   all 50, by category.
+   all of them (52 as of 2026-09-01), by category — the launcher's `demos.json`
+   is the live catalogue.
 
 Then choose the shortest route to your own work:
 
@@ -99,12 +100,12 @@ published documentation**, dated and linked; we did not measure their engines. W
 
 |  | **OmniSim** | Gazebo Jetty | Isaac Sim 6.0.1 |
 |---|---|---|---|
-| First-party HTTP/JSON scene API | **34 endpoints** | none | none |
-| Typed external control | 34 harness + 15 capture verbs, **plus ROS 2 `simulation_interfaces` (15 svc + 1 action) and a `ros2_control` `SystemInterface`** | ROS 2 `simulation_interfaces` (18 svc + 1 action) + `ros2_control` | ROS 2 + `ros2_control`, **plus raw Python over TCP :8226** |
+| First-party HTTP/JSON scene API | **38 endpoints** | none | none |
+| Typed external control | 38 harness + 15 capture verbs, **plus ROS 2 `simulation_interfaces` (15 svc + 1 action) and a `ros2_control` `SystemInterface`** | ROS 2 `simulation_interfaces` (18 svc + 1 action) + `ros2_control` | ROS 2 + `ros2_control`, **plus raw Python over TCP :8226** |
 | First-party MCP server | **18 tools**, stdio, zero deps | none | **5 tools — docs search; none touch a running sim** |
-| Structured load diagnostics | **54 codes** | — | — |
+| Structured load diagnostics | **50+ codes** (open enum; `GET /capabilities` serves the live set) | — | — |
 | Typed runtime events | **10**, with drop counters | — | — |
-| `AGENTS.md` at repo root | **695 lines** | none | **yes, + 25 `SKILL.md` skills** |
+| `AGENTS.md` at repo root | **701 lines** | none | **yes, + 25 `SKILL.md` skills** |
 
 ### 2. Performance and resources
 
@@ -203,13 +204,17 @@ vendor-claim: [docs/developer/simulator-comparison.md](docs/developer/simulator-
 - **Newton is young and we removed our fallback.** macOS is untested, so it has no verified physics.
 - **Single-GPU training only.** No multi-GPU or multi-node; Isaac Lab publishes a 16-GPU ladder.
   Our figures are one GPU, and every number above says which one.
-- **78% of measured capabilities work** (45 probes, run on **two machines** — 43 of 45 verdicts
-  agree, and both disagreements are attributed in the
+- **95.7% of measured capabilities work** (51 probes as of 2026-09-01 round 3 -- eight rows flipped to works in one day, measured: IMU carrier, propeller inflow, ball probe, limit-less servo promotion, cloth/FEM/granular particle readback, connector weld, runtime deletion via rebuild; the
+  45-probe set as it stood on 2026-08-17 also ran on a **second machine** — 43 of 45 verdicts
+  agreed, and both disagreements are attributed in the
   [campaign](docs/benchmarks/lane4-multimachine-2026-08-17.md), neither to the hardware).
-  Restitution is unimplemented, and runtime scene mutation is non-physical in both directions:
-  deleted nodes keep colliding, and spawned nodes are never registered with the solver at all.
-  Compound colliders drop all but the first child by default. A motorised `BallJoint` still does not
-  actuate (its `Hinge2Joint` sibling now does).
+  Restitution is unimplemented, and runtime scene mutation is non-physical in both directions *by
+  default*: deleted nodes keep colliding, and spawned nodes are never registered with the solver at
+  all (since 2026-09-01 an opt-in mid-run physics rebuild — `POST /sim/rebuild_physics`, 97–267 ms
+  measured — fixes both, refused on deformable worlds and dropping engaged welds).
+  Compound colliders drop all but the first child by default. A motorised `BallJoint` was measured
+  not to actuate, but a 2026-09-01 probe review found that measurement could not have detected
+  actuation — unproven either way pending re-measurement (its `Hinge2Joint` sibling does actuate).
   [Capability matrix](docs/benchmarks/lane4-capability-matrix.md) · [CHANGELOG](CHANGELOG.md).
 - **A `mujoco_warp` scene silently drops constraint rows past 256.** Measured on both machines:
   16 driven four-wheeled rovers peak at 336 and 328 rows against a cap that does not grow, with a

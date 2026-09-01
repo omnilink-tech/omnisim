@@ -94,10 +94,12 @@ When to edit here:
 - node semantics
 
 ### Rendering
+
+> ✅ **WREN was DELETED on 2026-08-23** (commit `976b9449d`). wgpu-native is the only renderer, compiled into the engine — there is no separate renderer library. (Updated 2026-09-01.)
+
 Main directories:
-- `src/wren`
-- `src/omnisim/wren`
-- `src/omnisim/render`
+- `src/omnisim/render` (the wgpu backend: surface, render targets, shaders, mesh/texture caches)
+- `src/omnisim/nodes/OmWgpuSceneRenderer.*` (offscreen rendering for Camera/RangeFinder/Lidar devices)
 - parts of `src/omnisim/gui`
 
 Responsibilities:
@@ -107,16 +109,15 @@ Responsibilities:
 - post-processing and picking
 
 Key classes:
-- Wren texture/material/frame-buffer/scene classes in `src/wren`
-- `OmWrenRenderingContext`
-- `OmWrenCamera`
+- `OmRenderBackend` / `OmVulkanBackend` and the `OmWgpu*` classes in `src/omnisim/render`
+- `OmWgpuSceneRenderer`
 - `OmView3D`
 
 When to edit here:
 - rendering performance
 - visual effects
 - sensor rendering
-- OpenGL/Wren integration
+- wgpu-native integration
 
 ### Controller APIs and protocol
 Main directories:

@@ -348,15 +348,18 @@ endif
 # was renamed from newton-physics in late 2025). Driven from C++ via the
 # stable CPython API in OmNewtonBackend.cpp -- no pybind11 dep at P2 because
 # the call surface is small. The flag now defaults to ON (Stage 3 flip);
-# OMNISIM_WITH_NEWTON=OFF restores the pure-ODE legacy build.
+# OMNISIM_WITH_NEWTON=OFF strips the Newton backend and leaves the binary with
+# NO physics at all -- ODE was deleted in bdc02139 (2026-08-08), so there is no
+# "pure-ODE legacy build" to restore (comment corrected 2026-09-01).
 # ---- Vulkan/wgpu render backend (R1 of engine-migration-plan.md) ------------
 # DEFAULT ON as of the architectural-baseline C1 flip (2026-06-07) -- symmetric
 # with OMNISIM_WITH_NEWTON: a no-flags `make` now COMPILES the wgpu backend in,
-# so the new render architecture is "live by default." This does NOT change the
-# runtime default: WREN stays the canonical renderer on every Camera/Viewpoint
-# (the `renderBackend` field defaults to "wren"); only a world that opts in with
-# `renderBackend "wgpu"` uses the GPU path (the Phase-ζ default flip is separate
-# and gated on lighting parity). The wgpu code is DOUBLE-GUARDED:
+# so the new render architecture is "live by default." HISTORICAL, corrected
+# 2026-09-01: the next sentence described the C1-era runtime default ("WREN stays
+# canonical, renderBackend defaults to wren"); the runtime default flipped to
+# wgpu on 2026-08-19 and WREN was DELETED on 2026-08-23 (976b9449d), so wgpu is
+# now the ONLY renderer and `renderBackend "wren"` is a warned no-op.
+# The wgpu code is DOUBLE-GUARDED:
 #   * OMNISIM_WITH_VULKAN       -- compiles the backend TUs in (this flag), and
 #   * WB_WGPU_NATIVE_AVAILABLE  -- set only when WGPU_NATIVE_HOME points at a real
 #     wgpu-native lib (below); every wgpu* API call lives behind it.

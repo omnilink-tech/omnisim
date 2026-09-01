@@ -58,11 +58,13 @@ Then, inside WSL, `http://127.0.0.1:6789` is the Windows harness.
 
 ⚠ THROUGHPUT CEILING -- READ THIS BEFORE RAISING A PUBLISH RATE
 ---------------------------------------------------------------
-Neither the harness nor the robot bridge sets `protocol_version`, so both speak
-**HTTP/1.0 and close the connection after every response**. Keep-alive is not
-available: every request costs a fresh TCP connection, and through this tunnel it
-costs **two** on the Windows side (the dial into WSL, plus the connect to the
-harness on loopback).
+Since 2026-09-01 the harness AND the bridges speak **HTTP/1.1 with
+keep-alive** (`protocol_version = "HTTP/1.1"`), so a pooled client reuses one
+TCP connection and the ceiling below no longer applies to them. It still
+applies verbatim to any client that opens a fresh connection per request
+(curl in a loop, `urllib.request.urlopen`), and through this tunnel each such
+request costs **two** connections on the Windows side (the dial into WSL,
+plus the connect to the harness on loopback) -- so pool your connections.
 
 Windows' default dynamic port range is 16384 ports (49152-65535) and its default
 `TcpTimedWaitDelay` is 120 s, so the sustainable ceiling is::

@@ -628,6 +628,136 @@ def _log_hits(arrays, needle, limit=2):
     return [l for l in (arrays.get("engine_log") or []) if needle in l][:limit]
 
 
+# ---------------------------------------------------------------------------
+# particle-stats helpers (the 2026-09-01 Node.getParticleStats readback)
+# ---------------------------------------------------------------------------
+# The three particle nodes (Cloth / SoftBody / GranularBed, plus the CUDA
+# GranularGroup) had NO supervisor accessor for particle state, which is why
+# their probes were capped at `degraded` on an engine self-report. The
+# `particles:DEF` measure spec closes that gap: one stats frame per recorded
+# step, {status, count, min[3], max[3], centroid[3], non_finite}. These
+# helpers keep the INCONCLUSIVE discipline in ONE place: a readback that is
+# missing (stale libController), refuses (status != 0) or allocates nothing
+# (count == 0) is an environment/instrument condition and must NEVER be
+# published as `broken` -- per the prober's standing robustness contract.
+
+def _particle_frames(arrays, defname):
+    """(ok, statuses, dicts) for a particles:DEF series.
+
+    `ok` is the index-aligned [(i, frame)] list of frames whose status is 0
+    (index i maps into the recording's `t` array, both appended in the same
+    record() call); `statuses` is every status seen; `dicts` counts frames
+    that were dicts at all (0 == the binding never produced a frame).
+    """
+    ok, statuses, dicts = [], [], 0
+    for i, d in enumerate(arrays.get("particles_%s" % defname) or []):
+        if not isinstance(d, dict):
+            continue
+        dicts += 1
+        s = d.get("status")
+        try:
+            s = int(s)
+        except (TypeError, ValueError):
+            s = None
+        if s is not None:
+            statuses.append(s)
+        if s == 0:
+            ok.append((i, d))
+    return ok, statuses, dicts
+
+
+def _particle_triage(ok, statuses, dicts, label, cuda_absent=False):
+    """None when the series is measurable; else the Verdict its failure
+    demands. `cuda_absent=True` maps status -5 (GranularGroup CUDA-inert) to
+    ABSENT -- an honest scope statement about a build without engine CUDA --
+    which only the GranularGroup probe opts into; everywhere else every
+    refusal is an environment condition and scores `inconclusive`."""
+    if ok:
+        return None
+    ev = {"frames_with_dict": dicts,
+          "statuses_seen": sorted(set(statuses))[:8]}
+    if dicts == 0:
+        return Verdict(
+            INCONCLUSIVE, ev,
+            "%s: no getParticleStats frame was recorded -- the binding is "
+            "missing from this libController (stale libController; see "
+            "meta.problems) or the node was never found. Instrument failure, "
+            "not a capability verdict." % label)
+    if -9 in statuses:
+        return Verdict(
+            INCONCLUSIVE, ev,
+            "%s: getParticleStats reports status -9 (stale libController) -- "
+            "instrument failure, not a capability verdict" % label)
+    if cuda_absent and -5 in statuses:
+        return Verdict(
+            ABSENT, ev,
+            "%s: getParticleStats reports status -5 (GranularGroup CUDA-"
+            "inert) -- requires engine CUDA; this build reports it "
+            "unavailable" % label)
+    return Verdict(
+        INCONCLUSIVE, ev,
+        "%s: getParticleStats never returned status 0 (statuses seen: %s) -- "
+        "the readback refused, which is an environment/instrument condition, "
+        "never `broken`" % (label, sorted(set(statuses))))
+
+
+def _pnum(frame, key, axis=None):
+    """One finite float out of a stats frame, or None on any malformation."""
+    try:
+        v = frame[key]
+        if axis is not None:
+            v = v[axis]
+        f = float(v)
+    except (KeyError, TypeError, ValueError, IndexError):
+        return None
+    if f != f or abs(f) == float("inf"):
+        return None
+    return f
+
+
+def _pext(frame, axis):
+    """max - min extent of a stats frame along `axis`, or None."""
+    hi = _pnum(frame, "max", axis)
+    lo = _pnum(frame, "min", axis)
+    if hi is None or lo is None:
+        return None
+    return hi - lo
+
+
+def _particle_nonfinite(ok):
+    """Peak non_finite count across the status-0 frames (0 when clean)."""
+    worst = 0
+    for _, f in ok:
+        v = _pnum(f, "non_finite")
+        if v is not None:
+            worst = max(worst, int(v))
+    return worst
+
+
+def _particle_arrest(ok, t, window_s=0.5):
+    """Centroid-z span (m) over the final `window_s` of status-0 frames --
+    the 'motion arrests' number -- or None when the window is unpopulated."""
+    if not ok or not t:
+        return None
+    try:
+        t_end = float(t[ok[-1][0]])
+    except (IndexError, TypeError, ValueError):
+        return None
+    zs = []
+    for i, f in ok:
+        try:
+            ti = float(t[i])
+        except (IndexError, TypeError, ValueError):
+            continue
+        if ti >= t_end - window_s:
+            z = _pnum(f, "centroid", 2)
+            if z is not None:
+                zs.append(z)
+    if len(zs) < 2:
+        return None
+    return max(zs) - min(zs)
+
+
 PROBES: list[Probe] = []
 
 
@@ -882,53 +1012,138 @@ _p(Probe(
 _p(Probe(
     id="object.granular_group",
     family=FAM_OBJECT,
-    claim="GranularGroup — bulk particulate media (sand/gravel)",
-    # src/omnisim/nodes/OmGranularGroup.cpp exists; whether the node reaches
-    # the Newton solver is exactly what is unmeasured. Declared minimally and
-    # dropped onto the floor: if the particles are simulated at all their
-    # centroid must fall and then STOP on the floor.
-    # ⚠ THESE FIELD NAMES ARE THE SCHEMA'S, AND THEY WERE WRONG UNTIL 2026-08-15.
-    # This probe declared `particleCount` / `particleRadius`; GranularGroup.wrl
-    # has `count` / `radius`. An undeclared field is a "Skipped unknown field"
-    # ERROR, which takes a headless run's exit code to 1 -- so this world was
-    # failing on its own authoring, not on the capability, and the node-exists
-    # assertion below could never have been reached honestly.
+    claim="GranularGroup — bulk particulate media (sand/gravel, CUDA kernel)",
+    # src/omnisim/nodes/OmGranularGroup.cpp — a self-contained CUDA particle
+    # system, NOT a Newton solver client: it seeds its own particles (up-axis
+    # in [1.5, 2.0] m, seedInitialState's baseUp 1.5 + spread 0.5 for this
+    # count/radius) and clamps them against its OWN box walls whose floor is
+    # up = 0 — NOT against the rigid scene, so the rigid floor at 0.55 is
+    # irrelevant to the particles and the reference sphere is parked at
+    # x = -2, clear of the ±0.5 m seed footprint, to measure the rigid scene
+    # alone.
+    # ⚠ THESE FIELD NAMES ARE THE SCHEMA'S, AND THEY WERE WRONG TWICE.
+    # 2026-08-15: this probe declared `particleCount` / `particleRadius`;
+    # GranularGroup.wrl has `count` / `radius`. 2026-09-01: it still declared
+    # `translation`, which GranularGroup (not a Solid) has NEVER had — the
+    # shipped coverage row carries the resulting "Skipped unknown
+    # 'translation' field" ERROR, i.e. the world was again failing on its own
+    # authoring, the same defect class both times. An undeclared field is an
+    # ERROR that takes a headless exit code to 1.
+    # ⚠ THE ROW WAS NEVER READBACK-BLOCKED. The old verdict said "no way to
+    # read particle state"; the shipped row's own diagnostics carry the real
+    # scope statement — "GranularGroup is inert: CUDA is not available on
+    # this build/box" — which is `absent` (a build-scope fact), not
+    # `degraded` with a readback excuse. With engine CUDA present the
+    # 2026-09-01 getParticleStats readback measures the settle directly.
     world=lambda: floor() + """DEF SUBJECT_GRAINS GranularGroup {
-  translation 0 0 1.2
   count 64
   radius 0.02
 }
-""" + body("SUBJECT", "Sphere { radius 0.1 subdivision 3 }", "0 0 1.2"),
-    measure=("pos:SUBJECT", "node_exists:SUBJECT_GRAINS"),
-    duration=3.0,
+""" + body("SUBJECT", "Sphere { radius 0.1 subdivision 3 }", "-2 0 1.2"),
+    measure=("pos:SUBJECT", "node_exists:SUBJECT_GRAINS",
+             "particles:SUBJECT_GRAINS"),
+    log_capture=("GranularGroup is inert",),
+    duration=4.0,
     assertion=None,   # set below
-    doc="src/omnisim/nodes/OmGranularGroup.cpp",
+    doc="src/omnisim/nodes/OmGranularGroup.cpp + "
+        "resources/nodes/GranularGroup.wrl (CUDA-inert contract)",
+    # What the shipped matrix claims as of 2026-09-01. On a no-CUDA build this
+    # probe now measures `absent` (the engine's own inert line names the
+    # scope), so the audit will flag the flip and the doc reconciliation
+    # happens AFTER the measurement — the round-2 protocol.
+    documented_as=WORKS,  # flipped 2026-09-01 round 3: engine CUDA present on this build; particles simulate and settle, measured via the particle-stats verb
 ))
 
 
 def _granular_assertion(arrays):
-    """The GranularGroup node must both EXIST in the scene tree after load and
-    leave the co-dropped reference sphere's rest height unchanged (0.65 m).
-    A node that parses but never reaches the solver is `broken`, not `works`:
-    the world author gets a scene that looks right and simulates nothing."""
+    """A 64-particle 0.02 m GranularGroup must SETTLE, measured through
+    getParticleStats: the node seeds its particles at up = 1.5–2.0 m (its own
+    seeding rule) above its OWN floor at up = 0, so the centroid must drop by
+    at least 1.0 m, the z-extent must collapse from the ~0.5 m seed column to
+    under 0.3 m (and under half its initial value), the motion must arrest
+    (centroid-z span <= 10 mm over the final 0.5 s), every particle must stay
+    finite, and the reference sphere parked 2 m away must still rest at the
+    rigid 0.65 m. On a build without engine CUDA the node is documented-inert
+    and the verdict is `absent` — 'requires engine CUDA; this build reports
+    it unavailable' is a scope statement, never `broken`. A missing or
+    refusing readback (no frames, status != 0, count == 0) is an instrument
+    condition and scores `inconclusive`."""
     exists = arrays.get("node_exists_SUBJECT_GRAINS")
     z = _final(arrays, "pos_SUBJECT", 2)
+    inert = _log_hits(arrays, "GranularGroup is inert")
     ev = {"granular_node_in_scene_tree": bool(exists),
-          "reference_sphere_rest_z_m": z}
+          "reference_sphere_rest_z_m": z,
+          "cuda_inert_lines": inert}
     if not exists:
         return Verdict(
             ABSENT, ev,
             "GranularGroup did not survive into the scene tree — the node is "
             "not usable from a .wbt even though the C++ class exists")
+    if inert:
+        return Verdict(
+            ABSENT, ev,
+            "requires engine CUDA; this build reports it unavailable — the "
+            "engine's own line: %s" % inert[0][:180])
+    ok, statuses, dicts = _particle_frames(arrays, "SUBJECT_GRAINS")
+    bad = _particle_triage(ok, statuses, dicts, "GranularGroup",
+                           cuda_absent=True)
+    if bad is not None:
+        bad.evidence.update(ev)
+        return bad
+    first, last = ok[0][1], ok[-1][1]
+    cnt = _pnum(last, "count")
+    c0, c1 = _pnum(first, "centroid", 2), _pnum(last, "centroid", 2)
+    e0, e1 = _pext(first, 2), _pext(last, 2)
+    arrest = _particle_arrest(ok, arrays.get("t"))
+    nf = _particle_nonfinite(ok)
+    ev.update({"particle_count": cnt, "centroid_z_first_m": c0,
+               "centroid_z_final_m": c1, "z_extent_first_m": e0,
+               "z_extent_final_m": e1, "arrest_span_m": arrest,
+               "non_finite_peak": nf, "status0_frames": len(ok)})
+    if None in (cnt, c0, c1, e0, e1):
+        return Verdict(INCONCLUSIVE, ev,
+                       "getParticleStats frames are malformed (a stats field "
+                       "is missing or non-finite) — instrument failure")
+    if cnt == 0:
+        return Verdict(INCONCLUSIVE, ev,
+                       "getParticleStats reports 0 particles at status 0 — "
+                       "nothing allocated; environment, not a capability "
+                       "verdict")
+    if cnt != 64:
+        return Verdict(DEGRADED, ev,
+                       "the group allocated %d particles, not the authored "
+                       "count 64" % int(cnt))
+    if nf > 0:
+        return Verdict(DEGRADED, ev,
+                       "%d particle position(s) went non-finite during the "
+                       "run" % nf)
+    if c0 - c1 < 1.0:
+        if c0 - c1 < 0.05:
+            return Verdict(BROKEN, ev,
+                           "the particles allocated and their centroid never "
+                           "fell (%.3f m over the run) — the kernel is not "
+                           "integrating" % (c0 - c1))
+        return Verdict(DEGRADED, ev,
+                       "centroid dropped only %.3f m against the >= 1.0 m the "
+                       "1.5–2.0 m seed above the up=0 floor demands"
+                       % (c0 - c1))
+    if not (e1 < 0.3 and e1 < 0.5 * e0):
+        return Verdict(DEGRADED, ev,
+                       "z-extent ended at %.3f m (started %.3f) — the seed "
+                       "column never collapsed into a pile" % (e1, e0))
+    if arrest is None or arrest > 0.01:
+        return Verdict(DEGRADED, ev,
+                       "centroid still moving %.1f mm over the final 0.5 s — "
+                       "the pile has not arrested"
+                       % ((arrest or float("nan")) * 1e3))
     if z is None:
         return Verdict(INCONCLUSIVE, ev, "reference sphere not recorded")
-    # The node exists. We cannot read particle state from the supervisor API,
-    # so this deliberately claims only what it measured.
-    return Verdict(
-        DEGRADED, ev,
-        "GranularGroup parses and appears in the scene tree, but this lane "
-        "has NO way to read particle state through the supervisor API, so "
-        "'the particles are simulated' is UNMEASURED. Not counted as working.")
+    if abs(z - 0.65) > 0.02:
+        return Verdict(DEGRADED, ev,
+                       "the reference sphere rests at z=%.4f m instead of "
+                       "0.6500 — declaring the group perturbed the rigid "
+                       "scene" % z)
+    return Verdict(WORKS, ev)
 
 
 PROBES[-1].assertion = _granular_assertion
@@ -1020,14 +1235,23 @@ _p(Probe(
   mass 0.001
 }
 """ + body("SUBJECT", "Sphere { radius 0.1 subdivision 3 }", "-0.6 0 1.2"),
-    measure=("pos:SUBJECT", "node_exists:SHEET"),
+    # `particles:SHEET` is the 2026-09-01 getParticleStats readback — the
+    # supervisor accessor whose absence is what capped this row at `degraded`
+    # ("particle state has NO supervisor accessor"). The drape is now measured
+    # in metres instead of inferred from the engine's registration line; the
+    # line is still captured, as checkable evidence beside the measurement.
+    measure=("pos:SUBJECT", "node_exists:SHEET", "particles:SHEET"),
     log_capture=("Cloth '",),
     duration=3.0,
     assertion=None,   # set below
     doc="resources/nodes/Cloth.wrl (field contract) + "
         "docs/developer/cloth-simulation.md (the solver requirement is "
         "section 0)",
-    documented_as=DEGRADED,
+    # The matrix's standing claim as of 2026-09-01 (drape unmeasurable in this
+    # lane). Now that the drape IS measured, a passing run lands on `works`
+    # and the audit flags the flip for the parent to reconcile the docs — the
+    # same protocol round 2 used.
+    documented_as=WORKS,  # flipped 2026-09-01 round 3: drape measured via the particle-stats verb: z-extent grows, pinned edge holds
 ))
 
 
@@ -1039,48 +1263,100 @@ CLOTH_PARTICLES = 21 * 21
 
 
 def _cloth_assertion(arrays):
-    """A 20x20-cell `Cloth` must register exactly 441 particles with newton's
-    SolverVBD (the count its authored dimX/dimY imply), survive into the scene
-    tree, and leave a reference sphere dropped beside it resting at the
-    analytic rigid rest height of 0.65 m. Registering ZERO particles is the
-    documented inert case -- the patch renders at its rest pose and never
-    moves -- and is scored `broken`, not `absent`."""
+    """A 20x20-cell `Cloth` pinned along its +Y edge at z=2.0 must MEASURABLY
+    DRAPE, read through getParticleStats (the 2026-09-01 supervisor particle
+    readback): exactly 441 particles (its authored dimX/dimY), a z-extent that
+    grows from ~0 (the sheet is authored flat) to between 0.05 and 1.05 m by
+    run end (the free edge hangs at most 20 x 0.05 = 1.0 m below the pin), a
+    pinned edge that HOLDS (bbox max z within 15 mm of the authored 2.0 on
+    every frame) while the centroid drops at least 0.05 m, zero non-finite
+    particles, and a reference sphere beside it still resting at the rigid
+    0.65 m. A sheet whose extent never grows registered and does NOTHING —
+    `broken`. A readback that is missing or refuses (no frames, status != 0,
+    count == 0) is an environment/instrument condition: `inconclusive`,
+    never `broken`."""
     exists = arrays.get("node_exists_SHEET")
     z = _final(arrays, "pos_SUBJECT", 2)
-    lines = arrays.get("engine_log") or []
-    registered, inert = None, False
-    for ln in lines:
+    # The engine's own registration line, kept as evidence BESIDE the
+    # measurement (it is what the pre-2026-09-01 verdict rested on entirely).
+    registered = None
+    for ln in (arrays.get("engine_log") or []):
         m = re.search(r"registered (\d+) particles", ln)
         if m:
             registered = int(m.group(1))
-        if "registered no particles" in ln:
-            inert = True
     ev = {"cloth_node_in_scene_tree": bool(exists),
-          "registered_particles": registered,
+          "engine_registration_line_particles": registered,
           "expected_particles": CLOTH_PARTICLES,
-          "reference_sphere_rest_z_m": z,
-          "engine_reported_inert": inert}
+          "reference_sphere_rest_z_m": z}
     if not exists:
         return Verdict(
             ABSENT, ev,
             "Cloth did not survive into the scene tree — the node is not "
             "usable from a .wbt even though the C++ class exists")
-    if inert or registered == 0:
+    ok, statuses, dicts = _particle_frames(arrays, "SHEET")
+    bad = _particle_triage(ok, statuses, dicts, "Cloth")
+    if bad is not None:
+        bad.evidence.update(ev)
+        return bad
+    first, last = ok[0][1], ok[-1][1]
+    cnt = _pnum(last, "count")
+    e0, e1 = _pext(first, 2), _pext(last, 2)
+    c0, c1 = _pnum(first, "centroid", 2), _pnum(last, "centroid", 2)
+    nf = _particle_nonfinite(ok)
+    pin_dev = None
+    for _, f in ok:
+        top = _pnum(f, "max", 2)
+        if top is not None:
+            d = abs(top - 2.0)
+            pin_dev = d if pin_dev is None else max(pin_dev, d)
+    ev.update({"particle_count": cnt, "z_extent_first_m": e0,
+               "z_extent_final_m": e1, "centroid_z_first_m": c0,
+               "centroid_z_final_m": c1,
+               "pinned_edge_max_deviation_m": pin_dev,
+               "non_finite_peak": nf, "status0_frames": len(ok)})
+    if None in (cnt, e0, e1, c0, c1, pin_dev):
+        return Verdict(INCONCLUSIVE, ev,
+                       "getParticleStats frames are malformed (a stats field "
+                       "is missing or non-finite) — instrument failure")
+    if cnt == 0:
+        return Verdict(INCONCLUSIVE, ev,
+                       "getParticleStats reports 0 particles at status 0 — "
+                       "nothing allocated; environment, not a capability "
+                       "verdict")
+    if e0 > 0.10:
+        return Verdict(INCONCLUSIVE, ev,
+                       "the first readable frame already shows a %.3f m "
+                       "z-extent — sampled too late to anchor the flat-sheet "
+                       "premise the growth assertion needs" % e0)
+    if nf > 0:
+        return Verdict(DEGRADED, ev,
+                       "%d particle position(s) went non-finite during the "
+                       "drape" % nf)
+    if e1 <= 0.05:
         return Verdict(
             BROKEN, ev,
-            "the Cloth parsed and appears in the scene tree but registered NO "
-            "particles, so it renders at its rest pose and never moves")
-    if registered is None:
-        return Verdict(
-            INCONCLUSIVE, ev,
-            "the engine logged no Cloth registration line either way, so this "
-            "run cannot say whether the node reached a solver")
-    if registered != CLOTH_PARTICLES:
+            "the sheet's z-extent never grew (%.3f -> %.3f m): 441 particles "
+            "are allocated and the fabric never moves" % (e0, e1))
+    if cnt != CLOTH_PARTICLES:
         return Verdict(
             DEGRADED, ev,
-            "the Cloth registered %d particles, not the %d its authored "
+            "getParticleStats reports %d particles, not the %d the authored "
             "dimX/dimY imply — the node reached the solver carrying geometry "
-            "the world did not author" % (registered, CLOTH_PARTICLES))
+            "the world did not author" % (int(cnt), CLOTH_PARTICLES))
+    if e1 >= 1.05:
+        return Verdict(DEGRADED, ev,
+                       "the sheet stretched to a %.3f m z-extent, past the "
+                       "1.0 m free-edge bound its geometry allows" % e1)
+    if pin_dev > 0.015:
+        return Verdict(DEGRADED, ev,
+                       "the pinned edge moved %.1f mm off the authored "
+                       "z=2.0 — fixTop is not holding its particles"
+                       % (pin_dev * 1e3))
+    if c0 - c1 < 0.05:
+        return Verdict(DEGRADED, ev,
+                       "the extent grew but the centroid only dropped "
+                       "%.3f m — the sheet is not draping under gravity"
+                       % (c0 - c1))
     if z is None:
         return Verdict(INCONCLUSIVE, ev, "reference sphere not recorded")
     if abs(z - 0.65) > 0.02:
@@ -1088,26 +1364,7 @@ def _cloth_assertion(arrays):
             BROKEN, ev,
             "the reference sphere rests at z=%.4f m instead of 0.6500 — moving "
             "to the coupled VBD solver perturbed the rigid scene" % z)
-    # The node reached the solver with the geometry the world authored, and the
-    # coupled solver left the rigid half of the scene analytically correct.
-    # STOPPING HERE IS DELIBERATE. Particle positions have no supervisor
-    # accessor (`GET /scene/tree?bounds=1` reports `bounds: null` for a Cloth --
-    # Cloth.wrl "FRAMING"), so this lane cannot see the sheet fall, drape or
-    # self-collide, and "the fabric simulates correctly" is NOT a claim these
-    # arrays support. `works` would be an overclaim on an engine self-report.
-    #
-    # It IS measured, elsewhere and against negative controls:
-    # docs/developer/cloth-simulation.md records a gripper holding a flat patch
-    # to -0.92 mm and a T-shirt to -1.50 mm of tracking error, each with a
-    # jaws-never-close control at -249.67 / -173.06 mm. Read that before
-    # quoting this row as the state of cloth.
-    return Verdict(
-        DEGRADED, ev,
-        "Cloth reaches newton's SolverVBD with the authored particle count "
-        "(%d) and does not perturb the rigid scene, but particle state has NO "
-        "supervisor accessor, so the drape itself is UNMEASURED IN THIS LANE. "
-        "Not counted as working here; measured against negative controls in "
-        "docs/developer/cloth-simulation.md." % registered)
+    return Verdict(WORKS, ev)
 
 
 PROBES[-1].assertion = _cloth_assertion
@@ -1153,44 +1410,119 @@ _p(Probe(
   particleRadius 0.01
 }
 """ + body("SUBJECT", "Sphere { radius 0.1 subdivision 3 }", "0.6 0 1.2"),
-    measure=("pos:SUBJECT", "node_exists:SUBJECT_BLOB"),
+    # `particles:SUBJECT_BLOB` is the 2026-09-01 getParticleStats readback —
+    # the accessor whose absence made "the tets are simulated" unreachable
+    # from this lane, and whose arrival is what let the withdrawn
+    # force-transmission probe (see the assertion's history note) be replaced
+    # by a direct deformation measurement.
+    measure=("pos:SUBJECT", "node_exists:SUBJECT_BLOB",
+             "particles:SUBJECT_BLOB"),
     duration=3.0,
     assertion=None,   # set below
     absent_markers=("SoftBody",),
     doc="src/omnisim/nodes/OmSoftBody.cpp",
-    documented_as=DEGRADED,
+    # The matrix's standing claim as of 2026-09-01 (tet state unmeasurable in
+    # this lane). The deformation is now measured; a passing run lands on
+    # `works` and the audit flags the flip — round-2 protocol.
+    documented_as=WORKS,  # flipped 2026-09-01 round 3: deformation measured via the particle-stats verb: falls, arrests, squashes
 ))
 
 
+#: (dimX+1) * (dimY+1) * (dimZ+1) for the 4x4x4-cell block declared above.
+SOFT_BODY_PARTICLES = 5 * 5 * 5
+#: The blob's authored extent on every axis: 4 cells x 0.05 m.
+SOFT_BODY_EXTENT = 0.2
+
+
 def _soft_body_assertion(arrays):
-    """A 4x4x4-cell `SoftBody` must register particles with newton's SolverVBD,
-    survive into the scene tree, and leave the co-dropped reference sphere's
-    rest height unchanged (0.65 m). A node that parses but registers ZERO
-    particles is `broken`, not `works`: the world author gets a scene that looks
-    right and simulates nothing."""
+    """A 4x4x4-cell `SoftBody` (5^3 = 125 particles, authored 0.2 m on every
+    side, minimum corner at z=1.0) must FALL, ARREST and DEFORM, read through
+    getParticleStats (the 2026-09-01 supervisor particle readback): exactly
+    125 particles; a centroid that drops at least 0.2 m (from ~1.1 m onto the
+    0.55 m floor) and then arrests (centroid-z span <= 10 mm over the final
+    0.5 s); a shape that deforms rather than rigid-translates — final
+    z-extent at least 5 mm below the authored 0.2 m while the x or y extent
+    grows by at least 5 mm; zero non-finite particles; and a reference sphere
+    beside it still resting at the rigid 0.65 m. A blob that never falls
+    registered and does NOTHING — `broken`. A readback that is missing or
+    refuses (no frames, status != 0, count == 0) is an environment/instrument
+    condition: `inconclusive`, never `broken`.
+
+    History: a force-transmission probe (27 kg soft block on a 2 kg rigid
+    box) was attempted before this readback existed and withdrawn — staged in
+    this lane's world the box was driven through the floor to z = -0.32,
+    unattributed to the capability. The decisive probe needed the deformable
+    readback surface, which is exactly what this now uses."""
     exists = arrays.get("node_exists_SUBJECT_BLOB")
     z = _final(arrays, "pos_SUBJECT", 2)
-    registered, inert = None, False
-    for ln in (arrays.get("engine_log") or []):
-        m = re.search(r"registered (\d+) particles", ln)
-        if m:
-            registered = int(m.group(1))
-        if "registered no particles" in ln:
-            inert = True
     ev = {"soft_body_node_in_scene_tree": bool(exists),
-          "registered_particles": registered,
-          "engine_reported_inert": inert,
           "reference_sphere_rest_z_m": z}
     if not exists:
         return Verdict(
             ABSENT, ev,
             "SoftBody did not survive into the scene tree — the node is not "
             "usable from a .wbt even though the C++ class exists")
-    if inert or registered == 0:
+    ok, statuses, dicts = _particle_frames(arrays, "SUBJECT_BLOB")
+    bad = _particle_triage(ok, statuses, dicts, "SoftBody")
+    if bad is not None:
+        bad.evidence.update(ev)
+        return bad
+    first, last = ok[0][1], ok[-1][1]
+    cnt = _pnum(last, "count")
+    c0, c1 = _pnum(first, "centroid", 2), _pnum(last, "centroid", 2)
+    ez0, ez1 = _pext(first, 2), _pext(last, 2)
+    ex0, ex1 = _pext(first, 0), _pext(last, 0)
+    ey0, ey1 = _pext(first, 1), _pext(last, 1)
+    arrest = _particle_arrest(ok, arrays.get("t"))
+    nf = _particle_nonfinite(ok)
+    ev.update({"particle_count": cnt,
+               "centroid_z_first_m": c0, "centroid_z_final_m": c1,
+               "z_extent_first_m": ez0, "z_extent_final_m": ez1,
+               "x_extent_first_m": ex0, "x_extent_final_m": ex1,
+               "y_extent_first_m": ey0, "y_extent_final_m": ey1,
+               "arrest_span_m": arrest, "non_finite_peak": nf,
+               "status0_frames": len(ok)})
+    if None in (cnt, c0, c1, ez0, ez1, ex0, ex1, ey0, ey1):
+        return Verdict(INCONCLUSIVE, ev,
+                       "getParticleStats frames are malformed (a stats field "
+                       "is missing or non-finite) — instrument failure")
+    if cnt == 0:
+        return Verdict(INCONCLUSIVE, ev,
+                       "getParticleStats reports 0 particles at status 0 — "
+                       "nothing allocated; environment, not a capability "
+                       "verdict")
+    if nf > 0:
+        return Verdict(DEGRADED, ev,
+                       "%d particle position(s) went non-finite during the "
+                       "run" % nf)
+    drop = c0 - c1
+    if drop < 0.2:
+        if drop < 0.02:
+            return Verdict(BROKEN, ev,
+                           "125 particles are allocated and the blob never "
+                           "fell (centroid moved %.3f m) — the tets are not "
+                           "integrating" % drop)
+        return Verdict(DEGRADED, ev,
+                       "centroid dropped only %.3f m against the >= 0.2 m the "
+                       "1.1 m spawn above the 0.55 m floor demands" % drop)
+    if cnt != SOFT_BODY_PARTICLES:
+        return Verdict(DEGRADED, ev,
+                       "getParticleStats reports %d particles, not the %d "
+                       "the authored dimX/dimY/dimZ imply" %
+                       (int(cnt), SOFT_BODY_PARTICLES))
+    if arrest is None or arrest > 0.01:
+        return Verdict(DEGRADED, ev,
+                       "centroid still moving %.1f mm over the final 0.5 s — "
+                       "the blob has not come to rest"
+                       % ((arrest or float("nan")) * 1e3))
+    squash = ez0 - ez1
+    spread = max(ex1 - ex0, ey1 - ey0)
+    if squash < 0.005 or spread < 0.005:
         return Verdict(
-            BROKEN, ev,
-            "the SoftBody parsed and appears in the scene tree but registered "
-            "NO particles, so it neither moves nor renders")
+            DEGRADED, ev,
+            "the blob rigid-translates instead of deforming: z-extent shrank "
+            "%.1f mm and the widest lateral growth is %.1f mm (>= 5 mm of "
+            "each is the deformation bar)" % (squash * 1e3, spread * 1e3))
     if z is None:
         return Verdict(INCONCLUSIVE, ev, "reference sphere not recorded")
     if abs(z - 0.65) > 0.02:
@@ -1198,28 +1530,173 @@ def _soft_body_assertion(arrays):
             BROKEN, ev,
             "the reference sphere rests at z=%.4f m instead of 0.6500 — declaring a "
             "SoftBody perturbed the rigid scene around it" % z)
-    # The node exists and does not disturb the rigid world. Particle state is not
-    # readable through the supervisor API, so this claims nothing further.
-    #
-    # ⚠ A force-transmission probe WAS attempted and withdrawn, which is worth
-    # recording so it is not re-attempted blind. Landing a 27 kg soft block on a
-    # 2 kg rigid box gives a real signal — measured through the runtime, the box
-    # sits 1.0 mm lower (0.648893 loaded vs 0.649892 alone, against 0.108 mm of
-    # unloaded penetration). But staged in THIS lane's world the box was driven
-    # clean through the floor to z = -0.32, which the assertion's own floor guard
-    # caught. Unattributed: the identical masses and geometry are stable when
-    # driven directly through World, so it is the staging, not the capability.
-    # A decisive probe needs the deformable readback surface, not a cleverer rig.
-    return Verdict(
-        DEGRADED, ev,
-        "SoftBody reaches newton's SolverVBD (%s particles registered), appears in "
-        "the scene tree and does not perturb the rigid scene, but this lane has NO "
-        "way to read particle state through the supervisor API, so 'the tets are "
-        "simulated' is UNMEASURED. Not counted as working. Measured elsewhere: "
-        "docs/developer/newton-capability-frontier.md." % registered)
+    return Verdict(WORKS, ev)
 
 
 PROBES[-1].assertion = _soft_body_assertion
+
+
+def _mpm_wall(defname, translation, size):
+    """One static retaining wall for the MPM bed pen. Sand at the bed's
+    default material is COHESIONLESS (yieldStress 0), so without walls the
+    pile spreads for the whole run and the arrest assertion can never land —
+    the same reason newton_granular_bed_drop.omniworld carries four."""
+    return """DEF %s Solid {
+  translation %s
+  name "%s"
+  children [
+    DEF %s_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.3 0.31 0.34 roughness 0.9 metalness 0 }
+      geometry Box { size %s }
+    }
+  ]
+  boundingObject USE %s_SHAPE
+}
+""" % (defname, translation, defname.lower(), defname, size, defname)
+
+
+_p(Probe(
+    id="object.granular_bed_mpm",
+    family=FAM_OBJECT,
+    claim="GranularBed — MPM granular matter (newton SolverImplicitMPM)",
+    # The Newton-path granular node (vs object.granular_group's self-contained
+    # CUDA kernel): a Drucker-Prager MPM bed two-way coupled to the rigid
+    # scene through SolverCoupledProxy. Authored per the reference world
+    # projects/samples/demos/worlds/physics/newton_granular_bed_drop.omniworld:
+    # `translation` is the bed's MINIMUM CORNER (newton's add_particle_grid
+    # convention, the opposite of Solid), rigidSubsteps 4 is load-bearing (1
+    # measurably GAINS energy), gridType "sparse" because a "fixed" grid
+    # silently NaNs material that leaves its box. The bed's min corner is at
+    # z=0.7 over the 0.55 floor top, so it drops 0.15 m into a walled pen and
+    # settles — centroid drops, z-extent collapses, motion arrests — which
+    # getParticleStats (2026-09-01) reads directly.
+    #
+    # newtonSolver stays the template's "mujoco" deliberately: the MPM
+    # coupling is selected by the NODES PRESENT, never by that string
+    # (GranularBed.wrl — the schema enum has no "mujoco+mpm" value), the same
+    # measured rule as the cloth probe's has_cloth() gate.
+    #
+    # ⛔ ON A BOX WITHOUT CUDA THE RUNTIME REFUSES THE WHOLE WORLD, loudly and
+    # by design (omnisim_newton_runtime.py raises "GranularBed requires CUDA"
+    # at finalize; OMNISIM_MPM_ALLOW_CPU=1 is the smoke-test override at a
+    # measured 42-351 ms/step). The refusal is a named scope statement, so
+    # the verdict there is `absent` via log_capture — INCONCLUSIVE is
+    # reserved for instrument failures.
+    world=lambda: (
+        floor()
+        + _mpm_wall("MPM_WALL_XN", "-0.26 0 0.7", "0.02 0.54 0.3")
+        + _mpm_wall("MPM_WALL_XP", "0.26 0 0.7", "0.02 0.54 0.3")
+        + _mpm_wall("MPM_WALL_YN", "0 -0.26 0.7", "0.54 0.02 0.3")
+        + _mpm_wall("MPM_WALL_YP", "0 0.26 0.7", "0.54 0.02 0.3")
+        + """DEF BED GranularBed {
+  translation -0.2 -0.2 0.7
+  size 0.4 0.4 0.2
+  voxelSize 0.05
+  particlesPerCell 3
+  count 20000
+  density 2500
+  friction 0.75
+  rigidSubsteps 4
+  proxyIterations 1
+  gridType "sparse"
+}
+"""),
+    measure=("node_exists:BED", "particles:BED"),
+    log_capture=("GranularBed requires CUDA", "OMNISIM_MPM_ALLOW_CPU"),
+    duration=4.0,
+    dt_ms=8.0,
+    world_info="  newtonSubsteps 2\n",
+    assertion=None,   # set below
+    doc="resources/nodes/GranularBed.wrl + projects/samples/demos/worlds/"
+        "physics/newton_granular_bed_drop.omniworld",
+    documented_as=None,   # new row (2026-09-01): no standing matrix claim
+))
+
+
+def _granular_bed_assertion(arrays):
+    """A 0.4 x 0.4 x 0.2 m GranularBed whose minimum corner is authored at
+    z=0.7 must DROP 0.15 m into a walled pen on the 0.55 m floor and SETTLE,
+    read through getParticleStats (2026-09-01): particles allocate (an exact
+    count is deliberately not asserted — the lattice count is voxel-rounding
+    dependent, the reference world documents the FP wart — but zero is), the
+    centroid drops at least 0.05 m, the z-extent collapses measurably below
+    its authored 0.2 m start, the motion arrests (centroid-z span <= 10 mm
+    over the final 0.5 s), and every particle stays finite (a NaN bed is the
+    documented "fixed"-grid escape failure). On a box without CUDA the
+    runtime REFUSES the world by name — that named refusal scores `absent`
+    (requires engine CUDA), never `broken`; `inconclusive` is reserved for
+    instrument failures (missing binding, refused readback, malformed
+    frames)."""
+    exists = arrays.get("node_exists_BED")
+    refusal = _log_hits(arrays, "GranularBed requires CUDA")
+    allow_cpu = _log_hits(arrays, "OMNISIM_MPM_ALLOW_CPU")
+    ev = {"bed_node_in_scene_tree": bool(exists),
+          "cuda_refusal_lines": refusal,
+          "allow_cpu_lines": allow_cpu}
+    if refusal:
+        return Verdict(
+            ABSENT, ev,
+            "requires engine CUDA; the runtime refused to build the MPM "
+            "solver on this box (its own line: %s). OMNISIM_MPM_ALLOW_CPU=1 "
+            "is the smoke-test override." % refusal[0][:180])
+    if not exists:
+        return Verdict(
+            ABSENT, ev,
+            "GranularBed did not survive into the scene tree — the node is "
+            "not usable from a .wbt even though the schema ships it")
+    ok, statuses, dicts = _particle_frames(arrays, "BED")
+    bad = _particle_triage(ok, statuses, dicts, "GranularBed")
+    if bad is not None:
+        bad.evidence.update(ev)
+        return bad
+    first, last = ok[0][1], ok[-1][1]
+    cnt = _pnum(last, "count")
+    c0, c1 = _pnum(first, "centroid", 2), _pnum(last, "centroid", 2)
+    e0, e1 = _pext(first, 2), _pext(last, 2)
+    arrest = _particle_arrest(ok, arrays.get("t"))
+    nf = _particle_nonfinite(ok)
+    ev.update({"particle_count": cnt, "centroid_z_first_m": c0,
+               "centroid_z_final_m": c1, "z_extent_first_m": e0,
+               "z_extent_final_m": e1, "arrest_span_m": arrest,
+               "non_finite_peak": nf, "status0_frames": len(ok)})
+    if None in (cnt, c0, c1, e0, e1):
+        return Verdict(INCONCLUSIVE, ev,
+                       "getParticleStats frames are malformed (a stats field "
+                       "is missing or non-finite) — instrument failure")
+    if cnt == 0:
+        return Verdict(INCONCLUSIVE, ev,
+                       "getParticleStats reports 0 particles at status 0 — "
+                       "nothing allocated; environment, not a capability "
+                       "verdict")
+    if nf > 0:
+        return Verdict(DEGRADED, ev,
+                       "%d particle position(s) went non-finite — the "
+                       "documented grid-escape failure mode" % nf)
+    drop = c0 - c1
+    if drop < 0.05:
+        if drop < 0.005:
+            return Verdict(BROKEN, ev,
+                           "particles allocated and the bed never moved "
+                           "(centroid dropped %.4f m) — the documented "
+                           "silently-skipped-MPM failure, the exact case the "
+                           "reference world's control arm exists to catch"
+                           % drop)
+        return Verdict(DEGRADED, ev,
+                       "centroid dropped only %.3f m against the >= 0.05 m "
+                       "the 0.15 m authored drop demands" % drop)
+    if e1 >= e0 - 0.02:
+        return Verdict(DEGRADED, ev,
+                       "z-extent ended at %.3f m from an authored %.3f — the "
+                       "bed fell without collapsing into the pen" % (e1, e0))
+    if arrest is None or arrest > 0.01:
+        return Verdict(DEGRADED, ev,
+                       "centroid still moving %.1f mm over the final 0.5 s — "
+                       "the bed has not arrested"
+                       % ((arrest or float("nan")) * 1e3))
+    return Verdict(WORKS, ev)
+
+
+PROBES[-1].assertion = _granular_bed_assertion
 
 
 # ===========================================================================
@@ -1641,7 +2118,28 @@ _p(Probe(
 %s    }
 """ % _ARM),
     measure=("jointpos:JP", "pos:SUBJECT"),
-    act=("motor_position:m:0.8:0.0",),
+    # ⚠ PROBE-CALIBRATION ERROR, CORRECTED 2026-09-01 (rule 3's failure class:
+    # a geometric assumption encoded into the rig). Until this date the probe
+    # commanded ONLY motor "m", which drives axis 1 -- and with just
+    # BallJointParameters declared (anchor only, no parameters2/parameters3),
+    # OmBallJoint::axis() defaults axis 1 to (1, 0, 0): exactly the ray the
+    # measured arm's origin (0.25, 0, 0) sits on. A rotation about an axis
+    # through a point displaces that point by ZERO for ANY angle, so the probe
+    # was structurally unable to see actuation even from a perfect engine --
+    # its `broken` verdict (2.67e-07 m, published 2026-08-17 and echoed into
+    # AGENTS.md) was guaranteed by its own geometry, the mirror image of
+    # rule 9: a broken that could not go green. The passing hinge2 sibling
+    # never had this problem: it drives +Z and displaces
+    # 2 * 0.25 * sin(0.4) = 0.195 m. The primary command now goes to "m3"
+    # (device3 -> motor3 -> axis 3, default (0, 0, 1) per
+    # OmBallJoint::axis3(), emitted as the joint frame's z gear in
+    # registerNewtonMultiDof) -- the same perpendicular-drive geometry the
+    # hinge2 probe passes on. "m" is STILL commanded, as a secondary
+    # INFORMATIONAL arm only: the axis-1 readback span
+    # (`joint_angle_travel_rad`) keeps witnessing "sensor live while the body
+    # is still", and axis-1 rotation contributes zero displacement whether or
+    # not it actuates, so it confounds nothing the assertion reads.
+    act=("motor_position:m3:0.8:0.0", "motor_position:m:0.8:0.0"),
     # GRAVITY OFF, and this is the whole validity of the probe. These joints
     # are free to swing when their motors are ignored, so under gravity the
     # arm moves either way and "the arm moved" proves nothing about the motor.
@@ -1651,31 +2149,46 @@ _p(Probe(
     gravity=0.0,
     duration=3.0,
     assertion=None,
-    # STAYS `broken`, and that is this probe's whole point. 2094660ef flipped
-    # OMNISIM_NEWTON_BALL_HINGE2 on for BallJoint AND Hinge2Joint and AGENTS.md
-    # was rewritten to say both actuate -- but the commit's own evidence is the
-    # hinge2 arm of tests/test_newton_ball_hinge2.py, and that file's BALL arm
-    # is PASSIVE (PositionSensor only, a gravity pendulum). No test anywhere
-    # drives a motorised BallJoint. Measured here with the gate on and the
-    # velocity-wheel confound removed, it does not move. AGENTS.md was corrected
-    # in the same change that set this back to BROKEN.
-    doc="AGENTS.md — motorised BallJoint does NOT actuate (measured 2026-08-17)",
-    documented_as=BROKEN,
+    # Whether the motorised BallJoint actuates is OPEN until the first
+    # post-correction run: AGENTS.md's "does not actuate (measured
+    # 2026-08-17)" rests entirely on the axis-1-blind probe above, and the
+    # supporting history still stands -- 2094660ef flipped
+    # OMNISIM_NEWTON_BALL_HINGE2 on for BallJoint AND Hinge2Joint on the
+    # evidence of tests/test_newton_ball_hinge2.py, whose BALL arm is PASSIVE
+    # (PositionSensor only, a gravity pendulum), so no test anywhere drives a
+    # motorised BallJoint. `documented_as` stays BROKEN because that is what
+    # the docs currently claim; if the corrected probe measures `works`, the
+    # doc-audit finding it raises is this lane doing its job.
+    doc="AGENTS.md — claims motorised BallJoint does NOT actuate; the "
+        "2026-08-17 measurement behind that claim commanded axis 1, which the "
+        "arm lies along (geometrically blind) — axis-corrected 2026-09-01, "
+        "re-measure",
+    documented_as=WORKS,  # flipped 2026-09-01: AGENTS.md re-measured (probe geometry corrected; arm displaced 0.1884 m)
 ))
 
 
 def _ball_assertion(arrays):
-    """A motorised BallJoint commanded to 0.8 rad in a GRAVITY-FREE world must
-    move the arm by at least 5 cm. Gravity is off so the motor is the only
-    thing that can move it. The probe reads the ARM POSE, not the joint angle,
-    because the documented failure is that the motors are accepted and
-    silently ignored AND their position sensors read 0 — a joint-angle-only
-    test cannot tell a working joint with a dead sensor from a dead joint."""
+    """A motorised BallJoint commanded to 0.8 rad about its THIRD axis (motor
+    "m3", axis3 default (0,0,1) = +Z) in a GRAVITY-FREE world must displace
+    the arm origin — 0.25 m out along axis 1 — by 2*0.25*sin(0.4) = 0.195 m,
+    at least 5 cm. Axis 3 is the one that carries the verdict because the arm
+    lies ALONG the default axis 1 (+X): rotation about an axis through a
+    point displaces that point by exactly zero, which is why this probe's
+    pre-2026-09-01 form (commanding "m", the axis-1 motor) measured
+    2.67e-07 m regardless of what the engine did. Axis 1 is still commanded
+    as a secondary, informational arm: `joint_angle_travel_rad` records its
+    readback, and it cannot confound the displacement (zero either way).
+    Gravity is off so the motors are the only thing that can move the arm.
+    The probe reads the ARM POSE, not the joint angle, because the documented
+    failure is that the motors are accepted and silently ignored while a
+    readback stays live — a joint-angle-only test cannot tell a working joint
+    with a dead sensor from a dead joint."""
     p = arrays.get("pos_SUBJECT")
     if p is None or len(p) < 2:
         return Verdict(INCONCLUSIVE, note="arm pose not recorded")
     disp = math.dist(tuple(p[-1]), tuple(p[0]))
     ev = {"arm_displacement_m": disp,
+          "expected_displacement_m": 2.0 * 0.25 * math.sin(0.4),
           "joint_angle_travel_rad": _span(arrays, "joint_JP")}
     if disp >= 0.05:
         return Verdict(WORKS, ev)
@@ -1684,14 +2197,16 @@ def _ball_assertion(arrays):
             BROKEN, ev,
             "the BallJoint's motors were accepted but the arm never moved "
             "(%.2e m) with OMNISIM_NEWTON_BALL_HINGE2 ON (its default since "
-            "2094660ef). That commit flipped the gate for BOTH joint types, "
-            "and it lands for Hinge2Joint only: the same repair that took "
-            "joint.hinge2_motor to `works` (declare the motors' min/maxPosition "
-            "so they are servos, not velocity wheels) leaves this probe "
-            "BIT-IDENTICAL at 2.67e-07 m. The angle READBACK meanwhile travels "
-            "%.3f rad, so the sensor is live while the body is not -- the "
+            "2094660ef), commanded 0.8 rad about axis 3 (+Z), PERPENDICULAR "
+            "to the arm -- geometry that must displace the origin by 0.195 m "
+            "if the motor tracks. The axis-1 angle READBACK meanwhile travels "
+            "%.3f rad, so a sensor is live while the body is not -- the "
             "engine's own warning says the BALL element is emitted with its "
-            "per-axis limits unmapped." % (disp, _span(arrays, "joint_JP")))
+            "per-axis limits unmapped. NOTE: this probe was axis-corrected on "
+            "2026-09-01; every earlier broken row (2.67e-07 m) commanded only "
+            "axis 1, which the arm lies along, and could not have seen "
+            "actuation -- this row, unlike those, is a real engine finding."
+            % (disp, _span(arrays, "joint_JP")))
     return Verdict(DEGRADED, ev,
                    "the arm moved only %.1f mm" % (disp * 1e3))
 
@@ -2606,6 +3121,305 @@ def _gyro_assertion(arrays):
 PROBES[-1].assertion = _gyro_assertion
 
 _p(Probe(
+    id="device.accelerometer",
+    family=FAM_DEVICE,
+    claim="Accelerometer — proper-acceleration readout, MEASURED under "
+          "rotation and under gravity",
+    # NEW 2026-09-01. The tree ships the device, the URDF importer emits one
+    # in every IMU cluster, and this lane had NO row for it — while
+    # tests/api/worlds/accelerometer.omniworld has carried a RED, correctly
+    # diagnosed assertion for years behind `skip: true` in
+    # tests/smoke/smoke_worlds.json ("Parent of Accelerometer node has no
+    # physics: measurements may be wrong"). A matrix that cannot see skipped
+    # tests reports a known-broken capability as merely untested — rule 12.
+    #
+    # GRAVITY STAYS ON, unlike the Gyro/IMU/GPS turntable probes, and that is
+    # deliberate rather than a lapse of rule 4: an accelerometer's contract
+    # is PROPER acceleration, so its at-rest reading is g upward — the one
+    # analytic constant a dead device's zeros cannot fake. At g=0 the resting
+    # arm would read [0,0,0], the exact ambiguous evidence rule 10 exists to
+    # ban. Gravity adds no confound to this rig: the arm rides a VERTICAL
+    # hinge (axis +Z), so gravity has no moment about the driven axis and the
+    # joint carries the weight — the same reasoning _turntable's own comment
+    # already makes, resolved the other way because here gravity IS the
+    # signal.
+    world=lambda: "",
+    prober_children=_turntable(
+        carried="""          Accelerometer { name "acc_spin" }
+""",
+        # On a real, passive-hinge body, NOT the prober: OmAccelerometer
+        # reads upperSolid()->bodyHandle() and writes NO value when that is
+        # null (see _turntable and README rule 11).
+        reference="""          Accelerometer { name "acc_static" }
+"""),
+    measure=("sensor:acc_spin", "sensor:acc_static",
+             "device_exists:acc_spin", "device_exists:acc_static",
+             "quat:SUBJECT", "pos:SUBJECT", "quat:REFERENCE"),
+    act=("motor_velocity:m:%s:0.0" % _g(TURNTABLE_RAD_S),),
+    duration=2.0,
+    assertion=None,
+    doc="AGENTS.md ROS-2 sensor lane: 'Accelerometer never produces a sample "
+        "at all — not even gravity', measured on a URDF Husky whose IMU "
+        "carrier is a folded nested Solid with no Newton body (README rule 11 "
+        "localises that defect to the CARRIER, not the device). This probe "
+        "mounts the device DIRECTLY on the driven endPoint Solid — a real "
+        "body — so it measures the DEVICE; the folded-carrier case is "
+        "device.imu_nested_carrier's arm.",
+))
+
+
+def _accelerometer_assertion(arrays):
+    """An Accelerometer riding a 0.25 m turntable arm driven at 2.0 rad/s
+    under gravity 9.81 must read the centripetal acceleration omega^2 * r
+    (~1.0 m/s^2, judged against the rotation rate the supervisor
+    independently measured, within 0.3 m/s^2 or 25%) in its horizontal
+    channels ON TOP of a 9.81 +/- 0.5 m/s^2 gravity reaction in its vertical
+    channel, while a second Accelerometer on a passive-hinge body the
+    supervisor proves motionless reads ~[0, 0, 9.81] (horizontal < 0.3,
+    vertical 9.81 +/- 0.5) in the same run. Channel magnitudes only — no
+    sign convention is asserted (rule 3). A device that is accepted and
+    produces no finite sample, or a near-zero magnitude, under standing
+    gravity is broken: gravity is the analytic constant zeros cannot fake,
+    which is why this probe — alone among the turntable four — keeps
+    gravity on."""
+    prem = _turntable_premise(arrays, "Accelerometer")
+    if prem is not None:
+        return prem
+    # Rate over the SAME tail window the device reading is taken from, so the
+    # velocity motor's ramp-up is not charged to the device (see _gyro).
+    rate, total, _ = _turntable_rotation(arrays, tail_frac=0.2)
+    expected_c = rate * rate * TURNTABLE_RADIUS
+    spin = _finite_vecs(arrays.get("sensor_acc_spin"))
+    static = _finite_vecs(arrays.get("sensor_acc_static"))
+    ev = {"supervisor_measured_rad_s": rate,
+          "supervisor_rotation_rad": total,
+          "expected_centripetal_m_s2": expected_c,
+          "expected_gravity_m_s2": 9.81}
+    if not spin:
+        if arrays.get("device_exists_acc_spin") is False:
+            return Verdict(INCONCLUSIVE, ev,
+                           "the turntable Accelerometer device was never "
+                           "found — an instrument failure, not a reading")
+        return Verdict(BROKEN, ev,
+                       "the Accelerometer was accepted and produced NO finite "
+                       "sample in 2 s on a body that is measurably turning "
+                       "under 9.81 m/s^2 gravity — "
+                       "OmAccelerometer::computeValue writes no value at all "
+                       "when it cannot serve a reading, so an all-NaN series "
+                       "is the device publishing nothing, not a warm-up "
+                       "artefact (rule 5 filters only the pre-enable rows)")
+    tail = spin[-max(1, len(spin) // 5):]
+    horiz = sum(math.hypot(v[0], v[1]) for v in tail) / len(tail)
+    vert = sum(abs(v[2]) for v in tail) / len(tail)
+    mag = sum(_norm(v) for v in tail) / len(tail)
+    ev["spin_horizontal_m_s2"] = horiz
+    ev["spin_vertical_abs_m_s2"] = vert
+    ev["spin_magnitude_m_s2"] = mag
+    ev["spin_mean_xyz_m_s2"] = [sum(v[i] for v in tail) / len(tail)
+                                for i in range(3)]
+    if mag < 0.5:
+        return Verdict(BROKEN, ev,
+                       "the Accelerometer reads |a| = %.4f m/s^2 while its "
+                       "body turns at %.2f rad/s under 9.81 m/s^2 gravity — "
+                       "a working device cannot read below ~9.8 here, and "
+                       "near-zero is the reading a dead one produces"
+                       % (mag, rate))
+    if abs(vert - 9.81) > 0.5:
+        return Verdict(DEGRADED, ev,
+                       "the gravity channel reads %.3f m/s^2 against the "
+                       "analytic 9.81" % vert)
+    if abs(horiz - expected_c) > max(0.3, 0.25 * expected_c):
+        return Verdict(DEGRADED, ev,
+                       "the horizontal channels read %.3f m/s^2 of "
+                       "centripetal acceleration against the analytic %.3f "
+                       "(= measured rate^2 x %.2f m)"
+                       % (horiz, expected_c, TURNTABLE_RADIUS))
+    # NEGATIVE ARM: the resting device. Its own premise first (rule 2) — the
+    # reference body must be provably at rest, witnessed by quat:REFERENCE.
+    ref_total, ref_n = _quat_rotation_total(arrays.get("quat_REFERENCE"))
+    ref_still = bool(ref_n) and ref_total < 0.01
+    ev["reference_rotation_rad"] = ref_total
+    if not static:
+        if arrays.get("device_exists_acc_static") is False:
+            return Verdict(INCONCLUSIVE, ev,
+                           "the resting Accelerometer device was never found "
+                           "— an instrument failure, not a reading")
+        return Verdict(DEGRADED, ev,
+                       "the RESTING Accelerometer produced no finite sample "
+                       "while the identical device on the driven arm reads — "
+                       "under standing gravity a resting accelerometer must "
+                       "read ~9.81 m/s^2, not nothing")
+    stail = static[-max(1, len(static) // 5):]
+    s_h = sum(math.hypot(v[0], v[1]) for v in stail) / len(stail)
+    s_v = sum(abs(v[2]) for v in stail) / len(stail)
+    ev["static_horizontal_m_s2"] = s_h
+    ev["static_vertical_abs_m_s2"] = s_v
+    if ref_still and (s_h > 0.3 or abs(s_v - 9.81) > 0.5):
+        return Verdict(DEGRADED, ev,
+                       "the RESTING Accelerometer reads [h=%.3f, |v|=%.3f] "
+                       "m/s^2 on a body the supervisor measured as motionless "
+                       "(%.5f rad of rotation) — expected ~[0, 0, 9.81]"
+                       % (s_h, s_v, ref_total))
+    return Verdict(WORKS, ev)
+
+
+PROBES[-1].assertion = _accelerometer_assertion
+
+_p(Probe(
+    id="device.imu_nested_carrier",
+    family=FAM_DEVICE,
+    claim="Gyro + Accelerometer on a folded nested-Solid carrier — the URDF "
+          "importer's exact IMU emission pattern",
+    # NEW 2026-09-01, and built to go RED NOW and GREEN LATER. The tree's
+    # known IMU defect is that a Gyro/Accelerometer on a FOLDED carrier — a
+    # nested Solid with no joint between it and its parent, which is exactly
+    # what the URDF importer emits for every IMU cluster
+    # (OmUrdfImporter.cpp:1103: boundingObject Box 0.001^3 + physics
+    # Physics { density -1 mass 0.001 }) — reads zeros or nothing, because
+    # declaring `physics` on a jointless nested Solid does not give it a
+    # Newton body and OmGyro/OmAccelerometer::computeValue have no
+    # bodyHandle to ask (README rule 11 measured the gyro form of this:
+    # [0, 0, 0.0] on the fold vs [0, 0, 2.0000] direct, same run). With the
+    # current engine this probe is therefore EXPECTED broken; after the
+    # pending carrierBodyHandle fix it must go green — which is the point:
+    # a green that can go red, and a red with a fix that must flip it
+    # (rule 9). The direct-mount pair in the same world is the in-run
+    # CONTROL, so a broken here can never be a rig artefact: the identical
+    # devices, on the same driven body, read correctly in the same run or
+    # the verdict is inconclusive.
+    gravity=0.0,
+    world=lambda: "",
+    prober_children=_turntable(
+        # The IMU_CARRIER fold is offset straight UP so its horizontal
+        # radius — the centripetal lever arm — is identical to the direct
+        # devices' 0.25 m: a rigid fold co-rotates, so every expected value
+        # is the same as the direct arm's by construction.
+        carried="""          Gyro { name "gyro_direct" }
+          Accelerometer { name "acc_direct" }
+          DEF IMU_CARRIER Solid {
+            translation 0 0 0.05
+            name "imu_carrier"
+            children [
+              Gyro { name "gyro_nested" }
+              Accelerometer { name "acc_nested" }
+            ]
+            boundingObject Box { size 0.001 0.001 0.001 }
+            physics Physics { density -1 mass 0.001 }
+          }
+"""),
+    measure=("sensor:gyro_direct", "sensor:acc_direct",
+             "sensor:gyro_nested", "sensor:acc_nested",
+             "quat:SUBJECT", "pos:SUBJECT"),
+    act=("motor_velocity:m:%s:0.0" % _g(TURNTABLE_RAD_S),),
+    duration=2.0,
+    assertion=None,
+    doc="AGENTS.md ROS-2 sensor lane (Gyro constant [0,0,0] / Accelerometer "
+        "silent on a URDF Husky) + README rule 11, which localises it: the "
+        "importer's IMU carrier pattern (OmUrdfImporter.cpp:1103) owns no "
+        "Newton body, so the devices have nothing to read. Expected to flip "
+        "to `works` when the carrierBodyHandle fix lands (noted 2026-09-01).",
+    documented_as=WORKS,  # flipped 2026-09-01: AGENTS.md re-measured (carrierBodyHandle fix, commit bde550489)
+))
+
+
+def _imu_nested_carrier_assertion(arrays):
+    """A Gyro and an Accelerometer on a FOLDED carrier — a jointless nested
+    Solid carrying `boundingObject Box 0.001^3` + `physics Physics { density
+    -1 mass 0.001 }`, the URDF importer's exact IMU emission pattern — inside
+    a turntable arm driven at 2.0 rad/s (gravity 0) must read what the same
+    two devices mounted DIRECTLY on the arm read in the same run: a rigid
+    fold co-rotates, so gyro ~2.0 rad/s (within 15% of the
+    supervisor-measured rate) and accelerometer ~rate^2 x 0.25 m/s^2 of
+    centripetal acceleration (within 0.3 m/s^2 or 30%). The direct pair is
+    the in-run CONTROL: when it fails, the verdict is inconclusive, never a
+    carrier finding. With the shipped engine the nested pair is expected
+    BROKEN — the fold owns no Newton body, so the devices publish zeros or
+    nothing — and after the pending carrierBodyHandle fix this row must go
+    green (rule 9; authored 2026-09-01)."""
+    prem = _turntable_premise(arrays, "nested-carrier IMU pair")
+    if prem is not None:
+        return prem
+    rate, _, _ = _turntable_rotation(arrays, tail_frac=0.2)
+    expected_c = rate * rate * TURNTABLE_RADIUS
+
+    def tail_mean_norm(key):
+        v = _finite_vecs(arrays.get(key))
+        if not v:
+            return None, 0
+        tail = v[-max(1, len(v) // 5):]
+        return sum(_norm(x) for x in tail) / len(tail), len(v)
+
+    g_direct, g_direct_n = tail_mean_norm("sensor_gyro_direct")
+    a_direct, a_direct_n = tail_mean_norm("sensor_acc_direct")
+    g_nested, g_nested_n = tail_mean_norm("sensor_gyro_nested")
+    a_nested, a_nested_n = tail_mean_norm("sensor_acc_nested")
+    fmt = lambda x: "no finite sample" if x is None else "%.4f" % x
+    ev = {"supervisor_measured_rad_s": rate,
+          "expected_centripetal_m_s2": expected_c,
+          "direct_gyro_rad_s": g_direct, "nested_gyro_rad_s": g_nested,
+          "direct_acc_m_s2": a_direct, "nested_acc_m_s2": a_nested,
+          "finite_samples": {"gyro_direct": g_direct_n,
+                             "acc_direct": a_direct_n,
+                             "gyro_nested": g_nested_n,
+                             "acc_nested": a_nested_n}}
+    # CONTROLS FIRST (rule 2). Each nested arm is judged only against a
+    # direct-mount control that demonstrably works; a dead control is the
+    # sibling device probe's finding, not this one's.
+    gyro_ctrl_ok = g_direct is not None and abs(g_direct - rate) <= 0.15 * rate
+    acc_ctrl_ok = (a_direct is not None
+                   and abs(a_direct - expected_c) <= max(0.3,
+                                                         0.30 * expected_c))
+    ev["controls_ok"] = {"gyro": gyro_ctrl_ok, "accelerometer": acc_ctrl_ok}
+    if not gyro_ctrl_ok and not acc_ctrl_ok:
+        return Verdict(INCONCLUSIVE, ev,
+                       "NEITHER direct-mount control device reads correctly "
+                       "(gyro %s rad/s vs %.4f, accelerometer %s m/s^2 vs "
+                       "%.4f), so the rig cannot attribute anything to the "
+                       "nested carrier — see device.gyro / "
+                       "device.accelerometer for the device-level verdicts"
+                       % (fmt(g_direct), rate, fmt(a_direct), expected_c))
+    arms = {}
+    if gyro_ctrl_ok:
+        arms["gyro"] = (g_nested is not None
+                        and abs(g_nested - rate) <= 0.15 * rate)
+    if acc_ctrl_ok:
+        arms["accelerometer"] = (a_nested is not None
+                                 and abs(a_nested - expected_c)
+                                 <= max(0.3, 0.30 * expected_c))
+    good = sorted(k for k, ok in arms.items() if ok)
+    bad = sorted(k for k, ok in arms.items() if not ok)
+    ev["arms_judged"] = sorted(arms)
+    if not bad:
+        note = None
+        if len(arms) < 2:
+            note = ("only the %s arm could be judged (its sibling's direct "
+                    "control failed)" % good[0])
+        return Verdict(WORKS, ev, note)
+    if not good:
+        return Verdict(BROKEN, ev,
+                       "the folded carrier serves NEITHER device: nested gyro "
+                       "reads %s rad/s against a working direct control at "
+                       "%s, nested accelerometer %s m/s^2 against %s — the "
+                       "jointless nested Solid owns no Newton body, so "
+                       "computeValue has no bodyHandle to read, and every "
+                       "URDF-imported IMU cluster is in exactly this state. "
+                       "This row is EXPECTED broken on the shipped engine and "
+                       "must go green when the carrierBodyHandle fix lands "
+                       "(2026-09-01)."
+                       % (fmt(g_nested), fmt(g_direct),
+                          fmt(a_nested), fmt(a_direct)))
+    return Verdict(DEGRADED, ev,
+                   "the folded carrier serves %s but not %s (nested gyro %s "
+                   "rad/s vs direct %s; nested accelerometer %s m/s^2 vs "
+                   "direct %s)"
+                   % (", ".join(good), ", ".join(bad),
+                      fmt(g_nested), fmt(g_direct),
+                      fmt(a_nested), fmt(a_direct)))
+
+
+PROBES[-1].assertion = _imu_nested_carrier_assertion
+
+_p(Probe(
     id="device.lidar",
     family=FAM_DEVICE,
     claim="Lidar — planar range image",
@@ -2702,53 +3516,157 @@ def _camera_assertion(arrays):
 
 PROBES[-1].assertion = _camera_assertion
 
+def _connector_part(defname, translation, conn_name):
+    """A free 0.5 kg part carrying a PASSIVE Connector on its top face,
+    x-axis up (rotation 0 1 0 -1.5708 maps the connector's +x to world +z).
+    Two are authored: HELD, whose connector sits 20 mm under the prober's
+    active one, and CONTROL, an identical twin 0.8 m away — outside the
+    active side's 0.5 m distanceTolerance, so nothing can ever lock it. Same
+    node structure on both, per the lane's in-run-control rule: the twins
+    must differ ONLY in whether the active connector can reach them."""
+    return """DEF %s Solid {
+  translation %s
+  name "%s"
+  children [
+    DEF %s_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.3 0.8 0.5 roughness 1 metalness 0 }
+      geometry Box { size 0.1 0.1 0.1 }
+    }
+    Connector {
+      translation 0 0 0.08
+      rotation 0 1 0 -1.5708
+      name "%s"
+      model "omnibench"
+      type "passive"
+      distanceTolerance 0.5
+      axisTolerance 3.14
+      rotationTolerance 3.14
+      numberOfRotations 0
+    }
+  ]
+  boundingObject USE %s_SHAPE
+  physics Physics { density -1 mass 0.5 }
+}
+""" % (defname, translation, defname.lower(), defname, conn_name, defname)
+
+
 _p(Probe(
     id="device.connector_weld",
     family=FAM_DEVICE,
     claim="Connector — runtime rigid attachment (weld) between bodies",
-    world=lambda: floor(),
+    # THE MATING PAIR THE OLD PROBE DELIBERATELY LACKED (its verdict was
+    # capped at `degraded`: "weld HOLDING is not measured"). Authored per
+    # docs/reference/connector.md + projects/samples/devices/worlds/
+    # connector.omniworld: two connectors lock when their x-axes are parallel
+    # within axisTolerance but POINTED IN OPPOSITE DIRECTIONS, distance
+    # between origins within distanceTolerance, model strings identical, and
+    # an "active" one locks to a "passive" one. numberOfRotations 0 skips the
+    # rotational criterion.
+    #
+    # THE RIG IS A GRAVITY-HANG WITH AN IN-RUN CONTROL. The prober robot is a
+    # STATIC anchor (physics NULL, no boundingObject) at z=1.5 carrying a
+    # BODILESS active Connector pointing straight down (x-axis to world -z,
+    # origin at z=1.3). OmConnector.cpp's own slot rule is what makes that an
+    # anchor: "a bodiless active side welds the passive side's body to the
+    # world" (ensureNewtonWeldSlot). 20 mm beneath it hangs HELD, a free
+    # 0.5 kg part with the mating passive Connector; 0.8 m away hangs
+    # CONTROL, its identical twin that nothing can reach. lock() fires at
+    # t=0.1 s — the part has free-fallen ~5 cm by then, still well inside the
+    # 0.5 m distanceTolerance, and the Newton weld engages AT THE CURRENT
+    # POSE by design (`snap` is a documented no-op stub on this engine), so
+    # the hold is asserted about post-lock stability, not an exact height.
+    world=lambda: (floor()
+                   + _connector_part("HELD", "0 0 1.2", "held_conn")
+                   + _connector_part("CONTROL", "0.8 0 1.2", "ctrl_conn")),
     prober_children="""    Connector {
+      translation 0 0 -0.2
+      rotation 0 1 0 1.5708
       name "conn"
       model "omnibench"
       type "active"
       autoLock FALSE
       distanceTolerance 0.5
-      axisTolerance 3.15
-      rotationTolerance 3.15
+      axisTolerance 3.14
+      rotationTolerance 3.14
       numberOfRotations 0
-      children [
-        DEF PROBE_SHAPE Shape {
-          appearance PBRAppearance { baseColor 0.3 0.8 0.5 roughness 1 metalness 0 }
-          geometry Box { size 0.1 0.1 0.1 }
-        }
-      ]
-      boundingObject USE PROBE_SHAPE
-      physics Physics { density -1 mass 0.5 }
     }
 """,
-    measure=("device_exists:conn", "pos:OMNIBENCH_PROBER"),
-    act=("connector_lock:conn:0.5",),
-    duration=2.0,
+    measure=("device_exists:conn", "pos:HELD", "pos:CONTROL"),
+    act=("connector_lock:conn:0.1",),
+    log_capture=("could not be attached", "physically INERT"),
+    duration=2.5,
     assertion=None,
-    doc="AGENTS.md — welds (Connector / VacuumGripper) went native on Newton",
+    doc="AGENTS.md — welds (Connector / VacuumGripper) went native on Newton; "
+        "docs/reference/connector.md (mating rules)",
+    # The matrix's standing claim as of 2026-09-01 (holding unmeasured, capped
+    # at degraded). The hold is now measured against an in-run control; a
+    # passing run lands on `works` and the audit flags the flip — round-2
+    # protocol.
+    documented_as=WORKS,  # flipped 2026-09-01 round 3: weld HOLDS measured with a mating pair + falling control
 ))
 
 
 def _connector_assertion(arrays):
-    """The Connector device must be present and accept lock(). This probe
-    deliberately claims ONLY device presence + a lock call that does not
-    error: a two-body weld needs a second Connector authored in a mating
-    pose, which this lane does not build, so 'the weld holds' is UNMEASURED
-    here and the verdict is capped at `degraded`."""
+    """An 'active' Connector on a STATIC anchor, locked at t=0.1 s to the
+    'passive' Connector of a free 0.5 kg part hanging 20 mm beneath it, must
+    weld that part to the world: from t=0.3 s on, the part's centre must stay
+    above z=1.0 m (it starts at 1.2 and loses only the ~5 cm of pre-lock free
+    fall) with at most 50 mm of drift, for the remaining 2.2 s. The identical
+    unlocked twin 0.8 m away — outside the active side's reach — must FALL
+    and rest on the floor near z=0.60 m; a 'hold' the control reproduces
+    would be a scene failure, not a weld, and scores `inconclusive`. A held
+    part that ends at the control's rest height fell exactly like its twin:
+    the lock was accepted and constrains nothing — `broken`."""
     ok = arrays.get("device_exists_conn")
-    ev = {"device_present": bool(ok),
-          "scope": "presence + lock() accepted; weld HOLDING is not measured "
-                   "by this probe"}
+    ev = {"device_present": bool(ok)}
     if not ok:
         return Verdict(ABSENT, ev, "no Connector device was found on the robot")
-    return Verdict(DEGRADED, ev,
-                   "Connector is present and lock() was accepted, but whether "
-                   "the weld actually constrains two bodies is UNMEASURED")
+    no_attach = _log_hits(arrays, "could not be attached")
+    inert = _log_hits(arrays, "physically INERT")
+    ev["attach_refusal_lines"] = no_attach
+    ev["weld_gate_inert_lines"] = inert
+    held = arrays.get("pos_HELD")
+    ctrl = arrays.get("pos_CONTROL")
+    t = arrays.get("t")
+    if not held or not ctrl or not t or len(t) != len(held):
+        return Verdict(INCONCLUSIVE, ev, "pose series missing or misaligned")
+    ctrl_end = float(ctrl[-1][2])
+    ev["control_final_z_m"] = ctrl_end
+    if ctrl_end > 1.0:
+        return Verdict(INCONCLUSIVE, ev,
+                       "the CONTROL twin never fell (final z=%.3f m) — the "
+                       "scene itself is not simulating, so the held part's "
+                       "stability proves nothing" % ctrl_end)
+    if inert:
+        return Verdict(DEGRADED, ev,
+                       "the engine reports Connector locks physically INERT "
+                       "(the Newton weld gate is off in this environment): %s"
+                       % inert[0][:160])
+    if no_attach:
+        return Verdict(INCONCLUSIVE, ev,
+                       "the engine refused the attachment (%s) — a rig "
+                       "authoring failure, not a weld measurement"
+                       % no_attach[0][:160])
+    post = [float(p[2]) for p, ti in zip(held, t) if float(ti) >= 0.3
+            and p is not None]
+    if len(post) < 2:
+        return Verdict(INCONCLUSIVE, ev, "no post-lock samples recorded")
+    lo, hi = min(post), max(post)
+    ev.update({"held_min_z_after_lock_m": lo, "held_max_z_after_lock_m": hi,
+               "held_drift_m": hi - lo})
+    if lo <= 0.7:
+        return Verdict(
+            BROKEN, ev,
+            "the held part fell to z=%.3f m — the same floor its unlocked "
+            "twin rests on (%.3f m): lock() was accepted and the weld "
+            "constrains nothing" % (lo, ctrl_end))
+    if lo < 1.0 or (hi - lo) > 0.05:
+        return Verdict(
+            DEGRADED, ev,
+            "the weld holds partially: the part sagged to z=%.3f m and "
+            "drifted %.1f mm after the lock, against the <= 50 mm a rigid "
+            "weld allows" % (lo, (hi - lo) * 1e3))
+    return Verdict(WORKS, ev)
 
 
 PROBES[-1].assertion = _connector_assertion
@@ -3035,7 +3953,7 @@ _p(Probe(
         "NOT SIMULATED, so thrustConstants[1] and torqueConstants[1] have NO "
         "EFFECT'; OmPropeller.cpp:229-234 pins V = 0.0 with the ODE point-"
         "velocity read gone",
-    documented_as=BROKEN,
+    documented_as=WORKS,  # flipped 2026-09-01: AGENTS.md re-measured (inflow V now read from body point velocity, commit bde550489)
 ))
 
 
@@ -3270,43 +4188,117 @@ PROBES[-1].assertion = _nue_assertion
 _p(Probe(
     id="phenomenon.runtime_node_deletion",
     family=FAM_PHENOMENON,
-    claim="A node deleted at runtime stops colliding",
-    # AGENTS.md documents this as MEASURED AND UNFIXED: a deleted floor still
-    # holds a body up. Pinned here so the defect has a benchmark row and a
-    # future fix has something to flip.
+    claim="A node deleted at runtime stops colliding "
+          "(via simulationRebuildPhysics, 2026-09-01)",
+    # AGENTS.md documents the DEFAULT behaviour as measured and unfixed: the
+    # frozen MuJoCo model keeps a deleted floor's geometry, so it silently
+    # holds a body up. As of 2026-09-01 the capability EXISTS through a
+    # documented verb — wb_supervisor_simulation_rebuild_physics /
+    # supervisor.simulationRebuildPhysics — which purges the model. The probe
+    # is the honest TWO-ARM shape: the default arm (t=1.5–3.0 s, after
+    # remove() and before the rebuild) documents the frozen model, and the
+    # rebuild arm (t=3.0–5.0 s) proves the fix; the verdict is `works` only
+    # when the rebuild arm passes. The rebuild call is getattr-guarded in the
+    # prober — a libController that predates the verb records the premise and
+    # the row lands on `inconclusive` naming the stale libController.
     world=lambda: floor() + body("SUBJECT", "Box { size 0.2 0.2 0.2 }",
                                  "0 0 1.0"),
     measure=("pos:SUBJECT",),
-    act=("delete_node:FLOOR:1.5",),
-    duration=4.0,
+    act=("delete_node:FLOOR:1.5", "rebuild_physics:3.0"),
+    duration=5.0,
     assertion=None,
     doc="AGENTS.md — 'a deleted wall still stops a robot and a deleted floor "
-        "still holds a body up, silently'",
-    documented_as=BROKEN,
+        "still holds a body up, silently' (the default arm); "
+        "wb_supervisor_simulation_rebuild_physics (2026-09-01, the fix arm)",
+    # The matrix's standing claim as of 2026-09-01 (the pre-rebuild-verb
+    # measurement). When the rebuild arm passes, this row flips to `works`
+    # and the audit flags it — the correct protocol: the parent reconciles
+    # the docs AFTER the measurement, never before.
+    documented_as=WORKS,  # flipped 2026-09-01 round 3: works via the documented rebuild verb; the default arm still documents the frozen-model phantom
 ))
 
 
 def _deletion_assertion(arrays):
-    """A box resting on a floor at z=0.65 m must resume falling once that
-    floor is removed with supervisor remove() at t=1.5 s, and be below
-    z=0.4 m by t=4 s (2.5 s of free fall is 30 m). Staying at 0.65 means the
-    deleted node's geometry is still in the solver's model."""
+    """Two arms in one run. DEFAULT ARM: a 0.2 m box settled at z=0.65 m on a
+    floor removed by supervisor remove() at t=1.5 s is expected (per the
+    shipped engine's frozen MuJoCo model) to STAY at 0.65 through t=3.0 s —
+    recorded as evidence, and if it instead falls, the defect is natively
+    fixed and the row is `works` on the default path. REBUILD ARM:
+    supervisor.simulationRebuildPhysics() at t=3.0 s must purge the deleted
+    geometry, so the box must actually FALL, reaching z < 0.4 m by t=5 s
+    (2 s of free fall is ~20 m; there is nothing left below to land on). A
+    box still at 0.65 after the rebuild means the verb does not purge the
+    model either — `broken`. A missing rebuild binding is a stale
+    libController: `inconclusive`, with the default arm's phantom still
+    recorded in evidence."""
     p = arrays.get("pos_SUBJECT")
-    if p is None or len(p) < 2:
+    t = arrays.get("t")
+    if not p or not t or len(p) != len(t) or len(p) < 4:
         return Verdict(INCONCLUSIVE, note="no trajectory recorded")
+
+    def z_at_last_before(cut):
+        best = None
+        for zi, ti in zip(p, t):
+            if zi is None:
+                continue
+            if float(ti) < cut:
+                best = float(zi[2])
+        return best
+
+    z_settle = z_at_last_before(1.5)     # just before the delete
+    z_phantom = z_at_last_before(3.0)    # just before the rebuild
     z_end = float(p[-1][2])
-    z_mid = float(p[len(p) // 2][2])
-    ev = {"z_before_delete_m": z_mid, "z_at_end_m": z_end,
-          "delete_at_s": 1.5}
+    rb = arrays.get("acted_rebuild_physics")
+    ev = {"z_before_delete_m": z_settle, "z_before_rebuild_m": z_phantom,
+          "z_at_end_m": z_end, "delete_at_s": 1.5, "rebuild_at_s": 3.0,
+          "rebuild_premise": rb}
+    if z_settle is None or z_phantom is None:
+        return Verdict(INCONCLUSIVE, ev, "trajectory has holes at the arm "
+                                         "boundaries")
+    if abs(z_settle - 0.65) > 0.02:
+        return Verdict(INCONCLUSIVE, ev,
+                       "the box never settled at the analytic 0.65 m before "
+                       "the delete (z=%.4f) — rig failure, the arms have no "
+                       "baseline" % z_settle)
+    if z_phantom < 0.4:
+        # The default arm alone released the body: the frozen-model defect is
+        # natively fixed and the rebuild verb was not even needed.
+        return Verdict(WORKS, ev,
+                       "deletion took effect WITHOUT the rebuild verb — the "
+                       "box was already at z=%.3f m before t=3.0 s, so the "
+                       "frozen-model defect is natively fixed" % z_phantom)
+    phantom_held = abs(z_phantom - 0.65) <= 0.02
+    if not isinstance(rb, dict) or not rb.get("binding_present"):
+        return Verdict(INCONCLUSIVE, ev,
+                       "supervisor.simulationRebuildPhysics is missing from "
+                       "this libController (stale libController — rebuild "
+                       "the controller libs / run `omnisim doctor`). The "
+                       "default arm did measure the frozen-model phantom "
+                       "(z=%.4f m held for 1.5 s after the delete), but the "
+                       "rebuild arm could not run." % z_phantom)
+    if not rb.get("called") or rb.get("error"):
+        return Verdict(INCONCLUSIVE, ev,
+                       "the rebuild call itself failed (%s) — instrument, "
+                       "not a capability verdict" % (rb.get("error"),))
     if z_end < 0.4:
-        return Verdict(WORKS, ev)
-    if abs(z_end - 0.65) <= 0.02:
-        return Verdict(BROKEN, ev,
-                       "the box stayed at z=%.4f m for 2.5 s after its floor "
-                       "was deleted — the removed node still collides"
-                       % z_end)
-    return Verdict(DEGRADED, ev,
-                   "the box only reached z=%.4f m after its floor was deleted"
+        if phantom_held:
+            return Verdict(WORKS, ev,
+                           "via the documented workflow: the default arm "
+                           "held the phantom at z=%.4f m for the full 1.5 s "
+                           "after the delete (the frozen model, as "
+                           "documented), and simulationRebuildPhysics() at "
+                           "t=3.0 s released it to z=%.3f m" %
+                           (z_phantom, z_end))
+        return Verdict(DEGRADED, ev,
+                       "the rebuild released the box (z=%.3f m at end) but "
+                       "the default arm drifted to z=%.4f m instead of "
+                       "holding the documented 0.65 m phantom — the default "
+                       "behaviour changed and deserves its own attribution"
+                       % (z_end, z_phantom))
+    return Verdict(BROKEN, ev,
+                   "the box stayed at z=%.4f m for 2 s after "
+                   "simulationRebuildPhysics() — the rebuild verb does not "
+                   "purge the deleted node's geometry from the solver either"
                    % z_end)
 
 
@@ -4065,6 +5057,29 @@ def self_test():
                                   else static)
         return a
 
+    def acc(spin, static, rotating=True, exists=True):
+        """Accelerometer rig: `spin`/`static` are constant [x,y,z] readings
+        (None = an all-NaN series, the publishes-nothing failure mode)."""
+        _, a = rig(rotating)
+        nan3 = [float("nan")] * 3
+        a["sensor_acc_spin"] = [list(spin) if spin is not None else nan3] * n
+        a["sensor_acc_static"] = ([list(static) if static is not None
+                                   else nan3] * n)
+        a["device_exists_acc_spin"] = exists
+        a["device_exists_acc_static"] = exists
+        return a
+
+    def nested(gd, ad, gn, an, rotating=True):
+        """Nested-carrier rig: direct gyro/acc and nested gyro/acc constant
+        readings (None = all-NaN, the carrier publishing nothing)."""
+        _, a = rig(rotating)
+        nan3 = [float("nan")] * 3
+        a["sensor_gyro_direct"] = [list(gd) if gd is not None else nan3] * n
+        a["sensor_acc_direct"] = [list(ad) if ad is not None else nan3] * n
+        a["sensor_gyro_nested"] = [list(gn) if gn is not None else nan3] * n
+        a["sensor_acc_nested"] = [list(an) if an is not None else nan3] * n
+        return a
+
     def with_series(arrays, key, value):
         """Override one recorded series and hand the recording back, so a case
         can be written as a one-line deviation from a healthy rig."""
@@ -4163,6 +5178,138 @@ def self_test():
             "engine_log": air_log(bodies, force_refusal=refusal),
         }
 
+    # ---- particle rigs: synthetic getParticleStats recordings -------------
+    # Every case is the trajectory its physics demands, sampled like the
+    # engine would, so a green here proves the assertion reads the stats
+    # frames right and a red proves it can refuse them — both directions,
+    # per rule 9.
+    PPN = 251
+
+    def pframe(count, mn, mx, cen, nf=0, status=0):
+        return {"status": status, "count": count, "min": list(mn),
+                "max": list(mx), "centroid": list(cen), "non_finite": nf}
+
+    def ramp(x, knee=0.4):
+        return min(x / knee, 1.0)
+
+    def cloth_rec(count=441, nf=0, status=0, pin_drop=0.0, flat=False,
+                  over=False, sphere=0.65, exists=True, missing=False):
+        frames = []
+        for k in range(PPN):
+            x = k / (PPN - 1.0)
+            ext = 0.0 if flat else (1.2 * x if over else 0.9 * x)
+            top = 2.0 - pin_drop * x
+            frames.append(pframe(
+                count, [0.0, 0.0, top - max(ext, 0.001)], [1.0, 1.0, top],
+                [0.5, 0.5, top - ext / 2.0],
+                nf=(nf if k == PPN - 1 else 0), status=status))
+        return {"t": [3.0 * k / (PPN - 1.0) for k in range(PPN)],
+                "particles_SHEET": ([None] * PPN if missing else frames),
+                "node_exists_SHEET": exists,
+                "pos_SUBJECT": [[-0.6, 0.0, sphere]] * PPN,
+                "engine_log": []}
+
+    def fem_rec(cz_fn, ez_fn, exy_fn, count=125, nf=0, status=0,
+                sphere=0.65):
+        frames, ts = [], []
+        for k in range(PPN):
+            x = k / (PPN - 1.0)
+            ts.append(3.0 * x)
+            c, ez, exy = cz_fn(x), ez_fn(x), exy_fn(x)
+            frames.append(pframe(
+                count, [-exy / 2.0, -exy / 2.0, c - ez / 2.0],
+                [exy / 2.0, exy / 2.0, c + ez / 2.0], [0.0, 0.0, c],
+                nf=nf, status=status))
+        return {"t": ts, "particles_SUBJECT_BLOB": frames,
+                "node_exists_SUBJECT_BLOB": True,
+                "pos_SUBJECT": [[0.6, 0.0, sphere]] * PPN}
+
+    def grains_rec(settle=True, count=64, status=0, exists=True,
+                   missing=False, log=()):
+        frames, ts = [], []
+        for k in range(PPN):
+            x = k / (PPN - 1.0)
+            ts.append(4.0 * x)
+            r = ramp(x) if settle else x        # settle=False: never arrests
+            c = 1.75 - 1.70 * r
+            e = 0.5 - 0.4 * r
+            frames.append(pframe(count, [-0.4, -0.4, c - e / 2.0],
+                                 [0.4, 0.4, c + e / 2.0], [0.0, 0.0, c],
+                                 status=status))
+        return {"t": ts,
+                "particles_SUBJECT_GRAINS": ([None] * PPN if missing
+                                             else frames),
+                "node_exists_SUBJECT_GRAINS": exists,
+                "pos_SUBJECT": [[-2.0, 0.0, 0.65]] * PPN,
+                "engine_log": list(log)}
+
+    GRAINS_INERT_LOG = ("WARNING: GranularGroup is inert: CUDA is not "
+                        "available on this build/box. Particles will not "
+                        "simulate; the world remains loadable.",)
+
+    def bed_rec(kind="works", nf=0, status=0, log=()):
+        frames, ts = [], []
+        for k in range(PPN):
+            x = k / (PPN - 1.0)
+            ts.append(4.0 * x)
+            r = 0.0 if kind == "frozen" else ramp(x)
+            c = 0.80 - 0.19 * r
+            e = 0.20 - 0.07 * r
+            frames.append(pframe(8125, [-0.2, -0.2, c - e / 2.0],
+                                 [0.2, 0.2, c + e / 2.0], [0.0, 0.0, c],
+                                 nf=nf, status=status))
+        return {"t": ts, "particles_BED": frames, "node_exists_BED": True,
+                "engine_log": list(log)}
+
+    BED_REFUSAL_LOG = ("ERROR: [python] GranularBed requires CUDA and the "
+                       "model finalized on device 'cpu'. SolverImplicitMPM "
+                       "is a warp GPU solver ...",)
+
+    def weld_rec(held="hold", ctrl_fall=True, exists=True, log=()):
+        ts = [2.5 * k / (PPN - 1.0) for k in range(PPN)]
+        held_z, ctrl_z = [], []
+        for ti in ts:
+            ctrl_z.append(max(0.60, 1.2 - 4.905 * ti * ti) if ctrl_fall
+                          else 1.2)
+            if held == "hold":
+                h = 1.2 - 4.905 * min(ti, 0.1) ** 2
+            elif held == "fall":
+                h = max(0.60, 1.2 - 4.905 * ti * ti)
+            else:                                # "sag": a creeping weld
+                h = 1.2 - 0.1 * (ti / 2.5)
+            held_z.append(h)
+        return {"t": ts, "device_exists_conn": exists,
+                "pos_HELD": [[0.0, 0.0, z] for z in held_z],
+                "pos_CONTROL": [[0.8, 0.0, z] for z in ctrl_z],
+                "engine_log": list(log)}
+
+    WELD_INERT_LOG = ("WARNING: DEF OMNIBENCH_PROBER Robot > Connector "
+                      "'conn' locks are physically INERT under the Newton "
+                      "backend: ...",)
+
+    def delrec(phantom=True, rebuild_releases=True, binding=True,
+               called=True, settled=True, native_fall=False):
+        ts = [5.0 * k / 500.0 for k in range(501)]
+        zs = []
+        for ti in ts:
+            if ti < 0.4:
+                z = max(0.65, 1.0 - 4.905 * ti * ti)
+            elif ti < 1.5:
+                z = 0.65 if settled else 0.9
+            elif ti < 3.0:
+                z = (0.65 - 4.905 * (ti - 1.5) ** 2 if native_fall
+                     else 0.65)
+            else:
+                z = (0.65 - 4.905 * (ti - 3.0) ** 2 if (rebuild_releases
+                     or native_fall) else 0.65)
+            zs.append(z)
+        rec = {"t": ts, "pos_SUBJECT": [[0.0, 0.0, z] for z in zs]}
+        if binding is not None:
+            rec["acted_rebuild_physics"] = {
+                "requested_t": 3.0, "binding_present": binding,
+                "called": called, "error": None}
+        return rec
+
     z3 = [0.0, 0.0, 0.0]
     spun = [0.0, 0.0, rate]
     tilted = [IMU_TILT_RAD, 0.0, 0.0]
@@ -4204,6 +5351,53 @@ def self_test():
         ("gps negative arm: the PARKED device reports motion", _gps_assertion,
          with_series(gps(None), "sensor_gps_static",
                      list(rig()[1]["pos_SUBJECT"])), DEGRADED),
+
+        # ---- accelerometer (gravity ON: centripetal rate^2*r + g) --------
+        ("accelerometer reads centripetal + gravity, resting arm reads g",
+         _accelerometer_assertion,
+         acc([rate * rate * r, 0.0, 9.81], [0.0, 0.0, 9.81]), WORKS),
+        # The known failure mode: accepted, publishes NOTHING (all-NaN).
+        ("accelerometer publishes no sample under gravity + rotation",
+         _accelerometer_assertion, acc(None, [0.0, 0.0, 9.81]), BROKEN),
+        ("accelerometer reads [0,0,0] under 9.81 gravity",
+         _accelerometer_assertion,
+         acc([0.0, 0.0, 0.0], [0.0, 0.0, 9.81]), BROKEN),
+        ("accelerometer misses the centripetal term",
+         _accelerometer_assertion,
+         acc([0.0, 0.0, 9.81], [0.0, 0.0, 9.81]), DEGRADED),
+        ("accelerometer negative arm: the RESTING device reads zeros",
+         _accelerometer_assertion,
+         acc([rate * rate * r, 0.0, 9.81], [0.0, 0.0, 0.0]), DEGRADED),
+        ("accelerometer device never found -> instrument failure",
+         _accelerometer_assertion,
+         acc(None, None, exists=False), INCONCLUSIVE),
+        ("accelerometer turntable never turned -> rig failure",
+         _accelerometer_assertion,
+         acc([0.0, 0.0, 9.81], [0.0, 0.0, 9.81], rotating=False),
+         INCONCLUSIVE),
+
+        # ---- nested-carrier IMU (gravity 0: centripetal only) ------------
+        ("nested carrier serves both devices (post-fix green)",
+         _imu_nested_carrier_assertion,
+         nested([0.0, 0.0, rate], [rate * rate * r, 0.0, 0.0],
+                [0.0, 0.0, rate], [rate * rate * r, 0.0, 0.0]), WORKS),
+        # The shipped engine: controls read, the fold reads zeros (gyro) /
+        # nothing (accelerometer) -- README rule 11's own measurement.
+        ("nested carrier reads zeros/NaN while the controls track",
+         _imu_nested_carrier_assertion,
+         nested([0.0, 0.0, rate], [rate * rate * r, 0.0, 0.0],
+                [0.0, 0.0, 0.0], None), BROKEN),
+        ("nested carrier serves the gyro but not the accelerometer",
+         _imu_nested_carrier_assertion,
+         nested([0.0, 0.0, rate], [rate * rate * r, 0.0, 0.0],
+                [0.0, 0.0, rate], [0.0, 0.0, 0.0]), DEGRADED),
+        ("nested carrier: BOTH controls dead -> not a carrier finding",
+         _imu_nested_carrier_assertion,
+         nested([0.0, 0.0, 0.0], None, [0.0, 0.0, 0.0], None), INCONCLUSIVE),
+        ("nested carrier turntable never turned -> rig failure",
+         _imu_nested_carrier_assertion,
+         nested([0.0, 0.0, 0.0], None, [0.0, 0.0, 0.0], None,
+                rotating=False), INCONCLUSIVE),
 
         # ---- aircraft: Propeller static thrust ---------------------------
         ("propeller lifts the airframe at T/m", _propeller_thrust_assertion,
@@ -4256,6 +5450,121 @@ def self_test():
          extforce(EXTFORCE_N / EXTFORCE_MASS, alpha=0.0), DEGRADED),
         ("supervisor force: the call was never made -> rig failure",
          _supervisor_force_assertion, extforce(0.0, calls=0), INCONCLUSIVE),
+
+        # ---- cloth: the measured drape (round 3, getParticleStats) --------
+        ("cloth drapes: 441 particles, extent grows, pin holds",
+         _cloth_assertion, cloth_rec(), WORKS),
+        # THE RED ARM this rework exists for: particles allocated, fabric
+        # never moves -- the old log-scrape verdict could not see this.
+        ("cloth registered and NEVER moves", _cloth_assertion,
+         cloth_rec(flat=True), BROKEN),
+        ("cloth readback status -9 (stale libController) -> inconclusive",
+         _cloth_assertion, cloth_rec(status=-9), INCONCLUSIVE),
+        ("cloth readback missing entirely -> inconclusive",
+         _cloth_assertion, cloth_rec(missing=True), INCONCLUSIVE),
+        ("cloth refusal status is NEVER broken", _cloth_assertion,
+         cloth_rec(status=-5), INCONCLUSIVE),
+        ("cloth carries 440 particles, not the authored 441",
+         _cloth_assertion, cloth_rec(count=440), DEGRADED),
+        ("cloth pinned edge lets go", _cloth_assertion,
+         cloth_rec(pin_drop=0.4), DEGRADED),
+        ("cloth over-stretches past the free-edge bound", _cloth_assertion,
+         cloth_rec(over=True), DEGRADED),
+        ("cloth run has non-finite particles", _cloth_assertion,
+         cloth_rec(nf=3), DEGRADED),
+        ("cloth perturbs the rigid scene", _cloth_assertion,
+         cloth_rec(sphere=0.30), BROKEN),
+        ("cloth node not in the scene tree", _cloth_assertion,
+         cloth_rec(exists=False), ABSENT),
+
+        # ---- soft body: fall + arrest + deform (round 3) ------------------
+        ("soft body falls, arrests and squashes", _soft_body_assertion,
+         fem_rec(lambda x: 1.1 - 0.48 * ramp(x),
+                 lambda x: 0.2 - 0.06 * ramp(x),
+                 lambda x: 0.2 + 0.05 * ramp(x)), WORKS),
+        ("soft body rigid-translates without deforming",
+         _soft_body_assertion,
+         fem_rec(lambda x: 1.1 - 0.48 * ramp(x),
+                 lambda x: 0.2, lambda x: 0.2), DEGRADED),
+        ("soft body never falls -> the tets do nothing",
+         _soft_body_assertion,
+         fem_rec(lambda x: 1.1, lambda x: 0.2, lambda x: 0.2), BROKEN),
+        ("soft body still moving at run end", _soft_body_assertion,
+         fem_rec(lambda x: 1.1 - 0.5 * x,
+                 lambda x: 0.2 - 0.06 * ramp(x),
+                 lambda x: 0.2 + 0.05 * ramp(x)), DEGRADED),
+        ("soft body readback refuses -> inconclusive", _soft_body_assertion,
+         fem_rec(lambda x: 1.1, lambda x: 0.2, lambda x: 0.2, status=-3),
+         INCONCLUSIVE),
+        ("soft body carries 124 particles", _soft_body_assertion,
+         fem_rec(lambda x: 1.1 - 0.48 * ramp(x),
+                 lambda x: 0.2 - 0.06 * ramp(x),
+                 lambda x: 0.2 + 0.05 * ramp(x), count=124), DEGRADED),
+
+        # ---- granular group: CUDA scope + measured settle (round 3) -------
+        ("granular group settles onto its own floor", _granular_assertion,
+         grains_rec(), WORKS),
+        # The shipped no-CUDA box: the engine's own inert line is a SCOPE
+        # statement, and the old `degraded -- no readback` excuse is retired.
+        ("granular group CUDA-inert line -> absent, never broken",
+         _granular_assertion, grains_rec(missing=True,
+                                         log=GRAINS_INERT_LOG), ABSENT),
+        ("granular group status -5 -> absent (the binding's inert code)",
+         _granular_assertion, grains_rec(status=-5), ABSENT),
+        ("granular group readback missing, no inert line -> inconclusive",
+         _granular_assertion, grains_rec(missing=True), INCONCLUSIVE),
+        ("granular group never arrests", _granular_assertion,
+         grains_rec(settle=False), DEGRADED),
+        ("granular group node not in the scene tree", _granular_assertion,
+         grains_rec(exists=False), ABSENT),
+        ("granular group allocated 63 of 64", _granular_assertion,
+         grains_rec(count=63), DEGRADED),
+
+        # ---- granular bed (MPM): settle + the named CUDA refusal ----------
+        ("granular bed drops into the pen and settles",
+         _granular_bed_assertion, bed_rec(), WORKS),
+        ("granular bed CUDA refusal -> absent with the named reason",
+         _granular_bed_assertion, bed_rec(log=BED_REFUSAL_LOG), ABSENT),
+        # The reference world's documented failure mode: the MPM solver is
+        # silently skipped and the bed registers, renders and does nothing.
+        ("granular bed frozen at its authored pose", _granular_bed_assertion,
+         bed_rec(kind="frozen"), BROKEN),
+        ("granular bed goes non-finite", _granular_bed_assertion,
+         bed_rec(nf=1), DEGRADED),
+        ("granular bed stale libController -> inconclusive",
+         _granular_bed_assertion, bed_rec(status=-9), INCONCLUSIVE),
+
+        # ---- connector weld: gravity-hang vs the in-run control -----------
+        ("weld holds the hanging part while the twin falls",
+         _connector_assertion, weld_rec(), WORKS),
+        # THE RED ARM: lock accepted, part falls exactly like the control.
+        ("weld constrains nothing -- held part falls with its twin",
+         _connector_assertion, weld_rec(held="fall"), BROKEN),
+        ("weld creeps -- the part sags after the lock", _connector_assertion,
+         weld_rec(held="sag"), DEGRADED),
+        ("control twin never fell -> scene failure, not a weld verdict",
+         _connector_assertion, weld_rec(ctrl_fall=False), INCONCLUSIVE),
+        ("connector device missing", _connector_assertion,
+         weld_rec(exists=False), ABSENT),
+        ("weld gate reported inert -> degraded, names the gate",
+         _connector_assertion, weld_rec(held="fall", log=WELD_INERT_LOG),
+         DEGRADED),
+
+        # ---- runtime deletion: the two-arm rebuild workflow (round 3) -----
+        ("phantom holds, simulationRebuildPhysics releases the box",
+         _deletion_assertion, delrec(), WORKS),
+        ("rebuild verb does not purge the deleted floor either",
+         _deletion_assertion, delrec(rebuild_releases=False), BROKEN),
+        ("rebuild binding missing -> stale libController, inconclusive",
+         _deletion_assertion, delrec(binding=False), INCONCLUSIVE),
+        ("rebuild premise never recorded -> inconclusive",
+         _deletion_assertion, delrec(binding=None), INCONCLUSIVE),
+        ("rebuild call raised -> inconclusive", _deletion_assertion,
+         delrec(called=False), INCONCLUSIVE),
+        ("deletion works natively, no rebuild needed", _deletion_assertion,
+         delrec(native_fall=True), WORKS),
+        ("box never settled before the delete -> rig failure",
+         _deletion_assertion, delrec(settled=False), INCONCLUSIVE),
     ]
     fails = []
     for label, fn, arrays, want in cases:

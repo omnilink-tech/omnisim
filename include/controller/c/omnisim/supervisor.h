@@ -66,6 +66,11 @@ void wb_supervisor_world_reload();
 void wb_supervisor_simulation_quit(int status);
 void wb_supervisor_simulation_reset();
 void wb_supervisor_simulation_reset_physics();
+// W1.7: rebuild the physics world at the scene's CURRENT poses on the next
+// step -- gives runtime-spawned nodes physics and removes deleted ones from
+// the solver. Fire-and-forget; a refusal (cloth/soft/granular world, or no
+// running physics world) is reported as an engine warning.
+void wb_supervisor_simulation_rebuild_physics();
 
 WbSimulationMode wb_supervisor_simulation_get_mode();
 void wb_supervisor_simulation_set_mode(WbSimulationMode mode);
@@ -126,6 +131,28 @@ WbProtoRef wb_supervisor_node_get_proto(WbNodeRef node);
 int wb_supervisor_node_solve_ik(WbNodeRef node, int n_targets, const double *targets, const double *rotations,
                                 const double *tool_offset, int iterations, int *n_joints, const int **joint_node_ids,
                                 const double **angles, const double **residuals);
+
+// Node-scoped PARTICLE-STATE readback for the deformable/granular systems
+// (Cloth, SoftBody, GranularBed, GranularGroup) -- stats-first,
+// sample-optional. `node` is the particle node itself. With
+// `sample_stride == 0` only the aggregate is computed: `count` particles owned
+// by this node, componentwise `min`/`max` and the `centroid` over the FINITE
+// particles (world frame, metres), and `non_finite` = how many particles carry
+// a NaN/Inf component (counted, never propagated into the aggregates). With
+// `sample_stride > 0` (clamped to 4096) every stride-th particle's world xyz is
+// additionally returned: `*sampled` positions, tightly packed float32 xyz in
+// `*sample_xyz`, a buffer that stays valid until the next call. A PURE READ:
+// nothing in the scene moves. Returns 0 on success and fills the out
+// parameters. Non-zero return = no answer:
+//   -1  no Newton runtime / world not running, or the node failed to register
+//       with the particle solver (isSimulated() false),
+//   -2  the node is not a particle node,
+//   -5  a GranularGroup whose CUDA particle state was never allocated (the
+//       node is honestly inert -- no CUDA on this build/host),
+//   -9  the engine did not answer,
+//   -10 invalid arguments.
+int wb_supervisor_node_get_particle_stats(WbNodeRef node, int sample_stride, int *count, double min[3], double max[3],
+                                          double centroid[3], int *non_finite, int *sampled, const float **sample_xyz);
 
 const char *wb_supervisor_node_get_def(WbNodeRef node);
 const char *wb_supervisor_node_get_type_name(WbNodeRef node);

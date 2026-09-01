@@ -54,6 +54,7 @@ private:
   OmLookupTable *mLut;
   double mValues[3];  // current sensor value according to lookup table
   bool mNeedToReconfigure;
+  bool mWarningWasPrinted;
 
   // private functions
   OmGyro &operator=(const OmGyro &);  // non copyable

@@ -2568,7 +2568,10 @@ class MobileBridge:
     # would get an opaque transport error instead of our structured "still
     # moving, go poll" note -- and a long turn (a 180 deg pivot is ~40 s of
     # sim time) is close enough to that edge to matter.
-    WAIT_MAX_S = 50.0
+    # A caller may explicitly ask a synchronous endpoint to wait through a
+    # cold/JIT-bound run. Keep a finite safety ceiling, but do not silently
+    # reduce ordinary 60-120 s agent budgets to 50 s.
+    WAIT_MAX_S = 300.0
     # Wall pause after an aborted drive_to leg so the commanded stop has
     # actually reached the wheels before the final pose is read.
     DRIVE_TO_ABORT_SETTLE_S = 0.35
@@ -2972,6 +2975,7 @@ class MobileBridge:
 
     def act_drive_forward(self, distance: float, speed: Optional[float] = None,
                           wait: bool = False,
+                          timeout_s: Optional[float] = None,
                           source: str = SOURCE_EXTERNAL) -> dict:
         x, y, yaw0 = self._read_pose()
         actual_speed = speed if speed is not None else self.cruise_linear
@@ -3000,8 +3004,9 @@ class MobileBridge:
                 "corrections": 0,
             })
         if wait:
+            wait_budget_s = eta * 3.0 + 12.0 if timeout_s is None else float(timeout_s)
             return {"accepted": True, "commanded": float(distance), "unit": "m",
-                    **self._await_completion(seq, eta * 3.0 + 12.0)}
+                    **self._await_completion(seq, wait_budget_s)}
         return {"accepted": True, "seq": seq, "commanded": float(distance),
                 "unit": "m", "eta_s": eta,
                 "note": "NOT complete -- this returns on acceptance. Pass "
@@ -7180,6 +7185,22 @@ def make_handler(bridge: MobileBridge, router: IntentRouter, relay: Any = None):
                 pass  # headers already sent / socket gone -- nothing to add
 
         def _route_get(self):
+            if self.path in ("/", "/help"):
+                return self._json(200, {
+                    "ok": True,
+                    "service": WIRE_SERVICE,
+                    "robot_id": bridge.robot_id,
+                    "discovery": {
+                        "protocol": "GET /protocol",
+                        "capabilities": "GET /capabilities",
+                        "state": "GET /state",
+                        "sensors": "GET /list_sensors",
+                        "natural_language": "POST /prompt {\"text\": \"...\"}",
+                        "drive": "POST /drive_forward {\"distance\": 1.0, \"wait\": true}",
+                        "turn": "POST /turn {\"angle\": 1.5708, \"wait\": true}",
+                        "stop": "POST /stop_robot {}",
+                    },
+                })
             if self.path == "/protocol":
                 return self._json(200, {
                     "ok": True, "omnisim_wire": WIRE_VERSION,
@@ -7291,8 +7312,15 @@ def make_handler(bridge: MobileBridge, router: IntentRouter, relay: Any = None):
                 speed = body.get("speed")
                 if speed is not None:
                     speed = finite_number(speed, "speed")
+                timeout_s = body.get("timeout_s")
+                if timeout_s is not None:
+                    timeout_s = finite_number(timeout_s, "timeout_s")
+                    if timeout_s <= 0:
+                        raise RequestError(400, "invalid_argument",
+                                           "timeout_s must be greater than zero")
                 return self._motion_json(bridge.act_drive_forward(
-                    distance, speed, wait=bool(body.get("wait", False))))
+                    distance, speed, wait=bool(body.get("wait", False)),
+                    timeout_s=timeout_s))
             if p == "/turn":
                 angle = finite_number(require_field(body, "angle"), "angle")
                 return self._motion_json(bridge.act_turn(

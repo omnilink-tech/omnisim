@@ -29,6 +29,7 @@
 #include "OmPreferences.hpp"
 #include "OmRgb.hpp"
 #include "OmSFBool.hpp"
+#include "OmSimulationState.hpp"
 #include "OmStandardPaths.hpp"
 #include "OmUrl.hpp"
 #include "OmViewpoint.hpp"
@@ -88,6 +89,30 @@ namespace {
       gDecodedImageBytes -= oldest->bytes;
       gDecodedImages.erase(oldest);
     }
+  }
+
+  // Headless texture-decode gate (default ON; OMNISIM_EAGER_TEXTURE_DECODE=1 is the
+  // exact-revert hatch). During a WORLD LOAD in a process launched with
+  // --no-rendering / --no-window (CLI intent captured at argument-parse time in
+  // OmSimulationState::startedWithoutRendering(), so a preferences override cannot
+  // fake it), decoding texture pixels is pure waste UNLESS something in the world
+  // reads them for its simulation output. Why each conjunct is safe:
+  //   - startedWithoutRendering(): nothing will ever draw the main view in this
+  //     process; the wgpu renderer draws a material untextured when image() is
+  //     NULL, so even a stray render request degrades gracefully.
+  //   - isLoading(): the gate covers ONLY the eager load-time decode. updateUrl()
+  //     is also connected to the url field (postFinalize), so a runtime URL edit
+  //     from the scene tree or a supervisor still decodes normally.
+  //   - !needsTextures(): OmSimulationWorld's pre-finalize scan sets this true when
+  //     the world contains any Camera (offscreen render reads pixels), infra-red
+  //     DistanceSensor (reads the hit surface's red channel) or Pen (paints into
+  //     the texture) -- the three simulation consumers of texture pixels. pickColor
+  //     is already lazy (decodes on demand), and mIsMainTextureTransparent has zero
+  //     external readers, so neither needs the eager decode.
+  bool skipHeadlessEagerTextureDecode() {
+    const OmWorld *const world = OmWorld::instance();
+    return OmSimulationState::instance()->startedWithoutRendering() && world && world->isLoading() &&
+           !world->needsTextures() && !qEnvironmentVariableIsSet("OMNISIM_EAGER_TEXTURE_DECODE");
   }
 }  // namespace
 
@@ -300,9 +325,20 @@ void OmImageTexture::updateWrenTexture() {
   if (completeUrl.isEmpty())
     return;
 
-  if (loadTexture()) {
-    if (mUrl->size() == 0)
-      return;
+  // Headless texture-decode gate: one guard, placed HERE rather than around the
+  // updateWrenTexture() call in updateUrl(), so it covers every caller AND skips
+  // the decoded-image cache path too (loadTexture() owns the cache lookup/insert
+  // /prune -- no point churning a cache for images we are not decoding). The
+  // URL normalization, download scheduling and download-error handling above and
+  // in updateUrl() run unchanged; the downloader cleanup below runs unchanged.
+  // Full predicate rationale: see skipHeadlessEagerTextureDecode() at the top of
+  // this file. Gated on OmWorld::isLoading(), so a runtime url edit (updateUrl is
+  // connected to the field in postFinalize) still decodes.
+  if (!skipHeadlessEagerTextureDecode()) {
+    if (loadTexture()) {
+      if (mUrl->size() == 0)
+        return;
+    }
   }
 
   delete mDownloader;

@@ -42,6 +42,13 @@ public:
   bool isRealTime() const { return mMode == REALTIME; }
   bool isFast() const { return mMode == FAST; }
   bool isRendering() const { return mPerformRendering; }
+  // CLI intent: the process was launched with --no-rendering / --no-window.
+  // Distinct from mPerformRendering, which the preferences override in
+  // OmGuiApplication::setup() can flip after argument parsing: this flag is
+  // set exactly once, at parse time, and never changes for the life of the
+  // process. Read by the headless texture-decode gate (OmImageTexture).
+  void setStartedWithoutRendering(bool value) { mStartedWithoutRendering = value; }
+  bool startedWithoutRendering() const { return mStartedWithoutRendering; }
   // pause/resume simulation for executing application dialogs
   void pauseSimulation();
   void resumeSimulation();
@@ -86,6 +93,7 @@ private:
   Mode mMode, mPreviousMode;
 
   bool mPerformRendering;
+  bool mStartedWithoutRendering = false;
   bool mEnabled;
   double mTime;
 

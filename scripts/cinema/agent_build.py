@@ -14,11 +14,12 @@
 
 """Manifest-driven editor for OmniSim Agent Build films.
 
-This is the reusable form of the approved v6 milestone.  Capture is handled by
+This is the reusable form of the approved v8 milestone.  Capture is handled by
 ``scripts/capture`` or ``omnisim cinema render``; this module turns those real
-captures into a restrained, evidence-led build story with the locked silent
-intro, direct-cut grammar, information cards, natural narration mix, GitHub
-outro, edit-decision list, provenance manifest, and hash-bound receipt.
+captures into a simulator-first, three-act build story with the locked silent
+intro, purposeful direct-cut grammar, sparse information cards, natural
+narration mix, GitHub outro, edit-decision list, provenance manifest, and
+hash-bound receipt.
 """
 
 from __future__ import annotations
@@ -29,8 +30,9 @@ import math
 import re
 import shutil
 import subprocess
+import time
 import wave
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +50,11 @@ OUTRO_DURATION_S = 4.5
 DISCLOSURE = "This video was made end-to-end by an AI agent under human monitoring."
 SIGNATURE_LINES = ("A real build.", "The story of an agent.", "Told by an agent.")
 GITHUB_DESTINATION = "github.com/omnilink-tech/omnisim"
+STYLE_VERSION = "agent_build_v8"
+RENDER_CACHE_VERSION = 2
+INTRO_SCORE_GAIN = 0.08
+STORY_SCORE_GAIN = 0.32
+INTRO_MASTER_GAIN = 0.50
 
 INK = (242, 246, 250)
 MUTED = (164, 176, 188)
@@ -69,6 +76,7 @@ ORB = REPO_ROOT / "resources" / "branding" / "omnisim" / "orb" / "orb_512.png"
 REQUIRED_BEATS = ("question", "attempt", "control", "evidence", "method", "boundary", "conclusion")
 ALLOWED_BEATS = set(REQUIRED_BEATS) | {"transfer"}
 ALLOWED_KINDS = {"clip", "plate"}
+ALLOWED_COVERAGE = {"", "wide", "medium", "detail"}
 
 
 @dataclass(frozen=True)
@@ -94,6 +102,7 @@ class Segment:
     purpose: str
     source: str | None = None
     source_in_s: float = 0.0
+    source_tail_hold_s: float = 0.0
     eyebrow: str = ""
     headline: str = ""
     body: str = ""
@@ -102,6 +111,8 @@ class Segment:
     replay: bool = False
     replay_label: str = ""
     claim_boundary: str = ""
+    act: int = 0
+    coverage: str = ""
 
 
 @dataclass(frozen=True)
@@ -133,6 +144,12 @@ class AgentBuildSpec:
     segments: tuple[Segment, ...]
     voice: VoiceSpec
     repository: str = GITHUB_DESTINATION
+    structure: str = ""
+    simulator_footage_ratio_min: float = 0.0
+    climax_segment: str = ""
+    spatial_reorientation_required: bool = False
+    max_consecutive_detail: int = 2
+    wide_reference_segments: tuple[str, ...] = ()
     fps: int = FPS
     width: int = W
     height: int = H
@@ -144,6 +161,35 @@ class AgentBuildSpec:
     @property
     def duration_s(self) -> float:
         return INTRO_DURATION_S + self.content_duration_s + OUTRO_DURATION_S
+
+    @property
+    def simulator_footage_ratio(self) -> float:
+        if self.content_duration_s <= 0:
+            return 0.0
+        return sum(
+            segment.duration_s for segment in self.segments if segment.kind == "clip"
+        ) / self.content_duration_s
+
+
+@dataclass(frozen=True)
+class RenderProfile:
+    """One deterministic output tier.
+
+    The proxy uses the exact edit, overlays, narration, and score at half-size
+    and half-rate.  It is therefore useful for editorial review while being
+    materially cheaper than the release encode.
+    """
+
+    name: str
+    width: int
+    height: int
+    fps: int
+    preset: str
+    crf: int
+
+
+FINAL_PROFILE = RenderProfile("final", W, H, FPS, "medium", 13)
+PROXY_PROFILE = RenderProfile("proxy", PW, PH, PFPS, "veryfast", 22)
 
 
 def _slugify(value: str) -> str:
@@ -185,6 +231,11 @@ def _parse_segment(raw: dict[str, Any], index: int) -> Segment:
     source = str(raw.get("source", "")).strip() or None
     if kind == "clip" and source is None:
         raise ValueError(f"clip segment {segment_id!r} needs a source")
+    source_tail_hold_s = float(raw.get("source_tail_hold_s", 0))
+    if source_tail_hold_s < 0 or source_tail_hold_s > 3.0:
+        raise ValueError(
+            f"segment {segment_id!r} source_tail_hold_s must stay between 0 and 3 seconds"
+        )
     headline = str(raw.get("headline", "")).strip()
     if kind == "plate" and not headline:
         raise ValueError(f"plate segment {segment_id!r} needs a headline")
@@ -221,13 +272,24 @@ def _parse_segment(raw: dict[str, Any], index: int) -> Segment:
     claim_boundary = str(raw.get("claim_boundary", "")).strip()
     if claim_boundary and _text_width(claim_boundary.upper(), 18, "semi") > 1680:
         raise ValueError(f"segment {segment_id!r} claim boundary exceeds the 72 px safe area")
+    act = int(raw.get("act", 0))
+    if act not in {0, 1, 2, 3}:
+        raise ValueError(f"segment {segment_id!r} act must be 1, 2, or 3")
+    coverage = str(raw.get("coverage", "")).strip().lower()
+    if coverage not in ALLOWED_COVERAGE:
+        raise ValueError(
+            f"segment {segment_id!r} coverage must be wide, medium, or detail"
+        )
     return Segment(
         id=segment_id, beat=beat, kind=kind, duration_s=duration, purpose=purpose,
         source=source, source_in_s=float(raw.get("source_in_s", 0)),
+        source_tail_hold_s=source_tail_hold_s,
         eyebrow=str(raw.get("eyebrow", "")).strip(), headline=headline,
         body=body, rows=rows, overlay=overlay,
         replay=replay, replay_label=replay_label,
         claim_boundary=claim_boundary,
+        act=act,
+        coverage=coverage,
     )
 
 
@@ -283,6 +345,74 @@ def parse(payload: dict[str, Any] | str | Path) -> AgentBuildSpec:
     if not boundary_segment.claim_boundary:
         raise ValueError("the boundary beat must carry an exact on-screen claim_boundary")
 
+    editorial = data.get("editorial") or {}
+    structure = str(editorial.get("structure", "")).strip()
+    simulator_ratio_min = float(editorial.get("simulator_footage_ratio_min", 0.0))
+    climax_segment = str(editorial.get("climax_segment", "")).strip()
+    spatial_reorientation_required = bool(
+        editorial.get("spatial_reorientation_required", False)
+    )
+    max_consecutive_detail = int(editorial.get("max_consecutive_detail", 2))
+    wide_reference_segments = tuple(
+        str(item).strip()
+        for item in editorial.get("wide_reference_segments", [])
+        if str(item).strip()
+    )
+    if structure:
+        if structure != "three_act":
+            raise ValueError("editorial.structure must be 'three_act'")
+        acts = [segment.act for segment in segments]
+        if any(act == 0 for act in acts):
+            raise ValueError("three-act films must assign act 1, 2, or 3 to every segment")
+        if acts != sorted(acts) or set(acts) != {1, 2, 3}:
+            raise ValueError("three-act segment acts must be contiguous and ordered 1 -> 2 -> 3")
+        if not 0.5 <= simulator_ratio_min <= 1.0:
+            raise ValueError("simulator_footage_ratio_min must stay between 0.5 and 1.0")
+        clip_seconds = sum(segment.duration_s for segment in segments if segment.kind == "clip")
+        footage_ratio = clip_seconds / sum(segment.duration_s for segment in segments)
+        if footage_ratio + 1e-9 < simulator_ratio_min:
+            raise ValueError(
+                f"simulator footage ratio {footage_ratio:.3f} is below the required "
+                f"{simulator_ratio_min:.3f}"
+            )
+        climax = next((segment for segment in segments if segment.id == climax_segment), None)
+        if climax is None or climax.kind != "clip" or climax.act != 3:
+            raise ValueError("three-act films need an Act III clip named by editorial.climax_segment")
+        if climax.duration_s < 12.0:
+            raise ValueError("the Act III climax clip must be at least 12 seconds")
+
+        if spatial_reorientation_required:
+            clips = [segment for segment in segments if segment.kind == "clip"]
+            missing_coverage = [segment.id for segment in clips if not segment.coverage]
+            if missing_coverage:
+                raise ValueError(
+                    "spatial reorientation requires coverage on every clip: "
+                    + ", ".join(missing_coverage)
+                )
+            if max_consecutive_detail < 1:
+                raise ValueError("max_consecutive_detail must be at least 1")
+            run = 0
+            for segment in clips:
+                run = run + 1 if segment.coverage == "detail" else 0
+                if run > max_consecutive_detail:
+                    raise ValueError(
+                        "too many consecutive detail clips without a wide or medium reorientation"
+                    )
+            if not wide_reference_segments:
+                raise ValueError("spatial reorientation needs declared wide_reference_segments")
+            wide_refs = []
+            for segment_id in wide_reference_segments:
+                reference = next((segment for segment in segments if segment.id == segment_id), None)
+                if reference is None or reference.kind != "clip" or reference.coverage != "wide":
+                    raise ValueError(
+                        f"wide reference {segment_id!r} must name a wide simulator clip"
+                    )
+                wide_refs.append(reference)
+            if not any(segment.act == 1 for segment in wide_refs):
+                raise ValueError("wide references must orient Act I")
+            if not any(segment.act == 3 for segment in wide_refs):
+                raise ValueError("wide references must reorient Act III")
+
     # Source time moves forward. Reuse is only legal when declared analytical replay.
     previous_by_source: dict[str, float] = {}
     for segment in segments:
@@ -325,6 +455,12 @@ def parse(payload: dict[str, Any] | str | Path) -> AgentBuildSpec:
         voice=VoiceSpec(script=script, wav=wav,
                         voice=str(voice_raw.get("voice", "am_michael")), blocks=blocks),
         repository=repository,
+        structure=structure,
+        simulator_footage_ratio_min=simulator_ratio_min,
+        climax_segment=climax_segment,
+        spatial_reorientation_required=spatial_reorientation_required,
+        max_consecutive_detail=max_consecutive_detail,
+        wide_reference_segments=wide_reference_segments,
     )
 
 
@@ -336,9 +472,18 @@ def template(title: str = "My OmniSim Agent Build") -> dict[str, Any]:
         "slug": _slugify(title),
         "repository": GITHUB_DESTINATION,
         "story": {
+            "duration_policy": "story_driven",
             "question": "What measurable robotics question does this build answer?",
             "claim": "What does the controlled comparison support?",
             "boundary": "What does this simulation not establish?",
+        },
+        "editorial": {
+            "structure": "three_act",
+            "simulator_footage_ratio_min": 0.75,
+            "climax_segment": "climax",
+            "spatial_reorientation_required": True,
+            "max_consecutive_detail": 2,
+            "wide_reference_segments": ["build_question", "climax"],
         },
         "evidence": [
             "evidence/result.json",
@@ -361,20 +506,23 @@ def template(title: str = "My OmniSim Agent Build") -> dict[str, Any]:
         },
         "segments": [
             {"id": "build_question", "beat": "question", "kind": "clip",
+             "act": 1, "coverage": "wide",
              "duration_s": 12.0, "source": "captures/question.mp4", "source_in_s": 0,
              "purpose": "Begin on the real object or robot and make the measurable question judgeable.",
              "overlay": {"eyebrow": "MY BUILD LOG · QUESTION",
                          "headline": "ONE BUILD. ONE TEST.", "accent": "cyan"}},
             {"id": "first_attempt", "beat": "attempt", "kind": "clip",
+             "act": 1, "coverage": "detail",
              "duration_s": 12.0, "source": "captures/attempt.mp4", "source_in_s": 0,
              "purpose": "Show the apparent success in a locked, judgeable frame."},
             {"id": "controlled_failure", "beat": "control", "kind": "clip",
+             "act": 2, "coverage": "wide",
              "duration_s": 12.0, "source": "captures/control.mp4", "source_in_s": 0,
              "purpose": "Change one variable and show the controlled failure.",
              "overlay": {"eyebrow": "NEGATIVE CONTROL",
                          "headline": "ONE VARIABLE CHANGED", "accent": "amber"}},
             {"id": "evidence", "beat": "evidence", "kind": "plate",
-             "duration_s": 10.0, "eyebrow": "WHAT THE COMPARISON EARNED",
+             "act": 2, "duration_s": 6.0, "eyebrow": "WHAT THE COMPARISON EARNED",
              "headline": "THE RESULT BECAME EVIDENCE",
              "body": "Success and control are readable only together.",
              "purpose": "State the bounded claim supported by the comparison.",
@@ -383,21 +531,22 @@ def template(title: str = "My OmniSim Agent Build") -> dict[str, Any]:
                  {"label": "CONTROL", "detail": "Describe the opposite outcome", "accent": "amber"},
                  {"label": "BOUNDARY", "detail": "State what remains unproven", "accent": "red"}
              ]},
-            {"id": "agent_method", "beat": "method", "kind": "plate",
-             "duration_s": 12.0, "eyebrow": "HOW I WORK AS AN AI AGENT",
-             "headline": "DESCRIBE · INSPECT · EDIT · RUN · MEASURE · REFINE",
-             "body": "Evidence decides the next edit.",
-             "purpose": "Reveal the repeatable agent workflow."},
-            {"id": "claim_boundary", "beat": "boundary", "kind": "plate",
-             "duration_s": 10.0, "eyebrow": "THE CONDITION I CANNOT HIDE",
-             "headline": "SUPPORT CHANGES THE CLAIM",
-             "body": "Put the relevant simulation limitation on screen.",
+            {"id": "agent_method", "beat": "method", "kind": "clip",
+             "act": 2, "coverage": "detail", "duration_s": 12.0, "source": "captures/method.mp4",
+             "source_in_s": 0,
+             "purpose": "Narrate the build method over purposeful simulator footage."},
+            {"id": "climax", "beat": "evidence", "kind": "clip",
+             "act": 3, "coverage": "wide", "duration_s": 32.0, "source": "captures/climax.mp4",
+             "source_in_s": 0,
+             "purpose": "Stay with the robot through the decisive continuous run to the result."},
+            {"id": "claim_boundary", "beat": "boundary", "kind": "clip",
+             "act": 3, "coverage": "wide", "duration_s": 10.0, "source": "captures/boundary.mp4",
+             "source_in_s": 0,
              "purpose": "Make claim limits part of the story.",
              "claim_boundary": "Replace with the exact build-specific boundary."},
-            {"id": "conclusion", "beat": "conclusion", "kind": "plate",
-             "duration_s": 10.0, "eyebrow": "ONE METHOD · MANY BUILDS",
-             "headline": "THE PATTERN TRANSFERS",
-             "body": "The question changes. The evidence loop stays the same.",
+            {"id": "conclusion", "beat": "conclusion", "kind": "clip",
+             "act": 3, "coverage": "detail", "duration_s": 10.0, "source": "captures/conclusion.mp4",
+             "source_in_s": 0,
              "purpose": "Conclude with the reusable build method, not a capability montage."},
         ],
     }
@@ -441,6 +590,222 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _stable_hash(payload: Any) -> str:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"),
+                         ensure_ascii=True).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+class ArtifactCache:
+    """Small content-addressed cache local to one rendered deliverable.
+
+    Generated media remains beside the local build and out of Git.  A cache
+    hit requires both an identical semantic key and a non-empty artifact, so
+    interrupted encodes never masquerade as reusable work.
+    """
+
+    def __init__(self, root: Path, profile: RenderProfile):
+        self.path = root / ".agent_build_cache.json"
+        self.profile = profile
+        try:
+            self.data = json.loads(self.path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            self.data = {"version": RENDER_CACHE_VERSION, "artifacts": {}}
+        if int(self.data.get("version", 0)) != RENDER_CACHE_VERSION:
+            self.data = {"version": RENDER_CACHE_VERSION, "artifacts": {}}
+        self.hits = 0
+        self.misses = 0
+        self.events: list[dict[str, Any]] = []
+
+    def key(self, kind: str, payload: Any) -> str:
+        return _stable_hash({
+            "cache_version": RENDER_CACHE_VERSION,
+            "style": STYLE_VERSION,
+            "profile": self.profile.__dict__,
+            "kind": kind,
+            "payload": payload,
+        })
+
+    def hit(self, label: str, key: str, output: Path) -> bool:
+        record = self.data.get("artifacts", {}).get(label) or {}
+        ok = (record.get("key") == key and output.exists()
+              and output.stat().st_size > 0)
+        if ok:
+            actual_sha = _sha256(output)
+            expected_sha = record.get("sha256")
+            ok = expected_sha in (None, actual_sha)
+            if expected_sha is None:
+                # One-time upgrade for caches written before output hashes
+                # became part of the reuse contract.
+                record["sha256"] = actual_sha
+                self.path.write_text(
+                    json.dumps(self.data, indent=2) + "\n", encoding="utf-8"
+                )
+        if ok:
+            self.hits += 1
+        else:
+            self.misses += 1
+        self.events.append({"artifact": label, "cache_hit": ok,
+                            "path": str(output)})
+        return ok
+
+    def store(self, label: str, key: str, output: Path) -> None:
+        self.data.setdefault("artifacts", {})[label] = {
+            "key": key, "path": str(output), "bytes": output.stat().st_size,
+            "sha256": _sha256(output),
+        }
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(self.data, indent=2) + "\n", encoding="utf-8")
+
+    def report(self) -> dict[str, Any]:
+        return {"hits": self.hits, "misses": self.misses, "events": self.events}
+
+
+def _rate(value: str | None) -> float:
+    if not value or value == "0/0":
+        return 0.0
+    numerator, separator, denominator = value.partition("/")
+    if not separator:
+        return float(value)
+    return float(numerator) / float(denominator)
+
+
+def probe_media(path: Path) -> dict[str, Any]:
+    """Return the media facts needed by the fail-fast source preflight."""
+    process = subprocess.run([
+        _ffprobe(), "-v", "error", "-show_entries",
+        "format=duration:stream=codec_type,width,height,r_frame_rate,avg_frame_rate,nb_frames",
+        "-of", "json", str(path),
+    ], cwd=REPO_ROOT, text=True, capture_output=True)
+    if process.returncode:
+        raise ValueError(f"ffprobe rejected {path}: {process.stderr.strip()}")
+    payload = json.loads(process.stdout)
+    video = next((item for item in payload.get("streams", [])
+                  if item.get("codec_type") == "video"), None)
+    if video is None:
+        raise ValueError(f"capture has no video stream: {path}")
+    duration = float(payload.get("format", {}).get("duration") or 0.0)
+    return {
+        "path": str(path), "sha256": _sha256(path), "duration_s": duration,
+        "width": int(video.get("width") or 0), "height": int(video.get("height") or 0),
+        "fps": _rate(video.get("avg_frame_rate") or video.get("r_frame_rate")),
+        "frames": int(video.get("nb_frames") or 0),
+    }
+
+
+def _voice_estimate(text: str, block: VoiceBlock) -> tuple[float, int]:
+    """Conservative local estimate used before the TTS model is loaded."""
+    words = len(re.findall(r"\b[\w'-]+\b", text))
+    sentences = len(re.findall(r"[.!?]+(?:[\"']|\s|$)", text))
+    clauses = len(re.findall(r"[,;:]", text))
+    seconds = words / max(0.1, 2.70 * block.speed)
+    seconds += max(0, sentences - 1) * block.sentence_pause_s
+    seconds += clauses * block.clause_pause_s
+    return seconds, words
+
+
+def preflight(spec: AgentBuildSpec, *, require_captures: bool = True) -> dict[str, Any]:
+    """Validate every expensive input before voice generation or rendering.
+
+    Structural validation happens in :func:`parse`.  This second gate checks
+    the filesystem and opens each unique capture once, so an impossible trim or
+    an overstuffed narration block fails before any encode is started.
+    """
+    started = time.perf_counter()
+    errors: list[str] = []
+    warnings: list[str] = []
+    media: dict[str, dict[str, Any]] = {}
+    ranges: list[dict[str, Any]] = []
+    for segment in spec.segments:
+        if segment.kind != "clip" or segment.source is None:
+            continue
+        source = _resolve(spec, segment.source)
+        if not source.exists():
+            if require_captures:
+                errors.append(f"{segment.id}: capture is missing: {source}")
+            continue
+        key = str(source)
+        if key not in media:
+            try:
+                media[key] = probe_media(source)
+            except (ValueError, OSError, json.JSONDecodeError) as exc:
+                errors.append(f"{segment.id}: {exc}")
+                continue
+        facts = media[key]
+        requested_end = segment.source_in_s + segment.duration_s
+        frame_slack = 1.0 / max(1.0, float(facts["fps"]) or FPS)
+        if segment.source_in_s < 0:
+            errors.append(f"{segment.id}: source_in_s cannot be negative")
+        available_with_hold = float(facts["duration_s"]) + segment.source_tail_hold_s
+        if requested_end > available_with_hold + frame_slack:
+            errors.append(
+                f"{segment.id}: requests {segment.source_in_s:.3f}-{requested_end:.3f}s "
+                f"from a {facts['duration_s']:.3f}s capture with only "
+                f"{segment.source_tail_hold_s:.3f}s of declared tail hold"
+            )
+        ranges.append({
+            "segment": segment.id, "source": key,
+            "source_in_s": segment.source_in_s, "source_out_s": requested_end,
+            "available_s": facts["duration_s"],
+        })
+
+    evidence: list[dict[str, Any]] = []
+    for value in spec.evidence:
+        path = _resolve(spec, value)
+        if not path.exists():
+            errors.append(f"evidence is missing: {path}")
+        elif path.is_file():
+            evidence.append({"path": str(path), "sha256": _sha256(path)})
+        else:
+            errors.append(f"evidence must be a file: {path}")
+
+    script_path = _resolve(spec, spec.voice.script)
+    voice_blocks: list[dict[str, Any]] = []
+    if not script_path.exists():
+        errors.append(f"narration script is missing: {script_path}")
+    else:
+        blocks = [part.strip() for part in
+                  script_path.read_text(encoding="utf-8").split("\n\n") if part.strip()]
+        if len(blocks) != len(spec.voice.blocks):
+            errors.append(
+                f"narration has {len(blocks)} blocks; manifest declares "
+                f"{len(spec.voice.blocks)} windows"
+            )
+        else:
+            for index, (text, block) in enumerate(zip(blocks, spec.voice.blocks), 1):
+                estimate, words = _voice_estimate(text, block)
+                window = block.window_end_s - block.start_s
+                # The model remains the final authority.  This catches copy
+                # that is plainly too long while leaving a small estimator
+                # margin for natural pronunciation differences.
+                if estimate > window * 1.10:
+                    errors.append(
+                        f"voice block {index}: estimated {estimate:.2f}s exceeds its "
+                        f"{window:.2f}s window; shorten the {words}-word block"
+                    )
+                elif estimate > window * 0.90:
+                    warnings.append(
+                        f"voice block {index} is close to its limit "
+                        f"({estimate:.2f}s estimated in {window:.2f}s)"
+                    )
+                voice_blocks.append({
+                    "index": index, "words": words,
+                    "estimated_duration_s": round(estimate, 3),
+                    "window_s": round(window, 3),
+                })
+
+    report = {
+        "valid": not errors, "style": STYLE_VERSION,
+        "elapsed_s": round(time.perf_counter() - started, 3),
+        "errors": errors, "warnings": warnings,
+        "sources": list(media.values()), "ranges": ranges,
+        "evidence": evidence, "voice_blocks": voice_blocks,
+    }
+    if errors:
+        raise ValueError("Agent Build preflight failed:\n- " + "\n- ".join(errors))
+    return report
+
+
 def _font(size: int, weight: str = "regular") -> ImageFont.FreeTypeFont:
     path = {"regular": FONT_REG, "semi": FONT_SEMI, "bold": FONT_BOLD}[weight]
     return ImageFont.truetype(str(path), size=size)
@@ -475,14 +840,19 @@ def _plate_base() -> Image.Image:
     return image
 
 
-def _render_raw_frames(output: Path, duration_s: float, painter: Any) -> Path:
+def _render_raw_frames(output: Path, duration_s: float, painter: Any,
+                       profile: RenderProfile) -> Path:
     output.parent.mkdir(parents=True, exist_ok=True)
     command = [
         _ffmpeg(), "-y", "-hide_banner", "-loglevel", "error",
         "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{PW}x{PH}",
-        "-r", str(PFPS), "-i", "-", "-vf", f"scale={W}:{H}:flags=lanczos",
-        "-an", "-r", str(FPS), "-c:v", "libx264", "-preset", "medium",
-        "-crf", "13", "-profile:v", "high", "-pix_fmt", "yuv420p", str(output),
+        "-r", str(PFPS), "-i", "-", "-vf",
+        f"scale={profile.width}:{profile.height}:flags=lanczos",
+        "-an", "-r", str(profile.fps),
+        "-frames:v", str(round(duration_s * profile.fps)),
+        "-c:v", "libx264", "-preset", profile.preset,
+        "-crf", str(profile.crf), "-profile:v", "high",
+        "-pix_fmt", "yuv420p", str(output),
     ]
     process = subprocess.Popen(command, cwd=REPO_ROOT, stdin=subprocess.PIPE)
     assert process.stdin is not None
@@ -497,7 +867,8 @@ def _render_raw_frames(output: Path, duration_s: float, painter: Any) -> Path:
     return output
 
 
-def render_locked_intro(out_dir: Path) -> tuple[Path, Path]:
+def render_locked_intro(out_dir: Path, profile: RenderProfile,
+                        cache: ArtifactCache) -> tuple[Path, Path]:
     """Render the immutable 0–5 disclosure and 5–10 story signature."""
     def disclosure(progress: float) -> Image.Image:
         image = _plate_base()
@@ -533,13 +904,24 @@ def render_locked_intro(out_dir: Path) -> tuple[Path, Path]:
                   tuple(int(value * amounts[2]) for value in INK))
         return image
 
-    return (
-        _render_raw_frames(out_dir / "locked_disclosure.mp4", 5.0, disclosure),
-        _render_raw_frames(out_dir / "locked_story_signature.mp4", 5.0, signature),
+    outputs = (out_dir / "locked_disclosure.mp4",
+               out_dir / "locked_story_signature.mp4")
+    painters = (disclosure, signature)
+    payloads = (
+        {"text": DISCLOSURE, "duration_s": DISCLOSURE_DURATION_S},
+        {"lines": SIGNATURE_LINES, "duration_s": 5.0},
     )
+    for label, output, painter, payload in zip(
+            ("locked_disclosure", "locked_story_signature"), outputs, painters, payloads):
+        key = cache.key("locked_intro", payload)
+        if not cache.hit(label, key, output):
+            _render_raw_frames(output, 5.0, painter, profile)
+            cache.store(label, key, output)
+    return outputs
 
 
-def _make_overlay(segment: Segment, out_path: Path) -> Path | None:
+def _make_overlay(segment: Segment, out_path: Path,
+                  profile: RenderProfile) -> Path | None:
     if segment.overlay is None and not segment.replay_label and not segment.claim_boundary:
         return None
     image = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -561,20 +943,33 @@ def _make_overlay(segment: Segment, out_path: Path) -> Path | None:
                                fill=(10, 15, 21, 232), outline=RED, width=2)
         draw.text((W // 2, H - SAFE - 29), segment.claim_boundary.upper(),
                   font=_font(18, "semi"), fill=INK, anchor="mm")
+    if (profile.width, profile.height) != (W, H):
+        image = image.resize((profile.width, profile.height), Image.Resampling.LANCZOS)
     image.save(out_path)
     return out_path
 
 
-def _render_clip(spec: AgentBuildSpec, segment: Segment, index: int, out_dir: Path) -> Path:
+def _render_clip(spec: AgentBuildSpec, segment: Segment, index: int, out_dir: Path,
+                 profile: RenderProfile, cache: ArtifactCache) -> Path:
     assert segment.source is not None
     source = _resolve(spec, segment.source)
     if not source.exists():
         raise FileNotFoundError(f"capture is missing for segment {segment.id}: {source}")
     output = out_dir / f"{index:03d}_{segment.id}.mp4"
-    overlay = _make_overlay(segment, out_dir / f"{index:03d}_{segment.id}_overlay.png")
-    base_filter = (
-        f"scale={W}:{H}:force_original_aspect_ratio=increase:flags=lanczos,"
-        f"crop={W}:{H},eq=contrast=1.025:saturation=0.94:gamma=0.99,format=yuv420p"
+    key = cache.key("clip", {"source_sha256": _sha256(source),
+                             "segment": asdict(segment)})
+    label = f"segment:{index:03d}:{segment.id}"
+    if cache.hit(label, key, output):
+        return output
+    overlay = _make_overlay(
+        segment, out_dir / f"{index:03d}_{segment.id}_overlay.png", profile,
+    )
+    tail_filter = (f"tpad=stop_mode=clone:stop_duration={segment.source_tail_hold_s:.3f},"
+                   if segment.source_tail_hold_s > 0 else "")
+    base_filter = tail_filter + (
+        f"scale={profile.width}:{profile.height}:force_original_aspect_ratio=increase:flags=lanczos,"
+        f"crop={profile.width}:{profile.height},"
+        "eq=contrast=1.025:saturation=0.94:gamma=0.99,format=yuv420p"
     )
     command = [
         _ffmpeg(), "-y", "-hide_banner", "-loglevel", "error",
@@ -588,15 +983,19 @@ def _render_clip(spec: AgentBuildSpec, segment: Segment, index: int, out_dir: Pa
     else:
         command += ["-vf", base_filter]
     command += [
-        "-an", "-r", str(FPS), "-frames:v", str(round(segment.duration_s * FPS)),
-        "-c:v", "libx264", "-preset", "medium", "-crf", "13", "-profile:v", "high",
+        "-an", "-r", str(profile.fps),
+        "-frames:v", str(round(segment.duration_s * profile.fps)),
+        "-c:v", "libx264", "-preset", profile.preset,
+        "-crf", str(profile.crf), "-profile:v", "high",
         "-pix_fmt", "yuv420p", str(output),
     ]
     _run(command)
+    cache.store(label, key, output)
     return output
 
 
-def _render_plate(segment: Segment, index: int, out_dir: Path) -> Path:
+def _render_plate(segment: Segment, index: int, out_dir: Path,
+                  profile: RenderProfile, cache: ArtifactCache) -> Path:
     def painter(progress: float) -> Image.Image:
         image = _plate_base()
         draw = ImageDraw.Draw(image)
@@ -632,10 +1031,17 @@ def _render_plate(segment: Segment, index: int, out_dir: Path) -> Path:
         if segment.claim_boundary:
             _centered(draw, (PW // 2, 650), segment.claim_boundary.upper(), _font(16, "semi"), RED)
         return image
-    return _render_raw_frames(out_dir / f"{index:03d}_{segment.id}.mp4", segment.duration_s, painter)
+    output = out_dir / f"{index:03d}_{segment.id}.mp4"
+    key = cache.key("plate", asdict(segment))
+    label = f"segment:{index:03d}:{segment.id}"
+    if not cache.hit(label, key, output):
+        _render_raw_frames(output, segment.duration_s, painter, profile)
+        cache.store(label, key, output)
+    return output
 
 
-def render_locked_outro(out_dir: Path) -> Path:
+def render_locked_outro(out_dir: Path, profile: RenderProfile,
+                        cache: ArtifactCache) -> Path:
     def painter(_progress: float) -> Image.Image:
         image = _plate_base().convert("RGBA")
         glow = Image.new("RGBA", (PW, PH), (0, 0, 0, 0))
@@ -652,7 +1058,14 @@ def render_locked_outro(out_dir: Path) -> Path:
         draw.line((500, 430, 780, 430), fill=CYAN, width=3)
         _centered(draw, (PW // 2, 490), GITHUB_DESTINATION, _font(21, "semi"), INK)
         return image.convert("RGB")
-    return _render_raw_frames(out_dir / "locked_outro.mp4", OUTRO_DURATION_S, painter)
+    output = out_dir / "locked_outro.mp4"
+    key = cache.key("locked_outro", {
+        "destination": GITHUB_DESTINATION, "duration_s": OUTRO_DURATION_S,
+    })
+    if not cache.hit("locked_outro", key, output):
+        _render_raw_frames(output, OUTRO_DURATION_S, painter, profile)
+        cache.store("locked_outro", key, output)
+    return output
 
 
 def build_edl(spec: AgentBuildSpec) -> dict[str, Any]:
@@ -672,10 +1085,13 @@ def build_edl(spec: AgentBuildSpec) -> dict[str, Any]:
         source = (f"MOTION_GRAPHIC:{segment.id}" if segment.kind == "plate" else segment.source)
         entries.append({
             "index": len(entries) + 1, "id": segment.id, "beat": segment.beat,
+            "act": segment.act or None,
             "master_in_s": round(cursor, 3), "master_out_s": round(cursor + segment.duration_s, 3),
             "duration_s": segment.duration_s, "source": source,
             "source_in_s": segment.source_in_s if segment.kind == "clip" else None,
             "source_out_s": (segment.source_in_s + segment.duration_s if segment.kind == "clip" else None),
+            "source_tail_hold_s": (segment.source_tail_hold_s
+                                   if segment.kind == "clip" else None),
             "purpose": segment.purpose, "transition": "direct_cut",
             "replay": segment.replay, "replay_label": segment.replay_label,
             "claim_boundary": segment.claim_boundary,
@@ -688,8 +1104,11 @@ def build_edl(spec: AgentBuildSpec) -> dict[str, Any]:
         "purpose": "Locked GitHub-only OmniSim end slate.", "transition": "direct_cut",
     })
     return {
-        "version": 1, "style": "agent_build_v6", "master_duration_s": spec.duration_s,
+        "version": 1, "style": STYLE_VERSION, "master_duration_s": spec.duration_s,
         "cuts_reviewed": len(entries) - 1, "transition_vocabulary": ["direct_cut"],
+        "structure": spec.structure or "evidence_arc",
+        "simulator_footage_ratio": round(spec.simulator_footage_ratio, 6),
+        "climax_segment": spec.climax_segment,
         "entries": entries,
     }
 
@@ -701,19 +1120,56 @@ def _write_edl(spec: AgentBuildSpec, out_dir: Path) -> tuple[Path, list[dict[str
     return edl_path, payload["entries"]
 
 
-def _concat(clips: list[Path], output: Path) -> Path:
+def _concat(clips: list[Path], output: Path, profile: RenderProfile,
+            cache: ArtifactCache, expected_duration_s: float) -> Path:
+    key = cache.key("picture", [{"path": str(path), "sha256": _sha256(path)}
+                                for path in clips])
+    if cache.hit("picture", key, output):
+        return output
     listing = output.with_suffix(".txt")
     listing.write_text("".join(f"file '{clip.resolve().as_posix()}'\n" for clip in clips), encoding="utf-8")
-    _run([
-        _ffmpeg(), "-y", "-hide_banner", "-loglevel", "error",
-        "-f", "concat", "-safe", "0", "-i", str(listing), "-an", "-r", str(FPS),
-        "-c:v", "libx264", "-preset", "medium", "-crf", "13", "-profile:v", "high",
-        "-pix_fmt", "yuv420p", str(output),
-    ])
+    partial = output.with_name(output.stem + ".partial" + output.suffix)
+    # Every part is normalized to the same H.264 profile, geometry, and CFR.
+    # A packet-level concat makes revisions nearly instant.  If a platform's
+    # ffmpeg build produces timing drift, fall back to the old full re-encode.
+    _run([_ffmpeg(), "-y", "-hide_banner", "-loglevel", "error",
+          "-f", "concat", "-safe", "0", "-i", str(listing), "-an",
+          "-c:v", "copy", "-movflags", "+faststart", str(partial)])
+    expected_frames = round(expected_duration_s * profile.fps)
+    try:
+        facts = probe_media(partial)
+        duration_ok = abs(facts["duration_s"] - expected_duration_s) <= 1.1 / profile.fps
+        frames_ok = not facts["frames"] or abs(facts["frames"] - expected_frames) <= 1
+        geometry_ok = (facts["width"], facts["height"]) == (profile.width, profile.height)
+        rate_ok = abs(facts["fps"] - profile.fps) < 0.01
+    except Exception:
+        duration_ok = frames_ok = geometry_ok = rate_ok = False
+    if not all((duration_ok, frames_ok, geometry_ok, rate_ok)):
+        partial.unlink(missing_ok=True)
+        _run([
+            _ffmpeg(), "-y", "-hide_banner", "-loglevel", "error",
+            "-f", "concat", "-safe", "0", "-i", str(listing), "-an",
+            "-r", str(profile.fps), "-t", f"{expected_duration_s:.6f}",
+            "-frames:v", str(expected_frames),
+            "-c:v", "libx264", "-preset", profile.preset,
+            "-crf", str(profile.crf), "-profile:v", "high",
+            "-pix_fmt", "yuv420p", str(partial),
+        ])
+    partial.replace(output)
+    cache.store("picture", key, output)
     return output
 
 
-def _generate_score(spec: AgentBuildSpec, output: Path, sample_rate: int = 48000) -> Path:
+def _generate_score(spec: AgentBuildSpec, output: Path, cache: ArtifactCache,
+                    sample_rate: int = 48000) -> Path:
+    key = cache.key("score", {
+        "duration_s": spec.duration_s,
+        "segments": [{"id": segment.id, "duration_s": segment.duration_s}
+                     for segment in spec.segments],
+        "sample_rate": sample_rate,
+    })
+    if cache.hit("score", key, output):
+        return output
     t = np.arange(int(spec.duration_s * sample_rate), dtype=np.float64) / sample_rate
     score = np.zeros_like(t)
     cues = [0.0]
@@ -738,6 +1194,7 @@ def _generate_score(spec: AgentBuildSpec, output: Path, sample_rate: int = 48000
         wav.setsampwidth(2)
         wav.setframerate(sample_rate)
         wav.writeframes(pcm.tobytes())
+    cache.store("score", key, output)
     return output
 
 
@@ -755,47 +1212,68 @@ def _verify_voice_silence(path: Path) -> None:
         raise ValueError("narration WAV must be mono; the final mix is stereo")
 
 
-def _mix(spec: AgentBuildSpec, picture: Path, voice: Path, score: Path, output: Path) -> Path:
+def _mix(spec: AgentBuildSpec, picture: Path, voice: Path, score: Path, output: Path,
+         profile: RenderProfile, cache: ArtifactCache) -> Path:
     _verify_voice_silence(voice)
+    key = cache.key("master_mix", {
+        "picture_sha256": _sha256(picture), "voice_sha256": _sha256(voice),
+        "score_sha256": _sha256(score), "intro_score_gain": INTRO_SCORE_GAIN,
+        "story_score_gain": STORY_SCORE_GAIN, "intro_master_gain": INTRO_MASTER_GAIN,
+    })
+    if cache.hit("master_mix", key, output):
+        return output
     audio_filter = (
         "[1:a]highpass=f=65,lowpass=f=15500,acompressor=threshold=0.14:ratio=1.65:attack=25:release=300,"
-        "volume=1.05,asplit=2[voice_sc][voice_mix];[2:a]volume=0.42[bed];"
+        "volume=1.05,asplit=2[voice_sc][voice_mix];"
+        f"[2:a]volume='if(lt(t,{INTRO_DURATION_S:g}),{INTRO_SCORE_GAIN:.3f},"
+        f"{STORY_SCORE_GAIN:.3f})':eval=frame[bed];"
         "[bed][voice_sc]sidechaincompress=threshold=0.020:ratio=7:attack=18:release=560[duck];"
         "[duck][voice_mix]amix=inputs=2:duration=longest:normalize=0,"
-        "loudnorm=I=-15:TP=-1.5:LRA=8[aout]"
+        f"loudnorm=I=-15:TP=-1.5:LRA=8,volume='if(lt(t,{INTRO_DURATION_S:g}),"
+        f"{INTRO_MASTER_GAIN:.3f},1.0)':eval=frame[aout]"
     )
     _run([
         _ffmpeg(), "-y", "-hide_banner", "-loglevel", "error",
         "-i", str(picture), "-i", str(voice), "-i", str(score),
         "-filter_complex", audio_filter, "-map", "0:v", "-map", "[aout]",
-        "-t", f"{spec.duration_s:.3f}", "-frames:v", str(round(spec.duration_s * FPS)),
+        "-t", f"{spec.duration_s:.3f}",
+        "-frames:v", str(round(spec.duration_s * profile.fps)),
         "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-ar", "48000",
         "-movflags", "+faststart", str(output),
     ])
+    cache.store("master_mix", key, output)
     return output
 
 
-def render(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Path]:
+def render(spec: AgentBuildSpec, out_dir: Path | None = None, *,
+           profile: RenderProfile = FINAL_PROFILE,
+           preflight_checked: bool = False) -> dict[str, Path]:
     """Render an Agent Build manifest and emit its hash-bound production artifacts."""
-    out_dir = (out_dir or spec.source_path.parent / "build" / spec.slug).resolve()
+    started = time.perf_counter()
+    preflight_report = ({"valid": True, "reused_from_workflow_gate": True}
+                        if preflight_checked else preflight(spec))
+    base_out = (out_dir or spec.source_path.parent / "build" / spec.slug).resolve()
+    out_dir = base_out if profile.name == "final" else base_out / profile.name
     parts = out_dir / "parts"
     parts.mkdir(parents=True, exist_ok=True)
-    disclosure, signature = render_locked_intro(parts)
+    cache = ArtifactCache(out_dir, profile)
+    disclosure, signature = render_locked_intro(parts, profile, cache)
     clips = [disclosure, signature]
     provenance_sources: list[dict[str, Any]] = []
     for index, segment in enumerate(spec.segments, 1):
         if segment.kind == "clip":
-            rendered = _render_clip(spec, segment, index, parts)
+            rendered = _render_clip(spec, segment, index, parts, profile, cache)
             source = _resolve(spec, segment.source or "")
             provenance_sources.append({
                 "segment": segment.id, "source": str(source), "sha256": _sha256(source),
                 "source_in_s": segment.source_in_s,
                 "source_out_s": segment.source_in_s + segment.duration_s,
+                "source_tail_hold_s": segment.source_tail_hold_s,
             })
         else:
-            rendered = _render_plate(segment, index, parts)
+            rendered = _render_plate(segment, index, parts, profile, cache)
         clips.append(rendered)
-    clips.append(render_locked_outro(parts))
+    clips.append(render_locked_outro(parts, profile, cache))
 
     edl_path, _ = _write_edl(spec, out_dir)
     provenance_path = out_dir / "capture_provenance.json"
@@ -806,12 +1284,15 @@ def render(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Path]
             raise FileNotFoundError(f"evidence artifact is missing: {path}")
         evidence_records.append({"path": str(path), "sha256": _sha256(path)})
     provenance_path.write_text(json.dumps({
-        "version": 1, "style": "agent_build_v6", "story": {
+        "version": 1, "style": STYLE_VERSION, "story": {
             "question": spec.question, "claim": spec.claim, "boundary": spec.boundary,
+            "structure": spec.structure or "evidence_arc",
+            "simulator_footage_ratio": round(spec.simulator_footage_ratio, 6),
+            "climax_segment": spec.climax_segment,
         }, "captures": provenance_sources, "evidence": evidence_records,
     }, indent=2) + "\n", encoding="utf-8")
-    picture = _concat(clips, out_dir / "picture.mp4")
-    score = _generate_score(spec, out_dir / "score.wav")
+    picture = _concat(clips, out_dir / "picture.mp4", profile, cache, spec.duration_s)
+    score = _generate_score(spec, out_dir / "score.wav", cache)
     voice = _resolve(spec, spec.voice.wav)
     if not voice.exists():
         raise FileNotFoundError(f"narration WAV missing; run agent-build-voice first: {voice}")
@@ -819,7 +1300,8 @@ def render(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Path]
     voice_timings = voice.with_suffix(".segments.json")
     if not voice_script.exists() or not voice_timings.exists():
         raise FileNotFoundError("narration script/timing receipt missing; run agent-build-voice first")
-    master = _mix(spec, picture, voice, score, out_dir / f"{spec.slug}.mp4")
+    master_name = f"{spec.slug}.mp4" if profile.name == "final" else f"{spec.slug}_proxy.mp4"
+    master = _mix(spec, picture, voice, score, out_dir / master_name, profile, cache)
 
     artifacts = {
         "renderer": Path(__file__).resolve(),
@@ -829,10 +1311,19 @@ def render(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Path]
         "narration_script": voice_script, "narration_timings": voice_timings,
         "narration_wav": voice, "picture": picture, "score": score, "master": master,
     }
-    receipt = out_dir / "assembly_receipt.json"
+    render_report = out_dir / "render_report.json"
+    render_report.write_text(json.dumps({
+        "version": 1, "style": STYLE_VERSION, "profile": asdict(profile),
+        "elapsed_s": round(time.perf_counter() - started, 3),
+        "cache": cache.report(), "preflight": preflight_report,
+    }, indent=2) + "\n", encoding="utf-8")
+    artifacts["render_report"] = render_report
+    receipt = out_dir / ("assembly_receipt.json" if profile.name == "final"
+                         else "proxy_receipt.json")
     receipt.write_text(json.dumps({
-        "version": 1, "style": "agent_build_v6", "master_duration_s": spec.duration_s,
-        "video_frames": round(spec.duration_s * FPS),
+        "version": 1, "style": STYLE_VERSION, "master_duration_s": spec.duration_s,
+        "profile": asdict(profile),
+        "video_frames": round(spec.duration_s * profile.fps),
         "opening_contract": {
             "disclosure": [0.0, 5.0], "story_signature": [5.0, 10.0],
             "first_build_footage_s": 10.0, "voiceover_present_during_intro": False,
@@ -841,7 +1332,8 @@ def render(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Path]
                       for name, path in artifacts.items()},
     }, indent=2) + "\n", encoding="utf-8")
     return {"output_dir": out_dir, "master": master, "edl": edl_path,
-            "provenance": provenance_path, "receipt": receipt}
+            "provenance": provenance_path, "receipt": receipt,
+            "render_report": render_report}
 
 
 def verify(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Any]:
@@ -898,7 +1390,7 @@ def verify(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Any]:
         raise AssertionError("master duration does not match the manifest")
 
     report = {
-        "approved": True, "style": "agent_build_v6", "master": str(master),
+        "approved": True, "style": STYLE_VERSION, "master": str(master),
         "master_sha256": _sha256(master), "duration_s": spec.duration_s,
         "frames": round(spec.duration_s * FPS), "intro_voiceover": False,
         "disclosure_s": [0.0, 5.0], "story_signature_s": [5.0, 10.0],

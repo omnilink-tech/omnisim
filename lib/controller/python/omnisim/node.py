@@ -79,6 +79,17 @@ class Node:
         ctypes.POINTER(ctypes.POINTER(ctypes.c_double)),  # out: angles
         ctypes.POINTER(ctypes.POINTER(ctypes.c_double)),  # out: residuals
     ]
+    wb.wb_supervisor_node_get_particle_stats.restype = ctypes.c_int
+    wb.wb_supervisor_node_get_particle_stats.argtypes = [
+        ctypes.c_void_p, ctypes.c_int,                   # node, sample_stride
+        ctypes.POINTER(ctypes.c_int),                    # out: count
+        ctypes.POINTER(ctypes.c_double),                 # out: min[3]
+        ctypes.POINTER(ctypes.c_double),                 # out: max[3]
+        ctypes.POINTER(ctypes.c_double),                 # out: centroid[3]
+        ctypes.POINTER(ctypes.c_int),                    # out: non_finite
+        ctypes.POINTER(ctypes.c_int),                    # out: sampled
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_float)),  # out: sample xyz (3 * sampled)
+    ]
 
     def __init__(self, DEF: typing.Optional[str] = None, tag: typing.Optional[int] = None, id: typing.Optional[int] = None,
                  selected: typing.Optional[bool] = None, ref: typing.Optional[int] = None):
@@ -269,6 +280,47 @@ class Node:
             'joint_node_ids': [int(ids_p[i]) for i in range(m)],
             'angles': [[float(angles_p[t * m + j]) for j in range(m)] for t in range(n)],
             'residuals': [float(residuals_p[t]) for t in range(n)],
+        }
+
+    def getParticleStats(self, sample_stride: int = 0) -> dict:
+        """Particle-state readback for a Cloth / SoftBody / GranularBed /
+        GranularGroup node — stats-first, sample-optional (a PURE READ:
+        nothing in the scene moves).
+
+        Returns {"status": 0, "count": N, "min": [x, y, z], "max": [x, y, z],
+        "centroid": [x, y, z], "non_finite": M, "sample": [[x, y, z], ...]}.
+        min/max/centroid are world-frame aggregates over the FINITE particles;
+        `non_finite` counts particles carrying a NaN/Inf component (counted,
+        never propagated into the aggregates, and 0.0 everywhere when nothing
+        is finite). `sample_stride` 0 (the default) returns stats only with
+        an empty `sample`; a positive stride (clamped to 4096) additionally
+        returns every stride-th particle's world xyz. On failure returns
+        {"status": <negative>} — see supervisor.h for the codes (-1 no Newton
+        runtime / node not registered, -2 not a particle node, -5 inert
+        GranularGroup with no CUDA state, -9 no answer, -10 bad arguments).
+        """
+        count = ctypes.c_int(0)
+        mn = (ctypes.c_double * 3)()
+        mx = (ctypes.c_double * 3)()
+        cen = (ctypes.c_double * 3)()
+        non_finite = ctypes.c_int(0)
+        sampled = ctypes.c_int(0)
+        sample_p = ctypes.POINTER(ctypes.c_float)()
+        status = wb.wb_supervisor_node_get_particle_stats(
+            self._ref, int(sample_stride), ctypes.byref(count), mn, mx, cen,
+            ctypes.byref(non_finite), ctypes.byref(sampled), ctypes.byref(sample_p))
+        if status != 0:
+            return {'status': int(status)}
+        m = sampled.value
+        return {
+            'status': 0,
+            'count': count.value,
+            'min': [mn[0], mn[1], mn[2]],
+            'max': [mx[0], mx[1], mx[2]],
+            'centroid': [cen[0], cen[1], cen[2]],
+            'non_finite': non_finite.value,
+            'sample': [[float(sample_p[3 * i]), float(sample_p[3 * i + 1]),
+                        float(sample_p[3 * i + 2])] for i in range(m)],
         }
 
     def restartController(self):

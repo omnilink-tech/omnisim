@@ -31,10 +31,12 @@ column as self-attested -- the weakest evidence tier that document defines.
 
 | binary sha256[:16] | probe rows | newest row |
 |---|---|---|
-| `f3f003bf0304bc5e` | 35 | 2026-08-15T11:56:37Z |
-| `13906cc6f12451eb` | 6 | 2026-08-17T12:21:24Z |
-| `89e978269dc27a23` | 2 | 2026-08-16T17:45:05Z |
+| `f3f003bf0304bc5e` | 28 | 2026-08-15T11:56:37Z |
+| `e2ef19dfb4c65b13` | 12 | 2026-09-01T20:14:55Z |
+| `6df9792e206f577f` | 4 | 2026-09-01T19:01:33Z |
+| `13906cc6f12451eb` | 3 | 2026-08-17T12:21:24Z |
 | `6aac9ae1b461f567` | 2 | 2026-08-17T08:09:13Z |
+| `dd7ae9921b6629ba` | 2 | 2026-08-22T13:46:14Z |
 
 Reproduce: `python tests/benchmarks/omnibench/lane4/run_coverage.py`
 
@@ -52,15 +54,15 @@ Reproduce: `python tests/benchmarks/omnibench/lane4/run_coverage.py`
 
 | | count |
 |---|---|
-| PASS | 32 |
-| PARTIAL | 5 |
-| BROKEN | 4 |
+| PASS | 45 |
+| PARTIAL | 1 |
+| BROKEN | 1 |
 | absent | 4 |
 | no result | 0 |
-| **probes total** | **45** |
+| **probes total** | **51** |
 
 Of the capabilities that **exist** (excluding `absent`, which is a scope statement
-rather than a defect), **78%** work.
+rather than a defect), **96%** work.
 
 > **Scope.** Rigid-body simulation only. Rendering quality is out of OmniBench's
 > scope by design; the Camera and Lidar probes assert that an image EXISTS, nothing
@@ -78,24 +80,25 @@ rather than a defect), **78%** work.
 | `object.static_collider`<br/>A static Solid (no physics) is solid and stops dynamic bodies | **PASS** | rest_z_m=0.6496; expected_rest_z_m=0.65; abs_err_m=0.0004 | A body dropped onto a floor whose top face is at z=0.55 m must come to rest with its centre at z=0.6500 m (+/- 5 mm) |
 | `object.no_boundingobject_is_intangible`<br/>A Solid WITHOUT boundingObject does not collide (documented behaviour -- the C2 fall-through trap) | **PASS** | final_z_m=-43.0039; visual_surface_rest_z_m=0.65; rest_z_if_unconditional_implicit_plane=0.1 | A Solid with no boundingObject must NOT collide: a sphere dropped onto it must pass through, i.e |
 | `object.elevationgrid_terrain`<br/>ElevationGrid heightfield as a collider (terrain) | **PASS** | rest_z_m=0.6499; expected_rest_z_m=0.65; abs_err_m=0.0001 | A body dropped onto a floor whose top face is at z=0.55 m must come to rest with its centre at z=0.6500 m (+/- 20 mm) |
-| `object.granular_group`<br/>GranularGroup -- bulk particulate media (sand/gravel) | **PARTIAL** | granular_node_in_scene_tree=True; reference_sphere_rest_z_m=0.6496 | GranularGroup parses and appears in the scene tree, but this lane has NO way to read particle state through the supervisor API, so 'the particles are simulated' is UNMEASURED. Not counted as working. |
+| `object.granular_group`<br/>GranularGroup -- bulk particulate media (sand/gravel, CUDA kernel) | **PASS** | granular_node_in_scene_tree=True; reference_sphere_rest_z_m=0.6496; particle_count=64 | A 64-particle 0.02 m GranularGroup must SETTLE, measured through getParticleStats: the node seeds its particles at up = 1.5-2.0 m (its own seeding rule) above its OWN floor at up = 0, so the centroid must drop by at least 1.0 m, the z-exten |
 | `object.fluid_buoyancy`<br/>Fluid volumes / buoyancy / drag (Fluid + ImmersionProperties) | **absent** | engine_refused=True; diagnostic_count=2; rc=0 | the engine refused or ignored the declaration: ERROR: Missing declaration for 'Fluid', unknown node. |
 | `object.immersion_properties`<br/>Solid.immersionProperties (per-body buoyancy/drag coefficients) | **absent** | engine_refused=True; diagnostic_count=1; rc=0 | the engine refused or ignored the declaration: ERROR: 'O:/omnisim/tests/benchmarks/omnibench/lane4/worlds/object_immersion_properties.wbt':55:3: error: Skipped unknown 'immersionProperties' field in Solid node. |
-| `object.deformable_cloth`<br/>Deformable surfaces (cloth / membranes) | **PARTIAL** | cloth_node_in_scene_tree=True; registered_particles=441; expected_particles=441 | Cloth reaches newton's SolverVBD with the authored particle count (441) and does not perturb the rigid scene, but particle state has NO supervisor accessor, so the drape itself is UNMEASURED IN THIS LANE. Not counted as working here; measured against negative controls in docs/developer/cloth-simulation.md. |
-| `object.soft_body_fem`<br/>Volumetric soft bodies (FEM / MPM) | **PARTIAL** | soft_body_node_in_scene_tree=True; registered_particles=125; engine_reported_inert=False | SoftBody reaches newton's SolverVBD (125 particles registered), appears in the scene tree and does not perturb the rigid scene, but this lane has NO way to read particle state through the supervisor API, so 'the tets are simulated' is UNMEASURED. Not counted as working. Measured elsewhere: docs/developer/newton-capability-frontier.md. |
+| `object.deformable_cloth`<br/>Deformable surfaces (cloth / membranes) | **PASS** | cloth_node_in_scene_tree=True; engine_registration_line_particles=441; expected_particles=441 | A 20x20-cell `Cloth` pinned along its +Y edge at z=2.0 must MEASURABLY DRAPE, read through getParticleStats (the 2026-09-01 supervisor particle readback): exactly 441 particles (its authored dimX/dimY), a z-extent that grows from ~0 (the sh |
+| `object.soft_body_fem`<br/>Volumetric soft bodies (FEM / MPM) | **PASS** | soft_body_node_in_scene_tree=True; reference_sphere_rest_z_m=0.6496; particle_count=125 | A 4x4x4-cell `SoftBody` (5^3 = 125 particles, authored 0.2 m on every side, minimum corner at z=1.0) must FALL, ARREST and DEFORM, read through getParticleStats (the 2026-09-01 supervisor particle readback): exactly 125 particles; a centroi |
+| `object.granular_bed_mpm`<br/>GranularBed -- MPM granular matter (newton SolverImplicitMPM) | **PARTIAL** | bed_node_in_scene_tree=True; particle_count=9464; centroid_z_first_m=0.7995 | z-extent ended at 0.222 m from an authored 0.216 -- the bed fell without collapsing into the pen |
 
 ## Joints and actuation
 
 | capability | verdict | measured | what the probe asserts |
 |---|---|---|---|
 | `joint.hinge_passive`<br/>HingeJoint, passive -- swings freely under gravity | **PASS** | joint_travel_rad=3.1417; joint_travel_deg=180.0033 | A 0.5 m arm released horizontally about a frictionless hinge must swing through at least 45 deg (0.785 rad) within 2 s -- a free pendulum of this length has a quarter-period well under 0.4 s |
-| `joint.hinge_motor_position`<br/>RotationalMotor position control -- setPosition reaches its target | **PARTIAL** | target_rad=0.8; achieved_rad=0.3447; abs_err_rad=0.4553 | the motor settled 0.4553 rad from its target |
-| `joint.hinge_motor_position_unloaded`<br/>RotationalMotor position control with NO gravity load -- does the servo track its target at all? | **BROKEN** | target_rad=0.8; achieved_rad=0; abs_err_rad=0.8 | with no load at all the motor never left 0 rad -- the position servo does not track |
+| `joint.hinge_motor_position`<br/>RotationalMotor position control -- setPosition reaches its target | **PASS** | target_rad=0.8; achieved_rad=0.8017; abs_err_rad=0.0017 | A RotationalMotor commanded to 0.8 rad with 100 N.m of torque must arrive within 0.05 rad of the target in 3 s |
+| `joint.hinge_motor_position_unloaded`<br/>RotationalMotor position control with NO gravity load -- does the servo track its target at all? | **PASS** | target_rad=0.8; achieved_rad=0.8; abs_err_rad=0 | The same 0.8 rad position command as the loaded probe, with gravity switched off |
 | `joint.hinge_motor_position_with_gain`<br/>RotationalMotor position control WITH the documented gain override (OMNISIM_NEWTON_TARGET_KE) | **PASS** | target_rad=0.8; achieved_rad=0.8; abs_err_rad=0 | The same unloaded 0.8 rad command, run with OMNISIM_NEWTON_TARGET_KE=250 and TARGET_KD=60 |
 | `joint.hinge_motor_force`<br/>RotationalMotor torque control -- setTorque produces motion (the grasp path: a servo that has arrived pushes with nothing) | **PASS** | joint_travel_rad=2.0118; applied_torque_Nm=20 | 20 N.m applied to a 1 kg, 0.5 m arm must rotate it by more than 0.2 rad within 2 s |
 | `joint.hinge_motor_velocity`<br/>RotationalMotor velocity control -- setPosition(inf) + setVelocity spins the joint at the commanded rate | **PASS** | commanded_rad_s=2; window_s=2; joint_angle_span_rad=3.992 | A hinge commanded to 2.0 rad/s in a gravity-free world must turn about 4.0 rad in 2 s |
 | `joint.slider_motor`<br/>SliderJoint + LinearMotor -- prismatic actuation | **PASS** | target_m=0.15; achieved_m=0.15; abs_err_m=0 | A LinearMotor commanded to 0.15 m with 200 N must arrive within 5 mm in 3 s. |
-| `joint.ball_motor`<br/>BallJoint with motors -- 3-DoF spherical actuation | **BROKEN** | arm_displacement_m=0; joint_angle_travel_rad=5.8053 | the BallJoint's motors were accepted but the arm never moved (2.67e-07 m) with OMNISIM_NEWTON_BALL_HINGE2 ON (its default since 2094660ef). That commit flipped the gate for BOTH joint types, and it lands for Hinge2Joint only: the same repair that took joint.hinge2_motor to `works` (declare the motors' min/maxPosition so they are servos, not velocity wheels) leaves this probe BIT-IDENTICAL at 2.67e-07 m. The angle READBACK meanwhile travels 5.805 rad, so the sensor is live while the body is not -- the engine's own warning says the BALL element is emitted with its per-axis limits unmapped. |
+| `joint.ball_motor`<br/>BallJoint with motors -- 3-DoF spherical actuation | **PASS** | arm_displacement_m=0.1884; expected_displacement_m=0.1947; joint_angle_travel_rad=5.0608 | A motorised BallJoint commanded to 0.8 rad about its THIRD axis (motor "m3", axis3 default (0,0,1) = +Z) in a GRAVITY-FREE world must displace the arm origin -- 0.25 m out along axis 1 -- by 2*0.25*sin(0.4) = 0.195 m, at least 5 cm |
 | `joint.hinge2_motor`<br/>Hinge2Joint with motors -- 2-DoF steered/driven axle | **PASS** | arm_displacement_m=0.1951; joint_angle_travel_rad=0.8 | A motorised Hinge2Joint commanded to 0.8 rad in a GRAVITY-FREE world must move the arm by at least 5 cm |
 | `joint.limits_enforced`<br/>HingeJointParameters minStop/maxStop -- hard joint limits hold | **PASS** | max_abs_angle_rad=0.3; stop_rad=0.3 | A passive arm falling against a maxStop/minStop of +/-0.3 rad must not exceed 0.35 rad in magnitude |
 | `joint.position_sensor`<br/>PositionSensor reads back the joint angle the solver holds | **PASS** | max_abs_disagreement_rad=0; finite_samples=750; sensor_travel_rad=0.3445 | A PositionSensor must agree with the supervisor's own reading of the joint's `position` field to within 0.01 rad |
@@ -111,10 +114,14 @@ rather than a defect), **78%** work.
 | `device.gps`<br/>GPS -- absolute position readout, TRACKED while the body moves | **PASS** | gps_path_len_m=0.997; supervisor_path_len_m=0.9984; samples_compared=500 | A GPS riding a turntable arm must TRACK it: agreeing with the supervisor's own world position for the same body to within 1 cm at every sample, while covering the same path length (the 0.25 m arm sweeps about 1.0 m in the 2 s window) |
 | `device.inertial_unit`<br/>InertialUnit -- orientation readout, TRACKED through a rotation | **PASS** | yaw_travel_rad=3.9936; supervisor_rotation_rad=3.9936; supervisor_measured_rad_s=1.9968 | An InertialUnit riding a turntable must sweep a yaw travel matching the ~4 rad rotation the supervisor independently measured to within 10%, while a second unit at an authored 0.3 rad tilt reads 0.3 +/- 0.02 and a third, mounted level, read |
 | `device.gyro`<br/>Gyro -- angular velocity readout, MEASURED under rotation | **PASS** | supervisor_measured_rad_s=2; commanded_rad_s=2; supervisor_rotation_rad=3.9936 | A Gyro riding a turntable driven at 2.0 rad/s must report that rate to within 10% of the rotation the supervisor independently measured, while a second Gyro on a body proven at rest reads |omega| < 0.05 rad/s in the same run |
+| `device.accelerometer`<br/>Accelerometer -- proper-acceleration readout, MEASURED under rotation and under gravity | **PASS** | supervisor_measured_rad_s=2; supervisor_rotation_rad=0.792; expected_centripetal_m_s2=1 | An Accelerometer riding a 0.25 m turntable arm driven at 2.0 rad/s under gravity 9.81 must read the centripetal acceleration omega^2 * r (~1.0 m/s^2, judged against the rotation rate the supervisor independently measured, within 0.3 m/s^2 o |
+| `device.imu_nested_carrier`<br/>Gyro + Accelerometer on a folded nested-Solid carrier -- the URDF importer's exact IMU emission pattern | **PASS** | supervisor_measured_rad_s=2; expected_centripetal_m_s2=1; direct_gyro_rad_s=2 | A Gyro and an Accelerometer on a FOLDED carrier -- a jointless nested Solid carrying `boundingObject Box 0.001^3` + `physics Physics { density -1 mass 0.001 }`, the URDF importer's exact IMU emission pattern -- inside a turntable arm driven |
 | `device.lidar`<br/>Lidar -- planar range image | **PASS** | min_range_m=2.9008; expected_m=2.9; finite_returns=32 | A 32-beam lidar facing a wall 3 m away (near face 2.9 m) must return a range image whose minimum lands within 0.3 m of 2.9 |
 | `device.camera`<br/>Camera -- renders a non-degenerate image in a headless run | **PASS** | device_present=True; width=32; height=32 | A 32x32 Camera pointed at a red wall must return width*height pixels that are not all identical |
-| `device.connector_weld`<br/>Connector -- runtime rigid attachment (weld) between bodies | **PARTIAL** | device_present=True | Connector is present and lock() was accepted, but whether the weld actually constrains two bodies is UNMEASURED |
+| `device.connector_weld`<br/>Connector -- runtime rigid attachment (weld) between bodies | **PASS** | device_present=True; control_final_z_m=0.5999; held_min_z_after_lock_m=1.1489 | An 'active' Connector on a STATIC anchor, locked at t=0.1 s to the 'passive' Connector of a free 0.5 kg part hanging 20 mm beneath it, must weld that part to the world: from t=0.3 s on, the part's centre must stay above z=1.0 m (it starts a |
 | `device.emitter_receiver`<br/>Emitter/Receiver -- inter-robot messaging | **PASS** | receiver_present=True; emitter_on_this_robot=False; emitter_present=None | A packet emitted by a SECOND robot on channel 1 must arrive at this robot's Receiver on channel 1 within the run |
+| `device.propeller_thrust`<br/>Propeller -- a motorised rotor produces its analytic thrust | **PASS** | measured_accel_m_s2=10.0002; analytic_accel_m_s2=10; accel_ratio=1 | A Propeller with thrustConstants 0.001 0, spun at 100 rad/s by its RotationalMotor, produces T = 0.001 * |omega| * omega = 10 N along its shaft axis |
+| `device.propeller_inflow`<br/>Propeller thrust decays with axial airspeed (thrustConstants[1], the speed-of-advance term) | **PASS** | early_accel_m_s2=-3.8427; late_accel_m_s2=-0.3778; late_over_early=0.0983 | A rotor holding 5 N of static thrust under a 1 kg airframe's 9.81 N of weight, with thrustConstants 0.0005 0.01, must reach a TERMINAL descent speed of (m*g - t1*omega^2) / (t2*omega) = 4.81 m/s: as the airframe falls, axial airspeed builds |
 
 ## Phenomena and world-level contracts
 
@@ -122,7 +129,7 @@ rather than a defect), **78%** work.
 |---|---|---|---|
 | `phenomenon.gravity_is_honoured`<br/>WorldInfo.gravity reaches the solver (non-Earth values included) | **PASS** | declared_g_m_s2=3.72; measured_g_m_s2=3.7274; drop_m=7.4549 | A sphere in free fall in a world declaring gravity 3.72 m/s^2 (Mars) must fall 0.5*3.72*t^2 = 7.44 m in 2 s, +/- 5% |
 | `phenomenon.coordinate_system_nue`<br/>WorldInfo.coordinateSystem NUE -- the up-axis reaches the solver | **PASS** | up_axis=+y (NUE); drop_along_y_m=19.6592; measured_g_m_s2=9.8296 | In an NUE world (up = +y) a sphere released at y=20 must fall along -y at 9.81 m/s^2, dropping 19.62 m in 2 s +/- 5% |
-| `phenomenon.runtime_node_deletion`<br/>A node deleted at runtime stops colliding | **BROKEN** | z_before_delete_m=0.6499; z_at_end_m=0.6499; delete_at_s=1.5 | the box stayed at z=0.6499 m for 2.5 s after its floor was deleted -- the removed node still collides |
+| `phenomenon.runtime_node_deletion`<br/>A node deleted at runtime stops colliding (via simulationRebuildPhysics, 2026-09-01) | **PASS** | z_before_delete_m=0.6499; z_before_rebuild_m=0.6499; z_at_end_m=-19.0093 | Two arms in one run |
 | `phenomenon.restitution_declared`<br/>Restitution (bounciness) is declarable per-material in the .wbt | **BROKEN** | declared_bounce=0.8; rebound_height_m=-0.0004; predicted_rebound_m=0.64 | the world declares bounce 0.8 and the sphere rebounded -0.4 mm -- the restitution declaration does not reach the solver |
 | `phenomenon.friction_declared_in_world`<br/>A world can state its own friction and have it reach the solver | **PASS** | slide_m=0.0008; declared_mu=2; required_mu_to_stick=1.4281 | A low-CoM slab resting on a 55 deg incline in a world declaring newtonGroundMu 2.0 must stay put: Coulomb requires only mu >= tan(55 deg) = 1.4281, so mu=2.0 carries 40% margin and the slab should slide less than 5 cm in 3 s |
 | `phenomenon.friction_slides_below_coulomb_bound`<br/>Declared friction BELOW the Coulomb bound correctly fails to hold | **PASS** | slide_m=1.4402; predicted_slide_m_at_2s=1.442; slide_vs_predicted=0.999 | The same slab on the same 55 deg incline, at a declared mu of 1.3 -- BELOW tan(55 deg) = 1.4281 -- must slide, and must slide at roughly the rate Coulomb predicts for 1.3 |
@@ -130,26 +137,36 @@ rather than a defect), **78%** work.
 | `phenomenon.body_sleep_disabled`<br/>No body sleep -- a long-idle body still reports contacts | **PASS** | mean_contacts_first_third=4; mean_contacts_last_sixth=4; declared_physicsDisableTime_s=1 | A box left undisturbed for 6 s in a world declaring physicsDisableTime 1 (the ODE auto-sleep knob) must STILL report contacts in the final second |
 | `phenomenon.implicit_ground_plane`<br/>Newton adds an IMPLICIT ground plane at z=0 that no world declares | **absent** | rest_z_m=-75.5585; expected_rest_z_m=None; world_declares_a_floor=False | correct since 2026-08-12: the sphere fell to z=-75.558 m in a world that declares no ground, so no undeclared collision surface was substituted for one it never asked for |
 | `phenomenon.physics_plugin_api`<br/>Custom physics plugin (webots_physics_init/_collide/_step) | **absent** | engine_refused=True; diagnostic_count=1; rc=0 | the engine refused or ignored the declaration: WARNING: WorldInfo : Physics plugins were removed from OmniSim: the WorldInfo.physics field is ignored (this world asks for 'omnibench_plugin'). Delete the field from WorldInfo to silence this warning |
+| `phenomenon.supervisor_external_force`<br/>Supervisor addForce / addForceWithOffset reach the Newton solver | **PASS** | measured_accel_m_s2=5.0001; analytic_accel_m_s2=5; accel_ratio=1 | A constant 10 N applied to a free 2 kg body in a gravity-free world, re-applied every tick through Supervisor addForce, must accelerate it at exactly F/m = 5.0 m/s^2 along the force direction, +/- 5% |
 
 ## Cross-machine — is this matrix a property of OmniSim or of one box?
 
 | machine | GPU | CPU | OS | engine binary | probes | PASS | PARTIAL | BROKEN | absent | no result |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `9722d23d12a3` | NVIDIA GeForce RTX 3060 Laptop GPU | AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD | Windows-11 | `f3f003bf0304bc5e` +3 more | 45 | 32 | 5 | 4 | 4 | 0 |
+| `9722d23d12a3` | NVIDIA GeForce RTX 3060 Laptop GPU | AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD | Windows-11 | `f3f003bf0304bc5e` +5 more | 51 | 45 | 1 | 1 | 4 | 0 |
 | `8ab788c4c833` | NVIDIA RTX A4500 | AMD EPYC 7352 24-Core Processor | Linux-6.8.0-90-generic-x86_64-with-glibc2.35 | `6f7e2217426a2088` | 45 | 31 | 4 | 5 | 4 | 1 |
 
-**45 probes ran on all 2 machines. 43 agree, 2 disagree.**
+**45 probes ran on all 2 machines. 36 agree, 9 disagree.**
 
 | capability | `9722d23d12a3` | `8ab788c4c833` |
 |---|---|---|
+| `device.connector_weld` | **PASS** | **PARTIAL** |
+| `joint.ball_motor` | **PASS** | **BROKEN** |
 | `joint.hinge2_motor` | **PASS** | **BROKEN** |
-| `object.deformable_cloth` | **PARTIAL** | **no result** |
+| `joint.hinge_motor_position` | **PASS** | **PARTIAL** |
+| `joint.hinge_motor_position_unloaded` | **PASS** | **BROKEN** |
+| `object.deformable_cloth` | **PASS** | **no result** |
+| `object.granular_group` | **PASS** | **PARTIAL** |
+| `object.soft_body_fem` | **PASS** | **PARTIAL** |
+| `phenomenon.runtime_node_deletion` | **PASS** | **BROKEN** |
 
 > Every row above is either a machine-dependent capability or a difference between the
 > engine binaries in the table. **It is not publishable as either until it has been
 > attributed.** The attribution lives in the campaign document for these rows, under
 > [`docs/benchmarks/`](.) -- and the raw rows, one directory per machine per date, under
 > [`tests/benchmarks/omnibench/results/`](../../tests/benchmarks/omnibench/results/).
+
+- `9722d23d12a3` additionally ran: `device.accelerometer`, `device.imu_nested_carrier`, `device.propeller_inflow`, `device.propeller_thrust`, `object.granular_bed_mpm`, `phenomenon.supervisor_external_force`
 
 ## Documentation audit
 

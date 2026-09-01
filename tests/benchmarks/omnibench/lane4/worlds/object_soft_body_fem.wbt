@@ -7,7 +7,7 @@
 # family: object
 # claim : Volumetric soft bodies (FEM / MPM)
 # doc   : src/omnisim/nodes/OmSoftBody.cpp
-# docs currently claim this is: degraded (lane 4 raises a finding if the measurement disagrees)
+# docs currently claim this is: works (lane 4 raises a finding if the measurement disagrees)
 
 WorldInfo {
   gravity 9.81
@@ -72,7 +72,7 @@ DEF OMNIBENCH_PROBER Robot {
   controllerArgs [
     "--label=object.soft_body_fem"
     "--duration=3"
-    "--measure=pos:SUBJECT;node_exists:SUBJECT_BLOB"
+    "--measure=pos:SUBJECT;node_exists:SUBJECT_BLOB;particles:SUBJECT_BLOB"
   ]
   supervisor TRUE
   children [

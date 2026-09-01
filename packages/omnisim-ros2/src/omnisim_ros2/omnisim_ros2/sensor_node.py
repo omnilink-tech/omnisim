@@ -25,7 +25,8 @@ own controller is the only source, which is why this node speaks to the bridge
 WHAT IS PUBLISHED, AND WHAT IS DELIBERATELY NOT
 -----------------------------------------------
 Measured on the shipped Husky (2026-08-17, machine ``9722d23d12a3``, CPU
-``mj_step``), sensor by sensor:
+``mj_step``), sensor by sensor -- with the Gyro/Accelerometer verdicts
+superseded by the 2026-09-01 engine fix described below:
 
 =================  ==========================================================
 ``InertialUnit``   **live** -- tracked the supervisor's yaw to 4 decimals
@@ -33,24 +34,47 @@ Measured on the shipped Husky (2026-08-17, machine ``9722d23d12a3``, CPU
 ``GPS``            **live** -- moved 5.59 m during a drive
 ``Lidar``          **live** -- 541 finite returns, changed under motion
 ``PositionSensor`` **live** -- wheel angle reached 34.5 rad
-``Gyro``           **DEAD** -- read exactly ``[0, 0, 0]`` while the robot was
-                   demonstrably rotating (yaw 0 -> 0.136 rad)
-``Accelerometer``  **DEAD** -- never produced a sample at all; ``getValues()``
-                   stays ``None`` indefinitely, so not even gravity is read
+``Gyro``           was dead (read ``[0, 0, 0]`` while rotating); **fixed
+                   engine-side 2026-09-01** (``bde550489``), see below
+``Accelerometer``  was dead (never produced a sample); **fixed engine-side
+                   2026-09-01** (``bde550489``), see below
 =================  ==========================================================
 
-So ``sensor_msgs/Imu`` goes out with a **real orientation** and with its
-angular-velocity and linear-acceleration covariances set to ``-1``. That is not
-a placeholder: ``-1`` in ``[0]`` is the ROS-wide convention for "this component
-is not available", and it is the honest encoding for a component the simulator
-does not measure. Publishing a zero there would claim the robot is not rotating
-and is in free fall, neither of which anything measured.
+THE GYRO/ACCELEROMETER CHANNELS (updated 2026-09-01)
+----------------------------------------------------
+Both devices read their carrier's Newton body handle, which was non-null only
+when that *exact* Solid owned a body -- and the URDF importer's nested IMU
+carrier owns none (the registration fold welds it into its leader). Engine
+commit ``bde550489`` resolves them via the new ``carrierBodyHandle()``
+(the ancestor-walking read welds already used), verified by OmniBench lane-4
+probes ``device.accelerometer`` and ``device.imu_nested_carrier`` (both
+``works``); a body-less Accelerometer now publishes gravity-only instead of
+NaN.
 
-⚠ The yaw RATE is genuinely available -- but from the bridge's own pose
-differencing, not from the gyro -- and it is already published on ``/odom`` as
-``twist.twist.angular.z``. It is deliberately not copied into the Imu message,
-because an ``Imu`` whose fields come from two different sources is exactly the
-kind of quiet blend that makes a later reader trust a number they should not.
+So this node now publishes ``angular_velocity`` and ``linear_acceleration``
+whenever the bridge returns three finite values for the Gyro / Accelerometer,
+with ``covariance[0] = 0.0`` ("available, accuracy unknown"). ``-1`` in
+``[0]`` -- the ROS-wide convention for "this component is not available" --
+is kept for exactly the cases where nothing was measured: the device is
+absent from the robot, still warming up, or returns non-finite values (a
+stale pre-fix engine still yields zeros-or-NaN; the NaN case is caught by
+the finite check, and nothing here can detect a pre-fix gyro's plausible
+constant ``[0,0,0]`` -- pair this node with a current engine).
+
+⚠ VERIFICATION STATUS (2026-09-01): this change is **code-verified against
+the engine fix, not live-verified under a ROS 2 stack** -- no engine or ROS
+process was run for it; the WSL bringup lane owns the live check. A live
+check would assert: ``/imu/data angular_velocity.z`` tracks a commanded turn
+(against the bridge's own ``/odom`` yaw-rate differencing), and
+``linear_acceleration`` has magnitude ~9.81 m/s^2 at rest (gravity, Z-up
+ENU), with both ``covariance[0]`` entries reading ``0.0`` instead of ``-1``.
+
+The bridge-side yaw rate from pose differencing remains on ``/odom`` as
+``twist.twist.angular.z``; it is still never copied into the Imu message --
+the Imu's ``angular_velocity`` comes from the Gyro device or not at all,
+because an ``Imu`` whose fields come from two different sources is exactly
+the kind of quiet blend that makes a later reader trust a number they should
+not.
 
 LIDAR LAYERS
 ------------
@@ -82,6 +106,7 @@ from tf2_ros import StaticTransformBroadcaster
 
 from omnisim_ros2.bridge_client import BridgeClient, DEFAULT_BRIDGE_URL
 from omnisim_ros2.conversions import (
+    finite_triplet,
     lidar_layer_ranges,
     matrix_to_quaternion,
     select_lidar_layer,
@@ -92,6 +117,9 @@ from omnisim_ros2.node_support import guard_timer
 
 # ROS convention: covariance[0] == -1 means "this component is not measured".
 UNAVAILABLE = -1.0
+# ROS convention: an all-zero covariance means "available, accuracy unknown".
+# Used since 2026-09-01 for gyro/accelerometer samples that arrive finite.
+AVAILABLE_UNKNOWN_ACCURACY = 0.0
 
 
 class SensorNode(Node):
@@ -138,6 +166,11 @@ class SensorNode(Node):
         self._local_pub = None
         self._discovered = False
         self._imu_name: str | None = None
+        self._gyro_name: str | None = None
+        self._accel_name: str | None = None
+        # The sensor whose mount names the Imu message's frame_id: the
+        # InertialUnit when present, else the gyro, else the accelerometer.
+        self._imu_frame_sensor: str | None = None
         self._lidar_name: str | None = None
         self._gps_name: str | None = None
         self._chosen_layer: int | None = None
@@ -184,6 +217,10 @@ class SensorNode(Node):
                 continue
             if kind == "InertialUnit" and self._imu_name is None:
                 self._imu_name = name
+            elif kind == "Gyro" and self._gyro_name is None:
+                self._gyro_name = name
+            elif kind == "Accelerometer" and self._accel_name is None:
+                self._accel_name = name
             elif kind == "Lidar" and self._lidar_name is None:
                 self._lidar_name = name
             elif kind == "GPS" and self._gps_name is None:
@@ -193,7 +230,8 @@ class SensorNode(Node):
             if entry.get("mount"):
                 mounts[name] = entry["mount"]
 
-        if self.do_imu and self._imu_name:
+        self._imu_frame_sensor = self._imu_name or self._gyro_name or self._accel_name
+        if self.do_imu and self._imu_frame_sensor:
             self._imu_pub = self.create_publisher(Imu, "imu/data", 10)
         if self.do_scan and self._lidar_name:
             self._scan_pub = self.create_publisher(LaserScan, "scan", 10)
@@ -203,17 +241,26 @@ class SensorNode(Node):
             pass
 
         self._publish_mount_tf(mounts)
-        found = [n for n in (self._imu_name, self._lidar_name, self._gps_name) if n]
+        found = [n for n in (self._imu_name, self._gyro_name, self._accel_name,
+                             self._lidar_name, self._gps_name) if n]
         self.get_logger().info(
             f"sensors: {', '.join(found) if found else 'none usable'} "
             f"(of {len(sensors)} reported)"
         )
-        if self._imu_name:
+        if self._imu_pub is not None:
             self.get_logger().info(
-                "Imu: orientation is REAL; angular_velocity and "
-                "linear_acceleration are published with covariance[0] = -1 "
-                "('not available') because OmniSim's Gyro reads a constant "
-                "zero and its Accelerometer never produces a sample"
+                "Imu components: orientation "
+                + ("REAL (InertialUnit)" if self._imu_name else
+                   "ABSENT (covariance[0] = -1)")
+                + ", angular_velocity "
+                + ("from Gyro when finite (covariance[0] = 0.0)"
+                   if self._gyro_name else "ABSENT (covariance[0] = -1)")
+                + ", linear_acceleration "
+                + ("from Accelerometer when finite (covariance[0] = 0.0)"
+                   if self._accel_name else "ABSENT (covariance[0] = -1)")
+                + ". Gyro/Accelerometer need the 2026-09-01 engine "
+                "(bde550489); an older one yields zeros-or-NaN, and only the "
+                "NaN case is detectable here."
             )
         return True
 
@@ -230,7 +277,11 @@ class SensorNode(Node):
         """
         transforms = []
         for sensor, frame_override in (
-            (self._imu_name, self.imu_frame),
+            # The Imu frame follows the sensor that names it (InertialUnit,
+            # else Gyro, else Accelerometer). On the shipped Husky all three
+            # are emitted into the same carrier Solid, so one mount covers
+            # the whole message.
+            (self._imu_frame_sensor, self.imu_frame),
             (self._lidar_name, self.scan_frame),
             (self._gps_name, ""),
         ):
@@ -316,26 +367,91 @@ class SensorNode(Node):
             self.get_logger().info("bridge is back; resuming sensors")
             self._warned_unreachable = False
 
-    def _publish_imu(self) -> None:
-        body = self._read(self._imu_name)
+    def _read_triplet(self, sensor: str | None):
+        """Read a 3-axis device; ``(values, sim_time)`` or None.
+
+        None covers every "nothing measured" case in one place: no such
+        device, bridge refused, still warming up, or a value that is not
+        exactly three finite floats (the bridge's sanitizer sends null for
+        non-finite entries -- a stale pre-2026-09-01 engine's Accelerometer
+        NaN lands here and is correctly treated as absent, never zeroed).
+        """
+        if not sensor:
+            return None
+        body = self._read(sensor)
         if body is None:
+            return None
+        vals = finite_triplet(body.get("value"))
+        if vals is None:
+            return None
+        return vals, body.get("sim_time")
+
+    def _publish_imu(self) -> None:
+        """One ``sensor_msgs/Imu`` from up to three devices, per component.
+
+        Covariance semantics (2026-09-01, engine fix ``bde550489`` -- see the
+        module docstring; code-verified, NOT live-verified under a ROS stack):
+        each component's ``covariance[0]`` is ``0.0`` ("available, accuracy
+        unknown") exactly when this message's field was populated from a
+        finite device reading, and ``-1`` ("not available") otherwise --
+        device absent, warming up, or non-finite. Costs one HTTP request per
+        carried device per tick (see the publish_rate_hz note above).
+        """
+        # Orientation: the InertialUnit's quaternion, exact ground truth.
+        quat = None
+        stamp_src = None
+        if self._imu_name:
+            body = self._read(self._imu_name)
+            if body is not None:
+                q = body.get("value")
+                if isinstance(q, list) and len(q) == 4 and not any(
+                    v is None for v in q
+                ):
+                    quat = [float(v) for v in q]
+                    stamp_src = body.get("sim_time")
+
+        gyro = self._read_triplet(self._gyro_name)
+        accel = self._read_triplet(self._accel_name)
+        if quat is None and gyro is None and accel is None:
+            # Nothing measured this tick (warm-up, or the bridge stalled a
+            # read). An Imu with every component at -1 says nothing; skip.
             return
-        q = body.get("value")
-        if not isinstance(q, list) or len(q) != 4 or any(v is None for v in q):
-            return
+
         msg = Imu()
-        msg.header.stamp = self._stamp(body.get("sim_time"))
-        msg.header.frame_id = self.frame_for(self._imu_name, self.imu_frame)
-        msg.orientation.x = float(q[0])
-        msg.orientation.y = float(q[1])
-        msg.orientation.z = float(q[2])
-        msg.orientation.w = float(q[3])
-        # Zero covariance == "unknown accuracy", which is true: the orientation
-        # is exact ground truth and nothing here measured an error bound.
-        # -1 in [0] is the ROS convention for "this component is absent", which
-        # is the honest statement for both of these. See the module docstring.
-        msg.angular_velocity_covariance[0] = UNAVAILABLE
-        msg.linear_acceleration_covariance[0] = UNAVAILABLE
+        if quat is not None:
+            msg.orientation.x = quat[0]
+            msg.orientation.y = quat[1]
+            msg.orientation.z = quat[2]
+            msg.orientation.w = quat[3]
+            # Orientation covariance stays all-zero: "available, unknown
+            # accuracy", which is true of exact ground truth.
+        else:
+            msg.orientation_covariance[0] = UNAVAILABLE
+
+        if gyro is not None:
+            vals, t = gyro
+            msg.angular_velocity.x = vals[0]
+            msg.angular_velocity.y = vals[1]
+            msg.angular_velocity.z = vals[2]
+            msg.angular_velocity_covariance[0] = AVAILABLE_UNKNOWN_ACCURACY
+            if stamp_src is None:
+                stamp_src = t
+        else:
+            msg.angular_velocity_covariance[0] = UNAVAILABLE
+
+        if accel is not None:
+            vals, t = accel
+            msg.linear_acceleration.x = vals[0]
+            msg.linear_acceleration.y = vals[1]
+            msg.linear_acceleration.z = vals[2]
+            msg.linear_acceleration_covariance[0] = AVAILABLE_UNKNOWN_ACCURACY
+            if stamp_src is None:
+                stamp_src = t
+        else:
+            msg.linear_acceleration_covariance[0] = UNAVAILABLE
+
+        msg.header.stamp = self._stamp(stamp_src)
+        msg.header.frame_id = self.frame_for(self._imu_frame_sensor, self.imu_frame)
         self._imu_pub.publish(msg)
 
     def _select_layer(self, values: list, layers: int, per: int) -> int:

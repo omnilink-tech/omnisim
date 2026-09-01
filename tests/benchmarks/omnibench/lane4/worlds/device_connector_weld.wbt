@@ -6,7 +6,8 @@
 # probe : device.connector_weld
 # family: device
 # claim : Connector -- runtime rigid attachment (weld) between bodies
-# doc   : AGENTS.md -- welds (Connector / VacuumGripper) went native on Newton
+# doc   : AGENTS.md -- welds (Connector / VacuumGripper) went native on Newton; docs/reference/connector.md (mating rules)
+# docs currently claim this is: works (lane 4 raises a finding if the measurement disagrees)
 
 WorldInfo {
   gravity 9.81
@@ -35,35 +36,75 @@ DEF FLOOR Solid {
   ]
   boundingObject USE FLOOR_SHAPE
 }
+DEF HELD Solid {
+  translation 0 0 1.2
+  name "held"
+  children [
+    DEF HELD_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.3 0.8 0.5 roughness 1 metalness 0 }
+      geometry Box { size 0.1 0.1 0.1 }
+    }
+    Connector {
+      translation 0 0 0.08
+      rotation 0 1 0 -1.5708
+      name "held_conn"
+      model "omnibench"
+      type "passive"
+      distanceTolerance 0.5
+      axisTolerance 3.14
+      rotationTolerance 3.14
+      numberOfRotations 0
+    }
+  ]
+  boundingObject USE HELD_SHAPE
+  physics Physics { density -1 mass 0.5 }
+}
+DEF CONTROL Solid {
+  translation 0.8 0 1.2
+  name "control"
+  children [
+    DEF CONTROL_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.3 0.8 0.5 roughness 1 metalness 0 }
+      geometry Box { size 0.1 0.1 0.1 }
+    }
+    Connector {
+      translation 0 0 0.08
+      rotation 0 1 0 -1.5708
+      name "ctrl_conn"
+      model "omnibench"
+      type "passive"
+      distanceTolerance 0.5
+      axisTolerance 3.14
+      rotationTolerance 3.14
+      numberOfRotations 0
+    }
+  ]
+  boundingObject USE CONTROL_SHAPE
+  physics Physics { density -1 mass 0.5 }
+}
 DEF OMNIBENCH_PROBER Robot {
   translation 0 0 1.5
   name "omnibench_prober"
   controller "omnibench_prober"
   controllerArgs [
     "--label=device.connector_weld"
-    "--duration=2"
-    "--measure=device_exists:conn;pos:OMNIBENCH_PROBER"
-    "--act=connector_lock:conn:0.5"
+    "--duration=2.5"
+    "--measure=device_exists:conn;pos:HELD;pos:CONTROL"
+    "--act=connector_lock:conn:0.1"
   ]
   supervisor TRUE
   children [
     Connector {
+      translation 0 0 -0.2
+      rotation 0 1 0 1.5708
       name "conn"
       model "omnibench"
       type "active"
       autoLock FALSE
       distanceTolerance 0.5
-      axisTolerance 3.15
-      rotationTolerance 3.15
+      axisTolerance 3.14
+      rotationTolerance 3.14
       numberOfRotations 0
-      children [
-        DEF PROBE_SHAPE Shape {
-          appearance PBRAppearance { baseColor 0.3 0.8 0.5 roughness 1 metalness 0 }
-          geometry Box { size 0.1 0.1 0.1 }
-        }
-      ]
-      boundingObject USE PROBE_SHAPE
-      physics Physics { density -1 mass 0.5 }
     }
   ]
   physics NULL

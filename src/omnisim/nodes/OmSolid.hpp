@@ -58,6 +58,16 @@ public:
   // Idempotent across calls -- already-registered solids are skipped.
   static void flushPendingNewtonRegistrations();
 
+  // W1.7 mid-run physics rebuild: capture every registered dynamic body's
+  // live velocity into the pending-velocity replay slots (the FIX-5 path in
+  // flushPendingNewtonRegistrations re-seeds them at re-registration), then
+  // forget all Newton registration state so the next flush re-registers the
+  // whole scene into a fresh Newton world. Called by
+  // OmSimulationWorld::step() when a rebuild was requested; the teardown of
+  // the old Newton world happens in the same breath (OmNewtonBackend).
+  static void captureNewtonVelocitiesForRebuild();
+  static void resetNewtonRegistrationsForRebuild();
+
   // reimplemented public functions
   int nodeType() const override { return WB_NODE_SOLID; }
   void downloadAssets() override;
@@ -165,6 +175,16 @@ public:
   // Newton for collision detection only; the dynamic state lives on
   // Newton and is what callers reading pose / velocity want.
   OmBodyHandle bodyHandle() const;
+  // Fold-aware body handle: bodyHandle() answers only when THIS Solid owns a
+  // body, but under the P3.10c fold a device carrier (a nested Solid with no
+  // joint between it and its parent -- the URDF importer's IMU emission
+  // pattern) owns none: it is rigidly welded to its merge leader / nearest
+  // bodied ancestor, whose body is the physically correct read (omega is
+  // identical throughout the fold, and point-velocity reads pass the
+  // sensor's own world position so the lever arm is right). Resolves via
+  // nearestNewtonBodyIndex() -- the same walk welds and wrench reads anchor
+  // on -- and returns NULL when the whole chain owns no Newton body.
+  OmBodyHandle carrierBodyHandle() const;
   int recognitionColorSize() const;
   const OmRgb &recognitionColor(int index) const;
   // hidden field accessors

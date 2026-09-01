@@ -27,7 +27,9 @@ from __future__ import annotations
 
 import argparse
 import atexit
+import codecs
 import json
+import locale
 import os
 import re
 import signal
@@ -43,6 +45,65 @@ if str(REPO_ROOT) not in sys.path:
 from omnisim.paths import linux_runtime_env  # noqa: E402
 
 
+class IncrementalLogText:
+    """Tail a log file without re-reading it from byte 0 on every poll.
+
+    The 0.5 s poll loop used to `read_text()` the whole engine log each
+    iteration -- O(n^2) disk work over a run once the log reaches megabytes.
+    This keeps the accumulated text in memory and reads only the bytes
+    appended since the last poll, so callers can run the same whole-text
+    regexes as before with identical results. If the file shrinks
+    (truncate-on-reload: OmLog truncates at engine startup), the offset is
+    reset and the text is rebuilt from byte 0. Decoding uses the same
+    default locale encoding + errors="replace" that read_text() used, via
+    an incremental decoder so a multi-byte char split across two polls
+    still decodes correctly.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self._offset = 0
+        self._text = ""
+        self._pending = ""  # a trailing "\r" held back until its "\n" arrives
+        self._encoding = locale.getpreferredencoding(False)
+        self._decoder = codecs.getincrementaldecoder(self._encoding)("replace")
+
+    def _reset(self) -> None:
+        self._offset = 0
+        self._text = ""
+        self._pending = ""
+        self._decoder = codecs.getincrementaldecoder(self._encoding)("replace")
+
+    def read(self) -> str:
+        """Return the file's full text so far ("" if absent), reading only new bytes."""
+        try:
+            if not self.path.exists():
+                self._reset()
+                return ""
+            size = self.path.stat().st_size
+            if size < self._offset:
+                self._reset()
+            if size > self._offset:
+                with open(self.path, "rb") as fh:
+                    fh.seek(self._offset)
+                    chunk = fh.read()
+                self._offset += len(chunk)
+                decoded = self._pending + self._decoder.decode(chunk)
+                self._pending = ""
+                # read_text() translated newlines universally; do the same,
+                # holding back a chunk-final "\r" so a "\r\n" split across two
+                # polls still collapses to one "\n".
+                if decoded.endswith("\r"):
+                    self._pending = "\r"
+                    decoded = decoded[:-1]
+                self._text += decoded.replace("\r\n", "\n").replace("\r", "\n")
+        except OSError:
+            # Mirror the old per-iteration read_text() behaviour: an OSError
+            # poll yields "" for this iteration without poisoning the state.
+            return ""
+        return self._text
+
+
 def find_binary(omnisim_home: Path) -> Path:
     override = os.environ.get("OMNISIM_BINARY")
     if override:
@@ -52,10 +113,9 @@ def find_binary(omnisim_home: Path) -> Path:
         return binary
     if sys.platform == "win32":
         candidates = [
-            # Canonical post-Phase-B name first; legacy omnisim-bin.exe is
-            # the same byte content (alias) but acts as fallback if the
-            # post-build alias step hasn't run on this checkout yet.
-            omnisim_home / "msys64" / "mingw64" / "bin" / "omnisim-bin.exe",
+            # Canonical name first; the legacy webots-named launcher is a
+            # byte-identical copy the build still refreshes, kept as a
+            # fallback for checkouts where only the old name exists.
             omnisim_home / "msys64" / "mingw64" / "bin" / "omnisim-bin.exe",
             omnisim_home / "msys64" / "mingw64" / "bin" / "webots.exe",
         ]
@@ -66,7 +126,6 @@ def find_binary(omnisim_home: Path) -> Path:
         ]
     else:
         candidates = [
-            omnisim_home / "bin" / "omnisim-bin",
             omnisim_home / "bin" / "omnisim-bin",
             omnisim_home / "omnisim",
             omnisim_home / "webots",
@@ -1273,6 +1332,10 @@ def run_once(args) -> int:
     warp_deadline = None
     step_wait_announced = False
     completion_text = ""
+    # Incremental tailers for the 0.5 s poll loop: same text the old full
+    # read_text() calls produced, without re-reading the whole file each poll.
+    completion_tail = IncrementalLogText(completion_path) if completion_path else None
+    log_tail = IncrementalLogText(log_path)
     while True:
         ret = proc.poll()
         if ret is not None:
@@ -1342,11 +1405,7 @@ def run_once(args) -> int:
                 break
         now = time.time()
         if completion_re is not None:
-            try:
-                completion_text = (completion_path.read_text(errors="replace")
-                                   if completion_path.exists() else "")
-            except OSError:
-                completion_text = ""
+            completion_text = completion_tail.read()
             if until_finalized_mode and not warp_in_log:
                 warp_in_log = _WARP_PATH_RE.search(completion_text) is not None
             if completion_re.search(completion_text):
@@ -1409,10 +1468,7 @@ def run_once(args) -> int:
                         print("[headless] Completion grace reached, stopping simulator...")
                     break
         if run_start is None:
-            try:
-                live_content = log_path.read_text(errors="replace") if log_path.exists() else ""
-            except OSError:
-                live_content = ""
+            live_content = log_tail.read()
             if _NEWTON_STEP_RE.search(live_content):
                 run_start = now
                 print("[headless] First physics step observed; starting duration clock.")
@@ -1448,6 +1504,19 @@ def run_once(args) -> int:
                 if now < warp_deadline:
                     time.sleep(0.5)
                     continue
+            # ── AND EXTENDED WHILE THE POST-FINALIZE STEP WAIT IS LIVE ───────
+            # The branch above only covers the PRE-finalize case. After
+            # finalize, the step wait announces a device-sized budget (180 s on
+            # cuda) -- but this ceiling used to fire anyway, so every healthy
+            # mujoco_warp world FAILED the bare load check: finalize ~9 s,
+            # first step ~90-99 s (measured, machine 9722d23d12a3, warm cache),
+            # ceiling 30 s. Honour the announced deadline; the wait still ends
+            # the instant the step lands or a controller failure is reported.
+            if until_finalized_mode and completion_at is not None and step_seen_at is None \
+                    and step_deadline is not None and now < step_deadline \
+                    and not controller_start_failures(completion_text):
+                time.sleep(0.5)
+                continue
             print("[headless] Duration reached, stopping simulator...")
             # --until-finalized asked to stop early and did not get to. Say so,
             # because the failure mode is SILENT: the run still PASSes, it just

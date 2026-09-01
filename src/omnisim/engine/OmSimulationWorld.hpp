@@ -54,6 +54,15 @@ public:
 
   virtual void step();
 
+  // W1.7 mid-run physics rebuild: tear down the live Newton world and
+  // re-register the whole scene (current poses, replayed velocities) on the
+  // NEXT step, so runtime-spawned nodes gain physics and runtime-deleted
+  // nodes lose it. Validated synchronously: returns 0 and arms the rebuild,
+  // or -1 with a reason in *whyNot (no Newton world running; or the world
+  // carries Cloth/SoftBody/GranularBed particles, which re-register from
+  // their AUTHORED state and would snap back).
+  int requestNewtonRebuild(QString *whyNot = nullptr);
+
 public slots:
   void modeChanged();
   void rayTracingEnabled();
@@ -71,6 +80,7 @@ protected slots:
   void storeAddedNodeIfNeeded(OmNode *node) override;
 
 private:
+  bool mNewtonRebuildRequested = false;
   OmSimulationCluster *mCluster;
   OmOdeContext *mOdeContext;
   QTimer *mTimer;

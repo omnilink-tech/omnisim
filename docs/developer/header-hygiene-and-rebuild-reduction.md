@@ -48,7 +48,7 @@ Good:
 
 - `class OmNode;`
 - `class QImage;`
-- `class OmWrenTextureOverlay;`
+- `class OmWgpuRenderTarget;`
 
 Bad:
 
@@ -60,7 +60,7 @@ Try hard to keep these out of lower-level headers:
 
 - `QtWidgets`
 - `QtOpenGL`
-- WREN-specific headers
+- renderer implementation headers (`src/omnisim/render`, wgpu-native internals)
 - physics-backend implementation details (`src/omnisim/physics`, Newton/MuJoCo internals)
 - asset-decoding helpers
 
@@ -212,7 +212,7 @@ The fourth step matters. A refactor only counts as successful if the next nearby
 Reject or rework changes that:
 
 - add `QtWidgets` or scene-tree includes to runtime-facing headers
-- add WREN implementation headers to parser or world headers
+- add renderer implementation headers (`src/omnisim/render`) to parser or world headers
 - expand a global utility header because "it is already included everywhere"
 - add non-trivial inline methods to common node or world headers
 - rely on accidental transitive includes

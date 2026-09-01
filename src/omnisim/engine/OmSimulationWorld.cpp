@@ -16,6 +16,7 @@
 
 #include "OmSimulationWorld.hpp"
 
+#include "OmBaseNode.hpp"
 #include "OmBoundingSphere.hpp"
 #include "OmDownloadManager.hpp"
 #include "OmLog.hpp"
@@ -34,6 +35,7 @@
 #include "OmPreferences.hpp"
 #include "OmRandom.hpp"
 #include "OmRobot.hpp"
+#include "OmSFString.hpp"
 #include "OmSimulationCluster.hpp"
 #include "OmSimulationState.hpp"
 #include "OmSoundEngine.hpp"
@@ -98,6 +100,46 @@ OmSimulationWorld::OmSimulationWorld(OmTokenizer *tokenizer) :
   emit worldLoadingStatusHasChanged(tr("Loading plugins (if any)"));
 
   setIsLoading(true);
+  // Headless texture-decode gate: decide BEFORE finalize whether any node in
+  // this world needs decoded texture PIXELS for its simulation output --
+  // Camera devices (offscreen wgpu render), infra-red DistanceSensor (reads
+  // the red channel of the hit surface, see OmDistanceSensor::updateRaySetup
+  // / computeValue), and Pen (paints into the texture). Everything else only
+  // needs textures to DRAW, which a --no-rendering / --no-window process never
+  // does; OmImageTexture::updateUrl consults OmWorld::needsTextures() through
+  // this flag and skips the decode during loading. One O(nodes) pass, the same
+  // subNodes(true) walk OmNodeUtilities::hasDescendantNodesOfType uses. The
+  // DistanceSensor `type` field is an ordinary SFString parsed at
+  // construction, so it is resolvable here, pre-finalize; the string->type
+  // mapping below mirrors OmDistanceSensor::updateRaySetup exactly.
+  {
+    bool needsTextures = false;
+    const QList<OmNode *> allNodes = root()->subNodes(true);
+    foreach (const OmNode *n, allNodes) {
+      const OmBaseNode *baseNode = dynamic_cast<const OmBaseNode *>(n);
+      if (baseNode == NULL)
+        continue;
+      const int type = baseNode->nodeType();
+      if (type == WB_NODE_CAMERA || type == WB_NODE_PEN) {
+        needsTextures = true;
+        break;
+      }
+      if (type == WB_NODE_DISTANCE_SENSOR) {
+        const OmSFString *const typeField = n->findSFString("type");
+        const QString typeValue = typeField ? typeField->value() : QString();
+        if (typeValue.compare("infra-red", Qt::CaseInsensitive) == 0 ||
+            typeValue.compare("infrared", Qt::CaseInsensitive) == 0) {
+          needsTextures = true;
+          break;
+        }
+      }
+    }
+    setNeedsTextures(needsTextures);
+    if (!needsTextures && OmSimulationState::instance()->startedWithoutRendering() &&
+        !qEnvironmentVariableIsSet("OMNISIM_EAGER_TEXTURE_DECODE"))
+      OmLog::info(tr("headless load: eager texture decode skipped (no Camera/IR-sensor/Pen in world). "
+                     "OMNISIM_EAGER_TEXTURE_DECODE=1 reverts."));
+  }
   root()->finalize();
   finalize();
   setIsLoading(false);
@@ -190,6 +232,26 @@ void OmSimulationWorld::step() {
   if (timeStep != mOldTimeStep && OmSimulationState::instance()->isRealTime()) {
     mOldTimeStep = timeStep;
     mTimer->start(timeStep);
+  }
+
+  // W1.7 mid-run physics rebuild -- consumed BEFORE physicsStepStarted so
+  // any producer that registers from that signal would land in the fresh
+  // world (v1 refuses particle worlds at request time regardless). The
+  // rebuild completes and the world steps within this same call: teardown
+  // here, re-registration in the flush below, finalize right after it.
+  if (mNewtonRebuildRequested) {
+    mNewtonRebuildRequested = false;
+    OmNewtonBackend *const nb =
+      static_cast<OmNewtonBackend *>(OmPhysicsBackendRegistry::newtonBackend());
+    if (nb != nullptr && nb->isAvailable()) {
+      OmLog::info(QObject::tr("[OmNewtonBackend] mid-run physics rebuild: tearing down the live "
+                              "Newton world and re-registering the scene at its CURRENT poses."));
+      OmSolid::captureNewtonVelocitiesForRebuild();
+      nb->teardownWorld();
+      OmSolid::resetNewtonRegistrationsForRebuild();
+      OmBasicJoint::requeueAllNewtonJointsForRebuild();
+      OmSolid::bumpNewtonFlushGeneration();
+    }
   }
 
   emit physicsStepStarted();
@@ -368,6 +430,31 @@ void OmSimulationWorld::step() {
     mSimulationHasRunAfterSave = true;
     emit simulationStartedAfterSave(true);
   }
+}
+
+int OmSimulationWorld::requestNewtonRebuild(QString *whyNot) {
+  OmNewtonBackend *const nb =
+    static_cast<OmNewtonBackend *>(OmPhysicsBackendRegistry::newtonBackend());
+  const auto refuse = [whyNot](const QString &why) {
+    if (whyNot != nullptr)
+      *whyNot = why;
+    return -1;
+  };
+  if (nb == nullptr || !nb->isAvailable())
+    return refuse(QObject::tr("no Newton backend is available in this process"));
+  if (!nb->isWorldRunning())
+    return refuse(QObject::tr("the Newton world is not running (still building, or it never "
+                              "finalised -- a world with no physics cannot be rebuilt)"));
+  if (nb->particleCount() > 0)
+    return refuse(QObject::tr("this world simulates Cloth/SoftBody particles, which re-register "
+                              "from their AUTHORED rest state -- a mid-run rebuild would snap "
+                              "them back. Reload the world instead."));
+  if (nb->granularBedCount() > 0)
+    return refuse(QObject::tr("this world simulates a GranularBed, which re-registers from its "
+                              "AUTHORED state -- a mid-run rebuild would reset it. Reload the "
+                              "world instead."));
+  mNewtonRebuildRequested = true;
+  return 0;
 }
 
 void OmSimulationWorld::pauseStepTimer() {

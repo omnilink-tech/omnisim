@@ -133,6 +133,11 @@ public:
   // True once addGranularBed() has succeeded, i.e. the bed is being simulated.
   // False means inert AND invisible -- there is no rest pose to draw.
   bool isSimulated() const { return mParticleStart >= 0; }
+  // This bed's half-open particle range [start, end) in the Newton world's
+  // SHARED particle arrays (start is -1 when not simulated). Consumed by the
+  // supervisor particle-stats verb (C_SUPERVISOR_NODE_PARTICLE_STATS).
+  int particleRangeStart() const { return mParticleStart; }
+  int particleRangeEnd() const { return mParticleEnd; }
 
   // ---- THE wgpu RENDER SURFACE --------------------------------------------
   //

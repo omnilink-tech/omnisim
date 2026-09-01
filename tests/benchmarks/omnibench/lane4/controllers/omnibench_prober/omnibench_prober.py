@@ -28,6 +28,16 @@ Measurement specs (--measure, semicolon-separated)
                                                        -> joint_DEF   [N]
     sensor:NAME         a device on THIS robot         -> sensor_NAME [N] or [N][k]
     contacts:DEF        len(getContactPoints())        -> contacts_DEF[N]
+    particles:DEF       Node.getParticleStats(0)       -> particles_DEF [N]{dict}
+                        per-recorded-step particle stats (stride 0 = stats
+                        only, no sample dump): {status, count, min[3], max[3],
+                        centroid[3], non_finite}. getattr-guarded: a
+                        libController without the binding records None + ONE
+                        meta.problems entry, so the scorer lands on
+                        `inconclusive`, never `broken`. A frame whose status
+                        is < 0 is recorded AS IS -- the status code is what
+                        separates the INCONCLUSIVE causes (-5 GranularGroup
+                        CUDA-inert, -9 stale libController).
     node_exists:DEF     one-shot bool                  -> node_exists_DEF
     device_exists:NAME  one-shot bool                  -> device_exists_NAME
     camera:NAME         one-shot image stats           -> camera_NAME {dict}
@@ -46,6 +56,14 @@ ONE-SHOT — fire once, the first step at which t >= T:
                                   torque control)
     delete_node:DEF:T             supervisor remove() of DEF at t >= T
     connector_lock:NAME:T         Connector.lock() at t >= T
+    rebuild_physics:T             supervisor.simulationRebuildPhysics() at
+                                  t >= T (the runtime-mutation purge verb,
+                                  2026-09-01). getattr-guarded: a
+                                  libController without the binding records a
+                                  problem and publishes
+                                  acted_rebuild_physics.binding_present=False
+                                  so the assertion can name the stale
+                                  libController instead of scoring the engine.
 
 PERSISTENT — re-applied EVERY step from T to the end of the run:
 
@@ -164,6 +182,11 @@ class Prober:
         self.joint_fields = {}
         self.sensor_names = []
         self.contact_defs = []
+        self.particle_defs = []
+        #: DEFs whose getParticleStats read already recorded a problem, so a
+        #: missing binding is reported ONCE, not once per recorded step (750
+        #: identical strings is a recording, not a diagnosis).
+        self._particle_flagged = set()
         for spec in self.measures:
             kind, _, rest = spec.partition(":")
             if kind in ("pos", "quat"):
@@ -192,6 +215,10 @@ class Prober:
                 self.nodes.setdefault(rest, self.node(rest))
                 self.contact_defs.append(rest)
                 self.series["contacts_%s" % rest] = []
+            elif kind == "particles":
+                self.nodes.setdefault(rest, self.node(rest))
+                self.particle_defs.append(rest)
+                self.series["particles_%s" % rest] = []
             elif kind == "node_exists":
                 self.oneshot["node_exists_%s" % rest] = (
                     self.sv.getFromDef(rest) is not None)
@@ -224,6 +251,8 @@ class Prober:
                 elif parts[0] == "connector_lock":
                     self.actions.append((float(parts[2]), parts[0], parts[1],
                                          None))
+                elif parts[0] == "rebuild_physics":
+                    self.actions.append((float(parts[1]), parts[0], "", None))
                 elif parts[0] == "add_force":
                     self.persistent.append(
                         (float(parts[5]), parts[0], parts[1],
@@ -293,6 +322,52 @@ class Prober:
             self.problem("reading device %r (%s) raised %r" % (name, cls, exc))
         return None
 
+    def read_particles(self, defname):
+        """One getParticleStats frame for DEF, stats only (stride 0), or None.
+
+        Written AGAINST the 2026-09-01 supervisor binding
+        Node.getParticleStats(sample_stride=0) -> {'status', 'count', 'min',
+        'max', 'centroid', 'non_finite', 'sample'} and getattr-guarded for the
+        libControllers that predate it: a missing binding is a recorded
+        problem, never a crash and never a fake number, per the robustness
+        contract in the module docstring. A frame whose status is < 0 is kept
+        AS RECORDED so the scorer can separate the refusal causes (-5 =
+        GranularGroup CUDA-inert, -9 = stale libController). The (empty at
+        stride 0) 'sample' array is dropped so 750 recorded frames stay a
+        recording, not a dump.
+        """
+        n = self.nodes.get(defname)
+        if n is None:
+            return None
+        fn = getattr(n, "getParticleStats", None)
+        if fn is None:
+            if defname not in self._particle_flagged:
+                self._particle_flagged.add(defname)
+                self.problem("Node.getParticleStats missing on %r -- this "
+                             "libController predates the particle-stats "
+                             "binding (stale libController; rebuild the "
+                             "controller libs / run `omnisim doctor`)"
+                             % defname)
+            return None
+        try:
+            try:
+                st = fn(0)         # sample_stride=0 -> stats only, no sample
+            except TypeError:
+                st = fn()
+        except Exception as exc:
+            if defname not in self._particle_flagged:
+                self._particle_flagged.add(defname)
+                self.problem("getParticleStats on %r raised %r"
+                             % (defname, exc))
+            return None
+        if isinstance(st, dict):
+            return {k: v for k, v in st.items() if k != "sample"}
+        if defname not in self._particle_flagged:
+            self._particle_flagged.add(defname)
+            self.problem("getParticleStats on %r returned %s, not a dict"
+                         % (defname, type(st).__name__))
+        return None
+
     def record(self, t):
         self.t.append(t)
         for defname, n in self.nodes.items():
@@ -323,6 +398,9 @@ class Prober:
                     self.problem("getContactPoints on %r raised %r"
                                  % (defname, exc))
             self.series["contacts_%s" % defname].append(c)
+        for defname in self.particle_defs:
+            self.series["particles_%s" % defname].append(
+                self.read_particles(defname))
 
     # -- actions ----------------------------------------------------------
     def fire(self, t):
@@ -368,6 +446,32 @@ class Prober:
                     if dev is not None:
                         dev.lock()
                         self.log("t=%.3f lock() on %r" % (t, target))
+                elif kind == "rebuild_physics":
+                    # Premise record FIRST, so the assertion can tell "the
+                    # verb is missing from this libController" (stale, ->
+                    # inconclusive) from "the verb ran and changed nothing"
+                    # (-> a capability verdict). Same acted_* pattern the
+                    # persistent wrenches use.
+                    slot = {"requested_t": when, "binding_present": None,
+                            "called": False, "error": None}
+                    self.oneshot["acted_rebuild_physics"] = slot
+                    fn = getattr(self.sv, "simulationRebuildPhysics", None)
+                    slot["binding_present"] = fn is not None
+                    if fn is None:
+                        self.problem(
+                            "supervisor.simulationRebuildPhysics missing -- "
+                            "this libController predates the rebuild verb "
+                            "(2026-09-01; stale libController, rebuild the "
+                            "controller libs / run `omnisim doctor`)")
+                    else:
+                        try:
+                            fn()
+                            slot["called"] = True
+                            self.log("t=%.3f simulationRebuildPhysics()" % t)
+                        except Exception as exc:
+                            slot["error"] = repr(exc)
+                            self.problem(
+                                "simulationRebuildPhysics() raised %r" % exc)
             except Exception as exc:
                 self.problem("action %s on %r raised %r" % (kind, target, exc))
         self.fire_persistent(t)

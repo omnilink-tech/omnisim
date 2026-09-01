@@ -308,6 +308,28 @@ def lidar_layer_ranges(
     return out
 
 
+def finite_triplet(value: Any) -> list[float] | None:
+    """Coerce a 3-axis sensor reading to three finite floats, or ``None``.
+
+    The gate for publishing ``Imu.angular_velocity`` / ``linear_acceleration``
+    as *measured* (covariance[0] = 0.0) rather than *absent* (-1). Defensive on
+    purpose: the bridge's JSON sanitizer maps every non-finite float to
+    ``null``, so a device that is enabled but not yet sampling — or a stale
+    pre-2026-09-01 engine whose Accelerometer still yields NaN — arrives here
+    as ``None`` or as a vector containing nulls. Anything short of exactly
+    three finite numbers is "not measured", and is never zeroed.
+    """
+    if not isinstance(value, (list, tuple)) or len(value) != 3:
+        return None
+    try:
+        out = [float(v) for v in value]
+    except (TypeError, ValueError):
+        return None
+    if not all(math.isfinite(v) for v in out):
+        return None
+    return out
+
+
 def sanitize_frame_id(name: str) -> str:
     """Make a DEF name safe to use as a TF frame id.
 

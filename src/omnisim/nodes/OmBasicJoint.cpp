@@ -59,6 +59,49 @@ namespace {
     return list;
   }
 
+  // W1.7: these registries are keyed by NEWTON JOINT INDICES, which a mid-run
+  // physics rebuild invalidates wholesale. File-scope (not function-local
+  // statics) so requeueAllNewtonJointsForRebuild can clear them; stale indices
+  // from the previous Newton world would otherwise misfire on reused slots.
+  QSet<int> &forceModeJointIndices() {
+    static QSet<int> s;
+    return s;
+  }
+  QSet<int> &forceModeAxes() {
+    static QSet<int> s;
+    return s;
+  }
+  QSet<int> &loggedNonZeroJointIndices() {
+    static QSet<int> s;
+    return s;
+  }
+
+  // W1.4 servo promotion. limitlessNewtonJointIndices: 1-DoF joints the
+  // classifier built as VELOCITY WHEELS (ke=0, kd=500) because they declare no
+  // position limits -- the ONLY population promotion may touch.
+  // promotedServoJointIndices: the subset currently holding servo gains
+  // because the controller sent a finite setPosition over the wire. Both are
+  // keyed by NEWTON JOINT INDICES -> cleared by the W1.7 rebuild requeue.
+  QSet<int> &limitlessNewtonJointIndices() {
+    static QSet<int> s;
+    return s;
+  }
+  QSet<int> &promotedServoJointIndices() {
+    static QSet<int> s;
+    return s;
+  }
+
+  // OMNISIM_NEWTON_PROMOTE_SERVO -- value-parsed, default ON. "0/false/off/no"
+  // restores the pre-2026-09-01 behaviour (setPosition() on a limit-less
+  // motor is ignored for ever).
+  bool newtonPromoteServoEnabled() {
+    static const bool on = []() {
+      const QString v = QString::fromUtf8(qgetenv("OMNISIM_NEWTON_PROMOTE_SERVO")).trimmed().toLower();
+      return !(v == "0" || v == "false" || v == "off" || v == "no");
+    }();
+    return on;
+  }
+
   // Internal parity plan, item W1.4. A motor whose joint declares no position limits
   // is configured as a VELOCITY WHEEL (ke=0, kd=500), so setPosition() on it
   // does nothing. That is a defensible default -- husky/jackal/rover wheels are
@@ -194,7 +237,7 @@ void OmBasicJoint::pushNewtonAxisTarget(OmNewtonBackend *newton, int jointIdx, i
   // jointIdx * 8 + dof: no joint here has more than 3 DoF, so 8 leaves headroom
   // and keeps this a plain int set (the 1-DoF registry next door is keyed by the
   // bare joint index and is a separate set, so the two never collide).
-  static QSet<int> sForceModeAxes;
+  QSet<int> &sForceModeAxes = forceModeAxes();
   const int axisKey = jointIdx * 8 + dof;
   if (motor->userControl()) {
     newton->setJointForceDof(jointIdx, dof, motor->rawInput());
@@ -314,7 +357,6 @@ void OmBasicJoint::postFinalize() {
   // propagate to all generated child Solids -- the husky URDF expands
   // into chassis + 4 wheel Solids whose own fields are default-"ode",
   // so we'd miss them if we only checked the local field.
-  OmSolid *const parent = solidParent();
   // OMNISIM_NEWTON_KINEMATIC: a joint whose endPoint has NO Physics node is a
   // KINEMATIC joint -- the ENGINE animates it (OmMotor::runKinematicControl ->
   // updatePosition writes the endpoint's fields; there is no dJoint under ODE
@@ -324,13 +366,9 @@ void OmBasicJoint::postFinalize() {
   // endpoint registration) trip enforceNewtonJointEndpoints' FATAL, so the
   // joint is simply never queued. Flag OFF = unchanged: such articulations
   // are gated to ODE upstream and never resolve to Newton anyway.
-  const bool kinematicEndpoint =
-      s != nullptr && s->physics() == nullptr && OmSolid::newtonKinematicNativeEnabled();
-  if (parent != nullptr && s != nullptr && !kinematicEndpoint &&
-      (dynamic_cast<OmHingeJoint *>(this) != nullptr ||
-       dynamic_cast<OmSliderJoint *>(this) != nullptr) &&
-      parent->effectivePhysicsBackendName() != QStringLiteral("ode") &&
-      s->effectivePhysicsBackendName() != QStringLiteral("ode")) {
+  // (The full eligibility predicate, endpoint checks included, lives in
+  // wantsNewtonRegistration so the W1.7 rebuild requeue shares it.)
+  if (wantsNewtonRegistration()) {
     pendingNewtonJoints().append(QPointer<OmBasicJoint>(this));
     // P5 hang fix 2026-05-28: the per-joint OmLog::info that the
     // concurrent G1 session added accumulates per-message cost during
@@ -383,6 +421,43 @@ static void enforceNewtonJointEndpoints(const OmSolid *parent, const OmSolid *ch
               "\"ode\" and OMNISIM_ALLOW_ODE_FALLBACK=1 no longer select anything.)")
           .arg(parentMissing ? QStringLiteral("parent") : QStringLiteral("child"))
           .arg(missing != nullptr ? missing->name() : QStringLiteral("?")));
+}
+
+bool OmBasicJoint::wantsNewtonRegistration() const {
+  // The exact predicate postFinalize used inline before W1.7 (see the
+  // comment there): endpoint + parent Solids present, not a kinematic
+  // (no-Physics) endpoint under native-kinematic mode, a Hinge/Slider
+  // family joint (the OmHingeJoint cast deliberately captures Hinge2 and
+  // Ball, which inherit from it), and neither side pinned to the retired
+  // "ode" backend.
+  OmSolid *const s = solidEndPoint();
+  OmSolid *const parent = solidParent();
+  const bool kinematicEndpoint =
+      s != nullptr && s->physics() == nullptr && OmSolid::newtonKinematicNativeEnabled();
+  return parent != nullptr && s != nullptr && !kinematicEndpoint &&
+         (dynamic_cast<const OmHingeJoint *>(this) != nullptr ||
+          dynamic_cast<const OmSliderJoint *>(this) != nullptr) &&
+         parent->effectivePhysicsBackendName() != QStringLiteral("ode") &&
+         s->effectivePhysicsBackendName() != QStringLiteral("ode");
+}
+
+void OmBasicJoint::requeueAllNewtonJointsForRebuild() {
+  pendingNewtonJoints().clear();
+  registeredNewtonMotorizedJoints().clear();
+  forceModeJointIndices().clear();
+  forceModeAxes().clear();
+  loggedNonZeroJointIndices().clear();
+  limitlessNewtonJointIndices().clear();
+  promotedServoJointIndices().clear();
+  for (const OmSolid *solid : OmSolid::solids()) {
+    for (OmBasicJoint *const j : solid->jointChildren()) {
+      if (j == nullptr)
+        continue;
+      j->mNewtonJointIndex = -1;
+      if (j->wantsNewtonRegistration())
+        pendingNewtonJoints().append(QPointer<OmBasicJoint>(j));
+    }
+  }
 }
 
 void OmBasicJoint::flushPendingNewtonRegistrations() {
@@ -620,6 +695,7 @@ void OmBasicJoint::flushPendingNewtonRegistrations() {
     // limb from a velocity-driven wheel. See the control-mode-aware block
     // following the limit computation.
     double targetKe = 0.0;
+    bool limitlessWheel = false;  // W1.4: set by the velocity-wheel branch below
     double targetKd = 0.0;
     // P3.10m: forward URDF effort + velocity + position limits to
     // Newton so the solver clips actuator force/velocity at physically
@@ -769,12 +845,15 @@ void OmBasicJoint::flushPendingNewtonRegistrations() {
         // warning. The warning below is the shipped half.
         targetKe = 0.0;
         targetKd = 500.0;
+        limitlessWheel = true;
         if (shouldWarnLimitlessServoOnce(motor))
           OmLog::warning(QObject::tr(
                            "Joint motor '%1' declares no position limits, so this physics backend configures it as a "
                            "VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. "
                            "If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a "
-                           "minStop/maxStop) and it will be position-controlled.")
+                           "minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite "
+                           "setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; "
+                           "OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)")
                            .arg(motor->deviceName()),
                          false, OmLog::ODE);
       }
@@ -799,6 +878,8 @@ void OmBasicJoint::flushPendingNewtonRegistrations() {
               effortLimit, velocityLimit,
               childRelRot.x(), childRelRot.y(), childRelRot.z(), childRelRot.w());
     p->mNewtonJointIndex = idx;
+    if (idx >= 0 && motor != nullptr && limitlessWheel)
+      limitlessNewtonJointIndices().insert(idx);
     if (idx >= 0) {
       OmLog::info(QString("[OmNewtonBackend] hinge joint %1 (parent=body %2, child=body %3) "
                           "axis=(%4, %5, %6) anchor=(%7, %8, %9) "
@@ -837,12 +918,12 @@ void OmBasicJoint::pushNewtonMotorTargets() {
   // each registered joint. One-shot per joint for the lifetime of the
   // process; helps verify the controller -> motor -> Newton chain is
   // wired without spamming the log every tick.
-  static QSet<int> sLoggedNonZeroJointIndices;
+  QSet<int> &sLoggedNonZeroJointIndices = loggedNonZeroJointIndices();
   // Newton joint indices currently driven by a controller-set force. Tracked
   // so that LEAVING force mode can withdraw that force: nothing else clears
   // control.joint_f, and a stale one silently overpowers the position
   // controller that replaced it.
-  static QSet<int> sForceModeJointIndices;
+  QSet<int> &sForceModeJointIndices = forceModeJointIndices();
 
   for (const QPointer<OmBasicJoint> &p : registeredNewtonMotorizedJoints()) {
     if (p.isNull())
@@ -903,6 +984,51 @@ void OmBasicJoint::pushNewtonMotorTargets() {
     // target. Bridge it here: compute a PD-style velocity command from
     // the position error so the Newton joint actually converges on the
     // requested angle.
+    // W1.4 servo promotion (2026-09-01): a limit-less joint was built as a
+    // velocity wheel (ke=0), so a controller finite setPosition() had no
+    // authority. The wire-level latch (OmMotor::controllerCommandedFinitePosition,
+    // set ONLY by C_MOTOR_SET_POSITION -- never by reset or pre-configure
+    // moves) is the promotion trigger; setPosition(inf) demotes back to the
+    // exact wheel gains. The gain write goes into mj_model actuator
+    // gainprm/biasprm directly (the model-array route is baked at conversion
+    // and does nothing post-finalize).
+    if (newtonPromoteServoEnabled() && limitlessNewtonJointIndices().contains(p->mNewtonJointIndex)) {
+      const int jIdx = p->mNewtonJointIndex;
+      const bool promoted = promotedServoJointIndices().contains(jIdx);
+      const bool wants = motor->controllerCommandedFinitePosition();
+      if (wants && !promoted) {
+        const double effort = motor->maxForceOrTorque();
+        const double servoKe = (effort > 0.0) ? effort * 10.0 : 20.0;
+        const double servoKd = (effort > 0.0) ? effort * 0.5 : 3.0;
+        const int rc = newton->setJointGains(jIdx, 0, servoKe, servoKd);
+        if (rc == 0) {
+          promotedServoJointIndices().insert(jIdx);
+          // Un-cached push: the IfChanged cache may already hold this target.
+          newton->setJointTargetPosition(jIdx, motor->targetPosition());
+          OmLog::info(QString("[OmNewtonBackend] motor '%1' (joint %2) received a finite setPosition from its "
+                              "controller; re-configuring it with position-servo gains ke=%3 kd=%4 "
+                              "(was a ke=0 velocity wheel; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables).")
+                          .arg(motor->deviceName())
+                          .arg(jIdx)
+                          .arg(servoKe)
+                          .arg(servoKd));
+        } else {
+          static QSet<int> sWarnedUnsupported;
+          if (!sWarnedUnsupported.contains(jIdx)) {
+            sWarnedUnsupported.insert(jIdx);
+            OmLog::warning(QString("[OmNewtonBackend] motor '%1' (joint %2): servo promotion is not supported on "
+                                   "this solver path (rc=%3; the GPU path bakes gains) -- setPosition() on this "
+                                   "limit-less motor stays IGNORED. Declare minPosition/maxPosition instead.")
+                               .arg(motor->deviceName())
+                               .arg(jIdx)
+                               .arg(rc));
+          }
+        }
+      } else if (!wants && promoted) {
+        if (newton->setJointGains(jIdx, 0, 0.0, 500.0) == 0)
+          promotedServoJointIndices().remove(jIdx);
+      }
+    }
     double target;
     if (motor->isPIDPositionControl()) {
       newton->setJointTargetPositionIfChanged(p->mNewtonJointIndex, motor->targetPosition());

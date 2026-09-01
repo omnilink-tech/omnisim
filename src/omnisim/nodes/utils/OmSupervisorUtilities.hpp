@@ -119,6 +119,13 @@ private:
   QVector<double> mSolveIkRotations;  // empty or 4 * n
   QVector<double> mSolveIkToolOffset; // empty or 3
   int mSolveIkIterations;
+  // wb_supervisor_node_get_particle_stats pending request
+  // (C_SUPERVISOR_NODE_PARTICLE_STATS). Decoded in handleMessage, answered
+  // (always -- failures included, so the libController side never blocks on a
+  // missing answer) in writeAnswer.
+  bool mParticleStatsRequested;
+  OmNode *mParticleStatsNode;      // Cloth/SoftBody/GranularBed/GranularGroup, or NULL
+  int mParticleStatsSampleStride;  // 0 = stats only
   QString mNodeExportString;
   bool mNodeExportStringRequest;
   bool mIsProtoRegenerated;
@@ -147,6 +154,7 @@ private:
   void pushRelativePoseToStream(OmDataStream &stream, OmPose *fromNode, OmPose *toNode);
   void pushContactPointsToStream(OmDataStream &stream, OmSolid *solid, int solidId, bool includeDescendants);
   void pushSolveIkToStream(OmDataStream &stream);
+  void pushParticleStatsToStream(OmDataStream &stream);
   void initControllerRequests();
   void deleteControllerRequests();
   void writeNode(OmDataStream &stream, const OmBaseNode *baseNode, int messageType);

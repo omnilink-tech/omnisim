@@ -2,26 +2,20 @@
 
 This guide is for developers working on the renderer, sensor rendering, and overall visual quality of the simulator.
 
+> ✅ **WREN was DELETED on 2026-08-23** (commit `976b9449d`: `src/wren` + `include/wren` + `src/omnisim/wren`). wgpu-native (Vulkan / D3D12 / Metal) is the only renderer, compiled into the engine from `src/omnisim/render/`. WREN-era problem descriptions below are kept only where the underlying issue (CPU-side overlay work, instrumentation gaps) still exists on the wgpu path. (Banner added 2026-09-01.)
+
 ## Rendering Stack
 
-The rendering path is split across three layers:
+The rendering path is split across two layers:
 
-### `src/wren`
+### `src/omnisim/render`
 
-Renderer core:
+The wgpu backend:
 
-- scene graph primitives
-- cameras and framebuffers
-- textures, materials, shaders
-- mesh and GPU resource management
-
-### `src/omnisim/wren`
-
-Bridge layer:
-
-- maps simulator concepts to WREN objects
-- owns rendering context integration
-- handles overlays and simulator-specific rendering behavior
+- surface/context management (`OmWgpuSurface`, `OmVulkanBackend`)
+- render targets and framebuffers (`OmWgpuRenderTarget`)
+- shaders (`OmWgpuShaders`), mesh and texture caches (`OmWgpuMeshCache`, `OmWgpuTextureCache`)
+- adapters mapping simulator assets to GPU resources (`OmWgpuMeshAdapter`, `OmWgpuImageAdapter`)
 
 ### `src/omnisim/gui` and sensor nodes
 
@@ -73,9 +67,9 @@ Why it matters:
 - sensor-heavy worlds pay extra CPU and GPU-transfer cost
 - camera-recognition overlays and depth-display paths can dominate frame cost
 
-### 4. Performance instrumentation is incomplete under WREN
+### 4. Performance instrumentation is incomplete
 
-The performance log still has an average FPS field, but the WREN-side hook that should feed it is disabled.
+The performance log still has an average FPS field, but the renderer-side hook that should feed it is disabled (a WREN-era gap that survived the wgpu migration; `OMNISIM_RENDERER_TIMINGS=1` is the current signal).
 
 Why it matters:
 
@@ -84,7 +78,7 @@ Why it matters:
 
 ### 5. Debugging support is still uneven
 
-Some older debugging surfaces still have WREN migration gaps.
+Some older debugging surfaces still have renderer-migration gaps (originally WREN-era; not all were closed by the wgpu move).
 
 Why it matters:
 
@@ -165,20 +159,20 @@ If the task is about:
 
 Start in:
 
-- `src/wren`
+- `src/omnisim/render`
 
-### simulator-specific rendering integration, overlays, render contexts
+### simulator-specific rendering integration, offscreen device rendering
 
 Start in:
 
-- `src/omnisim/wren`
+- `src/omnisim/nodes/OmWgpuSceneRenderer.*`
 
 ### main viewport behavior, feature toggles, renderer capability checks
 
 Start in:
 
 - `src/omnisim/gui/OmView3D.*`
-- `src/omnisim/gui/OmWrenWindow.*`
+- `src/omnisim/gui/OmWgpuView.*`
 
 ### camera, display, and sensor rendering
 

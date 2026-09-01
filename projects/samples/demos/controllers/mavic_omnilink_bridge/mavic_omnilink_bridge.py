@@ -238,7 +238,7 @@ VERT_I_CLAMP = 3.0
 # input units (the same scale the disturbances always used).
 POS_HOLD_RADIUS_M = 3.0
 K_POS = 3.0        # input units per metre of position error
-K_XY_V = 3.0       # input units per m/s of velocity (always on)
+K_XY_V = 8.0       # input units per m/s of velocity (always on)
 MAX_HOLD_TILT = 8.0  # clamp on the hold branch's roll/pitch command
 K_VERTICAL_OFFSET = 0.0    # was 0.6: a standing bias for the era when hover
                            # thrust was short of the weight; k_thrust is now
@@ -256,7 +256,7 @@ MAX_PITCH_DISTURBANCE = -1.0   # negative = pitch nose down to fly forward
 WAYPOINT_REACH_TOL_M = 0.6
 ALTITUDE_REACH_TOL_M = 0.4
 
-# Gimbal pitch motor range (camera pitch). 0 = forward, pi/2 (~1.5708) = down.
+# Gimbal pitch motor range (camera pitch). 0 = forward, pi/2 = down.
 GIMBAL_PITCH_MIN = -0.5
 GIMBAL_PITCH_MAX = 1.7
 GIMBAL_DOWN_RAD = math.pi / 2
@@ -350,17 +350,22 @@ def _classify_blobs(bgra_bytes: bytes, w: int, h: int) -> dict:
             R = raw[i + 2]
             bright_sum += R + G + B
             tag = None
-            if R > 140 and G < 90 and B < 90:
+            # The PBR camera's exposure maps emissive primary-colour pads to
+            # lighter, partially desaturated pixels. Classify by channel
+            # dominance instead of requiring the two secondary channels to
+            # remain below an absolute value. Neutral asphalt and highlights
+            # therefore stay out while the rendered red/pink pad remains red.
+            if R > 140 and R > 1.35 * G and R > 1.35 * B:
                 tag = "red"
-            elif G > 140 and R < 90 and B < 90:
+            elif G > 140 and G > 1.35 * R and G > 1.35 * B:
                 tag = "green"
-            elif B > 140 and R < 90 and G < 90:
+            elif B > 140 and B > 1.35 * R and B > 1.35 * G:
                 tag = "blue"
-            elif R > 140 and G > 130 and B < 90:
+            elif R > 140 and G > 130 and min(R, G) > 1.35 * B:
                 tag = "yellow"
-            elif R > 140 and B > 130 and G < 90:
+            elif R > 140 and B > 130 and min(R, B) > 1.35 * G:
                 tag = "magenta"
-            elif G > 140 and B > 140 and R < 90:
+            elif G > 140 and B > 140 and min(G, B) > 1.35 * R:
                 tag = "cyan"
             if tag is not None:
                 counts[tag] += 1
@@ -499,6 +504,10 @@ class BridgeState:
         self.mission_log = []        # list of {ts, sim_time, rationale, payload}
         # Reset request — main loop teleports the drone back to start.
         self.reset_request: Optional[dict] = None
+        # One-use anchor consumed by an immediate follow-up takeoff.  This is
+        # separate from reset_request because the simulation thread clears that
+        # queue while the HTTP thread may still be preparing the next action.
+        self.reset_anchor: Optional[dict] = None
         # Ground-truth-able DEFs in the world (advertised in /capabilities).
         self.gt_def_names: list = []
         # wwi-chat outbox: lines the main loop should push to the robot
@@ -882,12 +891,24 @@ def make_handler(state: BridgeState):
                     state.target_y = None
                     state.target_yaw = None
                     state.target_altitude = 0.0
+                    # Publish the requested pose immediately.  The physical
+                    # teleport is applied on the next simulation tick, but a
+                    # follow-up takeoff may arrive before that tick and must
+                    # hold this reset location, not the pre-reset state.
+                    state.x = reset_x
+                    state.y = reset_y
+                    state.z = reset_z
+                    state.yaw = reset_yaw
                     state.mode = "idle"
                     state.fault = None
                 self._ok({"halted_at": time.time()})
                 return
 
             if action == "reset":
+                reset_x = finite_number(body.get("x", 0.0), "x")
+                reset_y = finite_number(body.get("y", -12.0), "y")
+                reset_z = finite_number(body.get("z", 0.1), "z")
+                reset_yaw = finite_number(body.get("yaw", math.pi / 2), "yaw")
                 with state.lock:
                     state.target_x = None
                     state.target_y = None
@@ -897,8 +918,11 @@ def make_handler(state: BridgeState):
                     state.fault = None
                     state.mission_complete = False
                     state.mission_log = []
-                    state.reset_request = {"x": 0.0, "y": -12.0, "z": 0.1, "yaw": math.pi / 2}
-                self._ok({"reset": True})
+                    state.reset_request = {
+                        "x": reset_x, "y": reset_y, "z": reset_z, "yaw": reset_yaw,
+                    }
+                    state.reset_anchor = dict(state.reset_request)
+                self._ok({"reset": True, "pose": dict(state.reset_request)})
                 return
 
             if action == "complete_mission":
@@ -927,8 +951,10 @@ def make_handler(state: BridgeState):
                 altitude = finite_number(body.get("altitude", DEFAULT_TAKEOFF_ALTITUDE), "altitude")
                 with state.lock:
                     state.target_altitude = max(0.5, altitude)
-                    state.target_x = state.x
-                    state.target_y = state.y
+                    anchor = state.reset_anchor
+                    state.reset_anchor = None
+                    state.target_x = anchor["x"] if anchor else state.x
+                    state.target_y = anchor["y"] if anchor else state.y
                     state.mode = "takeoff"
                     state.fault = None
                 if body.get("wait"):
@@ -1298,8 +1324,10 @@ def main():
         # (measured in issue #10) -- the land action stores the touchdown point
         # in target_x/y, so keep holding it.
         if mode in ("takeoff", "hover", "goto", "land") and (target_altitude > 0.05 or mode == "land"):
-            # Climb until at altitude before touching xy.
-            if (mode == "land" or altitude > target_altitude - 1.0) and target_x is not None and target_y is not None:
+            # Hold the authored launch point throughout the climb.  Deferring
+            # xy control until the last metre of ascent let small trim errors
+            # integrate into a large lateral excursion before correction.
+            if (mode == "land" or altitude > 0.25) and target_x is not None and target_y is not None:
                 # Heading-to-target in world frame.
                 dx = target_x - x_pos
                 dy = target_y - y_pos
@@ -1310,7 +1338,7 @@ def main():
                 # authority -- measured: a 12 m hop crawled 44 m the WRONG way.
                 # A quad is holonomic: command tilt from the body-frame position
                 # error + velocity damping, clamped, and the clamp IS the cruise
-                # limit (MAX_HOLD_TILT / K_XY_V = ~2.7 m/s). Yaw steering stays
+                # limit (MAX_HOLD_TILT / K_XY_V = ~1.0 m/s). Yaw steering stays
                 # only so the camera faces the direction of travel.
                 e_fwd = dx * cy + dy * sy
                 e_right = dx * sy - dy * cy
@@ -1406,6 +1434,18 @@ def main():
         if req and translation_field and rotation_field:
             translation_field.setSFVec3f([req["x"], req["y"], req.get("z", 0.1)])
             rotation_field.setSFRotation([0.0, 0.0, 1.0, req.get("yaw", math.pi / 2)])
+            # A pose reset must also clear the rigid body's accumulated linear
+            # and angular velocity.  Capture sessions can leave the aircraft
+            # landed or drifting before a new take starts; carrying that
+            # momentum through the teleport makes the repeated take diverge
+            # even though its authored start pose is identical.
+            try:
+                self_node.resetPhysics()
+            except Exception:
+                try:
+                    self_node.setVelocity([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+                except Exception as exc:
+                    print(f"[mavic_omnilink_bridge] resetPhysics failed: {exc}")
             with state.lock:
                 state.last_pose_for_v = None
                 state.v_xy = 0.0

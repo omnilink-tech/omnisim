@@ -192,6 +192,23 @@ DAMAGE_EXTRA_ROBOTS = [
 # explanation.
 LIGHT_MODE = "--light" in sys.argv
 
+# Per-tracker toggles (public issue #4): finer-grained than the all-or-nothing
+# --light. Each drops exactly one tracker; --light still drops all three.
+# GripTracker consumes ContactTracker's pairs, so no-contacts implies no-grips.
+NO_CONTACT_TRACKER = LIGHT_MODE or "--no-contacts" in sys.argv
+NO_JOINT_LIMIT_TRACKER = LIGHT_MODE or "--no-joint-limits" in sys.argv
+NO_GRIP_TRACKER = NO_CONTACT_TRACKER or "--no-grips" in sys.argv
+
+# Producer-class names (event_bus.EVENT_TYPE_PRODUCERS values) disabled by
+# the flags above — the capabilities command reports suppressed event types
+# from this, so the report stays honest for any flag combination.
+DISABLED_PRODUCERS = tuple(
+    name for flag, name in (
+        (NO_CONTACT_TRACKER, "ContactTracker"),
+        (NO_JOINT_LIMIT_TRACKER, "JointLimitTracker"),
+        (NO_GRIP_TRACKER, "GripTracker"),
+    ) if flag)
+
 # Named engine-side state snapshots taken in THIS supervisor process, keyed by
 # name. The value carries a pose fingerprint used only to *verify* a restore;
 # the state itself lives in the engine (OmNode::save / ::reset, recursive over
@@ -947,6 +964,38 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
             "sim_time_ms": sim_time_ms,
             "basic_time_step_ms": basic_step_ms,
         }
+    if cmd == "diag_read_bench":
+        # Ground-truth the cost of one supervisor read on THIS session:
+        # n getPosition round-trips, free-running vs inside paused_reads.
+        # Diagnostic only (not in ROUTES); results are measured, not echoed.
+        n = max(1, min(int(args.get("n", 50)), 1000))
+        root_children = supervisor.getRoot().getField("children")
+        node = None
+        for i in range(root_children.getCount()):
+            cand = root_children.getMFNode(i)
+            try:
+                if cand.getPosition() is not None:
+                    node = cand
+                    break
+            except Exception:  # noqa: BLE001
+                continue
+        if node is None:
+            raise CommandError("no readable node for read bench")
+        t0 = time.perf_counter()
+        for _ in range(n):
+            node.getPosition()
+        free_ms = (time.perf_counter() - t0) * 1000.0 / n
+        with observe.paused_reads(supervisor) as took:
+            sim_t0 = supervisor.getTime()
+            t0 = time.perf_counter()
+            for _ in range(n):
+                node.getPosition()
+            paused_ms = (time.perf_counter() - t0) * 1000.0 / n
+            sim_advance_s = supervisor.getTime() - sim_t0
+        return {"n": n, "free_running_ms_per_read": round(free_ms, 4),
+                "paused_ms_per_read": round(paused_ms, 4),
+                "pause_taken": bool(took),
+                "sim_advance_during_paused_reads_s": round(sim_advance_s, 4)}
     if cmd == "damage_state":
         if damage is None:
             raise CommandError("damage tracker not initialised")
@@ -1012,6 +1061,27 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
         if "error" in result:
             raise CommandError(result["error"])
         return result
+    if cmd == "rebuild_physics":
+        # W1.7: ask the engine to tear down and rebuild the Newton world at
+        # the scene's CURRENT poses on its next step -- runtime-spawned nodes
+        # gain physics, deleted ones lose it. Fire-and-forget on the wire; a
+        # refusal (cloth/soft/granular world, no running physics) arrives as
+        # an engine WARNING, which the harness's diagnostics/events carry.
+        fn = getattr(supervisor, "simulationRebuildPhysics", None)
+        if fn is None:
+            raise CommandError(
+                "this controller build predates simulationRebuildPhysics -- "
+                "rebuild libController (python -m omnisim doctor checks the pair)")
+        fn()
+        steps = int(args.get("settle_steps", 8))
+        steps = max(1, min(steps, 1024))
+        local_sim_ms = float(sim_time_ms)
+        for _ in range(steps):
+            if supervisor.step(basic_step_ms) == -1:
+                raise CommandError("simulator step returned -1 (terminating)")
+            local_sim_ms += basic_step_ms
+        return {"requested": True, "settle_steps": steps,
+                "advanced_to_ms": local_sim_ms}
     if cmd == "step":
         steps = int(args.get("steps", 1))
         if steps < 1:
@@ -1574,18 +1644,24 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
             sources = []
         events = event_bus.verify_event_types(*sources)
         suppressed = [t for t, p in event_bus.EVENT_TYPE_PRODUCERS.items()
-                      if LIGHT_MODE and p in event_bus.LIGHT_MODE_DISABLED_PRODUCERS]
+                      if p in DISABLED_PRODUCERS]
         events["active"] = [t for t in events["types"] if t not in suppressed]
         events["suppressed"] = sorted(suppressed)
         if suppressed:
             events["suppressed_reason"] = (
-                "the supervisor is running with --light, which skips the "
-                "contact / joint-limit / grip trackers; /sim/events?types= is "
-                "an exact-match allowlist, so filtering on a suppressed type "
-                "returns an empty stream, not an error")
+                "the supervisor is running with disabled tracker(s) ("
+                + ", ".join(DISABLED_PRODUCERS) + " -- via --light or a "
+                "per-tracker toggle); /sim/events?types= is an exact-match "
+                "allowlist, so filtering on a suppressed type returns an "
+                "empty stream, not an error")
         events["producers"] = dict(event_bus.EVENT_TYPE_PRODUCERS)
         return {
             "light": LIGHT_MODE,
+            "tracking": {
+                "contacts": not NO_CONTACT_TRACKER,
+                "joint_limits": not NO_JOINT_LIMIT_TRACKER,
+                "grips": not NO_GRIP_TRACKER,
+            },
             "basic_time_step_ms": basic_step_ms,
             "sim_time_ms": float(sim_time_ms),
             "commands": dispatch_commands(),
@@ -2138,6 +2214,75 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
                 "are keyed node_<id> and cannot be applied via "
                 "set_joint_positions (is 'effector' really on this robot?)")
         return out
+    if cmd == "particle_stats":
+        # Node-scoped particle-state readback
+        # (C_SUPERVISOR_NODE_PARTICLE_STATS): stats-first (count / min / max /
+        # centroid / non_finite over the node's OWN particles), sample-optional
+        # (sample_stride > 0 additionally returns every stride-th particle's
+        # world xyz). A PURE READ off the engine's per-step particle caches —
+        # nothing in the scene moves — which is what makes it a member of the
+        # harness's idempotent-retry set.
+        def_name = args.get("def")
+        if not isinstance(def_name, str) or not def_name:
+            raise CommandError(
+                "particle_stats requires a 'def' string (the Cloth / SoftBody "
+                "/ GranularBed / GranularGroup node)")
+        try:
+            stride = int(args.get("sample_stride", 0))
+        except (TypeError, ValueError):
+            raise CommandError("sample_stride must be an integer")
+        if stride < 0 or stride > 4096:
+            raise CommandError(
+                "sample_stride must be in [0, 4096] (0 = stats only)")
+        node = supervisor.getFromDef(def_name)
+        if node is None:
+            raise CommandError(f"no node with DEF '{def_name}'")
+        fn = getattr(node, "getParticleStats", None)
+        if fn is None:
+            raise CommandError(
+                "this controller build predates getParticleStats -- rebuild "
+                "libController (python -m omnisim doctor checks the pair)")
+        res = fn(stride)
+        status = int(res.get("status", -9))
+        if status != 0:
+            reasons = {
+                -1: "particle stats unavailable: no Newton physics runtime, "
+                    "the world is not running yet, or this node never "
+                    "registered with the particle solver (a Cloth / SoftBody "
+                    "/ GranularBed whose registration failed reads -1, not 0)",
+                -2: f"DEF '{def_name}' is not a particle node (Cloth, "
+                    "SoftBody, GranularBed or GranularGroup)",
+                -5: f"GranularGroup '{def_name}' has no CUDA particle state — "
+                    "the node is honestly inert (no CUDA on this build/host), "
+                    "so there is no particle state to read",
+                -9: "the engine did not answer the particle-stats request",
+                -10: "particle_stats was called with invalid arguments",
+            }
+            raise CommandError(reasons.get(
+                status, f"particle stats unavailable: engine status {status}"))
+        sample = res.get("sample") or []
+        return {
+            "def": def_name,
+            "status": 0,
+            "count": res["count"],
+            "min": res["min"],
+            "max": res["max"],
+            "centroid": res["centroid"],
+            "non_finite": res["non_finite"],
+            "sample_stride": stride,
+            "sampled": len(sample),
+            "sample": sample,
+            "verification": {
+                "semantics": (
+                    "PURE READ off the engine's per-step particle cache: "
+                    "nothing moved. min/max/centroid are world-frame "
+                    "aggregates over the FINITE particles only; non_finite "
+                    "counts particles carrying a NaN/Inf component (counted, "
+                    "never propagated — a diverging cloth reads as a rising "
+                    "non_finite, not a NaN centroid). sample is every "
+                    "stride-th particle's xyz, raw, non-finite included."),
+            },
+        }
     if cmd == "sim_contacts":
         # ⚠ `wake` IS A DOCUMENTED NO-OP AS OF 2026-08-08, and the parameter is
         # kept ONLY so existing callers do not 400.
@@ -2251,6 +2396,10 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
             "total": bus.total,
             "dropped": bus.dropped,
             "buffered": bus.buffered,
+            # The declared type vocabulary, so the harness can name
+            # unmatched entries in a ?types= filter instead of returning a
+            # silently empty stream.
+            "types": list(event_bus.SUPERVISOR_EVENT_TYPES),
         }
     raise CommandError(f"unknown cmd: {cmd}")
 
@@ -2361,12 +2510,15 @@ def main() -> int:
     # depend on those trackers, so disabling them keeps the visible
     # damage demo and gets the framerate back.
     bus = EventBus()
-    if LIGHT_MODE:
-        sys.stderr.write("[harness_supervisor] --light: skipping contact/joint-limit/grip trackers\n")
+    if DISABLED_PRODUCERS:
+        sys.stderr.write(
+            "[harness_supervisor] tracker(s) disabled: "
+            + ", ".join(DISABLED_PRODUCERS) + "\n")
         sys.stderr.flush()
-        contact_tracker = None
-        joint_limit_tracker = None
-        grip_tracker = None
+    contact_tracker = None if NO_CONTACT_TRACKER else ContactTracker(supervisor, bus)
+    joint_limit_tracker = None if NO_JOINT_LIMIT_TRACKER else JointLimitTracker(supervisor, bus)
+    grip_tracker = None if NO_GRIP_TRACKER else GripTracker(supervisor, bus)
+    if LIGHT_MODE:
         # --light also implies lite damage FX: no spawned-in-scene
         # markers, debris, smoke, sparks, decals, or mesh re-emit. The
         # robots still take damage internally (HP, state transitions);
@@ -2374,10 +2526,6 @@ def main() -> int:
         # Explicit OMNISIM_LITE_DAMAGE=0 in the environment opts back in.
         if os.environ.get("OMNISIM_LITE_DAMAGE") is None:
             os.environ["OMNISIM_LITE_DAMAGE"] = "1"
-    else:
-        contact_tracker = ContactTracker(supervisor, bus)
-        joint_limit_tracker = JointLimitTracker(supervisor, bus)
-        grip_tracker = GripTracker(supervisor, bus)
     # Per-joint velocity cache: id -> (last_position, last_t_s). Shared
     # across all dispatch("robot_joints") calls so velocities are
     # meaningful across snapshots.
@@ -2629,11 +2777,24 @@ def main() -> int:
         except BlockingIOError:
             pass
 
-        # Drain ready clients. Each iteration handles at most one frame per
-        # client per step so a chatty client can't starve the sim loop.
-        if clients:
-            ready, _, _ = select.select(clients, [], [], 0)
-            for client in ready:
+        # Drain ready clients in a burst. The old shape handled AT MOST ONE
+        # frame per client per step, so every RPC in a sequence paid a full
+        # engine step of queueing latency; a short linger after a served
+        # frame catches the caller's follow-up RPC (which arrives sub-ms
+        # after it reads our answer) without stalling the free-running loop
+        # when no one is talking to us. Bounded so a hostile client flood
+        # cannot starve the sim.
+        frames_this_step = 0
+        linger_rounds = 0
+        while clients and frames_this_step < 64:
+            timeout = 0.002 if (frames_this_step and linger_rounds < 8) else 0
+            ready, _, _ = select.select(clients, [], [], timeout)
+            if not ready:
+                if timeout:
+                    linger_rounds += 1
+                    continue
+                break
+            for client in list(ready):
                 request = read_frame(client)
                 if request is None:
                     try:
@@ -2642,10 +2803,13 @@ def main() -> int:
                         pass
                     clients.remove(client)
                     continue
+                frames_this_step += 1
+                linger_rounds = 0
                 req_id = request.get("id", 0)
                 cmd = request.get("cmd", "")
                 args = request.get("args") or {}
                 try:
+                    _rpc_t0 = _stdtime.perf_counter()
                     result = dispatch(supervisor, basic_step_ms, sim_time_ms, cmd, args,
                                       damage=damage, bus=bus,
                                       contact_tracker=contact_tracker,
@@ -2670,6 +2834,13 @@ def main() -> int:
                         result["reset_side_effects"] = rearm_after_reset(
                             (damage, *extra_damages), "reset command",
                             log=sys.stderr.write)
+                    if isinstance(result, dict):
+                        # Measured, never echoed: how long the supervisor
+                        # spent executing this command (excludes harness
+                        # queueing and HTTP time).
+                        result.setdefault(
+                            "rpc_ms",
+                            round((_stdtime.perf_counter() - _rpc_t0) * 1000.0, 2))
                     write_frame(client, {"id": req_id, "ok": True, "result": result})
                 except CommandError as exc:
                     write_frame(client, {"id": req_id, "ok": False, "error": str(exc)})

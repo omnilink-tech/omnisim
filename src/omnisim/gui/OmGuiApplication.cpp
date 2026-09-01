@@ -66,6 +66,18 @@
 
 using namespace std;
 
+// Informational-task chrome skip (--help / --sysinfo / --version): set by
+// main.cpp's pre-scan through skipStartupChromeForInformationalTask() before
+// the OmGuiApplication below is constructed. File-scope static rather than a
+// constructor argument so the QApplication(argc, argv) call signature (which
+// must receive the ORIGINAL argc by reference, see the comment below) stays
+// untouched.
+static bool gSkipStartupChrome = false;
+
+void OmGuiApplication::skipStartupChromeForInformationalTask() {
+  gSkipStartupChrome = true;
+}
+
 // QApplication needs the reference to the original argc directly to run properly.
 // Otherwise, bugs related with threads (splashscreen, tooltips, ...) can appear.
 // This was observed on Linux 64
@@ -84,7 +96,13 @@ OmGuiApplication::OmGuiApplication(int &argc, char **argv) :
   setOrganizationName("OmniLink");
   setOrganizationDomain("omnilink-agents.com");
 #ifdef _WIN32
-  QApplication::setStyle("windowsvista");
+  // Skipped for --help/--sysinfo/--version (gSkipStartupChrome): these print and
+  // exit, so widget style, application font and stylesheet are dead weight on
+  // their critical path -- expected 20-60 ms of the 0.36 s --version baseline
+  // (main.cpp's Newton-preload pre-scan comment); the parent A/B measures the
+  // real figure. GUI launches never set the flag, so they are byte-identical.
+  if (!gSkipStartupChrome)
+    QApplication::setStyle("windowsvista");
 #endif
 
   mApplication = new OmApplication();  // creates OmApplication singleton
@@ -93,10 +111,12 @@ OmGuiApplication::OmGuiApplication(int &argc, char **argv) :
   QDir::addSearchPath("icons", OmStandardPaths::resourcesPath() + "nodes/icons");
   QDir::addSearchPath("images", OmStandardPaths::resourcesPath() + "images");
 
-  QFontDatabase::addApplicationFont(OmStandardPaths::fontsPath() + "Raleway-Light.ttf");
+  if (!gSkipStartupChrome) {
+    QFontDatabase::addApplicationFont(OmStandardPaths::fontsPath() + "Raleway-Light.ttf");
 
-  // setup the stylesheet for the application
-  updateStyleSheet();
+    // setup the stylesheet for the application
+    updateStyleSheet();
+  }
 
   // Qt has its own arguments, see Qt doc
   mShouldMinimize = false;
@@ -166,6 +186,11 @@ void OmGuiApplication::parseArguments() {
       mShouldRunBackground = true;
       mShouldMinimize = true;
       mShouldDoRendering = false;
+      // Record the CLI intent immediately (setup() may later flip
+      // mShouldDoRendering from preferences, so mPerformRendering alone
+      // cannot distinguish "launched headless" from "user toggled rendering
+      // off"). Consumed by the headless texture-decode gate in OmImageTexture.
+      OmSimulationState::instance()->setStartedWithoutRendering(true);
       batch = true;
       OmMessageBox::disable();
     } else if (arg == "--fullscreen")
@@ -182,9 +207,11 @@ void OmGuiApplication::parseArguments() {
     else if (arg == "--mode=run") {
       commandLineError(tr("`--mode=run` is deprecated, falling back to `fast` mode."), false);
       mStartupMode = OmSimulationState::FAST;
-    } else if (arg == "--no-rendering")
+    } else if (arg == "--no-rendering") {
       mShouldDoRendering = false;
-    else if (arg == "convert") {
+      // CLI intent, captured at parse time -- see the --no-window branch above.
+      OmSimulationState::instance()->setStartedWithoutRendering(true);
+    } else if (arg == "convert") {
       mTask = CONVERT;
       mTaskArguments = args.mid(i);
       break;
@@ -368,6 +395,11 @@ bool OmGuiApplication::setup() {
   // check so those behave identically, and before any dialog/splash/window construction.
   if (qEnvironmentVariableIsSet("OMNISIM_NO_WINDOW") || qEnvironmentVariableIsSet("OMNISIM_NO_GL")) {
     mNoWindowMode = true;
+    // Same intent as the --no-window CLI flag: this process will never show a
+    // main view, so the headless texture-decode gate may engage (camera-family
+    // devices still render offscreen -- the world scan in OmSimulationWorld
+    // keeps textures for any world that contains one).
+    OmSimulationState::instance()->setStartedWithoutRendering(true);
     return setupNoWindow();
   }
 

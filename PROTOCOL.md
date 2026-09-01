@@ -27,7 +27,7 @@ must be honoured.
 | Field | Value |
 |---|---|
 | Protocol name | `omnisim_wire` |
-| Version | `1.0` |
+| Version | `1.1` |
 | Specification status | Stable for the three implemented surfaces (Robot Bridge, World Harness, Capture Service). §9 Twin Shadow is **reserved and unimplemented**. See §16 for the open compliance gaps. |
 | Reference simulator versions | OmniSim ≥ 2.0.0 |
 | Transport | HTTP/1.1 + JSON over loopback TCP |
@@ -49,6 +49,8 @@ Wire-protocol semver follows the standard rules:
 
 Tooling that depends on the OmniSim wire protocol should pin to a major
 version and negotiate minor versions at runtime.
+
+**Changelog:** `1.1` (2026-07-26, additive; harness commit `5f994bf99`) — world-harness capability discovery (`GET /capabilities`, §7.28), the scene-mutation verbs (`/scene/spawn`, `/scene/delete`, `/scene/set_pose`, §§7.29–7.31), named snapshots (`/sim/snapshot` / `/sim/restore` / `GET /sim/snapshots`, §7.32), and `/sim/reset` restoring the authored scene; later harness routes (§§7.33–7.36) are additive under `1.1`. `1.0` (2026-07-26) — the initial reconciled specification. The harness serves `"omnisim_wire": "1.1"`; the shipped robot bridges still implement `1.0` (see §4.1).
 
 ---
 
@@ -240,7 +242,14 @@ Every compliant service exposes `GET /protocol`:
 Fields:
 
 - `omnisim_wire` — the highest protocol major.minor this service
-  implements. SemVer string.
+  implements. SemVer string. ⚠️ Per-service, so it may lag the spec
+  version at the top of this document: the example above shows `"1.0"`
+  because the shipped robot bridges genuinely implement `1.0`
+  (`WIRE_VERSION` in
+  `packages/omnisim-bridges/src/omnisim_bridges/http_security.py` —
+  every `1.1` addition is a World-Harness route), while the world
+  harness reports `"omnisim_wire": "1.1"` via `GET /capabilities`
+  (§7.28), since it does not serve `GET /protocol` yet.
 - `service` — one of `robot_bridge`, `world_harness`, `capture_service`,
   `twin_shadow`. The surface this endpoint represents.
 - `service_versions` — map of service-name → spec version. A bridge
@@ -724,7 +733,11 @@ subprocess and exposes endpoints for authoring, hot-reloading, and
 inspecting worlds.
 
 > **The route table below is the complete implemented set as of
-> 2026-07-26** — 19 `GET` routes and 14 `POST` routes, and no `DELETE`.
+> 2026-09-01** — 21 `GET` routes and 18 `POST` routes (39 total, counted
+> from the harness's own `ROUTES` table, including the diagnostic
+> `GET /debug/read_bench` (§7.35), the W1.7 mid-run rebuild
+> `POST /sim/rebuild_physics` (§7.36) and the particle-state readback
+> `GET /scene/node/<def>/particles` (§7.37)), and no `DELETE`.
 > **Ask the harness rather than trusting this section: `GET /capabilities`
 > (§7.28) returns the route list, and it cross-checks that list against the
 > request handler's own source and reports any mismatch in
@@ -806,20 +819,28 @@ surfaces.
 ```
 
 Structured diagnostic codes. The authoritative list is
-[`scripts/harness/diagnostic_codes.py`](scripts/harness/diagnostic_codes.py) — a
-client MUST treat this enum as open and fall back gracefully on an unrecognised
-code, because new codes are added there without a protocol major bump. The set
-emitted today:
+[`scripts/harness/diagnostic_codes.py`](scripts/harness/diagnostic_codes.py)
+plus the handful the harness synthesizes itself, and **`GET /capabilities` →
+`diagnostic_codes` serves the live enumeration** — trust that over any table
+written here. A client MUST treat this enum as open and fall back gracefully on
+an unrecognised code, because new codes are added there without a protocol
+major bump. The set emitted today (56 codes, regenerated from the source
+2026-09-01):
 
 | Group | Codes |
 |---|---|
 | World file | `WORLD_WRONG_EXTENSION`, `WORLD_FILE_NOT_FOUND`, `WORLD_FILE_EMPTY`, `WORLD_PARSE_INVALID_TOKENS`, `WORLD_PARSE_SYNTAX_ERROR` |
 | Header | `HEADER_MISSING`, `HEADER_INVALID` |
 | PROTO | `PROTO_RECURSIVE`, `PROTO_BASE_NAME_INVALID`, `PROTO_NAME_MISMATCH`, `PROTO_PARAM_ERROR`, `EXTERNPROTO_DOWNLOAD_FAILED` |
+| Fields / nodes | `UNKNOWN_FIELD_IN_NODE`, `WORLDINFO_PHYSICSBACKEND_MISNAMED` |
 | Assets | `ASSET_DOWNLOAD_FAILED`, `TEXTURE_READ_FAILED`, `MESH_READ_FAILED`, `URDF_MESH_UNRESOLVED` |
+| Newton / physics | `NEWTON_RUNTIME_ABSENT`, `NEWTON_RUNTIME_BROKEN`, `NEWTON_WORLD_NOT_BUILT`, `NEWTON_BODIES_REGISTERED`, `NEWTON_ZERO_DYNAMIC_BODIES`, `NEWTON_STATICS_NOT_REGISTERED`, `NEWTON_ENFORCE_REFUSED`, `NO_PHYSICS_BACKEND`, `NO_STATIC_COLLISION_SURFACE`, `KINEMATIC_ARTICULATION`, `INERTIA_FROM_BOUNDING_OBJECT_UNAVAILABLE`, `CONTACT_PROPERTIES_IGNORED`, `CONTACT_QUERIES_BLIND`, `SOLID_ODE_PIN_INERT`, `RETIRED_ODE_SELECTOR` |
+| Joints | `JOINT_FEATURE_UNIMPLEMENTED`, `JOINT_REGISTRATION_FAILED` |
+| Sensors | `SENSOR_NO_SOURCE`, `OCCLUSION_RAYS_UNANSWERED` |
 | Controller | `CONTROLLER_CRASHED`, `CONTROLLER_EXITED_NONZERO` |
-| Launch | `LAUNCHER_DLL_NOT_FOUND` (Windows), `SIMULATOR_EXITED_NONZERO` |
-| CUDA | `CUDA_*` (9 codes — see the source) |
+| Platform | `QT_PLATFORM_PLUGIN_FAILED` |
+| Harness-synthesized (the engine never got far enough to log) | `LAUNCHER_DLL_NOT_FOUND` (Windows), `SIMULATOR_EXITED_NONZERO`, `SUPERVISOR_BIND_STALLED`, `SUPERVISOR_BIND_CEILING`, `WORLD_DIR_NOT_WRITABLE` |
+| CUDA | `CUDA_NOT_AVAILABLE`, `CUDA_DRIVER_TOO_OLD`, `CUDA_COMPUTE_CAPABILITY_TOO_OLD`, `CUDA_DEVICE_INIT_FAILED`, `CUDA_OUT_OF_MEMORY`, `CUDA_KERNEL_LAUNCH_FAILED`, `CUDA_KERNEL_EXECUTION_ERROR`, `CUDA_MEMCPY_FAILED`, `CUDA_GL_INTEROP_NOT_IMPLEMENTED` |
 | Fallthrough | `PARSE_ERROR`, `UNKNOWN` |
 
 Hot reload is the behaviour of repeated `/world/load` calls. Agent authoring
@@ -1544,11 +1565,16 @@ and the node appears in `/scene/tree` and renders. This is the exact mirror of t
 **delete** defect (a deleted collider stays in the model). Use `spawn` for cameras, markers
 and visual props, and for staging a scene you then reload; do not use it for anything that
 must fall, collide or be picked up. `set_pose` is unaffected. Tracked internally as W1.7 — runtime scene
-mutation (one workstream covering both directions); no public issue yet.
-As the honest interim, every successful spawn response carries a `physics_warning`
+mutation (one workstream covering both directions).
+This is still the DEFAULT behaviour: every successful spawn response carries a `physics_warning`
 block — `{"code": "RUNTIME_MUTATION_NOT_IN_SOLVER", "message": ...}` — on all input
 forms, and the first spawn per world-load also emits one `world.warning` with the same
 code into `/sim/events` (§7.19).
+✅ **Since 2026-09-01 there is an OPT-IN fix (W1.7 shipped): pass `{"physics": "rebuild"}`
+on this verb (optionally with `rebuild_settle_steps`), or call `POST /sim/rebuild_physics`
+(§7.36) after the spawn, and the spawned node IS simulated** — the Newton world is rebuilt
+at the scene's current poses in a measured 97–267 ms. The default is deliberately unchanged
+(a rebuild drops engaged welds, so it is never applied silently); see §7.36 for the caveats.
 
 Add a node to the **live** scene. Four input shapes:
 
@@ -1638,10 +1664,14 @@ frozen MuJoCo model has no remove path either, so a deleted wall still blocks ro
 rays, and a deleted floor still holds bodies up, silently (a 0.2 m box rested at z = 0.5999
 for 61,440 steps on a floor `POST /scene/delete` had removed). The node is gone from the
 scene graph and the render, which makes the phantom invisible. Tracked internally as
-W1.7 — runtime scene mutation, one workstream covering both directions. As the honest interim,
-every successful delete response carries the same `physics_warning` block
+W1.7 — runtime scene mutation, one workstream covering both directions. This is still the
+DEFAULT behaviour: every successful delete response carries the same `physics_warning` block
 (`RUNTIME_MUTATION_NOT_IN_SOLVER`), and the first delete per world-load emits one
-`world.warning` into `/sim/events` (§7.19). Reload the world after removing collidable nodes.
+`world.warning` into `/sim/events` (§7.19). In default mode, reload the world after removing
+collidable nodes. ✅ **Since 2026-09-01 there is an OPT-IN fix (W1.7 shipped): pass
+`{"physics": "rebuild"}` on this verb (optionally with `rebuild_settle_steps`), or call
+`POST /sim/rebuild_physics` (§7.36) after the delete, and the phantom colliders are genuinely
+gone** — measured, a deleted floor stops holding bodies up. See §7.36 for cost and caveats.
 
 **Request:** `{ "def": "PROBE_BOX" }` or `{ "defs": ["A", "B"], "settle_steps": 0 }`.
 
@@ -1894,6 +1924,158 @@ Errors: `404` + `DEF_NOT_FOUND` (robot or effector), `422` + `IK_NO_BODY`
 joint registered), `503` + `IK_UNAVAILABLE` (no backend / world not
 finalised — retry after finalize), `500` + `IK_SOLVER_FAILED`, `400` +
 `EFFECTOR_UNSPECIFIED` / `TARGETS_UNSPECIFIED` / `ARGUMENT_INVALID`.
+
+### 7.35 GET /debug/read_bench
+
+Diagnostic: the measured cost of **one supervisor read on this live
+session**, free-running vs paused — the number every inspection
+endpoint's cost is built from, so an agent (or a bug report) quotes the
+session it is actually on instead of a figure measured on another
+machine or era.
+
+**Request:** `GET /debug/read_bench?n=100`. `n` (default `50`, clamped
+`1`–`1000`) is the number of `getPosition()` round-trips per arm.
+
+**Response:**
+
+```json
+{ "n": 100,
+  "free_running_ms_per_read": 0.71,
+  "paused_ms_per_read": 0.68,
+  "pause_taken": true,
+  "sim_advance_during_paused_reads_s": 0.0 }
+```
+
+The bench picks the first root node whose `getPosition()` answers, times
+`n` reads against the free-running engine, then `n` more inside the same
+paused-reads guard the inspection endpoints use, and reports whether the
+pause actually engaged plus how much sim time advanced while paused.
+Results are measured, never echoed. Since the engine's immediate-burst
+fast path (2026-09-01, `OMNISIM_IMMEDIATE_BURST`, `=0` reverts) the two
+arms land in the same ~0.6–0.9 ms band on the 309-node fleet arena —
+reads are no longer pause-dependent; the pause survives because it buys
+a consistent single-instant snapshot, not speed.
+
+### 7.36 POST /sim/rebuild_physics
+
+**W1.7 — mid-run physics rebuild (2026-09-01, engine commit
+`88487d988`).** Tears down the live Newton world and re-registers the
+WHOLE scene at its **current** poses, so runtime-spawned nodes (§7.29)
+gain physics and runtime-deleted ones (§7.30) lose their phantom
+colliders — the opt-in fix for the frozen-model defect both banners
+describe. Live velocities are replayed and motor targets re-pushed, so a
+running robot keeps driving (measured: an 8-Husky motorised world drove
+through a mid-run rebuild at unchanged speed). Also reachable as
+`{"physics": "rebuild"}` directly on `/scene/spawn` / `/scene/delete`
+(optionally with `rebuild_settle_steps`), which chains the rebuild onto
+the mutation in one call and replaces the `physics_warning` block with a
+`physics: {"mode": "rebuild", ...}` block in that response.
+
+**Request:** `{ "settle_steps": 8 }` (default `8`, clamped `1`–`1024`).
+
+**Response (200):**
+
+```json
+{ "ok": true, "requested": true, "settle_steps": 8,
+  "advanced_to_ms": 1234.0 }
+```
+
+**Refusal (`409` + `REBUILD_REFUSED`):** on a Cloth / SoftBody /
+GranularBed world the engine refuses the rebuild — those systems
+re-register from *authored* state, so a rebuild would teleport them;
+reload the world instead. The engine logs
+`physics rebuild REFUSED: <reason>` as a warning
+(`OmSupervisorUtilities.cpp`), and the harness watches the settle window
+for that line and surfaces it, so the caller does not have to poll
+`/sim/events`:
+
+```json
+{ "ok": false, "code": "REBUILD_REFUSED", "requested": true,
+  "settle_steps": 8, "advanced_to_ms": 1234.0,
+  "error": "... physics rebuild REFUSED: <the engine's reason>" }
+```
+
+Caveats, all deliberate:
+
+- **Engaged `Connector` / `VacuumGripper` welds are DROPPED**, with a
+  loud engine warning naming the count. Do not rebuild mid-grasp;
+  re-lock from the controller afterwards.
+- **Measured cost: 97–267 ms** (machine `9722d23d12a3`, CPU `mj_step`;
+  an in-process `SolverMuJoCo` reconstruction), plus the settle steps.
+- **Bitwise step-for-step continuation across a rebuild is NOT
+  claimed** — a fresh solver is fresh state. What IS measured: a spawned
+  box frozen at z = 1.5 landed at **0.599892258644104** after a rebuild,
+  bit-identical to the authored control's rest height, and a deleted
+  floor genuinely stopped colliding.
+- The verb needs a current libController
+  (`wb_supervisor_simulation_rebuild_physics` /
+  `Supervisor.simulationRebuildPhysics`); an older build gets a coded
+  error telling it to rebuild (`python -m omnisim doctor` checks the
+  engine↔libController pair).
+
+The DEFAULT `/scene/spawn` / `/scene/delete` behaviour is unchanged:
+without the opt-in, their responses still carry `physics_warning`
+(`RUNTIME_MUTATION_NOT_IN_SOLVER`).
+
+### 7.37 GET /scene/node/&lt;def&gt;/particles
+
+**Particle-state readback (2026-09-01,
+`C_SUPERVISOR_NODE_PARTICLE_STATS`).** The deformable/granular systems
+(`Cloth`, `SoftBody`, `GranularBed`, `GranularGroup`) were, until this
+route, unobservable from the harness: their surfaces are engine-owned
+particle arrays with no supervisor accessor, so a controller could drive
+a gripper into a sheet and have no way to tell a grasp from a miss.
+This route is **stats-first, sample-optional**: the default answer is an
+80-byte aggregate computed engine-side (one FFI crossing), never the
+whole cloud — a 100k-particle bed costs the same as a 441-particle
+sheet. A **PURE READ** off the engine's per-step particle caches:
+nothing in the scene moves, and the RPC is in the harness's
+idempotent-retry set.
+
+**Request:** `GET /scene/node/SHEET/particles?sample=25`. `sample`
+(default `0` = stats only, clamped `0`–`4096`) returns every
+`sample`-th particle's world xyz in addition to the stats.
+
+**Response (200):**
+
+```json
+{ "def": "SHEET", "status": 0, "count": 441,
+  "min": [-0.55, -0.52, 0.02], "max": [0.55, 0.53, 0.31],
+  "centroid": [0.01, 0.00, 0.12],
+  "non_finite": 0,
+  "sample_stride": 25, "sampled": 18,
+  "sample": [[-0.55, -0.52, 0.02], ...],
+  "verification": { "semantics": "PURE READ ..." },
+  "rpc_ms": 4.2 }
+```
+
+Semantics, all deliberate:
+
+- `min` / `max` / `centroid` are world-frame aggregates over the
+  **FINITE** particles only; `non_finite` counts particles carrying a
+  NaN/Inf component (counted, never propagated — a diverging cloth
+  reads as a **rising `non_finite`**, not a NaN centroid, which is the
+  failure mode this stack actually exhibits). All three read `0.0` when
+  no particle is finite.
+- `sample` is raw (non-finite values included) so a caller can locate
+  the divergence, and `sampled`/`sample_stride` are echoed measured,
+  not assumed.
+- The stats are served off the same per-step particle cache the render
+  readback uses (one GPU→CPU transfer per tick, shared); the
+  `GranularGroup` arm aggregates the CUDA demo's host buffer instead —
+  that node's particles are not in the Newton arrays.
+
+**Errors** (via the supervisor's coded classifier): `404` +
+`DEF_NOT_FOUND`; `400` + `ARGUMENT_INVALID` for a non-particle node
+(engine status `-2`), a node that never registered with the particle
+solver or a missing Newton runtime (`-1`), an inert `GranularGroup`
+with no CUDA state (`-5`, honest inert — there is no particle state to
+read), or a bad `sample` stride; `503` when the supervisor link is
+down. The verb needs a current libController
+(`wb_supervisor_node_get_particle_stats` /
+`Node.getParticleStats`); an older build gets a coded error telling it
+to rebuild (`python -m omnisim doctor` checks the engine↔libController
+pair).
 
 ---
 
@@ -2362,8 +2544,8 @@ take both `--port` and `--supervisor-port`. Failing to do so produces
 
 | OmniSim simulator | Wire protocol versions spoken |
 |---|---|
-| `1.0.0` – `1.0.10` | `1.0` (this document) |
-| `2.0.0`            | `1.0` (this document) |
+| `1.0.0` – `1.0.10` | `1.0` |
+| `2.0.0`            | `1.0` – `1.1` (this document; the world harness speaks `1.1` since 2026-07-26, the robot bridges `1.0`) |
 
 Future simulator releases extend this table.
 

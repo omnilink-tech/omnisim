@@ -193,10 +193,9 @@ class TestLicense(unittest.TestCase):
             'scripts',
             'packages',
             'omnisim',
-            # 'agents' at large is not here yet: agents/bridges, agents/templates
-            # and the non-smart_house agents/production/* subtrees still hold
-            # files with no header. Widen this to 'agents' once they carry one --
-            # do NOT baseline them.
+            # 'agents' is walked in full (the "not here yet" caveat this comment
+            # used to carry was stale by 2026-09-01 -- the entry had already been
+            # widened to the whole tree four lines below it).
             'agents'
         ]
 

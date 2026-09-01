@@ -149,11 +149,16 @@ def paused_reads(supervisor):
     """Pause the engine for the duration of a read burst, then restore.
 
     Why: every supervisor read (getPosition, getMFNode, getSFFloat,
-    getContactPoints, ...) is a synchronous round-trip that waits for the
-    free-running engine to service it between physics steps. Measured on the
-    298-node 10-Husky bench scene (Newton, light session): ~6 ms per
-    round-trip free-running vs ~0.15 ms paused — 40x — with ~1 ms to enter
-    the pause. The read-heavy RPCs pause for their walk (the whole-scene
+    getContactPoints, ...) is a synchronous round-trip serviced by the
+    engine's event loop. Measured on the 298-node 10-Husky bench scene
+    (Newton, light session): ~6 ms per round-trip free-running vs ~0.15 ms
+    paused — 40x — with ~1 ms to enter the pause. Re-measured 2026-09-01
+    after the engine's immediate-burst fast path (OMNISIM_IMMEDIATE_BURST,
+    OmController::readRequest serves a request burst at pipe speed instead
+    of one event-loop wakeup each): ~0.9 ms free-running vs ~0.6 ms paused
+    on the 309-node fleet arena — the pause is no longer the dominant lever,
+    but the CONSISTENT-snapshot rationale below still holds, so keep it.
+    GET /debug/read_bench measures both numbers on any live session. The read-heavy RPCs pause for their walk (the whole-scene
     readers below do it themselves; the dispatch arms that compose geometry
     walks wrap their own blocks) and restore the caller's mode afterwards.
     Side benefit: the snapshot is CONSISTENT — the old walks smeared over

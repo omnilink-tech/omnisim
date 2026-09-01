@@ -66,6 +66,7 @@ void OmMotor::init() {
   mCurrentVelocity = 0.0;
   mRawInput = 0.0;
   mUserControl = false;
+  mControllerCommandedFinitePosition = false;
   mErrorIntegral = 0.0;
   mPreviousError = 0.0;
 
@@ -704,9 +705,16 @@ void OmMotor::handleMessage(QDataStream &stream) {
       double p;
       stream >> p;
       setTargetPosition(p);
+      // W1.4 servo promotion latch: the WIRE is the only place controller
+      // intent is unambiguous (setTargetPosition also runs on reset and on
+      // engine-internal pre-configure moves, neither of which should promote
+      // a limit-less wheel to a servo).
+      mControllerCommandedFinitePosition = !std::isinf(p);
       // relay target position to coupled motors, if any
-      for (int i = 0; i < mCoupledMotors.size(); ++i)
+      for (int i = 0; i < mCoupledMotors.size(); ++i) {
         mCoupledMotors[i]->setTargetPosition(p);
+        mCoupledMotors[i]->mControllerCommandedFinitePosition = !std::isinf(p);
+      }
       break;
     }
     case C_MOTOR_SET_VELOCITY: {

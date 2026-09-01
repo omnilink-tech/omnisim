@@ -64,6 +64,12 @@ class Supervisor(Robot):
     def simulationResetPhysics(self):
         wb.wb_supervisor_simulation_reset_physics()
 
+    def simulationRebuildPhysics(self):
+        # W1.7: rebuild the physics world at the scene's CURRENT poses on the
+        # next step -- runtime-spawned nodes gain physics, deleted ones lose
+        # it. Fire-and-forget; refusals arrive as engine warnings.
+        wb.wb_supervisor_simulation_rebuild_physics()
+
     def worldLoad(self, filename: str):
         wb.wb_supervisor_world_load(str.encode(filename))
 

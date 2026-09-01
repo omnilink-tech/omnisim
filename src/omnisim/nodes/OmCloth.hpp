@@ -108,6 +108,11 @@ public:
   // True once addClothGrid() has succeeded, i.e. the patch is actually being
   // simulated. False means "rendering the authored rest pose only".
   bool isSimulated() const { return mParticleStart >= 0; }
+  // This patch's half-open particle range [start, end) in the Newton world's
+  // SHARED particle arrays (start is -1 when not simulated). Consumed by the
+  // supervisor particle-stats verb (C_SUPERVISOR_NODE_PARTICLE_STATS).
+  int particleRangeStart() const { return mParticleStart; }
+  int particleRangeEnd() const { return mParticleEnd; }
 
   // ---- WORLD-SPACE BOUNDS -------------------------------------------------
   //

@@ -1786,7 +1786,54 @@ double OmSolid::volume() const {
 }
 
 const double *OmSolid::inertiaMatrix() const {
-  return NULL;  // ODE is gone: no dMass storage (no in-tree callers)
+  // The Physics pane is an in-tree caller: it renders this as a row-major
+  // 3x3 tensor. Returning NULL after the ODE deletion made selecting its
+  // "Mass" tab dereference a null pointer and close OmniSim. Reconstruct the
+  // same view from the ODE-free native mirror, or from the authored custom
+  // tensor when that mode deliberately bypasses the mirror.
+  static thread_local double matrix[9];
+  if (mNativeInertiaValid) {
+    matrix[0] = mNativeInertia.ixx();
+    matrix[1] = mNativeInertia.ixy();
+    matrix[2] = mNativeInertia.ixz();
+    matrix[3] = mNativeInertia.ixy();
+    matrix[4] = mNativeInertia.iyy();
+    matrix[5] = mNativeInertia.iyz();
+    matrix[6] = mNativeInertia.ixz();
+    matrix[7] = mNativeInertia.iyz();
+    matrix[8] = mNativeInertia.izz();
+    return matrix;
+  }
+
+  const OmPhysics *const p = physics();
+  if (p != NULL && p->inertiaMatrix().size() >= 1) {
+    const OmVector3 &diagonal = p->inertiaMatrix().item(0);
+    const OmVector3 offDiagonal = p->inertiaMatrix().size() >= 2 ?
+      p->inertiaMatrix().item(1) : OmVector3(0.0, 0.0, 0.0);
+    matrix[0] = diagonal.x();
+    matrix[1] = offDiagonal.x();
+    matrix[2] = offDiagonal.y();
+    matrix[3] = offDiagonal.x();
+    matrix[4] = diagonal.y();
+    matrix[5] = offDiagonal.z();
+    matrix[6] = offDiagonal.y();
+    matrix[7] = offDiagonal.z();
+    matrix[8] = diagonal.z();
+    return matrix;
+  }
+
+  // Same fallback the mass pipeline uses when neither geometry nor a custom
+  // tensor yields usable inertia.
+  matrix[0] = 1.0;
+  matrix[1] = 0.0;
+  matrix[2] = 0.0;
+  matrix[3] = 0.0;
+  matrix[4] = 1.0;
+  matrix[5] = 0.0;
+  matrix[6] = 0.0;
+  matrix[7] = 0.0;
+  matrix[8] = 1.0;
+  return matrix;
 }
 
 void OmSolid::applyToOdeMass() {
@@ -2181,6 +2228,17 @@ OmBodyHandle OmSolid::bodyHandle() const {
   if (dBodyID b = bodyMerger())
     return static_cast<OmBodyHandle>(b);
   return nullptr;
+}
+
+OmBodyHandle OmSolid::carrierBodyHandle() const {
+  // See the header comment: a folded device carrier owns no body of its own,
+  // so resolve the nearest Newton body up the fold (merger-aware, same walk
+  // welds and wrench reads use) and hand back the same handle bodyHandle()
+  // would build for it.
+  const int idx = nearestNewtonBodyIndex();
+  if (idx < 0)
+    return nullptr;
+  return OmNewtonBackend::handleFromIndex(idx);
 }
 
 int OmSolid::effectiveNewtonBodyIndex() const {
@@ -3261,6 +3319,66 @@ static double resolvedNewtonGroundMu(const OmWorldInfo *wi, bool *bridgedOut = n
     }
   }
   return -1.0;
+}
+
+void OmSolid::captureNewtonVelocitiesForRebuild() {
+  // W1.7: postPhysicsStep refreshes mLinearVelocity/mAngularVelocity from
+  // the solver every tick, so the FIELDS hold the live values. Stash them in
+  // the FIX-5 replay slots; re-registration replays them into the fresh
+  // Newton world (set_body_vel queues pre-finalize and drains after
+  // finalize's closing eval_fk). Dynamic registered bodies only -- statics
+  // do not move and kinematic bodies are driven from their fields.
+  for (const OmSolid *cs : cSolids) {
+    OmSolid *const s = const_cast<OmSolid *>(cs);
+    if (s->mNewtonBodyIndex < 0 || s->mNewtonBodyIsStatic || s->mNewtonBodyIsKinematic)
+      continue;
+    if (s->mLinearVelocity) {
+      const OmVector3 &lv = s->mLinearVelocity->value();
+      s->mPendingNewtonLinVel[0] = lv.x();
+      s->mPendingNewtonLinVel[1] = lv.y();
+      s->mPendingNewtonLinVel[2] = lv.z();
+      s->mPendingNewtonLinVelValid = true;
+    }
+    if (s->mAngularVelocity) {
+      const OmVector3 &av = s->mAngularVelocity->value();
+      s->mPendingNewtonAngVel[0] = av.x();
+      s->mPendingNewtonAngVel[1] = av.y();
+      s->mPendingNewtonAngVel[2] = av.z();
+      s->mPendingNewtonAngVelValid = true;
+    }
+  }
+}
+
+void OmSolid::resetNewtonRegistrationsForRebuild() {
+  // W1.7: forget every Newton registration so the next flush re-registers
+  // the whole scene into the fresh world. Registration reads the LIVE world
+  // transform (matrix().translation() / rotationMatrix()), which the
+  // per-tick pose readback keeps current, so a rebuild re-seeds bodies at
+  // their current pose -- never the authored one.
+  int droppedWelds = 0;
+  for (const OmSolid *cs : cSolids) {
+    OmSolid *const s = const_cast<OmSolid *>(cs);
+    s->mNewtonBodyIndex = -1;
+    s->mNewtonBodyIsStatic = false;
+    s->mNewtonBodyIsKinematic = false;
+    s->mNewtonKinPoseValid = false;
+    s->mLastNewtonXformValid = false;
+    // Weld slots index the OLD Newton world; the flush's weld-slot sweep
+    // re-reserves fresh ones while the rebuilt world is open for build.
+    if (OmConnector *const c = dynamic_cast<OmConnector *>(s)) {
+      if (c->resetNewtonWeldSlotForRebuild())
+        ++droppedWelds;
+    } else if (OmVacuumGripper *const v = dynamic_cast<OmVacuumGripper *>(s)) {
+      if (v->resetNewtonWeldSlotForRebuild())
+        ++droppedWelds;
+    }
+  }
+  if (droppedWelds > 0)
+    OmLog::warning(QObject::tr(
+      "[OmNewtonBackend] physics rebuild dropped %1 ENGAGED weld(s) (Connector locks / "
+      "VacuumGripper grips). Held objects are released; re-lock or re-grip from the "
+      "controller after the rebuild. Re-engaging welds across a rebuild is not yet "
+      "implemented.").arg(droppedWelds));
 }
 
 void OmSolid::flushPendingNewtonRegistrations() {

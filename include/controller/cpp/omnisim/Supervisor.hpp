@@ -32,6 +32,7 @@ namespace omnisim {
     virtual void simulationQuit(int status);
     virtual void simulationReset();
     virtual void simulationResetPhysics();
+    virtual void simulationRebuildPhysics();
 
     SimulationMode simulationGetMode() const;
     virtual void simulationSetMode(SimulationMode mode);

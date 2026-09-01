@@ -145,35 +145,45 @@ rather than discovered later:
   mid-startup"; that is **stale** — it loads cleanly and produces working
   devices, presumably fixed by the later rework that moved sensor carriers
   inline into their link's Solid.
-- ⛔ **`Gyro` and `Accelerometer` yield nothing here — and the ROOT CAUSE is now known:
-  the device is fine, its CARRIER is not a Newton body.** The gyro reads exactly
-  `[0,0,0]` while the robot rotates; the accelerometer never yields a sample at
-  all, not even gravity. Both sit in the *same* emitted carrier Solid as the
-  `InertialUnit`, which works perfectly.
+- ✅ **`Gyro` and `Accelerometer` are FIXED (engine `bde550489`, 2026-09-01) and
+  the ROS side is re-pointed at them — but the re-point is code-verified, not
+  live-verified.** The historical defect: the gyro read exactly `[0,0,0]` while
+  the robot rotated and the accelerometer never yielded a sample, not even
+  gravity, while the `InertialUnit` in the *same* emitted carrier Solid worked
+  perfectly.
 
-  The asymmetry is in how the two device families read their pose.
-  `OmGyro`/`OmAccelerometer` go through **`upperSolid()->bodyHandle()`**;
-  `InertialUnit` and GPS-position go through **`matrix()`**. A `matrix()` read
-  works off the scene graph and needs no solver body; a `bodyHandle()` read
-  needs one. **Declaring `physics` on a jointless nested `Solid` does not create
-  a Newton body** — so the importer's IMU cluster structurally cannot serve
-  Gyro or Accelerometer, while its `InertialUnit` is unaffected.
+  The asymmetry was in how the two device families read their pose.
+  `OmGyro`/`OmAccelerometer` went through **`upperSolid()->bodyHandle()`**,
+  which is non-null only when that *exact* Solid owns a Newton body;
+  `InertialUnit` and GPS-position go through **`matrix()`**, a scene-graph read
+  that needs no body. The URDF importer's nested IMU carrier owns none — the
+  registration fold welds it into its leader — so the cluster structurally
+  could not serve Gyro or Accelerometer. Measured (OmniBench lane 4,
+  2026-08-17): a real Newton body read `[0, 0, 2.0000]` against a
+  supervisor-measured 2.0000 rad/s; the importer's exact carrier pattern read
+  `[0, 0, 0.0]`.
 
-  Measured (OmniBench lane 4, 2026-08-17) in one run, one rotating arm, three
-  gyros: a **real Newton body** reads `[0, 0, 2.0000]` against a
-  supervisor-measured 2.0000 rad/s; a **physics-less nested Solid** reads
-  `[0, 0, 0.0]`; and the URDF importer's *exact* carrier pattern
-  ([`OmUrdfImporter.cpp:1103`](../../src/omnisim/vrml/OmUrdfImporter.cpp))
-  also reads `[0, 0, 0.0]`, with the engine warning by name.
+  The engine fix (`bde550489`): both devices now resolve via the new
+  **`carrierBodyHandle()`** — the ancestor-walking read welds already used, so
+  a folded child reads its merge-leader's body, with point-velocity reads
+  taking the sensor's own world position for an exact lever arm. A body-less
+  Accelerometer publishes gravity-only (never NaN) with a latched warning.
+  Verified by lane-4 probes `device.accelerometer` and
+  `device.imu_nested_carrier` (the importer's exact emission pattern, with a
+  direct-mount in-run control): both **`works`**.
 
-  ✅ **So this is a fixable URDF-emission bug, not a broken device** — the fix is
-  to emit the IMU cluster onto something that becomes a body, and the lane-4
-  probe (rebuilt on a driven turntable) proves the device itself works.
-  Until then `sensor_msgs/Imu` ships a real orientation with
-  `angular_velocity_covariance[0]` and `linear_acceleration_covariance[0]` set
-  to `-1`, the ROS convention for "not available", rather than zeros that would
-  read as real measurements. The genuine yaw rate is on `/odom`, differenced
-  from pose.
+  **`sensor_msgs/Imu` semantics since 2026-09-01**: `angular_velocity` and
+  `linear_acceleration` are populated whenever the bridge's `/read_sensor`
+  returns three finite values, with `covariance[0] = 0.0` ("available,
+  accuracy unknown"); `covariance[0] = -1` ("not available") is kept, per
+  message, when the device is absent, warming up, or non-finite — a stale
+  pre-fix engine still yields zeros-or-NaN, and only the NaN half is
+  detectable client-side. The bridge's pose-differenced yaw rate stays on
+  `/odom` and is never blended into the Imu message. ⚠ **Not yet
+  live-verified**: no engine or ROS stack was run for the re-point (the WSL
+  bringup lane owns that); a live check would assert `angular_velocity.z`
+  tracking a commanded turn and `linear_acceleration` magnitude ≈ 9.81 m/s²
+  at rest, with both `covariance[0]` entries at `0.0`.
 - ⛔ **No camera exists in this tree**, so no `Image`/`CameraInfo` was shipped.
 
 The Husky URDF gained a `<sensor type="ray">` block (a SICK LMS111 on the sensor
@@ -290,10 +300,13 @@ Declared through the feature flags **and** repeated in
    harness's documented reset behaviour; its warning is passed through verbatim.
 5. **`DeleteEntity` removes a node from the scene graph, not from the physics
    model.** Deleted geometry keeps blocking rays and contacts until a reload.
-6. **Sensor topics cover orientation, range and position only.** `Gyro` reads a
-   constant zero and `Accelerometer` never samples, so both are declared absent
-   via `covariance[0] = -1` instead of being published as zeros; there is no
-   camera in the tree, so no `Image`/`CameraInfo`. Only
+6. **Sensor topics cover orientation, rates, acceleration, range and
+   position.** Since 2026-09-01 (engine `bde550489` + the sensor-node
+   re-point, code-verified only) `Imu.angular_velocity` /
+   `linear_acceleration` carry `covariance[0] = 0.0` when the Gyro /
+   Accelerometer reading is finite, and keep the `-1` "not available"
+   declaration when the device is absent, warming up, or non-finite;
+   there is no camera in the tree, so no `Image`/`CameraInfo`. Only
    `omnilink_mobile_bridge` implements `/read_sensor`
    ([PROTOCOL.md §6.6](../../PROTOCOL.md)) — other bridges still have no sensor
    surface, so check `capabilities.sensors` rather than assuming the verb.
@@ -305,9 +318,11 @@ Declared through the feature flags **and** repeated in
 8. **Rates cost TCP connections — for harness traffic.** The **bridge** now sets
    `protocol_version = "HTTP/1.1"` and the client pools connections, measured at
    300 requests costing **+0** `TIME_WAIT` sockets at 908.8 req/s, against
-   **+300** at 114.8 req/s before. The **World Harness still speaks HTTP/1.0**,
-   so `clock_node`, `robot_state_node` and `simulation_interfaces_node` still
-   burn one socket per request; the pool detects that and degrades automatically.
+   **+300** at 114.8 req/s before. The World Harness **also speaks HTTP/1.1 with keep-alive since
+   2026-09-01** (it was HTTP/1.0 when this section was written), so
+   `clock_node`, `robot_state_node` and `simulation_interfaces_node` now
+   reuse pooled connections too; the pool's HTTP/1.0-peer detection remains
+   as a safety net for older harnesses.
    Each closed socket holds an ephemeral port for 120 s against Windows' 16,384,
    which is how a ~50 Hz bringup previously reached 17,487 sockets in
    `TIME_WAIT` and `WinError 10048`. Giving the harness keep-alive is the

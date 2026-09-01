@@ -177,10 +177,15 @@ void OmPhysicsViewer::updateMass() {
 void OmPhysicsViewer::updateDensity() {
   const double d = mSolid->density();
   const double ad = mSolid->averageDensity();
-  if (ad >= 0.0) {
-    const double currentDensity = mIncludingExcludingDescendants->currentIndex() == LOCAL ? d : ad;
+  // Gate on the density of the SELECTED mode, not on averageDensity():
+  // averageDensity() is always -1 post-ODE (global volume is always 0), so
+  // gating on it blanked the row even when the LOCAL mode had an authored
+  // physics()->density() to show. The average path is kept for the day
+  // volume integration returns.
+  const double currentDensity = mIncludingExcludingDescendants->currentIndex() == LOCAL ? d : ad;
+  if (currentDensity >= 0.0)
     mDensityLabel->setText(QString("%1 kg/m^3").arg(OmPrecision::doubleToString(currentDensity, OmPrecision::GUI_MEDIUM)));
-  } else
+  else
     mDensityLabel->clear();
 }
 
@@ -209,11 +214,14 @@ void OmPhysicsViewer::updateCenterOfMass() {
 void OmPhysicsViewer::updateInertiaMatrix() {
   if (mSolid->mass() != 0.0 && (mIncludingExcludingDescendants->currentIndex() == LOCAL)) {
     mInertiaMatrixMainLabel->setText(tr("Inertia matrix:"));
+    // inertiaMatrix() is a row-major stride-3 double[9] (see OmSolid.cpp) --
+    // the old stride-4 ODE dMatrix3 indices (I[i+4], I[i+8]) read past the
+    // end of the array. Row r, column c lives at I[3*r + c].
     const double *const I = mSolid->inertiaMatrix();
     for (int i = 0; i < 3; ++i) {
       mInertiaMatrixLabel[i]->setText(OmPrecision::doubleToString(I[i], OmPrecision::GUI_MEDIUM));
-      mInertiaMatrixLabel[i + 3]->setText(OmPrecision::doubleToString(I[i + 4], OmPrecision::GUI_MEDIUM));
-      mInertiaMatrixLabel[i + 6]->setText(OmPrecision::doubleToString(I[i + 8], OmPrecision::GUI_MEDIUM));
+      mInertiaMatrixLabel[i + 3]->setText(OmPrecision::doubleToString(I[i + 3], OmPrecision::GUI_MEDIUM));
+      mInertiaMatrixLabel[i + 6]->setText(OmPrecision::doubleToString(I[i + 6], OmPrecision::GUI_MEDIUM));
     }
   } else {
     for (int i = 0; i < 9; ++i)

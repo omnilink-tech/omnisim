@@ -317,8 +317,12 @@ bool OmGps::refreshSensorIfNeeded() {
   // owns the upper Solid's body. Newton-backed Solids now get a
   // real GPS speed reading from the Newton override (was previously
   // reading bridge-proxy ODE state, which is stale or zero).
+  // carrierBodyHandle, not bodyHandle: a GPS on a FOLDED carrier (nested
+  // Solid, no joint to its parent) owns no body of its own; the fold leader's
+  // body is the physically correct read, and the point-velocity query passes
+  // the SENSOR's own world position, so the lever arm in the fold is right.
   OmSolid *const us = upperSolid();
-  const OmBodyHandle upperHandle = us ? us->bodyHandle() : nullptr;
+  const OmBodyHandle upperHandle = us ? us->carrierBodyHandle() : nullptr;
   if (upperHandle) {
     // ⚠ CHECK THE RETURN -- it was being discarded. getBodyPointVel returns -1
     // WITHOUT WRITING v[] when the Newton world is not running, and always on a
