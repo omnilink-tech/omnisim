@@ -232,7 +232,7 @@ It writes the engine log to `omnisim_log.txt`, tails it for errors and warnings,
 For an agent-driven workflow (headless, structured exit, supported run contract):
 
 ```bash
-python scripts/dev/omnisim_dev.py run-headless projects/samples/demos/worlds/showcase/warehouse_husky.omniworld --until-finalized
+python -m omnisim run-headless projects/samples/demos/worlds/showcase/warehouse_husky.omniworld --until-finalized
 ```
 
 To regenerate a procedural world:
@@ -326,16 +326,16 @@ docs/           Documentation (guide, reference, developer)
 The repo now exposes a thin developer command layer for targeted build and validation:
 
 ```bash
-python scripts/dev/omnisim_dev.py --help
-python scripts/dev/omnisim_dev.py build core
-python scripts/dev/omnisim_dev.py build gui
-python scripts/dev/omnisim_dev.py test-smoke
-python scripts/dev/omnisim_dev.py test-world tests/api/worlds/accelerometer.omniworld
-python scripts/dev/omnisim_dev.py run-headless tests/api/worlds/accelerometer.omniworld
-python scripts/dev/omnisim_dev.py profile-world tests/rendering/worlds/normals.omniworld
+python -m omnisim --help
+python -m omnisim build core
+python -m omnisim build gui
+python -m omnisim test-smoke
+python -m omnisim test-world tests/api/worlds/accelerometer.omniworld
+python -m omnisim run-headless tests/api/worlds/accelerometer.omniworld
+python -m omnisim profile-world tests/rendering/worlds/normals.omniworld
 ```
 
-`python -m omnisim <same args>` is the going-forward spelling; `scripts/dev/omnisim_dev.py` is a shim that forwards to it, so both keep working.
+`python -m omnisim` is the only spelling: the `scripts/dev/omnisim_dev.py` shim that used to forward to it was deleted on 2026-09-02.
 
 ⚠️ **There is no `build renderer`.** It now exits non-zero with an explanation (`omnisim/dev/commands.py`), because the `renderer` make target it used to call survives only in the top-level `Makefile`'s `.PHONY` and goal-filter lists with **no recipe behind it** — `make renderer` prints `Nothing to be done for 'renderer'` and exits **0**, a build command reporting success while building nothing. Use `build core` (or `build gui`); the wgpu renderer is part of the engine.
 

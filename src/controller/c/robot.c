@@ -1646,9 +1646,10 @@ static const char *CONNECT_DIAG_PIPE_OPEN =
   "the simulator launched this controller but libController could not open its IPC pipe. This almost always "
   "means libController and the simulator binary are built from different revisions (a build mismatch): the "
   "two derive the pipe name differently and never meet";
-static const char *CONNECT_DIAG_HANDSHAKE =
-  "the OmniSim IPC handshake failed: engine and libController are different builds (an ABI/protocol "
-  "mismatch, failed fast instead of hanging at zero ticks)";
+// Used only when the scheduler recorded no detail (should not happen; kept as the floor).
+static const char *CONNECT_DIAG_HANDSHAKE_GENERIC =
+  "engine and libController could not complete the hello exchange (a build mismatch, a stale pipe, "
+  "or a timeout -- the scheduler did not record which)";
 
 int wb_robot_init() {  // API initialization
 // do not use any buffer for the standard streams
@@ -1754,8 +1755,15 @@ int wb_robot_init() {  // API initialization
     // cannot succeed, so record it durably (headless/CI runs have no console) and die loudly now.
     // The scheduler already printed the attributed stderr diagnostic.
     if (init_status == SCHEDULER_INIT_ABI_MISMATCH) {
-      write_connect_failure_diagnostic(socket_filename, CONNECT_DIAG_HANDSHAKE);
-      fprintf(stderr, "Giving up: the OmniSim IPC handshake failed (build mismatch), retrying cannot help.\n");
+      // Name the check that failed (public issue #15): a handshake TIMEOUT and a stale-pipe
+      // nonce crossing are not build mismatches, and the generic sentence used to send the
+      // reader to `doctor`, which then reported the builds compatible -- a closed loop.
+      const char *detail = scheduler_last_handshake_failure();
+      char reason[640];
+      snprintf(reason, sizeof(reason), "the OmniSim IPC handshake failed: %s",
+               (detail && detail[0]) ? detail : CONNECT_DIAG_HANDSHAKE_GENERIC);
+      write_connect_failure_diagnostic(socket_filename, reason);
+      fprintf(stderr, "Giving up: %s. Retrying cannot help.\n", reason);
       exit(EXIT_FAILURE);
     }
     // An intern controller that still cannot open its IPC pipe after a couple of seconds is almost

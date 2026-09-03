@@ -31,7 +31,6 @@
 #include "OmWorld.hpp"
 #include "OmWrenAbstractResizeManipulator.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 void OmBox::init() {
   mSize = findSFVector3("size");
@@ -151,23 +150,14 @@ QStringList OmBox::fieldsToSynchronizeWithW3d() const {
 // ODE objects //
 /////////////////
 
-dGeomID OmBox::createOdeGeom(dSpaceID space) {
+bool OmBox::createOdeGeom() {
   const OmVector3 &s1 = mSize->value();
   if (s1.x() <= 0.0 || s1.y() <= 0.0 || s1.z() <= 0.0) {
-    parsingWarn(tr("'size' must be positive: construction of the Box in 'boundingObject' failed."));
+    parsingWarn(tr("'size' must be positive: construction of the Box in 'boundingObject' failed. This collider is dropped, so the Solid has NO collision here and falls through everything; set all three 'size' components to positive metres."));
     return NULL;
   }
 
-  (void)space;
-  return NULL;  // ODE is gone: no collision geoms
-}
-
-void OmBox::applyToOdeData(bool correctSolidMass) {
-  if (mOdeGeom == NULL)
-    return;
-
-  if (correctSolidMass)
-    applyToOdeMass();
+  return true;
 }
 
 const OmVector3 OmBox::scaledSize() const {
@@ -177,7 +167,7 @@ const OmVector3 OmBox::scaledSize() const {
 bool OmBox::isSuitableForInsertionInBoundingObject(bool warning) const {
   const bool invalidDimensions = (mSize->x() <= 0.0 || mSize->y() <= 0.0 || mSize->z() <= 0.0);
   if (warning && invalidDimensions)
-    parsingWarn(tr("All 'size' components must be positive for a Box used in a 'boundingObject'."));
+    parsingWarn(tr("All 'size' components must be positive for a Box used in a 'boundingObject'. The Box is rejected as a collider, so the Solid does not collide through it; set all three 'size' components to positive metres."));
 
   return !invalidDimensions;
 }

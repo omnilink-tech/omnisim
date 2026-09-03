@@ -18,9 +18,10 @@
 
 #include "OmWrenRenderingContext.hpp"
 
+// Qt-include ratchet exception (2026-09-02): both inherited from the pre-deletion wren/OmWrenTextureOverlay.cpp
+// and used as COMPLETE types in iconSizeFor() (QFileInfo::isFile, QImageReader::size on a "gl:" search path).
+// QList / QStringList come from the header's <QtCore/QObject> (qobject.h -> qlist.h -> qstringlist.h).
 #include <QtCore/QFileInfo>
-#include <QtCore/QList>
-#include <QtCore/QStringList>
 #include <QtGui/QImageReader>
 
 #include <cassert>

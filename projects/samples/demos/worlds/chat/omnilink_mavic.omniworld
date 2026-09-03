@@ -48,6 +48,15 @@ WorldInfo {
   # A quadcopter has no wheels to starve, so the chassis-collider caveat
   # that keeps this FALSE by default does not apply here.
   newtonRobotColliders TRUE
+  # Ground friction for the parked airframe (public issue #14). The camera-pitch
+  # servo holding the gimbal down puts a small sustained horizontal reaction into
+  # the base; at the built-in mu the parked Mavic slid ~4.5 m per simulated minute
+  # with rotors off and mode=idle, so any measurement taken seconds after load
+  # started somewhere unintended. MEASURED on machine 9722d23d12a3: unset and an
+  # explicit 1.0 drift identically (+0.394, -7.471 after 60 s, byte-identical), and
+  # 1.5 parks it (0.000 m over the last 10 s). Bisected: the gimbal alone
+  # reproduces it; the propeller motors and the device enables do not.
+  newtonGroundMu 1.5
   defaultDamping Damping {
     linear 0.5
     angular 0.5
@@ -277,6 +286,10 @@ DEF MARKER_CYAN Solid {
 # ============================================================================
 DEF MAVIC URDFRobot {
   url "../../../../robots/dji/mavic/urdf/mavic_2_pro.urdf"
+  # Spawn height: 0.1, NOT the ~0.04 resting height. Measured 2026-09-03 (public
+  # issue #14): spawning at 0.04 starts the box inside the contact margin and the
+  # solver pushes it out hard enough to flip the airframe (roll -> -pi within a
+  # second). The 6 cm drop is the lesser evil; it settles upright.
   translation 0 -12 0.1
   rotation 0 0 1 1.5708
   name "Mavic 2 PRO"

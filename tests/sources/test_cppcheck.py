@@ -124,7 +124,6 @@ class TestCppCheck(unittest.TestCase):
         """Test Webots with Cppcheck."""
         sourceDirs = [
             'src/omnisim',
-            'src/wren',
             'src/controller/c',
             'src/controller/cpp',
             'src/controller/launcher',
@@ -139,7 +138,6 @@ class TestCppCheck(unittest.TestCase):
         ]
         includeDirs = [
             'include/controller/c',
-            'include/wren',
             'include/glad',
             'src/omnisim/app',
             'src/omnisim/control',
@@ -159,7 +157,6 @@ class TestCppCheck(unittest.TestCase):
             'src/omnisim/util',
             'src/omnisim/vrml',
             'src/omnisim/widgets',
-            'src/omnisim/wren'
         ]
         skippedFiles = [
             'src/controller/c/sha1.c',

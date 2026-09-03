@@ -21,8 +21,6 @@
 #include "OmMathsUtilities.hpp"
 #include "OmMotor.hpp"
 #include "OmNewtonBackend.hpp"
-#include "OmOdeContext.hpp"
-#include "OmOdeUtilities.hpp"
 #include "OmPhysicsBackend.hpp"
 #include "OmPositionSensor.hpp"
 #include "OmQuaternion.hpp"
@@ -35,7 +33,6 @@
 #include <QtCore/QStringList>
 #include <cmath>
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 // Constructors
 
@@ -48,7 +45,6 @@ void OmBallJoint::init() {
   mOdePositionOffset3 = mPosition3;
   mSavedPositions3[stateId()] = mPosition3;
 
-  mControlMotor = NULL;
 }
 
 OmBallJoint::OmBallJoint(OmTokenizer *tokenizer) : OmHinge2Joint("BallJoint", tokenizer) {
@@ -64,7 +60,6 @@ OmBallJoint::OmBallJoint(const OmNode &other) : OmHinge2Joint(other) {
 }
 
 OmBallJoint::~OmBallJoint() {
-  mControlMotor = NULL;
 }
 
 OmBallJointParameters *OmBallJoint::ballJointParameters() const {
@@ -327,12 +322,7 @@ bool OmBallJoint::setJoint() {
   if (!OmBasicJoint::setJoint())
     return false;
 
-  const OmSolid *const s = solidEndPoint();
-  dBodyID body = s ? s->body() : NULL;
-  dBodyID parentBody = upperSolid()->bodyMerger();
-  // ODE removed: the control-AMotor enable/disable that used to precede this is
-  // gone (mControlMotor is permanently NULL).
-  setOdeJoint(body, parentBody);
+  setOdeJoint();
 
   return true;
 }
@@ -440,68 +430,6 @@ void OmBallJoint::postFinalize() {
     connect(motor2(), &OmMotor::minPositionChanged, this, &OmBallJoint::checkMotorLimit, Qt::UniqueConnection);
     connect(motor2(), &OmMotor::maxPositionChanged, this, &OmBallJoint::checkMotorLimit, Qt::UniqueConnection);
   }
-}
-
-void OmBallJoint::applyToOdeSpringAndDampingConstants(dBodyID body, dBodyID parentBody) {
-  const OmBallJointParameters *const p = ballJointParameters();
-  const OmJointParameters *const p2 = parameters2();
-  const OmJointParameters *const p3 = parameters3();
-
-  const double brakingDampingConstant = brake() ? brake()->getBrakingDampingConstant() : 0.0;
-  const double brakingDampingConstant2 = brake2() ? brake2()->getBrakingDampingConstant() : 0.0;
-  const double brakingDampingConstant3 = brake3() ? brake3()->getBrakingDampingConstant() : 0.0;
-
-  if ((p == NULL && p2 == NULL && p3 == NULL && brakingDampingConstant == 0.0 && brakingDampingConstant2 == 0.0 &&
-       brakingDampingConstant3 == 0.0) ||
-      (body == NULL && parentBody == NULL)) {
-    if (mSpringAndDamperMotor) {
-      mSpringAndDamperMotor = NULL;
-    }
-    return;
-  }
-  assert((body || parentBody) && (p || p2 || p3 || brake() || brake2() || brake3()));
-
-  double s = p ? p->springConstant() : 0.0;
-  double d = p ? p->dampingConstant() : 0.0;
-  double s2 = p2 ? p2->springConstant() : 0.0;
-  double d2 = p2 ? p2->dampingConstant() : 0.0;
-  double s3 = p3 ? p3->springConstant() : 0.0;
-  double d3 = p3 ? p3->dampingConstant() : 0.0;
-
-  if (p) {  // homogeneous case
-    if (!p2) {
-      s2 = s;
-      d2 = d;
-    }
-    if (!p3) {
-      s3 = s;
-      d3 = d;
-    }
-  }
-
-  d += brakingDampingConstant;
-  d2 += brakingDampingConstant2;
-  d3 += brakingDampingConstant3;
-
-  if (s == 0.0 && d == 0.0 && s2 == 0.0 && d2 == 0.0 && s3 == 0.0 && d3 == 0.0) {
-    if (mSpringAndDamperMotor) {
-      mSpringAndDamperMotor = NULL;
-    }
-    return;
-  }
-
-  const OmWorldInfo *const wi = OmWorld::instance()->worldInfo();
-  double cfm, erp, cfm2, erp2, cfm3, erp3;
-  OmOdeUtilities::convertSpringAndDampingConstants(s, d, wi->basicTimeStep() * 0.001, cfm, erp);
-  OmOdeUtilities::convertSpringAndDampingConstants(s2, d2, wi->basicTimeStep() * 0.001, cfm2, erp2);
-  OmOdeUtilities::convertSpringAndDampingConstants(s3, d3, wi->basicTimeStep() * 0.001, cfm3, erp3);
-
-  (void)cfm;
-  (void)erp;
-  (void)cfm2;
-  (void)erp2;
-  (void)cfm3;
-  (void)erp3;
 }
 
 void OmBallJoint::prePhysicsStep(double ms) {
@@ -740,8 +668,6 @@ void OmBallJoint::save(const QString &id) {
 }
 
 void OmBallJoint::applyToOdeAxis() {
-  assert(mJoint);
-
   OmVector3 referenceAxis = axis();
   OmVector3 referenceAxis3 = axis3();
 
@@ -751,16 +677,10 @@ void OmBallJoint::applyToOdeAxis() {
     referenceAxis3 = OmVector3(0.0, 0.0, 1.0);
   }
 
-  if (mIsReverseJoint)
-    referenceAxis = -referenceAxis;
-
   (void)referenceAxis;
   (void)referenceAxis3;
 
   updateOdePositionOffset();
-
-  if (!mSpringAndDamperMotor)
-    return;
 }
 
 void OmBallJoint::applyToOdeMinAndMaxStop() {

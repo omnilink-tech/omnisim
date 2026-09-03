@@ -118,11 +118,12 @@ void OmRangeFinder::copyImageToMemoryMappedFile(unsigned char *data) {
     if (back && back->isAvailable() &&
         OmWgpuSceneRenderer::ensureTarget(back, width(), height(), mWgpuTarget, mWgpuMeshCache,
                                           mWgpuTargetWidth, mWgpuTargetHeight)) {
-      std::vector<OmWgpuSolidDraw> draws;
-      std::vector<std::array<float, 16>> modelStorage;
-      modelStorage.reserve(64);  // stable backing for draws' modelMatrix16 ptrs
-      draws.reserve(64);
-      collectWgpuDraws(*mWgpuMeshCache, draws, modelStorage);
+      std::vector<OmWgpuSolidDraw> *drawsPtr = nullptr;
+      std::vector<std::array<float, 16>> *modelPtr = nullptr;
+      collectWgpuDrawsCached(*mWgpuMeshCache, nullptr, drawsPtr, modelPtr);  // per-device cached list
+      std::vector<OmWgpuSolidDraw> &draws = *drawsPtr;
+      std::vector<std::array<float, 16>> &modelStorage = *modelPtr;
+      (void)modelStorage;
 
       const double aspect =
         mWgpuTargetHeight > 0 ? static_cast<double>(mWgpuTargetWidth) / mWgpuTargetHeight : 1.0;

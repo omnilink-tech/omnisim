@@ -33,7 +33,6 @@
 #include "OmVersion.hpp"
 #include "OmVrmlNodeUtilities.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 #include <cmath>
 
@@ -157,22 +156,13 @@ QStringList OmSphere::fieldsToSynchronizeWithW3d() const {
 // ODE objects //
 /////////////////
 
-dGeomID OmSphere::createOdeGeom(dSpaceID space) {
+bool OmSphere::createOdeGeom() {
   if (mRadius->value() <= 0.0) {
-    parsingWarn(tr("'radius' must be positive when used in 'boundingObject'."));
+    parsingWarn(tr("'radius' must be positive when used in 'boundingObject'. The Sphere is rejected as a collider, so the Solid does not collide through it; set 'radius' to a positive value in metres."));
     return NULL;
   }
 
-  (void)space;
-  return NULL;  // ODE is gone: no collision geoms
-}
-
-void OmSphere::applyToOdeData(bool correctSolidMass) {
-  if (mOdeGeom == NULL)
-    return;
-
-  if (correctSolidMass)
-    applyToOdeMass();
+  return true;
 }
 
 double OmSphere::scaledRadius() const {
@@ -183,7 +173,7 @@ double OmSphere::scaledRadius() const {
 bool OmSphere::isSuitableForInsertionInBoundingObject(bool warning) const {
   const bool invalidRadius = mRadius->value() <= 0.0;
   if (warning && invalidRadius)
-    parsingWarn(tr("'radius' must be positive when used in 'boundingObject'."));
+    parsingWarn(tr("'radius' must be positive when used in 'boundingObject'. The Sphere is rejected as a collider, so the Solid does not collide through it; set 'radius' to a positive value in metres."));
   return !invalidRadius;
 }
 

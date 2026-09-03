@@ -12,9 +12,9 @@
 >
 > Two clarifications so this is not read as a repudiation:
 >
-> - **The rendering arm is still live and unaffected.** WREN remains canonical, wgpu is
->   opt-in (`renderBackend "wgpu"`), the flip is human-gated, and every render-side
->   mechanism described below still works. Read the render half as current.
+> - **The rendering arm is finished too.** wgpu became the default main view on 2026-08-19 and
+>   WREN was deleted on 2026-08-23 (`976b9449d`); `renderBackend` is a warned no-op. Read the
+>   render half as the record of how the flip was staged, not as current.
 > - **The physics half succeeded on its own terms first.** The default flipped, the
 >   silent-fallback init bug was fixed (`6a459f84`), the solver default moved to
 >   `SolverMuJoCo` (`7b431e81`), and XPBD was then removed (`94f04222`). Deletion came
@@ -51,10 +51,10 @@
 >    `OMNISIM_WITH_NEWTON ?= ON`, the schema default is `physicsBackend "auto"` →
 >    Newton when the runtime is present. See [newton-runtime-bundle.md](newton-runtime-bundle.md).
 >
-> **Honest scope:** ODE is **not** deprecated — it remains the permanent fallback.
+> **Honest scope (as written; ODE was deleted 2026-08-08):** ODE was then the permanent fallback.
 > The bundle closes the "stock *release* silently runs ODE" gap; a from-source
-> clone (or `make debug`) **without** the runtime still falls back to ODE by
-> design. So the precise statement is: build ON · schema `auto`→Newton · release
+> clone (or `make debug`) **without** the runtime fell back to ODE by design — today such a
+> clone has NO physics (`python -m omnisim doctor` reports it). So the precise statement is: build ON · schema `auto`→Newton · release
 > bundles the runtime · init now reliable ⇒ the user-visible runtime default for a
 > **stock release on a supported host is Newton-where-supported**, but a no-runtime
 > source clone is ODE. The fidelity tail also remains (~35–40% corpus-faithful,
@@ -422,7 +422,7 @@ Newton-golden smoke. The capability gate (§4.1) shrinks as milestones land.
 criterion below was satisfied: §4.1 capability gate verified (mesh + non-Hinge/Slider → ODE); N1–N3
 landed, N4/N5 documented as capability-gated/warned limitations (§4.2); **runtime shipping decision =
 document, do NOT bundle** — vendoring Warp + its CUDA redistributables (~GB) was rejected; a default
-build uses Newton when `pip install newton warp-lang` is present, else falls back to ODE (safe, logged).
+build uses Newton when `pip install newton warp-lang` is present, else falls back to ODE (safe, logged) — *historical; no ODE since 2026-08-08*.
 Verified: no-flags build compiles+links+runs Newton (invariant gate PASS); ODE path intact under
 `OMNISIM_FORCE_ODE`; pure-legacy `make OMNISIM_WITH_NEWTON=OFF` links (also fixed a pre-existing
 `snapshotBodyTranslations` missing-stub that had silently broken that build). §3 harness is green except
@@ -449,14 +449,14 @@ Original criterion (flip only when **all** hold):
 > banner) and the `OMNISIM_REQUIRE_NEWTON` guard (`cfb11d06`), a stock release on
 > a supported host now reliably *runs* Newton — the missing piece that made the
 > Layer-A/B "default" real rather than nominal. A from-source clone or `make
-> debug` without the runtime still falls back to ODE (by design). Full procedure
+> debug` without the runtime still falls back to ODE (by design — *historical; it now has no physics*). Full procedure
 > + caveats: [newton-runtime-bundle.md](newton-runtime-bundle.md).
 >
 > **Update 2026-06-09 (lane L6, branch `lane-l6`).** §4.3 chose "document, do
 > NOT bundle" on the premise that vendoring Warp + CUDA redistributables is
 > "~GB". **That number was an overestimate and the decision is now reversed:**
 > the runtime *is* being bundled, because the lane mandate
-> ([migration-parallel-lanes.md](migration-parallel-lanes.md) L6) and the §8.1
+> (migration-parallel-lanes.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) L6) and the §8.1
 > default-flip blocker both require "a stock install runs Newton with no manual
 > pip/PATH steps."
 
@@ -486,7 +486,7 @@ imports `python312.dll`; a binary rebuilt under the current Makefile (PYTHON_HOM
 break, so the bundler **autodetects** the version from the binary's PE import
 table (pure-Python parse, no objdump dep) rather than hardcoding it.
 
-**Delivered:**
+**Delivered (landed on `main` 2026-06-09):**
 - `scripts/packaging/bundle_newton_runtime.py` — stages CPython + `._pth` +
   `site-packages`; `vendor` mode (offline, ~450 MB) and `bootstrap` mode (slim,
   first-run install); `--verify` proves imports under a scrubbed env.

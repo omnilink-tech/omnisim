@@ -307,8 +307,11 @@ now measures as harmful.
 > 2026-08-08. A world declaring `coulombFriction [ 5 ]` gets **1.0**.
 > `newtonGroundMu` is the field that works, and the engine warns when a world
 > declares one without the other. Do **not** reach for the old escape hatch of
-> pinning `physicsBackend "ode"` on the gripper: a Solid pinned to `"ode"` is
-> not simulated at all now.
+> pinning `physicsBackend "ode"` on the gripper: it is a retired selector, so
+> the Solid runs on Newton anyway and the world just collects a warning. (Until
+> 2026-09-02 it was worse than useless — the Solid was left with NO physics at
+> all. That trap is closed; see the backend-fields rule in
+> [agents-hard-won-rules.md](../developer/agents-hard-won-rules.md).)
 >
 > (One narrow exception: a world that pins `defaultPhysicsBackend "newton"` has
 > its first positive `coulombFriction` **bridged** to Newton's ground friction,

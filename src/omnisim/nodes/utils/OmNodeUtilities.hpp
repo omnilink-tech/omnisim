@@ -25,7 +25,6 @@
 
 #include "OmNode.hpp"
 #include "OmNodeModel.hpp"
-#include "OmOdeTypes.hpp"
 #include "OmProtoModel.hpp"
 
 #include <QtCore/QList>
@@ -157,7 +156,6 @@ namespace OmNodeUtilities {
 
   bool isTrackAnimatedGeometry(const OmNode *node);
 
-  dBodyID findBodyMerger(const OmNode *node);
 
   ///////////
   // Other //

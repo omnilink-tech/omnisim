@@ -130,8 +130,8 @@ robot's spec decides.
 > (authority *is* the instability; the sim-to-deploy gap mis-times the feedback
 > loop; no kinematic redundancy to absorb it) and the passenger-vs-saboteur
 > framing:
-> [rl-two-layer-architecture.md §3.8](rl-two-layer-architecture.md#38-stand-and-hold-cubes--passenger-vs-saboteur-and-why-a-residual-on-a-static-stand-goes-net-negative-2026-06-23)
-> and [rl-journey.md §8 lesson 10](rl-journey.md#8-cross-cutting-lessons-the-rules-paid-for-in-falls).
+> [rl-two-layer-architecture.md §3.8](shadowing.md)
+> and rl-journey.md §8 lesson 10 (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 
 ### Vibration / steady-state jitter
 

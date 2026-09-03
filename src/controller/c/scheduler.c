@@ -62,6 +62,22 @@ void scheduler_set_expected_ipc_nonce(unsigned long long nonce) {
   scheduler_expected_nonce = nonce;
 }
 
+// The attributed reason for the last handshake failure (public issue #15). Every failure
+// below already prints WHICH check failed to stderr -- but a spawned controller's stderr is
+// invisible in a headless run, and robot.c's durable sidecar used one generic "different
+// builds" sentence for all of them, so a handshake TIMEOUT on a busy machine read as an ABI
+// mismatch and sent the reader to `doctor`, which then reported the builds compatible.
+// Keep the detail here so the sidecar can carry it.
+static char scheduler_last_handshake_detail[320] = "";
+
+const char *scheduler_last_handshake_failure(void) {
+  return scheduler_last_handshake_detail;
+}
+
+static void scheduler_note_handshake_failure(const char *detail) {
+  snprintf(scheduler_last_handshake_detail, sizeof(scheduler_last_handshake_detail), "%s", detail);
+}
+
 // IPC handshake (core-evolution-plan.md, Phase I1). The engine speaks first: it writes its
 // 16-byte hello (messages.h frame layout) as soon as it accepts the connection; we validate
 // it and reply with an echo carrying our protocol version. Every failure here is FATAL and
@@ -70,6 +86,8 @@ void scheduler_set_expected_ipc_nonce(unsigned long long nonce) {
 // `hello` must already contain the engine's full OMNISIM_IPC_HELLO_SIZE-byte frame.
 static int scheduler_validate_and_echo_hello(const char *hello, bool is_tcp) {
   if (memcmp(hello, OMNISIM_IPC_MAGIC, 4) != 0) {
+    scheduler_note_handshake_failure("BUILD MISMATCH: the simulator sent unrecognized bytes where the IPC hello was "
+                                     "expected (it predates the handshake protocol or is a different build)");
     fprintf(stderr,
             "Error: the simulator sent unrecognized bytes where the OmniSim IPC handshake was expected. "
             "The simulator binary predates the handshake protocol or is a different build than this "
@@ -78,6 +96,13 @@ static int scheduler_validate_and_echo_hello(const char *hello, bool is_tcp) {
   }
   const unsigned int engine_version = (unsigned char)hello[4] | ((unsigned int)(unsigned char)hello[5] << 8);
   if (engine_version != OMNISIM_IPC_VERSION) {
+    {
+      char detail[200];
+      snprintf(detail, sizeof(detail),
+               "BUILD MISMATCH: IPC protocol version %u (simulator) vs %u (this libController)",
+               engine_version, (unsigned int)OMNISIM_IPC_VERSION);
+      scheduler_note_handshake_failure(detail);
+    }
     fprintf(stderr,
             "Error: OmniSim IPC protocol version mismatch: the simulator speaks version %u but this "
             "libController speaks version %u (a build mismatch). Rebuild engine and libController from "
@@ -101,6 +126,12 @@ static int scheduler_validate_and_echo_hello(const char *hello, bool is_tcp) {
     for (int i = 7; i >= 0; i--)
       got = (got << 8) | (unsigned char)hello[8 + i];
     if (expected != 0 && got != expected) {
+      char detail[200];
+      snprintf(detail, sizeof(detail),
+               "STALE PIPE CROSSING: connected to a different simulator instance (launch nonce %llu, "
+               "expected %llu) -- not a build mismatch",
+               got, expected);
+      scheduler_note_handshake_failure(detail);
       fprintf(stderr,
               "Error: this controller connected to a DIFFERENT simulator instance (launch nonce %llu, "
               "expected %llu): a stale IPC pipe crossing. Aborting so the pairing can be retried cleanly.\n",
@@ -124,13 +155,48 @@ static int scheduler_handshake_timeout_ms(void) {
   if (value && value[0]) {
     char *end = NULL;
     const long parsed = strtol(value, &end, 10);
-    if (end != value && *end == '\0' && parsed >= 1000 && parsed <= 300000)
+    if (end != value && *end == '\0' && parsed >= 1000 && parsed <= 900000)
       return (int)parsed;
   }
   return OMNISIM_IPC_HANDSHAKE_DEFAULT_TIMEOUT_MS;
 }
 
+// Wait for the engine's hello in slices, announcing progress between them (public issue #15).
+// The budget is 300 s so a slow cold load cannot be misread as a build mismatch -- but a
+// silent five-minute wait is its own bad failure mode, so say what we are waiting for every
+// 30 s. Returns the bytes read, exactly like the one-shot receive it replaces.
+#define OMNISIM_HANDSHAKE_SLICE_MS 30000
+
+static int scheduler_receive_hello(void *transport, char *buffer, int size, int timeout_ms, bool is_tcp) {
+  int waited = 0;
+  int got = 0;
+  while (waited < timeout_ms) {
+    const int slice = (timeout_ms - waited) < OMNISIM_HANDSHAKE_SLICE_MS ? (timeout_ms - waited)
+                                                                         : OMNISIM_HANDSHAKE_SLICE_MS;
+    got = is_tcp ? tcp_client_receive_timeout(*(int *)transport, buffer, size, slice)
+                 : g_pipe_receive_timeout((GPipe *)transport, buffer, size, slice);
+    if (got == size)
+      return got;
+    waited += slice;
+    if (waited < timeout_ms)
+      fprintf(stderr,
+              "OmniSim: still waiting for the simulator's IPC handshake (%d s of %d s). The engine is "
+              "probably still loading the world -- a cold warp kernel compile can take minutes.\n",
+              waited / 1000, timeout_ms / 1000);
+  }
+  return got;
+}
+
 static void scheduler_print_handshake_timeout(int timeout_ms) {
+  {
+    char detail[320];
+    snprintf(detail, sizeof(detail),
+             "HANDSHAKE TIMEOUT: the simulator did not send its IPC hello within %.3g s -- the engine "
+             "was still loading or the machine is overloaded (a cold warp kernel compile can take longer), "
+             "NOT a build mismatch; raise OMNISIM_IPC_HANDSHAKE_TIMEOUT_MS (up to 900000) or reduce load",
+             timeout_ms / 1000.0);
+    scheduler_note_handshake_failure(detail);
+  }
   fprintf(stderr,
           "Error: the simulator did not send the OmniSim IPC handshake within %.3g seconds. "
           "It may be overloaded, may predate the handshake protocol, or may be a different build than this "
@@ -194,8 +260,8 @@ int scheduler_init_remote(const char *host, int port, const char *robot_name, ch
     pre_read = 0;
   free(acknowledge_message);
   const int handshake_timeout_ms = scheduler_handshake_timeout_ms();
-  if (tcp_client_receive_timeout(scheduler_client, hello + pre_read, OMNISIM_IPC_HELLO_SIZE - pre_read,
-                                  handshake_timeout_ms) != OMNISIM_IPC_HELLO_SIZE - pre_read) {
+  if (scheduler_receive_hello(&scheduler_client, hello + pre_read, OMNISIM_IPC_HELLO_SIZE - pre_read,
+                              handshake_timeout_ms, true) != OMNISIM_IPC_HELLO_SIZE - pre_read) {
     scheduler_print_handshake_timeout(handshake_timeout_ms);
     tcp_client_close(scheduler_client);
     scheduler_client = -1;
@@ -223,7 +289,7 @@ int scheduler_init_local(const char *pipe) {
   // handshake (a build mismatch) and must produce a loud, fast failure, not a silent hang.
   char hello[OMNISIM_IPC_HELLO_SIZE];
   const int handshake_timeout_ms = scheduler_handshake_timeout_ms();
-  if (g_pipe_receive_timeout(scheduler_pipe, hello, OMNISIM_IPC_HELLO_SIZE, handshake_timeout_ms) !=
+  if (scheduler_receive_hello(scheduler_pipe, hello, OMNISIM_IPC_HELLO_SIZE, handshake_timeout_ms, false) !=
       OMNISIM_IPC_HELLO_SIZE) {
     scheduler_print_handshake_timeout(handshake_timeout_ms);
     g_pipe_delete(scheduler_pipe);

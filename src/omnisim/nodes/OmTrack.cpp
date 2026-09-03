@@ -51,7 +51,6 @@ void OmTrack::init() {
   mMotorPosition = 0.0;
   mLinearMotor = NULL;
   mBrake = NULL;
-  mBodyID = NULL;
 
   // texture animation
   mShape = NULL;
@@ -212,15 +211,6 @@ void OmTrack::createWrenObjects() {
 
 void OmTrack::postFinalize() {
   OmSolid::postFinalize();
-
-  // get bodyID
-  OmSolid *node = this;
-  while (node) {
-    mBodyID = node->body();
-    if (mBodyID)
-      break;
-    node = OmNodeUtilities::findUpperSolid(node);
-  }
 
   OmMFNode::Iterator it(*mDeviceField);
   while (it.hasNext()) {

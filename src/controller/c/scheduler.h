@@ -43,6 +43,9 @@ int scheduler_init_local(const char *pipe);
 // (an extern controller reading the engine's "ipc-nonce" rendezvous file, Phase I3). When unset,
 // the check falls back to the OMNISIM_IPC_NONCE environment variable (intern controllers).
 void scheduler_set_expected_ipc_nonce(unsigned long long nonce);
+// The attributed reason for the last handshake failure (which check failed, with values);
+// empty when no handshake has failed. See scheduler.c (public issue #15).
+const char *scheduler_last_handshake_failure(void);
 void scheduler_cleanup();
 void scheduler_send_request(const WbRequest *);
 WbRequest *scheduler_read_data();

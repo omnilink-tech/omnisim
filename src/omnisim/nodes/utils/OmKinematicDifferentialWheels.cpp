@@ -49,7 +49,6 @@ void OmKinematicDifferentialWheels::applyKinematicMotion(double ms) {
   if (deltaDirection != 0.0)
     mRobot->setRotationAngle(mRobot->rotation().angle() + 2.0 * deltaDirection);
 
-  mRobot->updateOdeGeomPosition();
   mRobot->printKinematicWarningIfNeeded();
 }
 
@@ -58,7 +57,6 @@ void OmKinematicDifferentialWheels::applyKinematicDisplacement() {
   OmVector3 position = mRobot->translation();
   mRobot->setTranslation(position[0] - mKinematicDisplacement[0] / mKinematicDisplacementNumber,
                          position[1] - mKinematicDisplacement[1] / mKinematicDisplacementNumber, position[2]);
-  mRobot->updateOdeGeomPosition();
 }
 
 OmCylinder *OmKinematicDifferentialWheels::getRecursivelyBigestCylinder(OmBaseNode *node) {

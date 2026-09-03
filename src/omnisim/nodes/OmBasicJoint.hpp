@@ -20,7 +20,6 @@
 #define OM_BASIC_JOINT_HPP
 
 #include "OmBaseNode.hpp"
-#include "OmOdeTypes.hpp"
 #include "OmRotation.hpp"
 #include "OmVector3.hpp"
 
@@ -63,7 +62,6 @@ public:
   OmSolid *solidEndPoint() const;
   OmSolidReference *solidReference() const;
   OmSolid *solidParent() const;
-  virtual dJointID jointID() const { return mJoint; }
   // endPoint Solid translation and rotation if joint position is 0
   const OmVector3 &zeroEndPointTranslation() const { return mEndPointZeroTranslation; }
   const OmRotation &zeroEndPointRotation() const { return mEndPointZeroRotation; }
@@ -150,7 +148,7 @@ protected:
   OmBasicJoint(const OmBasicJoint &other);
   OmBasicJoint(const OmNode &other);
 
-  virtual void setOdeJoint(dBodyID body, dBodyID parentBody);
+  virtual void setOdeJoint();
   // anchor point on an hinge axis; also defined for a slider axis to set its graphical represention position
   virtual OmVector3 anchor() const;
 
@@ -184,9 +182,6 @@ protected:
   // a stale one silently overpowers the position controller that replaced it.
   static void pushNewtonAxisTarget(OmNewtonBackend *newton, int jointIdx, int dof, OmMotor *motor);
 
-  dJointID mJoint;
-  // joint attached to the static environment (internally in ODE the first body cannot be NULL)
-  bool mIsReverseJoint;
   // the second end of the joint, the first being its parent; this is is either a Solid or a SolidReference
   OmSFNode *mEndPoint;
   // axis, anchor, initial position, damping and spring constants, min and max stop
@@ -196,8 +191,6 @@ protected:
   OmVector3 mEndPointZeroTranslation;
   OmRotation mEndPointZeroRotation;
   void retrieveEndPointSolidTranslationAndRotation(OmVector3 &it, OmRotation &ir) const;
-  dJointID mSpringAndDamperMotor;  // ODE linear motor used to simulate spring and damper effects by means of stops
-  virtual void applyToOdeSpringAndDampingConstants(dBodyID body, dBodyID parentBody) = 0;
 
   bool mIsEndPointPositionChangedByJoint;
 

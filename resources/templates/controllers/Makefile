@@ -79,8 +79,14 @@ space := $(null) $(null)
 ### Makefile.include hard-requires OMNISIM_HOME, so seed it from WEBOTS_HOME
 ### when only the legacy name is exported. When neither is set OMNISIM_HOME
 ### stays empty and Makefile.include fails with its usual explicit error.
+# Adopt the legacy name ONLY when it names a directory that EXISTS: a machine that
+# once had Webots keeps WEBOTS_HOME after the install is removed, and adopting that
+# phantom path resolves every include and library under a directory that is not there.
+# `test -d`, not $(wildcard): wildcard splits on spaces and would reject a real
+# "C:\Program Files\..." install.
+OM_LEGACY_HOME := $(strip $(if $(strip $(WEBOTS_HOME)),$(if $(strip $(shell test -d "$(WEBOTS_HOME)" && echo yes)),$(WEBOTS_HOME))))
 ifeq ($(strip $(OMNISIM_HOME)),)
- OMNISIM_HOME := $(WEBOTS_HOME)
+ OMNISIM_HOME := $(OM_LEGACY_HOME)
 endif
 ifeq ($(OMNISIM_HOME),)
  $(error The OMNISIM_HOME environment variable is not defined. Set it to your OmniSim installation root, e.g. export OMNISIM_HOME=/path/to/omnisim)

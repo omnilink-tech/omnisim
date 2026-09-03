@@ -17,7 +17,7 @@ is non-deterministic — across runs its output coverage swings ~31–100% (the 
 intermittently drops), while the single-pass `clearAndDrawScene` is rock-stable. This is the **last real bug**
 blocking lighting parity (and therefore the 3c-B main-view flip and Phase ζ).
 
-See the full diagnosis in [r4-completion-checklist.md](r4-completion-checklist.md) (the
+See the full diagnosis in r4-completion-checklist.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) (the
 "Lighting/shadow convergence to WREN" block).
 
 ## What we already know (so you can skip re-deriving it)

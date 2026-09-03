@@ -191,7 +191,7 @@ void OmGyro::computeValue() {
     // Latched like OmAccelerometer's no-body warning: computeValue runs every
     // sensor refresh, so an unlatched warn floods the log at the refresh rate.
     if (!mWarningWasPrinted) {
-      parsingWarn(tr("this node or its parents requires a 'physics' field to be functional."));
+      parsingWarn(tr("this node or its parents requires a 'physics' field to be functional. The Gyro writes NO value (a controller keeps reading 0 0 0 while the body rotates); add a Physics node to the Solid carrying it -- see docs/reference/gyro.md."));
       mWarningWasPrinted = true;
     }
   }

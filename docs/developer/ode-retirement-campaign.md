@@ -205,7 +205,7 @@
 > ### Companion docs — status after the campaign
 >
 > All four are now **historical**; none should be followed as a plan:
-> [`v6-readiness.md`](v6-readiness.md),
+> `v6-readiness.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)),
 > [`newton-ode-replacement-plan.md`](newton-ode-replacement-plan.md) (W0–W7),
 > [`default-flip-plan.md`](default-flip-plan.md) (the safety harness for a flip
 > that has since happened *and* been superseded by deletion),

@@ -44,6 +44,11 @@ public:
   // returns the number of invalid tokens found
   int tokenize(const QString &fileName, const QString &prefix = QString());
   int tokenizeString(const QString &string);
+  // Fill this tokenizer with deep copies of `tokens` (line/column preserved) instead of lexing
+  // text again. Used by OmProtoModel::generateRoot, which re-tokenized the SAME body text once per
+  // PROTO instance (2026-09-02: 1.0 s of the city's construction for 476 instances of 60 bodies).
+  void adoptTokens(const QVector<OmToken *> &tokens);
+  const QVector<OmToken *> &tokens() const { return mVector; }
   const QString &fileName() const { return mFileName; }
 
   // OmniSim extension: expand `#include "path/to/file.wbt"` directives

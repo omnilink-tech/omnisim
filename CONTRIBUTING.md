@@ -29,7 +29,7 @@ For C/C++ contributions it is strongly recommended that you install the developm
 
 ## Install the Development Environment
 
-* See the [Developer Quickstart](docs/developer/quickstart.md) for the full Windows (MSYS2 + MinGW64) setup. Linux and macOS use the same `make` / `python scripts/dev/omnisim_dev.py build all` flow with the appropriate native toolchain.
+* See the [Developer Quickstart](docs/developer/quickstart.md) for the full Windows (MSYS2 + MinGW64) setup. Linux and macOS use the same `make` / `python -m omnisim build all` flow with the appropriate native toolchain.
 * **Note:** `OMNISIM_HOME` is the canonical environment variable for the install root — setting it alone is sufficient to build and run, and it is the name to use in new code. `WEBOTS_HOME` survives as a **legacy alias** kept for compatibility with the upstream Webots project, and it is still read in three places, so do not assume it has been purged:
   1. **Core runtime** (libController, the Python/C/C++ controller package, the controller launcher) reads **only** `OMNISIM_HOME` — no `WEBOTS_HOME` fallback.
   2. **One shipped runtime library still reads it**: [`resources/projects/libraries/qt_utils/core/StandardPaths.cpp`](resources/projects/libraries/qt_utils/core/StandardPaths.cpp) resolves the install root at **runtime** to build the Qt plugin + icon search paths used by robot windows. It prefers `OMNISIM_HOME` and falls back to `WEBOTS_HOME`.

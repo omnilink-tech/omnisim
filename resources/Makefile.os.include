@@ -20,9 +20,13 @@
 # OMNISIM_LIB_PATH / OMNISIM_CONTROLLER_LIB_PATH block at the bottom expands it.
 # No-op when OMNISIM_HOME is already set, which is the case for every path that
 # arrives via resources/Makefile.include or the top-level Makefile.
+# Existence-checked for the same reason as resources/Makefile.include: a stale
+# WEBOTS_HOME left behind by an uninstalled Webots must not become the root.
 ifeq ($(strip $(OMNISIM_HOME)),)
  ifneq ($(strip $(WEBOTS_HOME)),)
-  OMNISIM_HOME := $(WEBOTS_HOME)
+  ifeq ($(strip $(shell test -d "$(WEBOTS_HOME)" && echo yes)),yes)
+   OMNISIM_HOME := $(WEBOTS_HOME)
+  endif
  endif
 endif
 

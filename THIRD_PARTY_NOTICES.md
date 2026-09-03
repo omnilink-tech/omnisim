@@ -98,7 +98,7 @@ identical** over ~11,000 steps — `max |Δpos| = 0.00000000 m`, 24.601 m travel
 arms — as is the bare trot model. One scenario did change and is reported rather than
 buried: the get-up policy, whose contact set *is* the substituted body and thigh colliders,
 now recovers where it previously flipped. Full evidence, including the voxel fits for each
-collider (volume ratios 0.977–1.013): `docs/developer/spot-provenance-research.md`.
+collider (volume ratios 0.977–1.013): `docs/developer/spot-provenance-research.md` (archived 2026-09-02, see [docs/ARCHIVE.md](docs/ARCHIVE.md)).
 
 **Trademark.** "Spot" and "Boston Dynamics" are trademarks of Boston Dynamics, Inc. This
 package no longer models that machine and no longer uses those marks.

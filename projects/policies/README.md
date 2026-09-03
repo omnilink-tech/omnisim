@@ -159,7 +159,7 @@ read it before trusting any "stands/walks forever" claim.
 | OmniQuad  | `omniquad_residual_main`         | 5.55 m / 30 s straight walk                  | [`train_residual.py`](research/training/train_residual.py)                                                                |
 | G1    | `gpu_g1_stand_robust`        | Robust stand: **≈98 % in trainer; OmniSim Newton deploy holds to t ≈ 1.55 s today** ([rl-current-state.md](../../docs/developer/rl-current-state.md)) | [`gpu_mjwarp_g1_stand_trainer.py`](research/training/gpu_mjwarp_g1_stand_trainer.py) (default GPU + heavy DR + 5 speedups) |
 
-Full documentation: [docs/developer/archive/rl-pipeline.md](../../docs/developer/archive/rl-pipeline.md)
+Full documentation: docs/developer/archive/rl-pipeline.md (archived 2026-09-02, see [docs/ARCHIVE.md](../../docs/ARCHIVE.md))
 
 ## TL;DR — biped / new robot (default recipe)
 

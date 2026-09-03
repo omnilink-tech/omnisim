@@ -120,5 +120,5 @@ the launch-impulse contact gap rather than by stability or the ghost.
 
 ## Related
 - [shadowing.md](shadowing.md) — the pipeline (generator / verifier / tracker).
-- [ghost-tracking-pipeline.md](ghost-tracking-pipeline.md) — the "any robot, any motion" thesis.
+- [ghost-tracking-pipeline.md](shadowing.md) — the "any robot, any motion" thesis.
 - [omniquad-residual-rl.md](omniquad-residual-rl.md) — the earlier OmniQuad residual-RL walk work.

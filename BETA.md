@@ -79,8 +79,8 @@ We especially want to learn:
 - Sim-to-real transfer is unproven.
 - OmniSim's G1 walk uses a weight-bearing balance harness; it is not a
   free-standing humanoid walk.
-- The measured capability matrix currently reports 78% working coverage and
-  names every absent, degraded, or broken probe.
+- The measured capability matrix currently reports 95.7% working coverage
+  (51 probes, 2026-09-01) and names every absent, degraded, or broken probe.
 
 The longer, claim-by-claim limitations list is in
 [README.md](README.md#what-omnisim-is-worse-at). OmniSim does not collect beta

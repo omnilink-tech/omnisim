@@ -19,7 +19,7 @@ must be honoured.
 > registrations and event emitters rather than from the previous edition;
 > where behaviour is wrong but shipped, this document now describes the
 > shipped behaviour and points at the proposed fix in
-> [docs/developer/agent-native-api.md](docs/developer/agent-native-api.md)
+> docs/developer/agent-native-api.md (archived 2026-09-02, see [docs/ARCHIVE.md](docs/ARCHIVE.md))
 > rather than describing the aspiration. Read §16 before depending on any
 > harness endpoint. The structural fix — serving these lists from the
 > code — is proposal P1 in that document.
@@ -796,20 +796,45 @@ Liveness probe; does not touch the simulator subprocess.
 { "ok": true, "world": "...", "load_ms": 1040,
   "exit_code": null, "supervisor": "connected",
   "hot_reloaded": true, "diagnostics": [],
-  "tracking": { "light": false, "mode": "full", "hint": "FULL tracking (the backward-compatible default): ..." } }
+  "tracking": { "light": true, "mode": "light", "default_applied": true,
+                "hint": "light mode: /sim/grips is empty and contact.*/grip.*/joint.limit_hit events are not produced; /sim/contacts still answers.",
+                "default": { "light": true, "mode": "light", "source": "built-in", "since": "2026-09-02",
+                             "why": "...", "revert": "...", "explicit_wins": "..." },
+                "default_note": "LIGHT tracking was applied BY DEFAULT (built-in; light is the default since 2026-09-02) because the request named neither `light` nor `tracking`: pass {\"light\": false} ..." } }
 ```
 
 `tracking` (added 2026-08-29, every supervised load) names the tracking mode
-this load runs in and what it costs, so a client learns the full-mode step tax
-from the response rather than from a timeout: `mode` is `full` (the default —
-the supervisor walks the scene every basic step for `contact.*` / `grip.*` /
-`joint.limit_hit` events and `/sim/grips`) or `light` (`{"light": true}` on the
-request — those trackers are dropped; `/sim/contacts` still answers). Measured
-on the 10-Husky `husky_fleet_arena` world (309 nodes, CPU `mj_step`,
-2026-08-29): `/sim/step 1` ≈ 0.6 s full vs 6–35 ms light (~17×), 10 steps ≈ 3 s
-vs ≈ 60 ms (~47×). A client MAY ignore the block; a client that steps more than
-a handful of times SHOULD pass `light: true` unless it needs the tracker-fed
-surfaces.
+this load runs in and what it costs, so a client learns the step tax from the
+response rather than from a timeout: `mode` is `light` (the trackers are
+dropped; `/sim/contacts` still answers), `partial` (a `tracking` object
+disabled some of them) or `full` (the supervisor walks the scene every basic
+step for `contact.*` / `grip.*` / `joint.limit_hit` events and `/sim/grips`).
+
+**Light is the default since 2026-09-02.** A request that names **neither**
+`light` **nor** `tracking` runs light, and the block says so:
+`default_applied: true`, a `default` sub-block (the same one
+`GET /capabilities` → `limits.tracking_default` serves, built by one
+function), and `default_note` — one sentence naming how to get the trackers
+back. The contract is **dual: an explicit `light` (either value) or any
+`tracking` object always wins** over the default, and a `tracking` object with
+no `light` is `partial` mode, never the default. `OMNISIM_HARNESS_LIGHT=0` on
+the harness restores full tracking as the process-wide default (value-parsed:
+unset or `1` → light, `0` → full); the harness names the armed default on its
+startup banner, and `default_applied: true` with `mode: "full"` is what a
+`=0` process reports. Why it flipped — measured on machine `9722d23d12a3`: on
+the 10-Husky `husky_fleet_arena` world (309 nodes, CPU `mj_step`, 2026-08-29)
+a full load costs 5.2 s vs 4.65 s (2026-09-02 engine; 12.1 s vs 4.1 s on 2026-08-29) light, `/sim/step 1` 573–606 ms vs 6–35 ms on the 2026-08-29 engine (54 ms vs 23 ms re-measured 2026-09-02 after the controller-probe cache)
+(~17×), 10 steps 2855–3187 ms vs 48–67 ms (~47×); on the 10-node cloth world
+(2026-08-14) a default reload cost 13.4 s vs 3.1 s light — with the trackers
+on, the harness was slower than the `run-headless` it exists to replace, and
+an agent that forgot the flag got that path. Before the flip the default was
+`full` and the block read `"FULL tracking (the backward-compatible default)"`;
+a client written against that MUST now pass `light: false` (all three
+trackers) or a `tracking` object (exactly the ones it needs) if it reads
+`/sim/grips` or the `contact.*` / `grip.*` / `joint.limit_hit` events. The
+first `/sim/grips` read of a session whose GripTracker is not running emits
+one `world.warning` (`TRACKER_NOT_RUNNING`, per load) on `/sim/events` naming
+whether light was the default or requested. A client MAY ignore the block.
 
 **Response (422 on a load failure; 400 on a malformed request):**
 
@@ -867,7 +892,7 @@ references a missing world, a bad `--` argument), never by this
 precondition check. A client that branches on
 `diagnostics[].code == "WORLD_FILE_NOT_FOUND"` will silently mis-handle a
 typo'd path; branch on `ok === false && diagnostics.length === 0` too.
-Proposed fix: [docs/developer/agent-native-api.md](docs/developer/agent-native-api.md)
+Proposed fix: docs/developer/agent-native-api.md (archived 2026-09-02, see [docs/ARCHIVE.md](docs/ARCHIVE.md))
 G7 / P5 (`POST /world/validate`).
 
 Two other real responses this section did not previously describe:
@@ -1039,7 +1064,9 @@ the per-round-trip cost is now simply the cost.
 **Both mitigations are now reachable over the wire.** The supervisor's
 `--light` flag (it skips all three producers) is exposed as
 `POST /world/load {"light": true}` — measured 27.0 s → 0.034 s per step on
-that 298-node world — and `GET /capabilities` (§7.28) publishes the
+that 298-node world — **and is the default since 2026-09-02** (§7.3: a load
+naming neither `light` nor `tracking` runs light; `OMNISIM_HARNESS_LIGHT=0`
+restores full) — and `GET /capabilities` (§7.28) publishes the
 **measured** `limits.step_cost` for the loaded world plus a derived
 `recommended_max_steps_per_request`, so the budget below does not have to
 be guessed.
@@ -1057,7 +1084,7 @@ first on an unfamiliar world.
 The response also carries `wall_ms` and `steps_executed`, and each call
 feeds the rolling `limits.step_cost` median.
 
-Proposed fix: [docs/developer/agent-native-api.md](docs/developer/agent-native-api.md)
+Proposed fix: docs/developer/agent-native-api.md (archived 2026-09-02, see [docs/ARCHIVE.md](docs/ARCHIVE.md))
 G1 / P2 (`observe`, `observe_every`, per-request `timeout_s`, `return: ["poses"]`).
 
 ### 7.11 POST /sim/reset
@@ -1472,7 +1499,7 @@ does it refuse to do".
                "sidecar_path": "...omnisim_log.txt.newton.json",
                "sidecar_age_s": 0.6, "basic_time_step_ms": 32 },
 
-  "supervisor": { "connected": true, "port": 6990, "light": true,
+  "supervisor": { "connected": true, "port": 6990, "light": true, "light_default_applied": true,
                   "commands": ["capabilities", "scene_spawn", "..."],
                   "commands_source": "scanned from dispatch() in harness_supervisor.py",
                   "snapshots": ["__init__", "t0"] },
@@ -1490,7 +1517,10 @@ does it refuse to do".
               "recommended_max_steps_per_request": 62,
               "recommended_max_steps_per_request_formula":
                 "floor(0.6 * supervisor_rpc_timeout_s / step_cost.median_s_per_step)",
-              "events_limit_default": 256, "events_limit_max": 1024 },
+              "events_limit_default": 256, "events_limit_max": 1024,
+              "tracking_default": { "light": true, "mode": "light", "source": "built-in",
+                                    "since": "2026-09-02", "why": "...", "revert": "...",
+                                    "explicit_wins": "..." } },
 
   "endpoints": [ { "method": "GET", "path": "/scene/tree", "summary": "...", "params": ["bounds"] } ],
   "endpoints_verification": { "declared": 33, "scanned_literals": 32,

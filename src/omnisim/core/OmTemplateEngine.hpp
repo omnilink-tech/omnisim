@@ -24,6 +24,17 @@
 #include <QtCore/QObject>
 #include <QtCore/QString>
 
+// Load-time split of the JavaScript template path (OMNISIM_RELOAD_PROFILE=1), cumulative ns:
+// [0] translate template -> JS text, [1] write jsTemplateFilled.js, [2] QJSEngine construction,
+// [3] importModule (parse + compile), [4] generateVrml() call. Reported by OmApplication.
+struct OmTemplateEngineProfile {
+  qint64 ns[5] = {0, 0, 0, 0, 0};
+  qint64 bytes = 0;       // filled-template bytes handed to importModule, cumulative
+  qint64 resultHash = 0;  // order-sensitive hash of every generated result (A/B proof of identity)
+  int calls = 0;
+  static OmTemplateEngineProfile &instance();
+};
+
 class OmTemplateEngine : public QObject {
   Q_OBJECT
 

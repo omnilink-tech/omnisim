@@ -20,7 +20,6 @@
 #include "OmBaseNode.hpp"
 #include "OmHiddenKinematicParameters.hpp"
 #include "OmMFNode.hpp"
-#include "OmOdeTypes.hpp"
 
 class OmBoundingSphere;
 
@@ -96,9 +95,6 @@ public:
   // bounding sphere
   OmBoundingSphere *boundingSphere() const override { return mBoundingSphere; }
   void recomputeBoundingSphere();
-  // For a group in a boundingObject
-  dSpaceID odeSpace() const { return mOdeSpace; }
-  void setOdeData(dSpaceID s) { mOdeSpace = s; }
 
   // lazy matrix multiplication system
   void setMatrixNeedUpdate() override;
@@ -136,8 +132,6 @@ private:
   OmNode *clone() const override { return new OmGroup(*this); }
   void init();
 
-  // ODE (for Group lying into a boundingObject)
-  dSpaceID mOdeSpace;
 
   // user accessible fields
   OmMFNode *mChildren;

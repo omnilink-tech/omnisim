@@ -3,7 +3,7 @@
 # Runs the g1_parity_probe world (welded-base, NO RL) in omnisim-bin and dumps a
 # per-tick deploy trace, then (optionally) runs the matching TRAINER trace and
 # diffs them with g1_parity_compare.py. This is the FIRST trainer<->deploy parity
-# check that steps the REAL binary, not the g1_deploy_runtime.py extract.
+# check that steps the REAL binary, not the omnisim_newton_runtime.py module driven in-process.
 #
 # The Newton env is sourced from SPEC.newton_env() (single source of truth), with
 # the position-PD gains overridden to the probe's stand gains and the link-COM

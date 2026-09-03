@@ -26,7 +26,7 @@
 attributed to the project's recorded benchmarks. Competitor numbers are from published
 vendor docs, peer-reviewed papers, and one independent academic benchmark, each cited
 inline (see [References](#references)). Raw OmniSim data:
-[measurements-2026-06-14.md](measurements-2026-06-14.md).
+measurements-2026-06-14.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 
 > **This paper covers *throughput* only.** For the non-speed axes — licence and cost,
 > hardware floor, ROS integration, rendering class, agent-facing APIs, sim-to-real track
@@ -255,7 +255,7 @@ catch a regression that both arms share.
 ## 3. OmniSim measured performance
 
 All §3.1–3.2 numbers were measured on this checkout on 2026-06-14 on the laptop RTX
-3060 (§1.2). Raw logs: [measurements-2026-06-14.md](measurements-2026-06-14.md).
+3060 (§1.2). Raw logs: measurements-2026-06-14.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 
 ### 3.1 Single-environment rigid-body physics (Newton XPBD) — first-hand
 
@@ -292,7 +292,7 @@ unbounded at 10+ robots** — ODE fails to keep up while Newton holds 2.9–3.4 
 > The two sides of that ratio **were never measured the same way**:
 >
 > - The **ODE side** (`~50 ms` / `~98 ms` per step, derived from 20.1 / 10.2 fps) comes
->   from [`archive/fps-optimization-journey.md`](../developer/archive/fps-optimization-journey.md),
+>   from `archive/fps-optimization-journey.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)),
 >   which states plainly what it measured: *mean fps over 25–30 wall-seconds* of a
 >   **windowed, full-engine run** — ODE physics **plus WREN rendering plus the Python
 >   damage system plus scene-graph traversal**. That doc's own conclusion is that
@@ -359,7 +359,7 @@ cost in almost every real robotics workload, so this scene is *cheap*, and the
 throughput above is correspondingly *optimistic* relative to a contact-rich scene. We
 state it because it is the same weakness this paper criticises elsewhere (§4.8) —
 being on the receiving end of it does not make it go away. (`ngeom=5` is in the raw
-data: [measurements-2026-06-14.md](measurements-2026-06-14.md) — an earlier revision
+data: measurements-2026-06-14.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — an earlier revision
 of this section silently dropped it.)
 
 **Reading:** near-linear scaling; the GPU is **not saturated** even at 4,096 envs (wall

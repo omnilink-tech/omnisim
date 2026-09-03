@@ -65,7 +65,7 @@ Medians; where n>1 the range is given. `raw` = `mujoco_warp` stepping the
 engine-exported MjModel, CUDA-graphed. `Ag` = the same model through OmniSim's
 embedded Newton `SolverMuJoCo`, also graphed — **the like-for-like pair**. `A` is
 the same OmniSim path *ungraphed*, kept because
-[lane2-graphed-ab-2026-08-08.md](lane2-graphed-ab-2026-08-08.md) obliges anyone
+lane2-graphed-ab-2026-08-08.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) obliges anyone
 quoting `Ag` to quote `A` beside it.
 
 ### `raw` — mujoco_warp baseline, env-steps/s

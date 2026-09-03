@@ -8,15 +8,15 @@ See also:
 
 - [benchmark-authoring.md](benchmark-authoring.md)
 - [performance-handbook.md](performance-handbook.md)
-- [sensor-and-device-performance.md](sensor-and-device-performance.md)
+- sensor-and-device-performance.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))
 
 ## What Exists Today
 
 OmniSim already exposes a performance log path through:
 
 - `--log-performance=<file>[,<steps>]`
-- `python scripts/dev/omnisim_dev.py profile-world <world>`
-- `python scripts/dev/omnisim_dev.py benchmarks`
+- `python -m omnisim profile-world <world>`
+- `python -m omnisim benchmarks`
 
 The current log includes measurements for:
 
@@ -47,7 +47,7 @@ Interpretation:
 ### Profile one world
 
 ```bash
-python scripts/dev/omnisim_dev.py profile-world tests/rendering/worlds/normals.omniworld
+python -m omnisim profile-world tests/rendering/worlds/normals.omniworld
 ```
 
 This writes to:
@@ -61,13 +61,13 @@ Unless `--log` is provided.
 ### Profile one world to a dedicated log
 
 ```bash
-python scripts/dev/omnisim_dev.py profile-world tests/physics/worlds/contact_points.omniworld --log tests/benchmarks/logs/contact_points-local.log
+python -m omnisim profile-world tests/physics/worlds/contact_points.omniworld --log tests/benchmarks/logs/contact_points-local.log
 ```
 
 ### Run the benchmark set
 
 ```bash
-python scripts/dev/omnisim_dev.py benchmarks --nomake
+python -m omnisim benchmarks --nomake
 ```
 
 This writes one log per benchmark under:

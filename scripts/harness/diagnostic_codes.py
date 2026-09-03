@@ -43,9 +43,13 @@ Two input shapes are supported:
 Anything ERROR/WARNING/FATAL that matches no rule is returned with
 `code = "UNKNOWN"` and the full raw line, so nothing is silently dropped.
 
-Some codes carry a static `hint`: one sentence of what to DO, keyed by code in
-`_HINTS`. The engine's own message says what happened; the hint says what the
-agent's next call should be, and it is not derivable from the message text.
+EVERY code carries a static `hint`: what to DO, keyed by code in `HINTS`.
+The engine's own message says what happened; the hint says what the agent's
+next call should be, and it is not derivable from the message text. The
+harness-synthesized codes (`HARNESS_SYNTHESIZED_CODES`, produced by
+omnisim_harness.py when the engine never got far enough to log) are keyed here
+too, so `hint_for(code)` answers for the whole vocabulary an agent can see.
+`tests/harness/test_diagnostic_hints.py` pins that no code is hint-less.
 
 The mapping is intentionally a flat ordered list — readability and the
 ability to add a rule by appending one tuple matter more than performance.
@@ -349,8 +353,112 @@ _SPECIFIC_FIRST: tuple[str, ...] = (
 
 # What to DO about a code. The engine's message says what happened; this says
 # what the agent's next call is. Attached to every diagnostic that carries the
-# code, including tagged-line ones.
-_HINTS: dict[str, str] = {
+# code, including tagged-line ones. Every code in `all_codes()` has one.
+HINTS: dict[str, str] = {
+    # ---- Qt / process ------------------------------------------------------
+    "QT_PLATFORM_PLUGIN_FAILED": (
+        "the engine aborted BEFORE opening the world, so nothing below this line is about "
+        "your world. Linux: run under `xvfb-run -a` and install the libxcb set "
+        "(`bash scripts/install/linux_bootstrap.sh deps`); on a GPU-less box set "
+        "OMNISIM_NO_WINDOW=1 for headless smokes. Any platform: unset a QT_QPA_PLATFORM that "
+        "names a plugin this build does not ship. Then `python -m omnisim doctor`."),
+    # ---- World file gating / tokenizer / parser ----------------------------
+    "WORLD_WRONG_EXTENSION": (
+        "the engine only opens `.omniworld` (or the legacy `.wbt`). Rename the file -- new "
+        "worlds are always written as .omniworld (dual-read, single-write) -- and reload. "
+        "This is never a physics or parse problem."),
+    "WORLD_FILE_NOT_FOUND": (
+        "the path did not resolve. Harness paths resolve against the repo root of the clone "
+        "whose omnisim_harness.py is running, NOT your working directory -- pass an absolute "
+        "path and `ls` it first. `python -m omnisim run-headless <world> --until-finalized` "
+        "reproduces the load outside the harness."),
+    "WORLD_PARSE_INVALID_TOKENS": (
+        "the tokenizer rejected the file before parsing: an unterminated string, a stray "
+        "character, a BOM or a non-UTF-8 byte. Read the PARSE_ERROR diagnostics on the same "
+        "load for line:column; if there are none, check the header line "
+        "(`#OMNISIM R2025a utf8`, or the legacy `#VRML_SIM R2025a utf8`) and the encoding."),
+    "WORLD_PARSE_SYNTAX_ERROR": (
+        "the structure is wrong: unbalanced braces/brackets, a field outside its node, or a "
+        "node the engine does not declare. The PARSE_ERROR / UNKNOWN_FIELD_IN_NODE diagnostics "
+        "on this load carry line:column -- fix the FIRST one, later ones are usually cascades. "
+        "`python scripts/dev/omniworld.py validate <world>` runs the offline checks in ~4 ms."),
+    "WORLD_FILE_EMPTY": (
+        "zero bytes: a generator that wrote nothing, or a save that raced a reload. "
+        "Regenerate the world (omniworld generate / your gen_*.py), check `wc -c`, reload."),
+    "HEADER_MISSING": (
+        "the first line must be the header: `#OMNISIM R2025a utf8` (the legacy "
+        "`#VRML_SIM R2025a utf8` still parses). Add it and reload."),
+    "HEADER_INVALID": (
+        "a header line exists but is not one the tokenizer accepts. Use exactly "
+        "`#OMNISIM R2025a utf8` (or the legacy `#VRML_SIM R2025a utf8`); a Webots version tag "
+        "this engine does not know reads as invalid."),
+    "PARSE_ERROR": (
+        "open source_path at line:column and read `detail` -- it names the token the parser "
+        "expected. Fix the first PARSE_ERROR on the load; the rest are usually cascades. "
+        "`Skipped unknown '<f>' field` is UNKNOWN_FIELD_IN_NODE (a misspelt or non-existent "
+        "field); `Missing declaration for '<N>'` is an undeclared NODE -- it needs an "
+        "EXTERNPROTO line, or it is a node this engine no longer has (Fluid, Radio, "
+        "Microphone are gone; check docs/reference/)."),
+    # ---- PROTO ----------------------------------------------------------------
+    "PROTO_RECURSIVE": (
+        "the PROTO instantiates itself, directly or through another PROTO. Break the cycle: "
+        "a PROTO body may not reference its own name -- use a base node or a second PROTO "
+        "for the inner instance."),
+    "PROTO_BASE_NAME_INVALID": (
+        "the PROTO is named like a built-in base node (Solid, Robot, Shape ...). Rename the "
+        "PROTO and its file to a name that is not a base node, and update every EXTERNPROTO "
+        "line that imports it."),
+    "PROTO_NAME_MISMATCH": (
+        "`PROTO <Name>` inside the file must equal the filename stem: `PROTO Foo` lives in "
+        "Foo.proto. Rename one to match (and the EXTERNPROTO lines that reference it). The "
+        "engine refuses the mismatch, so that node is MISSING from the world -- do not read "
+        "a pose for it."),
+    "PROTO_PARAM_ERROR": (
+        "the PROTO's parameter block (`field SFFloat x 1.0` ...) did not parse. Every "
+        "parameter needs a type, a name and a default OF THAT TYPE; a default of the wrong "
+        "type or a missing bracket on an MF field is the usual cause."),
+    # ---- EXTERNPROTO / assets -------------------------------------------------
+    "EXTERNPROTO_DOWNLOAD_FAILED": (
+        "the EXTERNPROTO URL could not be fetched (`detail`: a 404 is a wrong URL or a "
+        "renamed PROTO; a connection error is an offline box). Smoke and benchmark worlds "
+        "must be LOCAL-ASSET-ONLY: replace the http(s):// URL with a repo-relative path or "
+        "an `omnisim://` URL for a shipped PROTO. `omniworld validate` enforces this."),
+    "ASSET_DOWNLOAD_FAILED": (
+        "a texture/mesh/sound URL could not be fetched (`detail` carries the HTTP status). "
+        "Vendor the asset next to the world and reference it relatively; worlds in smoke or "
+        "benchmark lanes must never reach the network."),
+    "TEXTURE_READ_FAILED": (
+        "the texture path resolved but could not be read or decoded: wrong path CASE "
+        "(matters on Linux), a non-image file, an unsupported format, or a path relative to "
+        "the wrong directory (texture URLs resolve against the world file, or the PROTO "
+        "file when set inside one). The load continued with an untextured surface -- fix "
+        "the path, then POST /world/sync."),
+    "MESH_READ_FAILED": (
+        "the mesh file could not be read: wrong path or an unsupported format. The Shape "
+        "renders empty, and if the mesh was a boundingObject it now COLLIDES WITH NOTHING -- "
+        "after fixing the path, confirm GET /scene/node/<def> -> boundingObject.present. "
+        "URDF meshes are URDF_MESH_UNRESOLVED."),
+    "URDF_MESH_UNRESOLVED": (
+        "a `<mesh filename=...>` in the URDF did not resolve: `package://` needs the package "
+        "directory reachable from the URDF's location, and plain paths are relative to the "
+        "URDF file. Run `python scripts/dev/urdf_import.py <urdf> --report --strict` for a "
+        "structured preflight; docs/developer/urdf-import-debugging.md has the rules."),
+    # ---- Controllers -----------------------------------------------------------
+    "CONTROLLER_CRASHED": (
+        "the controller PROCESS died (a native crash or an exception that escaped its "
+        "interpreter), so that robot executes zero further steps while the world keeps "
+        "running and a bare log check still PASSes. The traceback is in the controller's "
+        "own stdout/stderr -- GET /sim/events?types=controller.log -- not in the engine "
+        "log. Reproduce with `python -m omnisim run-headless <world> --duration 10` and "
+        "read omnisim_log.txt."),
+    "CONTROLLER_EXITED_NONZERO": (
+        "the controller exited with the status in `detail`, usually an ImportError or a "
+        "traceback at start-up -- the robot never moved, although the world loaded. "
+        "GET /sim/events?types=controller.log carries the traceback. A missing module must "
+        "be installed into the `python` the ENGINE spawns (the one on PATH; `python -m "
+        "omnisim doctor` names it), not into a venv. run-headless already treats this as "
+        "a controller-start failure and FAILs the run."),
+    # ---- Physics / backend ------------------------------------------------------
     "SOLID_ODE_PIN_INERT": (
         "this node is INERT, not slow: it will never fall, never collide, and "
         "GET /sim/contacts can never report a contact for it. Delete the "
@@ -389,12 +497,17 @@ _HINTS: dict[str, str] = {
         "NEWTON_RUNTIME_ABSENT/BROKEN, SOLID_ODE_PIN_INERT, NEWTON_ENFORCE_REFUSED). "
         "If the world genuinely authors no dynamic body, it is correct and expected."),
     "JOINT_REGISTRATION_FAILED": (
-        "the joint's motors will not move it and its position sensors read 0, so do "
-        "not read a 0 joint position as 'the motor is holding'. Motorised BallJoint / "
-        "Hinge2Joint actuation is unimplemented (see /capabilities not_supported)."),
+        "this Ball/Hinge2 joint registered NO Newton d6, so its motors will not move it and "
+        "its position sensors read 0 -- do not read that 0 as 'the motor is holding'. "
+        "Motorised BallJoint / Hinge2Joint actuation itself WORKS (default ON since "
+        "2026-08-17): check that OMNISIM_NEWTON_BALL_HINGE2 is not set to 0, then the "
+        "joint's authoring (an endPoint Solid with a Physics node). Residual, by design: "
+        "a BallJoint's per-axis stops are not enforced (see /capabilities not_supported)."),
     "JOINT_FEATURE_UNIMPLEMENTED": (
         "the CONSTRAINT holds (the bodies stay connected) but the named fields do "
-        "nothing. Do not tune them expecting an effect."),
+        "nothing -- do not tune them expecting an effect. For limits set "
+        "OMNISIM_NEWTON_LIMIT_KE/KD; for springs / suspension drive the joint from your "
+        "controller (GET /capabilities -> not_supported joint.fields lists each field)."),
     "SENSOR_NO_SOURCE": (
         "this sensor's 0 means NOT MEASURED. Do not use it as evidence of no contact "
         "or no force; prove the contact geometrically or with GET /sim/contacts."),
@@ -415,12 +528,16 @@ _HINTS: dict[str, str] = {
         "occlusion was requested but no ray could be cast this tick, so the device is "
         "reporting its PREVIOUS verdicts -- an unfiltered target list, not a measured "
         "one. Nothing was promoted to \"visible\". Fix the raycast service (leave "
-        "OMNISIM_NEWTON_RAYCAST unset; check the Newton runtime) rather than trusting "
-        "the list. NOTE: occlusion itself works as of 2026-08-08; a target still hidden "
-        "by a node you DELETED at runtime is a different, SILENT gap -- the deleted "
-        "geometry is never removed from the MuJoCo model, so reload the world."),
+        "OMNISIM_NEWTON_RAYCAST unset; check the Newton runtime; on newtonSolver "
+        "\"mujoco_warp\" rays are DECLINED by design -- use the CPU solver) rather than "
+        "trusting the list. NOTE: occlusion itself works as of 2026-08-08; a target still "
+        "hidden by a node you DELETED at runtime is a different, SILENT gap -- the deleted "
+        "geometry stays in the frozen MuJoCo model until POST /sim/rebuild_physics (W1.7, "
+        "2026-09-01) or a reload."),
     "INERTIA_FROM_BOUNDING_OBJECT_UNAVAILABLE": (
-        "the inertiaMatrix fields were NOT modified. Author an explicit inertiaMatrix."),
+        "the inertiaMatrix fields were NOT modified, so the body keeps whatever inertia it "
+        "had (possibly the identity matrix). Author an explicit `inertiaMatrix` (and "
+        "`centerOfMass`) in the Physics node and reload."),
     "WORLDINFO_PHYSICSBACKEND_MISNAMED": (
         "the WORLD-level field is `defaultPhysicsBackend`; `physicsBackend` is "
         "per-Solid. This is a one-word typo, NOT a physics failure -- but the engine "
@@ -436,7 +553,90 @@ _HINTS: dict[str, str] = {
         "the chain animates through the scene tree; no solver simulates it, so it "
         "will not react to contact. Give the joint's endPoint a Physics node to "
         "simulate it dynamically."),
+    "NEWTON_BODIES_REGISTERED": (
+        "informational: the registration census (N dynamic + M static Newton bodies). "
+        "Compare N with the dynamic bodies you authored -- fewer means one was dropped; the "
+        "other diagnostics on this load say which (SOLID_ODE_PIN_INERT, "
+        "KINEMATIC_ARTICULATION, NEWTON_STATICS_NOT_REGISTERED). N == 0 is reported "
+        "separately as NEWTON_ZERO_DYNAMIC_BODIES."),
+    # ---- CUDA (tagged-line only; src/omnisim/compute/cuda/OmCudaError.hpp) ------
+    "CUDA_NOT_AVAILABLE": (
+        "no CUDA device or driver is visible to the engine, so the CUDA granular path "
+        "(GranularBed / GranularGroup) cannot run; ordinary Newton physics on the CPU "
+        "solver is unaffected. Check `nvidia-smi`; on a CPU-only box do not author "
+        "Granular nodes and do not select newtonSolver \"mujoco_warp\"."),
+    "CUDA_DEVICE_INIT_FAILED": (
+        "a CUDA device exists but could not be initialised: another process holding it "
+        "exclusively, a driver in a bad state, or a container started without `--gpus all`. "
+        "Check `nvidia-smi`, close the other GPU user, retry; reset the driver (or the pod) "
+        "if it persists."),
+    "CUDA_DRIVER_TOO_OLD": (
+        "the NVIDIA driver predates the CUDA runtime the engine was built against. Update "
+        "the driver to the version the message names; nothing in the world file fixes this."),
+    "CUDA_COMPUTE_CAPABILITY_TOO_OLD": (
+        "this GPU's compute capability is below what the engine's kernels were compiled "
+        "for. Run the CUDA-dependent nodes on a newer GPU (or on the CPU path where one "
+        "exists); not fixable from the world."),
+    "CUDA_OUT_OF_MEMORY": (
+        "the GPU ran out of memory: too many granular particles, too large a warp env "
+        "batch, or another process (a training run, a second engine) holding VRAM. Reduce "
+        "the particle count / batch, close the other GPU user (`nvidia-smi` names it), "
+        "retry."),
+    "CUDA_KERNEL_LAUNCH_FAILED": (
+        "a kernel failed to launch -- usually the consequence of an earlier CUDA_* error "
+        "logged just above, or a driver/runtime mismatch. Read the preceding CUDA "
+        "diagnostic first; if this stands alone, treat it as an engine bug and report it "
+        "with the world and `nvidia-smi` output."),
+    "CUDA_KERNEL_EXECUTION_ERROR": (
+        "a kernel ran and faulted (out-of-range access, NaN cascade). The CUDA context is "
+        "poisoned after this: reload the world and do not trust any particle state from "
+        "this load. Report it with the world that triggers it."),
+    "CUDA_MEMCPY_FAILED": (
+        "a host<->device copy failed, almost always after an earlier CUDA error or an "
+        "out-of-memory. Read the preceding CUDA_* diagnostic; reload the world once its "
+        "cause is fixed."),
+    "CUDA_GL_INTEROP_NOT_IMPLEMENTED": (
+        "this build does not share buffers between CUDA and the renderer, so particle "
+        "rendering goes through a CPU copy -- slower, not wrong. Nothing to fix in the "
+        "world; keep particle counts modest for interactive use."),
+    # ---- The fall-through -----------------------------------------------------
+    "UNKNOWN": (
+        "this ERROR/WARNING/FATAL line matched no rule, so there is no code to branch on -- "
+        "read `raw` and decide from the text. If it recurs, add a rule to "
+        "scripts/harness/diagnostic_codes.py anchored in the engine's emit site "
+        "(`git grep` the message in src/omnisim/) so the next agent gets a code."),
+    # ---- Synthesized by the HARNESS (omnisim_harness.py) -------------------------
+    "LAUNCHER_DLL_NOT_FOUND": (
+        "the engine subprocess could not load its DLLs (Windows exit 0xC0000135): the "
+        "harness was started with a PATH that lacks msys64/mingw64/bin. Start it as "
+        "`python -m omnisim harness` (the module form prepends the bundled Qt DLLs), not "
+        "the raw script, and restart the harness after fixing PATH."),
+    "SIMULATOR_EXITED_NONZERO": (
+        "the engine exited before the world came up and logged nothing this classifier "
+        "recognises. Read the whole engine log (omnisim_log.txt / OMNISIM_LOG_PATH); run "
+        "`python -m omnisim doctor` (missing Newton runtime, stale libController); "
+        "reproduce with `python -m omnisim run-headless <world> --until-finalized`. Retry "
+        "ONCE before diagnosing the world: a second engine starting against a running one "
+        "used to die in the Windows console-attach race (fixed 2026-08-29)."),
+    "SUPERVISOR_BIND_STALLED": (
+        "the injected supervisor never connected inside the wait. Causes, in order: a "
+        "controller that cannot start at all (stale libController -> `python -m omnisim "
+        "doctor`); an asset-heavy cold load still in progress (46-79 s measured on "
+        "virtualised disks -- raise wait_s); a supervisor port already owned by another "
+        "harness (start yours with --auto-port, or --supervisor-port)."),
+    "SUPERVISOR_BIND_CEILING": (
+        "the supervisor bind wait hit the harness's hard ceiling, so a longer wait_s will "
+        "not help. Read the engine log for the world's own errors, run `python -m omnisim "
+        "doctor`, and make sure no second harness owns port 6790 (`--auto-port`)."),
+    "WORLD_DIR_NOT_WRITABLE": (
+        "the harness injects its supervisor by writing a sibling copy of the world next to "
+        "the file, and that directory refused the write (an install under Program Files is "
+        "the usual cause). Copy the world into a writable directory -- or make the "
+        "directory writable -- and load from there."),
 }
+
+# Backwards-compatible private alias (older callers and tests read `_HINTS`).
+_HINTS = HINTS
 
 
 def _refine(diag: dict) -> dict:
@@ -482,6 +682,34 @@ SYNTHESIZED_CODES: tuple[str, ...] = (
     "NEWTON_ZERO_DYNAMIC_BODIES",
 )
 
+# Codes the HARNESS synthesizes itself (omnisim_harness.py
+# HARNESS_DIAGNOSTIC_CODES -- the two tuples are asserted equal by
+# tests/harness/test_diagnostic_hints.py) when the engine never got far enough
+# to log anything this classifier could match. Keyed in `HINTS` so the hint
+# vocabulary covers them; the harness is the one that attaches them.
+HARNESS_SYNTHESIZED_CODES: tuple[str, ...] = (
+    "LAUNCHER_DLL_NOT_FOUND",
+    "SIMULATOR_EXITED_NONZERO",
+    "SUPERVISOR_BIND_STALLED",
+    "SUPERVISOR_BIND_CEILING",
+    "WORLD_DIR_NOT_WRITABLE",
+)
+
+
+def all_codes() -> tuple[str, ...]:
+    """Every code this module can put a `code` field on, plus the harness's."""
+    codes = {rule[2] for rule in _RULES}
+    codes.update(CUDA_CODES)
+    codes.update(SYNTHESIZED_CODES)
+    codes.update(HARNESS_SYNTHESIZED_CODES)
+    codes.add("UNKNOWN")
+    return tuple(sorted(codes))
+
+
+def hint_for(code: str) -> str | None:
+    """The next-action hint for a code, or None for a code this module does not know."""
+    return HINTS.get(code)
+
 
 def _ordered_rules() -> tuple[_Rule, ...]:
     """The rule table with `_SPECIFIC_FIRST` codes hoisted to the front.
@@ -524,11 +752,12 @@ def _classify_line(severity: str, message: str) -> dict:
                     pass
             diag[field] = value
         diag = _refine(diag)
-        hint = _HINTS.get(diag["code"])
+        hint = HINTS.get(diag["code"])
         if hint:
             diag["hint"] = hint
         return diag
-    return {"code": "UNKNOWN", "severity": severity, "message": message}
+    return {"code": "UNKNOWN", "severity": severity, "message": message,
+            "hint": HINTS["UNKNOWN"]}
 
 
 def _parse_tagged_line(payload: str) -> dict | None:
@@ -560,7 +789,7 @@ def _parse_tagged_line(payload: str) -> dict | None:
     if "node" in fields:
         diag["node_def"] = fields.pop("node")
     diag.update(fields)
-    hint = _HINTS.get(diag["code"])
+    hint = HINTS.get(diag["code"])
     if hint:
         diag["hint"] = hint
     return diag

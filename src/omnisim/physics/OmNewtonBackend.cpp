@@ -532,6 +532,25 @@ namespace {
       PyErr_Clear();
     }
 
+    // Import diet: `import newton` pulls in newton._src.usd, which imports the
+    // whole Pixar USD stack (pxr.Sdf/Vt/Ar/Plug + newton_usd_schemas) inside a
+    // try/except ImportError -- 240-330 ms of the ~1.5 s newton import on the
+    // reference machine, for a USD authoring path this engine never calls (worlds
+    // arrive as VRML/URDF through the C++ importers; the runtime has no add_usd
+    // caller). Blocking the package name before the import makes newton take its
+    // documented no-USD branch (newton/_src/usd/utils.py sets Usd = None). This
+    // preload runs on the background thread, but on small worlds and under
+    // OMNISIM_NO_WINDOW=1 the main thread measurably blocks on it, so the saving
+    // is on the critical path there. OMNISIM_NEWTON_USD=1 (value-parsed) keeps
+    // pxr importable for anyone driving USD through the embedded interpreter.
+    {
+      const QByteArray keepUsd = qgetenv("OMNISIM_NEWTON_USD").trimmed().toLower();
+      if (keepUsd.isEmpty() || keepUsd == "0" || keepUsd == "false" || keepUsd == "off") {
+        PyRun_SimpleString("import sys as _sys\n_sys.modules.setdefault('pxr', None)\n");
+        PyErr_Clear();
+      }
+    }
+
     PyObject *warp = PyImport_ImportModule("warp");
     if (warp == nullptr) {
       PyErr_Clear();
@@ -686,55 +705,25 @@ OmNewtonBackend::OmNewtonBackend() : mAvailable(false), mRuntime(nullptr) {
   if (!mAvailable) {
     delete mRuntime;
     mRuntime = nullptr;
-    // OMNISIM_REQUIRE_NEWTON (opt-in): fail LOUDLY at construction instead of
-    // loading a world that will stand still when the Newton runtime won't come
-    // up at all. Still useful post-ODE: the default is one logged error and a
-    // motionless scene, which a batch job can miss; this makes it non-zero exit.
-    // This guards the WHOLE-RUNTIME-missing case (warp/newton import or FFI
-    // smoke failure -- e.g. the headless stdout/banner FFI-smoke failure fixed
-    // alongside this); it is intentionally opt-in so a genuine ODE-only clone
-    // without the bundled runtime is unaffected. The complementary case -- the
-    // runtime IS up but an individual articulation / joint / solver would
-    // silently downgrade to ODE -- is enforced by DEFAULT on a Newton-capable
-    // build via OmPhysicsBackendRegistry::newtonEnforced() (OmSolid /
-    // OmBasicJoint flush, finalizeWorld). The opt-outs that used to relax both
-    // -- OMNISIM_ALLOW_ODE_FALLBACK, OMNISIM_FORCE_ODE, OMNISIM_LEGACY -- are
-    // RETIRED: each named a legitimate route onto ODE, and ODE is gone, so they
-    // now warn and are ignored (OmPhysicsBackend.cpp).
-    // ⚠ THE SILENT FALL-BACK IS RETIRED (2026-08-05, owner's call).
+    // OMNISIM_REQUIRE_NEWTON (opt-in, PRESENCE-gated): fail LOUDLY at
+    // construction instead of loading a world that will stand still when the
+    // Newton runtime is not installed at all (warp/newton import or FFI smoke
+    // failure). The default for MISSING is one logged ERROR (registry
+    // resolve()) and a motionless scene, which a batch job can miss; this makes
+    // it a non-zero exit. Promoting it to the default is the owner's call.
     //
-    // A runtime that is INSTALLED and will not come up is a malfunction, and
-    // running ODE instead of saying so does not degrade gracefully -- it
-    // produces a world simulated by a backend nobody chose, with different
-    // contact behaviour, different friction semantics and different contact
-    // visibility, under a log that says Newton was requested. That corrupts
-    // results rather than losing them, which is strictly worse.
-    //
-    // Measured 2026-08-05: 5 of 10 cold launches on this machine failed
-    // interpreter bring-up and continued on ODE. Nothing downstream could tell
-    // those runs from Newton runs except by reading the .newton.json sidecar,
-    // and no benchmark cell was doing that.
-    //
-    // MISSING historically "still fell back", because "the runtime is not
-    // installed" is not a malfunction and an ODE-only clone had to keep working.
-    // ⚠ SINCE ODE'S DELETION THAT FALL-BACK LEADS NOWHERE: OmOdeBackend is an
-    // inert dispatcher stub, so a runtime-absent clone runs with no physics at
-    // all rather than with legacy physics. OMNISIM_REQUIRE_NEWTON is still the
-    // only thing that makes that state visible; promoting it to the default is a
-    // behaviour change the owner has to call.
-    //
-    // There is no escape hatch for BROKEN any more. It used to be
-    // OMNISIM_ALLOW_ODE_FALLBACK=1; with ODE deleted that variable can only buy
-    // a physics-free run, so it warns and is ignored.
-    // ⚠ THE REFUSAL CANNOT FIRE HERE. This constructor runs BEFORE the world
-    // is parsed, so at this point nobody has said which backend they want --
-    // and refusing here rejected worlds that explicitly asked for ODE, which
-    // is the one case that must always keep working. Measured immediately
-    // after writing it: 4 of 4 `defaultPhysicsBackend "ode"` worlds refused.
-    //
-    // The reason is recorded instead, and the refusal happens in
-    // OmSolid's Newton flush, once the world's own choice is known. See
-    // OmNewtonBackend::refuseIfBrokenAndNewtonWanted.
+    // BROKEN (installed, would not come up) is a malfunction and is refused
+    // unconditionally -- but NOT here: this constructor runs before the world
+    // is parsed, and a FATAL here left nothing to inspect. The reason is
+    // recorded and the refusal fires from the first world step; see
+    // OmNewtonBackend::refuseIfNewtonBroken. There is no escape hatch: the
+    // silent fall-back to another solver was retired on 2026-08-05 (5 of 10
+    // cold launches on this machine had degraded that way and nothing
+    // downstream could tell), and there is no other solver any more.
+    // The complementary case -- the runtime IS up but an individual
+    // articulation / joint / solver would silently drop out -- is enforced by
+    // DEFAULT via OmPhysicsBackendRegistry::newtonEnforced() (OmSolid /
+    // OmBasicJoint flush, finalizeWorld).
     if (gNewtonUnavailable == NewtonUnavailable::Missing && !qEnvironmentVariableIsEmpty("OMNISIM_REQUIRE_NEWTON"))
       OmLog::fatal(
         "[OmNewtonBackend] OMNISIM_REQUIRE_NEWTON is set but the Newton runtime is"
@@ -784,9 +773,9 @@ void OmNewtonBackend::adoptAsyncPreloadedRuntime() {
 #endif
 }
 
-bool OmNewtonBackend::refuseIfBrokenAndNewtonWanted(bool newtonWanted) {
-  // Called once the world's backend choice IS known. Returns true when it
-  // refused (and has already logged a FATAL, which exits).
+bool OmNewtonBackend::refuseIfNewtonBroken() {
+  // Called from the first world step. Returns true when it refused (and has
+  // already logged a FATAL, which exits).
   //
   // The silent fall-back is retired (2026-08-05): a runtime that is INSTALLED
   // and will not come up is a malfunction, and running ODE instead produces a
@@ -800,14 +789,8 @@ bool OmNewtonBackend::refuseIfBrokenAndNewtonWanted(bool newtonWanted) {
   // reason it was left alone -- "an ODE-only clone must keep working" -- no
   // longer holds now that ODE is deleted, but changing it is the owner's call.)
 #ifdef OMNISIM_WITH_NEWTON
-  if (!newtonWanted || gNewtonUnavailable != NewtonUnavailable::Broken)
+  if (gNewtonUnavailable != NewtonUnavailable::Broken)
     return false;
-  // OMNISIM_ALLOW_ODE_FALLBACK used to turn this refusal off by accepting an ODE
-  // run. It cannot do that any more -- ODE has been removed -- so it is warned
-  // about and ignored rather than silently buying a physics-free world.
-  if (!qEnvironmentVariableIsEmpty("OMNISIM_ALLOW_ODE_FALLBACK"))
-    OmLog::warning("[OmNewtonBackend] OMNISIM_ALLOW_ODE_FALLBACK is set but RETIRED and IGNORED: it used to accept an "
-                   "ODE run when Newton would not come up, and ODE has been removed. The refusal below stands.");
   OmLog::fatal(QString("[OmNewtonBackend] this world asked for the Newton backend, and the Newton runtime is INSTALLED "
                        "but did not come up: %1. Newton is the only physics backend -- ODE has been removed -- so "
                        "there is no other backend to run this world on, and running it on nothing would be a wrong "
@@ -1366,7 +1349,7 @@ int OmNewtonBackend::solveIk(int linkBodyIdx, int nTargets, const double *target
       residualsOut.push_back(PyFloat_AsDouble(PyList_GetItem(r, nAngles + i)));
     rc = 0;
   } else
-    OmLog::warning(QString("[OmNewtonBackend] solve_ik returned an unexpected shape (expected %1 values)")
+    OmLog::warning(QString("[OmNewtonBackend] solve_ik returned an unexpected shape (expected %1 values): the IK result is discarded and no joint angles are returned -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).")
                      .arg((qlonglong)expected));
   Py_DECREF(r);
   PyGILState_Release(gstate);
@@ -1708,7 +1691,7 @@ int OmNewtonBackend::addClothGrid(const double pos[3], const double quat[4],
     PyErr_Clear();
     Py_DECREF(r);
     PyGILState_Release(gstate);
-    OmLog::warning("[OmNewtonBackend] add_cloth_grid: expected a (start, end) tuple");
+    OmLog::warning("[OmNewtonBackend] add_cloth_grid: expected a (start, end) tuple: the Cloth is NOT registered and stays inert -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   Py_DECREF(r);
@@ -1796,7 +1779,7 @@ int OmNewtonBackend::addClothMesh(const double pos[3], const double quat[4],
     PyErr_Clear();
     Py_DECREF(r);
     PyGILState_Release(gstate);
-    OmLog::warning("[OmNewtonBackend] add_cloth_mesh: expected a (start, end) tuple");
+    OmLog::warning("[OmNewtonBackend] add_cloth_mesh: expected a (start, end) tuple: the Cloth is NOT registered and stays inert -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   Py_DECREF(r);
@@ -1867,7 +1850,7 @@ int OmNewtonBackend::addSoftGrid(const double pos[3], const double quat[4],
     PyErr_Clear();
     Py_DECREF(r);
     PyGILState_Release(gstate);
-    OmLog::warning("[OmNewtonBackend] add_soft_grid: expected a (start, end) tuple");
+    OmLog::warning("[OmNewtonBackend] add_soft_grid: expected a (start, end) tuple: the SoftBody is NOT registered and stays inert -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   Py_DECREF(r);
@@ -1963,7 +1946,7 @@ int OmNewtonBackend::addGranularBed(const double pos[3], const double quat[4], c
     PyErr_Clear();
     Py_DECREF(r);
     PyGILState_Release(gstate);
-    OmLog::warning("[OmNewtonBackend] add_granular_bed: expected a (start, end) tuple");
+    OmLog::warning("[OmNewtonBackend] add_granular_bed: expected a (start, end) tuple: the GranularBed is NOT registered and stays inert -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   Py_DECREF(r);
@@ -2058,7 +2041,7 @@ int OmNewtonBackend::softSurfaceTriangles(int gridIndex, int *indices, int maxTr
     Py_DECREF(r);
     PyGILState_Release(gstate);
     OmLog::warning(QString("[OmNewtonBackend] soft_surface_packed returned %1 bytes, not a "
-                           "multiple of %2").arg(static_cast<long long>(len))
+                           "multiple of %2: the SoftBody surface is NOT drawn this tick -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).").arg(static_cast<long long>(len))
                      .arg(static_cast<long long>(stride)));
     return -1;
   }
@@ -2819,8 +2802,7 @@ int OmNewtonBackend::finalizeWorld() {
     // Newton enforcement (2026-06-29 default: no silent physics downgrade). A
     // requested-but-failed MuJoCo build silently swapping in XPBD is the same
     // class of bug as a silent Newton->ODE fall-back (it broke the G1 deploy),
-    // so escalate it to a hard error under enforcement. Opt out with
-    // OMNISIM_ALLOW_ODE_FALLBACK=1 (or FORCE_ODE/LEGACY) -- all three retired; the Python runtime's
+    // so escalate it to a hard error under enforcement. The Python runtime's
     // OMNISIM_REQUIRE_MUJOCO_SOLVER=1 asserts the same thing one layer earlier.
     if (OmPhysicsBackendRegistry::newtonEnforced())
       OmLog::fatal(msg);
@@ -3300,7 +3282,7 @@ int OmNewtonBackend::getBodyXform(int bodyIdx, double xform[7]) const {
   if (!PyArg_ParseTuple(r, "ddddddd", &x, &y, &z, &qx, &qy, &qz, &qw)) {
     PyErr_Clear();
     Py_DECREF(r);
-    OmLog::warning("[OmNewtonBackend] body_xform: tuple parse failed");
+    OmLog::warning("[OmNewtonBackend] body_xform: tuple parse failed: this body's pose is NOT read back this tick -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   Py_DECREF(r);
@@ -3328,7 +3310,7 @@ int OmNewtonBackend::getBodyVelocity(int bodyIdx, double vel[6]) const {
   if (!PyArg_ParseTuple(r, "dddddd", &vx, &vy, &vz, &wx, &wy, &wz)) {
     PyErr_Clear();
     Py_DECREF(r);
-    OmLog::warning("[OmNewtonBackend] body_vel: tuple parse failed");
+    OmLog::warning("[OmNewtonBackend] body_vel: tuple parse failed: this body's velocity is NOT read back this tick -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   Py_DECREF(r);
@@ -3347,19 +3329,19 @@ int OmNewtonBackend::snapshotBodyTranslations(int maxBodies, float *xyzw) const 
     return reportPyError("body_translations_packed");
   if (!PyBytes_Check(r)) {
     Py_DECREF(r);
-    OmLog::warning("[OmNewtonBackend] body_translations_packed: return not bytes");
+    OmLog::warning("[OmNewtonBackend] body_translations_packed: return not bytes: body poses are NOT read back this tick (bodies appear frozen) -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   const Py_ssize_t n = PyBytes_Size(r);
   if (n < 0 || (n % 16) != 0) {
     Py_DECREF(r);
-    OmLog::warning("[OmNewtonBackend] body_translations_packed: bad size");
+    OmLog::warning("[OmNewtonBackend] body_translations_packed: bad size: body poses are NOT read back this tick (bodies appear frozen) -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   const int count = static_cast<int>(n / 16);
   if (count > maxBodies) {
     Py_DECREF(r);
-    OmLog::warning("[OmNewtonBackend] body_translations_packed: count > max");
+    OmLog::warning("[OmNewtonBackend] body_translations_packed: count > max: body poses are NOT read back this tick (bodies appear frozen) -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   if (count > 0) {
@@ -3399,14 +3381,14 @@ int OmNewtonBackend::snapshotParticlePositions(int particleStart, int particleEn
   if (!PyBytes_Check(r)) {
     Py_DECREF(r);
     PyGILState_Release(gstate);
-    OmLog::warning("[OmNewtonBackend] particle_positions_packed: return not bytes");
+    OmLog::warning("[OmNewtonBackend] particle_positions_packed: return not bytes: particle positions are NOT read back this tick (cloth/soft bodies render stale) -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   const Py_ssize_t n = PyBytes_Size(r);
   if (n < 0 || (n % 12) != 0) {
     Py_DECREF(r);
     PyGILState_Release(gstate);
-    OmLog::warning("[OmNewtonBackend] particle_positions_packed: bad size");
+    OmLog::warning("[OmNewtonBackend] particle_positions_packed: bad size: particle positions are NOT read back this tick (cloth/soft bodies render stale) -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   const int count = static_cast<int>(n / 12);
@@ -3416,7 +3398,7 @@ int OmNewtonBackend::snapshotParticlePositions(int particleStart, int particleEn
   if (particleStart >= 0 && count > particleEnd - particleStart) {
     Py_DECREF(r);
     PyGILState_Release(gstate);
-    OmLog::warning("[OmNewtonBackend] particle_positions_packed: more particles than the range asked for");
+    OmLog::warning("[OmNewtonBackend] particle_positions_packed: more particles than the range asked for: particle positions are NOT read back this tick (cloth/soft bodies render stale) -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   if (count > 0) {
@@ -3477,7 +3459,7 @@ int OmNewtonBackend::particleStats(int particleStart, int particleEnd, int *coun
   if (!PyBytes_Check(r)) {
     Py_DECREF(r);
     PyGILState_Release(gstate);
-    OmLog::warning("[OmNewtonBackend] particle_stats_packed: return not bytes");
+    OmLog::warning("[OmNewtonBackend] particle_stats_packed: return not bytes: wb_supervisor_node_get_particle_stats() returns nothing for this call -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   const Py_ssize_t n = PyBytes_Size(r);
@@ -3491,7 +3473,7 @@ int OmNewtonBackend::particleStats(int particleStart, int particleEnd, int *coun
   if (n != 2 * (Py_ssize_t)sizeof(std::int32_t) + 9 * (Py_ssize_t)sizeof(double)) {
     Py_DECREF(r);
     PyGILState_Release(gstate);
-    OmLog::warning("[OmNewtonBackend] particle_stats_packed: bad size");
+    OmLog::warning("[OmNewtonBackend] particle_stats_packed: bad size: wb_supervisor_node_get_particle_stats() returns nothing for this call -- the engine and the staged omnisim_newton_runtime.py disagree on this call's return shape (usually a runtime edit that a rebuild did not ship, or a stale bundle). Re-stage it with `python scripts/packaging/bundle_newton_runtime.py --mode vendor`, then `python -m omnisim doctor` (docs/developer/newton-runtime-bundle.md).");
     return -1;
   }
   const char *src = PyBytes_AsString(r);

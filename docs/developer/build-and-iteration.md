@@ -18,7 +18,7 @@ The important consequence is that OmniSim is not yet split into small independen
 
 ## Public Build Targets
 
-### `python scripts/dev/omnisim_dev.py build all`
+### `python -m omnisim build all`
 
 Runs the full product-style build.
 
@@ -28,7 +28,7 @@ Use this when:
 - you changed multiple subsystems
 - you are preparing a broad integration change
 
-### `python scripts/dev/omnisim_dev.py build core`
+### `python -m omnisim build core`
 
 Runs the top-level `omnisim_target` path. Today that means:
 
@@ -42,7 +42,7 @@ Use this when:
 - you changed code in `src/omnisim` (renderer code in `src/omnisim/render` included)
 - you do not want to rely on a stale static library or stale dependency artifact
 
-### `python scripts/dev/omnisim_dev.py build gui`
+### `python -m omnisim build gui`
 
 Builds only `src/omnisim`.
 
@@ -52,11 +52,11 @@ Use this when:
 - you did not change `src/glad`
 - you want the narrowest practical rebuild of the main simulator binary
 
-### `python scripts/dev/omnisim_dev.py build renderer` — RETIRED (refuses)
+### `python -m omnisim build renderer` — RETIRED (refuses)
 
 ⚠️ Its recipe was `make -C src/wren`, deleted with WREN on 2026-08-23. As of 2026-08-24 the subcommand **refuses with an explanation and a non-zero exit** rather than routing to a target with no recipe behind it (which printed `Nothing to be done` and exited 0 — a build command reporting success while building nothing). There is no separate renderer subsystem: rebuild renderer code with `build core` or `build gui`.
 
-### `python scripts/dev/omnisim_dev.py build controller-libs`
+### `python -m omnisim build controller-libs`
 
 Builds only the controller libraries and launcher.
 
@@ -66,7 +66,7 @@ Use this when:
 - you changed `include/controller`
 - you are iterating on controller APIs or launcher behavior
 
-### `python scripts/dev/omnisim_dev.py build package`
+### `python -m omnisim build package`
 
 Runs the packaging path. This is not part of the normal fast inner loop.
 
@@ -91,7 +91,7 @@ They are convenience names, not proof that the architecture is already modular.
 Narrowest rebuild:
 
 ```bash
-python scripts/dev/omnisim_dev.py build gui
+python -m omnisim build gui
 ```
 
 ### If you changed `src/omnisim/nodes`, `src/omnisim/engine`, `src/omnisim/control`, or `src/omnisim/vrml`
@@ -99,13 +99,13 @@ python scripts/dev/omnisim_dev.py build gui
 Narrowest rebuild:
 
 ```bash
-python scripts/dev/omnisim_dev.py build gui
+python -m omnisim build gui
 ```
 
 Safer rebuild:
 
 ```bash
-python scripts/dev/omnisim_dev.py build core
+python -m omnisim build core
 ```
 
 Use the safer rebuild if the change touches runtime behavior that depends on generated resource state or static-link integration details.
@@ -115,13 +115,13 @@ Use the safer rebuild if the change touches runtime behavior that depends on gen
 Renderer code is part of the engine target, so this is the ordinary engine loop:
 
 ```bash
-python scripts/dev/omnisim_dev.py build gui
+python -m omnisim build gui
 ```
 
 Safer rebuild:
 
 ```bash
-python scripts/dev/omnisim_dev.py build core
+python -m omnisim build core
 ```
 
 ### If you changed `src/controller` or `include/controller`
@@ -129,7 +129,7 @@ python scripts/dev/omnisim_dev.py build core
 Use:
 
 ```bash
-python scripts/dev/omnisim_dev.py build controller-libs
+python -m omnisim build controller-libs
 ```
 
 ### If you changed test harnesses or world files only
@@ -141,15 +141,15 @@ Usually no rebuild is required. Run validation directly with `--nomake` when app
 ### Renderer loop
 
 ```bash
-python scripts/dev/omnisim_dev.py build gui
-python scripts/dev/omnisim_dev.py test-world tests/rendering/worlds/normals.omniworld --nomake
+python -m omnisim build gui
+python -m omnisim test-world tests/rendering/worlds/normals.omniworld --nomake
 ```
 
 ### Runtime loop
 
 ```bash
-python scripts/dev/omnisim_dev.py build gui
-python scripts/dev/omnisim_dev.py test-smoke --nomake
+python -m omnisim build gui
+python -m omnisim test-smoke --nomake
 ```
 
 If the change is broad or touches physics or controller synchronization, use `build core` instead of `build gui`.
@@ -157,22 +157,22 @@ If the change is broad or touches physics or controller synchronization, use `bu
 ### Controller API loop
 
 ```bash
-python scripts/dev/omnisim_dev.py build controller-libs
-python scripts/dev/omnisim_dev.py test-group api --nomake
+python -m omnisim build controller-libs
+python -m omnisim test-group api --nomake
 ```
 
 ### One-world investigation loop
 
 ```bash
-python scripts/dev/omnisim_dev.py build gui
-python scripts/dev/omnisim_dev.py run-world tests/api/worlds/accelerometer.omniworld
+python -m omnisim build gui
+python -m omnisim run-world tests/api/worlds/accelerometer.omniworld
 ```
 
 ### Headless automation loop
 
 ```bash
-python scripts/dev/omnisim_dev.py build gui
-python scripts/dev/omnisim_dev.py run-headless tests/api/worlds/accelerometer.omniworld
+python -m omnisim build gui
+python -m omnisim run-headless tests/api/worlds/accelerometer.omniworld
 ```
 
 ## Compile Database and Tooling
@@ -182,7 +182,7 @@ python scripts/dev/omnisim_dev.py run-headless tests/api/worlds/accelerometer.om
 Generate it with:
 
 ```bash
-python scripts/dev/omnisim_dev.py compile-commands
+python -m omnisim compile-commands
 ```
 
 Current behavior:

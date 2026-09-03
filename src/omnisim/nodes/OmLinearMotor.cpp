@@ -22,7 +22,6 @@
 #include "OmSolid.hpp"
 #include "OmTrack.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 #include <cassert>
 
 void OmLinearMotor::init() {
@@ -60,11 +59,8 @@ double OmLinearMotor::computeFeedback() const {
 
   const OmJoint *j = joint();
   if (j == NULL) {  // function available for motorized joints only
-    warn(tr("Force feedback is available for motorized joints only"));
+    warn(tr("Force feedback is available for motorized joints only: this motor is not the 'device' of a Joint, so the reading stays 0. Place the motor in a SliderJoint 'device' field to measure it -- see docs/reference/linearmotor.md."));
     return 0.0;
   }
-  const dJointID jID = j->jointID();
-  if (!jID)  // we need physics enabled to compute force feedback
-    return 0.0;
-  return 0.0;  // unreachable (jID is always null now); the dJointFeedback math this replaced went with ODE
+  return 0.0;  // the dJointFeedback math this replaced went with ODE; no Newton force-feedback service yet
 }

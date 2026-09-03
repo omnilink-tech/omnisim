@@ -29,6 +29,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts" / "dev"))
 
 from headless_runner import (  # noqa: E402
     RUNAWAY_WINDOW,
+    writable_log_path,
     connect_sidecar_failures,
     controller_start_failures,
     early_exit_cause_lines,
@@ -323,3 +324,22 @@ def test_platform_plugin_hint_fires_only_on_the_signature():
 def test_platform_plugin_abort_is_not_the_startup_race():
     # A header-only log with a Qt Fatal line must never be retried as "the flake".
     assert looks_like_startup_race(_XCB_ABORT_LOG) is False
+
+
+# ---- Program Files log fallback (public issue #14 report) --------------------
+
+def test_writable_log_path_keeps_a_writable_location(tmp_path):
+    preferred = tmp_path / "omnisim_log.txt"
+    path, note = writable_log_path(preferred)
+    assert path == preferred and note is None
+
+
+def test_writable_log_path_falls_back_when_the_directory_refuses(tmp_path):
+    # A path whose parent cannot be created: a FILE where the directory should be.
+    blocker = tmp_path / "blocker"
+    blocker.write_text("")
+    preferred = blocker / "sub" / "omnisim_log.txt"
+    path, note = writable_log_path(preferred)
+    assert path != preferred
+    assert path.name == "omnisim_log.txt"
+    assert note and "not writable" in note

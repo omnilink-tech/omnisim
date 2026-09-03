@@ -378,7 +378,7 @@ void OmGranularBed::onPhysicsStepStarted() {
     OmLog::warning(tr("GranularBed '%1' is inert: the Newton runtime is not available, so there is "
                       "no MPM solver to simulate its particles. It is invisible as well as "
                       "motionless -- a bed's positions come back from the solver and there is no "
-                      "rest pose to draw without one.")
+                      "rest pose to draw without one. Run `python -m omnisim doctor`; on Windows stage the runtime with `make -C src/omnisim bundle-newton-runtime`, on Linux pip newton/warp/mujoco into the system python3 (docs/developer/newton-runtime-bundle.md).")
                      .arg(usefulName()));
     return;
   }

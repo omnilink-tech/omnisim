@@ -663,7 +663,7 @@ Machine `9722d23d12a3` (RTX 3060 laptop, AMD64 16 core), engine
 `msys64/mingw64/bin/omnisim-bin.exe` sha256 `f12be1cc3418174e`, repo `12e547b9d`.
 Newton verdict sidecar on every physics rung: `finalised: true,
 degraded: false`, `mujoco 3.8.1 / newton 1.2.0 / warp 1.13.0 /
-mujoco_warp 3.8.0.3`, model device `cpu`.
+mujoco_warp 3.8.0.3`, model device `cpu`. (Runtime at the time of the run; the pinned runtime is newton 1.5.0 / warp 1.16.0 / mujoco 3.11.0 — `scripts/packaging/newton_runtime_pins.py`.)
 
 **⚠️ This is a DIFFERENT BINARY from the rung-0–4 campaign below, and rung 4's
 verdict changed with it.** Nothing in a row says which build produced it unless
@@ -828,7 +828,7 @@ the honest scene, so those faults cannot be shown surgical on them *here*; the
 
 Engine `omnisim-bin.exe` (08-12 13:16), Newton/MuJoCo CPU `mj_step`, verdict
 sidecar `finalised: true, degraded: false`, `mujoco 3.8.1 / newton 1.2.0 /
-warp 1.13.0`, model device `cpu`.
+warp 1.13.0`, model device `cpu` (the runtime then; pinned today: newton 1.5.0 / warp 1.16.0 / mujoco 3.11.0).
 
 | rung | verdict | headline |
 |---|---|---|

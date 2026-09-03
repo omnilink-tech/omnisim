@@ -26,4 +26,4 @@ only collects the migrations that need more than a changelog line.
   [System Requirements](system-requirements.md).
 
 For the inherited pre-fork history, see the upstream Webots
-[changelog](../reference/changelog.md).
+[changelog](../../CHANGELOG.md).

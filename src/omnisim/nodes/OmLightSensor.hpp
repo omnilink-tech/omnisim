@@ -46,7 +46,6 @@ public:
   bool refreshSensorIfNeeded() override;
 
   // specific functions
-  void rayCollisionCallback(dGeomID geom);
 
   void computeLightMeasurement(const OmLight *light, const OmVector3 &sensorAxis, const OmVector3 &sensorPos,
                                OmVector3 &lightDirection, double &distance, double &direct, double &attenuation) const;

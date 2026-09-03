@@ -138,17 +138,17 @@ When `gpuMemoryTransfer` moves, inspect:
 ### Narrow visual change
 
 ```bash
-python scripts/dev/omnisim_dev.py build renderer
-python scripts/dev/omnisim_dev.py build gui
-python scripts/dev/omnisim_dev.py test-world tests/rendering/worlds/normals.omniworld --nomake
+python -m omnisim build renderer
+python -m omnisim build gui
+python -m omnisim test-world tests/rendering/worlds/normals.omniworld --nomake
 ```
 
 ### Performance-sensitive visual change
 
 ```bash
-python scripts/dev/omnisim_dev.py build core
-python scripts/dev/omnisim_dev.py profile-world tests/rendering/worlds/normals.omniworld
-python scripts/dev/omnisim_dev.py benchmarks --nomake
+python -m omnisim build core
+python -m omnisim profile-world tests/rendering/worlds/normals.omniworld
+python -m omnisim benchmarks --nomake
 ```
 
 ## Edit Map

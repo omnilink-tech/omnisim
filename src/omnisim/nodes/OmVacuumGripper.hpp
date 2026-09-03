@@ -74,7 +74,6 @@ private:
   OmSFInt *mContactPoints;       // minimum number of contact points required to connect with a Solid
 
   // other stuff
-  dJointID mFixedJoint;  // ODE joint that does the connection
   OmSolid *mSolid;       // connected object or NULL
   OmSensor *mSensor;     // presence sensor
   bool mValue;

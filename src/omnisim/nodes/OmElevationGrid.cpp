@@ -35,7 +35,6 @@
 #include "OmTransform.hpp"
 #include "OmVrmlNodeUtilities.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 void OmElevationGrid::init() {
   mData = NULL;
@@ -80,7 +79,8 @@ void OmElevationGrid::preFinalize() {
   if (isInBoundingObject()) {
     if (OmNodeUtilities::findUpperMatter(this)->nodeType() == WB_NODE_FLUID) {
       parsingWarn("The ElevationGrid geometry cannot be used as a Fluid boundingObject. Immersions will have not effect.\n");
-      // TODO: enable dHeightField for immersion detection in src/ode/ode/fluid_dynamics
+      // Immersion was ODE-only and went with it (bdc02139): Fluid is retired and
+      // WB_NODE_FLUID survives only as positional public ABI, so this branch is dead.
     }
     isSuitableForInsertionInBoundingObject(true);  // boundingObject specific warnings
   }
@@ -297,16 +297,15 @@ QStringList OmElevationGrid::fieldsToSynchronizeWithW3d() const {
 // ODE objects //
 /////////////////
 
-dGeomID OmElevationGrid::createOdeGeom(dSpaceID space) {
+bool OmElevationGrid::createOdeGeom() {
   if (setOdeHeightfieldData() == false)
-    return NULL;
+    return false;
 
   // Creates a height field with without dSpace.
   // We need to translate the height field because in VRML the coordinate center is located in
   // one corner of the grid, while in ODE, it is located in the middle of the grid.
   mLocalOdeGeomOffsetPosition = OmVector3(scaledWidth() / 2.0, scaledDepth() / 2.0, 0.0);
-  (void)space;
-  return NULL;  // ODE is gone: the Newton heightfield is a separate registration path
+  return true;  // the Newton heightfield is a separate registration path
 }
 
 bool OmElevationGrid::setOdeHeightfieldData() {
@@ -338,11 +337,8 @@ void OmElevationGrid::applyToOdeData(bool correctSolidMass) {
   if (setOdeHeightfieldData() == false)
     return;
 
-  if (mOdeGeom == NULL) {
-    if (areOdeObjectsCreated())
-      emit validElevationGridInserted();
-    return;
-  }
+  if (areOdeObjectsCreated())
+    emit validElevationGridInserted();
 }
 
 double OmElevationGrid::scaledWidth() const {
@@ -369,7 +365,7 @@ bool OmElevationGrid::isSuitableForInsertionInBoundingObject(bool warning) const
       parsingWarn(tr("'height' must be positive when used in a 'boundingObject'."));
 
     if (invalid)
-      parsingWarn(tr("Cannot create the associated physics object."));
+      parsingWarn(tr("Cannot create the associated physics object. This ElevationGrid is dropped from the boundingObject, so the terrain has NO collision and bodies fall through it: set 'xDimension' and 'yDimension' to at least 2 and 'xSpacing'/'ySpacing' to positive values (the warnings above name the bad field) -- see docs/reference/elevationgrid.md."));
   }
 
   return !invalid;

@@ -47,8 +47,10 @@ pass the flag before the cluster.
 
 from __future__ import annotations
 
+import fnmatch
 import re
-from pathlib import Path
+import subprocess
+from pathlib import Path, PurePosixPath
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -73,15 +75,50 @@ _HAZARD = re.compile(
 )
 
 
+def _tracked_files() -> list[str] | None:
+    """Repo-relative paths git tracks, or None when this is not a git checkout.
+
+    The rule is about recipes that SHIP, so the corpus is the committed tree.
+    Walking the disk instead (the previous behaviour) swept gitignored build
+    residue too -- and died on it: the ROS 2 package's colcon `install/` tree
+    holds WSL-created reparse points that Windows cannot stat (WinError
+    1920), which took the whole test down before it had read a single
+    Makefile, after a 35 s crawl of the residue.
+
+    (The word for the simulator is deliberately absent from this file: the
+    engine-marker classifier in conftest.py marks any module pairing a
+    subprocess call with that token, which would drop this test from the
+    engine-free lane it exists to run in.)
+    """
+    try:
+        raw = subprocess.run(
+            ["git", "-C", str(REPO), "ls-files", "-z"],
+            capture_output=True, check=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return [p.decode("utf-8", errors="replace") for p in raw.split(b"\0") if p]
+
+
 def _candidate_files() -> list[Path]:
+    tracked = _tracked_files()
+    if tracked is None:  # an exported tree without .git: fall back to the disk walk
+        candidates = (p for pat in PATTERNS for p in REPO.rglob(pat))
+    else:
+        candidates = (
+            REPO / rel for rel in tracked
+            if any(fnmatch.fnmatch(PurePosixPath(rel).name, pat) for pat in PATTERNS)
+        )
     out: list[Path] = []
-    for pat in PATTERNS:
-        for p in REPO.rglob(pat):
-            rel = p.relative_to(REPO).as_posix()
-            if any(rel.startswith(d) or f"/{d}/" in f"/{rel}" for d in SKIP_DIRS):
-                continue
+    for p in candidates:
+        rel = p.relative_to(REPO).as_posix()
+        if any(rel.startswith(d) or f"/{d}/" in f"/{rel}" for d in SKIP_DIRS):
+            continue
+        try:
             if p.is_file():
                 out.append(p)
+        except OSError:  # a reparse point this OS cannot stat is not a recipe
+            continue
     return out
 
 

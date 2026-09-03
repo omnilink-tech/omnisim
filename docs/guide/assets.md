@@ -33,13 +33,13 @@ OmniSim also imports URDF directly — see the `URDFRobot` node — which is usu
 
 Actuator assets are listed under the *actuator* keyword.
 They typically correspond to commercially available devices.
-For the generic actuator nodes they build on, see the [Actuators](actuators.md) section.
+For the generic actuator nodes they build on, see the Actuators (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) section.
 
 ## Sensors
 
 Sensor assets are listed under the *sensor* keyword.
 They typically correspond to commercially available devices.
-For the generic sensor nodes they build on, see the [Sensors](sensors.md) section.
+For the generic sensor nodes they build on, see the Sensors (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) section.
 
 ## Joints
 

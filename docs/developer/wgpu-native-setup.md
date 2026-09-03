@@ -1,11 +1,12 @@
 # wgpu-native build-host setup
 
-**Status (2026-05-28):** optional. R3.1 of the engine-migration plan
-landed the build hook + the constructor probe; without
-`WGPU_NATIVE_HOME` set, the `OMNISIM_WITH_VULKAN=ON` build still
-compiles + `OmVulkanBackend::isAvailable()` returns false (so
-worlds with `renderBackend "vulkan"` silently fall back to WREN —
-the safety net every phase of the engine-migration plan promises).
+**Status (2026-09-02): mandatory.** wgpu-native is the ONLY renderer — WREN was deleted on
+2026-08-23 (`976b9449d`) and there is no fallback. A build that cannot find wgpu-native is
+**REFUSED** (`WGPU_NATIVE_HOME` is auto-discovered by the Makefile; `OMNISIM_RENDERERLESS=ON`
+is the only way to build without it, by name). A host whose wgpu-native cannot initialise at
+runtime has no renderer at all: one loud log line, physics and controllers unaffected.
+The R3-era text below (2026-05-28) is the install recipe; where it says "optional" or
+"falls back to WREN", read the paragraph above instead.
 
 This doc lives so that when a developer wants to actually exercise
 the wgpu path (R3.2 mesh cache testing, R3.3 single-Camera RTT
@@ -111,8 +112,8 @@ If the log is silent (no init message), check:
   whole path — the binary still builds, just without the wgpu code
   compiled in.
 - `OMNISIM_WITH_VULKAN` was `ON` at build time (the default since the
-  2026-06-07 baseline flip, so a plain `make` compiles the wgpu backend
-  in; WREN stays the runtime default via the `renderBackend` field).
+  2026-06-07 baseline flip; since 2026-08-23 wgpu is the only renderer and
+  the `renderBackend` field is a warned no-op).
 - The `wgpu_native.dll` is present next to `omnisim-bin.exe`. The build
   now copies it there automatically on the link step (see §2.6); if it's
   missing, force a re-link (`touch` any source + rebuild) or confirm
@@ -138,7 +139,7 @@ pre-R3.1 self.
   `renderBackend "vulkan"` to a Viewpoint or Camera.
 - R3.4: Path-3 shader port (GLSL→WGSL hand-port + naga long tail).
 - R3.5: texture bridge.
-- R3.6: golden-image parity vs WREN.
+- R3.6: golden-image parity vs WREN (done; WREN deleted 2026-08-23).
 - R3.7: Newton interop — wgpu storage buffer = Newton body buffer.
   Gated on Physics Phase D (which fired 2026-05-28; see the §15
   decision log).

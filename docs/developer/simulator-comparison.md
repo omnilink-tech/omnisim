@@ -1081,8 +1081,8 @@ research and OmniBench.**
   server). **For a lab whose stack is ROS 2 end to end, Gazebo remains better integrated.**
   Detail and limitations: [ros2-integration.md](ros2-integration.md).
 - **Not photoreal.** Isaac's RTX renderer and UE5's Nanite/Lumen are a different visual
-  class. Default main view is still WREN (OpenGL); wgpu is opt-in per world
-  ([wgpu-renderer-status.md](wgpu-renderer-status.md)).
+  class. OmniSim renders the main view and every sensor through wgpu-native (WREN deleted
+  2026-08-23; [wgpu-renderer-status.md](wgpu-renderer-status.md)).
 - **Sim-to-real is unproven.** Sim-to-*deploy* parity in-engine 📊 is not zero-shot transfer
   to six physical robots ✅ (§5.3).
 - **Young fork, narrow shoulders.** MuJoCo took 1948 commits last year, Newton 1586, Drake

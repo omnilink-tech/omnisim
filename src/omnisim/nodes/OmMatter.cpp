@@ -30,7 +30,6 @@
 #include "OmMatrix3.hpp"
 #include "OmMatrix4.hpp"
 #include "OmNodeUtilities.hpp"
-#include "OmOdeContext.hpp"
 #include "OmPlane.hpp"
 #include "OmResizeManipulator.hpp"
 #include "OmRotation.hpp"
@@ -97,10 +96,6 @@ void OmMatter::disconnectFromBoundingObjectUpdates(const OmNode *node) const {
   const OmGeometry *const geometry = dynamic_cast<const OmGeometry *>(node);
   if (geometry)
     disconnect(geometry, &OmGeometry::boundingGeometryRemoved, this, &OmMatter::removeBoundingGeometry);
-}
-
-dSpaceID OmMatter::space() const {
-  return OmOdeContext::instance()->space();
 }
 
 void OmMatter::postFinalize() {
@@ -182,65 +177,18 @@ void OmMatter::boundingObjectFinalizationCompleted(OmBaseNode *node) {
   updateBoundingObject();
 }
 
-dSpaceID OmMatter::groupSpace() const {
-  const OmGroup *const gp = dynamic_cast<OmGroup *>(mBoundingObject->value());
-  return gp ? gp->odeSpace() : NULL;
-}
-
-dSpaceID OmMatter::upperSpace() const {
-  assert(areOdeObjectsCreated());
-  dSpaceID s = groupSpace();
-  if (s)
-    return s;
-
-  return NULL;  // ODE is gone: no collision space exists
-}
-
-dGeomID OmMatter::odeGeom() const {
-  OmBaseNode *const bo = boundingObject();
-  if (bo == NULL)
-    return NULL;
-
-  const OmGeometry *g = NULL;
-
-  const OmPose *const p = dynamic_cast<OmPose *>(bo);
-  // cppcheck-suppress knownConditionTrueFalse
-  if (p)
-    g = p->geometry();
-  else {
-    const OmShape *const s = dynamic_cast<OmShape *>(bo);
-    g = s ? s->geometry() : dynamic_cast<OmGeometry *>(bo);
-  }
-
-  if (g)
-    return g->odeGeom();
-
-  const OmGroup *const gp = dynamic_cast<OmGroup *>(bo);
-  if (gp)
-    return (dGeomID)gp->odeSpace();
-
-  return NULL;
-}
-
-dGeomID OmMatter::createOdeGeomFromGeometry(dSpaceID space, OmGeometry *geometry, bool setOdeData) {
+bool OmMatter::createOdeGeomFromGeometry(OmGeometry *geometry, bool listenForRemoval) {
   if (geometry == NULL)
-    return NULL;
+    return false;
 
-  dGeomID geom = geometry->createOdeGeom(space);
-
-  if (geom && setOdeData) {
-    // Stores a pointer to the ODE geometry into the OmGeometry node & sets the OmGeometry node and its OmMatter parent node as
-    // reference data
-    geometry->setOdeData(geom, this);
+  const bool valid = geometry->createOdeGeom();
+  if (valid && listenForRemoval)
     connect(geometry, &OmGeometry::boundingGeometryRemoved, this, &OmMatter::removeBoundingGeometry, Qt::UniqueConnection);
-  }
 
-  return geom;
+  return valid;
 }
 
-dGeomID OmMatter::createOdeGeomFromPose(dSpaceID space, OmPose *pose) {
-  assert(space);
-
+bool OmMatter::createOdeGeomFromPose(OmPose *pose) {
   // Listens to insertion/deletion in the children field of the OmPose
   connect(pose, &OmPose::geometryInPoseInserted, this, &OmMatter::createOdeGeomFromInsertedPoseItem, Qt::UniqueConnection);
   pose->listenToChildrenField();
@@ -248,11 +196,11 @@ dGeomID OmMatter::createOdeGeomFromPose(dSpaceID space, OmPose *pose) {
   const int n = pose->childCount();
   if (n == 0) {
     parsingInfo(tr("A child to the Transform placed in 'boundingObject' is expected."));
-    return NULL;
+    return false;
   }
 
   if (n != 1)
-    pose->parsingWarn(tr("A Pose node inside a 'boundingObject' can only contain one child. Remaining children are ignored."));
+    pose->parsingWarn(tr("A Pose node inside a 'boundingObject' can only contain one child. Remaining children are ignored. To collide with several shapes, make the boundingObject a Group of Pose/Shape children and set WorldInfo.newtonCompoundColliders TRUE (the default registers only children[0]) -- see docs/reference/solid.md."));
 
   OmBaseNode *const poseChild = pose->child(0);
   const OmShape *const shape = dynamic_cast<OmShape *>(poseChild);
@@ -274,7 +222,7 @@ dGeomID OmMatter::createOdeGeomFromPose(dSpaceID space, OmPose *pose) {
 
   OmGeometry *const geometry = pose->geometry();
   if (geometry == NULL)
-    return NULL;
+    return false;
 
   const OmIndexedFaceSet *const ifs = dynamic_cast<OmIndexedFaceSet *>(geometry);
   // cppcheck-suppress knownConditionTrueFalse
@@ -285,18 +233,14 @@ dGeomID OmMatter::createOdeGeomFromPose(dSpaceID space, OmPose *pose) {
   if (eg)  // TODO: rename slot?
     connect(eg, &OmElevationGrid::validElevationGridInserted, pose, &OmPose::geometryInPoseInserted, Qt::UniqueConnection);
 
-  return createOdeGeomFromGeometry(space, geometry);
+  return createOdeGeomFromGeometry(geometry);
 }
 
 void OmMatter::createOdeGeomFromInsertedPoseItem() {
   assert(dynamic_cast<OmPose *>(sender()));
   OmPose *const pose = static_cast<OmPose *>(sender());
-  dGeomID g = createOdeGeomFromPose(upperSpace(), pose);
-  if (g) {
-    setGeomMatter(g, pose);
-    if (isInsertedOdeGeomPositionUpdateRequired())
-      updateOdeGeomPosition(g);
-  }
+  if (createOdeGeomFromPose(pose))
+    setGeomMatter(pose);
 }
 
 void OmMatter::createOdeGeomFromInsertedShapeItem() {
@@ -305,11 +249,9 @@ void OmMatter::createOdeGeomFromInsertedShapeItem() {
   OmGeometry *const geometry = shape->geometry();
   OmPose *const pose = shape->upperPose();
 
-  dGeomID insertedGeom;
   if (pose && pose->isInBoundingObject()) {
-    insertedGeom = createOdeGeomFromPose(upperSpace(), pose);
-    if (insertedGeom)
-      setGeomMatter(insertedGeom);
+    if (createOdeGeomFromPose(pose))
+      setGeomMatter();
   } else {  // no Pose in the boundingObject is a parent of this Shape
     OmIndexedFaceSet *const ifs = dynamic_cast<OmIndexedFaceSet *>(geometry);
     if (ifs)
@@ -320,48 +262,40 @@ void OmMatter::createOdeGeomFromInsertedShapeItem() {
     if (eg)
       connect(eg, &OmElevationGrid::validElevationGridInserted, shape, &OmShape::geometryInShapeInserted, Qt::UniqueConnection);
 
-    insertedGeom = createOdeGeomFromGeometry(upperSpace(), geometry);
-    if (insertedGeom == NULL) {
+    if (!createOdeGeomFromGeometry(geometry)) {
       assert(ifs || eg);
       return;
     }
 
-    setGeomMatter(insertedGeom, geometry);
+    setGeomMatter(geometry);
   }
-
-  if (isInsertedOdeGeomPositionUpdateRequired())
-    updateOdeGeomPosition(insertedGeom);
 }
 
-dGeomID OmMatter::createOdeGeomFromGroup(dSpaceID space, OmGroup *group) {  // group is a *OmGroup but not a *OmPose
-  // ODE is gone: no collision geoms/spaces are created
-  (void)space;
+bool OmMatter::createOdeGeomFromGroup(OmGroup *group) {  // group is a *OmGroup but not a *OmPose
+  // A Group boundingObject is walked by the Newton registration directly
+  // (compound colliders); nothing to validate or wire here.
   (void)group;
-  return NULL;
-}
-
-dGeomID OmMatter::createOdeGeomFromBoundingObject(dSpaceID space) {
-  return createOdeGeomFromNode(space, boundingObject());
+  return false;
 }
 
 void OmMatter::insertValidGeometryInBoundingObject() {
   assert(dynamic_cast<OmIndexedFaceSet *>(sender()) || dynamic_cast<OmElevationGrid *>(sender()));
   OmGeometry *const geometry = static_cast<OmGeometry *>(sender());
-  createOdeGeomFromGeometry(upperSpace(), geometry);
+  createOdeGeomFromGeometry(geometry);
 }
 
-dGeomID OmMatter::createOdeGeomFromNode(dSpaceID space, OmBaseNode *node) {
+bool OmMatter::createOdeGeomFromNode(OmBaseNode *node) {
   if (!node)
-    return NULL;
+    return false;
 
   OmPose *const pose = dynamic_cast<OmPose *>(node);
   // cppcheck-suppress knownConditionTrueFalse
   if (pose)
-    return createOdeGeomFromPose(space, pose);
+    return createOdeGeomFromPose(pose);
 
   OmGroup *const group = dynamic_cast<OmGroup *>(node);
   if (group)
-    return createOdeGeomFromGroup(space, group);
+    return createOdeGeomFromGroup(group);
 
   const OmShape *const shape = dynamic_cast<OmShape *>(node);
   if (shape) {
@@ -376,7 +310,7 @@ dGeomID OmMatter::createOdeGeomFromNode(dSpaceID space, OmBaseNode *node) {
 
   OmGeometry *const geometry = OmSolidUtilities::geometry(node);
   if (!geometry)
-    return NULL;  // the boundingObject is neither a OmGroup, OmShape nor a OmGeometry => ignored (maybe empty Shape)
+    return false;  // the boundingObject is neither a OmGroup, OmShape nor a OmGeometry => ignored (maybe empty Shape)
 
   const OmIndexedFaceSet *const ifs = dynamic_cast<OmIndexedFaceSet *>(geometry);
   // cppcheck-suppress knownConditionTrueFalse
@@ -389,7 +323,7 @@ dGeomID OmMatter::createOdeGeomFromNode(dSpaceID space, OmBaseNode *node) {
     connect(eg, &OmElevationGrid::validElevationGridInserted, this, &OmMatter::insertValidGeometryInBoundingObject,
             Qt::UniqueConnection);
 
-  return createOdeGeomFromGeometry(space, geometry);
+  return createOdeGeomFromGeometry(geometry);
 }
 
 bool OmMatter::handleJerkIfNeeded() {
@@ -435,22 +369,6 @@ void OmMatter::updateName() {
     mName->blockSignals(false);
   }
   emit matterNameChanged();
-}
-
-// Places ODE dGeoms through their absolute coordinates
-void OmMatter::updateOdePlaceableGeomPosition(dGeomID g) {
-  (void)g;  // ODE is gone: nothing to place
-}
-
-void OmMatter::updateOdePlanePosition(dGeomID plane) {
-  (void)plane;  // ODE is gone: nothing to place
-}
-
-void OmMatter::updateOdeGeomPosition(dGeomID g) {
-  if (g == NULL)
-    return;
-
-  return;  // ODE is gone: no geoms to reposition
 }
 
 void OmMatter::updateLocked() {

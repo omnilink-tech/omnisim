@@ -1,5 +1,7 @@
 # G1 walk — the deploy-proven recipe, in-engine (the first durable forward humanoid walk here)
 
+> ⚠️ **Disclosure — this walk is NOT free-standing.** It runs on a **weight-bearing balance harness**: `HARNESS_LAM0=0.9`, `HARNESS_KZ=2000`, up to **700 N** of upward pelvis force (roughly 2× the 34 kg G1's body weight) plus **±350 N·m** of attitude torque — the `_FCAP`/`_TCAP` clamps in [`g1_walk_recipe.py`](../../projects/policies/training/g1_walk_recipe.py). The robot is fully physical and does real footwork, but it is not carrying its own weight unaided. Every "durable" below means durable on that rig. Full disclosure: [DEMOS.md](../../DEMOS.md#humanoid-rl-deploy).
+
 > **Status (2026-07-01): SOLVED to a durable forward walk.** A G1 walks forward, upright,
 > by real stepping, trained **in OmniSim's own mujoco_warp engine** (train == deploy, zero
 > sim gap). Live GUI deploy: **stayed upright for ~1300 control-steps covering ~15 m of

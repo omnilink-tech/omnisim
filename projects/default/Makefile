@@ -20,7 +20,13 @@ include $(OMNISIM_HOME_PATH)/resources/Makefile.os.include
 
 .PHONY: release debug profile clean
 
-TARGETS = controllers/braitenberg.Makefile
+# Descend into every controller here that is COMPILED, i.e. ships its own Makefile;
+# the Python controllers have none and must not be descended into. Globbed, not
+# hard-coded: the previous hard-coded `controllers/braitenberg.Makefile` outlived the
+# controller itself and broke the Linux build on a fresh checkout ("No such file or
+# directory"), while the local Windows engine build, which never descends here, stayed
+# green. A glob cannot go stale when a controller is added or removed.
+TARGETS = $(patsubst %/Makefile,%.Makefile,$(wildcard controllers/*/Makefile))
 
 release debug profile: $(TARGETS)
 ifneq ($(MESSAGE),)

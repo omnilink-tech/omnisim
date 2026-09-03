@@ -105,7 +105,7 @@ Every skill is one `skill.json` manifest (schema 2) declaring:
 Deterministic skills additionally follow the **balance-core-underneath** contract:
 they ride on the stiff-squat stand + reactive balancers and declare **effector
 arbitration** (hand-off vs superposition) — see
-[`humanoid/g1_arm_motion/README.md`](humanoid/g1_arm_motion/README.md).
+[`humanoid/g1_arm_motion/README.md`](../../../docs/developer/g1-arm-motion-skill.md).
 
 ## The two regimes (why the libraries aren't symmetric)
 

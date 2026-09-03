@@ -53,11 +53,9 @@ public:
   double gravity() const { return mGravity->value(); }
   double cfm() const { return mCfm->value(); }
   double erp() const { return mErp->value(); }
-  // ODE broadphase selection (§8.4 of rendering-roadmap.md; landed).
-  // Returns the raw field value: "simple" (the default, matches today's
-  // dSimpleSpace behavior), "sap", "quadtree", or "auto". For the
-  // already-resolved value (auto → sap or quadtree depending on top-
-  // level Solid positions), use resolveBroadphaseChoice().
+  // Retired ODE broadphase selection: the field is still parsed ("simple",
+  // "sap", "quadtree", "auto") so old worlds load, but nothing reads it --
+  // Newton/MuJoCo has its own broadphase.
   const QString &broadphase() const { return mBroadphase->value(); }
   // Newton solver choice (WorldInfo.newtonSolver). ⚠ THIS COMMENT USED TO
   // DESCRIBE AN XPBD DEFAULT THAT NO LONGER EXISTS -- XPBD was removed
@@ -189,7 +187,6 @@ public:
   // (quadtree when world spans > 500 m on the largest axis, else sap).
   // Any other field value is returned unchanged. Safe to call from
   // createOdeObjects time -- OmWorld::topSolids is populated by then.
-  QString resolveBroadphaseChoice() const;
   double basicTimeStep() const { return mBasicTimeStep->value(); }
   double fps() const { return mFps->value(); }
   int optimalThreadCount() const { return mOptimalThreadCount->value(); }
@@ -293,12 +290,7 @@ private:
 
   // Apply methods
   void applyLineScaleToWren();
-  void applyToOdeGravity();
-  void applyToOdeCfm();
-  void applyToOdeErp();
   // Non-slot update methods
-  void applyToOdeGlobalDamping();
-  void applyToOdePhysicsDisableTime();
   void updateGravityBasis();
 
 private slots:

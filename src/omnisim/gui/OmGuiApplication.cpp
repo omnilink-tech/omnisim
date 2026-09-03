@@ -74,6 +74,15 @@ using namespace std;
 // untouched.
 static bool gSkipStartupChrome = false;
 
+// 2026-09-02: OMNISIM_NO_WINDOW / OMNISIM_NO_GL are value-parsed. Both reads were presence-gated,
+// so `OMNISIM_NO_GL=0` ARMED compute-only mode (the OMNISIM_REQUIRE_NEWTON trap); now
+// unset/empty/"0"/"false"/"off" mean OFF and anything else means ON. main.cpp's early
+// QT_QPA_PLATFORM decision parses OMNISIM_NO_GL the same way.
+static bool envSwitchOn(const char *name) {
+  const QString v = QString::fromUtf8(qgetenv(name)).trimmed().toLower();
+  return !(v.isEmpty() || v == "0" || v == "false" || v == "off");
+}
+
 void OmGuiApplication::skipStartupChromeForInformationalTask() {
   gSkipStartupChrome = true;
 }
@@ -393,7 +402,7 @@ bool OmGuiApplication::setup() {
   // No-window headless mode (Phase Q1 first slice) / compute-only mode (Tier C spike):
   // skip the entire widget tree. Placed after the mode/rendering flags and the world-file
   // check so those behave identically, and before any dialog/splash/window construction.
-  if (qEnvironmentVariableIsSet("OMNISIM_NO_WINDOW") || qEnvironmentVariableIsSet("OMNISIM_NO_GL")) {
+  if (envSwitchOn("OMNISIM_NO_WINDOW") || envSwitchOn("OMNISIM_NO_GL")) {
     mNoWindowMode = true;
     // Same intent as the --no-window CLI flag: this process will never show a
     // main view, so the headless texture-decode gate may engage (camera-family
@@ -535,7 +544,7 @@ bool OmGuiApplication::setup() {
 bool OmGuiApplication::setupNoWindow() {
   mSplash = NULL;
 
-  const bool noGl = qEnvironmentVariableIsSet("OMNISIM_NO_GL");
+  const bool noGl = envSwitchOn("OMNISIM_NO_GL");
 
   // The kept "gl:" assets (gizmo meshes, HUD icons, muscle.png) resolve through this Qt
   // search path, normally registered by the OmView3D constructor -- which this mode skips.

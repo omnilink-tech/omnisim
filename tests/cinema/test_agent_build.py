@@ -32,6 +32,7 @@ from cinema import agent_build_capture  # noqa: E402
 from cinema import agent_build_pipeline  # noqa: E402
 from cinema import agent_build_review  # noqa: E402
 from cinema import cli as cinema_cli  # noqa: E402
+from cinema import sim_quality  # noqa: E402
 import omnisim_capture as capture_service  # noqa: E402
 
 
@@ -273,6 +274,73 @@ class AgentBuildContractTests(unittest.TestCase):
         del plan["shots"][0]["sequence"]["fps"]
         with self.assertRaisesRegex(ValueError, "path_keyframes, duration_s, and fps"):
             agent_build_capture._validate(plan)
+
+    def test_verified_frame_cleanup_is_scoped_and_receipted(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            frames = root / "hero_frames"
+            frames.mkdir()
+            for index in range(3):
+                (frames / f"frame_{index:06d}.png").write_bytes(b"png" + bytes([index]))
+            output = root / "hero.mp4"
+            output.write_bytes(b"encoded-video")
+            receipt = root / "hero.mp4.encode.json"
+            payload = {
+                "input": {"frame_count": 3},
+                "output_sha256": sim_quality.sha256(output),
+                "output_probe": {"frames": 3, "width": 1920, "height": 1080},
+            }
+
+            cleanup = sim_quality._cleanup_verified_frame_spool(
+                frames, output, receipt, payload,
+            )
+
+            self.assertFalse(frames.exists())
+            self.assertEqual(cleanup["removed_files"], 3)
+            saved = json.loads(receipt.read_text(encoding="utf-8"))
+            self.assertEqual(saved["frame_cleanup"]["status"],
+                             "removed_after_verified_encode")
+
+    def test_frame_cleanup_rejects_mixed_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            frames = root / "hero_frames"
+            frames.mkdir()
+            (frames / "frame_000000.png").write_bytes(b"png")
+            (frames / "notes.txt").write_text("keep me", encoding="utf-8")
+            output = root / "hero.mp4"
+            output.write_bytes(b"encoded-video")
+            payload = {
+                "input": {"frame_count": 1},
+                "output_sha256": sim_quality.sha256(output),
+                "output_probe": {"frames": 1, "width": 1920, "height": 1080},
+            }
+
+            with self.assertRaisesRegex(ValueError, "unexpected entries"):
+                sim_quality._cleanup_verified_frame_spool(
+                    frames, output, root / "hero.mp4.encode.json", payload,
+                )
+            self.assertTrue(frames.exists())
+
+    def test_frame_cleanup_rejects_short_encode(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            frames = root / "hero_frames"
+            frames.mkdir()
+            (frames / "frame_000000.png").write_bytes(b"png")
+            output = root / "hero.mp4"
+            output.write_bytes(b"encoded-video")
+            payload = {
+                "input": {"frame_count": 1},
+                "output_sha256": sim_quality.sha256(output),
+                "output_probe": {"frames": 0, "width": 1920, "height": 1080},
+            }
+
+            with self.assertRaisesRegex(ValueError, "frame count"):
+                sim_quality._cleanup_verified_frame_spool(
+                    frames, output, root / "hero.mp4.encode.json", payload,
+                )
+            self.assertTrue(frames.exists())
 
     def test_capture_checkpoint_http_routes_use_one_supervisor_session(self) -> None:
         class State:

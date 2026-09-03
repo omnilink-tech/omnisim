@@ -387,7 +387,7 @@ Finally, it moves the [Sphere](../reference/sphere.md) in a circle.
 
 ### [track.wbt]({{ url.github_tree }}/projects/samples/devices/worlds/track.omniworld)
 
-**Keywords**: [Track](../reference/track.md), caterpillar track, conveyor belt
+**Keywords**: Track (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)), caterpillar track, conveyor belt
 
-![track.png](images/samples/track.thumbnail.jpg) This example shows two use cases of the [Track](../reference/track.md) node.
-The [Track](../reference/track.md) node is used to model two caterpillar tracks, and a conveyor belt.
+![track.png](images/samples/track.thumbnail.jpg) This example shows two use cases of the Track (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) node.
+The Track (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) node is used to model two caterpillar tracks, and a conveyor belt.

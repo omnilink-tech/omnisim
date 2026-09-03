@@ -122,7 +122,11 @@ def serve():
 
     def _start(state):
         server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(state))
-        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        # poll_interval: shutdown() joins serve_forever()'s select() loop, so the
+        # default 0.5 s poll cost ~0.5 s of teardown per test (measured 2026-09-02).
+        thread = threading.Thread(
+            target=server.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True
+        )
         thread.start()
         servers.append((server, thread))
         return f"http://127.0.0.1:{server.server_address[1]}"
@@ -374,9 +378,16 @@ def test_hot_reload_refuses_a_supervisor_that_cannot_answer_a_real_rpc(tmp_path,
     dying = FakeClient(alive=False)            # ping ok, real RPC fails
     monkeypatch.setattr(state, "_try_connect_supervisor",
                         lambda *a, **k: dying)
+    # The rebind deadline is `max(HOT_RELOAD_WAIT_S, wait_s)`, so `wait_s=0.2`
+    # alone cannot shorten it: this test spent 15.1 s rejecting the same corpse
+    # ~150 times (MEASURED 2026-09-02). The refusal is proven by the first
+    # rejection; a 0.2 s window still delivers several and the same verdict.
+    monkeypatch.setattr(h, "HOT_RELOAD_WAIT_S", 0.2)
     out = state._try_hot_reload(world, wait_s=0.2)
     assert out is None, "adopting a corpse must fall back to a cold launch"
     assert dying.closed, "the rejected client must not be leaked"
+    assert dying.calls.count("sim_state") >= 1, (
+        "the refusal must come from a REAL RPC being answered with a failure")
 
 
 def test_hot_reload_accepts_a_supervisor_that_answers(tmp_path, monkeypatch):

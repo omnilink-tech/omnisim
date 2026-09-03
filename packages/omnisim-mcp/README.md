@@ -135,14 +135,20 @@ Relative paths resolve against the **repo root of the clone whose `omnisim_harne
 running** (`omnisim_harness.py:2972`) — not your editor's working directory, and not the MCP
 client's. If the harness runs out of a different checkout, pass an absolute path.
 
-`light: true` is close to always right: it drops the per-step contact / grip / joint-limit
-trackers and is worth 4–40× on step and reload cost. The trade is that `get_contacts` still
-answers but the `contact.*` / `grip.*` / `joint.limit_hit` **events** go quiet — see
+`light: true` is not an optimisation you add later; it is how you open the world. Without it
+the harness is **slower than just re-running `run-headless`** (a default-mode reload of the
+cloth world measured 13.4 s against 6.37 s headless). Measured on the 309-node fleet arena
+(2026-08-29, CPU `mj_step`): a full-tracking `sim_step` costs 573–606 ms against 6–35 ms light
+(~17×), ten steps 2855–3187 ms vs 48–67 ms (~47×), the load 12.1 s vs 4.1 s. The trade is that
+`get_contacts` still answers but the `contact.*` / `grip.*` / `joint.limit_hit` **events** and
+`get_grips` go quiet. Need exactly one tracker? Pass `tracking` instead —
+`{"tracking": {"contacts": false, "joint_limits": true, "grips": false}}` keeps
+`joint.limit_hit` while paying no contact walk (per-tracker toggles since 2026-09-01) — see
 [`AGENTS.md` §5](../../AGENTS.md#5-iterating-on-worlds-with-the-validation-harness).
 
 ## Tools
 
-31 tools, each one HTTP call to the harness — the surface mirrors
+37 tools, each one HTTP call to the harness — the surface mirrors
 [`AGENTS.md` §5](../../AGENTS.md#5-iterating-on-worlds-with-the-validation-harness) and
 [`PROTOCOL.md`](../../PROTOCOL.md) so it stays honest to the real endpoints. The live list is
 `python -m omnisim_mcp --help`.
@@ -151,7 +157,7 @@ answers but the `contact.*` / `grip.*` / `joint.limit_hit` **events** go quiet �
 |---|---|---|
 | `harness_status` | `GET /sim/state` | Is the harness up, and on what world? Start here — but see the warning above about what it does *not* prove. |
 | `get_capabilities` | `GET /capabilities` | What this harness can and will not do: verified physics backend, measured step cost + recommended step budget (`probe_step=true` measures one), event types (with what light mode suppresses), every endpoint and every gap under `not_supported`. The harness docs say to call it first. |
-| `load_world` | `POST /world/sync` (or `/world/load`) | Default safe iteration path: batch live pose-only edits, automatically reload anything else; `force_reload=true` restarts deliberately. |
+| `load_world` | `POST /world/sync` (or `/world/load`) | Default safe iteration path: batch live pose-only edits, automatically reload anything else; `force_reload=true` restarts deliberately. **Pass `light: true`** (or a per-tracker `tracking` object, which forces a `/world/load`) — see the note above. |
 | `world_sync` | `POST /world/sync` | The sync semantics by name: live pose batch (`mode=live_pose`) or automatic hot reload (`mode=full_reload`); also `no_change` / `rejected` / `busy`. |
 | `get_scene_tree` | `GET /scene/tree` | Every node's type, DEF, pose. |
 | `get_scene_node` | `GET /scene/node/<def>` | Full field dump + contacts for one node. |
@@ -160,13 +166,15 @@ answers but the `contact.*` / `grip.*` / `joint.limit_hit` **events** go quiet �
 | `orbit` | `POST /scene/orbit` | Nudge the camera *relative* to the current view (azimuth, elevation, dolly, pan). Every other camera tool is absolute. |
 | `visible` | `GET /scene/visible` | What is on screen right now: frustum test, screen-space bbox in pixels, angular offset, plus hints like `"off-screen: 34 deg to the left"`. The closed-loop feedback signal for aiming. |
 | `look_at` | `POST /scene/look_at` | Aim the Viewpoint from an explicit position at a target. Use when you already know both points. |
-| `screenshot` | `POST /world/screenshot` | Render PNG — returned **inline** (so a vision agent sees it) or written to a path. |
+| `screenshot` | `POST /world/screenshot` | Render PNG — returned **inline** (so a vision agent sees it) or written to a path. Call `frame` first; do not guess a pose and iterate on screenshots. |
 | `render_stats` | `GET /world/render_stats` | Exposure/brightness stats — catch blown-out lighting without eyeballing. **Needs Pillow** (see Prerequisites). |
-| `scene_spawn` | `POST /scene/spawn` | Import a node from VRML, a type+fields spec, or a clone of a DEF. ⛔ A scene-graph verb, **not** a physics verb: the spawned node has NO physics until the world is reloaded (the response's `physics_warning` says so). |
-| `scene_delete` | `POST /scene/delete` | Remove nodes by DEF. ⛔ The frozen solver model keeps the deleted colliders as phantoms until reload — a deleted wall still blocks, a deleted floor still holds bodies up. |
+| `scene_spawn` | `POST /scene/spawn` | Import a node from VRML, a type+fields spec, or a clone of a DEF. ⛔ By default a scene-graph verb, **not** a physics verb: the spawned node has NO physics (the response's `physics_warning` says so). Pass `physics: "rebuild"` — or call `rebuild_physics` — and it is simulated. |
+| `scene_delete` | `POST /scene/delete` | Remove nodes by DEF. ⛔ By default the frozen solver model keeps the deleted colliders as phantoms — a deleted wall still blocks, a deleted floor still holds bodies up. Pass `physics: "rebuild"` — or call `rebuild_physics` — and they are gone. |
 | `scene_set_pose` | `POST /scene/set_pose` | Move an existing node (velocity reset + settle by default). ⚠ Nothing checks interpenetration — check bounds first. |
-| `sim_step` | `POST /sim/step` | Advance N basic timesteps. |
-| `rebuild_physics` | `POST /sim/rebuild_physics` | W1.7: rebuild the Newton world at the scene's **current** poses (~0.1-0.3 s) so runtime-spawned nodes gain physics and deleted ones lose it; 409 `REBUILD_REFUSED` on cloth/soft/granular worlds; engaged welds are dropped loudly. |
+| `sim_step` | `POST /sim/step` | Advance N basic timesteps. Size N from `get_capabilities` → `limits.recommended_max_steps_per_request` (a rolling median of the measured per-step cost on *this* world). |
+| `rebuild_physics` | `POST /sim/rebuild_physics` | W1.7: rebuild the Newton world at the scene's **current** poses (97–267 ms measured) so runtime-spawned nodes gain physics and deleted ones lose it; 409 `REBUILD_REFUSED` on cloth/soft/granular worlds; engaged welds are dropped loudly. |
+| `read_bench` | `GET /debug/read_bench` | Diagnostic: measured cost of one supervisor read on this session, free-running vs paused (`n` reads per arm). |
+| `scene_node_particles` | `GET /scene/node/<def>/particles` | Particle stats for one Cloth / SoftBody / GranularBed / GranularGroup node: count, world-frame min/max/centroid over the finite particles, `non_finite`; `sample=N` adds every N-th particle. |
 | `sim_reset` | `POST /sim/reset` | Reset to t=0 **and restore the authored scene** without re-parsing; forwards `restore`/`verify`/`settle_steps`. |
 | `sim_snapshot` | `POST /sim/snapshot` | Save a named engine-side state snapshot — a rollback point that is not t=0. |
 | `sim_restore` | `POST /sim/restore` | Restore a named snapshot without rewinding the clock; reports how far it landed. Unknown names are refused (on purpose). |
@@ -177,9 +185,13 @@ answers but the `contact.*` / `grip.*` / `joint.limit_hit` **events** go quiet �
 | `robot_devices` | `GET /robot/<def>/devices` | Device inventory of a robot's subtree. |
 | `robot_joints_set` | `POST /robot/<def>/joints/set` | Command joint position targets, settle-and-verify: measured `{commanded, achieved, error}` per joint, never the argument echoed back. |
 | `robot_ik` | `POST /robot/<def>/ik` | Batched IK **preview** against the exact model the solver steps — nothing moves; per-target `residual_m`, apply via `robot_joints_set`. |
-| `get_contacts` | `GET /sim/contacts` | Global contact set. |
+| `get_contacts` | `GET /sim/contacts` | Global contact set: `[{a_def, b_def, point, paired}]` plus a `tracking` block (what was walked, `empty_set_reasons`, `inert_pinned_solids`). **Works in light mode** — it is walked per call and never reads the dropped tracker. |
 | `get_grips` | `GET /sim/grips` | Inferred grips. ⚠ Empty in a light-mode session (the tracker is dropped). |
 | `get_diagnostics` | `GET /world/diagnostics` | Re-fetch the current load's diagnostics. |
+| `robot_damage` | `GET /robot/damage` | Damage state of the tracked robot (per-part HP / state) — damage-tracking worlds only. |
+| `robot_damage_events` | `GET /robot/damage/events` | Filtered view of the `damage.*` events with their own `since` cursor. |
+| `robot_damage_reset` | `POST /robot/damage/reset` | Heal every part **without** resetting the simulation. |
+| `robot_damage_inject` | `POST /robot/damage/inject` | Set a part's damage state directly — the fault-injection verb. |
 
 The four camera tools (`get_viewpoint`, `frame`, `orbit`, `visible`) are the ones
 [`AGENTS.md`](../../AGENTS.md) tells agents to reach for *instead of* guessing a pose and
@@ -205,7 +217,7 @@ Before these existed, `--help` printed a startup line and then blocked forever r
 |---|---|---|
 | `OMNISIM_HARNESS_URL` | `http://127.0.0.1:6789` | Base URL of the running harness. |
 | `OMNISIM_MCP_TIMEOUT_S` | `130` | Per-request HTTP timeout (seconds). Deliberately **above** the harness's own 120 s supervisor-RPC timeout, so the wrapper never abandons a request the harness is still faithfully serving (which would silently desync the agent's world-model). `OMNISIM_MCP_TIMEOUT` is the accepted legacy spelling. |
-| `OMNISIM_MCP_KEEPALIVE` | `1` | Pool one `http.client` connection per harness (`0` = a fresh connection per request, for an A/B). The harness speaks HTTP/1.0 today, so the pool degrades to per-request automatically until it grows keep-alive. |
+| `OMNISIM_MCP_KEEPALIVE` | `1` | Pool one `http.client` connection per harness (`0` = a fresh connection per request, for an A/B). The harness speaks HTTP/1.1 with keep-alive since 2026-09-01 (measured on the flip: reuse 0/229 → 229/229, `GET /healthz` 5.09 → 0.31 ms), so the pool genuinely reuses the socket; against an older HTTP/1.0 harness it degrades to per-request automatically. |
 
 ## Notes & limits
 

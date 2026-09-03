@@ -324,7 +324,7 @@ in each bridge's Python file under
 
 Three pieces of code, all in this repo:
 
-- **[resources/projects/plugins/robot_windows/omnilink_chat/](../../resources/projects/plugins/robot_windows/omnilink_chat/)** —
+- **[projects/samples/demos/plugins/robot_windows/omnilink_chat/](../../projects/samples/demos/plugins/robot_windows/omnilink_chat/)** —
   the side-menu UI (HTML + JS + CSS). OmniSim loads it from a robot's
   `window` field. Communicates with the bridge over the standard
   `wwi` (web window interface) message channel.
@@ -430,7 +430,7 @@ demos run side-by-side. Override per world with `controllerArgs
 
 ## Where to look in the code
 
-- **Side menu UI**: [resources/projects/plugins/robot_windows/omnilink_chat/](../../resources/projects/plugins/robot_windows/omnilink_chat/)
+- **Side menu UI**: [projects/samples/demos/plugins/robot_windows/omnilink_chat/](../../projects/samples/demos/plugins/robot_windows/omnilink_chat/)
 - **Mobile bridge + configs**: [projects/samples/demos/controllers/omnilink_mobile_bridge/](../../projects/samples/demos/controllers/omnilink_mobile_bridge/)
 - **Quadruped bridge**: [projects/samples/demos/controllers/omnilink_quadruped_bridge/](../../projects/samples/demos/controllers/omnilink_quadruped_bridge/)
 - **OmniLink relay**: [projects/samples/demos/controllers/_omnilink_relay/](../../projects/samples/demos/controllers/_omnilink_relay/)

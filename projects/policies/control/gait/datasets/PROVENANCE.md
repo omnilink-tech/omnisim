@@ -32,7 +32,7 @@ the robot has already executed it.
 Full method, and the honest limit of what it bought (it inherits the recorded
 ~30° hip-roll splay, so on its own it does not fix the gait's appearance):
 [`docs/developer/g1-improved-shadow.md`](../../../../../docs/developer/g1-improved-shadow.md)
-and [`docs/developer/g1-deploy-walk.md`](../../../../../docs/developer/g1-deploy-walk.md).
+and `docs/developer/g1-deploy-walk.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../../../../../docs/ARCHIVE.md)).
 
 ## Not to be confused with the LAFAN1-lineage ghosts
 

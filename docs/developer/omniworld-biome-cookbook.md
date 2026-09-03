@@ -1,6 +1,6 @@
 # omniworld Biome Cookbook
 
-This guide walks through how a biome recipe is structured and how to add a new one. It complements the user-facing [omniworld-user-guide.md](omniworld-user-guide.md) and the long-range [procedural-world-generation-plan.md](procedural-world-generation-plan.md).
+This guide walks through how a biome recipe is structured and how to add a new one. It complements the user-facing [omniworld-user-guide.md](omniworld-user-guide.md) and the long-range procedural-world-generation-plan.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 
 If you have not read them, start there — the user guide tells you what the library does today, the plan tells you where it is going, and this cookbook tells you how to extend it.
 
@@ -281,6 +281,6 @@ Common patterns worth copying:
 ## See also
 
 - [omniworld-user-guide.md](omniworld-user-guide.md) — user-facing CLI + Python API reference.
-- [procedural-world-generation-plan.md](procedural-world-generation-plan.md) — long-range tier plan.
+- procedural-world-generation-plan.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — long-range tier plan.
 - [src/python/omniworld/catalog/assets.json](../../src/python/omniworld/catalog/assets.json) — the shipped PROTO catalog.
 - [scripts/dev/build_asset_catalog.py](../../scripts/dev/build_asset_catalog.py) — catalog validator.

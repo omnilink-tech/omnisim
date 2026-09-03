@@ -1,6 +1,6 @@
 # Multi-Instance + Many-Robot Optimization Plan
 
-This is a focused, sequenced plan for a specific workload — running **many simultaneous OmniSim processes on one host**, each with **many robots and physics-heavy worlds**. It is narrower than [improvement-backlog.md](improvement-backlog.md) and references it where overlap exists.
+This is a focused, sequenced plan for a specific workload — running **many simultaneous OmniSim processes on one host**, each with **many robots and physics-heavy worlds**. It is narrower than improvement-backlog.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) and references it where overlap exists.
 
 The optimizations are sequenced by `(impact for the target workload) × (1 / implementation cost)`. Phase 1 is multi-instance unblockers; Phase 2 is per-step IPC; Phase 3 is sensor rendering.
 
@@ -229,7 +229,7 @@ Buffer grown to 64 KB in `src/controller/c/robot.c`; silent truncation removed. 
 
 ## What this plan deliberately omits
 
-- The 30-odd items in [improvement-backlog.md](improvement-backlog.md) that don't move the needle for this specific workload (e.g. WREN FPS metric restoration, world-load timing split, scene-tree responsiveness). Pick those up under their own plans.
+- The 30-odd items in improvement-backlog.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) that don't move the needle for this specific workload (e.g. WREN FPS metric restoration, world-load timing split, scene-tree responsiveness). Pick those up under their own plans.
 - Anything that requires the not-yet-existing simulation-core boundary (backlog item #21+). Useful, but a year of work; not on this plan.
 
 ## Status tracking

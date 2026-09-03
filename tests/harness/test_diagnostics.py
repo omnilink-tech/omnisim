@@ -55,6 +55,9 @@ def test_unprefixed_line_is_ignored():
 
 def test_unknown_error_line_passes_through():
     diag = classify_line("ERROR: Something nobody planned for.")
+    # UNKNOWN carries a hint too (2026-09-02: every code does) -- it tells the
+    # agent to read `raw` and how to add a rule -- so compare everything else.
+    assert diag.pop("hint")
     assert diag == {
         "code": "UNKNOWN",
         "severity": "error",

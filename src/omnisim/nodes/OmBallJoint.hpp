@@ -43,7 +43,6 @@ public:
   void resetPhysics() override;
   void save(const QString &id) override;
   QVector<OmLogicalDevice *> devices() const override;
-  dJointID jointID() const override { return mControlMotor; }
   bool resetJointPositions() override;
   void setPosition(double position, int index = 1) override;
   double position(int index = 1) const override;
@@ -90,7 +89,6 @@ protected:
   double mPosition3;  // Keeps track of the joint position3 if JointParameters3 don't exist.
 
   OmVector3 anchor() const override;  // defaults to the center of the Solid parent, i.e. (0, 0, 0) in relative coordinates
-  void applyToOdeSpringAndDampingConstants(dBodyID body, dBodyID parentBody) override;
   void updateOdePositionOffset() override;
   void updatePosition(double position) override;
   void updatePositions(double position, double position2, double position3);
@@ -108,7 +106,6 @@ private:
   void updateParameters3();
   OmSFNode *mParameters3;
   QMap<QString, double> mSavedPositions3;
-  dJointID mControlMotor;  // ODE angular motor used to control the ball joint
   void applyToOdeAxis() override;
   void applyToOdeMinAndMaxStop() override;
   void init();

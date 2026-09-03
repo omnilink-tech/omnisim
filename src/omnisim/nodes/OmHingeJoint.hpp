@@ -37,7 +37,6 @@ public:
   int nodeType() const override { return WB_NODE_HINGE_JOINT; }
   void prePhysicsStep(double ms) override;
   void postPhysicsStep() override;
-  void updateOdeWorldCoordinates() override;
   void computeEndPointSolidPositionFromParameters(OmVector3 &translation, OmRotation &rotation) const override;
 
   OmVector3 anchor() const override;
@@ -57,10 +56,9 @@ public slots:
   void updatePosition() override;
 
 protected:
-  void setOdeJoint(dBodyID body, dBodyID parentBody) override;
+  void setOdeJoint() override;
   void updatePosition(double position) override;  // position change caused by the jerk of a statically based robot
   OmHingeJointParameters *hingeJointParameters() const;
-  void applyToOdeSpringAndDampingConstants(dBodyID body, dBodyID parentBody) override;
 
 protected slots:
   void updateParameters() override;

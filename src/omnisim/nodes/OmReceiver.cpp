@@ -21,7 +21,6 @@
 #include "OmEmitter.hpp"
 #include "OmFieldChecker.hpp"
 #include "OmGroup.hpp"
-#include "OmOdeContext.hpp"
 #include "OmRandom.hpp"
 #include "OmRobot.hpp"
 #include "OmSensor.hpp"
@@ -51,7 +50,8 @@ static bool isNewtonRaycastEnabled() {
     // DEFAULT ON since 2026-08-07: every ray consumer answers from the
     // Newton service (mj_ray on the live mjModel), incl. the LASER
     // transparency re-cast and the joint-descending exclusion walk.
-    // =0 reverts to the ODE ray verdicts while src/ode still ships.
+    // =0 declines the service; ODE is deleted (bdc02139), so no other ray
+    // path answers in its place.
     sGate = (v == "0" || v == "false" || v == "off" || v == "no") ? 0 : 1;
   }
   return sGate == 1;
@@ -68,8 +68,8 @@ static void collectRobotNewtonBodies(const OmRobot *robot, QVector<int> &out) {
 
 class Transmission {
 public:
-  Transmission(OmDataPacket *packet, OmReceiver *r, dSpaceID spaceId) : mPacket(packet), mCollided(false) {
-    assert(spaceId && packet && r);
+  Transmission(OmDataPacket *packet, OmReceiver *r) : mPacket(packet), mCollided(false) {
+    assert(packet && r);
     OmEmitter *e = packet->emitter();
     assert(e);
     mEmittingRobot = e->robot();
@@ -82,7 +82,6 @@ public:
     // setup ray geom for ODE collision detection
     // ODE is gone: no ray geom exists; carry the segment in plain
     // members so the Newton raycast service still answers the occlusion.
-    mGeom = NULL;
     mStart = te;
     mSegmentDir = dir;
     mSegmentLength = dir.length();
@@ -98,7 +97,6 @@ public:
   // it may both set and CLEAR the flag (the ODE collision pass already ran).
   void setNewtonVerdict(bool collided) { mCollided = collided; }
   const OmRobot *emittingRobot() const { return mEmittingRobot; }
-  dGeomID geom() const { return mGeom; }
   // Native segment accessors (the ODE ray geom used to be the carrier)
   const OmVector3 &segmentStart() const { return mStart; }
   const OmVector3 &segmentDirection() const { return mSegmentDir; }
@@ -118,7 +116,6 @@ public:
 private:
   OmDataPacket *mPacket;    // packet being transmitted
   OmRobot *mEmittingRobot;  // robot that emitted the packet
-  dGeomID mGeom;            // geom that checks collision of this packet
   bool mCollided;           // the geom has collided yet
   OmVector3 mStart;       // native segment carrier (see ctor)
   OmVector3 mSegmentDir;
@@ -457,22 +454,6 @@ void OmReceiver::postPhysicsStep() {
   }
 }
 
-// if the packet is blocked by an obstacle we can discard it
-void OmReceiver::rayCollisionCallback(dGeomID geom, OmSolid *obstacle) {
-  foreach (Transmission *t, mTransmissionList) {
-    if (t->geom() == geom) {
-      // we want to ignore collision of ray with the emitting robot
-      // (collision with receiver's robot is already filtered out by odeNearCallback())
-      if (!t->hasCollided() && obstacle->robot() != t->emittingRobot())
-        t->setCollided();
-
-      return;  // we have found the right packet: no need to look further in the list
-    }
-  }
-
-  assert(0);  // should never be reached
-}
-
 bool OmReceiver::refreshSensorIfNeeded() {
   if (!isPowerOn() || !mSensor->needToRefresh())
     return false;
@@ -563,7 +544,7 @@ void OmReceiver::transmitPacket(OmDataPacket *packet) {
               r->mWaitingQueue.append(new OmDataPacket(*packet));
             else
               // register for collision detection (append)
-              r->mTransmissionList.append(new Transmission(new OmDataPacket(*packet), r, OmOdeContext::instance()->space()));
+              r->mTransmissionList.append(new Transmission(new OmDataPacket(*packet), r));
           }
         }
       }

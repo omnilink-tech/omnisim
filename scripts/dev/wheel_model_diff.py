@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """wheel_model_diff -- build the SAME chassis+wheel two ways (probe-style direct builder calls
-that DRIVE, vs g1_deploy_runtime's API that LOCKS), with identical geometry, then drive both
+that DRIVE, vs omnisim_newton_runtime's API that LOCKS), with identical geometry, then drive both
 with the probe step loop and DIFF the finalized model.joint_* arrays to find what g1 builds
 differently. Run from PowerShell.
 """
@@ -22,7 +22,11 @@ import sys
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(_REPO / "projects" / "rl" / "backends"))
+# The deploy runtime is imported from its source location (the same module the
+# engine's embedded interpreter runs). This used to point at projects/rl/backends
+# (deleted in the rl -> policies reorg) and import the g1_deploy_runtime mirror,
+# which is gone too (2026-09-02).
+sys.path.insert(0, str(_REPO / "src" / "omnisim" / "physics"))
 sys.path.insert(0, str(_REPO / "scripts" / "xpbd_probes"))
 try:
     import truststore
@@ -32,7 +36,7 @@ except ImportError:
 
 import newton
 import warp as wp
-import g1_deploy_runtime as rt
+import omnisim_newton_runtime as rt
 
 DT, STEPS = 1.0 / 60.0, 400
 CZ, WPOS, WR, WM, CM = 0.40, (0.256, 0.0, 0.165), 0.165, 2.6, 30.0  # PROBE geometry (drives at omega=5)

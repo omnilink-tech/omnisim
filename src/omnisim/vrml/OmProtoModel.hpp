@@ -34,6 +34,22 @@ class OmTokenizer;
 #include <QtCore/QStringList>
 #include <QtCore/QVector>
 
+// Load-time profile of the PROTO machinery (OMNISIM_RELOAD_PROFILE=1): where a world's
+// "construct" stage goes, per phase, cumulative for the process. Zero cost when off.
+struct OmProtoLoadProfile {
+  qint64 modelReadNs = 0;      // OmProtoModel constructors (reading .proto files)
+  int modelsRead = 0;
+  qint64 templateNs = 0;       // template engine (JavaScript) evaluation
+  qint64 tokenizeNs = 0;       // generateRoot: tokenizeString of the body
+  qint64 syntaxNs = 0;         // generateRoot: parseProtoBody (the syntax pass)
+  qint64 readNodeNs = 0;       // generateRoot: OmNodeReader::readNode (node construction)
+  qint64 aliasNs = 0;          // generateRoot: verifyAliasing
+  int instances = 0;
+  static OmProtoLoadProfile &instance();
+  static bool enabled();
+  QString report() const;
+};
+
 class OmProtoModel : public QObject {
   Q_OBJECT
 

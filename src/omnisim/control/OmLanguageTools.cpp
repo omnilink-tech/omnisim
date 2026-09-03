@@ -26,13 +26,52 @@
 #include <QtCore/QStringList>
 #include <QtCore/QTextStream>
 
+#include <QtCore/QHash>
+
 #include <cstdlib>
+#include <cstring>
 
 #ifdef _WIN32
 static const QChar PATHS_SEPARATOR(';');
 #else
 static const QChar PATHS_SEPARATOR(':');
 #endif
+
+namespace {
+  // Process-lifetime cache of the Python probe (`python -c "import sys;print(sys.version)"` plus,
+  // on Windows, a second `-c` for the 64-bit check). The probe is a synchronous subprocess that
+  // costs ~80 ms per spawn on the reference Windows machine, and until 2026-09-02 it ran for EVERY
+  // Python controller start: measured on husky_fleet_arena (11 Python controllers) the engine
+  // spent 1.63 s serially probing the same interpreter -- one "Starting controller" line every
+  // ~160 ms -- on the critical path between world parse and the first physics step. The answer
+  // cannot change within a process for a given (command, PATH, PYTHONHOME, PYTHONPATH) tuple, so
+  // it is keyed on exactly that; a controller whose runtime.ini rewrites PATH still gets its own
+  // probe. OMNISIM_PYTHON_PROBE_CACHE=0 (value-parsed) restores the per-controller probe for an A/B.
+  struct PythonProbeResult {
+    QString command;
+    QString shortVersion;
+  };
+
+  QHash<QString, PythonProbeResult> &pythonProbeCache() {
+    static QHash<QString, PythonProbeResult> cache;
+    return cache;
+  }
+
+  bool pythonProbeCacheEnabled() {
+    static const bool enabled = []() {
+      const char *const v = std::getenv("OMNISIM_PYTHON_PROBE_CACHE");
+      if (v == nullptr || v[0] == '\0')
+        return true;
+      return !(std::strcmp(v, "0") == 0 || std::strcmp(v, "false") == 0 || std::strcmp(v, "off") == 0);
+    }();
+    return enabled;
+  }
+
+  QString pythonProbeCacheKey(const QString &command, const QProcessEnvironment &env) {
+    return command + QLatin1Char('\n') + env.value("PATH") + QLatin1Char('\n') + env.value("PYTHONHOME") +
+           QLatin1Char('\n') + env.value("PYTHONPATH");
+  }
+}  // namespace
 
 void OmLanguageTools::prependToPath(const QString &dir, QString &path) {
   if (path.isEmpty())
@@ -42,6 +81,14 @@ void OmLanguageTools::prependToPath(const QString &dir, QString &path) {
 }
 
 QString OmLanguageTools::pythonCommand(QString &shortVersion, const QString &command, QProcessEnvironment &env) {
+  const QString cacheKey = pythonProbeCacheKey(command, env);
+  if (pythonProbeCacheEnabled()) {
+    const auto cached = pythonProbeCache().constFind(cacheKey);
+    if (cached != pythonProbeCache().constEnd()) {
+      shortVersion = cached->shortVersion;
+      return cached->command;
+    }
+  }
   QString pythonCommand = command;
   if (pythonCommand.isEmpty())
 #ifdef _WIN32
@@ -128,6 +175,8 @@ QString OmLanguageTools::pythonCommand(QString &shortVersion, const QString &com
 
 #endif  // __APPLE__
 
+  if (pythonProbeCacheEnabled())
+    pythonProbeCache().insert(cacheKey, PythonProbeResult{pythonCommand, shortVersion});
   return pythonCommand;
 }
 

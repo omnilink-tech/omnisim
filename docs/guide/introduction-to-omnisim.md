@@ -45,8 +45,8 @@ OmniSim-specific discussion and bug tracking happens in the OmniSim repository.
 
 An OmniSim simulation is composed of the following items:
 
-1. A world file (`.wbt`) that defines one or several robots and their environment.
-The `.wbt` file may depend on external PROTO files (`.proto`) and textures.
+1. A world file (`.omniworld`; legacy `.wbt` files are read too, never written) that defines one or several robots and their environment.
+The world file may depend on external PROTO files (`.proto`) and textures.
 2. One or several controller programs for those robots (in C/C++ / Python).
 
 ### What is a World?
@@ -56,8 +56,8 @@ It contains a description of every object: position, orientation, geometry, appe
 Worlds are organised as hierarchical structures where objects can contain other objects (like in VRML97).
 For example, a robot can contain two wheels, a distance sensor and a joint which itself contains a camera, etc.
 A world file does not contain the controller code of the robots; it only specifies the name of the controller required for each robot.
-Worlds are saved in `.wbt` files.
-The `.wbt` files are stored in the `worlds` subdirectory of each project.
+Worlds are saved in `.omniworld` files (a legacy `.wbt` is read forever and saved back as `.omniworld`).
+The world files are stored in the `worlds` subdirectory of each project.
 
 ### What is a Controller?
 

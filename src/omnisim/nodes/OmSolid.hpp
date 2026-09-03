@@ -95,28 +95,25 @@ public:
   const QString &contactMaterial() const { return mContactMaterial->value(); }
   OmPhysics *physics() const;
   float radarCrossSection() const { return mRadarCrossSection->value(); }
-  // physicsBackend: opt-in selector for GPU-resident dynamics. Returns the
-  // backend resolved through OmPhysicsBackendRegistry — silently falls back
-  // to ODE when the requested backend is unavailable (e.g. NEWTON=OFF build,
-  // no CUDA hardware, missing wheels). The string accessor returns the raw
-  // field value for diagnostic logging. Subclass models that don't declare
-  // the field (every OmSolidDevice .wrl — Accelerometer, Camera, GPS, …)
-  // report the default "ode" so the world loads instead of crashing.
+  // physicsBackend: the per-Solid selector. Every value resolves to Newton
+  // through OmPhysicsBackendRegistry (the only backend); a retired value such
+  // as "ode" warns once per world and runs on Newton too. The string accessor
+  // returns the raw field value. Subclass models that don't declare the field
+  // (every OmSolidDevice .wrl — Accelerometer, Camera, GPS, …) report "auto"
+  // so the world loads instead of crashing.
   const QString &physicsBackendName() const;
   OmPhysicsBackend *physicsBackend() const;
-  // P3.10: walk up the scene tree returning the first non-"ode" backend
-  // value seen on any ancestor Solid, or this Solid's own value if it's
-  // already non-default. Lets `physicsBackend "newton"` on a URDFRobot's
-  // outer Robot propagate to the chassis + wheel Solids it auto-generates,
-  // so a single field on the wrapper opts the entire articulated tree
-  // into Newton.
-  // downgradedByGate (optional out): set true ONLY when this returns "ode"
-  // because the §4.1 capability gate pushed an otherwise-Newton-bound "auto"
-  // articulation onto ODE (a SILENT Newton->ODE downgrade) -- NOT when "ode"
-  // came from an explicit local / ancestor / world choice. The Newton-
-  // enforcement sweep uses it to fatal on a silent downgrade while leaving a
-  // deliberate ODE opt-out alone.
+  // Returns "newton" when this Solid or an ancestor Solid pins it explicitly
+  // (so `physicsBackend "newton"` on a URDFRobot's outer Robot governs the
+  // chassis + wheel Solids it auto-generates), otherwise "auto" -- which also
+  // means Newton.
+  // downgradedByGate (optional out): set true ONLY when the §4.1 capability
+  // gate kept an "auto" articulation OFF Newton because it uses an unsupported
+  // feature. With no second solver that is a SILENT omission, and the Newton-
+  // enforcement sweep fatals on it (except a kinematic chain, which warns).
   QString effectivePhysicsBackendName(bool *downgradedByGate = nullptr) const;
+  // Convenience for the joint flush: the downgradedByGate verdict alone.
+  bool gatedAwayFromNewton() const;
   // §4.1 capability gate (default-flip-plan.md): is this Solid's whole articulation Newton-capable?
   // False (=> a bare-"auto" articulation resolves to ODE, never silently degraded/solver-mixed) when it
   // uses a Newton-unsupported feature: a non-Hinge/Slider joint (correctness) or a mesh boundingObject
@@ -147,7 +144,7 @@ public:
   // attached to the chassis-merger leader's body in Newton, mirroring
   // ODE's OmSolidMerger semantics.
   int effectiveNewtonBodyIndex() const;
-  // Newton analogue of OmNodeUtilities::findBodyMerger(): the first Newton
+  // The first Newton
   // body index found walking THIS Solid and then its ancestor Solids (each
   // merger-aware via effectiveNewtonBodyIndex). Under the P3.10c fold a
   // device Solid (Connector, VacuumGripper, TouchSensor) has no body of its
@@ -169,7 +166,6 @@ public:
   //
   // Resolution:
   //   - mNewtonBodyIndex >= 0  -> handleFromIndex(mNewtonBodyIndex)
-  //   - else if bodyMerger() non-null -> (void*) bodyMerger() (ODE convention)
   //   - else -> NULL
   // Newton wins when both exist because the bridge runs ODE alongside
   // Newton for collision detection only; the dynamic state lives on
@@ -198,9 +194,6 @@ public:
   void setLinearVelocity(const double velocity[3]);
   void setAngularVelocity(const double velocity[3]);
 
-  // ODE objects accessors
-  dJointID joint() const { return mJoint; }
-  dBodyID body() const;
   double mass() const;
   const double *inertiaMatrix() const;
   double globalMass() const { return mGlobalMass; }
@@ -213,9 +206,6 @@ public:
   }
   void updateCenterOfMass();  // update the center of mass according to the Physics node specification
   const OmVector3 &centerOfMass() const { return mCenterOfMass; }
-  dMass *referenceMass() const { return mReferenceMass; }
-  // returns inertia and CoM relative to solid center in the local frame coordinates
-  dMass *odeMass() const { return mOdeMass; }
 
   const QVector<OmVector3> &contactPoints(bool includeDescendants = false) const {
     return includeDescendants ? mGlobalListOfContactPoints : mListOfContactPoints;
@@ -233,7 +223,6 @@ public:
   void setupSolidMergers();
   bool isSolidMerger() const;
   bool mergerIsSet() const { return mMergerIsSet; }
-  dBodyID bodyMerger() const;
 
   // New joints
   void appendJointParent(OmBasicJoint *joint);
@@ -242,7 +231,6 @@ public:
   // set up joints for special nodes:
   // - fixed joint between TouchSensor and parent body
   // - fixed joint between dynamic solid child and kinematic parent body (static environment)
-  void setOdeJointToUpperSolid();
 
   // dynamical state
   bool isDynamic() const { return !mIsKinematic; }
@@ -301,7 +289,6 @@ public:
   const QVector<OmBasicJoint *> &jointChildren() const { return mJointChildren; }
 
   // ODE mass adjustments
-  void correctOdeMass(const dMass *mass, OmBaseNode *node, bool adjustSolidMass = true);
 
   // ODE positioning
   void resetJointsToLinkedSolids();  // reset joint to any linked solid to this one
@@ -368,19 +355,12 @@ protected:
   OmSolid(const QString &modelName, OmTokenizer *tokenizer);
 
   // physics accessors
-  dBodyID upperSolidBody() const;
   const QList<OmBasicJoint *> &jointParents() const { return mJointParents; }
   void setJointParents();
 
   // to-be-reimplemented in derived classes
   void updateName() override;
-  virtual dJointID createJoint(dBodyID body, dBodyID parentBody, dWorldID world) const;
-  // check if a ODE joint is needed between current and upper solid
-  // special cases for: TouchSensor
-  virtual bool needJointToUpperSolid(const OmSolid *upperSolid) const;
 
-  // Avoids joint destruction, which is safer with respect to physics plugins
-  void setJoint(dJointID joint, dBodyID body, dBodyID parentBody) const;
 
   // Renders the frame axes and the center of mass
   void applyVisibilityFlagsToWren(bool selected) override;
@@ -391,7 +371,6 @@ protected:
   // Non NULL only if this solid is dynamic and is not related to its dynamic parent by a joint
   QPointer<OmSolidMerger> mSolidMerger;
 
-  bool isInsertedOdeGeomPositionUpdateRequired() const override { return mIsKinematic; }
 
   // export
   bool exportNodeHeader(OmWriter &writer) const override;
@@ -543,8 +522,6 @@ private:
   // Selection
   bool mSelected;
 
-  // ODE
-  dJointID mJoint;
   bool mUpdatedInStep;       // used to update Transform coordinated to setup ray collisions (based on pre-physics step values)
   bool mResetPhysicsInStep;  // used to completely reset physics when the solid is also moved in the same step
   void setGeomAndBodyPositions();
@@ -552,7 +529,6 @@ private:
   void resetJoints();  // reset joint to any linked solid to this one or to one of its descendants
   void setBodiesAndJointsToParents();
   void setJointChildrenWithReferencedEndpoint();
-  void updateKinematicPlaceableGeomPosition(dGeomID g);
   bool resetJointPositions(bool allParents = false);
   void handleJerk() override;
 
@@ -568,9 +544,6 @@ private:
   void addMassFromInsertedNode(OmBaseNode *node);
   bool checkMassAndDensity() const;
   double mAverageDensity;
-  dMass *mMassAroundCoM;
-  dMass *mOdeMass;         // around Solid frame center
-  dMass *mReferenceMass;   // the mass of the solid when the density is uniformly set to 1000 kg/m^3
   bool mUseInertiaMatrix;  // indicates that the OmSolid uses the latest valid inertia matrix field for ODE physics computation
   OmVector3 mCenterOfMass;
   // ODE-free mirror of mOdeMass (geometry-derived mass properties about the
@@ -579,17 +552,12 @@ private:
   // mNativeInertiaValid (i.e. after createOdeMass ran the geometry branch).
   OmInertia mNativeInertia;
   bool mNativeInertiaValid;
-  // one-shot: this Solid pinned physicsBackend "ode", which selects nothing
-  // now that ODE is deleted (it runs with no physics). Warn once, not per tick.
-  bool mWarnedOdePinInert;
 
   // ODE mass adjustments
   void createOdeMass(bool reset = true);
   // adjust the mass of the OmSolid after insertion or deletion in the boundingObject
   void adjustOdeMass(bool mergeMass = true);
-  void addMass(OmBaseNode *node);
   // subtracts the mass of a deleted node in the boundingObject (called from OmGeometry)
-  void subtractOdeMass(const dMass *mass, bool adjustSolidMass = true);
   void setDefaultMassSettings(bool applyCenterOfMassTranslation, bool warning = true);
 
   // Global center of mass variables
@@ -651,7 +619,6 @@ private:
   void updateDynamicSolidDescendantFlag();
 
   void setOdeInertiaMatrix();
-  void createOdeGeoms() override;
 
   // WREN objects
 
@@ -662,7 +629,7 @@ private:
                                         int &counter) override;
   bool resetHiddenKinematicParameters() override;
 
-  void setGeomMatter(dGeomID g, OmBaseNode *node = NULL) override;
+  void setGeomMatter(OmBaseNode *node = NULL) override;
 
   bool mNameClashResolved;
 

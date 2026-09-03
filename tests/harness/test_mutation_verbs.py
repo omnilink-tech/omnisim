@@ -638,34 +638,6 @@ def test_newton_verdict_absent_sidecar_says_it_proves_nothing(tmp_path):
     assert "ode" not in out["backend"].lower()
 
 
-def test_newton_verdict_reports_a_forced_ode_env(tmp_path, monkeypatch):
-    """A set OMNISIM_FORCE_ODE is still REPORTED -- and now flagged as retired.
-
-    The var has to keep being surfaced precisely BECAUSE it no longer works: the
-    engine ignores it (verified 2026-08-08 -- the run comes up on Newton and
-    writes a normal sidecar), so an agent reading /capabilities would otherwise
-    believe it had asked for and received ODE. src/ode was DELETED (bdc02139), so
-    the report must not read as a working ODE arm.
-    """
-    import omnisim_harness as h
-    monkeypatch.setenv("OMNISIM_FORCE_ODE", "1")
-    log = tmp_path / "engine.log"
-    log.write_text("INFO: forced\n", encoding="utf-8")
-    out = h.read_newton_verdict(log)
-    # The var is REPORTED (so an agent learns it is set and being ignored) but
-    # the backend field must state what actually ran. Reporting "ode" here while
-    # the detail text said the opposite was the one self-contradicting object in
-    # the surface -- and `backend` is the field an agent branches on.
-    assert out["backend"] == "newton"
-    assert out["source"] == "retired_selector_ignored"
-    assert "IGNORED" in out["detail"] or "ignored" in out["detail"]
-    assert out["forced_ode_env"] == "OMNISIM_FORCE_ODE"
-    retired = out["forced_ode_env_retired"]
-    assert "RETIRED" in retired
-    assert "bdc02139" in retired, "the retirement note must cite the deletion commit"
-    assert "does NOT give you an ODE run" in retired, \
-        "the note must say what actually happens, not just that the var is old"
-
 
 def test_newton_verdict_flags_a_degraded_solver(tmp_path):
     import omnisim_harness as h

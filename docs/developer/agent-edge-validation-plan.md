@@ -81,7 +81,7 @@ which experiments, in which order, at what cost, and — the part the SPEC does 
 **the pre-registered condition under which we withdraw the claim.** The SPEC has falsification
 *language* (§0, §6.1, §8.2.2) but no withdrawal *procedure* — no trigger, no retraction list,
 no scripted statement — and it does not reference this file; this file is that procedure.
-[`agent-native-api.md`](agent-native-api.md) is the capability audit the claim rests on
+`agent-native-api.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) is the capability audit the claim rests on
 (6 ahead / 5 partial / 10 missing vs ROS 2 `simulation_interfaces`).
 [`tool-design-for-agents.md`](tool-design-for-agents.md) is the principle this programme tests
 at task level — its own §5 names `omnilink-bench` as the next task-level measurement; that
@@ -293,7 +293,7 @@ requires) completes it on **every** simulator in the campaign, with the competit
 non-OmniSim reviewer countersigns the lane assignment at freeze, and lane membership is
 frozen content — moving a task across the boundary afterwards voids the campaign (§2.4).
 `B2` deserves a named caveat: its inclusion rationale — `POST /scene/frame` is the most
-differentiated verb we own ([`agent-native-api.md`](agent-native-api.md) §1.2), so if the
+differentiated verb we own (`agent-native-api.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) §1.2), so if the
 surface pays anywhere it pays there — is an **admitted seeding of the decision set with the
 surface's best case**. The oracle test and the countersignature govern its membership, not
 the rationale. And from Phase G onward, at least one externally-sourced (V4) task must sit
@@ -549,7 +549,7 @@ And in the same commit as that publication:
   scenes, and the deficit was in our integration layer ([correctness-scope.md](../benchmarks/correctness-scope.md)). Strike it from any withdrawal-survivors list; a GPU-batched path on a laptop 3060 where Isaac Sim will not start
   without an RT-core card ✅; the **packaging** claim — "plain HTTP and JSON with no ROS, no
   DDS, no in-process Python and no editor plugin" ([simulator-comparison.md](simulator-comparison.md)
-  §8), which [`agent-native-api.md`](agent-native-api.md) §1.3 states precisely as *packaging,
+  §8), which `agent-native-api.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) §1.3 states precisely as *packaging,
   not capability*, **including its own caveat that the advantage evaporates when the agent's
   environment already has ROS**; 33 structured diagnostic codes; and the 10/10 driveability
   score, which is a **capability** measurement and was never a throughput one. None of those

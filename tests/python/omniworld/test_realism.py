@@ -171,25 +171,24 @@ def test_weathering_color_multiplier_bounded():
 # -------------------------------------------------------------------
 
 
-def test_outdoor_forest_world_age_affects_output(tmp_path):
-    from omniworld import generate
+def test_outdoor_forest_world_age_affects_output(generated_world):
+    """The pristine world (``world_age`` 0.0) IS the recipe default, pinned
+    below, so the session-shared default build stands in for it byte for
+    byte; only the aged world is built here."""
+    from omniworld.biomes.outdoor_forest import DEFAULT_PARAMS
 
-    young = tmp_path / "young.wbt"
-    old = tmp_path / "old.wbt"
-    generate("outdoor_forest", seed=42, out=young, params={"world_age": 0.0})
-    generate("outdoor_forest", seed=42, out=old, params={"world_age": 0.8})
-    assert young.read_bytes() != old.read_bytes(), (
+    assert DEFAULT_PARAMS["world_age"] == 0.0
+    young = generated_world("outdoor_forest", 42)
+    old = generated_world("outdoor_forest", 42, {"world_age": 0.8})
+    assert young.world_path.read_bytes() != old.world_path.read_bytes(), (
         "world_age must produce different output"
     )
 
 
-def test_outdoor_forest_tree_variation_changes_between_instances(tmp_path):
+def test_outdoor_forest_tree_variation_changes_between_instances(generated_world):
     """Adjacent tree placements must not be pixel-identical — at minimum
     their scales (or colors) should differ."""
-    from omniworld import generate
-
-    out = tmp_path / "forest.omniworld"
-    result = generate("outdoor_forest", seed=42, out=out)
+    result = generated_world("outdoor_forest", 42)
     rocks = [p for p in result.description.props if p.proto_type == "Rock"]
     assert len(rocks) >= 3
     scales = set()

@@ -25,7 +25,6 @@
 #include "OmMFNode.hpp"
 #include "OmMFString.hpp"
 #include "OmMathsUtilities.hpp"
-#include "OmOdeContext.hpp"
 #include "OmParser.hpp"
 #include "OmPreferences.hpp"
 #include "OmProtoTemplateEngine.hpp"
@@ -243,82 +242,6 @@ void OmWorldInfo::createWrenObjects() {
 void OmWorldInfo::createOdeObjects() {
   OmBaseNode::createOdeObjects();
 
-  // §8.4 of rendering-roadmap.md (landed): apply the broadphase
-  // field. Runs before any Solid's createOdeObjects, so
-  // the ODE collision space is still empty and the switch is safe.
-  // Worlds that don't set the field stay on "simple" (the default),
-  // which is the current behavior -- byte-equivalent.
-  //
-  // "auto" gets resolved here -- not down in OmOdeContext -- because
-  // the decision depends on world geometry (the top-level Solids
-  // are populated by OmWorld::updateTopLevelLists during the world
-  // ctor, so we can read their positions). OmOdeContext gets handed
-  // the already-resolved value ("sap" or "quadtree"); it still
-  // accepts "auto" as a defensive fallback (→ "sap") for any caller
-  // that hasn't done the resolution.
-  OmOdeContext::instance()->setBroadphaseType(resolveBroadphaseChoice().toUtf8().constData());
-
-  applyToOdeGravity();
-  applyToOdeCfm();
-  applyToOdeErp();
-  applyToOdeGlobalDamping();
-  applyToOdePhysicsDisableTime();
-}
-
-QString OmWorldInfo::resolveBroadphaseChoice() const {
-  // Pass-through for explicit choices. Only "auto" needs geometric
-  // resolution.
-  const QString &requested = mBroadphase->value();
-  if (requested != "auto")
-    return requested;
-
-  // Auto-mode rule from rendering-roadmap.md §8.4:
-  // quadtree when the world spans > 500 m on either horizontal axis,
-  // else sap. The horizontal axes are X and Y under any coordinate
-  // system OmniSim supports (ENU/NUE/EUN) -- the up axis varies but
-  // the horizontal plane is always two of {x, y, z}, so taking the
-  // two-largest-span axes from the bounding box gets it right
-  // regardless of "up".
-  //
-  // We sample positions from top-level Solids only -- nested Solids
-  // can't displace their containing top-level much further than
-  // their parent, so the top-level extent is a good proxy for total
-  // world extent. Top-level translations are world-space (no parent
-  // transform above them by definition).
-  const QList<OmSolid *> &topSolids = OmWorld::instance()->topSolids();
-  if (topSolids.isEmpty())
-    return QStringLiteral("sap");  // empty world -> default modern broadphase
-
-  double minX = topSolids.first()->translation().x();
-  double maxX = minX;
-  double minY = topSolids.first()->translation().y();
-  double maxY = minY;
-  double minZ = topSolids.first()->translation().z();
-  double maxZ = minZ;
-  for (const OmSolid *const s : topSolids) {
-    const double x = s->translation().x();
-    const double y = s->translation().y();
-    const double z = s->translation().z();
-    if (x < minX) minX = x; else if (x > maxX) maxX = x;
-    if (y < minY) minY = y; else if (y > maxY) maxY = y;
-    if (z < minZ) minZ = z; else if (z > maxZ) maxZ = z;
-  }
-
-  // The plan's threshold is "horizontal extent > 500 m". Determining
-  // which axes are horizontal needs the coordinate system (ENU has
-  // up=Z, NUE has up=Y, EUN has up=Y). The simpler coordinate-system-
-  // agnostic substitute is: largest single-axis span > 500 m. That
-  // rule errs slightly on the side of "use quadtree" for very tall
-  // narrow worlds (a 1 km tower in a 100 m yard would pick quadtree),
-  // but quadtree at the 2 km default extents handles a tall tower
-  // fine and the only cost of a false positive is a slightly fancier
-  // broadphase than necessary -- not a correctness issue.
-  const double spanX = maxX - minX;
-  const double spanY = maxY - minY;
-  const double spanZ = maxZ - minZ;
-  const double maxSpan = spanX > spanY ? (spanX > spanZ ? spanX : spanZ) : (spanY > spanZ ? spanY : spanZ);
-
-  return maxSpan > 500.0 ? QStringLiteral("quadtree") : QStringLiteral("sap");
 }
 
 void OmWorldInfo::updateBasicTimeStep() {
@@ -374,19 +297,10 @@ void OmWorldInfo::updateRandomSeed() {
   emit randomSeedChanged();
 }
 
-void OmWorldInfo::applyToOdePhysicsDisableTime() {
-  OmOdeContext::instance()->setPhysicsDisableTime(mPhysicsDisableTime->value());
-}
-
 void OmWorldInfo::updateGravity() {
   updateGravityBasis();
   if (areOdeObjectsCreated())
-    applyToOdeGravity();
-}
-
-void OmWorldInfo::applyToOdeGravity() {
-  OmOdeContext::instance()->setGravity(mGravityVector.x(), mGravityVector.y(), mGravityVector.z());
-  emit globalPhysicsPropertiesChanged();
+    emit globalPhysicsPropertiesChanged();
 }
 
 void OmWorldInfo::updateCfm() {
@@ -394,12 +308,7 @@ void OmWorldInfo::updateCfm() {
     return;
 
   if (areOdeObjectsCreated())
-    applyToOdeCfm();
-}
-
-void OmWorldInfo::applyToOdeCfm() {
-  OmOdeContext::instance()->setCfm(mCfm->value());
-  emit globalPhysicsPropertiesChanged();
+    emit globalPhysicsPropertiesChanged();
 }
 
 void OmWorldInfo::updateErp() {
@@ -407,34 +316,18 @@ void OmWorldInfo::updateErp() {
     return;
 
   if (areOdeObjectsCreated())
-    applyToOdeErp();
-}
-
-void OmWorldInfo::applyToOdeErp() {
-  OmOdeContext::instance()->setErp(mErp->value());
-  emit globalPhysicsPropertiesChanged();
+    emit globalPhysicsPropertiesChanged();
 }
 
 void OmWorldInfo::updateDefaultDamping() {
-  if (areOdeObjectsCreated())
-    applyToOdeGlobalDamping();
-}
-
-void OmWorldInfo::applyToOdeGlobalDamping() {
+  if (!areOdeObjectsCreated())
+    return;
+  // The per-step damping conversion that used to be pushed into ODE here is
+  // gone; the Damping node is read by the Newton registration path directly.
+  // Keep listening to the node's own field changes and wake sleeping bodies.
   const OmDamping *const damping = defaultDamping();
-  if (damping) {
+  if (damping)
     connect(damping, &OmDamping::changed, this, &OmWorldInfo::updateDefaultDamping, Qt::UniqueConnection);
-
-    // convert damping per second (specified in the Scene Tree) in damping per step (for ODE)
-    const double ts = basicTimeStep() * 0.001;
-    const double linear = 1.0 - pow(1.0 - damping->linear(), ts);
-    const double angular = 1.0 - pow(1.0 - damping->angular(), ts);
-    OmOdeContext::instance()->setDamping(linear, angular);
-  } else {
-    // default ODE damping is 0.0
-    OmOdeContext::instance()->setDamping(0.0, 0.0);
-  }
-
   emit globalPhysicsPropertiesChanged();
 }
 

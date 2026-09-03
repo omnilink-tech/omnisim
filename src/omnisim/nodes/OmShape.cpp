@@ -21,7 +21,6 @@
 #include "OmImageTexture.hpp"
 #include "OmMaterial.hpp"
 #include "OmNodeUtilities.hpp"
-#include "OmOdeContext.hpp"
 #include "OmPaintTexture.hpp"
 #include "OmPbrAppearance.hpp"
 #include "OmPreferences.hpp"

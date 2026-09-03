@@ -147,3 +147,127 @@ def test_load_world_tool_can_force_controller_restarting_reload(monkeypatch):
     server.t_load_world({"path": "scene.wbt", "force_reload": True,
                          "settle_steps": 12})
     assert calls == [("POST", "/world/load", {"path": "scene.wbt"})]
+
+
+# --- 2026-09-02: tools for the routes that had none, and the stale-text pins ---
+
+def _capture(monkeypatch):
+    calls = []
+    monkeypatch.setattr(server, "_json_call",
+                        lambda method, path, body=None: calls.append((method, path, body)) or {"ok": True})
+    return calls
+
+
+def test_every_harness_route_family_has_a_tool():
+    resp = server._handle({"jsonrpc": "2.0", "id": 11, "method": "tools/list"})
+    names = {t["name"] for t in resp["result"]["tools"]}
+    assert {"robot_damage", "robot_damage_events", "robot_damage_reset",
+            "robot_damage_inject", "read_bench", "scene_node_particles",
+            "rebuild_physics"} <= names
+
+
+def test_damage_tools_hit_their_routes(monkeypatch):
+    calls = _capture(monkeypatch)
+    server.t_robot_damage({})
+    server.t_robot_damage_events({"since": 3, "limit": 10})
+    server.t_robot_damage_reset({})
+    server.t_robot_damage_inject({"part": "left_arm", "state": "broken", "hp_delta": -5})
+    assert calls == [
+        ("GET", "/robot/damage", None),
+        ("GET", "/robot/damage/events?since=3&limit=10", None),
+        ("POST", "/robot/damage/reset", {}),
+        ("POST", "/robot/damage/inject",
+         {"part": "left_arm", "state": "broken", "hp_delta": -5}),
+    ]
+
+
+def test_damage_inject_requires_part():
+    resp = server._tools_call({"name": "robot_damage_inject", "arguments": {}})
+    assert resp["isError"] is True and "part" in resp["content"][0]["text"]
+
+
+def test_read_bench_and_particles_forward_their_query(monkeypatch):
+    calls = _capture(monkeypatch)
+    server.t_read_bench({"n": 7})
+    server.t_read_bench({})
+    server.t_scene_node_particles({"def": "SHEET", "sample": 20})
+    server.t_scene_node_particles({"def": "SHEET"})
+    assert calls == [
+        ("GET", "/debug/read_bench?n=7", None),
+        ("GET", "/debug/read_bench", None),
+        ("GET", "/scene/node/SHEET/particles?sample=20", None),
+        ("GET", "/scene/node/SHEET/particles", None),
+    ]
+
+
+def test_spawn_and_delete_forward_the_rebuild_opt_in(monkeypatch):
+    calls = _capture(monkeypatch)
+    server.t_scene_spawn({"vrml": "Solid {}", "def": "X", "physics": "rebuild"})
+    server.t_scene_delete({"def": "X", "physics": "rebuild"})
+    assert calls == [
+        ("POST", "/scene/spawn", {"vrml": "Solid {}", "def": "X", "physics": "rebuild"}),
+        ("POST", "/scene/delete", {"def": "X", "physics": "rebuild"}),
+    ]
+    for name in ("scene_spawn", "scene_delete"):
+        schema = server.TOOLS[name][2]
+        assert schema["properties"]["physics"]["enum"] == ["rebuild"]
+        assert "rebuild_physics" in server.TOOLS[name][1]
+        assert "until the world is reloaded" not in server.TOOLS[name][1]
+
+
+def test_load_world_tracking_object_goes_to_world_load(monkeypatch):
+    # /world/sync has no per-tracker toggle, so a `tracking` request is a load.
+    calls = _capture(monkeypatch)
+    server.t_load_world({"path": "w.omniworld",
+                         "tracking": {"contacts": False, "joint_limits": True}})
+    assert calls == [("POST", "/world/load",
+                      {"path": "w.omniworld",
+                       "tracking": {"contacts": False, "joint_limits": True}})]
+    props = server.TOOLS["load_world"][2]["properties"]
+    assert set(props["tracking"]["properties"]) == {"contacts", "joint_limits", "grips"}
+    assert "run-headless" in server.TOOLS["load_world"][1]  # the light rule, stated
+
+
+def test_load_world_documents_the_light_default(monkeypatch):
+    """Light is the HARNESS default since 2026-09-02 (a load naming neither
+    `light` nor `tracking` runs light). The tool must say so, name the way
+    back, and keep sending a bare load bare so the harness applies -- and
+    reports -- its own default rather than the MCP layer echoing one."""
+    desc = server.TOOLS["load_world"][1]
+    assert "DEFAULT SINCE 2026-09-02" in desc
+    assert "default_applied" in desc
+    assert "light=false" in desc and "OMNISIM_HARNESS_LIGHT=0" in desc
+    assert "An explicit value ALWAYS wins" in desc
+    props = server.TOOLS["load_world"][2]["properties"]
+    assert "2026-09-02" in props["light"]["description"]
+    assert "Pass false" in props["light"]["description"]
+    assert "2026-09-02" in server.TOOLS["world_sync"][2]["properties"]["light"]["description"]
+    assert "2026-09-02" in server.TOOLS["get_grips"][1]
+    assert "TRACKER_NOT_RUNNING" in server.TOOLS["get_grips"][1]
+    assert "2026-09-02" in server.TOOLS["sim_step"][1]
+    # A bare call stays bare: no `light` is invented client-side.
+    calls = _capture(monkeypatch)
+    server.t_load_world({"path": "w.omniworld", "force_reload": True})
+    assert calls == [("POST", "/world/load", {"path": "w.omniworld"})]
+    calls.clear()
+    server.t_load_world({"path": "w.omniworld", "light": False, "force_reload": True})
+    assert calls == [("POST", "/world/load", {"path": "w.omniworld", "light": False})]
+
+
+def test_get_contacts_describes_paired_and_tracking(monkeypatch):
+    desc = server.TOOLS["get_contacts"][1]
+    assert "paired" in desc and "tracking" in desc and "LIGHT MODE" in desc
+    calls = _capture(monkeypatch)
+    server.t_get_contacts({})
+    server.t_get_contacts({"settle_steps": 2})
+    assert calls == [("GET", "/sim/contacts", None),
+                     ("GET", "/sim/contacts?settle_steps=2", None)]
+
+
+def test_descriptions_carry_the_documented_pointers():
+    assert "frame" in server.TOOLS["screenshot"][1]
+    assert "recommended_max_steps_per_request" in server.TOOLS["sim_step"][1]
+    # The harness speaks HTTP/1.1 keep-alive since 2026-09-01; the docstring
+    # must not present HTTP/1.0 as the current state.
+    assert "which\nit does today" not in server.__doc__
+    assert "HTTP/1.1" in server.__doc__

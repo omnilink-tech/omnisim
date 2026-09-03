@@ -526,6 +526,10 @@ phase_smoke() {
 
   rm -f "$OMNISIM_LOG_PATH" "$OMNISIM_LOG_PATH.newton.json"
   log "smoke: run-headless --until-finalized (ceiling ${CEILING}s; a cold warp kernel compile can take minutes)"
+  # The renderer assertion below greps for the main view's lazy wgpu-native init line. Since
+  # 2026-09-02 a --no-rendering run draws no main-view frame (and so never initialises wgpu)
+  # unless asked to prove the renderer exists -- which is exactly what this smoke is for.
+  export OMNISIM_RENDERER_PROBE=1
   xvfb-run -a --server-args="-screen 0 1280x1024x24" \
     python3 -m omnisim run-headless "$WORLD" \
       --until-finalized --duration "$CEILING" --step-wait-timeout "$CEILING" \

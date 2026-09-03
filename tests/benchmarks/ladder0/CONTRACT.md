@@ -337,7 +337,7 @@ it is a statement about contact formulations rather than about which project is
 better.
 
 **The `omnisim` sweeps, in full** (machine `9722d23d12a3`, RTX 3060 laptop, CPU
-`mj_step`, newton 1.2.0 / warp 1.13.0 / mujoco 3.8.1; every row is the honest
+`mj_step`, newton 1.2.0 / warp 1.13.0 / mujoco 3.8.1 — the runtime when the sweep ran; the pinned runtime is newton 1.5.0 / warp 1.16.0 / mujoco 3.11.0; every row is the honest
 rung-8 scene with the named `WorldInfo` fields changed and nothing else, and
 every row is reproducible with `python omnisim/variants.py <family>`):
 

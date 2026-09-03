@@ -13,7 +13,7 @@ Solid {
   field    SFString   model               ""           # generic name of the solid (eg: "chair")
   field    SFString   description         ""           # a short (1 line) of description of the solid
   field    SFString   contactMaterial     "default"    # see ContactProperties node
-  field    SFString{"ode", "newton", "auto"} physicsBackend "auto"  # "auto" (default) resolves to Newton, the only backend. "newton" pins it explicitly. ⚠ "ode" is a RETIRED SELECTOR, not a fallback: ODE was deleted, so a Solid pinned to it is not simulated AT ALL (no contact, no gravity) and the engine warns once. It is kept because worlds in the wild contain it, and because it is used deliberately as a "do not simulate this" switch for hologram / ghost robots.
+  field    SFString{"ode", "newton", "auto"} physicsBackend "auto"  # "auto" (default) resolves to Newton, the only backend. "newton" pins it explicitly. "ode" is a RETIRED SELECTOR kept only so worlds in the wild still parse: since 2026-09-02 it warns once per world and the Solid runs on Newton like every other (until then it left the Solid with NO physics -- no contact, no gravity -- which was a trap, not a feature).
   field    SFNode     boundingObject      NULL         # for collision detection
   field    SFNode     physics             NULL         # optional Physics node
   field    SFBool     locked              FALSE        # to avoid moving objects with the mouse

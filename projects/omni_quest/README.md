@@ -292,7 +292,7 @@ GPS fix │  Sensors.read() ──► local ENU (E, N)  +  heading psi (0 = East
   is exactly what M2's fusion earns its keep against. Cameras (M3) use a *real*
   rendered OmniSim `Camera` on a `husky_eye`-style sidecar.
 
-See [`docs/RESEARCH.md`](docs/RESEARCH.md) for the full research synthesis
+See `docs/RESEARCH.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../../docs/ARCHIVE.md)) for the full research synthesis
 (OmniSim capabilities, OmniLink integration, the Nav2 reference architecture,
 and the control/geodesy formulas).
 

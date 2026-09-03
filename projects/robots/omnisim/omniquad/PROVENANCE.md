@@ -31,7 +31,7 @@ reserved-rights terms. Clearpath's BSD-3 validly covers what Clearpath
 authored — the URDF, the per-link split, the materials, the decimated
 collision hulls — but a licensor can only license what it owns, and it did
 not own the *shape*. The full evidence chain is in
-[`docs/developer/spot-provenance-research.md`](../../../../docs/developer/spot-provenance-research.md).
+`docs/developer/spot-provenance-research.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../../../../docs/ARCHIVE.md)).
 
 So on **2026-08-22** the geometry was replaced with OmniSim's own and the
 package renamed to a generic robot:
@@ -113,7 +113,7 @@ better, and a multi-primitive `Group` is not an option here because OmniSim's
 then registers `children[0]` and silently drops the rest).
 
 Reproduce the fit with
-[`_baseline/fit_primitives.py`](../../../../docs/developer/spot-provenance-research.md)
+`_baseline/fit_primitives.py` (archived 2026-09-02, see [docs/ARCHIVE.md](../../../../docs/ARCHIVE.md))
 as described in §7.2 of the provenance research.
 
 ### 2.2 Nothing else moved

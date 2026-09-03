@@ -19,8 +19,6 @@
 #include "OmWgpuRenderTarget.hpp"  // OmWgpuSolidDraw
 #include "OmWgpuShaders.hpp"       // kSolidLit
 
-#include <QtCore/QString>  // the surface-source kind is named in the log lines below
-
 #include <cstring>
 #include <vector>
 

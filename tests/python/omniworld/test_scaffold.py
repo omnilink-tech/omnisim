@@ -70,9 +70,12 @@ def test_generate_writes_both_artifacts(tmp_path: Path):
     assert out.exists()
     assert result.manifest_path.exists()
     assert result.manifest_path == manifest_path_for(out)
-    # World starts with the VRML signature.
+    # World starts with the OmniSim header (2a945a8f0, 2026-08-08): the tree
+    # is dual-read / single-write, so `#VRML_SIM` is still ACCEPTED on input
+    # but the emitter must never WRITE it.
     text = out.read_text(encoding="utf-8")
-    assert text.startswith("#VRML_SIM")
+    assert text.startswith("#OMNISIM R2025a utf8\n")
+    assert not text.startswith("#VRML_SIM")
     # Manifest is valid JSON matching our schema version.
     payload = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert payload["schema_version"] == MANIFEST_SCHEMA_VERSION

@@ -27,9 +27,9 @@ def test_desert_registered():
     assert "outdoor_desert" in list_recipes()
 
 
-def test_desert_generates_and_validates(tmp_path: Path):
-    out = tmp_path / "desert.wbt"
-    result = generate("outdoor_desert", seed=42, out=out)
+def test_desert_generates_and_validates(generated_world):
+    result = generated_world("outdoor_desert", 42)
+    out = result.world_path
     assert out.exists()
     text = out.read_text(encoding="utf-8")
     assert "ElevationGrid {" in text
@@ -44,25 +44,24 @@ def test_desert_generates_and_validates(tmp_path: Path):
     assert report.ok, report.format()
 
 
-def test_desert_deterministic(tmp_path: Path):
-    a = tmp_path / "a.wbt"
-    b = tmp_path / "b.wbt"
-    generate("outdoor_desert", seed=3, out=a)
-    generate("outdoor_desert", seed=3, out=b)
-    assert a.read_bytes() == b.read_bytes()
+def test_desert_deterministic(tmp_path: Path, generated_world):
+    """A FRESH build into this test's own tmp_path is byte-identical to the
+    session-shared one -- which is also what licenses the other tests here
+    to read the shared result."""
+    shared = generated_world("outdoor_desert", 42)
+    fresh = tmp_path / "fresh.wbt"
+    generate("outdoor_desert", seed=42, out=fresh)
+    assert fresh.read_bytes() == shared.world_path.read_bytes()
 
 
-def test_desert_different_seeds_differ(tmp_path: Path):
-    a = tmp_path / "a.wbt"
-    b = tmp_path / "b.wbt"
-    generate("outdoor_desert", seed=1, out=a)
-    generate("outdoor_desert", seed=2, out=b)
+def test_desert_different_seeds_differ(generated_world):
+    a = generated_world("outdoor_desert", 42).world_path
+    b = generated_world("outdoor_desert", 7).world_path
     assert a.read_bytes() != b.read_bytes()
 
 
-def test_desert_clearing_is_empty(tmp_path: Path):
-    out = tmp_path / "desert.wbt"
-    result = generate("outdoor_desert", seed=7, out=out)
+def test_desert_clearing_is_empty(generated_world):
+    result = generated_world("outdoor_desert", 7)
     size = 50.0
     centre = (size / 2.0, size / 2.0)
     clearing_radius = 5.0

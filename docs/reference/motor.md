@@ -95,7 +95,7 @@ This sound is used to play the sound of the motor.
 It is modulated in volume and pitch according to the velocity of the motor to produce a realistic motor sound.
 
 - The `muscles` field optionally specifies one or more [Muscle](muscle.md) nodes that graphically display the contraction of an artificial muscle connecting the parent [Solid](solid.md) node and the `endPoint` node of the [Joint](joint.md).
-This functionality is not available for the [Track](track.md) node.
+This functionality is not available for the Track (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) node.
 
 ### Units
 
@@ -293,7 +293,7 @@ Where `output_torque` is the value returned by the [`wb_motor_get_torque_feedbac
 
 > ⚠️ **In practice this evaluates to zero on the current engine.** Both feedback functions return a hardcoded `0.0` (see the force/torque-feedback banner below), so a joint motor's `electrical_input_power` is always 0 and a [Robot](robot.md)'s `battery` never drains from motor use. A [Propeller](propeller.md)-driven RotationalMotor is the sole exception. Model consumption in your controller if you need it.
 
-> **Note**: This is a very simplified model for the energy consumption of an electrical motor (and will not work in case of a motor in a [Track](track.md) node), but it is sufficient for most prototyping purposes.
+> **Note**: This is a very simplified model for the energy consumption of an electrical motor (and will not work in case of a motor in a Track (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) node), but it is sufficient for most prototyping purposes.
 If a more specific or accurate model is needed, it can be implemented in the robot controller itself.
 
 ### Kinematics Mode
@@ -617,7 +617,7 @@ In a "rotational" motor, only the torque applied around the rotation axis is con
 
 Note that these functions applies only to *physics-based* simulations.
 Therefore, the `physics` and `boundingObject` fields of related [Solid](solid.md) nodes must be defined for these functions to work properly.
-Moreover they don't work for [Motor](#motor) nodes used to power a [Track](track.md) node.
+Moreover they don't work for [Motor](#motor) nodes used to power a Track (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) node.
 
 If the `wb_motor_get_force_feedback` (resp. `wb_motor_get_torque_feedback`) function was not previously enabled, the return value is undefined.
 
@@ -814,4 +814,4 @@ class Motor (Device):
 
 *get associated devices*
 
-The `wb_motor_get_brake` and `wb_motor_get_position_sensor` functions return the [Brake](brake.md) and [PositionSensor](positionsensor.md) instances defined in the same [Joint](joint.md) or [Track](track.md) `device` field. If none is defined they return 0.
+The `wb_motor_get_brake` and `wb_motor_get_position_sensor` functions return the [Brake](brake.md) and [PositionSensor](positionsensor.md) instances defined in the same [Joint](joint.md) or Track (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) `device` field. If none is defined they return 0.

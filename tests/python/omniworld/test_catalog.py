@@ -99,25 +99,22 @@ def test_catalog_validator_script_exits_zero():
     )
 
 
-def test_catalog_covers_all_shipped_biomes():
+def test_catalog_covers_all_shipped_biomes(generated_world):
     """Every PROTO type the currently shipped biomes reference in their
     output must resolve through the catalog.
 
-    We generate a world of each biome, collect the proto_type values,
+    We generate a world of each biome (seed 42, defaults -- the session-shared
+    build every per-biome module also reads), collect the proto_type values,
     and verify each is in the catalog.
     """
-    from omniworld import generate, list_recipes
-
-    import tempfile
+    from omniworld import list_recipes
 
     shipped = list_recipes()
     names_seen: set[str] = set()
-    with tempfile.TemporaryDirectory() as td:
-        for recipe in shipped:
-            path = Path(td) / f"{recipe}.wbt"
-            result = generate(recipe, seed=42, out=path)
-            for prop in result.description.props:
-                names_seen.add(prop.proto_type)
+    for recipe in shipped:
+        result = generated_world(recipe, 42)
+        for prop in result.description.props:
+            names_seen.add(prop.proto_type)
     known = {a.name for a in catalog.iter_all()}
     missing = names_seen - known
     assert not missing, f"catalog missing entries for: {sorted(missing)}"

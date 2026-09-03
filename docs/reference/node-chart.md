@@ -58,7 +58,7 @@ graph LR
 
   Group[[Group](group.md)] --> Pose[[Pose](pose.md)]
   Group --> Billboard[[Billboard](billboard.md)]
-  Group --> TrackWheel[[TrackWheel](trackwheel.md)]
+  Group --> TrackWheel[TrackWheel]
     Pose --> Transform[[Transform](transform.md)]
     Pose --> Solid[[Solid](solid.md)]
         Solid --> SolidDevice
@@ -84,7 +84,7 @@ graph LR
           SolidDevice --> Speaker[[Speaker](speaker.md)]
           SolidDevice --> TouchSensor[[TouchSensor](touchsensor.md)]
           SolidDevice --> VacuumGripper[[VacuumGripper](vacuumgripper.md)]
-        Solid --> Track[[Track](track.md)]
+        Solid --> Track[Track]
         Solid --> Charger[[Charger](charger.md)]
         Solid --> Robot[[Robot](robot.md)]
 
@@ -111,9 +111,9 @@ graph LR
     Background[[Background](background.md)]
     CadShape[[CadShape](cadshape.md)]
     Color[[Color](color.md)]
-    ContactProperties[[ContactProperties](contactproperties.md)]
+    ContactProperties[ContactProperties]
     Coordinate[[Coordinate](coordinate.md)]
-    Damping[[Damping](damping.md)]
+    Damping[Damping]
     Focus[[Focus](focus.md)]
     Fog[[Fog](fog.md)]
     ImageTexture[[ImageTexture](imagetexture.md)]

@@ -40,7 +40,7 @@ A collision is detected when the `boundingObject` of the [TouchSensor](#touchsen
 The `lookupTable` field of a "bumper" sensor is ignored.
 The [Physics](physics.md) node of a "bumper" sensor is not required.
 
-> ⛔ **That last sentence is the whole problem today: the sensor's `boundingObject` never reaches the solver, so nothing ever intersects it and a bumper reads a permanent 0.** Measured — see the warning below the table. Do not use a bumper as a workaround for the broken force type; it is the same defect.
+> ✅ Since 2026-08-13 the bumper's `boundingObject` is registered as a Newton collider of its own, so a bumper reads 1 on contact. It still needs that `boundingObject`: a bumper without one touches nothing and reads a permanent 0.
 
 #### "force" Sensors
 
@@ -67,49 +67,34 @@ The force vector must be read using the `wb_touch_sensor_get_values` function.
 | lookupTable    | ignored                         | used                            | used                             |
 | return value   | 0 or 1                          | scalar                          | vector                           |
 | API function   | wb\_touch\_sensor\_get\_value() | wb\_touch\_sensor\_get\_value() | wb\_touch\_sensor\_get\_values() |
-| works today    | ⛔ **reads 0**                   | ⛔ **reads 0 N**              | ⛔ **reads 0 N**               |
+| works today    | ✅ (needs `boundingObject`)     | ✅ (+ `Physics`, `+X` aimed, `lookupTable [ ]`) | ✅ (same as "force")      |
 
 %end
 
-> ⛔ **NO `TouchSensor` TYPE WORKS TODAY. ALL THREE READ ZERO — and it is ONE mechanism, not three.**
+> ✅ **All three `TouchSensor` types WORK under Newton (fixed 2026-08-13/15).** Measured on OmniBench
+> lane 4 (capability matrix, 2026-09-01): `device.touch_force` reads **19.62 N** under a resting 2 kg body
+> (PASS) and `device.touch_bumper` PASS. The sensor's own `boundingObject` is now registered as a Newton
+> collider of its own, which is the one mechanism all three types share.
 >
-> ⚠️ **This warning used to say "ONLY THE `"bumper"` TYPE WORKS", and that was wrong.** The pairing
-> was worse than either half: it sent anyone blocked on the force type to the bumper as the
-> workaround, and the bumper does not work either.
+> **Requirements.** Every type needs its own `boundingObject` (a sensor without one touches nothing and
+> reads 0). `"force"` / `"force-3d"` additionally need a [Physics](physics.md) node, the `+X` axis aimed
+> at the expected contact, and `lookupTable [ ]` (an empty table returns raw newtons; the default table
+> maps 0–5000 N onto 0–50000). `OMNISIM_NEWTON_BUMPER` and `OMNISIM_NEWTON_TOUCH_FORCE` (both default ON)
+> are the value-parsed hatches.
 >
-> Newton/MuJoCo has been the only physics backend since ODE was deleted on 2026-08-08 (commit
-> `bdc02139`). Measured 2026-08-10 (OmniBench lane 4 `device.touch_bumper` / `device.touch_force`,
-> build `df62067d7`, machine `9722d23d12a3`, CPU `mj_step`; re-confirmed on the current binary
-> 2026-08-13): the **bumper** read `max=0` across all 750 samples, and the **force** type read
-> **0.000 N** under a resting 2 kg body whose weight is **19.62 N**.
+> Contact *queries* are a separate path and also work: `getContactPoints` from a Supervisor,
+> `GET /sim/contacts` and `GET /sim/grips` read native Newton contacts. A grasp is still best proven
+> geometrically — the part is airborne and tracks the gripper ([friction-grasp.md](../guide/friction-grasp.md)).
+> There is no `physicsBackend "ode"` path: a Solid pinned to `"ode"` is not simulated at all.
 >
-> **The cause is neither device: the `TouchSensor`'s own `boundingObject` never becomes a Newton
-> collider**, so the parent body takes the contact and the sensor's geometry touches nothing. The
-> probe separates that from a readout defect *geometrically*, which is stronger than any sensor
-> value: its pad protrudes 10 mm below the body, so pad contact would rest the prober at **z=0.66**
-> and body contact at **0.65** — and it measured **0.6499**. A device whose geometry touches nothing
-> necessarily reads nothing, so the 0 N is a **consequence**, not a separately fixable defect. The
-> code agrees: `newtonBumperTouching()` refuses outright when the sensor has no Newton body of its
-> own rather than answering with the parent's contacts, so `OMNISIM_NEWTON_BUMPER` (default ON)
-> cannot rescue it, and neither can `OMNISIM_NEWTON_TOUCH_FORCE` (also default ON), whose un-fold
-> plumbing is in place but has nothing to read.
->
-> ⚠️ **Hold these apart: contact DETECTION works; the contact DEVICE does not.** Contact *queries*
-> are a different code path and are fine — `getContactPoints`, the harness's `/sim/contacts` and
-> `/sim/grips` read native Newton contacts, and lane 4 scores that row PASS on the same build.
->
-> **What to do instead.** For a contact *event*: `getContactPoints` from a Supervisor, or
-> `GET /sim/contacts`. For a grasp: prove it **geometrically** — the part is airborne and tracks the
-> gripper (see [friction-grasp.md](../guide/friction-grasp.md)); a `TouchSensor` cannot verify a
-> grip, and neither can a foot verify ground contact with one. For a contact *force*: that
-> capability is currently missing. There is **no workaround** via `physicsBackend "ode"` — a Solid
-> pinned to `"ode"` is not simulated at all.
+> Revisions of this page dated 2026-08-10/13 said all three types read zero; that was true on those
+> builds and is history.
 
 ### Lookup Table
 
 A "force" and "force-3d" sensors can optionally specify a `lookupTable` to simulate the possible non-linearity (and saturation) of the real device.
 The `lookupTable` allows the user to map the simulated force measured in *newton* [N] to an output value that will be returned by the `wb_touch_sensor_get_value` function.
-The value returned by the force sensor is first computed by the physics engine, then interpolated using the `lookupTable`, and finally noise is added (if specified in the lookupTable). ⚠️ Note that the force value itself currently reads **0 N** (see the warning above), so the `lookupTable` maps zero to whatever your table says zero maps to.
+The value returned by the force sensor is first computed by the physics engine, then interpolated using the `lookupTable`, and finally noise is added (if specified in the lookupTable). To read raw newtons, author `lookupTable [ ]`.
 Each line of the `lookupTable` contains three numbers: (1) an input force in *newton* [N], (2) the corresponding output value, and (3) a noise level between 0.0 and 1.0 (see [DistanceSensor](distancesensor.md) for more info).
 Note that the default `lookupTable` of the [TouchSensor](#touchsensor) node is:
 

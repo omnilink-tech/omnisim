@@ -23,7 +23,7 @@
 > And the gate **predicted it**: training on the failing ghost anyway (3 seeds) gives **0.170 m/s
 > vs the control's 0.380 m/s** and 2.6× the drift — while a *single deploy rollout flatters it*
 > (197 m, no fall, faster than the incumbent). Full write-up, ablation and reproduction:
-> **[shadow-iteration.md](shadow-iteration.md)**.
+> **shadow-iteration.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))**.
 >
 > **Sibling paper — BATON** ([policy-switching.md](policy-switching.md)): the runtime *handover*
 > between separately-trained Shadowing specialists (walk/stand/carry/turn). Its field-positioning
@@ -124,7 +124,7 @@ feasibility as the causal factor.
 > the reference is dynamically feasible and the task is NOT a continuous-balance problem** — get-up /
 > rise (B2, G1), reaching, sit-to-stand, toss-to-place, replaying a recorded motion — where the
 > ghost is a genuine plan the policy can track and the bounded residual suffices. Full reasoning +
-> the H1 evidence: [locomotion-shadowing-vs-pure-rl.md](locomotion-shadowing-vs-pure-rl.md);
+> the H1 evidence: locomotion-shadowing-vs-pure-rl.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md));
 > canonical status: [rl-current-state.md](rl-current-state.md).
 
 ## Method
@@ -228,7 +228,7 @@ ghosts go to RL. **Motion auto-detection** resolves `arm` (fixed-base → delega
 committed `verify_arm`, unchanged) / `hill` / `sit` / `getup` / `jump` / `walk` from the MJCF
 joints and ghost keys; all per-motion thresholds are overridable via `opts`.
 
-*Honest caveats (from adversarial audit, see [shadowing-verification.md](shadowing-verification.md)):*
+*Honest caveats (from adversarial audit, see shadowing-verification.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))):*
 the **binary verdict** is sound across the repertoire — no impossible motion (levitation,
 beyond-reach toss, frozen-apex jump, wrong-model) was made to PASS, and every deployed motion
 PASSes. But the **scalar score is only weakly informative** (`s_tau` pins to 0 whenever a single
@@ -296,7 +296,7 @@ sit-stand = `stand-up` (transition) → `g1_stand` (terminal balance, already so
     initial condition** (the deploy's ~0.3 s settle lean + residual velocity, absent in the
     batched reset) and the **observation pipeline** (world-frame `getVelocity` + finite-diff `qd`
     vs the trainer's exact MuJoCo-frame `qvel`). Full writeup:
-    [h1-walk-rl-journey.md](h1-walk-rl-journey.md); canonical status:
+    h1-walk-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)); canonical status:
     [rl-current-state.md](rl-current-state.md).
 - **E5 — The boundary (necessary-but-not-sufficient):** the G1 sit-stand *launch* — feasible
   ghost in hand, yet **neither** reward-RL (21 PPO-residual runs) **nor** MPC-distillation/DAgger
@@ -560,6 +560,5 @@ needs ≥ 20–30 graded ghosts.
 - [skill-library.md](skill-library.md) — the packaged pipeline (manifest per skill; BATON sequences).
 - [policy-switching.md](policy-switching.md) — BATON, the handover protocol between specialists.
 - [rl-current-state.md](rl-current-state.md) — **canonical RL status; cite this for any result claim.**
-- [ghost-tracking-pipeline.md](ghost-tracking-pipeline.md) — the original architecture write-up (pre-rename; superseded as the how-to).
-- [g1-sitstand-journey.md](g1-sitstand-journey.md) — the running case study + why hand-drawn ghosts fail.
-- [g1-universal-tracker.md](g1-universal-tracker.md) — the north-star objective Shadowing realizes.
+- g1-sitstand-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — the running case study + why hand-drawn ghosts fail.
+- g1-universal-tracker.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — the north-star objective Shadowing realizes.

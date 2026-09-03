@@ -28,7 +28,6 @@
 #include "OmTriangleMesh.hpp"
 #include "OmWorld.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 OmTriangleMeshMap OmTriangleMeshGeometry::cTriangleMeshMap;
 
@@ -136,19 +135,17 @@ void OmTriangleMeshGeometry::buildWrenMesh(bool updateCache) {
 /////////////////
 
 // works only for meshes made up of triangles
-dGeomID OmTriangleMeshGeometry::createOdeGeom(dSpaceID space) {
+bool OmTriangleMeshGeometry::createOdeGeom() {
   if (!isPreFinalizedCalled())  // needed because preFinalize comes after insertion and insertion triggers ODE dGeom creation
     preFinalize();
 
   if (!mTriangleMesh->isValid()) {
     clearTrimeshResources();  // delete trimesh resources if any
-    return NULL;
+    return false;
   }
 
   setOdeTrimeshData();
-
-  (void)space;
-  return NULL;  // ODE is gone: no collision geoms
+  return true;
 }
 
 void OmTriangleMeshGeometry::setOdeTrimeshData() {
@@ -164,17 +161,8 @@ void OmTriangleMeshGeometry::applyToOdeData(bool correctSolidMass) {
     return;
 
   setOdeTrimeshData();
-  if (mOdeGeom == NULL) {
-    if (areOdeObjectsCreated())
-      emit validTriangleMeshGeometryInserted();
-
-    return;
-  }
-
-  if (mCorrectSolidMass)
-    applyToOdeMass();
-
-  mIsOdeDataApplied = true;
+  if (areOdeObjectsCreated())
+    emit validTriangleMeshGeometryInserted();
 }
 
 void OmTriangleMeshGeometry::updateOdeData() {

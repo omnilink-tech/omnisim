@@ -18,7 +18,13 @@
 # legacy alias so existing setups keep working. OMNISIM_HOME_PATH is the contract
 # variable owned and consumed by resources/Makefile.include -- it was renamed
 # from WEBOTS_HOME_PATH in the same atomic change as every other caller.
-OMNISIM_ROOT := $(if $(OMNISIM_HOME),$(OMNISIM_HOME),$(WEBOTS_HOME))
+# Adopt the legacy name ONLY when it names a directory that EXISTS: a machine that
+# once had Webots keeps WEBOTS_HOME after the install is removed, and adopting that
+# phantom path resolves every include and library under a directory that is not there.
+# `test -d`, not $(wildcard): wildcard splits on spaces and would reject a real
+# "C:\Program Files\..." install.
+OM_LEGACY_HOME := $(strip $(if $(strip $(WEBOTS_HOME)),$(if $(strip $(shell test -d "$(WEBOTS_HOME)" && echo yes)),$(WEBOTS_HOME))))
+OMNISIM_ROOT := $(if $(OMNISIM_HOME),$(OMNISIM_HOME),$(OM_LEGACY_HOME))
 ifeq ($(OMNISIM_ROOT),)
 OMNISIM_HOME_PATH = ../../..
 else

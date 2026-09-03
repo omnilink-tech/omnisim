@@ -117,7 +117,7 @@ One consequence worth knowing: an idle Newton body **does** generate contact poi
 contact query is no longer explained away by sleep. The `?wake=1` parameter on the HTTP harness's
 `/sim/contacts` existed for exactly that ODE behaviour and is now a no-op that still costs two steps.
 
-- ⚠️ The `defaultDamping` field is **retired and not read**. It named a [Damping](damping.md) node
+- ⚠️ The `defaultDamping` field is **retired and not read**. It named a Damping (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) node
 supplying default linear/angular damping for every [Solid](solid.md), applied through ODE's
 `dBodySetDamping`. `OmSolidMerger::setOdeDamping()` is now an empty function and damping is not
 plumbed to Newton, so neither this field nor a per-`Physics` `damping` node has any effect. There is
@@ -164,7 +164,7 @@ The value of the seed should be either non-negative or -1, if the value is -1 a 
 Using a time-based seed makes simulations non-reproducible.
 
 - ⚠️ The `contactProperties` field is **retired and not read.** It held
-[ContactProperties](contactproperties.md) nodes describing the behaviour when [Solid](solid.md)
+ContactProperties (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) nodes describing the behaviour when [Solid](solid.md)
 nodes collide, and it was an **ODE-path** declaration throughout.
 
   > **`coulombFriction` in particular is not consulted.** Friction on the Newton path comes from

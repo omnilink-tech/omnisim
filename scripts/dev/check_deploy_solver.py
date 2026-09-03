@@ -15,7 +15,7 @@
 
 """check_deploy_solver -- lint RL/legged Newton deploy worlds for the MuJoCo-solver pin.
 
-THE BUG THIS GUARDS: OmniSim's Newton backend has two solvers (g1_deploy_runtime.py:1273+):
+THE BUG THIS GUARDS: OmniSim's Newton backend has two solvers (src/omnisim/physics/omnisim_newton_runtime.py):
 the default GPU **XPBD**, and **SolverMuJoCo** (the MuJoCo contact model the RL trainers run).
 A legged policy is trained under mujoco_warp; if its deploy world resolves to XPBD -- a DIFFERENT
 engine -- the policy collapses. The MuJoCo solver is selected only when the world sets
@@ -32,7 +32,7 @@ USAGE:
   python scripts/dev/check_deploy_solver.py path/to/*.wbt   # lint explicit worlds
 
 Runtime companion: set OMNISIM_REQUIRE_MUJOCO_SOLVER=1 to make a deploy fail LOUD (not silently
-fall to XPBD) at world load -- see g1_deploy_runtime.py.
+fall to XPBD) at world load -- see src/omnisim/physics/omnisim_newton_runtime.py.
 """
 from __future__ import annotations
 

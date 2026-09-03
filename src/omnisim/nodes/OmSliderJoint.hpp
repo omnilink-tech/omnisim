@@ -53,7 +53,6 @@ protected:
   OmLinearMotor *linearMotor() const;
   void updatePosition(double position) override;
   OmVector3 anchor() const override;
-  void applyToOdeSpringAndDampingConstants(dBodyID body, dBodyID parentBody) override;
 
   void writeExport(OmWriter &writer) const override;
 

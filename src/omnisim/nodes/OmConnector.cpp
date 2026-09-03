@@ -21,7 +21,6 @@
 #include "OmMFVector3.hpp"
 #include "OmNewtonBackend.hpp"
 #include "OmNodeUtilities.hpp"
-#include "OmOdeContext.hpp"
 #include "OmPhysics.hpp"
 #include "OmPhysicsBackend.hpp"
 #include "OmRobot.hpp"
@@ -36,7 +35,6 @@
 #include <QtCore/QList>
 #include <QtCore/QSet>
 
-#include "OmOdeTypes.hpp"  // opaque handles + value-type mirrors (dQuaternion)
 
 #include <cassert>
 
@@ -83,7 +81,6 @@ void OmConnector::init() {
   mFaceType = UNKNOWN;
   mMinDist2 = -1.0;
   mPeer = NULL;
-  mFixedJoint = 0;
   mStartup = true;
   mSensor = NULL;
   mIsJointInversed = false;
@@ -239,58 +236,6 @@ static inline double unitVectorsAngle(const OmVector3 &v1, const OmVector3 &v2) 
     return acos(cos);
 }
 
-// rotate vector v by quaternion q
-static inline void rotateVector(const dQuaternion q, OmVector3 &v) {
-  double v1 = v[0];
-  double v2 = v[1];
-  double v3 = v[2];
-  double t2 = q[0] * q[1];
-  double t3 = q[0] * q[2];
-  double t4 = q[0] * q[3];
-  double t5 = -q[1] * q[1];
-  double t6 = q[1] * q[2];
-  double t7 = q[1] * q[3];
-  double t8 = -q[2] * q[2];
-  double t9 = q[2] * q[3];
-  double t10 = -q[3] * q[3];
-  v[0] = 2.0 * ((t8 + t10) * v1 + (t6 - t4) * v2 + (t3 + t7) * v3) + v1;
-  v[1] = 2.0 * ((t4 + t6) * v1 + (t5 + t10) * v2 + (t9 - t2) * v3) + v2;
-  v[2] = 2.0 * ((t7 - t3) * v1 + (t2 + t9) * v2 + (t5 + t8) * v3) + v3;
-}
-
-// rotate "this" connector's parent dBody by q
-// and rotate "other" connector's parent dBody by inverse of q
-void OmConnector::rotateBodies(OmConnector *other, const dQuaternion q, const dBodyID b1, const dBodyID b2) {
-  // ⚠ Connector SNAP ALIGNMENT IS UNIMPLEMENTED. This rotated the two parent
-  // ODE bodies by +/- half the alignment quaternion; both handles are
-  // permanently NULL now (OmNodeUtilities::findBodyMerger has no ODE body to
-  // find), so every caller in the snap chain -- snapXAxes, snapRotation,
-  // snapNow -- computes a quaternion that lands nowhere. The Newton-weld path
-  // in createFixedJoint attaches WITHOUT snapping and is unaffected.
-}
-
-// rotate both (parent) bodies such that the connectors x-axes
-// become anti-parallel (collinear but in opposite directions)
-// each body performs half of the necessary rotation
-// output: q, the half rotation quaternion
-void OmConnector::snapXAxes(OmConnector *other, dQuaternion q, const dBodyID b1, const dBodyID b2) {
-  // x-axes of connector 1 and 2
-  OmVector3 x1 = xAxis();
-  OmVector3 x2 = -other->xAxis();
-
-  // find rotation axis using cross product of x-axes
-  OmVector3 w = x1.cross(x2);
-
-  // if x1 and x2 are collinear we are already x-aligned
-  if (w.isNull())
-    return;  // nothing to do
-
-  // only reachable from the ODE snap path, which is compiled out
-  q[0] = 1.0;
-  q[1] = q[2] = q[3] = 0.0;
-  rotateBodies(other, q, b1, b2);
-}
-
 // search for possible rotational alignment matching alpha angle
 // (thanks to problem symmetry we need to look only in 180°)
 // input: alpha angle (angle between z-vectors of connectors)
@@ -310,96 +255,8 @@ double OmConnector::findClosestRotationalAlignment(double alpha) const {
   return -1.0;
 }
 
-// rotate both (parent) bodies such that the connectors z-axes
-// correspond to the closest allowed rotational alignment
-// each body performs half of the necessary rotation
-void OmConnector::snapRotation(OmConnector *other, const OmVector3 &z1, const OmVector3 &z2, const dBodyID b1,
-                               const dBodyID b2) {
-  // if n == 0 we don't need to mSnap
-  const int n = mNumberOfRotations->value();
-  if (n == 0)
-    return;  // nothing to do
-
-  // use dot product to find angle of rotation
-  // z1.z2 = |z1|*|z2| * cos(alpha)
-  // (but |z1| == |z2| == 1.0)
-  double alpha = unitVectorsAngle(z1, z2);
-
-  // if the vectors are collinear (parallel) there is nothing to do
-  if (alpha == 0.0)
-    return;
-
-  // find w rotation axis from z1 to z2
-  OmVector3 w = z1.cross(z2);
-
-  // special case: if z1 and z2 are anti-parallel we set w manually
-  if (w.isNull()) {
-    w[0] = 0.0;
-    w[1] = 0.0;
-    w[2] = 1.0;
-    alpha = M_PI;
-  }
-
-  // search for possible rotational alignment
-  // we should always find a rotational alignment
-  const double beta = findClosestRotationalAlignment(alpha);
-  assert(beta != -1.0);
-
-  dQuaternion q;
-  // only reachable from the ODE snap path, which is compiled out
-  (void)beta;
-  q[0] = 1.0;
-  q[1] = q[2] = q[3] = 0.0;
-  rotateBodies(other, q, b1, b2);
-}
-
-// return the vrml origin ([0 0 0] point) of the connector in world (global) coordinate system
-void OmConnector::getOriginInWorldCoordinates(dReal out[3]) const {
-  const OmVector3 &globalTranslation = matrix().translation();
-  out[0] = globalTranslation[0];
-  out[1] = globalTranslation[1];
-  out[2] = globalTranslation[2];
-}
-
-// shift both connectors (parent) bodies such that the connectors VRML origins match
-// the shift is performed halfway by each body
-void OmConnector::snapOrigins(OmConnector *other, const dBodyID b1, const dBodyID b2) {
-  // ⚠ Connector ORIGIN SNAP IS UNIMPLEMENTED, same reason as rotateBodies above:
-  // it shifted the two parent ODE bodies halfway towards each other, and both
-  // handles are permanently NULL now. (The gcc 12/13 -Wdangling-pointer
-  // suppression pragma that used to guard this block went with it -- it had no
-  // matching `pop`, so removing it also balances the file.)
-}
-
-// temporarily change body position and orientation so that the fixed joint
-// will be created with the adjusted ("snapped") relative position and
-// orientation between the two bodies
-void OmConnector::snapNow(OmConnector *other, const dBodyID b1, const dBodyID b2) {
-  // rotate bodies such that x-axes become aligned and return corresponding quaternion
-  dQuaternion qa;
-  snapXAxes(other, qa, b1, b2);
-
-  // z-axes of connector 1 and 2
-  // z1 and z2 have unit length
-  OmVector3 z1 = zAxis();
-  OmVector3 z2 = other->zAxis();
-
-  // aq = inversion of qa rotation
-  dQuaternion aq = {qa[0], -qa[1], -qa[2], -qa[3]};
-
-  // rotate y vectors to take into account previous rotation carried out by snapXAxes()
-  rotateVector(qa, z1);
-  rotateVector(aq, z2);
-
-  // now mSnap rotational alignement (z-axes)
-  snapRotation(other, z1, z2, b1, b2);
-
-  // finally shift bodies such that the CS origins match
-  snapOrigins(other, b1, b2);
-}
-
 // this function must be called once the connectors are aligned
-void OmConnector::createFixedJoint(OmConnector *other, const dBodyID b1, const dBodyID b2) {
+void OmConnector::createFixedJoint(OmConnector *other) {
   // Newton-native weld (OMNISIM_NEWTON_WELDS). When either side's merge
   // leader owns a Newton body, the ODE path below is physically inert: the
   // proxy bodies are artificially disabled at Newton registration, so a
@@ -424,14 +281,8 @@ void OmConnector::createFixedJoint(OmConnector *other, const dBodyID b1, const d
       }
     }
   }
-  if (!b1 && !b2) {
-    warn(tr("Connectors could not be attached because neither of them (nor their parent nodes) has a Physics node."));
-    return;
-  }
-
-  // marriage
-  mPeer = other;
-  other->mPeer = this;
+  // No Newton weld engaged: with ODE gone there is no fixed joint to fall back on.
+  warn(tr("Connectors could not be attached because neither of them (nor their parent nodes) has a Physics node."));
 }
 
 void OmConnector::attachTo(OmConnector *other) {
@@ -445,37 +296,16 @@ void OmConnector::attachTo(OmConnector *other) {
   if (!(mUnilateralLock->isTrue() || other->mIsLocked->isTrue()))
     return;
 
-  const dBodyID b1 = OmNodeUtilities::findBodyMerger(this);
-  const dBodyID b2 = OmNodeUtilities::findBodyMerger(other);
-  // ODE is gone, so no body merger ever exists, but a Newton-backed pair is
-  // still attachable: route straight to createFixedJoint, whose Newton-weld
-  // branch handles it. (The ODE snap is skipped -- identical outcome to the
-  // ON build, where snapNow moves only the DISABLED proxy bodies.)
+  // A Newton-backed pair attaches through createFixedJoint, whose Newton-weld
+  // branch handles it. ⚠ Connector 'snap' alignment is UNIMPLEMENTED: the ODE
+  // snap (rotate / shift both bodies half-way before the fixed joint) went
+  // with ODE and no Newton equivalent is wired, so the weld holds the pair at
+  // its current relative pose.
   if (nearestNewtonBodyIndex() >= 0 || other->nearestNewtonBodyIndex() >= 0) {
-    createFixedJoint(other, b1, b2);
+    createFixedJoint(other);
     return;
   }
-  if (!b1 && !b2) {
-    warn(tr("Connectors could not be attached because neither of them (nor their parent nodes) has a Physics node."));
-    return;
-  }
-
-  if (mSnap->isTrue()) {
-    // ⚠ The save-then-restore of both bodies' pose around the snap IS
-    // UNIMPLEMENTED (it read and rewrote the ODE bodies, which are permanently
-    // NULL now). snapNow is retained for shape but is itself a no-op chain --
-    // see rotateBodies / snapOrigins -- so Connector 'snap' alignment does
-    // nothing at all today. This branch is also unreachable in practice: with
-    // no body merger, the `!b1 && !b2` guard above returns first.
-    snapNow(other, b1, b2);
-    createFixedJoint(other, b1, b2);
-  } else
-    createFixedJoint(other, b1, b2);
-}
-
-// destroy ODE fixed joint and remove feedback structure
-void OmConnector::destroyFixedJoint() {
-  mFixedJoint = NULL;
+  warn(tr("Connectors could not be attached because neither of them (nor their parent nodes) has a Physics node."));
 }
 
 void OmConnector::ensureNewtonWeldSlot(OmNewtonBackend *newton) {
@@ -512,7 +342,7 @@ void OmConnector::createNewtonWeld(OmConnector *other, int newtonBody1, int newt
     if (!sWarnedNoSlot.contains(name())) {
       sWarnedNoSlot.insert(name());
       warn(tr("Connector '%1': no Newton weld slot was reserved for this connection (the devices registered after the "
-              "world was finalized, or neither side's body is Newton-owned), so the lock will NOT hold.")
+              "world was finalized, or neither side's body is Newton-owned), so the lock will NOT hold. Author both Connectors in the world file with a Physics node on each side's Solid; a node spawned or re-parented at runtime needs POST /sim/rebuild_physics before it can lock -- see docs/reference/connector.md.")
              .arg(name()));
     }
     return;
@@ -556,15 +386,11 @@ void OmConnector::detachFromPeer() {
   assert(mPeer);
 
   // only one weld holds the two bodies together -- find which side of the
-  // connection owns it (Newton slot or ODE fixed joint) and undo that one
+  // connection owns it (the Newton weld slot) and undo that one
   if (mNewtonWeldActive)
     releaseNewtonWeld();
   else if (mPeer->mNewtonWeldActive)
     mPeer->releaseNewtonWeld();
-  else if (mFixedJoint)
-    destroyFixedJoint();
-  else
-    mPeer->destroyFixedJoint();
 
   // detaching connectors may cause some motion that wasn't possible when they were attached to each other
   // therefore we need to explicitely awake both of them in case they were idle
@@ -599,7 +425,7 @@ double OmConnector::getEffectiveShearStrength() const {
 // exceeds the limit, if it does, detach the connectors
 // Note that this function is called for just one of the two connectors that build up each connection
 void OmConnector::detachIfForceExceedStrength() {
-  assert(mPeer && (mFixedJoint || mNewtonWeldActive));
+  assert(mPeer && mNewtonWeldActive);
 
   OmVector3 f1;
   if (mNewtonWeldActive) {
@@ -652,7 +478,7 @@ void OmConnector::detachIfForceExceedStrength() {
 
 void OmConnector::prePhysicsStep(double ms) {
   bool skipAttach = mPeer != NULL;
-  if (mFixedJoint || mNewtonWeldActive)
+  if (mNewtonWeldActive)
     detachIfForceExceedStrength();
 
   // handle pre-locked mStartup case (must be done once only)
@@ -884,13 +710,6 @@ void OmConnector::assembleAxes(OmConnector *other) {
   // we need to apply the rotation to the whole solid not only the Connector
   OmSolid *solid = topSolid();
 
-  // find current roation of the solid: q
-  dQuaternion q;
-  // ODE is gone, so the rotational auto-assembly below is compiled out
-  // (positional assembly at the end of this function still runs); the weld
-  // then holds the authored relative orientation.
-  q[0] = 1.0;
-  q[1] = q[2] = q[3] = 0.0;
 
   // x-axes of both connectors
   OmVector3 x1 = xAxis();
@@ -959,7 +778,7 @@ void OmConnector::assembleWith(OmConnector *other) {
     mIsLocked->setValue(true);
 
   if (mIsLocked->isTrue())
-    createFixedJoint(other, OmNodeUtilities::findBodyMerger(this), OmNodeUtilities::findBodyMerger(other));
+    createFixedJoint(other);
 }
 
 void OmConnector::hasMoved() {

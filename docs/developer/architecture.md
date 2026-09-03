@@ -153,34 +153,34 @@ Useful wrapper targets:
 - `make package`
 
 Developer CLI:
-- `python scripts/dev/omnisim_dev.py build core`
-- `python scripts/dev/omnisim_dev.py build renderer`
-- `python scripts/dev/omnisim_dev.py test-smoke`
-- `python scripts/dev/omnisim_dev.py test-world <path>`
-- `python scripts/dev/omnisim_dev.py run-headless <path>`
-- `python scripts/dev/omnisim_dev.py profile-world <path>`
+- `python -m omnisim build core`
+- `python -m omnisim build renderer`
+- `python -m omnisim test-smoke`
+- `python -m omnisim test-world <path>`
+- `python -m omnisim run-headless <path>`
+- `python -m omnisim profile-world <path>`
 
 ## Safe Validation Paths
 
 ### Renderer changes
-- `python scripts/dev/omnisim_dev.py build renderer`
-- `python scripts/dev/omnisim_dev.py test-world tests/rendering/worlds/normals.omniworld --nomake`
+- `python -m omnisim build renderer`
+- `python -m omnisim test-world tests/rendering/worlds/normals.omniworld --nomake`
 
 ### Runtime or node changes
-- `python scripts/dev/omnisim_dev.py build core`
-- `python scripts/dev/omnisim_dev.py test-smoke --nomake`
+- `python -m omnisim build core`
+- `python -m omnisim test-smoke --nomake`
 
 ### GUI/editor changes
-- `python scripts/dev/omnisim_dev.py build gui`
+- `python -m omnisim build gui`
 - launch one small world locally
 
 ### Headless automation or agent-driven scenarios
-- `python scripts/dev/omnisim_dev.py run-headless <world>`
+- `python -m omnisim run-headless <world>`
 - Supported headless flags come from the existing simulator CLI: `--mode=fast --batch --no-rendering --stdout --stderr --minimize`
 
 ### Controller API changes
-- `python scripts/dev/omnisim_dev.py build controller-libs`
-- `python scripts/dev/omnisim_dev.py test-group api --nomake`
+- `python -m omnisim build controller-libs`
+- `python -m omnisim test-group api --nomake`
 
 ## Constraints
 

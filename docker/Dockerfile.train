@@ -4,7 +4,7 @@
 # the in-engine RL trainers run with no further setup. Published to GHCR by
 # .github/workflows/train-image.yml.
 #
-#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v8.2.0 bash
+#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v8.3.0 bash
 #   # inside:
 #   xvfb-run -a bash projects/policies/training/run_quad_walk_rl.sh 600 mytag train headless
 #
@@ -51,7 +51,7 @@
 ARG CUDA_TAG=12.8.1-devel-ubuntu24.04
 FROM nvidia/cuda:${CUDA_TAG}
 
-ARG OMNISIM_TAG=v8.2.0
+ARG OMNISIM_TAG=v8.3.0
 ARG REPO_URL=https://github.com/omnilink-tech/omnisim.git
 ARG GPU_VERIFY=0
 ARG JOBS=8

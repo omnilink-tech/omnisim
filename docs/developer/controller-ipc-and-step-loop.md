@@ -207,9 +207,9 @@ That order reduces risk because each step improves visibility before behavior ch
 
 After controller-related changes, validate with:
 
-- `python scripts/dev/omnisim_dev.py build controller-libs`
-- `python scripts/dev/omnisim_dev.py build core`
-- `python scripts/dev/omnisim_dev.py run-headless <small-world>`
+- `python -m omnisim build controller-libs`
+- `python -m omnisim build core`
+- `python -m omnisim run-headless <small-world>`
 - one smoke or benchmark scenario that exercises controller traffic without large render cost
 
 The important thing is to prove that controller work can be validated narrowly and repeatably.

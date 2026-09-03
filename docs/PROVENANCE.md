@@ -67,6 +67,8 @@ Distribution by directory:
 | 2 | `docs/guide/images/` (renamed in the rebrand: `pycharm_omnisim.png`, `pycharm_omnisim.thumbnail.jpg` — added at import as their `pycharm_webots*` names, content unchanged) |
 | 6 | `docs/css/fonts/` — **not covered by the above; see below** |
 
+The counts are as imported. The 2026-09-02 documentation cleanup deleted the files no page references any more (208 images and image sources, including all of `images/actuators/` and `images/sensors/`, whose only pages went), so the tree holds fewer today; the licence statement above still covers every survivor.
+
 ### `docs/css/fonts/` — separately and correctly licensed already
 
 The six webfonts are **not** Cyberbotics' work and are not covered by the

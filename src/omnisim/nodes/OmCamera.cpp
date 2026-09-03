@@ -602,10 +602,10 @@ void OmCamera::copyImageToMemoryMappedFile(unsigned char *data) {
     const bool wantSceneRender =
       isWgpuCameraSceneEnabled() && depthLevel <= 0 && !agxMode && !identityVp;
 
-    std::vector<OmWgpuSolidDraw> draws;
-    std::vector<std::array<float, 16>> modelStorage;
-    modelStorage.reserve(64);  // grow without invalidating pointers in `draws`
-    draws.reserve(64);
+    // Per-device cached draw list (see OmAbstractCamera::collectWgpuDrawsCached): the vectors
+    // belong to the device and are refreshed, not rebuilt, on a frame with no structural change.
+    std::vector<OmWgpuSolidDraw> *drawsPtr = nullptr;
+    std::vector<std::array<float, 16>> *modelPtr = nullptr;
     // W3: the albedo/roughness/metalness/normal maps are uploaded by the collect itself, but ONLY
     // when it is handed a texture cache. Creating it here (rather than in ensureWgpuTarget) keeps
     // it off every gated-off and every depth-mode frame, so OMNISIM_WGPU_CAMERA_SCENE=0 does not
@@ -620,8 +620,14 @@ void OmCamera::copyImageToMemoryMappedFile(unsigned char *data) {
     // R5c: scene walk via the shared sensor scene-renderer (same coverage as
     // the former inline collectShapeDraws — Box/Plane/Sphere/Cylinder/Capsule
     // primitives + WREN-readback fallback).
-    collectWgpuDraws(*mWgpuMeshCache, draws, modelStorage,
-                     wantSceneRender ? mWgpuTextureCache : nullptr);
+    bool texturesEvicted = false;
+    collectWgpuDrawsCached(*mWgpuMeshCache, wantSceneRender ? mWgpuTextureCache : nullptr, drawsPtr, modelPtr,
+                           &texturesEvicted);
+    if (texturesEvicted && mWgpuTarget)
+      mWgpuTarget->forgetTextureBindGroups();  // the cache released views; the cached bind groups are dead
+    std::vector<OmWgpuSolidDraw> &draws = *drawsPtr;
+    std::vector<std::array<float, 16>> &modelStorage = *modelPtr;
+    (void)modelStorage;
 
     // viewProj from this Camera's pose + FOV + near/far + aspect, via the
     // shared scene-renderer (encodes the Webots +X-fwd/+Z-up → wgpu -Z-fwd/

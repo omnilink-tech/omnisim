@@ -32,7 +32,9 @@
 #include "OmSimulationState.hpp"
 #include "OmStandardPaths.hpp"
 #include "OmViewpoint.hpp"
+#include "OmWgpuRenderTarget.hpp"  // OmWgpuSolidDraw (complete type for the cached draw list)
 #include "OmWgpuSceneRenderer.hpp"  // P1/P9: the shared sensor collect (Solids + dynamic content)
+#include "OmWgpuTextureCache.hpp"   // evictStale() at the draw-list rebuild point
 #include "OmWorld.hpp"
 #include "OmWorldInfo.hpp"
 #include "OmWrenRenderingContext.hpp"
@@ -46,10 +48,45 @@
 #include <QtCore/QFile>
 #ifndef _WIN32
 #include "OmPosixMemoryMappedFile.hpp"
+
 #else
 #include <QtCore/QSharedMemory>
 #endif
 #include <QtCore/QUrl>
+
+#include <QtCore/QElapsedTimer>
+#include <QtCore/QSet>
+
+struct OmAbstractCamera::WgpuDrawCache {
+  std::vector<OmWgpuSolidDraw> draws;
+  std::vector<std::array<float, 16>> models;  // draws' modelMatrix16 alias into this, 1:1
+  std::vector<OmWgpuSceneRenderer::OmWgpuDrawRefresh> refresh;
+  std::vector<QMetaObject::Connection> conns;
+  const OmWgpuMeshCache *meshCache = nullptr;
+  const OmWgpuTextureCache *texCache = nullptr;
+  bool dirty = true;
+  int age = 0;
+  int retries = 0;
+  size_t dynamicTail = 0;
+  // telemetry (OMNISIM_WGPU_REPORT): cumulative collect time and how many frames rebuilt the list
+  qint64 collectNs = 0;
+  int frames = 0;
+  int rebuilds = 0;
+};
+
+namespace {
+  bool sensorDrawCacheEnabled() {
+    static const bool on = []() {
+      const QByteArray v = qgetenv("OMNISIM_WGPU_SENSOR_DRAW_CACHE").trimmed().toLower();
+      return v.isEmpty() || (v != "0" && v != "false" && v != "off");
+    }();
+    return on;
+  }
+  bool sensorDrawCacheReport() {
+    static const bool on = qEnvironmentVariableIsSet("OMNISIM_WGPU_REPORT");
+    return on;
+  }
+}  // namespace
 #include <QtCore/QVector>
 #include <QtCore/QtGlobal>
 
@@ -61,6 +98,7 @@ int OmAbstractCamera::cCameraNumber = 0;
 int OmAbstractCamera::cCameraCounter = 0;
 
 void OmAbstractCamera::init() {
+  mWgpuDrawCache = NULL;
   mImageMemoryMappedFile = NULL;
   mImageData = NULL;
   mSensor = NULL;
@@ -99,6 +137,9 @@ OmAbstractCamera::OmAbstractCamera(const OmNode &other) : OmRenderingDevice(othe
 }
 
 OmAbstractCamera::~OmAbstractCamera() {
+  invalidateWgpuDrawCache();
+  delete mWgpuDrawCache;
+  mWgpuDrawCache = NULL;
   delete mImageMemoryMappedFile;
   delete mSensor;
 
@@ -267,6 +308,119 @@ void OmAbstractCamera::collectWgpuDraws(OmWgpuMeshCache &cache, std::vector<OmWg
   // rebuilt per call, so unlike the main view there is no cached prefix and nothing to trim
   // -- the returned count is deliberately dropped.
   OmWgpuSceneRenderer::collectDynamicDraws(cache, out, modelStorage, texCache);
+}
+
+void OmAbstractCamera::invalidateWgpuDrawCache() {
+  if (!mWgpuDrawCache)
+    return;
+  WgpuDrawCache &c = *mWgpuDrawCache;
+  for (const QMetaObject::Connection &conn : c.conns)
+    QObject::disconnect(conn);
+  c.conns.clear();
+  c.draws.clear();
+  c.models.clear();
+  c.refresh.clear();
+  c.dynamicTail = 0;
+  c.dirty = true;
+}
+
+void OmAbstractCamera::collectWgpuDrawsCached(OmWgpuMeshCache &cache, OmWgpuTextureCache *texCache,
+                                              std::vector<OmWgpuSolidDraw> *&outDraws,
+                                              std::vector<std::array<float, 16>> *&outModels,
+                                              bool *texturesEvicted) {
+  if (texturesEvicted)
+    *texturesEvicted = false;
+  if (!mWgpuDrawCache)
+    mWgpuDrawCache = new WgpuDrawCache();
+  WgpuDrawCache &c = *mWgpuDrawCache;
+  outDraws = &c.draws;
+  outModels = &c.models;
+  QElapsedTimer timer;
+  timer.start();
+  if (!sensorDrawCacheEnabled()) {
+    // exact-revert arm: the pre-cache behaviour, a fresh walk into fresh vectors every frame
+    c.draws.clear();
+    c.models.clear();
+    c.draws.reserve(64);
+    c.models.reserve(64);
+    if (texCache && texCache->evictStale() && texturesEvicted)
+      *texturesEvicted = true;
+    collectWgpuDraws(cache, c.draws, c.models, texCache);
+    c.collectNs += timer.nsecsElapsed();
+    ++c.frames;
+    ++c.rebuilds;
+    if (sensorDrawCacheReport() && (c.frames % 100) == 0)
+      OmLog::info(QString("[OmAbstractCamera] '%1' draw collect (cache OFF): %2 frames, %3 ms/frame mean, %4 draws")
+                    .arg(deviceName())
+                    .arg(c.frames)
+                    .arg(c.collectNs / 1.0e6 / c.frames, 0, 'f', 3)
+                    .arg(static_cast<qulonglong>(c.draws.size())));
+    return;
+  }
+  // The records alias GPU resources owned by these two caches; a different cache is a different list.
+  if (c.meshCache != &cache || c.texCache != texCache) {
+    invalidateWgpuDrawCache();
+    c.meshCache = &cache;
+    c.texCache = texCache;
+  }
+  // Drop last frame's dynamic tail before the size check below, exactly as the main view does.
+  if (c.dynamicTail > 0) {
+    c.draws.resize(c.draws.size() - std::min(c.dynamicTail, c.draws.size()));
+    c.models.resize(c.models.size() - std::min(c.dynamicTail, c.models.size()));
+    c.dynamicTail = 0;
+  }
+  ++c.age;
+  if (c.dirty || c.refresh.empty() || c.age >= 600 ||
+      !OmWgpuSceneRenderer::refreshWorldDraws(c.models, c.refresh, &c.draws)) {
+    invalidateWgpuDrawCache();
+    c.dirty = false;
+    c.age = 0;
+    // Rebuild point for the texture cache (see OmWgpuTextureCache::evictStale).
+    if (texCache && texCache->evictStale() && texturesEvicted)
+      *texturesEvicted = true;
+    ++c.rebuilds;
+    int skipped = 0;
+    c.draws.reserve(64);
+    c.models.reserve(64);
+    // Same call as collectWgpuDraws makes (no per-viewer hidden set is passed there either), plus
+    // the refresh records and the incomplete-collect counter the cache needs.
+    OmWgpuSceneRenderer::collectWorldDraws(cache, c.draws, c.models, /*outNodes=*/nullptr, texCache, &c.refresh,
+                                           &skipped);
+    // A destroyed scene node would dangle the cached records: hook every referenced node.
+    QSet<QObject *> hooked;
+    for (const OmWgpuSceneRenderer::OmWgpuDrawRefresh &r : c.refresh)
+      if (r.node && !hooked.contains(r.node)) {
+        hooked.insert(r.node);
+        c.conns.push_back(connect(r.node, &QObject::destroyed, this, [this]() { invalidateWgpuDrawCache(); }));
+      }
+    if (OmWorld::instance()) {
+      if (OmGroup *root = OmWorld::instance()->root())
+        c.conns.push_back(connect(root, &OmGroup::childrenChanged, this, [this]() { invalidateWgpuDrawCache(); }));
+      c.conns.push_back(connect(OmWorld::instance(), &OmWorld::robotAdded, this, [this]() { invalidateWgpuDrawCache(); }));
+      c.conns.push_back(
+        connect(OmWorld::instance(), &OmWorld::robotRemoved, this, [this]() { invalidateWgpuDrawCache(); }));
+    }
+    // Self-healing collect (the main view's rule): shapes whose geometry is not finalized yet are
+    // dropped silently; keep re-collecting, bounded, until the scene settles.
+    if (skipped > 0 && c.retries < 300) {
+      ++c.retries;
+      c.dirty = true;
+    } else if (skipped == 0)
+      c.retries = 0;
+  }
+  // Dynamic content is appended after the cached prefix every frame (collectDynamicDraws re-points
+  // the WHOLE list by index at its end, so the prefix survives any reallocation it causes).
+  if (OmWgpuSceneRenderer::sensorDynamicEnabled())
+    c.dynamicTail = OmWgpuSceneRenderer::collectDynamicDraws(cache, c.draws, c.models, texCache);
+  c.collectNs += timer.nsecsElapsed();
+  ++c.frames;
+  if (sensorDrawCacheReport() && (c.frames % 100) == 0)
+    OmLog::info(QString("[OmAbstractCamera] '%1' draw collect: %2 frames, %3 rebuilds, %4 ms/frame mean, %5 draws")
+                  .arg(deviceName())
+                  .arg(c.frames)
+                  .arg(c.rebuilds)
+                  .arg(c.collectNs / 1.0e6 / c.frames, 0, 'f', 3)
+                  .arg(static_cast<qulonglong>(c.draws.size())));
 }
 
 void OmAbstractCamera::setup() {

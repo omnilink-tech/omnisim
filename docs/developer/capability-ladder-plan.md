@@ -280,7 +280,7 @@ this hole. Any reader of a T2 cell is entitled to this paragraph.
 `hold_mechanism ∈ {friction, suction, attachment, unknown}` with the adapter's source citation.
 It is **not** a pass condition, and here is the reasoning, stated so it can be attacked: this
 tree's own shipped bin-picking success uses a **suction** end-effector
-([`docs/developer/omniarm6-suction-bin-pick-journey.md`](omniarm6-suction-bin-pick-journey.md):
+(`docs/developer/omniarm6-suction-bin-pick-journey.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)):
 deterministic 36/36 after finger-gripper attempts topped out ~18/36), and an earlier carry demo
 used a grasp-stabilisation weld. Failing an attachment-based grasp would be writing the task
 around a technique we ourselves abandoned — the inverse of task-rigging and equally

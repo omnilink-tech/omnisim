@@ -32,7 +32,6 @@
 #include "OmTransform.hpp"
 #include "OmVrmlNodeUtilities.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 #include <cmath>
 #include <limits>
@@ -241,27 +240,18 @@ QStringList OmCylinder::fieldsToSynchronizeWithW3d() const {
 // ODE Objects //
 /////////////////
 
-dGeomID OmCylinder::createOdeGeom(dSpaceID space) {
+bool OmCylinder::createOdeGeom() {
   if (mRadius->value() <= 0.0) {
-    parsingWarn(tr("'radius' must be positive when used in a 'boundingObject'."));
+    parsingWarn(tr("'radius' must be positive when used in a 'boundingObject'. The Cylinder is rejected as a collider, so the Solid does not collide through it; set 'radius' to a positive value in metres."));
     return NULL;
   }
 
   if (mHeight->value() <= 0.0) {
-    parsingWarn(tr("'height' must be positive when used in a 'boundingObject'."));
+    parsingWarn(tr("'height' must be positive when used in a 'boundingObject'. The Cylinder is rejected as a collider, so the Solid does not collide through it; set 'height' to a positive value in metres."));
     return NULL;
   }
 
-  (void)space;
-  return NULL;  // ODE is gone: no collision geoms
-}
-
-void OmCylinder::applyToOdeData(bool correctSolidMass) {
-  if (mOdeGeom == NULL)
-    return;
-
-  if (correctSolidMass)
-    applyToOdeMass();
+  return true;
 }
 
 double OmCylinder::scaledRadius() const {
@@ -278,10 +268,10 @@ bool OmCylinder::isSuitableForInsertionInBoundingObject(bool warning) const {
   const bool invalidHeight = mHeight->value() <= 0.0;
   if (warning) {
     if (invalidRadius)
-      parsingWarn(tr("'radius' must be positive when used in a 'boundingObject'."));
+      parsingWarn(tr("'radius' must be positive when used in a 'boundingObject'. The Cylinder is rejected as a collider, so the Solid does not collide through it; set 'radius' to a positive value in metres."));
 
     if (invalidHeight)
-      parsingWarn(tr("'height' must be positive when used in a 'boundingObject'."));
+      parsingWarn(tr("'height' must be positive when used in a 'boundingObject'. The Cylinder is rejected as a collider, so the Solid does not collide through it; set 'height' to a positive value in metres."));
   }
 
   return (!invalidHeight && !invalidRadius);

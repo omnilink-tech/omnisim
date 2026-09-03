@@ -59,7 +59,7 @@ from ._wbt_tree import (
     iter_tree,
     mat_apply,
     mat_mul,
-    parse_wbt,
+    parse_wbt_cached,
     proto_index_for,
 )
 
@@ -437,7 +437,9 @@ def analyze_viewpoint(path: Path | str, text: str | None = None, *,
         repo_root = Path(__file__).resolve().parents[3]
 
     try:
-        nodes = parse_wbt(text)
+        # Memoised per text (read-only tree): a second analysis of the same
+        # world skips the ~1 M-token parse. Nothing below mutates a node.
+        nodes = parse_wbt_cached(text)
     except Exception as exc:                     # pragma: no cover - defensive
         return ViewpointVerdict(world=path, status="borderline", subject_kind="none",
                                 reason=f"could not parse world ({exc})")

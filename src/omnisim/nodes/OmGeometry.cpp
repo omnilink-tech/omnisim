@@ -19,7 +19,6 @@
 #include "OmBoundingSphere.hpp"
 #include "OmNode.hpp"
 #include "OmNodeUtilities.hpp"
-#include "OmOdeContext.hpp"
 #include "OmPrecision.hpp"
 #include "OmResizeManipulator.hpp"
 #include "OmSimulationState.hpp"
@@ -43,8 +42,6 @@ void OmGeometry::init() {
   mCollisionTime = -std::numeric_limits<float>::infinity();
   mPreviousCollisionTime = -std::numeric_limits<float>::infinity();
   mIs90DegreesRotated = false;
-  mOdeGeom = NULL;
-  mOdeMass = NULL;
   mResizeManipulator = NULL;
   mResizeManipulatorInitialized = false;
   mResizeConstraint = OmWrenAbstractResizeManipulator::NO_CONSTRAINT;
@@ -67,8 +64,6 @@ OmGeometry::OmGeometry(const OmNode &other) : OmBaseNode(other) {
 
 OmGeometry::~OmGeometry() {
   delete mResizeManipulator;
-  if (mOdeGeom)
-    destroyOdeObjects();  // for OmGeometries lying in a boundingObject
   delete mBoundingSphere;
 }
 
@@ -80,9 +75,6 @@ void OmGeometry::postFinalize() {
 
 }
 
-void OmGeometry::destroyOdeObjects() {
-}
-
 ////////////////////////
 // Create ODE Objects //
 ////////////////////////
@@ -92,9 +84,9 @@ void OmGeometry::createOdeObjects() {
 }
 
 // Default creation method (overriden in every OmGeometry inherited class)
-dGeomID OmGeometry::createOdeGeom(dSpaceID space) {
+bool OmGeometry::createOdeGeom() {
   parsingWarn(tr("This type of geometry node cannot be placed in 'boundingObject'."));
-  return NULL;
+  return false;
 }
 
 /////////////////////////
@@ -111,10 +103,6 @@ void OmGeometry::setPickable(bool pickable) {
 ///////////////////
 // Apply Methods //
 ///////////////////
-
-// Apply to ODE
-void OmGeometry::applyToOdeMass() {
-}
 
 ////////////
 // Others //
@@ -220,15 +208,6 @@ void OmGeometry::setUniformConstraintForResizeHandles(bool enabled) {
 
 // ODE setters
 
-void OmGeometry::setOdeMass(const dMass *mass) {
-  (void)mass;  // ODE is gone: dMass is opaque (OmInertia is the native replacement)
-}
-
-void OmGeometry::setOdeData(dGeomID geom, OmMatter *matterAncestor) {
-  (void)geom;
-  (void)matterAncestor;
-}
-
 // Utility functions
 
 OmBaseNode *OmGeometry::transformedGeometry() {  // returns an upper OmPose lying in the same boundingObject if it does
@@ -250,9 +229,6 @@ OmVector3 OmGeometry::absolutePosition() const {
 void OmGeometry::setOdePosition(const OmVector3 &translation) {
   mOdePositionSet = translation;
   mOdeOffsetTranslation = translation + mOdeOffsetRotation * mLocalOdeGeomOffsetPosition;
-
-  if (mOdeGeom == NULL)
-    return;
 }
 
 void OmGeometry::setOdeRotation(const OmMatrix3 &rotation) {
@@ -267,9 +243,6 @@ void OmGeometry::setOdeRotation(const OmMatrix3 &rotation) {
     static const OmMatrix3 localRotation = OmRotation(1.0, 0.0, 0.0, M_PI_2).toMatrix3();
     mOdeOffsetRotation *= localRotation;
   }
-
-  if (mOdeGeom == NULL)
-    return;
 }
 
 bool OmGeometry::isAValidBoundingObject(bool checkOde, bool warning) const {
@@ -280,7 +253,9 @@ bool OmGeometry::isAValidBoundingObject(bool checkOde, bool warning) const {
   if (up && up->isInBoundingObject() && up->geometry() != this)
     return false;
 
-  if (checkOde && mOdeGeom == NULL)
+  // checkOde asked whether an ODE collision geom existed; none ever does now,
+  // so that question is answered "no" exactly as it was after ODE went away.
+  if (checkOde)
     return false;
 
   return true;

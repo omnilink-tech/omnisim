@@ -67,6 +67,7 @@
 // (OMNISIM_WGPU_NATIVE_CADSHAPE=0). The default path takes the matrix from OmCadShape's own pose.
 
 #include <QtCore/QFileInfo>  // P2: the Muscle texture path -> one stable cache key
+#include <QtCore/QList>      // hiddenNodes->isEmpty()/contains(): the header only forward-declares QList
 #include <QtGui/QImage>
 
 #include <algorithm>

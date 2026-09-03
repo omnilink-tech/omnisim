@@ -20,8 +20,8 @@ Bad benchmarks create noise instead of signal.
 
 The repo currently supports:
 
-- `python scripts/dev/omnisim_dev.py profile-world <world>`
-- `python scripts/dev/omnisim_dev.py benchmarks`
+- `python -m omnisim profile-world <world>`
+- `python -m omnisim benchmarks`
 - `tests/benchmarks/benchmark_worlds.json`
 
 ## Benchmark Categories

@@ -9,11 +9,11 @@ It focuses on two questions:
 
 Use this together with:
 
-- [asset-pipeline-and-world-quality.md](asset-pipeline-and-world-quality.md) for local assets, texture discipline, and sample-world quality
+- asset-pipeline-and-world-quality.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) for local assets, texture discipline, and sample-world quality
 - [test-harness-and-scenario-architecture.md](test-harness-and-scenario-architecture.md) for scenario manifests and validation lanes
 - [physics-contact-and-collision-complexity.md](physics-contact-and-collision-complexity.md) for contact-heavy worlds and instability patterns
 - [urdf-import-debugging.md](urdf-import-debugging.md) when the simulation starts from imported robot structure rather than hand-authored Webots nodes
-- [phase-two-architecture-plan.md](phase-two-architecture-plan.md) for the longer runtime-boundary work that makes a true agent-facing authoring surface possible
+- phase-two-architecture-plan.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) for the longer runtime-boundary work that makes a true agent-facing authoring surface possible
 
 ## Why This Matters
 
@@ -48,9 +48,9 @@ Today the safest authoring loop is:
 1. Start from an existing small world or PROTO that is already local-asset only.
 2. Keep the first change narrow: one robot, one controller, one sensor path, or one asset decision at a time.
 3. Validate with the repo wrappers before widening scope:
-   `python scripts/dev/omnisim_dev.py run-headless <world>`
-   `python scripts/dev/omnisim_dev.py test-world <world>`
-   `python scripts/dev/omnisim_dev.py profile-world <world>`
+   `python -m omnisim run-headless <world>`
+   `python -m omnisim test-world <world>`
+   `python -m omnisim profile-world <world>`
 4. Use the desktop shell only for questions that actually need it:
    main-view rendering
    scene-tree behavior
@@ -210,7 +210,7 @@ Useful report fields would include:
 
 Likely implementation areas:
 
-- `scripts/dev/omnisim_dev.py`
+- `omnisim/cli.py` (`python -m omnisim`)
 - `src/omnisim/vrml/*`
 - `src/omnisim/nodes/utils/OmWorld.*`
 - `src/omnisim/nodes/utils/OmTemplateManager.*`

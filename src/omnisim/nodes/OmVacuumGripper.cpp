@@ -32,7 +32,6 @@
 #include <QtCore/QList>
 #include <QtCore/QMap>
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 #include <cassert>
 #include <vector>
@@ -69,7 +68,6 @@ static OmNewtonBackend *availableNewtonBackend() {
 
 void OmVacuumGripper::init() {
   // init member variables
-  mFixedJoint = 0;
   mSolid = NULL;
   mSensor = NULL;
   mNeedToReconfigure = false;
@@ -168,7 +166,7 @@ void OmVacuumGripper::createFixedJoint(OmSolid *other) {
           if (!sWarnedNoSlot) {
             sWarnedNoSlot = true;
             warn(tr("VacuumGripper '%1': no Newton weld slot is available (the gripper's body is not Newton-owned or "
-                    "it registered after world finalize), so turning it on will NOT hold the object.")
+                    "it registered after world finalize), so turning it on will NOT hold the object. Give the gripper's Solid a Physics node and author it in the world file; a gripper spawned at runtime needs POST /sim/rebuild_physics before it can grip -- see docs/reference/vacuumgripper.md.")
                    .arg(name()));
           }
           return;
@@ -221,17 +219,9 @@ void OmVacuumGripper::createFixedJoint(OmSolid *other) {
     }
   }
 
-  // retrieve body merger
-  const dBodyID b1 = OmNodeUtilities::findBodyMerger(this);
-  const dBodyID b2 = OmNodeUtilities::findBodyMerger(other);
-  if (!b1 && !b2) {
-    warn(tr(
-      "VacuumGripper could not be attached because neither the VacuumGripper node nor the solid object have Physics nodes."));
-    return;
-  }
-
-  mSolid = other;
-  connect(mSolid, &OmSolid::destroyed, this, &OmVacuumGripper::destroyFixedJoint);
+  // No Newton weld engaged: with ODE gone there is no fixed joint to fall back on.
+  warn(tr(
+    "VacuumGripper could not be attached because neither the VacuumGripper node nor the solid object have Physics nodes."));
 }
 
 void OmVacuumGripper::destroyFixedJoint() {
@@ -242,12 +232,10 @@ void OmVacuumGripper::destroyFixedJoint() {
     OmNewtonBackend *const newton = availableNewtonBackend();
     if (newton != nullptr)
       newton->weldRelease(mNewtonWeldSlot);
-    mFixedJoint = NULL;
     mSolid = NULL;
     return;
   }
   // destroy ODE fixed joint and remove feedback structure
-  mFixedJoint = NULL;
   mSolid = NULL;
 }
 
@@ -286,7 +274,7 @@ double OmVacuumGripper::getEffectiveShearStrength() const {
 // check if the force exterted on the weld (mFixedJoint or the Newton slot)
 // exceeds the limit, if it does, detach the dBodies
 void OmVacuumGripper::detachIfForceExceedStrength() {
-  assert(mSolid && (mFixedJoint || mNewtonWeldActive));
+  assert(mSolid && mNewtonWeldActive);
 
   OmVector3 f1;
   if (mNewtonWeldActive) {
@@ -334,7 +322,7 @@ void OmVacuumGripper::detachIfForceExceedStrength() {
 void OmVacuumGripper::prePhysicsStep(double ms) {
   mCollidedSolidList.clear();
 
-  if (mFixedJoint || mNewtonWeldActive)
+  if (mNewtonWeldActive)
     detachIfForceExceedStrength();
 
   // call base class

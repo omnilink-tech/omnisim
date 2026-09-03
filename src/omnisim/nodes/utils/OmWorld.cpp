@@ -38,7 +38,6 @@
 #include "OmNodeOperations.hpp"
 #include "OmNodeReader.hpp"
 #include "OmNodeUtilities.hpp"
-#include "OmOdeContact.hpp"
 #include "OmPbrAppearance.hpp"
 #include "OmPerformanceLog.hpp"
 #include "OmPerspective.hpp"
@@ -232,7 +231,7 @@ void OmWorld::finalize() {
     QFile gf(qEnvironmentVariable("OMNISIM_PROBE_GATE"));
     if (gf.open(QIODevice::Append | QIODevice::Text)) {
       foreach (OmSolid *s, mTopSolids) {
-        const QString backend = s->effectivePhysicsBackendName();  // "ode" | "newton" | "auto"
+        const QString backend = s->effectivePhysicsBackendName();  // "newton" | "auto" (both Newton)
         const char *reason = "capable";
         s->articulationNewtonCapable(&reason);  // capability verdict: "capable" | "mesh" | "joint"
         gf.write(QString("articulation=%1 backend=%2 gate=%3\n")
@@ -739,12 +738,6 @@ bool OmWorld::reloadPerspective() {
   delete mPerspective;
   mPerspective = new OmPerspective(mFileName);
   return mPerspective->load();
-}
-
-void OmWorld::appendOdeContact(const OmOdeContact &odeContact) {
-  mOdeContactsMutex.lock();  // TODO: understand why this mutex is here. Related with MT-safe physics plugin?
-  mOdeContacts << odeContact;
-  mOdeContactsMutex.unlock();
 }
 
 void OmWorld::awake() {

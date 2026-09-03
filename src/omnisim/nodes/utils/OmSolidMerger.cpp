@@ -16,30 +16,21 @@
 
 #include "OmSolidMerger.hpp"
 
-// ODE HAS BEEN DELETED, so there is no body/geom/space to merge. Newton-side
-// code queries bodyMerger()/body() on OmSolid, which stay null; every merge verb
-// is a no-op. dMass is an INCOMPLETE type now (OmInertia is the native mass
-// replacement), so nothing here may allocate or delete one -- that is why the
-// constructor assigns mOdeMass = NULL rather than `new dMass`. The whole class
-// is a deletion candidate once its callers stop asking for a merger.
+// The merge LEADER bookkeeping survives ODE: OmSolid::effectiveNewtonBodyIndex
+// and the Newton flush use solid()/isSet() to fold joint-free children into
+// their leader body. The mass-merge verbs are empty (OmInertia is the native
+// mass path) and are kept only because their call sites in OmSolid still
+// express the fold order; they are a deletion candidate.
 
 #include "OmSolid.hpp"
 
 OmSolidMerger::OmSolidMerger(OmSolid *solid) :
   mSolid(solid),
-  mSpace(NULL),
   mCenterOfMass(0.0, 0.0, 0.0),
   mBodyArtificiallyDisabled(false) {
-  mOdeMass = NULL;
-  mBody = NULL;
 }
 
 OmSolidMerger::~OmSolidMerger() {
-  mMergedSolids.clear();
-}
-
-const QMap<OmSolid *, dMass *> &OmSolidMerger::mergedSolids() const {
-  return mMergedSolids;
 }
 
 void OmSolidMerger::appendSolid(OmSolid *) {
@@ -48,14 +39,7 @@ void OmSolidMerger::appendSolid(OmSolid *) {
 void OmSolidMerger::removeSolid(OmSolid *) {
 }
 
-dSpaceID OmSolidMerger::reservedSpace() {
-  return NULL;
-}
-
 void OmSolidMerger::removeExtraSpace() {
-}
-
-void OmSolidMerger::addGeomToSpace(dGeomID) {
 }
 
 void OmSolidMerger::mergeMass(OmSolid *const, bool) {
@@ -74,9 +58,6 @@ void OmSolidMerger::setOdeDamping() {
 }
 
 void OmSolidMerger::setOdeAutoDisable() {
-}
-
-void OmSolidMerger::attachGeomsToBody(dGeomID) {
 }
 
 bool OmSolidMerger::isSet() const {

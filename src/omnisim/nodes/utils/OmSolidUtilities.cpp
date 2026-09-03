@@ -31,16 +31,8 @@
 #include "OmSphere.hpp"
 #include "OmTriangleMesh.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 #include <assert.h>
-
-// The ODE interface does not allow to simply cast a dGeomID in a dSpaceID although dSpace inherits from dGeom; this forces the
-// use of a reinterpret_cast Note: this is possible because the internal stucture dxSpace inherits of dxGeom
-dSpaceID OmSolidUtilities::dynamicCastInSpaceID(dGeomID g) {
-  (void)g;
-  return NULL;  // ODE is gone: no collision spaces exist
-}
 
 void OmSolidUtilities::subtractInertiaMatrix(double *I, const double *J) {
   I[0] -= J[0];
@@ -52,23 +44,6 @@ void OmSolidUtilities::subtractInertiaMatrix(double *I, const double *J) {
   I[4] = I[1];
   I[8] = I[2];
   I[9] = I[6];
-}
-
-void OmSolidUtilities::setDefaultMass(dMass *m) {
-  (void)m;  // ODE is gone: dMass is opaque; OmInertia::setDefault is the native equivalent
-}
-
-// The mass is supposed to be homogeneously spread over the body boundingObject
-void OmSolidUtilities::addMass(dMass *const mass, OmNode *const node, double density, bool warning) {
-  // ODE is gone: the dMass integrator is retired -- addInertia (below,
-  // parity-pinned) is the only mass-property source. NOTE (report item): the
-  // per-geometry user warnings this pass emitted (invalid radius/dimensions,
-  // non-volume trimeshes) are not emitted any more; addInertia is
-  // warning-free by design.
-  (void)mass;
-  (void)node;
-  (void)density;
-  (void)warning;
 }
 
 // ODE-free mirror of addMass over OmInertia: identical traversal, identical

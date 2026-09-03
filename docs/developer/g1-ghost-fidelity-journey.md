@@ -155,7 +155,7 @@ long-horizon/deploy behavior — but the H1 case **localizes a concrete culprit 
 **initial condition** and the **observation pipeline**, not the physics solver. The path to a
 durable (10–20 m) deploy walk is therefore to **align the trainer's launch IC + obs to the
 deploy**, not to fine-tune harder on a mismatched IC. Full H1 journal:
-[h1-walk-rl-journey.md](h1-walk-rl-journey.md); canonical status: [rl-current-state.md](rl-current-state.md).
+h1-walk-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)); canonical status: [rl-current-state.md](rl-current-state.md).
 
 ---
 
@@ -201,6 +201,6 @@ deploy**, not to fine-tune harder on a mismatched IC. Full H1 journal:
 4. Accept a **finite-bout** framing (G1 walks ~7–33 s, the known limit) and report ≥80% over that
    bout — but only with the survival number shown next to it.
 
-Recipe details + the deploy launch live in [g1-deploy-walk.md](g1-deploy-walk.md) (last section);
+Recipe details + the deploy launch live in g1-deploy-walk.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) (last section);
 the feasible-ghost design in [g1-improved-shadow.md](g1-improved-shadow.md); canonical RL status
 in [rl-current-state.md](rl-current-state.md).

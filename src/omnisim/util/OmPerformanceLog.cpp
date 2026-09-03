@@ -16,7 +16,6 @@
 
 #include "OmPerformanceLog.hpp"
 
-#include "OmOdeContext.hpp"
 #include "OmPreferences.hpp"
 #include "OmSoundEngine.hpp"
 #include "OmSysInfo.hpp"
@@ -175,7 +174,8 @@ void OmPerformanceLog::writeTotalValues() {
     return;
   QTextStream out(mFile);
 
-  out << "Threads count: " << OmOdeContext::instance()->numberOfThreads() << "\n";
+  // The configured count (the ODE thread pool that used to consume it is gone).
+  out << "Threads count: " << OmPreferences::instance()->value("General/numberOfThreads", 1).toInt() << "\n";
 
   const double averageSpeed = (double)mValuesCount[SPEED_FACTOR] * mTimeStep * 1e3 / ((double)mValues[SPEED_FACTOR]);
 

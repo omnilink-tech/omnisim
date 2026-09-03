@@ -46,4 +46,4 @@ Supervisor controller for the OmniSim demo launcher world ([`projects/samples/de
 
 ## Why it lives here, not under `agents/`
 
-The launcher is an OmniSim **supervisor controller**, not an OmniLink agent — it speaks OmniSim's `wwiSendText` / `wwiReceiveText` to a side-panel Robot Window, not OmniLink HTTP. The closest parallel in the repo is [`omnilink_chat`](../../../../../resources/projects/plugins/robot_windows/omnilink_chat/) (the chat console used by every `omnilink_<robot>.wbt` demo); the launcher follows the same pattern.
+The launcher is an OmniSim **supervisor controller**, not an OmniLink agent — it speaks OmniSim's `wwiSendText` / `wwiReceiveText` to a side-panel Robot Window, not OmniLink HTTP. The closest parallel in the repo is [`omnilink_chat`](../../plugins/robot_windows/omnilink_chat/) (the chat console used by every `omnilink_<robot>.wbt` demo); the launcher follows the same pattern.

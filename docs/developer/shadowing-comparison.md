@@ -1,6 +1,6 @@
 # Shadowing vs. the field — honest positioning + measured improvement
 
-> Companion to [shadowing.md](shadowing.md) and [shadowing-verification.md](shadowing-verification.md).
+> Companion to [shadowing.md](shadowing.md) and shadowing-verification.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 > This file answers two questions a reviewer (or a partner) will ask: **(1) how much did our
 > own pipeline measurably improve this session, and (2) how does Shadowing compare to the
 > leading RL and control methods for underactuated robots?** Sourced from a 5-agent literature
@@ -125,7 +125,7 @@ localizes). So Shadowing's verified deploy wins are **quadruped** locomotion; th
 - **No head-to-head deploy benchmark vs DeepMimic/H2O/MPC exists yet** — that is the honest next
   step (§5). Any single "X% better" number today would be unsupported.
 
-## 5. Head-to-head experiments — RUN (numbers in [shadowing-experiments.md](shadowing-experiments.md))
+## 5. Head-to-head experiments — RUN (numbers in shadowing-experiments.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)))
 
 Three of the four are now done with real numbers (Go2, `gpu_mjwarp_go2_walk_trainer`, 200 iters/
 4096 envs per run):

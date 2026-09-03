@@ -140,7 +140,11 @@ class _StubState:
 @pytest.fixture()
 def live_server():
     server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(_StubState()))
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    # poll_interval: shutdown() joins serve_forever()'s select() loop, so the
+    # default 0.5 s poll cost ~0.5 s of teardown per test (measured 2026-09-02).
+    thread = threading.Thread(
+        target=server.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True
+    )
     thread.start()
     try:
         yield f"http://127.0.0.1:{server.server_address[1]}"

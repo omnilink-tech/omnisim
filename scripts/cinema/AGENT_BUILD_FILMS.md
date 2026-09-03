@@ -156,7 +156,13 @@ python scripts/cinema/sim_quality.py encode `
 
 The encoder writes a sampled-frame/hash receipt next to the clip and reuses the
 clip when the frame spool and settings still match. A repeated edit therefore
-does not spend another full PNG decode and high-quality encode pass.
+does not spend another full PNG decode and high-quality encode pass. After the
+encoded clip hash is verified, the PNG spool is deleted automatically. Use
+`--keep-frames` only for an active compositor or debugging pass; ordinary Agent
+Build production must treat frame sequences as disposable capture cache.
+The cleanup gate also decodes the finished video and requires its frame count
+and 1920×1080 dimensions to match the source contract. A malformed PNG or short
+encode leaves the spool intact for repair.
 
 The gate proves the wgpu/AgX runtime markers, PBR/normal-map/shadow authoring,
 stable resolution, and non-degenerate exposure/detail. Creative frame review is
@@ -176,6 +182,9 @@ still required because statistics cannot prove that the robot is visible.
   ranges into the edit. Do not repeatedly rerender unchanged evidence.
 - Render voice and motion plates only after the source ranges and story order
   validate. Render the final master once, then rerender only failed segments.
+- Delete lossless frame spools only after the encoded clip exists, its SHA-256
+  matches the encode receipt, and the spool contains only numbered PNG frames.
+  Keep the clip, manifest, evidence, receipts, narration, and review sheets.
 
 ## End-to-end workflow
 

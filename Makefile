@@ -134,7 +134,7 @@ space := $(null) $(null)
 OMNISIM_HOME_PATH?=$(subst $(space),\ ,$(strip $(subst \,/,$(OMNISIM_HOME))))
 include $(OMNISIM_HOME_PATH)/resources/Makefile.os.include
 
-.PHONY: clean cleanse debug distrib release omnisim_dependencies omnisim_target omnisim_projects clean-docs docs clean-urls sim-core sim-gui sim-check-objects sim-gui-staged renderer controller-libs all-controllers tests-smoke tests-docs tests-sources benchmarks compile-commands package dev-help ccache-stats
+.PHONY: clean cleanse debug distrib release omnisim_dependencies omnisim_target omnisim_projects clean-docs docs clean-urls sim-core sim-gui sim-check-objects sim-gui-staged renderer controller-libs all-controllers tests-smoke tests-unit tests-docs tests-sources benchmarks compile-commands package dev-help ccache-stats
 
 release debug profile: docs omnisim_projects
 
@@ -161,7 +161,28 @@ all-controllers: controller-libs
 	@+make --silent -C projects $(TARGET) OMNISIM_HOME="$(OMNISIM_HOME)"
 
 tests-smoke:
-	@+python3 scripts/dev/omnisim_dev.py test-smoke --nomake
+	@+python3 -m omnisim test-smoke --nomake
+
+# Engine-free unit lane: pure-Python tests only -- no engine, no GPU, no
+# network. tests/conftest.py marks every module that launches or requires the
+# simulator binary `engine` at collection (the pattern list lives there), so
+# `-m "not engine"` deselects them; the root-level files come from the SAME
+# logic (`tests/conftest.py --list-engine-free`), never from a hand-written
+# list, so a new engine test cannot sneak into this lane. Measured 2026-09-02
+# on machine 9722d23d12a3: 7 min 10 s for 1204 tests, dominated by omniworld's
+# mars recipe (~12 s per test) -- see tests/README.md for the full lane table.
+# USERPROFILE: MSYS make scrubs USERPROFILE/HOMEDRIVE/HOMEPATH from the recipe's
+# environment, and a Windows python then raises at Path.home() -- one test
+# module computes it at import and that aborted the whole collection.
+tests-unit:
+ifeq ($(PYTHON),)
+	@echo "tests-unit: no python with pytest+Pillow on PATH. Set PYTHON=<interpreter>." && false
+else
+	@+USERPROFILE="$${USERPROFILE:-$$HOME}" LOCALAPPDATA="$${LOCALAPPDATA:-$${USERPROFILE:-$$HOME}/AppData/Local}" \
+		$(PYTHON) -m pytest -m "not engine" -q \
+		tests/harness tests/python tests/packaging tests/dev \
+		$$($(PYTHON) tests/conftest.py --list-engine-free tests)
+endif
 
 # Documentation structure gate: links resolve, anchors resolve, menus complete,
 # images used. ~2 s, no engine, no GPU. It is EXCLUDED from a bare pytest by
@@ -199,10 +220,10 @@ else
 endif
 
 benchmarks:
-	@+python3 scripts/dev/omnisim_dev.py benchmarks --nomake
+	@+python3 -m omnisim benchmarks --nomake
 
 compile-commands:
-	@+python3 scripts/dev/omnisim_dev.py compile-commands
+	@+python3 -m omnisim compile-commands
 
 ccache-stats:
 ifeq ($(CCACHE),)
@@ -232,7 +253,7 @@ dev-help:
 	@+$(ECHO) "\033[33;1mmake benchmarks\033[0m\t# run the benchmark world set"
 	@+$(ECHO) "\033[33;1mmake compile-commands\033[0m\t# generate compile_commands.json using bear"
 	@+$(ECHO) "\033[33;1mmake ccache-stats\033[0m\t# show cache configuration, hits, misses, and uncacheable reasons"
-	@+$(ECHO) "\033[33;1mpython scripts/dev/omnisim_dev.py --help\033[0m\t# see the full developer CLI"
+	@+$(ECHO) "\033[33;1mpython -m omnisim --help\033[0m\t# see the full developer CLI"
 
 distrib: release
 	@+echo "#"; echo "# packaging"; echo "#"

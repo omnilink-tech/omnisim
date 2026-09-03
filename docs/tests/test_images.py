@@ -48,17 +48,31 @@ class TestImages(unittest.TestCase):
                 msg='No image found in book "%s"' % book.name
             )
 
-            # check the image reference can be found in at least one MD file
+            # Read every MD file once; the loop below is O(images x files) otherwise.
+            md_contents = []
+            for md_path in book.md_paths:
+                args = {} if sys.version_info[0] < 3 else {'encoding': 'utf-8'}
+                with open(md_path, **args) as file:
+                    md_contents.append(file.read())
+
+            def referenced(path):
+                return any(path in content for content in md_contents)
+
+            # An image is USED when an MD file names it, or -- for a full-size PNG --
+            # names its thumbnail (the pages reference `x.thumbnail.jpg`; the viewer
+            # opens `x.png` from it, see docs/generate_thumbnails.py).
+            #
+            # Until 2026-09-02 a PNG also counted as used when its thumbnail merely
+            # EXISTED on disk, whether or not anything referenced the thumbnail. That
+            # let ~150 orphaned image pairs sit in the tree for months: an unreferenced
+            # PNG was excused by an unreferenced thumbnail, and the thumbnail was only
+            # ever checked for its original. Both halves must now be reachable from a
+            # page.
             for image_path in images_paths:
-                found = False
-                for md_path in book.md_paths:
-                    args = {} if sys.version_info[0] < 3 else {'encoding': 'utf-8'}
-                    with open(md_path, **args) as file:
-                        if (image_path in file.read() or
-                                image_path.replace('.png', '.thumbnail.jpg') in images_paths or
-                                image_path.replace('.png', '.thumbnail.png') in images_paths):
-                            found = True
-                            break
+                found = referenced(image_path)
+                if not found and image_path.endswith('.png'):
+                    found = (referenced(image_path[:-4] + '.thumbnail.jpg') or
+                             referenced(image_path[:-4] + '.thumbnail.png'))
                 self.assertTrue(
                     found, msg='Image "%s" not referenced in any MD file.' % image_path
                 )

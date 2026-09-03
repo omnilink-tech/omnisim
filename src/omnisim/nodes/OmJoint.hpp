@@ -83,7 +83,7 @@ protected:
   OmJoint(const OmJoint &other);
   OmJoint(const OmNode &other);
 
-  void setOdeJoint(dBodyID body, dBodyID parentBody) override;
+  void setOdeJoint() override;
   virtual OmVector3 axis()
     const;  // return the axis of the joint with coordinates relative to the parent Solid; defaults to z-axis
   virtual void updatePosition(double position) = 0;  // position change caused by the jerk of a statically based robot

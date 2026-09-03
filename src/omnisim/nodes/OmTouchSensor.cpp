@@ -28,7 +28,6 @@
 #include "OmSensor.hpp"
 #include "OmSolidMerger.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 #include <QtCore/QDataStream>
 #include <cassert>
 #include "../../controller/c/messages.h"
@@ -158,7 +157,7 @@ void OmTouchSensor::updateType() {
     parsingWarn(tr("Unknown 'type': \"%1\". Set to \"bumper\"").arg(mType->value()));
 
   if ((mDeviceType == FORCE || mDeviceType == FORCE3D) && !physics())
-    parsingWarn(tr("\"force\" and \"force-3d\" 'type' requires 'physics' to be functional."));
+    parsingWarn(tr("\"force\" and \"force-3d\" 'type' requires 'physics' to be functional. Without a Physics node the sensor is never un-folded into a body of its own and reads 0 N for ever: set `physics Physics { mass ... }` on this TouchSensor, aim its +X axis into the load with 'rotation', and declare `lookupTable [ ]` for raw newtons -- see docs/reference/touchsensor.md."));
 }
 
 void OmTouchSensor::updateResolution() {
@@ -384,13 +383,6 @@ void OmTouchSensor::createOdeObjects() {
   OmSolidDevice::createOdeObjects();
   const OmBaseNode *node = OmSolidDevice::boundingObject();
   setODEDynamicFlag(node);
-}
-
-dJointID OmTouchSensor::createJoint(dBodyID body, dBodyID parentBody, dWorldID world) const {
-  (void)body;
-  (void)parentBody;
-  (void)world;
-  return NULL;  // ODE is gone: the newtonMountForce readback is the force source
 }
 
 void OmTouchSensor::writeConfigure(OmDataStream &stream) {

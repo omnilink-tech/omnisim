@@ -28,17 +28,17 @@ The **File** menu allows you to perform usual file operations: loading, saving, 
   You can then open the generated PROTO file in your preferred external editor to refine it.
   Finally, you will be able to insert an instance of your new PROTO in the scene tree as you would do for any other PROTO.
 
-- ![](images/open-button.png =26x26) The **Open World...** menu item (and button) opens a file selection dialog that allows you to choose a ".wbt" file to load.
+- ![](images/open-button.png =26x26) The **Open World...** menu item (and button) opens a file selection dialog that allows you to choose a world file (".omniworld", or a legacy ".wbt") to load.
 
-- The **Open Recent World** menu item gives the possibility of reopening a ".wbt" file that was opened recently by choosing it from the list displayed in the submenu.
+- The **Open Recent World** menu item gives the possibility of reopening a world file that was opened recently by choosing it from the list displayed in the submenu.
 
-- The **Open Sample World** menu item opens a dialog listing all the available sample worlds where it is possible to search for a specific ".wbt" file to load by entering the file name or part of it in the search field.
+- The **Open Sample World** menu item opens a dialog listing all the available sample worlds where it is possible to search for a specific world file to load by entering the file name or part of it in the search field.
 
 - ![](images/save-button.png =26x26) The **Save World** menu item (and button) saves the current world using the current filename (the filename that appears at the top of the main window).
-On each `Save` the content of the ".wbt" file is overwritten and no backup copies are created by OmniSim, therefore you should use this button carefully and eventually do safety copies manually.
+On each `Save` the content of the ".omniworld" file is overwritten (a world opened from a legacy ".wbt" is saved as ".omniworld"; ".wbt" is read forever, never written) and no backup copies are created by OmniSim, therefore you should use this button carefully and eventually do safety copies manually.
 
 - The **Save World As...** menu item (and button) saves the current world with a new filename entered by the user.
-Note that a ".wbt" file should always be saved in an OmniSim project directory, and in the "worlds" subdirectory, otherwise it will not be possible to reopen the file.
+Note that a world file should always be saved in an OmniSim project directory, and in the "worlds" subdirectory, otherwise it will not be possible to reopen the file.
 
 - ![](images/revert-button.png =26x26) The **Reload World** menu item (and button) reloads the current world from the saved version and restarts the simulation from the beginning.
 Please refer to [Reset/Reload Matrix](../reference/supervisor.md#wb_supervisor_simulation_reset) for more details.
@@ -107,18 +107,6 @@ If no object is selected, the viewpoint will be centered on the world origin.
 The available options are ![](images/front_view.png =26x26) **East View**, ![](images/back_view.png =26x26) **West View**, ![](images/left_view.png =26x26) **North View**, ![](images/right_view.png =26x26) **South View**, ![](images/top_view.png =26x26) **Top View** and ![](images/bottom_view.png =26x26) **Bottom View**.
 
 - The **Fullscreen** item enables and disables displaying the 3D window on the entire screen.
-
-- The **Virtual Reality Headset** submenu allows you to use a virtual reality headset such as the HTC Vive or Oculus Rift to view the simulation:
-  - The **Enable** item allows you to switch the simulation view to the headset.
-  - The **Track headset position** and **Track headset orientation** items specifies if the headset position and orientation should be tracked and applied to the viewpoint.
-  - The **View left eye**, **View right eye** and **Empty view** radio buttons allow you to choose what should be displayed in the simulation view.
-You can either see the left eye image, right eye image or nothing.
-  - The **Anti-aliasing** item allows you to enable anti-aliasing on both eye images (note that anti-aliasing will decrease simulation speed).
-  - The headset installation procedure is described [here](computer-peripherals.md).
-
-    > **Note**:
-This menu is currently present only on Windows.
-If you are on Windows and the menu is not enabled, it indicates that the drivers are not installed or that no headset is connected.
 
 - The **Projection** radio button group allows you to choose between the **Perspective Projection** (default) and the **Orthographic Projection** mode for OmniSim simulation window.
 The *perspective* mode corresponds to a natural projection: in which the farther an object is from the viewer, the smaller it appears in the image.

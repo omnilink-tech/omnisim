@@ -34,8 +34,102 @@
 #include "OmValue.hpp"
 
 #include <QtCore/QDir>
+#include <QtCore/QElapsedTimer>
+#include <QtCore/QHash>
 #include <QtCore/QFileInfo>
 #include <QtCore/QRegularExpression>
+
+
+namespace {
+  // Per-field regexes for the constructor's two template-regenerator scans, compiled once per
+  // (model, field) instead of once per (token, field). Keyed by the OmFieldModel pointer, which is
+  // stable for the model's lifetime; cleared when the model is destroyed (see the destructor).
+  QHash<const OmFieldModel *, QRegularExpression> &statementFieldRegexCache() {
+    static QHash<const OmFieldModel *, QRegularExpression> cache;
+    return cache;
+  }
+  QHash<const OmFieldModel *, QRegularExpression> &stringFieldRegexCache() {
+    static QHash<const OmFieldModel *, QRegularExpression> cache;
+    return cache;
+  }
+  const QRegularExpression &statementFieldRegex(const OmFieldModel *model) {
+    QHash<const OmFieldModel *, QRegularExpression> &cache = statementFieldRegexCache();
+    auto it = cache.find(model);
+    if (it == cache.end())
+      it = cache.insert(model, QRegularExpression(QString("(^|\\W)fields\\.%1($|\\W)").arg(QRegularExpression::escape(model->name()))));
+    return it.value();
+  }
+  const QRegularExpression &stringFieldRegex(const OmFieldModel *model, const QString &open, const QString &close) {
+    QHash<const OmFieldModel *, QRegularExpression> &cache = stringFieldRegexCache();
+    auto it = cache.find(model);
+    if (it == cache.end())
+      it = cache.insert(model, QRegularExpression(QString("%1(?:(?!%2|\").)*fields\\.%3(?:(?!%4|\").)*%5")
+                                                     .arg(open)
+                                                     .arg(close)
+                                                     .arg(QRegularExpression::escape(model->name()))
+                                                     .arg(close)
+                                                     .arg(close)));
+    return it.value();
+  }
+  void forgetFieldRegexes(const OmFieldModel *model) {
+    statementFieldRegexCache().remove(model);
+    stringFieldRegexCache().remove(model);
+  }
+
+  // Token cache for generateRoot(): the lexed tokens of a PROTO body, keyed by the PROTO url and
+  // the exact body text. Every instance of a non-template PROTO, and every instance of a
+  // deterministic template with the same parameter key, hands tokenizeString the SAME text and
+  // got the same tokens back after a character-by-character lex through a QTextStream --
+  // measured 2026-09-02 on city_traffic: 1.0 s for 476 instances of 60 distinct bodies. Tokens
+  // carry only word/line/column, so deep copies of the cached vector are indistinguishable from
+  // a fresh lex. Bodies that lex with errors are never cached. Bounded: cleared when it grows
+  // past 512 entries. OMNISIM_PROTO_TOKEN_CACHE=0 (value-parsed) lexes every instance as before.
+  struct CachedTokens {
+    QString content;  // the exact body text, compared on lookup so a qHash collision can never serve foreign tokens
+    QVector<OmToken *> tokens;
+  };
+  QHash<QString, CachedTokens> &protoTokenCache() {
+    static QHash<QString, CachedTokens> cache;
+    return cache;
+  }
+  bool protoTokenCacheEnabled() {
+    static const bool on = []() {
+      const QByteArray v = qgetenv("OMNISIM_PROTO_TOKEN_CACHE").trimmed().toLower();
+      return v.isEmpty() || (v != "0" && v != "false" && v != "off");
+    }();
+    return on;
+  }
+  void clearProtoTokenCache() {
+    QHash<QString, CachedTokens> &cache = protoTokenCache();
+    for (auto it = cache.begin(); it != cache.end(); ++it)
+      qDeleteAll(it.value().tokens);
+    cache.clear();
+  }
+}  // namespace
+
+OmProtoLoadProfile &OmProtoLoadProfile::instance() {
+  static OmProtoLoadProfile p;
+  return p;
+}
+
+bool OmProtoLoadProfile::enabled() {
+  static const bool on = !qEnvironmentVariableIsEmpty("OMNISIM_RELOAD_PROFILE");
+  return on;
+}
+
+QString OmProtoLoadProfile::report() const {
+  return QString("proto models read=%1 (%2 ms) instances=%3: template %4 ms + tokenize %5 ms + syntax %6 ms "
+                 "+ readNode %7 ms + aliasing %8 ms")
+    .arg(modelsRead)
+    .arg(modelReadNs / 1000000)
+    .arg(instances)
+    .arg(templateNs / 1000000)
+    .arg(tokenizeNs / 1000000)
+    .arg(syntaxNs / 1000000)
+    .arg(readNodeNs / 1000000)
+    .arg(aliasNs / 1000000);
+}
+
 #include <QtCore/QStringList>
 #include <QtCore/QTemporaryFile>
 #include <QtCore/QTextStream>
@@ -221,12 +315,18 @@ OmProtoModel::OmProtoModel(OmTokenizer *tokenizer, const QString &worldPath, con
 
       if (!mHasIndirectFieldAccess) {  // If the proto has indirect field access, we've already set the fields as template
                                        // regenerators
-        foreach (OmFieldModel *model, mFieldModels) {
-          // condition explanation: if (token contains modelName and not an identifier containing modelName such as
-          // "my_awesome_modelName") or (token contains fields and not an identifier containing fields such as "my_fields")
-          if (token->word().contains(
-                QRegularExpression(QString("(^|\\W)fields\\.%1($|\\W)").arg(QRegularExpression::escape(model->name()))))) {
-            model->setTemplateRegenerator(true);
+        // A field can only be named through "fields.<name>", so a statement without that substring
+        // can mark nothing -- skip the per-field regexes entirely (2026-09-02: they were compiled
+        // once per token x field, ~60k QRegularExpression constructions on a 2,000-token template;
+        // 31 models read cost 530 ms of the city's parse stage).
+        if (token->word().contains(QLatin1String("fields."))) {
+          foreach (OmFieldModel *model, mFieldModels) {
+            if (model->isTemplateRegenerator())
+              continue;
+            // condition explanation: if (token contains modelName and not an identifier containing modelName such as
+            // "my_awesome_modelName") or (token contains fields and not an identifier containing fields such as "my_fields")
+            if (token->word().contains(statementFieldRegex(model)))
+              model->setTemplateRegenerator(true);
           }
         }
       }
@@ -287,7 +387,6 @@ OmProtoModel::OmProtoModel(OmTokenizer *tokenizer, const QString &worldPath, con
       if (!mHasIndirectFieldAccess) {  // If the proto has indirect field access, we've already set the fields as template
                                        // regenerators
         // check which parameter need to regenerate the template instance from inside a string
-        foreach (OmFieldModel *model, mFieldModels) {
           // regex test cases:
           // "You know nothing, John Snow."  => false
           // "%<=fields.model->name()>%"  => true
@@ -299,13 +398,13 @@ OmProtoModel::OmProtoModel(OmTokenizer *tokenizer, const QString &worldPath, con
           // "%< a = \"fields.model->name().value.y\" >%"  => false
           // "%<= \"fields.model->name().value.y\" >%"  => false
           // "%<= fields.model->name().value.y >%"  => true
-          if (token->word().contains(QRegularExpression(QString("%1(?:(?!%2|\").)*fields\\.%3(?:(?!%4|\").)*%5")
-                                                          .arg(open)
-                                                          .arg(close)
-                                                          .arg(QRegularExpression::escape(model->name()))
-                                                          .arg(close)
-                                                          .arg(close))))
-            model->setTemplateRegenerator(true);
+        if (token->word().contains(QLatin1String("fields."))) {
+          foreach (OmFieldModel *model, mFieldModels) {
+            if (model->isTemplateRegenerator())
+              continue;
+            if (token->word().contains(stringFieldRegex(model, open, close)))
+              model->setTemplateRegenerator(true);
+          }
         }
       }
     }
@@ -345,6 +444,8 @@ OmProtoModel::OmProtoModel(OmTokenizer *tokenizer, const QString &worldPath, con
 
 OmProtoModel::~OmProtoModel() {
   foreach (const OmFieldModel *model, mFieldModels)
+    forgetFieldRegexes(model);
+  foreach (const OmFieldModel *model, mFieldModels)
     model->unref();
   mFieldModels.clear();
   mDeterministicContentMap.clear();
@@ -374,7 +475,13 @@ OmNode *OmProtoModel::generateRoot(const QVector<OmField *> &parameters, const Q
     if (!mIsDeterministic || (!mDeterministicContentMap.contains(key) || mDeterministicContentMap.value(key).isEmpty())) {
       OmProtoTemplateEngine te(mContent);
       rootUniqueId = uniqueId >= 0 ? uniqueId : OmNode::getFreeUniqueId();
-      if (!te.generate(name() + ".proto", parameters, mUrl, worldPath, rootUniqueId)) {
+      QElapsedTimer teTimer;
+      if (OmProtoLoadProfile::enabled())
+        teTimer.start();
+      const bool generated = te.generate(name() + ".proto", parameters, mUrl, worldPath, rootUniqueId);
+      if (OmProtoLoadProfile::enabled())
+        OmProtoLoadProfile::instance().templateNs += teTimer.nsecsElapsed();
+      if (!generated) {
         tokenizer.setReferralFile(mUrl);
         tokenizer.reportFileError(tr("Template engine error: %1").arg(te.error()));
         return NULL;
@@ -387,17 +494,44 @@ OmNode *OmProtoModel::generateRoot(const QVector<OmField *> &parameters, const Q
   } else
     mIsDeterministic = true;
 
+  const bool profiling = OmProtoLoadProfile::enabled();
+  QElapsedTimer phase;
+  if (profiling)
+    phase.start();
   tokenizer.setReferralFile(mUrl);
-  if (tokenizer.tokenizeString(content) > 0) {
-    tokenizer.reportFileError(tr("Failed to load due to syntax error(s)"));
-    return NULL;
+  const QString tokenKey = protoTokenCacheEnabled()
+                             ? mUrl + QLatin1Char('#') + QString::number(qHash(content)) + QLatin1Char('#') +
+                                 QString::number(content.size())
+                             : QString();
+  const auto cachedTokens = tokenKey.isEmpty() ? protoTokenCache().constEnd() : protoTokenCache().constFind(tokenKey);
+  if (cachedTokens != protoTokenCache().constEnd() && cachedTokens->content == content) {
+    tokenizer.adoptTokens(cachedTokens->tokens);
+  } else {
+    if (tokenizer.tokenizeString(content) > 0) {
+      tokenizer.reportFileError(tr("Failed to load due to syntax error(s)"));
+      return NULL;
+    }
+    if (!tokenKey.isEmpty()) {
+      if (protoTokenCache().size() >= 512)
+        clearProtoTokenCache();
+      CachedTokens entry;
+      entry.content = content;
+      entry.tokens.reserve(tokenizer.tokens().size());
+      foreach (const OmToken *token, tokenizer.tokens())
+        entry.tokens.append(new OmToken(*token));
+      protoTokenCache().insert(tokenKey, entry);
+    }
   }
+  if (profiling)
+    { OmProtoLoadProfile::instance().tokenizeNs += phase.nsecsElapsed(); phase.restart(); }
 
   // parse generated PROTO
   OmParser parser(&tokenizer);
   if (!parser.parseProtoBody(worldPath))
     return NULL;
   tokenizer.rewind();
+  if (profiling)
+    { OmProtoLoadProfile::instance().syntaxNs += phase.nsecsElapsed(); phase.restart(); }
 
   // read node in a local DEF/USE scope
   OmNode *root = NULL;
@@ -409,6 +543,10 @@ OmNode *OmProtoModel::generateRoot(const QVector<OmField *> &parameters, const Q
     tokenizer.reportFileError(tr("Cannot create the '%1' PROTO").arg(mName));
     return NULL;
   }
+  if (profiling) {
+    { OmProtoLoadProfile::instance().readNodeNs += phase.nsecsElapsed(); phase.restart(); }
+    ++OmProtoLoadProfile::instance().instances;
+  }
 
   if (!root) {
     tokenizer.reportFileError(tr("PROTO has unknown base type"));
@@ -419,6 +557,8 @@ OmNode *OmProtoModel::generateRoot(const QVector<OmField *> &parameters, const Q
   tokenizer.setErrorOffset(0);
 
   verifyAliasing(root, &tokenizer);
+  if (profiling)
+    { OmProtoLoadProfile::instance().aliasNs += phase.nsecsElapsed(); phase.restart(); }
 
   if (mTemplate) {
     root->setProtoInstanceTemplateContent(content.toUtf8());

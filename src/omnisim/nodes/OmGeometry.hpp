@@ -26,7 +26,6 @@
 
 #include "OmBaseNode.hpp"
 #include "OmMatrix3.hpp"
-#include "OmOdeTypes.hpp"
 #include "OmVector2.hpp"
 
 class OmBoundingSphere;
@@ -35,7 +34,6 @@ class OmMatter;
 class OmRay;
 class OmRgb;
 class OmWrenAbstractResizeManipulator;
-struct dMass;
 
 
 class OmGeometry : public OmBaseNode {
@@ -62,16 +60,14 @@ public:
     return QList<const OmBaseNode *>() << this;
   }
 
-  // Create ODE dGeom (for a OmGeometry lying into a boundingObject)
-  virtual dGeomID createOdeGeom(dSpaceID space);
-  void destroyOdeObjects();
-  dGeomID odeGeom() const { return mOdeGeom; }
-  void setOdeMass(const dMass *mass);
-  const dMass *odeMass() const { return mOdeMass; }
+  // Called when this geometry enters a boundingObject: validates it as a
+  // collider (warns and returns false on a bad size etc.) and prepares any
+  // native collider data. The collider itself is registered with Newton from
+  // the boundingObject walk in OmSolid::flushPendingNewtonRegistrations.
+  virtual bool createOdeGeom();
   virtual void setOdePosition(const OmVector3 &translation);
   virtual void setOdeRotation(const OmMatrix3 &rotation);
 
-  void setOdeData(dGeomID geom, OmMatter *matterAncestor);  // stores an ODE dGeom if the OmGeometry lies into a boundingObject
   virtual void applyToOdeData(bool correctSolidMass = true) {}  // Resize the ODE dGeom stored in a bounding OmGeometry
 
   // Ray tracing
@@ -153,13 +149,9 @@ protected:
   // check if the fields that resize the geometry are visible in the scene tree
   virtual bool areSizeFieldsVisibleAndNotRegenerator() const { return false; }
 
-  // ODE objects for a OmGeometry lying into a boundingObject
   // Scaling
   bool mIs90DegreesRotated;  // rotate ElevationGrid by 90 degrees: ODE to FLU rotation
-  dGeomID mOdeGeom;          // stores a pointer on the ODE dGeom object when the OmGeometry lies into a boundingObject
   OmVector3 mLocalOdeGeomOffsetPosition;
-  dMass *mOdeMass;        // needed to correct the OmSolid parent mass after the destruction of a bounding OmGeometry
-  void applyToOdeMass();  // modifies the ODE dMass when the dimensions change
   OmBaseNode *transformedGeometry();
   // Fluid
 

@@ -27,8 +27,6 @@
 
 #include "OmWorld.hpp"
 
-class OmSimulationCluster;
-class OmOdeContext;
 class QTimer;
 
 class OmSimulationWorld : public OmWorld {
@@ -42,7 +40,6 @@ public:
   explicit OmSimulationWorld(OmTokenizer *tokenizer = NULL);
   virtual ~OmSimulationWorld();
 
-  OmOdeContext *odeContext() const { return mOdeContext; }
 
   bool simulationHasRunAfterSave();
 
@@ -66,7 +63,6 @@ public:
 public slots:
   void modeChanged();
   void rayTracingEnabled();
-  void updateNumberOfThreads();
   void checkNeedForBoundingMaterialUpdate();
   virtual void triggerStepFromTimer(){};
 
@@ -81,8 +77,6 @@ protected slots:
 
 private:
   bool mNewtonRebuildRequested = false;
-  OmSimulationCluster *mCluster;
-  OmOdeContext *mOdeContext;
   QTimer *mTimer;
   double mOldTimeStep;
   QVector<OmNode *> mAddedNode;  // list of nodes added since the simulation started

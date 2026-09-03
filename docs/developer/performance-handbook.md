@@ -192,14 +192,14 @@ Use these follow-up docs:
 - [template-regeneration-and-dictionary-coherence.md](template-regeneration-and-dictionary-coherence.md)
 - [physics-and-determinism.md](physics-and-determinism.md)
 - [physics-contact-and-collision-complexity.md](physics-contact-and-collision-complexity.md)
-- [asset-pipeline-and-world-quality.md](asset-pipeline-and-world-quality.md)
+- asset-pipeline-and-world-quality.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))
 - [engine-migration-plan.md](engine-migration-plan.md) (the unified physics + rendering master plan)
-- [sensor-and-device-performance.md](sensor-and-device-performance.md)
+- sensor-and-device-performance.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))
 - [scene-tree-selection-and-runtime-mutation.md](scene-tree-selection-and-runtime-mutation.md)
 - [rendering-and-visual-quality.md](rendering-and-visual-quality.md)
 - [performance-anti-patterns.md](performance-anti-patterns.md)
-- [improvement-backlog.md](improvement-backlog.md)
-- [phase-two-execution-program.md](phase-two-execution-program.md)
+- improvement-backlog.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))
+- phase-two-execution-program.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))
 
 ## Recommended Order Of Work
 

@@ -19,7 +19,7 @@ The [Physics](#physics) node specifies the mass, the center of gravity and the m
 A [Physics](#physics) node can be placed in a [Solid](solid.md) node (or any node derived from [Solid](solid.md)).
 The presence or absence of a [Physics](#physics) node in the `physics` field of a [Solid](solid.md) defines whether the [Solid](solid.md) will have a *physics* or a *kinematic* behavior.
 
-> **History**: In older OmniSim versions, `coulombFriction, bounce, bounceVelocity` and `forceDependentSlip` fields used to be specified in [Physics](#physics) nodes, and were then moved to [ContactProperties](contactproperties.md).
+> **History**: In older OmniSim versions, `coulombFriction, bounce, bounceVelocity` and `forceDependentSlip` fields used to be specified in [Physics](#physics) nodes, and were then moved to ContactProperties (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 > ⚠️ **Do not follow that pointer as advice.** `ContactProperties` is itself retired and **not read** since the ODE deletion (2026-08-08, commit `bdc02139`) — a world declaring `coulombFriction 5` still runs at μ = 1.0. Friction is now set by [`WorldInfo.newtonGroundMu`](worldinfo.md), with `newtonContactKe` / `newtonContactKd` for contact stiffness and damping. **Restitution (`bounce`, `bounceVelocity`) and `forceDependentSlip` have no equivalent at all** and are simply not simulated.
 
 ### Field Summary
@@ -70,7 +70,7 @@ If this field is empty, OmniSim will compute the inertia matrix automatically ac
     Newton path. That bug is fixed; the automatic computation now derives from
     the `boundingObject` as documented.
 
-- ⚠️ The `damping` field has **no effect**. It names a [Damping](damping.md) node describing velocity damping for the [Solid](solid.md), but damping was implemented only on the ODE path and is not plumbed to Newton — `OmSolidMerger::setOdeDamping()` is now an empty function. The field still parses so legacy worlds load. See [Damping](damping.md).
+- ⚠️ The `damping` field has **no effect**. It names a Damping (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) node describing velocity damping for the [Solid](solid.md), but damping was implemented only on the ODE path and is not plumbed to Newton — `OmSolidMerger::setOdeDamping()` is now an empty function. The field still parses so legacy worlds load. See Damping.
 
 ### How to use Physics Nodes?
 

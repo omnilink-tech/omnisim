@@ -86,7 +86,7 @@ The four bold rows are the ones that specifically address the deploy-wrapper dri
 
 For OmniQuad, four contact points + static stability → control loop is over-determined, small wrapper drift gets soaked up by the kinematic redundancy. The OmniQuad residual works in OmniSim despite the same `mjw.step ≠ SolverMuJoCo.step` issue.
 
-For G1, two small foot contacts + inverted-pendulum dynamics → control loop is at the stability margin. One-tick delay + 5 % torque scaling = enough to push it from "barely standing" to "tipping in 1 second." See [`humanoid-balance-gap.md`](humanoid-balance-gap.md) for the deeper dynamics analysis.
+For G1, two small foot contacts + inverted-pendulum dynamics → control loop is at the stability margin. One-tick delay + 5 % torque scaling = enough to push it from "barely standing" to "tipping in 1 second." See `humanoid-balance-gap.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) for the deeper dynamics analysis.
 
 ## The 5 GPU speedups (so DR-rich training is actually fast)
 
@@ -296,5 +296,5 @@ The full sim-to-deploy journey is reconstructable from these commits, in order:
 
 - [`sim-to-deploy-rl-recipe.md`](sim-to-deploy-rl-recipe.md) — generalized version of this recipe for any robot.
 - [`omniquad-residual-rl.md`](omniquad-residual-rl.md) — the quadruped pipeline this one diverges from.
-- [`humanoid-balance-gap.md`](humanoid-balance-gap.md) — the prior analysis of why the OmniQuad recipe wouldn't port. Now resolved.
-- [`rl-accelerated-training.md`](rl-accelerated-training.md) — GPU mujoco_warp infrastructure for batched training.
+- `humanoid-balance-gap.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — the prior analysis of why the OmniQuad recipe wouldn't port. Now resolved.
+- `rl-accelerated-training.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — GPU mujoco_warp infrastructure for batched training.

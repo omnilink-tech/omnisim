@@ -46,28 +46,62 @@ QT_INCLUDE_RE = re.compile(r"^\s*#\s*include\s+<Qt?[A-Z]", re.MULTILINE)
 # High-water marks, measured 2026-07-18 (commit 763fbb9e's session). A PR may lower a
 # value (do it when you drain a directory!), never raise one. Directories absent from
 # this table must stay Qt-free.
+#
+# 2026-09-02 RE-BASELINE -- the one time two values went UP; read this before
+# treating it as precedent. The WREN deletion (976b9449d + 400a14f14,
+# 2026-08-23) removed src/omnisim/wren/ (24 Qt-including files) and RELOCATED
+# its survivors: OmTesselator.{cpp,hpp}, OmWrenAbstractManipulator.hpp,
+# OmWrenLabelOverlay.hpp, OmWrenTextureOverlay.hpp -> nodes/utils/;
+# OmWrenOpenGlContext.{cpp,hpp}, OmWrenRenderingContext.hpp -> render/. Every
+# one of those eight already included Qt at its old path (verified against
+# 7a1efd58d), so no Qt dependency was added by the move -- the ENGINE-WIDE
+# count went DOWN, 410 -> 387, while nodes/ and render/ went up. The table
+# records the move, and TOTAL below makes a move honest without letting the
+# sum creep. Six files inside that +9 are NOT relocations and are owed a
+# drain by whoever owns them: nodes/OmCadShape.cpp (<QtCore/QtGlobal>,
+# 1c01524ad), nodes/OmCloth.cpp (<QtCore/QFileInfo>, 6f495ca01),
+# nodes/OmWgpuSceneRenderer.hpp (<QtCore/QList>, 5cbbb78f2),
+# render/OmWgpuSurface.cpp (<QtCore/QString>, 51a1f9f44), and the two new
+# nodes/utils/OmWren{Label,Texture}Overlay.cpp split out in 976b9449d.
+#
+# 2026-09-02 DRAIN of that list, attributed file by file: OmCadShape.cpp
+# (<QtGlobal> supplied nothing the file uses -- qDeleteAll is qalgorithms.h,
+# reached via its own header's <QtCore/QMap>), OmWgpuSurface.cpp (QString comes
+# from OmLog.hpp, whose API names it) and OmWgpuSceneRenderer.hpp (QList only
+# ever a pointer in signatures -> forward declaration) are Qt-free: nodes 97 ->
+# 95, render 8 -> 7, TOTAL 387 -> 384. Two stay as dated, commented exceptions
+# because they use a Qt type as a COMPLETE type with no already-included
+# supplier: OmCloth.cpp (QFileInfo) and OmWrenTextureOverlay.cpp (QFileInfo +
+# QImageReader) -- the latter is not new at all: wren/OmWrenTextureOverlay.cpp
+# already included both before 976b9449d, and OmWrenLabelOverlay.cpp has never
+# included Qt directly (it was never in the count).
 BASELINE = {
-    "app": 7,
+    "app": 6,  # 2026-09-02: 7 -> 6
     "compute": 5,
     "control": 6,
-    "core": 49,
+    "core": 48,  # 2026-09-02: 49 -> 48
     "editor": 8,
-    "engine": 6,
-    "gui": 75,
+    "engine": 4,  # 2026-09-02: 6 -> 4 -- OmSimulationCluster deleted with the ODE stub layer
+    "gui": 73,  # 2026-09-02: 75 -> 73
     "maths": 7,  # 2026-07-19: OmMathsUtilities + OmPolygon drained (Qt containers -> std::)
-    "nodes": 92,
-    "ode": 1,
+    "nodes": 95,  # 2026-09-02: 92 -> 97 (5 relocated from the deleted wren/, 4 new) -> 95 (3 drained, see above)
+    "ode": 0,  # 2026-09-02: the directory was deleted with the ODE stub layer; it stays at 0
     "physics": 0,  # 2026-07-19: OmNewtonBackend drained -- physics/ is Qt-free (Phase Q2 first click)
-    "plugins": 4,
-    "render": 4,
+    "plugins": 0,  # 2026-09-02: 4 -> 0 -- drained
+    "render": 7,  # 2026-09-02: 4 -> 8 (3 relocated from the deleted wren/, 1 new) -> 7 (drained, see above)
     "scene_tree": 41,
-    "sound": 11,
+    "sound": 8,  # 2026-09-02: 11 -> 8 -- OmContactSound / OmContactSoundManager deleted (ODE-keyed)
     "user_commands": 11,
     "util": 2,
     "vrml": 47,
     "widgets": 10,
-    "wren": 24,
+    "wren": 0,  # 2026-08-23: the directory was deleted with WREN (976b9449d); it stays at 0
 }
+
+# The engine-wide high-water mark. Per-directory marks alone let a file move
+# between directories read as a regression in one and headroom in the other;
+# this one makes the direction unambiguous: the SUM never goes up.
+TOTAL = 378  # 2026-09-02 (410 at the 2026-07-18 baseline; 387 after the WREN-move re-baseline, 384 after the drain, 378 after the ODE stub-layer deletion)
 
 
 def measure() -> dict:
@@ -102,6 +136,12 @@ def test_qt_include_ratchet():
                 f"src/omnisim/{directory}: {count} files include Qt directly "
                 f"(ratchet allows {allowed})"
             )
+    total = sum(counts.values())
+    if total > TOTAL:
+        regressions.append(
+            f"src/omnisim (every directory): {total} files include Qt directly "
+            f"(ratchet allows {TOTAL})"
+        )
     assert not regressions, (
         "Qt-include ratchet violated -- new Qt dependencies added to the engine core:\n  "
         + "\n  ".join(regressions)

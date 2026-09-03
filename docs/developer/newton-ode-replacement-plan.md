@@ -50,7 +50,7 @@ contact bugs). NOT started: W4.3 flip (native default for Newton + drop the ODE 
 battlebot damage-tracker check), W3 joint-space force, W2 ball/fixed joints, W6 legged, W7 flip. ODE stays.
 **Goal:** drive Newton from today's ~35–40% world coverage to ~100% — every shipped world runs *faithfully*
 on Newton, and Newton becomes the resolved default for all of them. This builds **on top of** the
-[architectural baseline](architectural-baseline.md) (the dispatch structure is already done) and the
+architectural baseline (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) (the dispatch structure is already done) and the
 [engine-migration plan](engine-migration-plan.md) §13 (the P0–P8 physics arm); it is the "completeness"
 layer those two explicitly scoped out.
 
@@ -329,7 +329,7 @@ rest as `-1`. The notable gaps are the **write side a controller may need mid-st
 
 ### W4 — Native Newton contacts (retire the ODE observability bridge)
 Today a Newton-backed Solid keeps a **disabled ODE body + geom** purely so ODE's one collision pass still
-feeds the **damage tracker + ray sensors** (see [physics-p8-statics-design.md](physics-p8-statics-design.md)
+feeds the **damage tracker + ray sensors** (see physics-p8-statics-design.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))
 §2). A truly ODE-free world needs Newton to supply that.
 - **W4.1** Newton contact readback → a contact-point/event API on the backend. **GO/NO-GO resolved GO
   2026-06-08 (not class-E):** Newton's `Contacts` object (from `model.contacts()`, populated by
@@ -587,9 +587,9 @@ genuinely-hard tail** — exactly why this is a separate plan from the baseline.
 
 - [engine-migration-plan.md](engine-migration-plan.md) §13 — the P0–P8 physics arm this extends; the
   dispatcher, build flag, schema flip, and cross-backend bridge it relies on are already landed there.
-- [architectural-baseline.md](architectural-baseline.md) — the now-complete *structure*; this plan is the
+- architectural-baseline.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — the now-complete *structure*; this plan is the
   capability *completeness* that baseline explicitly scoped into the §4 "out of scope" tail.
 - [rl-current-state.md](rl-current-state.md) — the source of truth for W6 (legged/RL deploy).
-- [dispatcher-surface-signoff.md](dispatcher-surface-signoff.md) §1 — confirms every op here is an
+- dispatcher-surface-signoff.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) §1 — confirms every op here is an
   *override on the existing `OmPhysicsBackend` surface*, never a new virtual: this plan is capability, not
   architecture.

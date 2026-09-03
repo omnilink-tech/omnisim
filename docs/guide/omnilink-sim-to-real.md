@@ -77,9 +77,9 @@ The user-facing chat panel.
 
 | File | What it does |
 |---|---|
-| [`resources/projects/plugins/robot_windows/omnilink_chat/omnilink_chat.html`](../../resources/projects/plugins/robot_windows/omnilink_chat/omnilink_chat.html) | The OmniLink dark-theme side menu (transcript, prompt textarea, send/stop buttons) |
-| [`resources/projects/plugins/robot_windows/omnilink_chat/omnilink_chat.js`](../../resources/projects/plugins/robot_windows/omnilink_chat/omnilink_chat.js) | wwi protocol with the bridge: `prompt:<text>` / `stop` / `configure` |
-| [`resources/projects/plugins/robot_windows/omnilink_chat/omnilink_chat.css`](../../resources/projects/plugins/robot_windows/omnilink_chat/omnilink_chat.css) | OmniLink branded palette (black / cream / mimosa) |
+| [`projects/samples/demos/plugins/robot_windows/omnilink_chat/omnilink_chat.html`](../../projects/samples/demos/plugins/robot_windows/omnilink_chat/omnilink_chat.html) | The OmniLink dark-theme side menu (transcript, prompt textarea, send/stop buttons) |
+| [`projects/samples/demos/plugins/robot_windows/omnilink_chat/omnilink_chat.js`](../../projects/samples/demos/plugins/robot_windows/omnilink_chat/omnilink_chat.js) | wwi protocol with the bridge: `prompt:<text>` / `stop` / `configure` |
+| [`projects/samples/demos/plugins/robot_windows/omnilink_chat/omnilink_chat.css`](../../projects/samples/demos/plugins/robot_windows/omnilink_chat/omnilink_chat.css) | OmniLink branded palette (black / cream / mimosa) |
 | [`src/omnisim/gui/OmAgentHud.cpp`](../../src/omnisim/gui/OmAgentHud.cpp) | Right-side dock's "Status" + "Chat" tabs (Qt-native equivalent of the above) |
 
 The chat UI is **simulator-side only**. In a real-world deployment, the
@@ -294,7 +294,7 @@ curl -X POST -H 'Content-Type: application/json' \
 
 **OmniLink web UI:** Sign in at omnilink-agents.com, pick your agent, type.
 
-**Your own UI:** Same code as our [omnilink_chat plugin](../../resources/projects/plugins/robot_windows/omnilink_chat/) — post to the bridge's `/prompt` and render the response.
+**Your own UI:** Same code as our [omnilink_chat plugin](../../projects/samples/demos/plugins/robot_windows/omnilink_chat/) — post to the bridge's `/prompt` and render the response.
 
 ### 4. The same agent code can drive both
 

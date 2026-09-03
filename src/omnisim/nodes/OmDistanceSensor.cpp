@@ -23,7 +23,6 @@
 #include "OmMFVector3.hpp"
 #include "OmMathsUtilities.hpp"
 #include "OmNodeUtilities.hpp"
-#include "OmOdeContext.hpp"
 #include "OmGroup.hpp"
 #include "OmRobot.hpp"
 #include "../physics/OmNewtonBackend.hpp"
@@ -108,7 +107,6 @@ class SensorRay {
 public:
   SensorRay() {
     mDistance = std::numeric_limits<double>::infinity();
-    mGeom = NULL;
     mCollidedGeometry = NULL;
     mNewtonHit = false;
     mWeight = 1.0;
@@ -131,20 +129,6 @@ public:
     }
   }
 
-  // for LASER and SONAR
-  void setCollision(OmGeometry *geometry, const dContactGeom *contact) {
-    if (contact->depth < mDistance) {
-      mCollidedGeometry = geometry;
-      // the meaning of ODE contact depth for a ray collision is "distance from ray's origin to the contact point"
-      mDistance = contact->depth;
-      memcpy(mContactPosition, contact->pos, sizeof(dVector3));
-      memcpy(mContactNormal, contact->normal, sizeof(dVector3));
-
-      // according to ODE, in a dContactGeom, the normal vector points "in" g1
-      // this means that it point "out of" g2, this is fine if g2 is the primitive
-      // however if g2 is the sensor's ray then we must invert the normal
-    }
-  }
   void resetCollision() {
     mCollidedGeometry = NULL;
     mNewtonHit = false;
@@ -168,16 +152,12 @@ public:
   // getters
   double distance() const { return mDistance; }
   double weight() const { return mWeight; }
-  dGeomID geom() const { return mGeom; }
   OmGeometry *collidedGeometry() const { return mCollidedGeometry; }
   const OmVector3 &direction() const { return mDirection; }
-  const dReal *contactPosition() const { return mContactPosition; }
-  const dReal *contactNormal() const { return mContactNormal; }
+  const double *contactPosition() const { return mContactPosition; }
+  const double *contactNormal() const { return mContactNormal; }
 
   // setters
-  void setGeom(dGeomID geom) {
-    mGeom = geom;
-  }
   void setDirection(double x, double y, double z) { mDirection.setXyz(x, y, z); }
   void setDistance(double distance) { mDistance = distance; }
   void setWeight(double weight) { mWeight = weight; }
@@ -187,12 +167,10 @@ protected:
   double mWeight;
   double mDistance;
 
-  // ODE ray tracing
-  dGeomID mGeom;
   OmGeometry *mCollidedGeometry;
   bool mNewtonHit;
-  dVector3 mContactPosition;
-  dVector3 mContactNormal;
+  double mContactPosition[3];
+  double mContactNormal[3];
 };
 
 void OmDistanceSensor::init() {
@@ -281,7 +259,7 @@ void OmDistanceSensor::updateRaySetup() {
   if (OmFieldChecker::resetDoubleIfNegative(this, mRedColorSensitivity, -mRedColorSensitivity->value()))
     return;  // in order to avoiding passing twice in this function
   if (mRayType == LASER && mNumberOfRays->value() > 1) {
-    parsingWarn(tr("'type' \"laser\" must have one single ray."));
+    parsingWarn(tr("'type' \"laser\" must have one single ray. 'numberOfRays' is reset to 1 for this run; set it to 1 in the world (or use type \"generic\" / \"infra-red\" for a multi-ray fan) to silence this -- see docs/reference/distancesensor.md."));
     mNumberOfRays->setValue(1);
     return;  // in order to avoiding passing twice in this function
   }
@@ -433,21 +411,8 @@ void OmDistanceSensor::createOdeRays() {
 }
 
 void OmDistanceSensor::setSensorRays() {
-  const OmMatrix4 &m = matrix();
-  const OmVector3 &trans = m.translation();
-  for (int i = 0; i < mNRays; i++)
-    if (mRays[i].geom()) {  // NOT INFRA_RED
-      // get ray direction
-      const OmVector3 &dir = mRays[i].direction();
-      assert(!dir.isNull());
-
-      // apply sensor's coordinate system transformation to rays
-      OmVector3 r = m.sub3x3MatrixDot(dir);
-      if (r.isNull())  // Prevent ODE from crashing on zero direction vector
-        r.setXyz(1.0, 0.0, 0.0);
-      // setup ray position and direction for ODE collision detection
-      (void)r;  // unreachable: geom() is always null now
-    }
+  // The ODE ray geoms this positioned are gone; the Newton raycast service
+  // (refreshRaysFromNewton) builds its segments from the sensor matrix.
 }
 
 void OmDistanceSensor::updateRaysSetupIfNeeded() {
@@ -486,7 +451,8 @@ void OmDistanceSensor::refreshRaysFromNewton() {
     // DEFAULT ON since 2026-08-07: every ray consumer answers from the
     // Newton service (mj_ray on the live mjModel), incl. the LASER
     // transparency re-cast and the joint-descending exclusion walk.
-    // =0 reverts to the ODE ray verdicts while src/ode still ships.
+    // =0 declines the service; ODE is deleted (bdc02139), so no other ray
+    // path answers in its place.
     sGate = (v == "0" || v == "false" || v == "off" || v == "no") ? 0 : 1;
   }
   if (!sGate || mNRays <= 0 || mLut == nullptr)
@@ -668,27 +634,6 @@ void OmDistanceSensor::computeValue() {
   mValue = mLut->lookup(mDistance);
   if (mResolution->value() != -1.0)
     mValue = OmMathsUtilities::discretize(mValue, mResolution->value());
-}
-
-void OmDistanceSensor::rayCollisionCallback(OmGeometry *object, dGeomID rayGeom, const dContactGeom *contact) {
-  if (!mSensor->isEnabled())
-    return;
-
-  if (object->isTransparent()) {
-    if (mRayType == LASER || mRayType == INFRA_RED)
-      return;
-  }
-
-  for (int i = 0; i < mNRays; i++)
-    if (rayGeom == mRays[i].geom()) {
-      if (mRayType == GENERIC)
-        mRays[i].setCollision(object, contact->depth);
-      else  // SONAR and LASER
-        mRays[i].setCollision(object, contact);
-      return;
-    }
-
-  assert(0);  // should never be reached
 }
 
 void OmDistanceSensor::handleMessage(QDataStream &stream) {

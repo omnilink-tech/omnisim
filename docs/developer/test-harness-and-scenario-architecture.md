@@ -31,7 +31,7 @@ The newer surface is simple:
 
 - `tests/smoke/run_smoke.py` loads `smoke_worlds.json` and forwards those worlds to `tests/test_suite.py`
 - `tests/benchmarks/run_benchmarks.py` loads `benchmark_worlds.json`, adds `--performance-log`, and forwards worlds to `tests/test_suite.py`
-- `scripts/dev/omnisim_dev.py` exposes `test-smoke`, `test-group`, `test-world`, `run-headless`, and `profile-world`
+- `python -m omnisim` (`omnisim/cli.py`) exposes `test-smoke`, `test-group`, `test-world`, `run-headless`, and `profile-world`
 
 That is the right public direction.
 
@@ -221,9 +221,9 @@ That order preserves the current validation surface while making it more targeta
 
 After harness work, validate with:
 
-- `python scripts/dev/omnisim_dev.py test-smoke`
-- `python scripts/dev/omnisim_dev.py test-group parser`
-- `python scripts/dev/omnisim_dev.py test-world tests/api/worlds/accelerometer.omniworld`
-- `python scripts/dev/omnisim_dev.py benchmarks`
+- `python -m omnisim test-smoke`
+- `python -m omnisim test-group parser`
+- `python -m omnisim test-world tests/api/worlds/accelerometer.omniworld`
+- `python -m omnisim benchmarks`
 
 The important thing to check is not only that the worlds still run, but that the execution path is easier to target and explain than before.

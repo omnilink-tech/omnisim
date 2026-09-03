@@ -37,7 +37,17 @@ Endpoints:
                                  ?probe_step=1 advances ONE step to measure the
                                  cost on this world if none has been measured.
     POST /world/load          {"path": "...", "wait_s": 30.0, "with_supervisor": true,
-                               "light": false}
+                               "light"?: bool, "tracking"?: {...}}
+                              ⭐ LIGHT IS THE DEFAULT SINCE 2026-09-02. A request
+                              that names neither `light` nor `tracking` runs
+                              light; the response's `tracking` block then
+                              carries `default_applied: true` and one sentence
+                              naming how to get the trackers back. An explicit
+                              `light` (either value) or any `tracking` object
+                              always wins. OMNISIM_HARNESS_LIGHT=0 restores
+                              full tracking as the process-wide default
+                              (unset or =1 -> light); the startup banner names
+                              which default is armed.
                               light=true injects the supervisor with --light:
                               it drops the per-step contact / joint-limit /
                               grip trackers, which walk the whole scene graph
@@ -63,11 +73,15 @@ Endpoints:
                               /sim/contacts is NOT affected -- it walks the
                               scene per call (observe.collect_contacts) and
                               never reads the tracker, so it answers exactly as
-                              it does in full mode. Default stays false
-                              (backward compatible). Also settable
-                              process-wide via OMNISIM_HARNESS_LIGHT=1; that
-                              variable is parsed as a real boolean, so
-                              OMNISIM_HARNESS_LIGHT=0 turns light mode OFF.
+                              it does in full mode. The default WAS false
+                              (backward compatible) until 2026-09-02; the
+                              measured reason for the flip is the fleet-arena
+                              row above (2026-08-29: 12.1 s vs 4.1 s to load, 17-47x per step; re-measured 2026-09-02 on the current engine at 5.2 s vs 4.65 s and 2.3x per
+                              step) plus the cloth world (13.4 s vs 3.1 s to
+                              reload) -- an agent that forgot the flag got a
+                              harness slower than the run-headless it
+                              replaces. OMNISIM_HARNESS_LIGHT is parsed as a
+                              real boolean: unset or =1 -> light, =0 -> full.
     POST /world/sync          {"path"?: "...", "settle_steps"?: 1,
                                "reset_physics"?: true, "wait_s"?: 30.0}
                               Default edit-iteration path. Applies proven
@@ -426,8 +440,10 @@ Robot {{
 # Why this exists: the trackers walk the whole scene graph every basic step,
 # so /sim/step cost grows with node count -- measured at seconds per 16 ms
 # step on a multi-robot world, which no agent verification loop can afford.
-# Light mode trades /sim/contacts and /sim/grips (they return empty) for a
-# usable step. See docs/developer/agent-native-api.md G1.
+# Light mode trades /sim/grips (empty, tracking.enabled=false) and the
+# contact.* / grip.* / joint.limit_hit events for a usable step; /sim/contacts
+# is walked per call and unaffected. It is the DEFAULT since 2026-09-02 (see
+# LIGHT_DEFAULT_* below). See docs/developer/agent-native-api.md G1.
 SUPERVISOR_INJECT_STANZA_LIGHT = f"""
 Robot {{
   name "{HARNESS_SUPERVISOR_NAME}"
@@ -510,6 +526,74 @@ RESET_ACTUATION_DISCLOSURE = {
         "applies to any motor whose command was issued once and not repeated; a "
         "controller that writes its motor targets every tick is unaffected."),
 }
+
+
+# ---------------------------------------------------------------------------
+# The tracking-mode DEFAULT for POST /world/load (light since 2026-09-02)
+# ---------------------------------------------------------------------------
+#
+# The injected supervisor's per-step contact / joint-limit / grip trackers walk
+# the whole scene graph every basic step. With them on, the harness is SLOWER
+# than the run-headless it exists to replace -- measured on machine
+# 9722d23d12a3: fleet arena (309 nodes, CPU mj_step, 2026-08-29) loads in
+# 12.1 s full vs 4.1 s light, /sim/step 1 costs 573-606 ms vs 6-35 ms (~17x),
+# 10 steps 2855-3187 ms vs 48-67 ms (~47x); the 10-node cloth world reloads in
+# 13.4 s full vs 3.1 s light (2026-08-14). An agent that forgot `light: true`
+# got the slow path, which is the wrong default for the primary audience. So
+# since 2026-09-02 a /world/load that names NEITHER `light` NOR `tracking`
+# runs light, and says so (`tracking.default_applied: true`). The contract is
+# dual: an explicit `light` (either value) or any `tracking` object always
+# wins, and OMNISIM_HARNESS_LIGHT=0 restores full tracking as the
+# process-wide default (unset or =1 -> light). Nothing else changed: what
+# light mode drops (/sim/grips, the contact.* / grip.* / joint.limit_hit
+# events) and what it keeps (/sim/contacts) is unchanged, and the first
+# tracker-fed read in a light session emits one world.warning naming the
+# mode it ran in and how to get the tracker back.
+LIGHT_DEFAULT_ENV = "OMNISIM_HARNESS_LIGHT"
+LIGHT_DEFAULT_SINCE = "2026-09-02"
+LIGHT_DEFAULT_WHY = (
+    "with the per-step trackers on, the harness is slower than re-running "
+    "run-headless: fleet arena (309 nodes, CPU mj_step, 2026-08-29) 12.1 s "
+    "to load vs 4.1 s light, /sim/step 1 573-606 ms vs 6-35 ms (~17x), "
+    "10 steps 2855-3187 ms vs 48-67 ms (~47x); cloth world reload 13.4 s vs "
+    "3.1 s light")
+LIGHT_DEFAULT_REVERT = (
+    "pass {\"light\": false} on the request for all three trackers, or "
+    "{\"tracking\": {\"contacts\": bool, \"joint_limits\": bool, \"grips\": bool}} "
+    "for exactly the ones you need; OMNISIM_HARNESS_LIGHT=0 makes full "
+    "tracking the process-wide default again (unset or =1 -> light)")
+# world.warning code for the first tracker-fed read in a session whose
+# trackers are not running (GET /sim/grips answering with tracking.enabled=false).
+LIGHT_MODE_READ_CODE = "TRACKER_NOT_RUNNING"
+
+
+def resolve_light_default() -> tuple[bool, str]:
+    """(default, source) for the tracking mode a /world/load runs in when the
+    request names neither `light` nor `tracking`.
+
+    Unset -> light (the built-in default since 2026-09-02); =1/true -> light;
+    =0/false -> full. Value-parsed via env_flag, so `=0` means OFF.
+    """
+    raw = os.environ.get(LIGHT_DEFAULT_ENV)
+    if raw is None:
+        return True, "built-in"
+    return env_flag(LIGHT_DEFAULT_ENV, default=True), f"{LIGHT_DEFAULT_ENV}={raw.strip()}"
+
+
+def tracking_default_block(default_light: bool, source: str) -> dict:
+    """The one description of the tracking default, served on the load
+    response (when it was applied) and on GET /capabilities -> limits, so
+    the two cannot drift."""
+    return {
+        "light": bool(default_light),
+        "mode": "light" if default_light else "full",
+        "source": source,
+        "since": LIGHT_DEFAULT_SINCE,
+        "why": LIGHT_DEFAULT_WHY,
+        "revert": LIGHT_DEFAULT_REVERT,
+        "explicit_wins": ("an explicit `light` (either value) or any `tracking` object "
+                          "on the request always overrides this default"),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -638,7 +722,10 @@ ROUTES: tuple[dict, ...] = (
     {"method": "GET", "path": "/robot/damage", "summary": "Damage state of the tracked robot."},
     {"method": "GET", "path": "/robot/damage/events", "summary": "Filtered view of damage.* events.",
      "params": ["since", "limit"]},
-    {"method": "POST", "path": "/world/load", "summary": "Load or hot-reload a world (.omniworld or legacy .wbt); structured diagnostics.",
+    {"method": "POST", "path": "/world/load",
+     "summary": "Load or hot-reload a world (.omniworld or legacy .wbt); structured diagnostics. "
+                "Runs LIGHT by default since 2026-09-02 when neither `light` nor `tracking` is "
+                "named (tracking.default_applied says so; OMNISIM_HARNESS_LIGHT=0 restores full).",
      "body": ["path", "wait_s", "with_supervisor", "light", "tracking"]},
     {"method": "POST", "path": "/world/sync",
      "summary": "Default agent edit loop: live-apply proven root pose-only changes; safely reload everything else.",
@@ -655,27 +742,34 @@ ROUTES: tuple[dict, ...] = (
      "body": ["azimuth_deg", "elevation_deg", "dolly", "pan", "center", "def", "push"]},
     {"method": "POST", "path": "/scene/spawn",
      "summary": "Import a node into the live scene from VRML, a type+fields spec, or a clone of an "
-                "existing DEF. ⛔ A SCENE-GRAPH VERB, NOT A PHYSICS VERB: the Newton/MuJoCo model is "
-                "frozen at world finalize, so the spawned node has NO physics until the world is "
-                "reloaded (dynamic never falls, static never collides; measured 2026-08-17). Every "
-                "response carries `physics_warning` RUNTIME_MUTATION_NOT_IN_SOLVER saying so; see "
+                "existing DEF. ⛔ BY DEFAULT A SCENE-GRAPH VERB, NOT A PHYSICS VERB: the Newton/MuJoCo "
+                "model is frozen at world finalize, so without opting in the spawned node has NO "
+                "physics (dynamic never falls, static never collides; measured 2026-08-17) and the "
+                "response carries `physics_warning` RUNTIME_MUTATION_NOT_IN_SOLVER saying so. Pass "
+                "{\"physics\": \"rebuild\"} (or POST /sim/rebuild_physics afterwards) and the node "
+                "IS simulated: the Newton world is rebuilt at the scene's current poses, 97-267 ms "
+                "measured, refused on cloth/soft/granular worlds, engaged welds dropped. See "
                 "not_supported scene.runtime_mutation_physics.",
      "body": ["vrml", "type", "fields", "urdf", "clone", "def", "name",
               "translation", "rotation", "parent", "index", "settle_steps",
-              "reset_physics"]},
+              "reset_physics", "physics"]},
     {"method": "POST", "path": "/scene/delete",
-     "summary": "Remove nodes by DEF. ⛔ The frozen solver model KEEPS the deleted colliders as "
-                "phantoms until the world is reloaded (a deleted wall still blocks rays, a deleted "
-                "floor still holds bodies up; measured 2026-08-17). Every response carries "
-                "`physics_warning` RUNTIME_MUTATION_NOT_IN_SOLVER; see not_supported "
-                "scene.runtime_mutation_physics.",
-     "body": ["def", "defs", "settle_steps"]},
+     "summary": "Remove nodes by DEF. ⛔ BY DEFAULT the frozen solver model KEEPS the deleted "
+                "colliders as phantoms (a deleted wall still blocks rays and robots, a deleted "
+                "floor still holds bodies up; measured 2026-08-17) and the response carries "
+                "`physics_warning` RUNTIME_MUTATION_NOT_IN_SOLVER. Pass {\"physics\": \"rebuild\"} "
+                "(or POST /sim/rebuild_physics afterwards) and the deleted geometry genuinely stops "
+                "colliding -- same 97-267 ms rebuild and the same caveats as /scene/spawn; see "
+                "not_supported scene.runtime_mutation_physics.",
+     "body": ["def", "defs", "settle_steps", "physics"]},
     {"method": "POST", "path": "/scene/set_pose", "summary": "Move an existing node by DEF.",
      "body": ["def", "translation", "rotation", "reset_physics", "settle_steps"]},
     {"method": "POST", "path": "/sim/rebuild_physics",
      "summary": "W1.7: rebuild the Newton world at the scene's CURRENT poses -- runtime-spawned "
                 "nodes gain physics, deleted ones lose it. Refused (409 REBUILD_REFUSED) on "
-                "cloth/soft/granular worlds. ~0.3-0.7 s. Engaged Connector/VacuumGripper welds "
+                "cloth/soft/granular worlds. The rebuild itself measures 97-267 ms (machine "
+                "9722d23d12a3, CPU mj_step); the HTTP round trip adds the settle steps. Engaged "
+                "Connector/VacuumGripper welds "
                 "are DROPPED (re-lock from the controller). Also available as "
                 "{\"physics\": \"rebuild\"} on /scene/spawn and /scene/delete.",
      "body": ["settle_steps"]},
@@ -749,106 +843,139 @@ LOG_EVENT_TYPES = ("controller.log", "world.warning", "world.error")
 # Almost all of these are consequences of ODE's deletion (src/ode, bdc02139) with
 # no Newton-native replacement yet. They are gaps, not regressions to hide.
 ENGINE_NOT_SUPPORTED: list[dict] = [
+    # ⚠ THE TWO JOINT ENTRIES BELOW DESCRIBE FEATURES THAT NOW WORK. They used
+    # to read "UNIMPLEMENTED ... gated OFF by default ... does not move at all",
+    # which was true against the vendored newton 1.2.0 and false from
+    # 2026-08-17 on (the gate is DEFAULT ON, OmBasicJoint::newtonBallHinge2Enabled).
+    # They are kept, keys unchanged, because (a) the BallJoint has a REAL
+    # residual gap (per-axis stops) that belongs in this table, (b) the revert
+    # hatch disables both joint types at once and an agent must be able to find
+    # that, and (c) "the entry vanished" is indistinguishable from "nobody
+    # looked". Each carries a `status` field so a reader scanning feature names
+    # is not told a working actuator is unsupported.
     {"feature": "joint.motorised_balljoint_actuation",
      "scope": "engine",
-     "reason": "MOTORISED BallJoint ACTUATION IS UNIMPLEMENTED. ODE realised it as an AMotor triple "
-               "(per-axis torque, or an FMax + Vel pair); all of that is gone. The Newton d6 path "
-               "exists but is gated OFF by default behind OMNISIM_NEWTON_BALL_HINGE2, because "
-               "driving d6 POSITION targets through SolverMuJoCo is an upstream newton defect, not "
-               "ours (verified 2026-08-08: our d6 reports model_ke/model_kd and mode=3 correctly).",
-     "symptom": "the joint does not move at all and its PositionSensor reads 0, while setPosition() "
-                "and setVelocity() return success. The CONSTRAINT is honoured -- the bodies stay "
-                "connected -- so the robot looks assembled and simply will not articulate.",
-     "source": "src/omnisim/nodes/OmBallJoint.cpp:523",
-     "diagnostic": "JOINT_REGISTRATION_FAILED (only when OMNISIM_NEWTON_BALL_HINGE2 is set; "
-                   "otherwise SILENT)",
-     "workaround": "model the DOF as a chain of HingeJoints (revolute and prismatic joints DO "
-                   "actuate on Newton), or verify motion from GET /robot/<def>/joints across two "
-                   "reads instead of trusting the command."},
+     "status": "WORKS since 2026-08-17 (actuation measured 2026-09-01); residual gap: per-axis stops",
+     "reason": "MOTORISED BallJoint ACTUATION WORKS. The Newton d6 path (registerNewtonMultiDof / "
+               "pushNewtonMultiDofTargets, reached from OmBasicJoint's per-tick push) is DEFAULT ON "
+               "since 2026-08-17 behind OMNISIM_NEWTON_BALL_HINGE2 (value-parsed). It was default OFF "
+               "while the vendored runtime was newton 1.2.0, whose d6 -> MuJoCo actuator mapping did "
+               "not drive multi-DoF position targets; newton 1.5.0 (b56be84a0) does. Measured "
+               "2026-09-01 with a corrected probe (OmniBench lane 4 `joint.ball_motor`): commanded "
+               "0.8 rad about an axis WITH a lever arm, the arm displaced 0.1884 m against an analytic "
+               "0.1947 -- PASS. The earlier `broken` verdict commanded the one axis that passes "
+               "through the arm's own origin, which no actuator can displace, so it never measured "
+               "actuation at all. WHAT IS STILL NOT SUPPORTED: the BALL element is emitted "
+               "`limited: False`, so a BallJointParameters' per-axis minStop/maxStop are NOT "
+               "enforced by the solver and the joint swings past its authored stops; the engine "
+               "warns per motorised ball at registration.",
+     "symptom": "none for actuation. For the residual gap: a driven or passive ball joint travels "
+                "past its authored per-axis stops with no error; its PositionSensor readback is live "
+                "and reports the overshoot honestly.",
+     "source": "src/omnisim/nodes/OmBasicJoint.cpp (newtonBallHinge2Enabled), "
+               "src/omnisim/nodes/OmBallJoint.cpp (prePhysicsStep, applyToOdeMinAndMaxStop)",
+     "diagnostic": "JOINT_REGISTRATION_FAILED when the d6 could not be registered; the unmapped "
+                   "stops are warned per joint at registration (the joint-feature diagnostic named "
+                   "under joint.fields below); an overshoot itself is SILENT",
+     "workaround": "for hard stops, model the DOF as a chain of HingeJoints (hinge limits ARE "
+                   "enforced) or clamp targets in the controller; verify motion from "
+                   "GET /robot/<def>/joints across two reads rather than trusting the command. "
+                   "OMNISIM_NEWTON_BALL_HINGE2=0 is the exact-revert hatch back to a PASSIVE "
+                   "constraint (no actuation, no angle readback) for an A/B -- it disables "
+                   "Hinge2Joint too, so a joint that will not move is that hatch before it is the "
+                   "solver."},
     {"feature": "joint.motorised_hinge2joint_actuation",
      "scope": "engine",
-     "reason": "MOTORISED Hinge2Joint ACTUATION IS UNIMPLEMENTED. ODE realised it as per-axis "
-               "hinge2 torques, or an FMax + Vel pair per axis; all of that is gone. Same "
-               "default-OFF d6 gate and the same upstream cause as the BallJoint entry above.",
-     "symptom": "same as above: no motion, sensors read 0, commands succeed. Passive Hinge2 "
-                "constraints (free-spinning casters) are unaffected and still work.",
-     "source": "src/omnisim/nodes/OmHinge2Joint.cpp:262",
-     "diagnostic": "JOINT_REGISTRATION_FAILED (only under OMNISIM_NEWTON_BALL_HINGE2; else SILENT)",
-     "workaround": "as above -- decompose into HingeJoints."},
-    {"feature": "sensor.touchsensor_force / force-3d",
+     "status": "WORKS since 2026-08-17 (measured 2026-08-17); no residual gap",
+     "reason": "MOTORISED Hinge2Joint ACTUATION WORKS -- same d6 path and the same DEFAULT ON gate as "
+               "the BallJoint entry above. Measured 2026-08-17 (machine 9722d23d12a3, binary "
+               "13906cc6f12451eb, CPU mj_step, gravity 0 so the motor is the only thing that can move "
+               "the arm): OmniBench lane 4 `joint.hinge2_motor` went broken -> works, tracking its "
+               "commanded 0.8 rad exactly and carrying the arm 0.1951 m; tests/test_newton_ball_hinge2.py's "
+               "hinge2 arm went from xfail to XPASS (both axes inside 0.05 rad of their commands, axis 1 "
+               "does not drift when only axis 2 is re-commanded). Hinge2 axes ARE limited -- the d6 "
+               "carries per-axis limits -- so unlike the ball there is no stops gap. Declaring the "
+               "motors' minPosition/maxPosition (or the joint's minStop/maxStop) is what took the "
+               "probe to `works`: a motor with no limits is built as a velocity wheel (ke = 0), see "
+               "joint.fields below.",
+     "symptom": "none. Passive Hinge2 constraints (free-spinning casters) were never affected.",
+     "source": "src/omnisim/nodes/OmBasicJoint.cpp (newtonBallHinge2Enabled), "
+               "src/omnisim/nodes/OmHinge2Joint.cpp (prePhysicsStep)",
+     "diagnostic": "JOINT_REGISTRATION_FAILED when the d6 could not be registered; otherwise none",
+     "workaround": "none needed. Kept so the revert hatch (OMNISIM_NEWTON_BALL_HINGE2=0 disables BOTH "
+                   "joint types) and the history stay discoverable: if a Hinge2 does not move, check "
+                   "that variable and the motor's limits before suspecting the solver."},
+    {"feature": "sensor.touchsensor_force / force-3d (authored WITHOUT a Physics node)",
      "scope": "engine",
+     "status": "WORKS when authored correctly (measured 2026-08-15); two silent zeros remain",
      "reason": "the force source is the Newton mount-wrench readback, which can only answer for a "
-               "sensor that was UN-FOLDED into a Newton body of its own; when it cannot answer "
-               "there is NO force source at all, because the ODE mount-joint feedback it used to "
-               "fall back to has been removed.",
-     "symptom": "getValue() returns 0.0 for ever. That 0 is 'not measured', never 'no force'.",
-     "source": "src/omnisim/nodes/OmTouchSensor.cpp:281 (and :353 for \"bumper\")",
-     "diagnostic": "SENSOR_NO_SOURCE",
-     "workaround": "check for the SENSOR_NO_SOURCE diagnostic on the load before believing any "
-                   "TouchSensor reading; infer contact from GET /sim/contacts, or prove the "
-                   "interaction geometrically."},
+               "sensor that was UN-FOLDED into a Newton body of its own; the ODE mount-joint feedback "
+               "it used to fall back to has been removed, so when the native readback cannot answer "
+               "there is NO force source at all. Since ee069b326 (2026-08-13) a BUMPER un-folds on its "
+               "boundingObject alone, but \"force\" / \"force-3d\" still require a Physics node -- "
+               "deliberately, because their value is the MOUNT WRENCH, which is undefined for a "
+               "sensor that is not an inertial body in its own right. Re-measured 2026-08-15 (machine "
+               "9722d23d12a3, CPU mj_step): bumper 1.0 on 10/10 resting samples and 0.0 in free "
+               "flight; force 981.00004 N against an analytic 981.",
+     "symptom": "a force sensor authored without Physics reads 0.0 for ever -- that 0 is \"not "
+                "measured\", never \"no force\". Two more SILENT ZEROS survive in a WORKING force sensor "
+                "and are authoring traps, not engine defects: (1) the value is the mount wrench "
+                "projected onto the sensor's own +X axis, so a sensor authored without a rotation "
+                "(+X horizontal) reads ~8e-16 N under a vertical load; (2) TouchSensor.wrl defaults "
+                "lookupTable to [0 0 0, 5000 50000 0], a 10x gain, so a 19.62 N load reads 196.2.",
+     "source": "src/omnisim/nodes/OmTouchSensor.cpp (computeValue), "
+               "src/omnisim/nodes/OmSolid.cpp (isUnfoldedTouchSensor)",
+     "diagnostic": "SENSOR_NO_SOURCE for the never-un-folded case; the aim and lookupTable traps are "
+                   "SILENT",
+     "workaround": "give a force sensor a Physics node; aim +X into the load (rotation 0 1 0 1.5708 "
+                   "points it down under ENU); declare `lookupTable [ ]` for raw newtons; and check "
+                   "the load for SENSOR_NO_SOURCE before believing any reading. Proving a grasp "
+                   "geometrically (the part is airborne and tracks the gripper) remains the stronger "
+                   "claim; GET /sim/contacts is the contact read that never depends on this device."},
     {"feature": "physics.backend_ode (physicsBackend \"ode\", defaultPhysicsBackend \"ode\")",
      "scope": "engine",
      "reason": "src/ode was DELETED (bdc02139). The field still parses, and what it now selects is "
                "OmOdeBackend's inert dispatcher stub -- every verb returns -1 -- so the Solid gets "
                "NO gravity and NO contact while the world loads clean. An explicit "
                "physicsBackend \"ode\" is no longer an opt-out of Newton; it is an opt-out of "
-               "physics.",
+               "physics. Since 2026-08-08 the engine WARNS once per such Solid (\"asks for "
+               "physicsBackend 'ode' ... will have NO gravity and NO contact\"); an older log "
+               "will not have that line.",
      "symptom": "the body never falls, never collides, and reports zero contact points for ever, "
                 "with boundingObject and physics both present. The world loads with no error.",
-     "source": "src/omnisim/nodes/OmSolid.cpp:3150",
+     "source": "src/omnisim/nodes/OmSolid.cpp (flushPendingNewtonRegistrations)",
      "diagnostic": "SOLID_ODE_PIN_INERT (one per pinned Solid that declares collision or mass; "
                    "coalesced by this harness) -- and NEWTON_ZERO_DYNAMIC_BODIES when it was the "
                    "world's only dynamic body",
-     "workaround": "delete the field. GET /scene/node/<def> -> fields.physics_backend.inert tells "
-                   "you per node, and GET /sim/contacts -> tracking.inert_pinned_solids lists them "
-                   "all."},
+     "workaround": "delete the field (the \"auto\" default resolves to Newton; write \"newton\" to be "
+                   "explicit; never write \"ode\" into a new world). GET /scene/node/<def> -> "
+                   "fields.physics_backend.inert tells you per node, and GET /sim/contacts -> "
+                   "tracking.inert_pinned_solids lists them all."},
     {"feature": "sound.contact",
-     "scope": "engine",
      "reason": "CONTACT SOUND IS SILENT ON THE NEWTON BACKEND, and has been since Newton became the "
-               "default -- not a consequence of retiring ODE. Its producer is odeContacts(), filled "
-               "by odeNearCallback, which never fires for Newton bodies; and the whole subsystem is "
-               "keyed on ODE GEOM ids, whereas native contacts are body-indexed. Contact-sound MASS "
-               "WEIGHTING is separately unimplemented (both masses stay 0.0).",
+               "default. Its producer was the ODE near-callback's contact list, keyed on ODE geom ids; "
+               "that whole subsystem was deleted with the ODE layer on 2026-09-02, and nothing feeds "
+               "contact sounds from the body-indexed Newton contact snapshot yet. Contact-sound MASS "
+               "WEIGHTING is separately unimplemented.",
+     "scope": "engine",
      "symptom": "collisions are mute. Motor sounds are unaffected.",
-     "source": "src/omnisim/sound/OmSoundEngine.cpp:228, src/omnisim/sound/OmContactSound.cpp:48",
+     "source": "src/omnisim/sound/OmSoundEngine.cpp (updateAfterPhysicsStep; the contact producer is gone)",
      "diagnostic": None,
      "workaround": "none in-engine. Detect the collision from /sim/events contact.began and add "
                    "audio in post."},
-    {"feature": "gui.wgpu_main_view_overlays (selection, optional rendering, HUDs, labels, gizmos)",
-     "scope": "engine",
-     "reason": "the wgpu main-view frame path (OmView3D::renderMainFrameViaWgpu) draws scene "
-               "geometry and the sky only. Every 2D/aux surface -- selection outlines, the 21 "
-               "View > Optional Rendering items, device HUD insets, supervisor labels "
-               "(wb_supervisor_set_label), status overlays, and the translate/rotate/resize "
-               "gizmos -- is implemented as WREN scene nodes or WREN texture overlays and has no "
-               "wgpu equivalent wired into the production frame. Since the 2026-08-19 flip made "
-               "wgpu the default main-view renderer, none of them render by default.",
-     "symptom": "Clicking a Solid gives no visual feedback; Optional Rendering toggles change "
-                "nothing on screen; camera/rangefinder HUD insets and supervisor labels are "
-                "invisible. Gizmos are the dangerous case: they are INVISIBLE BUT STILL "
-                "DRAGGABLE, because the WREN picker renders into its own framebuffer -- a drag "
-                "still moves the node with nothing shown.",
-     "source": "src/omnisim/gui/OmView3D.cpp (renderMainFrameViaWgpu) vs "
-               "src/omnisim/wren/OmWrenTextureOverlay.cpp",
-     "diagnostic": None,
-     "workaround": "For agents this is mostly moot -- read state through /scene/tree, "
-                   "/scene/node/<def> and /robots rather than through pixels. For a human "
-                   "needing the overlays, a world can opt its Viewpoint back with "
-                   "renderBackend \"wren\" (losing the modern lighting stack), or set "
-                   "OMNISIM_FORCE_WREN=1 for the whole session. Tracked as phase W4 of "
-                   "docs/developer/wren-retirement-plan.md."},
-    {"feature": "gui.contact_points_overlay",
-     "scope": "engine",
-     "reason": "the overlay renders from OmWorld::odeContacts(), whose only producer "
-               "(appendOdeContact <- odeNearCallback) is gone, so the list is permanently empty. "
-               "Fluid immersion was removed with it, so the immersion outline stays empty too.",
-     "symptom": "View > Optional Rendering > Show Contact Points draws nothing even while bodies "
-                "are demonstrably in contact.",
-     "source": "src/omnisim/app/OmContactPointsRepresentation.cpp:124",
-     "diagnostic": None,
-     "workaround": "GET /sim/contacts -- the supervisor's per-Solid getContactPoints walk reads the "
-                   "NATIVE contact set and is unaffected by this."},
+    # The two GUI entries that used to sit here (gui.wgpu_main_view_overlays and
+    # gui.contact_points_overlay) are GONE, deliberately. Both were written the
+    # week the 2026-08-19 main-view flip left every WREN-drawn surface dark, and
+    # both recommended `renderBackend "wren"` / OMNISIM_FORCE_WREN=1 as the way
+    # back -- a renderer that was DELETED on 2026-08-23 (976b9449d; both spellings
+    # are now warned no-ops). The surfaces themselves were wired back into the
+    # wgpu frame: selection outline + every Optional Rendering item with a
+    # collector, contact-point crosses included (W4a, OmView3D::renderMainFrameViaWgpu
+    # -> OmWgpuView::collectContactCrosses reading computedContactPoints()), the
+    # manipulator gizmo (P8, OmGizmoLines) and device HUD insets + supervisor labels
+    # (P7, OmHudOverlay) -- hatches OMNISIM_WGPU_OVERLAYS / _GIZMO / _HUD = 0,
+    # all default ON. Agents never needed the pixels anyway: read state through
+    # /scene/tree, /scene/node/<def>, /robots and /sim/contacts.
     {"feature": "motor.force_feedback (getForceFeedback / getTorqueFeedback)",
      "scope": "engine",
      "reason": "the feedback read went through the ODE joint (dJointGetFeedback via "
@@ -859,7 +986,9 @@ ENGINE_NOT_SUPPORTED: list[dict] = [
      "symptom": "0.0 from every motorised joint's force/torque feedback, with no warning. "
                 "(Relatedly: turning a motor OFF is unimplemented -- a motor switched off keeps "
                 "whatever target the last per-tick Newton push wrote.)",
-     "source": "src/omnisim/nodes/OmRotationalMotor.cpp:54 and :77, src/omnisim/nodes/OmBasicJoint.cpp:178",
+     "source": "src/omnisim/nodes/OmRotationalMotor.cpp (computeFeedback, turnOffMotor), "
+               "src/omnisim/nodes/OmMotor.cpp (the computeFeedback callers), "
+               "src/omnisim/nodes/OmBasicJoint.hpp (jointID)",
      "diagnostic": None,
      "workaround": "none. Do not use force feedback as a contact or load signal on this build."},
     {"feature": "sensor.occlusion_rays vs a node DELETED at runtime",
@@ -868,15 +997,18 @@ ENGINE_NOT_SUPPORTED: list[dict] = [
                "start/direction/length members answered by the Newton raycast service, the same "
                "pattern Receiver and LightSensor already used -- a wall between sensor and target "
                "now blocks it, verified by a control/differential pair in "
-               "tests/test_newton_radar_occlusion_parity.py). What does NOT work is a node removed "
-               "by the supervisor at runtime: there is no remove path from a deleted Solid to the "
-               "MuJoCo model, so the deleted geometry stays in the model and keeps blocking rays.",
+               "tests/test_newton_radar_occlusion_parity.py). What does NOT work BY DEFAULT is a node "
+               "removed by the supervisor at runtime: the Newton world is frozen at finalize and has "
+               "no INCREMENTAL remove path, so the deleted geometry stays in the MuJoCo model and "
+               "keeps blocking rays until the world is rebuilt or reloaded.",
      "symptom": "after wb_supervisor_node_remove_node(), a target that the removed node used to "
                 "hide STILL reports as occluded. Measured on tests/api/worlds/camera_recognition.omniworld: "
                 "the 8-vs-7 occlusion count now passes, and the later assertion -- 1 object visible "
                 "once the occluders are removed -- reads 0.",
-     "source": "src/omnisim/nodes/utils/OmObjectDetection.cpp (working); the gap is the absence of "
-               "any removeBody/unregister path in src/omnisim/physics/OmNewtonBackend.hpp",
+     "source": "src/omnisim/nodes/utils/OmObjectDetection.cpp (working); the gap is the frozen "
+               "model -- src/omnisim/physics/OmNewtonBackend.cpp (finalizeWorld) -- and the fix is the "
+               "whole-world rebuild verb wb_supervisor_simulation_rebuild_physics "
+               "(include/controller/c/omnisim/supervisor.h)",
      "diagnostic": "OCCLUSION_RAYS_UNANSWERED",
      "workaround": "POST /sim/rebuild_physics after removing collidable nodes (W1.7, 2026-09-01; "
                    "97-267 ms, refused on particle worlds), or reload the world. This is "
@@ -888,24 +1020,25 @@ ENGINE_NOT_SUPPORTED: list[dict] = [
                    "dynamic bodies, robots and mujoco_warp are unmeasured."},
     {"feature": "scene.runtime_mutation_physics (/scene/spawn and /scene/delete reach the solver)",
      "scope": "engine",
-     "reason": "the Newton/MuJoCo model is FROZEN at finalizeWorld(): openForBuild goes false "
-               "(src/omnisim/physics/OmNewtonBackend.cpp:2384), every addBody/addShape* verb "
-               "guards on it, ensureWorldOpen() refuses to reopen mid-run, and there is no "
-               "removeBody path either. So a node spawned mid-session is NEVER registered with "
-               "the solver, and a node deleted mid-session leaves its colliders in it -- the "
-               "exact mirror pair (see the occlusion-rays entry above for the delete half's "
-               "measurements).",
+     "reason": "the Newton/MuJoCo model is FROZEN at finalizeWorld(): openForBuild goes false, "
+               "every addBody/addShape* verb guards on it, ensureWorldOpen() refuses to reopen "
+               "mid-run, and there is no incremental removeBody path either. So BY DEFAULT a node "
+               "spawned mid-session is NEVER registered with the solver, and a node deleted "
+               "mid-session leaves its colliders in it -- the exact mirror pair (see the "
+               "occlusion-rays entry above for the delete half's measurements).",
      "symptom": "a spawned dynamic body never falls (measured 2026-08-17: released at z=1.5, "
                 "unchanged after 2200 steps / ~87 s sim time, while its authored twin settled at "
                 "0.599892) and a spawned static body never collides; a deleted wall still blocks "
                 "robots and rays and a deleted floor still holds bodies up. Engine-side: 0 errors, "
                 "0 warnings, and the spawn response reads verification.node_resolved: true.",
-     "source": "src/omnisim/physics/OmNewtonBackend.cpp:2384 (openForBuild=false at finalize); "
-               "fix tracked internally as W1.7 -- runtime scene mutation, one workstream "
-               "covering both the spawn and the delete direction; no public issue yet",
+     "source": "src/omnisim/physics/OmNewtonBackend.cpp (finalizeWorld sets openForBuild = false; "
+               "ensureWorldOpen refuses to reopen); the opt-in fix shipped 2026-09-01 as W1.7 "
+               "(88487d988): wb_supervisor_simulation_rebuild_physics, "
+               "include/controller/c/omnisim/supervisor.h",
      "diagnostic": "SILENT engine-side; this harness attaches `physics_warning` "
                    "RUNTIME_MUTATION_NOT_IN_SOLVER to every successful /scene/spawn and "
-                   "/scene/delete response, and emits one world.warning per verb per world-load",
+                   "/scene/delete response that did not opt into the rebuild, and emits one "
+                   "world.warning per verb per world-load",
      "workaround": "FIXED 2026-09-01 (W1.7): POST /sim/rebuild_physics -- or pass "
                    "{\"physics\": \"rebuild\"} on /scene/spawn / /scene/delete -- rebuilds the "
                    "Newton world at the scene's CURRENT poses in 97-267 ms (measured), so spawned "
@@ -926,10 +1059,28 @@ ENGINE_NOT_SUPPORTED: list[dict] = [
                "modified.",
      "symptom": "the call warns and leaves the fields as they were, so a body keeps whatever "
                 "inertia it had (possibly the identity matrix).",
-     "source": "src/omnisim/nodes/OmSolid.cpp:1444",
+     "source": "src/omnisim/nodes/OmSolid.cpp (setInertiaMatrixFromBoundingObject)",
      "diagnostic": "INERTIA_FROM_BOUNDING_OBJECT_UNAVAILABLE",
      "workaround": "author an explicit `inertiaMatrix` (and `centerOfMass`) in the Physics node."},
-    {"feature": "joint.fields (stopErp/stopCfm, springs+damping, suspension, Ball/Hinge2 hard "
+    {"feature": "track.propulsion (a Track's belt drives nothing)",
+     "scope": "engine",
+     "reason": "OmTrack computes a belt surface velocity and exposes it as contactSurfaceVelocity(), "
+               "which has ZERO readers in the tree: it was consumed by ODE's contact-surface-velocity "
+               "mechanism, and nothing replaced it when ODE was deleted (bdc02139). The belt "
+               "ANIMATION (belt elements, wheel spin, texture scroll, the PositionSensor) was "
+               "separately dead on both renderers until 2026-08-23 -- prePhysicsStep gated the whole "
+               "update on a dBodyID that had been NULL since the deletion -- and works again; the "
+               "PROPULSION does not.",
+     "symptom": "a tracked robot's belt animates and its PositionSensor advances while the chassis "
+                "does not move. No error, no warning.",
+     "source": "src/omnisim/nodes/OmTrack.cpp (prePhysicsStep), "
+               "src/omnisim/nodes/OmTrack.hpp (contactSurfaceVelocity, unread)",
+     "diagnostic": None,
+     "workaround": "none in-engine. Propel the chassis through wheels (HingeJoint + RotationalMotor "
+                   "DO drive on Newton) and keep the Track for its visuals, or move the body "
+                   "kinematically from a supervisor. Making a tracked robot drive under Newton is "
+                   "open work."},
+    {"feature": "joint.fields (stopErp/stopCfm, springs+damping, suspension, BallJoint hard "
                 "stops, Connector snap alignment, Propeller inflow, Track force control, motor "
                 "turn-off)",
      "scope": "engine",
@@ -939,18 +1090,32 @@ ENGINE_NOT_SUPPORTED: list[dict] = [
                "HingeJointParameters.stopErp/stopCfm named ODE's error-reduction / "
                "constraint-force-mixing pair, and Newton's joint limits are a spring tuned by "
                "OMNISIM_NEWTON_LIMIT_KE/KD instead; spring/damping/staticFriction and "
-               "suspension*/suspensionAxis were ODE motor state; Connector snap rotated the two "
-               "parent ODE bodies (both handles are permanently NULL, so the whole snap chain "
-               "computes a quaternion that lands nowhere -- the Newton weld attaches WITHOUT "
-               "snapping); Propeller's axial inflow term needed a body point-velocity read, so V is "
-               "pinned to 0 and only the omega^2 term survives; Track force control needed the belt "
-               "body's mass from dBodyGetMass; turning a motor off zeroed the ODE motor velocity.",
+               "suspension*/suspensionAxis were ODE motor state; BallJoint per-axis stops are not "
+               "mapped (the BALL element is `limited: False`; Hinge2 axes ARE limited since the d6 "
+               "path went default-on 2026-08-17); Connector snap rotated the two parent ODE bodies "
+               "(both handles are permanently NULL, so the whole snap chain computes a quaternion "
+               "that lands nowhere -- the Newton weld attaches WITHOUT snapping); Propeller's axial "
+               "inflow term needed a body point-velocity read, so V is pinned to 0 and only the "
+               "omega^2 term survives; Track force control needed the belt body's mass from "
+               "dBodyGetMass; turning a motor off zeroed the ODE motor velocity. Related, and "
+               "NOT a gap any more: a motor with no minPosition/maxPosition (and no joint stops) is "
+               "built as a VELOCITY WHEEL with ke = 0, and since 2026-09-01 the first finite "
+               "setPosition() from the CONTROLLER promotes it to a position servo (wire-level "
+               "latch; OMNISIM_NEWTON_PROMOTE_SERVO=0 reverts) -- supervisor-side "
+               "/robot/<def>/joints/set writes do NOT promote, which is why that verb reports "
+               "position_controllable: false for such a joint.",
      "symptom": "the field is accepted and does nothing. A spring that does not push reads as a "
                 "physics bug rather than as a missing feature -- which is why the engine warns per "
                 "joint for the subset it can detect.",
-     "source": "src/omnisim/nodes/OmHingeJoint.cpp:155/226/234, OmHinge2Joint.cpp:205, "
-               "OmBallJoint.cpp:773, OmConnector.cpp:277, OmPropeller.cpp:232, OmTrack.cpp:598, "
-               "OmRotationalMotor.cpp:54, OmLinearMotor.cpp:48",
+     "source": "src/omnisim/nodes/OmHingeJoint.cpp (applyToOdeStopErp, "
+               "applyToOdeSpringAndDampingConstants, prePhysicsStep), "
+               "src/omnisim/nodes/OmHinge2Joint.cpp (applyToOdeSpringAndDampingConstants), "
+               "src/omnisim/nodes/OmBallJoint.cpp (applyToOdeMinAndMaxStop), "
+               "src/omnisim/nodes/OmConnector.cpp (snapXAxes), "
+               "src/omnisim/nodes/OmPropeller.cpp (prePhysicsStep), "
+               "src/omnisim/nodes/OmTrack.cpp (prePhysicsStep), "
+               "src/omnisim/nodes/OmRotationalMotor.cpp (turnOffMotor), "
+               "src/omnisim/nodes/OmLinearMotor.cpp (turnOffMotor)",
      "diagnostic": "JOINT_FEATURE_UNIMPLEMENTED (Hinge2Joint / BallJoint only -- the others are "
                    "SILENT)",
      "workaround": "for limits, tune OMNISIM_NEWTON_LIMIT_KE/KD; for suspension and springs, model "
@@ -1173,26 +1338,6 @@ def read_newton_verdict(log_path: Path) -> dict:
     """
     sidecar = Path(str(log_path) + ".newton.json")
     out: dict = {"sidecar_path": str(sidecar)}
-    # RETIRED KNOBS. OMNISIM_FORCE_ODE / OMNISIM_LEGACY used to select a real
-    # second backend; src/ode was DELETED (commit bdc02139). The current engine
-    # IGNORES them (verified 2026-08-08: the run comes up on Newton and writes a
-    # normal sidecar), so a set knob no longer describes the backend at all --
-    # which is exactly why it must still be REPORTED: an agent reading
-    # /capabilities would otherwise believe it had asked for and received ODE.
-    # An earlier build the same day did honour it, and the world then did not
-    # simulate (the cone stayed bit-identical to its authored pose for 3000 ms),
-    # so the report says RETIRED rather than implying a working ODE arm.
-    forced = os.environ.get("OMNISIM_FORCE_ODE") or os.environ.get("OMNISIM_LEGACY")
-    if forced:
-        which = ("OMNISIM_FORCE_ODE" if os.environ.get("OMNISIM_FORCE_ODE")
-                 else "OMNISIM_LEGACY")
-        out["forced_ode_env"] = which
-        out["forced_ode_env_retired"] = (
-            "%s is set but RETIRED: ODE was deleted (src/ode, commit bdc02139) "
-            "and Newton is the only physics backend. This does NOT give you an "
-            "ODE run. The engine ignores it, so you got a Newton run with a "
-            "misleading knob set; a build that still honoured it would never "
-            "build physics for the world at all. Unset it." % which)
     if sidecar.exists():
         try:
             data = json.loads(sidecar.read_text(encoding="utf-8", errors="replace"))
@@ -1232,17 +1377,6 @@ def read_newton_verdict(log_path: Path) -> dict:
         out.update({"backend": "newton",
                     "solver": line[:-1] if line.endswith(")") else line,
                     "source": "engine_log"})
-        return out
-    # NEVER name a deleted engine in this field -- an agent branches on it, and
-    # ODE cannot have driven anything since bdc02139. A retired selector does NOT
-    # give an ODE run: it is warned about and ignored (2271e1f8), so the run is
-    # Newton. Saying "ode" here while the detail text says the opposite was the
-    # one self-contradicting object in the whole surface.
-    if forced:
-        out.update({"backend": "newton", "source": "retired_selector_ignored",
-                    "detail": ("a retired ODE selector (OMNISIM_FORCE_ODE / OMNISIM_LEGACY / "
-                               "OMNISIM_ALLOW_ODE_FALLBACK) is set in the environment. It is warned "
-                               "about and IGNORED -- this run is Newton. Unset it.")})
         return out
     out.update({
         # Unverified, NOT "ode": the only honest reading of a missing sidecar is
@@ -2424,6 +2558,15 @@ class HarnessState:
     # Class-level default so test stubs built via __new__ resolve it too;
     # __init__ shadows it per instance.
     tracking_supervisor: dict | None = None
+    # Class-level defaults so a HarnessState built without __init__ (the test
+    # suite's bare_state) still answers the tracking-default questions.
+    default_light: bool = True
+    default_light_source: str = "built-in"
+    # True when the CURRENT load's tracking mode came from the default rather
+    # than from an explicit `light` / `tracking` on the request; it decides
+    # the wording of the tracker warning and is reported on /capabilities.
+    light_default_applied: bool = False
+    _light_read_warned: set | None = None
 
     def __init__(
         self,
@@ -2433,9 +2576,13 @@ class HarnessState:
     ):
         self.omnisim_home = omnisim_home
         self.binary = resolve_omnisim_binary(omnisim_home)
-        # Default for the injected supervisor's --light flag. A load may
+        # Default for the injected supervisor's --light flag: LIGHT since
+        # 2026-09-02 (OMNISIM_HARNESS_LIGHT=0 restores full). A load may
         # override per request; the hot-reload path reuses this value.
-        self.light_supervisor = env_flag("OMNISIM_HARNESS_LIGHT")
+        self.default_light, self.default_light_source = resolve_light_default()
+        self.light_supervisor = self.default_light
+        self.light_default_applied = False
+        self._light_read_warned = set()
         # Per-tracker toggles for the injected supervisor (public issue #4);
         # set per /world/load request, reused by hot reload and /world/sync.
         self.tracking_supervisor: dict | None = None
@@ -2555,6 +2702,84 @@ class HarnessState:
             print(f"[harness] WARNING {warning['code']} (POST /scene/{verb}): "
                   f"{warning['message']}", file=sys.stderr, flush=True)
         return dict(warning)
+
+    # -- tracking mode disclosure (light is the default since 2026-09-02) ---
+
+    def tracking_block(self, light: bool, default_applied: bool = False) -> dict:
+        """The `tracking` block of a supervised load response: which mode ran,
+        what it costs, and -- when the mode came from the default rather than
+        the request -- `default_applied: true` plus one sentence naming how to
+        get the trackers back."""
+        light = bool(light)
+        per_tracker = supervisor_controller_args(False, self.tracking_supervisor)
+        block: dict = {
+            "light": light,
+            "mode": ("light" if light else ("partial" if per_tracker else "full")),
+            "disabled_flags": (["--light"] if light else per_tracker),
+            "default_applied": bool(default_applied),
+            "hint": (
+                "light mode: /sim/grips is empty and contact.*/grip.*/joint.limit_hit "
+                "events are not produced; /sim/contacts still answers."
+                if light else
+                ("partial tracking: " + " ".join(per_tracker) + " -- the disabled "
+                 "trackers' event types go quiet (GET /capabilities -> "
+                 "event_types_detail.suppressed names them); /sim/contacts always "
+                 "answers regardless.")
+                if per_tracker else
+                "FULL tracking (requested explicitly, or via OMNISIM_HARNESS_LIGHT=0; light "
+                "is the default since 2026-09-02): the supervisor walks the scene every basic "
+                "step for contact / grip / joint-limit events. Measured on the 10-Husky world "
+                "(309 nodes, CPU mj_step, 2026-08-29): /sim/step 1 ~0.6 s vs ~0.01-0.03 s "
+                "light (17x), 10 steps ~3 s vs ~0.06 s (47x). Pass {\"light\": true} unless "
+                "you need /sim/grips or those events."),
+        }
+        if default_applied:
+            block["default"] = tracking_default_block(self.default_light, self.default_light_source)
+            block["default_note"] = (
+                (f"{'LIGHT' if light else 'FULL'} tracking was applied BY DEFAULT "
+                 f"({self.default_light_source}; light is the default since "
+                 f"{LIGHT_DEFAULT_SINCE}) because the request named neither `light` nor "
+                 f"`tracking`: ")
+                + (LIGHT_DEFAULT_REVERT if light else
+                   "pass {\"light\": true} (or unset OMNISIM_HARNESS_LIGHT) for the "
+                   "2.3x cheaper light steps (fleet arena, 2026-09-02; 17-47x on the 2026-08-29 engine)"))
+        return block
+
+    def light_read_warning(self, surface: str, detail: str | None = None) -> None:
+        """Emit ONE world.warning per world-load the first time a tracker-fed
+        read (GET /sim/grips) answers from a session whose tracker is not
+        running, naming whether the mode was the DEFAULT or requested and how
+        to get the tracker back. Per-load, not per-request, so a polling
+        loop cannot flood the ring."""
+        with self.lock:
+            if self._light_read_warned is None:
+                self._light_read_warned = set()
+            first = surface not in self._light_read_warned
+            self._light_read_warned.add(surface)
+        if not first:
+            return
+        if self.light_default_applied:
+            how = (f"this session runs {'LIGHT' if self.light_supervisor else 'partial'} "
+                   f"tracking BY DEFAULT ({self.default_light_source}; light is the default "
+                   f"since {LIGHT_DEFAULT_SINCE}) -- the load request named neither `light` "
+                   f"nor `tracking`")
+        elif self.light_supervisor:
+            how = "the load request asked for light mode ({\"light\": true})"
+        else:
+            how = ("the load request disabled this tracker via its `tracking` object "
+                   + json.dumps(self.tracking_supervisor or {}))
+        message = (
+            f"{surface}: the tracker behind this read is NOT RUNNING, so its empty "
+            f"answer means NOT MEASURED, not 'nothing there' -- {how}. To get it back: "
+            f"{LIGHT_DEFAULT_REVERT}. GET /sim/contacts is unaffected (walked per call)."
+            + (f" {detail}" if detail else ""))
+        self.log_buffer.emit_world_diagnostic({
+            "severity": "warning",
+            "code": LIGHT_MODE_READ_CODE,
+            "message": message,
+        })
+        print(f"[harness] WARNING {LIGHT_MODE_READ_CODE} ({surface}): {message}",
+              file=sys.stderr, flush=True)
 
     def _kill_running(self) -> None:
         self._load_generation += 1  # invalidate any in-flight bind waiter
@@ -3065,6 +3290,7 @@ class HarnessState:
             self.current_world = str(world)
             self.step_samples.clear()  # new world -> new step cost
             self._runtime_mutation_warned.clear()  # reload rebuilt the solver
+            self._light_read_warned = set()  # new load -> the tracker warning re-fires
             self.last_load_started_at = started_at
             self.last_load_completed_at = time.time()
         # ⚠ A HOT RELOAD USED TO REPORT `diagnostics: []` UNCONDITIONALLY, and
@@ -3108,11 +3334,16 @@ class HarnessState:
         }
 
     def load_world(self, world_path: str, wait_s: float, with_supervisor: bool,
-                   light: bool = False) -> dict:
+                   light: bool = False, default_applied: bool = False) -> dict:
         """Launch OmniSim on the given world. When with_supervisor is true (the
         default), inject a supervisor via a sibling file and connect to it.
         Reuses the running subprocess via a hot-reload RPC when possible.
+
+        `default_applied` says the caller named neither `light` nor
+        `tracking`, so `light` is the process default (light since
+        2026-09-02); the response's `tracking` block reports it.
         """
+        self.light_default_applied = bool(default_applied)
         world = Path(world_path)
         if not world.is_absolute():
             world = REPO_ROOT / world
@@ -3159,27 +3390,7 @@ class HarnessState:
             # otherwise learns about the full-mode tax only by timing out.
             if isinstance(result, dict) and with_supervisor and "error" not in result:
                 result["engine_mode"] = ENGINE_MODE
-                per_tracker = supervisor_controller_args(False, self.tracking_supervisor)
-                result["tracking"] = {
-                    "light": bool(light),
-                    "mode": ("light" if light else
-                             ("partial" if per_tracker else "full")),
-                    "disabled_flags": (["--light"] if light else per_tracker),
-                    "hint": (
-                        "light mode: /sim/grips is empty and contact.*/grip.*/joint.limit_hit "
-                        "events are not produced; /sim/contacts still answers."
-                        if light else
-                        ("partial tracking: " + " ".join(per_tracker) + " -- the disabled "
-                         "trackers' event types go quiet (GET /capabilities -> "
-                         "event_types_detail.suppressed names them); /sim/contacts always "
-                         "answers regardless.")
-                        if per_tracker else
-                        "FULL tracking (the backward-compatible default): the supervisor walks the "
-                        "scene every basic step for contact / grip / joint-limit events. Measured on "
-                        "the 10-Husky world (309 nodes, CPU mj_step, 2026-08-29): /sim/step 1 ~0.6 s "
-                        "vs ~0.01-0.03 s light (17x), 10 steps ~3 s vs ~0.06 s (47x). Pass "
-                        "{\"light\": true} unless you need /sim/grips or those events."),
-                }
+                result["tracking"] = self.tracking_block(light, default_applied)
             if result.get("ok") and result.get("load_state") != "failed":
                 with self.lock:
                     if self.current_world == str(world):
@@ -3232,6 +3443,10 @@ class HarnessState:
                     "mode": "rejected", "diagnostics": []}
         wait_s = max(0.1, min(MAX_LOAD_WAIT_S, float(wait_s)))
         chosen_light = active_light if light is None else bool(light)
+        # No `light` on the request keeps the running mode (an edit loop must
+        # not flip trackers under the caller); that mode is "the default" only
+        # when nothing is loaded yet or the running mode itself came from it.
+        default_applied = light is None and (active_path is None or self.light_default_applied)
 
         same_world = active_path is not None and Path(active_path).resolve() == world
         live_ready = (same_world and previous_source is not None and load_ok is True and proc_alive
@@ -3331,6 +3546,7 @@ class HarnessState:
             # _try_hot_reload writes the injected sibling from this process-wide
             # setting; update it before entering the ordinary load path.
             self.light_supervisor = chosen_light
+            self.light_default_applied = default_applied
             result = self._load_world_locked(
                 world, wait_s, True, chosen_light, source_text=current_source)
             result = dict(result)
@@ -3338,6 +3554,11 @@ class HarnessState:
             result["fallback"] = True
             result["reason"] = plan["reason"]
             result["wall_ms"] = int((time.perf_counter() - started) * 1000)
+            if "error" not in result:
+                # The MCP load_world tool reaches a first load THROUGH this
+                # path, so the tracking disclosure must ride here too.
+                result["engine_mode"] = ENGINE_MODE
+                result["tracking"] = self.tracking_block(chosen_light, default_applied)
             if result.get("ok") and result.get("load_state") != "failed":
                 with self.lock:
                     self.current_source_text = current_source
@@ -3378,6 +3599,7 @@ class HarnessState:
             self.current_world = str(world)
             self.step_samples.clear()  # new world -> new step cost
             self._runtime_mutation_warned.clear()  # reload rebuilt the solver
+            self._light_read_warned = set()  # new load -> the tracker warning re-fires
             self.last_load_started_at = time.time()
             self.last_load_completed_at = None
             self.last_load_ok = None
@@ -3880,6 +4102,11 @@ class HarnessState:
             "events_limit_max": 1024,
             "log_buffer_events": DEFAULT_LOG_BUFFER_SIZE,
             "step_cost": cost,
+            # The tracking mode a /world/load runs in when the request names
+            # neither `light` nor `tracking` -- the same block the load
+            # response carries when it applied it, built by one function.
+            "tracking_default": tracking_default_block(
+                self.default_light, self.default_light_source),
         }
         if cost:
             budget = int(0.6 * SUPERVISOR_RPC_TIMEOUT_S / max(cost["median_s_per_step"], 1e-6))
@@ -3992,8 +4219,11 @@ class HarnessState:
                 "workaround": "GET /sim/grips still answers, with tracking.enabled=false so an empty "
                               "list is not mistaken for 'nothing is gripped'; derive a grip from "
                               "GET /sim/contacts (gripper subtree vs held solid), or reload with "
-                              "{\"light\": false} to get the trackers back, at ~790x the /sim/step "
-                              "cost measured on a 298-node Newton world."})
+                              "{\"light\": false} (all trackers) or a `tracking` object (just the "
+                              "ones you need) to get them back, at about 2.3x the single /sim/step cost measured 2026-09-02 (17-47x on the 2026-08-29 engine) "
+                              "measured on the 309-node fleet arena. Light is the DEFAULT since "
+                              "2026-09-02 (limits.tracking_default; OMNISIM_HARNESS_LIGHT=0 "
+                              "restores full as the process default)."})
 
         return {
             "ok": True,
@@ -4019,6 +4249,7 @@ class HarnessState:
                 "host": self.supervisor_host,
                 "port": self.supervisor_port,
                 "light": light,
+                "light_default_applied": bool(self.light_default_applied),
                 "tracking": (sup or {}).get("tracking"),
                 "error": sup_error,
                 "commands": (sup or {}).get("commands"),
@@ -4972,6 +5203,14 @@ def make_handler(state: HarnessState):
             if base == "/sim/grips":
                 result = self._supervisor_call("sim_grips")
                 if result is not None:
+                    # A grips answer from a session with no GripTracker is
+                    # NOT MEASURED; say so once per load on the event stream,
+                    # naming whether light was the default or requested.
+                    tracking = result.get("tracking") if isinstance(result, dict) else None
+                    if isinstance(tracking, dict) and tracking.get("enabled") is False:
+                        warn = getattr(state, "light_read_warning", None)
+                        if warn is not None:
+                            warn("GET /sim/grips")
                     self._json(200, result)
                 return
 
@@ -5162,7 +5401,6 @@ def make_handler(state: HarnessState):
                     self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "path is required"})
                     return
                 with_supervisor = bool(body.get("with_supervisor", True))
-                light = bool(body.get("light", state.light_supervisor))
                 default_wait = DEFAULT_LOAD_WAIT_S if with_supervisor else DEFAULT_LOAD_WAIT_BARE_S
                 wait_s = body.get("wait_s", default_wait)
                 try:
@@ -5181,9 +5419,23 @@ def make_handler(state: HarnessState):
                                       "values for any of: contacts, "
                                       "joint_limits, grips")})
                         return
+                # Tracking mode (dual contract, light default since 2026-09-02):
+                # an explicit `light` wins; a `tracking` object with no `light`
+                # is partial mode (light=false + per-tracker flags); neither
+                # named -> the process default (state.default_light, i.e.
+                # OMNISIM_HARNESS_LIGHT: unset/1 -> light, 0 -> full), and the
+                # response says so via tracking.default_applied.
+                light_raw = body.get("light")
+                if light_raw is not None:
+                    light, default_applied = bool(light_raw), False
+                elif tracking is not None:
+                    light, default_applied = False, False
+                else:
+                    light, default_applied = bool(state.default_light), True
                 state.light_supervisor = light
                 state.tracking_supervisor = tracking
-                result = state.load_world(world_path, wait_s, with_supervisor, light)
+                result = state.load_world(world_path, wait_s, with_supervisor, light,
+                                          default_applied=default_applied)
                 self._json(200 if result.get("ok") else 422, result)
                 return
 
@@ -6077,6 +6329,23 @@ def main() -> int:
         print(f"[harness] WARNING: {mode_warning}", file=sys.stderr)
     if ENGINE_MODE != "fast":
         print(f"[harness] engine mode: {ENGINE_MODE}", file=sys.stderr)
+    # Loud on purpose: the tracking default flipped to light on 2026-09-02,
+    # and an operator expecting /sim/grips or contact.* events from a bare
+    # /world/load must learn it from the banner, not from an empty answer.
+    default_light, default_source = resolve_light_default()
+    if default_light:
+        print(f"[harness] tracking default: LIGHT ({default_source}; since "
+              f"{LIGHT_DEFAULT_SINCE}) -- a /world/load naming neither `light` nor "
+              f"`tracking` drops the contact/joint-limit/grip trackers (/sim/grips empty, "
+              f"contact.*/grip.*/joint.limit_hit quiet; /sim/contacts unaffected). "
+              f"{LIGHT_DEFAULT_ENV}=0 restores full tracking as the default.",
+              file=sys.stderr)
+    else:
+        print(f"[harness] tracking default: FULL ({default_source}) -- every /world/load "
+              f"without `light`/`tracking` walks the scene every basic step: /sim/step "
+              f"costs about 2.3x more per single step on the fleet arena (2026-09-02; ~17-47x before the 2026-09-02 engine fixes). Unset "
+              f"{LIGHT_DEFAULT_ENV} (or =1) for the light default.",
+              file=sys.stderr)
     supervisor_port = args.supervisor_port if args.supervisor_port is not None else args.port + 1
     return serve(args.host, args.port, supervisor_port, auto_port=args.auto_port)
 

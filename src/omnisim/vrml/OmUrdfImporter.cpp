@@ -1712,7 +1712,7 @@ QString OmUrdfImporter::convertContent(const QByteArray &xmlContent, const QStri
 QString OmUrdfImporter::convertFile(const QString &urdfPath) {
   QFile file(urdfPath);
   if (!file.open(QIODevice::ReadOnly)) {
-    OmLog::error(QObject::tr("Cannot open URDF file '%1'").arg(urdfPath));
+    OmLog::error(QObject::tr("Cannot open URDF file '%1': this URDFRobot is skipped entirely (no robot, no devices). URDFRobot.url resolves relative to the world file's directory, so check the path from there, and preflight the file with `python scripts/dev/urdf_import.py --report --strict <urdf>` (docs/developer/urdf-import-debugging.md).").arg(urdfPath));
     return QString();
   }
   const QByteArray content = file.readAll();

@@ -20,7 +20,7 @@ Solid {
 }
 ```
 
-Direct derived nodes: [Accelerometer](accelerometer.md), [Altimeter](altimeter.md), [Camera](camera.md), [Charger](charger.md), [Compass](compass.md), [Connector](connector.md), [Display](display.md), [DistanceSensor](distancesensor.md), [Emitter](emitter.md), [GPS](gps.md), [Gyro](gyro.md), [InertialUnit](inertialunit.md), [LED](led.md), [Lidar](lidar.md), [LightSensor](lightsensor.md), [Pen](pen.md), [Radar](radar.md), [RangeFinder](rangefinder.md), [Receiver](receiver.md), [Robot](robot.md), [TouchSensor](touchsensor.md), [Track](track.md), [VacuumGripper](vacuumgripper.md).
+Direct derived nodes: [Accelerometer](accelerometer.md), [Altimeter](altimeter.md), [Camera](camera.md), [Charger](charger.md), [Compass](compass.md), [Connector](connector.md), [Display](display.md), [DistanceSensor](distancesensor.md), [Emitter](emitter.md), [GPS](gps.md), [Gyro](gyro.md), [InertialUnit](inertialunit.md), [LED](led.md), [Lidar](lidar.md), [LightSensor](lightsensor.md), [Pen](pen.md), [Radar](radar.md), [RangeFinder](rangefinder.md), [Receiver](receiver.md), [Robot](robot.md), [TouchSensor](touchsensor.md), Track (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)), [VacuumGripper](vacuumgripper.md).
 
 ### Description
 
@@ -42,7 +42,7 @@ Note that the name cannot contain the colon character '`:`' and should preferabl
 - `description`: short description (1 line) of the solid.
 
 - `contactMaterial`: name of the contact material.
-When the `boundingObject`s of [Solid](#solid) nodes intersect, the `contactMaterial` is used to define which [ContactProperties](contactproperties.md) must be applied at the contact points.
+When the `boundingObject`s of [Solid](#solid) nodes intersect, the `contactMaterial` is used to define which ContactProperties (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) must be applied at the contact points.
 
 - `physicsBackend`: OmniSim-specific field naming which physics backend simulates this [Solid](#solid). Leave it out (or write `"auto"`, the default) and it resolves to Newton; `"newton"` says the same thing explicitly.
 

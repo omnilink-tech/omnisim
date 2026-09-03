@@ -1,0 +1,7 @@
+# ripgrep-only ignore list (honoured by rg and by the ripgrep-based search tools coding agents use;
+# git and pytest are unaffected). These trees are the owner's non-engineering workspaces: they are
+# on scripts/release/publish_deny.txt, ship in no release, and nothing in the engine, the Python
+# packages, the harness or the docs depends on them. An agent searching for a symbol, a flag or a
+# world should never be led there. Search them on purpose with `rg --no-ignore` or `git grep`.
+social/
+omnilink-docs/oliver_eval/

@@ -20,14 +20,12 @@
 #include "OmBoundingSphere.hpp"
 #include "OmGeometry.hpp"
 #include "OmNodeOperations.hpp"
-#include "OmOdeContext.hpp"
 #include "OmSlot.hpp"
 #include "OmSolid.hpp"
 
 using namespace OmHiddenKinematicParameters;
 
 void OmGroup::init() {
-  mOdeSpace = NULL;
   mHasNoSolidAncestor = true;
   mBoundingSphere = NULL;
 

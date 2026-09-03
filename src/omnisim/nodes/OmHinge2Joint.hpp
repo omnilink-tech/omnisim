@@ -89,12 +89,9 @@ protected:
   OmMFNode *mDevice2;  // JointDevices: logical position sensor device, a motor and brake, only one per type is allowed
   double mOdePositionOffset2;
   double mPosition2;                       // Keeps track of the joint position2 if JointParameters2 don't exist.
-  bool mSpringAndDampingConstantsAxis1On;  // defines if there is spring and dampingConstant along this axis
-  bool mSpringAndDampingConstantsAxis2On;
   QMap<QString, double> mSavedPositions2;
   void updatePosition(double position) override;
   void updatePositions(double position, double position2);
-  void applyToOdeSpringAndDampingConstants(dBodyID body, dBodyID parentBody) override;
   void updateOdePositionOffset() override;
   void writeExport(OmWriter &writer) const override;
 

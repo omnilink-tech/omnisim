@@ -1,10 +1,10 @@
 ## Generalities
 
-OmniSim world files must use the ".wbt" file name extension.
-The first line of a ".wbt" file uses this header:
+OmniSim world files use the ".omniworld" file name extension; legacy ".wbt" files are read forever but never written (a ".wbt" opened in OmniSim saves as ".omniworld").
+The first line of an ".omniworld" file uses this header (a legacy ".wbt" carries `#VRML_SIM R2025a utf8` instead):
 
 ```
-#VRML_SIM R2025a utf8
+#OMNISIM R2025a utf8
 ```
 
 The version *R2025a* specifies that the file can be open with *OmniSim 2025a*.
@@ -12,11 +12,11 @@ Although the header specifies *utf8*, at the moment only ascii is supported.
 
 The comments placed just below the header store the window configuration associated with this world.
 
-One (and only one) instance of each of the `WorldInfo, Viewpoint` and `Background` nodes must be present in every ".wbt" file.
+One (and only one) instance of each of the `WorldInfo, Viewpoint` and `Background` nodes must be present in every world file.
 For example:
 
 ```
-#VRML_SIM R2025a utf8
+#OMNISIM R2025a utf8
 
 WorldInfo {
   info [

@@ -91,10 +91,27 @@ ifeq ($(strip $(LOCALAPPDATA)),)
 endif
 export USERPROFILE
 export LOCALAPPDATA
+# ---- cached toolchain probes ------------------------------------------------
+# One `sh` spawn answers every environment probe below (ccache, uname, nvcc +
+# cygpath, ld.lld, the gcc-version expr, the Windows python prefixes) from a
+# fragment build_probes.sh regenerates only when PATH, CXX, OSTYPE, the
+# script, this Makefile or a resolved toolchain binary's mtime changes. They
+# used to be ~10 parse-time $(shell) calls costing ~1.1 s of every make.
+# OMNISIM_PROBE_CACHE=0 runs the probes inline as before.
+OMNISIM_PROBE_CACHE ?= 1
+ifneq ($(OMNISIM_PROBE_CACHE),0)
+OM_PROBES_MK := $(shell sh ./build_probes.sh "$(OMNISIM_PATH)/.build_tmp" "$(CXX)" "$(OSTYPE)")
+-include $(OM_PROBES_MK)
+endif
+
 USE_CCACHE ?= 1
 ifneq ($(USE_CCACHE),0)
 ifeq ($(findstring ccache,$(CC)),)
+ifdef OM_PROBES_CACHED
+OM_CCACHE := $(OM_PROBE_CCACHE)
+else
 OM_CCACHE := $(shell command -v ccache >/dev/null 2>&1 && ccache $(CXX) --version >/dev/null 2>&1 && command -v ccache 2>/dev/null)
+endif
 ifneq ($(OM_CCACHE),)
 CC  := $(OM_CCACHE) $(CC)
 CXX := $(OM_CCACHE) $(CXX)
@@ -111,25 +128,28 @@ endif
 # module dependencies: please keep these lists of dependencies up-to-date so that we don't break dependencies in the code
 # listed from the module with the less dependencies to the module with the more dependencies
 
-WB_ODE_INCLUDE           = $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(ODE_INCLUDE) $(INSTALL_INCLUDE) $(CONTROLLER_INCLUDE) -Iapp -Icore -Imaths -Inodes -Inodes/utils -Ivrml -Iengine
 WB_MATHS_INCLUDE         = $(QT_CORE_INCLUDE)
 WB_CORE_INCLUDE          = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(QT_GUI_INCLUDE) $(QT_QML_INCLUDE) $(CONTROLLER_INCLUDE) -Iqml -Iexternal/compilation_timestamp
-WB_UTIL_INCLUDE          = $(QT_CORE_INCLUDE) $(ODE_INCLUDE) $(CONTROLLER_INCLUDE) -Isound -Icore
+WB_UTIL_INCLUDE          = $(QT_CORE_INCLUDE) $(CONTROLLER_INCLUDE) -Isound -Icore
 WB_VRML_INCLUDE          = $(QT_CORE_INCLUDE) $(QT_XML_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -Imaths -Ivrml
-WB_USER_COMMANDS_INCLUDE = $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(QT_NETWORK_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -isystem external/siphash -Imaths -Inodes -Inodes/utils -Iode -Iphysics -Iuser_commands -Ivrml
+WB_USER_COMMANDS_INCLUDE = $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(QT_NETWORK_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -isystem external/siphash -Imaths -Inodes -Inodes/utils -Iphysics -Iuser_commands -Ivrml
 WB_WIDGETS_INCLUDE       = $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -Imaths -Iuser_commands -Ivrml
-WB_EDITOR_INCLUDE        = $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(QT_PRINT_SUPPORT_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -Iwidgets -Imaths -Inodes -Inodes/utils -Iode -Iphysics -Iuser_commands -Ivrml
-WB_ENGINE_INCLUDE        = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(ODE_INCLUDE) $(INSTALL_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -Imaths -Inodes -Inodes/utils -Iphysics -Irender -Isound -Iuser_commands -Iutil -Ivrml
-WB_CONTROL_INCLUDE       = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -Iengine -Imaths -Inodes -Inodes/utils -Iode -Iphysics -Ivrml -Iutil
+WB_EDITOR_INCLUDE        = $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(QT_PRINT_SUPPORT_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -Iwidgets -Imaths -Inodes -Inodes/utils -Iphysics -Iuser_commands -Ivrml
+WB_ENGINE_INCLUDE        = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(INSTALL_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -Imaths -Inodes -Inodes/utils -Iphysics -Irender -Isound -Iuser_commands -Iutil -Ivrml
+WB_CONTROL_INCLUDE       = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -Iengine -Imaths -Inodes -Inodes/utils -Iphysics -Ivrml -Iutil
 # dependency of NODES on QT_GUI is necessary in OmImageTexture to retrieve the size of a texture before loading it in Wren
-WB_NODES_INCLUDE         = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(QT_GUI_INCLUDE) $(ODE_INCLUDE) $(CONTROLLER_INCLUDE) $(OIS_INCLUDE) $(FREETYPE_INCLUDE) $(INSTALL_INCLUDE) $(STB_INCLUDE) $(ASSIMP_INCLUDE) $(CUDA_INCLUDE) -Iapp -Icompute/cuda -Icore -Iengine -isystem external/siphash -Imaths -Inodes -Inodes/utils -Iode -Iphysics -Irender -Isound -Iutil -Ivrml
-WB_APP_INCLUDE           = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(ODE_INCLUDE) $(INSTALL_INCLUDE) $(CONTROLLER_INCLUDE) -Icompute/cuda -Icontrol -Icore -Ieditor -Iengine -Imaths -Inodes -Inodes/utils -Iphysics -Iscene_tree -Ivrml -Irender
-WB_SCENE_TREE_INCLUDE    = $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(ASSIMP_INCLUDE) $(CONTROLLER_INCLUDE) -isystem external/siphash -Iapp -Icompute/cuda -Icore -Ieditor -Imaths -Inodes -Inodes/utils -Iode -Iphysics -Iuser_commands -Ivrml -Iwidgets
-WB_SOUND_INCLUDE         = $(QT_CORE_INCLUDE) $(QT_XML_INCLUDE) $(ODE_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -Imaths -Inodes -Inodes/utils -Iphysics -Isound -Ivrml
-WB_GUI_INCLUDE           = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(QT_WEBSOCKETS_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(QT_OPENGL_INCLUDE) $(QT_OPENGL_WIDGETS_INCLUDE) $(ODE_INCLUDE) $(INSTALL_INCLUDE) $(CONTROLLER_INCLUDE) -Iapp -Icontrol -Icore -Iwidgets -Ieditor -Iengine -isystem external/siphash -Imaths -Inodes -Inodes/utils -Iphysics -Irender -Iscene_tree -Isound -Iuser_commands -Iutil -Ivrml
+WB_NODES_INCLUDE         = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(QT_GUI_INCLUDE) $(CONTROLLER_INCLUDE) $(OIS_INCLUDE) $(FREETYPE_INCLUDE) $(INSTALL_INCLUDE) $(STB_INCLUDE) $(ASSIMP_INCLUDE) $(CUDA_INCLUDE) -Iapp -Icompute/cuda -Icore -Iengine -isystem external/siphash -Imaths -Inodes -Inodes/utils -Iphysics -Irender -Isound -Iutil -Ivrml
+WB_APP_INCLUDE           = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(INSTALL_INCLUDE) $(CONTROLLER_INCLUDE) -Icompute/cuda -Icontrol -Icore -Ieditor -Iengine -Imaths -Inodes -Inodes/utils -Iphysics -Iscene_tree -Ivrml -Irender
+WB_SCENE_TREE_INCLUDE    = $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(ASSIMP_INCLUDE) $(CONTROLLER_INCLUDE) -isystem external/siphash -Iapp -Icompute/cuda -Icore -Ieditor -Imaths -Inodes -Inodes/utils -Iphysics -Iuser_commands -Ivrml -Iwidgets
+WB_SOUND_INCLUDE         = $(QT_CORE_INCLUDE) $(QT_XML_INCLUDE) $(CONTROLLER_INCLUDE) -Icore -Imaths -Inodes -Inodes/utils -Iphysics -Isound -Ivrml
+WB_GUI_INCLUDE           = $(QT_CORE_INCLUDE) $(QT_NETWORK_INCLUDE) $(QT_WEBSOCKETS_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(QT_OPENGL_INCLUDE) $(QT_OPENGL_WIDGETS_INCLUDE) $(INSTALL_INCLUDE) $(CONTROLLER_INCLUDE) -Iapp -Icontrol -Icore -Iwidgets -Ieditor -Iengine -isystem external/siphash -Imaths -Inodes -Inodes/utils -Iphysics -Irender -Iscene_tree -Isound -Iuser_commands -Iutil -Ivrml
 WB_RENDER_INCLUDE        = $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(QT_OPENGL_INCLUDE) $(QT_WIDGETS_INCLUDE) $(INSTALL_INCLUDE) -isystem external/siphash
 
+ifdef OM_PROBES_CACHED
+HOSTTYPE ?= $(OM_PROBE_HOSTTYPE)
+else
 HOSTTYPE ?= $(shell uname -m)
+endif
 
 # clear out all suffixes for implicit rules to speed up Makefile
 .SUFFIXES:
@@ -151,13 +171,11 @@ OPEN_VR_INCLUDE = -isystem $(OMNISIM_PATH)/include/openvr
 
 ifeq ($(OSTYPE),darwin)
 EXECUTABLE_PATH    = $(OMNISIM_PATH)/Contents/MacOS
+ifeq ($(wildcard $(EXECUTABLE_PATH)),)
 EXECUTABLE_PATH_SETUP := $(shell mkdir -p $(EXECUTABLE_PATH))
+endif
 FRAMEWORKS         = $(OMNISIM_PATH)/Contents/Frameworks
 TARGET             = $(EXECUTABLE_PATH)/webots
-# (ODE = $(OMNISIM_PATH)/src/ode used to be defined here. src/ode was deleted in
-# bdc02139 and nothing referenced the variable, so it is gone. LIB_ODE /
-# ODE_LINK / ODE_INCLUDE below are a DIFFERENT thing -- deliberately kept and
-# empty, see the block near OMNISIM_WITH_ODE.)
 # D1.0: glad linked under its OWN variable. LIB_WREN used to expand to BOTH archives, so
 # deleting it (D1.4) would silently unlink glad and break the GL present fallback.
 # Order matters: wren references glad symbols, so LIB_GLAD stays after LIB_WREN in LIBS.
@@ -187,15 +205,7 @@ CXXFLAGS           = -std=c++11 -F$(FRAMEWORKS) -x objective-c++
 EXTRA_CMD          = cp launcher/omnisim-mac.sh $(OMNISIM_PATH)/webots && chmod 755 $(OMNISIM_PATH)/webots
 FILES_TO_REMOVE    = $(OMNISIM_PATH)/webots
 ifeq ($(BUILD_GOAL), profile)
-# LIB_ODE / ODE_LINK are permanently empty now that libode is gone (the flag
-# block below defines them empty; recursive expansion defers evaluation to link
-# time). Kept rather than deleted so the macOS/Linux/Windows branches that
-# reference them do not all need editing at once.
-LIB_ODE = $(if $(ODE_LINK),../ode/libode.a,)
-LIBS += $(LIB_ODE)
 LD_FLAGS += -lpthread
-else
-LD_FLAGS += $(ODE_LINK)
 endif
 else ifeq ($(OSTYPE),linux)
 # D1.0: glad linked under its OWN variable. LIB_WREN used to expand to BOTH archives, so
@@ -244,12 +254,7 @@ LD_FLAGS           = -rdynamic
 # serves both paths.
 EXTRA_CMD          = cp launcher/omnisim-linux.sh $(OMNISIM_PATH)/bin/omnisim && chmod 755 $(OMNISIM_PATH)/bin/omnisim && cp launcher/omnisim-linux.sh $(OMNISIM_PATH)/webots && chmod 755 $(OMNISIM_PATH)/webots
 FILES_TO_REMOVE    = $(OMNISIM_PATH)/bin/omnisim $(OMNISIM_PATH)/webots
-ifeq ($(BUILD_GOAL), profile)
-LIB_ODE = $(if $(ODE_LINK),../ode/libode.a,)
-LIBS += $(LIB_ODE) -lpthread
-else
-LIBS += $(ODE_LINK) -lpthread
-endif
+LIBS += -lpthread
 
 else ifeq ($(OSTYPE),windows)
 vpath %.c ../controller/c
@@ -275,7 +280,7 @@ CFLAGS                    = -isystem /mingw64/lib/libzip/include
 CXXFLAGS                  = -std=c++11 -D_USE_MATH_DEFINES
 MOC                       = /mingw64/share/qt6/bin/moc
 MOC_FLAGS                += -D_WIN32
-LIBS                     += $(LIB_GLAD) -L/mingw64/lib -L/mingw64/bin -L$(TARGET_PATH) -lQt6Core -lQt6Network -lQt6Gui -lQt6OpenGL -lQt6OpenGLWidgets -lQt6WebSockets -lQt6Widgets -lQt6PrintSupport -lQt6Qml -lQt6Xml $(ODE_LINK) -lopenal -lopengl32 -liphlpapi -ld3d9 -lgdi32 -lglu32 -lOIS -ldinput8 -ldxguid -lole32 -lsapi -loleaut32 -luuid -lfreetype-6 -lopenvr_api -lassimp-5
+LIBS                     += $(LIB_GLAD) -L/mingw64/lib -L/mingw64/bin -L$(TARGET_PATH) -lQt6Core -lQt6Network -lQt6Gui -lQt6OpenGL -lQt6OpenGLWidgets -lQt6WebSockets -lQt6Widgets -lQt6PrintSupport -lQt6Qml -lQt6Xml -lopenal -lopengl32 -liphlpapi -ld3d9 -lgdi32 -lglu32 -lOIS -ldinput8 -ldxguid -lole32 -lsapi -loleaut32 -luuid -lfreetype-6 -lopenvr_api -lassimp-5
 LD_FLAGS                  = -Wl,--enable-auto-import
 EXTRA_CMD                 = cp launcher/omnisim-bin.exe.config $(TARGET_PATH)/
 FILES_TO_REMOVE           = $(TARGET_PATH)/omnisim-bin.exe.config
@@ -289,10 +294,7 @@ else
 EXTRA_CMD                += ; cp launcher/omnisim_debug.bat $(TARGET_PATH)/omnisim_debug.bat
 endif
 ifeq ($(BUILD_GOAL), profile)
-LIB_ODE = $(if $(ODE_LINK),../ode/ode.a,)
-LIBS += $(LIB_ODE) -lpthread
-else
-LIBS += $(ODE_LINK)
+LIBS += -lpthread
 endif
 endif
 
@@ -301,8 +303,13 @@ ALL_INCLUDE        = -Iapp -Icontrol -Icore -Iwidgets -Ieditor -Iengine -isystem
 # ---- CUDA compute layer (M0 of cuda-compute-infrastructure-plan.md) ---------
 # OMNISIM_WITH_CUDA defaults to ON if `nvcc` is on PATH, OFF otherwise. Users
 # can force either with `make OMNISIM_WITH_CUDA=ON` / `=OFF`.
+ifdef OM_PROBES_CACHED
+OM_NVCC_ON_PATH := $(OM_PROBE_NVCC)
+else
+OM_NVCC_ON_PATH := $(shell command -v nvcc 2>/dev/null)
+endif
 ifeq ($(origin OMNISIM_WITH_CUDA), undefined)
-  ifneq ($(shell command -v nvcc 2>/dev/null),)
+  ifneq ($(OM_NVCC_ON_PATH),)
     OMNISIM_WITH_CUDA = ON
   else
     OMNISIM_WITH_CUDA = OFF
@@ -317,12 +324,17 @@ ifeq ($(OMNISIM_WITH_CUDA),ON)
   # on whitespace. On Windows we further pipe through `cygpath -m -d` to get
   # a short, forward-slashed form (e.g. "C:/PROGRA~1/NVIDIA~2/CUDA/v12.1")
   # that GCC's `-isystem` and the linker accept without quoting.
+  ifeq ($(CUDA_NVCC)$(OM_PROBES_CACHED),nvcc1)
+    CUDA_HOME    := $(OM_PROBE_CUDA_HOME)
+    CUDA_LIB_DIR := $(if $(filter windows,$(OSTYPE)),$(CUDA_HOME)/lib/x64,$(CUDA_HOME)/lib64)
+  else
   ifeq ($(OSTYPE),windows)
     CUDA_HOME    := $(shell p="$$(command -v $(CUDA_NVCC) 2>/dev/null)"; [ -n "$$p" ] && cygpath -m -d "$$(dirname "$$(dirname "$$p")")" 2>/dev/null)
     CUDA_LIB_DIR := $(CUDA_HOME)/lib/x64
   else
     CUDA_HOME    := $(shell p="$$(command -v $(CUDA_NVCC) 2>/dev/null)"; [ -n "$$p" ] && dirname "$$(dirname "$$p")")
     CUDA_LIB_DIR := $(CUDA_HOME)/lib64
+  endif
   endif
   CUDA_INCLUDE    = -isystem $(CUDA_HOME)/include
   CFLAGS += -DOMNISIM_WITH_CUDA
@@ -338,11 +350,11 @@ endif
 
 # ---- NVIDIA Newton physics backend (P0 of cuda-newton-physics-plan.md) ------
 # DEFAULT BACKEND as of the Stage 3 flip (see the OMNISIM_WITH_NEWTON block
-# below). ODE remains the permanent, byte-identical fallback (one flag away).
+# below). There is no other backend.
 # OMNISIM_WITH_NEWTON=ON compiles the Newton backend in; the runtime field
 # `physicsBackend "newton"` (or the flipped `"auto"` default) opts a Solid into
 # the GPU solver. With the flag OFF, every Newton-related .cpp file is a no-op
-# stub and the binary is byte-equivalent to a pure-ODE build.
+# stub and the binary has NO physics at all.
 #
 # Newton itself is a Python package (newton + warp-lang on PyPI; the former
 # was renamed from newton-physics in late 2025). Driven from C++ via the
@@ -488,14 +500,13 @@ endif
 # unspecified Solid resolves to Newton when the runtime is present AND its
 # articulation is Newton-faithful (the OmSolid capability gate still routes mesh
 # / non-Hinge-Slider-joint articulations away from Newton).
-# ⚠ THE FALLBACK THAT USED TO CATCH THOSE CASES IS GONE. ODE was deleted, so
-# `make OMNISIM_WITH_NEWTON=OFF` no longer yields a pure-ODE binary -- it yields
-# a binary with NO working physics backend at all, and the runtime levers that
-# used to select ODE (OMNISIM_LEGACY, OMNISIM_FORCE_ODE, physicsBackend "ode")
-# select nothing. The Newton runtime (newton + warp-lang on PyPI) is still not
-# bundled by this Makefile: when absent, isAvailable() is false and every Solid
-# lands on the inert OmOdeBackend stub. Set OMNISIM_REQUIRE_NEWTON=1 at runtime
-# to make that state loud (see docs/guide/newton-physics-backend.md).
+# ⚠ THERE IS NO FALLBACK. ODE was deleted (bdc02139) and its stub layer went on
+# 2026-09-02, so `make OMNISIM_WITH_NEWTON=OFF` yields a binary with NO physics
+# at all; physicsBackend "ode" in a world warns once and runs on Newton. The
+# Newton runtime is staged by `make bundle-newton-runtime`: when absent,
+# isAvailable() is false, the world loads and stands still, and one ERROR says
+# so. Set OMNISIM_REQUIRE_NEWTON=1 at runtime to make that a FATAL (see
+# docs/guide/newton-physics-backend.md).
 OMNISIM_WITH_NEWTON ?= ON
 ifeq ($(OMNISIM_WITH_NEWTON),ON)
   CFLAGS   += -DOMNISIM_WITH_NEWTON
@@ -521,12 +532,20 @@ ifeq ($(OMNISIM_WITH_NEWTON),ON)
       ifeq ($(PYTHON_PROBE),)
         # Fall back to the Windows py launcher (C:\Windows, so on PATH even
         # in stripped shells, and never shadowed by the MSYS2 python).
+ifdef OM_PROBES_CACHED
+        PYTHON_PROBE := $(wildcard $(subst \,/,$(OM_PROBE_PY3_PREFIX))/include/Python.h)
+else
         PYTHON_PROBE := $(wildcard $(subst \,/,$(shell py -3 -c "import sys; print(sys.prefix)" 2>/dev/null))/include/Python.h)
+endif
       endif
       ifeq ($(PYTHON_PROBE),)
         # Last resort: whatever python is on PATH (skips the MSYS2 python
         # automatically because its include layout doesn't match).
+ifdef OM_PROBES_CACHED
+        PYTHON_PROBE := $(wildcard $(subst \,/,$(OM_PROBE_PYTHON_PREFIX))/include/Python.h)
+else
         PYTHON_PROBE := $(wildcard $(subst \,/,$(shell python -c "import sys; print(sys.prefix)" 2>/dev/null))/include/Python.h)
+endif
       endif
       ifneq ($(PYTHON_PROBE),)
         PYTHON_HOME := $(patsubst %/include/Python.h,%,$(PYTHON_PROBE))
@@ -566,28 +585,10 @@ ifeq ($(OMNISIM_WITH_NEWTON),ON)
   LIBS += -L$(PYTHON_LIBDIR) $(PYTHON_LIB)
 endif
 
-# ---- ODE is GONE ------------------------------------------------------------
-# src/ode and include/ode were deleted; Newton is the only physics backend.
-# OMNISIM_WITH_ODE is no longer a build choice -- it survives only to refuse a
-# stale =ON invocation with a sentence. -DOMNISIM_WITH_ODE is never defined and
-# the `#ifdef OMNISIM_WITH_ODE` blocks it used to select have been swept out of
-# src/omnisim entirely, so nothing in the engine reads the macro any more. The
-# opaque handle typedefs in ode/OmOdeTypes.hpp stay UNCONDITIONAL: headers still
-# carry dBodyID / dGeomID / dMass members, and that file is now their ONLY
-# definition. ODE_LINK / ODE_SYS_INCLUDE stay defined-and-empty because several
-# platform branches above reference them; ODE_INCLUDE's `-Iode` is still needed,
-# it now resolves OmOdeTypes.hpp and nothing else.
-OMNISIM_WITH_ODE ?= OFF
-ifeq ($(OMNISIM_WITH_ODE),ON)
-  $(error OMNISIM_WITH_ODE=ON is no longer buildable: src/ode was deleted and Newton is the only physics backend. Drop the flag.)
-endif
-ODE_SYS_INCLUDE =
-ODE_LINK =
 
 CONTROLLER_INCLUDE = -I$(OMNISIM_PATH)/include/controller/c
-ODE_INCLUDE        = -Iode $(ODE_SYS_INCLUDE)
 QT_CORE_INCLUDE   += -I$(OBJDIR)
-INCLUDE            = $(ALL_INCLUDE) $(CONTROLLER_INCLUDE) $(ODE_INCLUDE) $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(QT_PRINT_SUPPORT_INCLUDE) $(QT_OPENGL_INCLUDE) $(QT_NETWORK_INCLUDE) $(OIS_INCLUDE) $(INSTALL_INCLUDE) $(FREETYPE_INCLUDE) $(STB_INCLUDE) $(ASSIMP_INCLUDE)
+INCLUDE            = $(ALL_INCLUDE) $(CONTROLLER_INCLUDE) $(QT_CORE_INCLUDE) $(QT_GUI_INCLUDE) $(QT_WIDGETS_INCLUDE) $(QT_PRINT_SUPPORT_INCLUDE) $(QT_OPENGL_INCLUDE) $(QT_NETWORK_INCLUDE) $(OIS_INCLUDE) $(INSTALL_INCLUDE) $(FREETYPE_INCLUDE) $(STB_INCLUDE) $(ASSIMP_INCLUDE)
 
 ifeq ($(BUILD_GOAL),debug)
 CFLAGS += -ggdb
@@ -614,9 +615,13 @@ endif
 OBJDIR=build/$(BUILD_GOAL)
 ifneq (,$(findstring $(BUILD_GOAL),debug profile release))
 ifeq ($(OSTYPE),darwin)
+ifeq ($(wildcard $(OBJDIR)/arm64/.deps),)
 BUILD_PATH_SETUP := $(shell mkdir -p $(OBJDIR) $(OBJDIR)/x86_64 $(OBJDIR)/arm64 $(OBJDIR)/x86_64/.deps $(OBJDIR)/arm64/.deps)
+endif
 else
+ifeq ($(wildcard $(OBJDIR)/.deps),)
 BUILD_PATH_SETUP := $(shell mkdir -p $(OBJDIR) $(OBJDIR)/.deps)
+endif
 endif
 endif
 
@@ -677,7 +682,11 @@ endif
 # probe: pin OMNISIM_LINKER=bfd (or =lld) for anything whose binary identity
 # has to match across machines, and `make linker-info` reports the choice.
 OMNISIM_LINKER ?= auto
+ifdef OM_PROBES_CACHED
+OM_HAVE_LLD := $(OM_PROBE_LLD)
+else
 OM_HAVE_LLD := $(shell command -v ld.lld 2>/dev/null)
+endif
 ifeq ($(OMNISIM_LINKER),auto)
 ifneq ($(OM_HAVE_LLD),)
 LD_FLAGS += -fuse-ld=lld
@@ -698,7 +707,11 @@ $(error OMNISIM_LINKER must be auto, bfd or lld)
 endif
 
 ifneq ($(OSTYPE),darwin) # Clang has these warnings by default
+ifdef OM_PROBES_CACHED
+GCC_VER_GREATER_OR_EQUAL_TO_5_DOT_4 := $(OM_PROBE_GCC_GE_504)
+else
 GCC_VER_GREATER_OR_EQUAL_TO_5_DOT_4 := $(shell expr `gcc -dumpversion | sed -e 's/\.\([0-9][0-9]\)/\1/g' -e 's/\.\([0-9]\)/0\1/g' -e 's/^[0-9]\{3,4\}$$/&00/'` \>= 50400)
+endif
 ifeq ($(GCC_VER_GREATER_OR_EQUAL_TO_5_DOT_4),1)
 CXXFLAGS += -Wsuggest-override
 endif
@@ -834,7 +847,6 @@ QT_SOURCES = OmAboutBox.cpp \
   OmNodePane.cpp \
   OmNodeReader.cpp \
   OmNormal.cpp \
-  OmOdeContext.cpp \
   OmOpenSampleWorldDialog.cpp \
   OmPaintTexture.cpp \
   OmPbrAppearance.cpp \
@@ -956,8 +968,6 @@ OTHER_SOURCES = \
   OmBoundingSphere.cpp \
   OmClipboard.cpp \
   OmConcreteNodeFactory.cpp \
-  OmContactSoundManager.cpp \
-  OmContactSound.cpp \
   OmContextMenuGenerator.cpp \
   OmControllerPlugin.cpp \
   OmDataPacket.cpp \
@@ -994,7 +1004,6 @@ OTHER_SOURCES = \
   OmNodeProtoInfo.cpp \
   OmNodeUtilities.cpp \
   OmObjectDetection.cpp \
-  OmOdeUtilities.cpp \
   OmParser.cpp \
   OmPerformanceLog.cpp \
   OmPerspective.cpp \
@@ -1006,7 +1015,6 @@ OTHER_SOURCES = \
   OmResizeCommand.cpp \
   OmResizeAndTranslateCommand.cpp \
   OmRotation.cpp \
-  OmSimulationCluster.cpp \
   OmSolidDevice.cpp \
   OmSolidUtilities.cpp \
   OmSoundClip.cpp \
@@ -1031,7 +1039,6 @@ OTHER_SOURCES = \
   OmCudaContext.cpp \
   OmCudaSmoke.cpp \
   OmPhysicsBackend.cpp \
-  OmOdeBackend.cpp \
   OmNewtonBackend.cpp \
   OmRenderBackend.cpp \
   OmVulkanBackend.cpp \
@@ -1078,8 +1085,8 @@ endif
 .PRECIOUS: $(MOC_FILES)
 
 vpath %.o $(OBJDIR)
-vpath %.hpp app compute/cuda control core widgets editor engine external/siphash gui maths nodes nodes/utils ode physics render scene_tree sound user_commands vrml
-vpath %.cpp app compute/cuda control core widgets editor engine external/siphash gui maths nodes nodes/utils ode physics render scene_tree sound user_commands vrml $(OBJDIR)
+vpath %.hpp app compute/cuda control core widgets editor engine external/siphash gui maths nodes nodes/utils physics render scene_tree sound user_commands vrml
+vpath %.cpp app compute/cuda control core widgets editor engine external/siphash gui maths nodes nodes/utils physics render scene_tree sound user_commands vrml $(OBJDIR)
 
 default:
 	@echo "Type one of the following (OSTYPE is \""$(OSTYPE)"\"):"
@@ -1182,17 +1189,17 @@ $(TARGET): $(OBJDIR)/x86_64/webots $(OBJDIR)/arm64/webots
 	@$(EXTRA_CMD)
 	@echo "# webots compiled in `expr \`date +%s\` - $(START)` seconds"
 
-$(OBJDIR)/x86_64/webots: $(X86_64_OBJECTS) $(LIB_GLAD) $(LIB_ODE)
+$(OBJDIR)/x86_64/webots: $(X86_64_OBJECTS) $(LIB_GLAD)
 	@echo "# linking " $@ "(x64_64)"
 	@$(CXX) -target x86_64-apple-macos12 $(LD_FLAGS) -o $@ $(X86_64_OBJECTS) $(LIBS)
 
-$(OBJDIR)/arm64/webots: $(ARM64_OBJECTS) $(LIB_GLAD) $(LIB_ODE)
+$(OBJDIR)/arm64/webots: $(ARM64_OBJECTS) $(LIB_GLAD)
 	@echo "# linking " $@ "(arm64)"
 	@$(CXX) -target arm64-apple-macos12 $(LD_FLAGS) -o $@ $(ARM64_OBJECTS) $(LIBS)
 
 else
 
-$(TARGET): $(OBJECTS) $(LIB_GLAD) $(LIB_ODE)
+$(TARGET): $(OBJECTS) $(LIB_GLAD)
 	@echo "# linking " $@
 	@$(CXX) $(LD_FLAGS) -o $(TARGET) $(addprefix $(OBJDIR)/, $(OBJECTS)) $(LIBS)
 	@$(EXTRA_CMD)
@@ -1308,13 +1315,9 @@ omnisim.o:gui/omnisim.rc gui/omnisim.ico gui/manifest.xml
 # $(PYTHON_INCLUDE) is empty when OMNISIM_WITH_NEWTON=OFF so it's harmless;
 # in =ON builds it's where Python.h lives for OmNewtonBackend's embedded
 # CPython interpreter.
-# $(ODE_INCLUDE) is here for OmOdeBackend.cpp (P1.5 widening: the ODE
-# backend gained a .cpp once its first method needed to call into ODE).
-# OmPhysicsBackend.hpp + OmOdeBackend.hpp still stay ODE-header-free so
-# the abstraction's containment of ODE doesn't leak to other TUs.
 %.o: physics/%.cpp
 	@echo "# compiling" $<
-	@$(CXX) -c $(CFLAGS) $(CXXFLAGS) $(QT_CORE_INCLUDE) $(PYTHON_INCLUDE) $(ODE_INCLUDE) -Iphysics -Icore $< -o $(OBJDIR)/$@
+	@$(CXX) -c $(CFLAGS) $(CXXFLAGS) $(QT_CORE_INCLUDE) $(PYTHON_INCLUDE) -Iphysics -Icore $< -o $(OBJDIR)/$@
 
 # Rendering-backend abstraction (R0 of engine-migration-plan.md).
 # Twin of the physics/ rule above. R0 stays Qt-free + WREN-free at the
@@ -1365,9 +1368,6 @@ omnisim.o:gui/omnisim.rc gui/omnisim.ico gui/manifest.xml
 	@echo "# compiling" $<
 	@$(CXX) -c $(CFLAGS) $(CXXFLAGS) $(WB_MATHS_INCLUDE) $< -o $(OBJDIR)/$@
 
-%.o: ode/%.cpp
-	@echo "# compiling" $<
-	@$(CXX) -c $(CFLAGS) $(CXXFLAGS) $(WB_ODE_INCLUDE) $< -o $(OBJDIR)/$@
 
 
 %.o: util/%.cpp
@@ -1438,9 +1438,6 @@ $(OBJDIR)/x86_64/%.o: maths/%.cpp
 	@echo "# compiling" $< "(x86_64)"
 	@$(CXX) -target x86_64-apple-macos12 -c $(CFLAGS) $(CXXFLAGS) $(WB_MATHS_INCLUDE) $< -o $@
 
-$(OBJDIR)/x86_64/%.o: ode/%.cpp
-	@echo "# compiling" $< "(x86_64)"
-	@$(CXX) -target x86_64-apple-macos12 -c $(CFLAGS) $(CXXFLAGS) $(WB_ODE_INCLUDE) $< -o $@
 
 
 $(OBJDIR)/x86_64/%.o: util/%.cpp
@@ -1512,9 +1509,6 @@ $(OBJDIR)/arm64/%.o: maths/%.cpp
 	@echo "# compiling" $< "(arm64)"
 	@$(CXX) -target arm64-apple-macos12 -c $(CFLAGS) $(CXXFLAGS) $(WB_MATHS_INCLUDE) $< -o $@
 
-$(OBJDIR)/arm64/%.o: ode/%.cpp
-	@echo "# compiling" $< "(arm64)"
-	@$(CXX) -target arm64-apple-macos12 -c $(CFLAGS) $(CXXFLAGS) $(WB_ODE_INCLUDE) $< -o $@
 
 
 $(OBJDIR)/arm64/%.o: util/%.cpp
@@ -1540,7 +1534,7 @@ $(OBJDIR)/arm64/%.o: vrml/%.cpp
 
 clean:
 	@echo "# cleaning"
-	@rm -rf $(TARGET) $(FILES_TO_REMOVE) $(LAUNCHER) $(LAUNCHERW) $(LAUNCHER_LEGACY) $(LAUNCHERW_LEGACY) build launcher/launcher.o
+	@rm -rf $(TARGET) $(FILES_TO_REMOVE) $(LAUNCHER) $(LAUNCHERW) $(LAUNCHER_LEGACY) $(LAUNCHERW_LEGACY) build launcher/launcher.o $(OMNISIM_PATH)/.build_tmp/make-probes.mk $(OMNISIM_PATH)/.build_tmp/make-probes.key
 
 count-lines:
 	wc -l */*.c* */*.h*

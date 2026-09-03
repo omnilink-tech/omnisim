@@ -178,7 +178,7 @@ resolvable machine provenance.
 > ⛔ **`g1_climb_stairs` (the SKILL) and the stair-climb DEMO are DIFFERENT ARTIFACTS.** They look like
 > a contradiction between this doc and [DEMOS.md](../../DEMOS.md); they are not.
 >
-> | | the **skill** (`humanoid/climb_stairs/skill.json`) | the **demo** ([`demos/run_climb_stairs.sh`](../../projects/policies/demos/run_climb_stairs.sh)) |
+> | | the **skill** (`humanoid/g1_climb_stairs/skill.json`) | the **demo** ([`demos/run_climb_stairs.sh`](../../projects/policies/demos/run_climb_stairs.sh)) |
 > |---|---|---|
 > | reference | a **bespoke climb-ghost** — composed walk→stand→climb, `root_lut` rising with the treads | the **existing WALKING ghost** (`ghost_official_full_v3_lut`), no climb ghost at all |
 > | riser | **7 cm** (5 × 0.07 = 0.35 m) | **3 cm** |

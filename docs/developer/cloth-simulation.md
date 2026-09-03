@@ -291,7 +291,7 @@ readback. The runtime logs this.
 ⚠ **A world carrying cloth finalizes on CUDA even though its robot still steps through CPU
 `mj_step`** ([runtime:3500-3531](../../src/omnisim/physics/omnisim_newton_runtime.py)). This is a
 deliberate inversion of the CPU-device pin that bought the engine 2.1–3.6× (see
-[physics-step-cost-optimization-plan.md](physics-step-cost-optimization-plan.md)), and it is the
+physics-step-cost-optimization-plan.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))), and it is the
 only place in the runtime where the two solvers want different devices.
 
 Reason: `SolverVBD` is a warp solver and its per-particle Gauss-Seidel sweeps are the whole cost.
@@ -805,6 +805,6 @@ garment world:
 - [docs/guide/newton-physics-backend.md](../guide/newton-physics-backend.md) — the Newton backend
 - [docs/guide/friction-grasp.md](../guide/friction-grasp.md) — why the robot stays on `SolverMuJoCo`
 - [docs/benchmarks/determinism-scope.md](../benchmarks/determinism-scope.md) — what "deterministic" is scoped to
-- [physics-step-cost-optimization-plan.md](physics-step-cost-optimization-plan.md) — the CPU device pin cloth inverts
+- physics-step-cost-optimization-plan.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — the CPU device pin cloth inverts
 
 *If this doc and the code disagree, the code wins — update this doc in the same change.*

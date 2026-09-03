@@ -27,11 +27,14 @@ one, so it is a thin, honest adapter rather than a re-plumbing.
 
 This server is a **stateless proxy**: every tool call is one HTTP request to a
 running harness (default `http://127.0.0.1:6789`), over one pooled
-`http.client` connection (per-request when the harness speaks HTTP/1.0, which
-it does today — the pool detects that and degrades automatically). It holds no
-simulator state of its own, which is why it needs no heavy runtime — it is
-pure stdlib (stdio JSON-RPC + http.client), matching the harness's own
-zero-dependency design, so it runs on a fresh clone with nothing installed.
+`http.client` connection. The harness speaks HTTP/1.1 with keep-alive since
+2026-09-01 (measured on the flip: connection reuse 0/229 -> 229/229, `GET
+/healthz` 5.09 -> 0.31 ms), so the pool genuinely reuses the socket; against
+an older HTTP/1.0 harness it still detects `will_close` and degrades to
+per-request connections automatically. It holds no simulator state of its
+own, which is why it needs no heavy runtime — it is pure stdlib (stdio
+JSON-RPC + http.client), matching the harness's own zero-dependency design,
+so it runs on a fresh clone with nothing installed.
 
 Transport
 ---------
@@ -52,9 +55,11 @@ Claude Desktop / Cursor config (`mcpServers`):
     "omnisim": { "command": "omnisim-mcp",
                  "env": { "OMNISIM_HARNESS_URL": "http://127.0.0.1:6789" } }
 
-The harness itself must be running (`python scripts/harness/omnisim_harness.py`
-or `python scripts/dev/omnisim_dev.py harness`). Call the `harness_status` tool
-first — it reports whether the harness is reachable and how to start it if not.
+The harness itself must be running: `python -m omnisim harness` (the module
+form pins OMNISIM_HOME and, on Windows, puts the bundled Qt DLLs on PATH for the
+engine subprocess; the raw script form fails the first world load with
+LAUNCHER_DLL_NOT_FOUND there). Call the `harness_status` tool first — it
+reports whether the harness is reachable and how to start it if not.
 """
 from __future__ import annotations
 
@@ -109,8 +114,9 @@ class _Pool:
       could execute a mutation twice.
     * An HTTP/1.0 peer (``resp.will_close``) closes the socket anyway; the pool
       honours that and degrades to per-request connections automatically. The
-      World Harness is such a peer today, so pooling is a free upgrade the
-      moment it grows keep-alive, and correct either way.
+      World Harness WAS such a peer until 2026-09-01 and speaks HTTP/1.1
+      keep-alive now, so the pool reuses one socket per harness; the detection
+      stays so an older harness is still driven correctly.
     """
 
     def __init__(self) -> None:
@@ -232,7 +238,7 @@ def t_harness_status(_args: dict) -> list:
 
 def t_load_world(args: dict) -> list:
     body = {"path": args["path"]}
-    for k in ("wait_s", "with_supervisor", "light", "settle_steps",
+    for k in ("wait_s", "with_supervisor", "light", "tracking", "settle_steps",
               "reset_physics"):
         if k in args:
             body[k] = args[k]
@@ -246,6 +252,14 @@ def t_load_world(args: dict) -> list:
     if force_reload:
         body.pop("settle_steps", None)
         body.pop("reset_physics", None)
+    else:
+        # /world/sync has no per-tracker toggle; the per-tracker `tracking`
+        # object is a /world/load contract (PROTOCOL.md, public issue #4).
+        # Asking for one on the sync path is a deliberate reload.
+        if "tracking" in body:
+            endpoint = "/world/load"
+            body.pop("settle_steps", None)
+            body.pop("reset_physics", None)
     return _text(_json_call("POST", endpoint, body))
 
 
@@ -310,6 +324,41 @@ def t_sim_step(args: dict) -> list:
     return _text(_json_call("POST", "/sim/step", body))
 
 
+def t_read_bench(args: dict) -> list:
+    suffix = f"?n={int(args['n'])}" if "n" in args else ""
+    return _text(_json_call("GET", "/debug/read_bench" + suffix))
+
+
+def t_scene_node_particles(args: dict) -> list:
+    suffix = f"?sample={int(args['sample'])}" if "sample" in args else ""
+    return _text(_json_call("GET", f"/scene/node/{args['def']}/particles" + suffix))
+
+
+def t_robot_damage(_args: dict) -> list:
+    return _text(_json_call("GET", "/robot/damage"))
+
+
+def t_robot_damage_events(args: dict) -> list:
+    q = []
+    for k in ("since", "limit"):
+        if k in args:
+            q.append(f"{k}={urllib.request.quote(str(args[k]))}")
+    path = "/robot/damage/events" + ("?" + "&".join(q) if q else "")
+    return _text(_json_call("GET", path))
+
+
+def t_robot_damage_reset(_args: dict) -> list:
+    return _text(_json_call("POST", "/robot/damage/reset", {}))
+
+
+def t_robot_damage_inject(args: dict) -> list:
+    body = {"part": args["part"]}
+    for k in ("state", "hp_delta"):
+        if k in args:
+            body[k] = args[k]
+    return _text(_json_call("POST", "/robot/damage/inject", body))
+
+
 def t_sim_reset(args: dict) -> list:
     body = {k: args[k] for k in ("restore", "verify", "settle_steps")
             if k in args}
@@ -338,8 +387,11 @@ def t_get_robot_joints(args: dict) -> list:
     return _text(_json_call("GET", f"/robot/{args['def']}/joints"))
 
 
-def t_get_contacts(_args: dict) -> list:
-    return _text(_json_call("GET", "/sim/contacts"))
+def t_get_contacts(args: dict) -> list:
+    suffix = ""
+    if "settle_steps" in args:
+        suffix = f"?settle_steps={int(args['settle_steps'])}"
+    return _text(_json_call("GET", "/sim/contacts" + suffix))
 
 
 def t_get_diagnostics(_args: dict) -> list:
@@ -388,12 +440,13 @@ def t_scene_spawn(args: dict) -> list:
     body = {k: args[k] for k in ("vrml", "type", "fields", "urdf", "clone",
                                  "def", "name", "translation", "rotation",
                                  "parent", "index", "settle_steps",
-                                 "reset_physics") if k in args}
+                                 "reset_physics", "physics") if k in args}
     return _text(_json_call("POST", "/scene/spawn", body))
 
 
 def t_scene_delete(args: dict) -> list:
-    body = {k: args[k] for k in ("def", "defs", "settle_steps") if k in args}
+    body = {k: args[k] for k in ("def", "defs", "settle_steps", "physics")
+            if k in args}
     return _text(_json_call("POST", "/scene/delete", body))
 
 
@@ -455,20 +508,50 @@ TOOLS = {
     ),
     "load_world": (
         t_load_world,
-        "Default world iteration tool. The first call loads the .wbt; later calls "
-        "live-apply proven root-node pose-only edits in one batch and automatically "
-        "hot-reload every other edit. Returns mode=live_pose|no_change|full_reload. "
-        "Set force_reload=true only when you deliberately need controllers restarted "
-        "or a full reparse.",
+        "Default world iteration tool. The first call loads the world (.omniworld, "
+        "or legacy .wbt); later calls live-apply proven root-node pose-only edits in "
+        "one batch and automatically hot-reload every other edit. Returns "
+        "mode=live_pose|no_change|full_reload. Set force_reload=true only when you "
+        "deliberately need controllers restarted or a full reparse. ⭐ LIGHT "
+        "TRACKING IS THE HARNESS DEFAULT SINCE 2026-09-02: omit both `light` and "
+        "`tracking` and the load runs light, and the response says so "
+        "(tracking.default_applied=true + a sentence naming the way back). It was "
+        "flipped because with the trackers on the harness is slower than just "
+        "re-running run-headless: measured on the 309-node fleet arena (2026-08-29), "
+        "a full-tracking step costs 573-606 ms against 6-35 ms light (~17x), 10 steps "
+        "2855-3187 ms vs 48-67 ms (~47x), and the load itself 12.1 s vs 4.1 s. The "
+        "trade: the contact.*/grip.*/joint.limit_hit EVENTS and get_grips go quiet; "
+        "get_contacts still answers. Need the trackers? An explicit value ALWAYS "
+        "wins: light=false runs all three, `tracking` (per-tracker toggles, "
+        "2026-09-01) exactly the ones you name; OMNISIM_HARNESS_LIGHT=0 on the "
+        "harness restores the old full default process-wide.",
         {"type": "object",
          "properties": {
              "path": {"type": "string",
-                      "description": "repo-relative or absolute path to the .wbt"},
+                      "description": "repo-relative (to the harness's clone) or absolute "
+                                     "path to the .omniworld / .wbt"},
              "wait_s": {"type": "number", "description": "load timeout seconds"},
               "with_supervisor": {"type": "boolean",
                                   "description": "inject the harness supervisor (default true)"},
               "light": {"type": "boolean",
-                        "description": "use the low-overhead supervisor mode"},
+                        "description": "drop ALL per-step trackers (contacts, joint "
+                                       "limits, grips). THE HARNESS DEFAULT since "
+                                       "2026-09-02 when neither this nor `tracking` is "
+                                       "passed (2.3x cheaper single steps and an 11% faster load on the fleet arena, measured 2026-09-02 on the current engine; the 2026-08-29 figures of 12.1 s vs 4.1 s and 17-47x predate the controller-probe cache and immediate-burst fixes; "
+                                       "~4x on a 10-node cloth world; get_contacts still "
+                                       "works). Pass false to run all three trackers "
+                                       "(get_grips + contact/grip/joint-limit events)."},
+              "tracking": {"type": "object",
+                           "description": "per-tracker toggles, e.g. {\"contacts\": false, "
+                                          "\"joint_limits\": true, \"grips\": false} -- "
+                                          "keep joint.limit_hit while paying no contact "
+                                          "walk (partial mode steps at ~light cost). "
+                                          "Keys: contacts, joint_limits, grips. Forces "
+                                          "a /world/load (the sync path has no toggle).",
+                           "properties": {
+                               "contacts": {"type": "boolean"},
+                               "joint_limits": {"type": "boolean"},
+                               "grips": {"type": "boolean"}}},
               "settle_steps": {"type": "integer", "minimum": 0,
                                "description": "steps after a live pose batch (default 1)"},
               "reset_physics": {"type": "boolean",
@@ -586,7 +669,12 @@ TOOLS = {
     "screenshot": (
         t_screenshot,
         "Render the current view to PNG. With no `path`, returns the image "
-        "inline so you can see it; with `path`, writes it server-side.",
+        "inline so you can see it; with `path`, writes it server-side. Call "
+        "`frame` first (it computes aim AND distance from the subject's real "
+        "bounds and returns a numeric proof it is in frame) -- do not guess a "
+        "pose and iterate on screenshots; `visible` tells you what is on screen "
+        "and by how many degrees you are off, `render_stats` catches a blown-out "
+        "or black frame as numbers.",
         {"type": "object",
          "properties": {
              "path": {"type": "string", "description": "server-side output path (optional)"},
@@ -601,9 +689,74 @@ TOOLS = {
     ),
     "sim_step": (
         t_sim_step,
-        "Advance the simulation by N basic timesteps (default 1).",
+        "Advance the simulation by N basic timesteps (default 1). Size N from "
+        "get_capabilities -> limits.recommended_max_steps_per_request (a rolling "
+        "median of the MEASURED per-step cost on THIS world; probe_step=true "
+        "measures one) instead of discovering the harness's 120 s RPC timeout by "
+        "hitting it. Per-step cost is dominated by tracking mode, not node count: "
+        "light is the harness default since 2026-09-02 (see load_world); a "
+        "light=false or `tracking` load pays about 2.3x per single step on the fleet arena (measured 2026-09-02; the older 17-47x figure predates the 2026-09-02 engine fixes).",
         {"type": "object",
-         "properties": {"steps": {"type": "integer", "minimum": 1}}},
+         "properties": {"steps": {"type": "integer", "minimum": 1,
+                                  "description": "basic timesteps to advance; keep at or "
+                                                 "below recommended_max_steps_per_request"}}},
+    ),
+    "read_bench": (
+        t_read_bench,
+        "Diagnostic: measure the cost of ONE supervisor read on this session "
+        "(n getPosition round-trips, free-running vs paused) -- "
+        "GET /debug/read_bench. Measured, never echoed. Use it to size a polling "
+        "loop or to check the 2026-09-01 immediate-burst fix is in effect "
+        "(7.4 -> 0.6 ms/read on the 309-node fleet arena).",
+        {"type": "object",
+         "properties": {"n": {"type": "integer", "minimum": 1, "maximum": 1000,
+                              "description": "reads per arm (default 50)"}}},
+    ),
+    "scene_node_particles": (
+        t_scene_node_particles,
+        "Particle statistics for one Cloth / SoftBody / GranularBed / "
+        "GranularGroup node by DEF (GET /scene/node/<def>/particles): count, "
+        "world-frame min/max/centroid over the FINITE particles, and non_finite "
+        "-- a diverging cloth reads as a rising non_finite, never a NaN "
+        "centroid. Pure read off the engine's per-step particle cache; "
+        "sample=N adds every N-th particle's xyz.",
+        {"type": "object",
+         "properties": {"def": {"type": "string", "description": "the particle node's DEF"},
+                        "sample": {"type": "integer", "minimum": 1,
+                                   "description": "include every N-th particle's xyz"}},
+         "required": ["def"]},
+    ),
+    "robot_damage": (
+        t_robot_damage,
+        "Damage state of the tracked robot (GET /robot/damage): per-part HP and "
+        "state. Only meaningful in a world whose supervisor tracks damage (the "
+        "robot_combat / damage demos); elsewhere the response says so.",
+        {"type": "object", "properties": {}},
+    ),
+    "robot_damage_events": (
+        t_robot_damage_events,
+        "Filtered view of the damage.* events (GET /robot/damage/events) -- the "
+        "same records get_events carries, with their own `since` cursor.",
+        {"type": "object",
+         "properties": {"since": {"type": "integer", "description": "event cursor"},
+                        "limit": {"type": "integer"}}},
+    ),
+    "robot_damage_reset": (
+        t_robot_damage_reset,
+        "Heal every part of the tracked robot WITHOUT resetting the simulation "
+        "(POST /robot/damage/reset).",
+        {"type": "object", "properties": {}},
+    ),
+    "robot_damage_inject": (
+        t_robot_damage_inject,
+        "Set a part's damage state directly (POST /robot/damage/inject) -- the "
+        "fault-injection verb, so a damage-response path can be tested without "
+        "staging a collision.",
+        {"type": "object",
+         "properties": {"part": {"type": "string", "description": "part name"},
+                        "state": {"type": "string", "description": "damage state to set"},
+                        "hp_delta": {"type": "number", "description": "HP change to apply"}},
+         "required": ["part"]},
     ),
     "sim_reset": (
         t_sim_reset,
@@ -625,13 +778,15 @@ TOOLS = {
     "rebuild_physics": (
         t_rebuild_physics,
         "W1.7 (2026-09-01): rebuild the Newton world at the scene's CURRENT "
-        "poses in ~0.1-0.3 s, so runtime-spawned nodes gain physics and "
-        "deleted ones lose it (the frozen-model physics_warning on "
-        "scene_spawn/scene_delete is the problem this fixes; those verbs also "
-        "accept physics='rebuild' inline). Refused with 409 REBUILD_REFUSED "
-        "on Cloth/SoftBody/GranularBed worlds (reload those). Engaged "
-        "Connector/VacuumGripper welds are DROPPED loudly -- re-lock from "
-        "the controller.",
+        "poses (97-267 ms measured; velocities replayed, motor targets "
+        "re-pushed, so a driving robot keeps driving), so runtime-spawned "
+        "nodes gain physics and deleted ones lose it (the frozen-model "
+        "physics_warning on scene_spawn/scene_delete is the problem this "
+        "fixes; those verbs also accept physics='rebuild' inline). Refused "
+        "with 409 REBUILD_REFUSED on Cloth/SoftBody/GranularBed worlds "
+        "(reload those). Engaged Connector/VacuumGripper welds are DROPPED "
+        "loudly -- do not rebuild mid-grasp. Bitwise step-for-step "
+        "continuation across a rebuild is not claimed.",
         {"type": "object",
          "properties": {
              "settle_steps": {"type": "integer", "minimum": 1,
@@ -667,8 +822,20 @@ TOOLS = {
     ),
     "get_contacts": (
         t_get_contacts,
-        "Global contact set: [{a_def, b_def, point}].",
-        {"type": "object", "properties": {}},
+        "Global contact set (GET /sim/contacts): `contacts` = [{a_def, b_def, "
+        "point, paired}] -- `paired` false means only one side answered "
+        "(b_def null), an honest half-contact rather than a dropped one -- "
+        "plus a `tracking` block naming what was walked (solids walked, "
+        "contacts_paired/unpaired, empty_set_reasons, inert_pinned_solids). "
+        "WORKS IN LIGHT MODE: it is walked per call and never reads the "
+        "ContactTracker that light=true drops (only the contact.* EVENTS and "
+        "get_grips go quiet). An EMPTY list is never proof of no contact -- "
+        "read tracking.empty_set_reasons. There is no body sleep on Newton, "
+        "so ?wake=1 is a no-op and is not exposed here.",
+        {"type": "object",
+         "properties": {"settle_steps": {
+             "type": "integer", "minimum": 0,
+             "description": "advance this many steps before the walk (optional)"}}},
     ),
     "get_diagnostics": (
         t_get_diagnostics,
@@ -708,20 +875,26 @@ TOOLS = {
                                "description": "clear moved-body velocity (default true)"},
              "wait_s": {"type": "number", "description": "reload timeout seconds"},
              "light": {"type": "boolean",
-                       "description": "low-overhead supervisor on a full reload"},
+                       "description": "low-overhead supervisor on a full reload -- the "
+                                      "harness default since 2026-09-02; omitted keeps the "
+                                      "running session's mode, false runs all trackers"},
          }},
     ),
     "scene_spawn": (
         t_scene_spawn,
         "Import a node into the live scene from raw VRML, a type+fields spec, "
-        "or clone of an existing DEF. ⛔ A SCENE-GRAPH VERB, NOT A PHYSICS "
-        "VERB: the solver model is frozen at world finalize, so the spawned "
-        "node has NO physics until the world is reloaded (a dynamic body "
+        "or clone of an existing DEF. ⛔ BY DEFAULT A SCENE-GRAPH VERB, NOT A "
+        "PHYSICS VERB: the solver model is frozen at world finalize, so "
+        "without opting in the spawned node has NO physics (a dynamic body "
         "never falls, a static one never collides — the response's "
-        "physics_warning says so). Use it for cameras/markers/visual props or "
-        "to stage a scene you will then reload. Cloning needs a unique `name` "
-        "or the clone's controller silently dies on an IPC collision; a "
-        "URDFRobot cannot be spawned from a string — clone one.",
+        "physics_warning says so). Pass physics='rebuild' (or call "
+        "rebuild_physics afterwards) and the node IS simulated: the Newton "
+        "world is rebuilt at the scene's current poses in 97-267 ms; refused "
+        "on cloth/soft/granular worlds, engaged welds dropped. Without it, use "
+        "spawn for cameras/markers/visual props or to stage a scene you will "
+        "then reload. Cloning needs a unique `name` or the clone's controller "
+        "silently dies on an IPC collision; a URDFRobot cannot be spawned from "
+        "a string — clone one.",
         {"type": "object",
          "properties": {
              "vrml": {"type": "string", "description": "raw VRML node text"},
@@ -739,22 +912,30 @@ TOOLS = {
              "index": {"type": "integer", "description": "insertion index in the parent"},
              "settle_steps": {"type": "integer", "minimum": 0},
              "reset_physics": {"type": "boolean"},
+             "physics": {"type": "string", "enum": ["rebuild"],
+                         "description": "'rebuild' = rebuild the Newton world after the "
+                                        "spawn so the node has physics (W1.7)"},
          }},
     ),
     "scene_delete": (
         t_scene_delete,
         "Remove nodes by DEF (unknown DEFs come back named rather than "
-        "failing the batch). ⛔ The frozen solver model KEEPS the deleted "
-        "colliders as phantoms until the world is reloaded — a deleted wall "
-        "still blocks rays and robots, a deleted floor still holds bodies up, "
-        "silently (the response's physics_warning says so). Reload after "
-        "deleting anything collidable.",
+        "failing the batch). ⛔ BY DEFAULT the frozen solver model KEEPS the "
+        "deleted colliders as phantoms — a deleted wall still blocks rays and "
+        "robots, a deleted floor still holds bodies up, silently (the "
+        "response's physics_warning says so). Pass physics='rebuild' (or call "
+        "rebuild_physics afterwards) and the deleted geometry genuinely stops "
+        "colliding -- same 97-267 ms rebuild and the same caveats as "
+        "scene_spawn. Otherwise reload after deleting anything collidable.",
         {"type": "object",
          "properties": {
              "def": {"type": "string", "description": "DEF of the node to remove"},
              "defs": {"type": "array", "items": {"type": "string"},
                       "description": "several DEFs at once"},
              "settle_steps": {"type": "integer", "minimum": 0},
+             "physics": {"type": "string", "enum": ["rebuild"],
+                         "description": "'rebuild' = rebuild the Newton world after the "
+                                        "delete so the phantoms are gone (W1.7)"},
          }},
     ),
     "scene_set_pose": (
@@ -809,9 +990,13 @@ TOOLS = {
     "get_grips": (
         t_get_grips,
         "Inferred grips: [{gripper_def, held_def, since_t_ms}]. ⚠ Empty in a "
-        "light-mode session (the grip tracker is dropped with light=true) — "
-        "and a contact read is always a weaker claim than proving the grasp "
-        "geometrically (the part is airborne and tracks the gripper).",
+        "light-mode session -- the harness DEFAULT since 2026-09-02, so unless "
+        "the world was loaded with light=false (or a `tracking` object keeping "
+        "grips) the tracker is NOT RUNNING: the answer carries "
+        "tracking.enabled=false (NOT MEASURED, not 'nothing gripped') and the "
+        "first such read puts one world.warning TRACKER_NOT_RUNNING on "
+        "get_events. A contact read is always a weaker claim than proving the "
+        "grasp geometrically (the part is airborne and tracks the gripper).",
         {"type": "object", "properties": {}},
     ),
     "robot_devices": (

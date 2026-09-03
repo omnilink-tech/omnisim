@@ -66,6 +66,41 @@ void OmWgpuTextureCache::evictToBudget() {
 #endif
 }
 
+bool OmWgpuTextureCache::evictStale() {
+  bool evicted = false;
+#ifdef OMNISIM_WITH_VULKAN
+#  ifdef WB_WGPU_NATIVE_AVAILABLE
+  // Only entries NOT touched since the previous rebuild are candidates (see the header).
+  while (mTotalBytes > kBudgetBytes && mEntries.size() > 1) {
+    auto lru = mEntries.end();
+    for (auto it = mEntries.begin(); it != mEntries.end(); ++it)
+      if (it->second.lastUsed < mFrameStart && (lru == mEntries.end() || it->second.lastUsed < lru->second.lastUsed))
+        lru = it;
+    if (lru == mEntries.end())
+      break;  // everything left is the working set: exceed the budget rather than re-upload it
+    if (lru->second.view)
+      wgpuTextureViewRelease(static_cast<WGPUTextureView>(lru->second.view));
+    if (lru->second.texture)
+      wgpuTextureRelease(static_cast<WGPUTexture>(lru->second.texture));
+    mTotalBytes -= lru->second.bytes;
+    mEntries.erase(lru);
+    evicted = true;
+  }
+  if (mTotalBytes > kBudgetBytes && !mBudgetWarned) {
+    mBudgetWarned = true;
+    OmLog::info(QString("[OmWgpuTextureCache] the scene's texture working set (%1 MB in %2 textures) exceeds the "
+                        "%3 MB VRAM budget; nothing is evicted while it is in use, so VRAM stays above budget for "
+                        "this scene (lower OpenGL/textureQuality to shrink it)")
+                  .arg(mTotalBytes / (1024 * 1024))
+                  .arg(static_cast<qulonglong>(mEntries.size()))
+                  .arg(kBudgetBytes / (1024 * 1024)));
+  }
+#  endif
+#endif
+  mFrameStart = mClock + 1;
+  return evicted;
+}
+
 bool OmWgpuTextureCache::tryGet(uint64_t textureId, OmWgpuTextureHandle &out) {
   auto it = mEntries.find(textureId);
   if (it == mEntries.end())
@@ -216,7 +251,8 @@ OmWgpuTextureHandle OmWgpuTextureCache::acquire(uint64_t textureId, uint32_t wid
   e.mipLevels = mipCount;
   mEntries.emplace(textureId, e);
   mTotalBytes += e.bytes;
-  evictToBudget();  // bound VRAM: drop the least-recently-used entries if over kBudgetBytes
+  // Eviction happens at evictStale(), never here: a view released mid-collect dangles in the draws
+  // already collected this frame (see beginFrame()).
   // Regression signal for the 3c-B texture-flood bug: log every texture CREATION (cache miss).
   // A correct scene reaches a small, STABLE count (its unique texture files) and then goes quiet
   // because shared files cache-HIT; a key regression (e.g. reverting to pointer keys) makes the

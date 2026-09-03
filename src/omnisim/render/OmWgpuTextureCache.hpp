@@ -50,6 +50,18 @@ struct OmWgpuTextureHandle {
 
 class OmWgpuTextureCache {
 public:
+  // Rebuild point (2026-09-02). Call right BEFORE re-collecting a draw list against this cache
+  // (never per frame, never mid-collect): releases least-recently-used entries down to
+  // kBudgetBytes, but only entries NOTHING touched since the previous call -- the previous
+  // rebuild's working set stays, so a scene whose textures exceed the budget runs above budget
+  // (warned once) instead of re-uploading it every rebuild. Returns true when anything was
+  // released; the caller must then drop every bind group keyed by a texture view
+  // (OmWgpuRenderTarget::forgetTextureBindGroups), because wgpu recycles handle values and a
+  // cached bind group built on the dead view is "invalid" at submit. acquire() no longer evicts:
+  // it used to release views mid-collect, and a draw collected earlier in the same frame kept
+  // referencing the dead view, so wgpuDeviceCreateBindGroup panicked ("TextureView does not
+  // exist") on any scene whose textures exceeded the budget (environments/city.omniworld).
+  bool evictStale();
   explicit OmWgpuTextureCache(OmVulkanBackend *owner);
   ~OmWgpuTextureCache();
 
@@ -112,6 +124,8 @@ private:
   std::unordered_map<uint64_t, Entry> mEntries;
   size_t mTotalBytes = 0;
   uint64_t mClock = 0;
+  uint64_t mFrameStart = 0;  // mClock value at the last beginFrame(); entries used since are the working set
+  bool mBudgetWarned = false;
 };
 
 #endif

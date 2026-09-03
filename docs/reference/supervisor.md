@@ -86,7 +86,7 @@ The return value can be used for subsequent calls to functions which require a `
 If the requested node does not exist in the current world file or is an internal node of a PROTO, the function returns NULL.
 If a handle to an internal node of a PROTO should be retrieved, the `wb_supervisor_node_get_from_proto_def` should be used instead.
 
-Note that in case of [procedural PROTO nodes](procedural-proto-nodes.md) regeneration, nodes retrieved by `wb_supervisor_node_get_from_proto_def` might become invalid as well as all the descendant nodes and fields.
+Note that in case of [procedural PROTO nodes](javascript-procedural-proto.md) regeneration, nodes retrieved by `wb_supervisor_node_get_from_proto_def` might become invalid as well as all the descendant nodes and fields.
 In this case, after triggering the PROTO regeneration, the nodes and fields should be retrieved again using the [Supervisor](#supervisor) API functions.
 
 It is possible to use dots (.) as scoping operator in the DEF parameter.
@@ -1869,7 +1869,7 @@ The following table summarizes the behavior of different reset functions:
       <td style="background-color:#eee;text-align:center;vertical-align:middle" colspan=2>N/A</td>
     </tr>
     <tr>
-      <td><strong><a href="track.md">Track</a></strong></td>
+      <td><strong>Track</strong></td>
       <td style="text-align:center;vertical-align:middle">Resets</td>
       <td colspan=2>Resets the motor position and the <code>translation</code> field of the textureTransform node of the <a
           href="appearance.md">Appearance</a> node of the first <a href="shape.md">Shape</a> children node

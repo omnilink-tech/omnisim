@@ -2,7 +2,7 @@
 
 Every `.wbt` in the repo classified by purpose. Use this when you have a world filename and need to know what it's for; use [DEMOS.md](DEMOS.md) when you want to find a demo by what it does.
 
-> **Canonical lighting recipe.** Every user-facing `.wbt` (demos, samples, RL, top-level robot demos — **332** of the 361 tracked worlds outside `tests/`) uses the same three-PROTO sky+sun recipe defined in [`docs/WORLD_RECIPE.md`](docs/WORLD_RECIPE.md): `OmniSimSky` + `DEF SUN OmniSimSun` + `DEF SUN_MARKER OmniSimSunMarker`. Test worlds under `tests/` are exempt. Exception: the omniworld-**generated** worlds under `distribution/generated_worlds/` currently ship with `TexturedBackground`, pending the emitter's migration to the OmniSimSky recipe. New worlds — human- or agent-authored — MUST follow the recipe; migrate via `python scripts/dev/migrate_world_recipe.py`.
+> **Canonical lighting recipe.** Every user-facing `.omniworld` (demos, samples, RL, top-level robot demos — **383** of the 434 tracked `.omniworld` worlds outside `tests/`, re-counted 2026-09-02) uses the same three-PROTO sky+sun recipe defined in [`docs/WORLD_RECIPE.md`](docs/WORLD_RECIPE.md): `OmniSimSky` + `DEF SUN OmniSimSun` + `DEF SUN_MARKER OmniSimSunMarker`. Test worlds under `tests/` are exempt. Exception: the omniworld-**generated** worlds under `distribution/generated_worlds/` currently ship with `TexturedBackground`, pending the emitter's migration to the OmniSimSky recipe. New worlds — human- or agent-authored — MUST follow the recipe; migrate via `python scripts/dev/migrate_world_recipe.py`.
 
 > **Migration status.** All 73 demo worlds are now grouped by category under [`projects/samples/demos/worlds/<category>/`](projects/samples/demos/worlds/) (Phase 3 — done). EXTERNPROTO/texture/mesh paths rewritten to portable `omnisim://` form; URDFRobot `url` paths kept relative (the URDF loader does not honour the URL scheme). Only [`omnilink_launcher.omniworld`](projects/samples/demos/worlds/omnilink_launcher.omniworld) stays at the top.
 
@@ -180,7 +180,7 @@ Representative research worlds (`projects/policies/research/worlds/`): `omniquad
 
 List the full current sets with `ls projects/policies/worlds/*.wbt` and `ls projects/policies/research/worlds/*.wbt`.
 
-Pipeline doc: [`docs/developer/archive/rl-pipeline.md`](docs/developer/archive/rl-pipeline.md) (and the canonical status in [`docs/developer/rl-current-state.md`](docs/developer/rl-current-state.md)). README: [`projects/policies/README.md`](projects/policies/README.md).
+Pipeline doc: `docs/developer/archive/rl-pipeline.md` (archived 2026-09-02, see [docs/ARCHIVE.md](docs/ARCHIVE.md)) (and the canonical status in [`docs/developer/rl-current-state.md`](docs/developer/rl-current-state.md)). README: [`projects/policies/README.md`](projects/policies/README.md).
 
 ---
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """wheel_lock_repro -- reproduce the omnisim XPBD wheel-lock in PURE PYTHON via the
-g1_deploy_runtime mirror (no omnisim-bin, no rebuild) and isolate the cause.
+omnisim_newton_runtime module itself (no omnisim-bin, no rebuild) and isolate the cause.
 
 The wheel reaches ~3 rad then freezes. Suspect: omnisim's _add_revolute_to_builder passes
 limit_ke=10000/limit_kd=100 to EVERY motorized joint, but for a CONTINUOUS wheel it does NOT
@@ -28,14 +28,18 @@ import sys
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(_REPO / "projects" / "rl" / "backends"))
+# The deploy runtime is imported from its source location (the same module the
+# engine's embedded interpreter runs). This used to point at projects/rl/backends
+# (a directory deleted in the rl -> policies reorg) and import the g1_deploy_runtime
+# mirror, which is gone too (2026-09-02).
+sys.path.insert(0, str(_REPO / "src" / "omnisim" / "physics"))
 try:
     import truststore
     truststore.inject_into_ssl()
 except ImportError:
     pass
 
-import g1_deploy_runtime as rt
+import omnisim_newton_runtime as rt
 
 DT, STEPS, OMEGA = 0.008, 400, 12.0
 

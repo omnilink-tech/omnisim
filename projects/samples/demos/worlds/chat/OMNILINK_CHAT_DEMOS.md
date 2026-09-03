@@ -1,6 +1,6 @@
 # OmniLink chat demos — index
 
-This folder contains 13 `omnilink_<robot>.wbt` chat-driven demos (one
+This folder contains 15 `omnilink_<robot>.omniworld` chat-driven demos (one
 per URDF robot in the repo), plus the 3-arm `omnilink_multi_arm.omniworld`.
 Each opens a robot in
 a small arena with an **OmniLink robot console** side menu attached:

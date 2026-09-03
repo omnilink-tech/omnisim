@@ -139,6 +139,28 @@ protected:
                         std::vector<std::array<float, 16>> &modelStorage,
                         OmWgpuTextureCache *texCache = NULL);
 
+  // CACHED variant of collectWgpuDraws (2026-09-02). The main view has kept a cached draw list
+  // since the wgpu flip (full scene walk only when a structural signal fires or every 600 frames,
+  // a ~1 ms matrix refresh otherwise: OmView3D::renderMainFrameViaWgpu), but every Camera and
+  // RangeFinder still rebuilt its list from scratch on EVERY rendered frame -- the whole Solid
+  // walk, dynamic_casts, ambient/uv fills and texture-cache lookups -- so a sensor on a big scene
+  // paid the ~50 ms walk the main view had already engineered away. This keeps one list per
+  // DEVICE (the records alias that device's own mesh/texture caches, so nothing is shared across
+  // devices), refreshes matrices in place, trims and re-appends the dynamic tail (cloth /
+  // softbody / granular / track / muscle) exactly as before, and rebuilds on the same hooks the
+  // main view uses. The vectors handed back belong to the device and are valid until the next
+  // call. Hatch: OMNISIM_WGPU_SENSOR_DRAW_CACHE=0 (value-parsed) collects from scratch every
+  // frame, reproducing the previous image byte for byte.
+  void collectWgpuDrawsCached(OmWgpuMeshCache &cache, OmWgpuTextureCache *texCache,
+                              std::vector<OmWgpuSolidDraw> *&draws,
+                              std::vector<std::array<float, 16>> *&modelStorage,
+                              bool *texturesEvicted = nullptr);
+  // `texturesEvicted` (optional) is set true when the texture cache released entries at this
+  // rebuild; the caller must then call forgetTextureBindGroups() on the target it renders with.
+  void invalidateWgpuDrawCache();
+  struct WgpuDrawCache;
+  WgpuDrawCache *mWgpuDrawCache;
+
   // user accessible fields
   OmSFDouble *mFieldOfView;
   OmSFString *mProjection;

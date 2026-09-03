@@ -20,9 +20,7 @@
 #include "OmHingeJointParameters.hpp"
 #include "OmMathsUtilities.hpp"
 #include "OmNewtonBackend.hpp"
-#include "OmOdeContext.hpp"
 #include "OmPhysicsBackend.hpp"
-#include "OmOdeUtilities.hpp"
 #include "OmRotationalMotor.hpp"
 #include "OmSolid.hpp"
 #include "OmWorld.hpp"
@@ -116,14 +114,13 @@ bool OmHingeJoint::setJoint() {
   if (!OmBasicJoint::setJoint())
     return false;
 
-  const OmSolid *const s = solidEndPoint();
-  setOdeJoint(s ? s->body() : NULL, upperSolid()->bodyMerger());
+  setOdeJoint();
 
   return true;
 }
 
-void OmHingeJoint::setOdeJoint(dBodyID body, dBodyID parentBody) {
-  OmJoint::setOdeJoint(body, parentBody);
+void OmHingeJoint::setOdeJoint() {
+  OmJoint::setOdeJoint();
   // compute and set the anchor point and suspension
   applyToOdeAnchor();
   applyToOdeSuspension();
@@ -148,70 +145,19 @@ void OmHingeJoint::applyToOdeStopCfm() {
 }
 
 void OmHingeJoint::applyToOdeAxis() {
+  // Only the position-offset bookkeeping survives; the axis itself reaches
+  // Newton through the joint registration in OmBasicJoint, not through here.
   updateOdePositionOffset();
-
-  const OmMatrix4 &m4 = upperPose()->matrix();
-  OmVector3 a = m4.sub3x3MatrixDot(axis());
-  if (mIsReverseJoint)
-    a = -a;  // the axis should be inverted when the upper solid has no physics node
-  (void)a;  // ODE is gone: no ODE joint exists
 }
 
 void OmHingeJoint::applyToOdeSuspensionAxis() {
   // suspension along the suspension axis
   const OmHingeJointParameters *const hp = hingeJointParameters();
-  if (hp == NULL)
-    return;
-  const OmMatrix4 &m4 = upperPose()->matrix();
-  OmVector3 a = m4.sub3x3MatrixDot(hp->suspensionAxis());
-  if (mIsReverseJoint)
-    a = -a;  // the axis should be inverted when the upper solid has no physics node
-  a.normalize();
-  (void)a;
+  (void)hp;  // suspension is UNIMPLEMENTED on Newton (see applyToOdeSuspension)
 }
 
 void OmHingeJoint::applyToOdeAnchor() {
-  assert(mJoint);
-
   updateOdePositionOffset();
-
-  const OmMatrix4 &m4 = upperPose()->matrix();
-  const OmVector3 &t = m4 * anchor();
-  (void)t;
-}
-
-void OmHingeJoint::applyToOdeSpringAndDampingConstants(dBodyID body, dBodyID parentBody) {
-  const OmJointParameters *const p = parameters();
-  const double brakingDampingConstant = brake() ? brake()->getBrakingDampingConstant() : 0.0;
-
-  if ((p == NULL && brakingDampingConstant == 0.0) || (body == NULL && parentBody == NULL)) {
-    if (mSpringAndDamperMotor) {
-      mSpringAndDamperMotor = NULL;
-    }
-    return;
-  }
-
-  assert((body || parentBody) && (p || brake()));
-
-  double d = brakingDampingConstant;
-  double s = 0.0;
-  if (p) {
-    d += p->dampingConstant();
-    s += p->springConstant();
-  }
-
-  if (s == 0.0 && d == 0.0) {
-    if (mSpringAndDamperMotor) {
-      mSpringAndDamperMotor = NULL;
-    }
-    return;
-  }
-
-  // ODE removed: JointParameters.springConstant / dampingConstant and Brake's
-  // brakingDampingConstant are now UNIMPLEMENTED on a HingeJoint -- they were
-  // realised as an ODE AMotor companion joint configured with the converted
-  // (cfm, erp) pair, and no Newton equivalent is wired. (s / d above are still
-  // read: a zero pair is what releases mSpringAndDamperMotor.)
 }
 
 void OmHingeJoint::applyToOdeSuspension() {
@@ -356,28 +302,18 @@ void OmHingeJoint::updateMinAndMaxStop(double min, double max) {
         p->parsingWarn(tr("HingeJoint 'maxStop' must be greater or equal to RotationalMotor 'maxPosition'."));
     }
   }
-
-  if (mJoint)
-    applyToOdeMinAndMaxStop();
 }
 
 void OmHingeJoint::updateStopErp() {
-  if (mJoint)
-    applyToOdeStopErp();
 }
 
 void OmHingeJoint::updateStopCfm() {
-  if (mJoint)
-    applyToOdeStopCfm();
 }
 
 void OmHingeJoint::updateAnchor() {
   // update the current endPoint pose based on the new anchor value
   // but do not modify the initial endPoint pose
   updatePosition();
-
-  if (mJoint)
-    applyToOdeAnchor();
 }
 
 OmVector3 OmHingeJoint::axis() const {
@@ -389,19 +325,4 @@ OmVector3 OmHingeJoint::axis() const {
 OmVector3 OmHingeJoint::anchor() const {
   const OmHingeJointParameters *const p = hingeJointParameters();
   return p ? p->anchor() : OmBasicJoint::anchor();
-}
-
-void OmHingeJoint::updateOdeWorldCoordinates() {
-  if (!mJoint || !isPostFinalizedCalled())
-    return;
-
-  const OmHingeJointParameters *p = hingeJointParameters();
-  if (p && (p->suspensionSpringConstant() != 0.0 || p->suspensionDampingConstant() != 0.0))
-    // remove suspension effect by resetting the endPoint solid position
-    updatePosition(mPosition);
-
-  applyToOdeAxis();
-  applyToOdeAnchor();
-  if (p)
-    applyToOdeSuspensionAxis();
 }

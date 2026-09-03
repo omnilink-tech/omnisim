@@ -207,9 +207,11 @@ Cloth {
   # exchange for a garment that does not tear open there. Author seams where a
   # real garment has them and it does not show.
   field SFNode     appearance      NULL          # Appearance | PBRAppearance. NULL => the legacy phong `diffuseColor` above
-  # This defaulted to FALSE for a while because TRUE crashed the engine with an
-  # access violation (0xC0000005) on the GL driver's own worker thread. That is
-  # FIXED (src/wren/DynamicMesh.cpp::updateGlShadow) and the default is TRUE
+  # HISTORY (WREN era -- WREN was deleted 2026-08-23, 976b9449d; under wgpu, the
+  # only renderer, this field is a plain shadow-caster toggle). This defaulted to
+  # FALSE for a while because TRUE crashed the engine with an access violation
+  # (0xC0000005) on the GL driver's own worker thread. That was FIXED in WREN's
+  # DynamicMesh.cpp::updateGlShadow (since deleted) and the default is TRUE
   # again; the mechanism is recorded here because the symptom pointed nowhere
   # near the cause.
   #

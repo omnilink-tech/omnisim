@@ -109,10 +109,21 @@ namespace {
   //     the texture) -- the three simulation consumers of texture pixels. pickColor
   //     is already lazy (decodes on demand), and mIsMainTextureTransparent has zero
   //     external readers, so neither needs the eager decode.
+  // 2026-09-02: value-parsed. This read was presence-gated, so `OMNISIM_EAGER_TEXTURE_DECODE=0`
+  // ARMED the revert (the OMNISIM_REQUIRE_NEWTON trap); unset/empty/"0"/"false"/"off" now keep the
+  // gate and anything else reverts. OmSimulationWorld.cpp's load-time log line parses it the same way.
+  bool eagerTextureDecodeForced() {
+    static const bool forced = []() {
+      const QString v = QString::fromUtf8(qgetenv("OMNISIM_EAGER_TEXTURE_DECODE")).trimmed().toLower();
+      return !(v.isEmpty() || v == "0" || v == "false" || v == "off");
+    }();
+    return forced;
+  }
+
   bool skipHeadlessEagerTextureDecode() {
     const OmWorld *const world = OmWorld::instance();
     return OmSimulationState::instance()->startedWithoutRendering() && world && world->isLoading() &&
-           !world->needsTextures() && !qEnvironmentVariableIsSet("OMNISIM_EAGER_TEXTURE_DECODE");
+           !world->needsTextures() && !eagerTextureDecodeForced();
   }
 }  // namespace
 

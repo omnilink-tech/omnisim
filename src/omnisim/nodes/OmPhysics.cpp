@@ -121,12 +121,12 @@ void OmPhysics::checkMassAndDensity() const {
   const double m = mMass->value();
   const double d = mDensity->value();
   if (m == -1.0 && d == -1.0) {
-    parsingWarn(tr("Either the 'mass' or the 'density' must be specified."));
+    parsingWarn(tr("Either the 'mass' or the 'density' must be specified. With neither, this Solid gets the default mass of 1 kg and an identity inertia matrix. Set 'mass' (kg) directly, or set 'density' (kg/m^3) together with a 'boundingObject' to integrate it over -- see docs/reference/physics.md."));
     return;
   }
 
   if (m > 0.0 && d > 0.0) {
-    parsingWarn(tr("Both 'density' and 'mass' specified: the 'density' will be ignored."));
+    parsingWarn(tr("Both 'density' and 'mass' specified: the 'density' will be ignored. The body keeps the authored 'mass'; set 'density' to -1 (or delete it) to silence this -- see docs/reference/physics.md."));
     return;
   }
 }
@@ -180,9 +180,9 @@ void OmPhysics::checkInertiaMatrix(bool showInfo) {
   if (!(minor1 > 0.0 && minor2 > 0.0 && minor3 > 0.0)) {
     mHasAvalidInertiaMatrix = false;
     if (showInfo)
-      parsingWarn(tr("'inertiaMatrix' must be positive definite."));
+      parsingWarn(tr("'inertiaMatrix' must be positive definite. This one is rejected and the inertia falls back to the boundingObject-derived value (identity if there is none). Fix the six values (principal moments on the first line, ixy ixz iyz on the second), or delete 'inertiaMatrix' and let the 'boundingObject' derive it -- see docs/reference/physics.md."));
   } else if (mCenterOfMass->size() == 0 && showInfo)
-    parsingWarn(tr("'centerOfmass' must also be specified when using an inertia matrix."));
+    parsingWarn(tr("'centerOfmass' must also be specified when using an inertia matrix. The custom 'inertiaMatrix' is IGNORED until it is: set 'centerOfMass' to one 'x y z' line in the Solid's own frame -- see docs/reference/physics.md."));
   else if (mMass->value() < 0.0 && showInfo)
     parsingWarn(tr("'mass' must be positive when using an inertia matrix."));
 }

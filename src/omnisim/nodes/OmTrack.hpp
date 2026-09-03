@@ -132,7 +132,6 @@ private:
   OmBrake *mBrake;
   double mMotorPosition;
   double mSurfaceVelocity;
-  dBodyID mBodyID;
 
   // wheels
   QVector<OmTrackWheel *> mWheelsList;

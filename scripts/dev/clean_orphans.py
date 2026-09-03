@@ -30,7 +30,9 @@ Two classes of orphan get cleaned:
    binary on this clone was previously built, the corresponding .o (and
    moc_/qrc_/.d sidecars) sit in src/<...>/build/{debug,release}/ forever
    linking to dead source. Each .o is removed only when no source file
-   with a matching basename exists anywhere under the build dir's parent.
+   with a matching basename exists anywhere under src/ -- where "source"
+   means every kind a Makefile compiles into a .o (.cpp/.c, but also the
+   windres .rc behind omnisim.o, .qrc, .ui, .cu), see SOURCE_EXTS.
 
 Both passes only act on gitignored output, never on tracked content.
 
@@ -97,7 +99,15 @@ def descend(root: Path, levels: int):
             yield from descend(child, levels - 1)
 
 
-SOURCE_EXTS = {".cpp", ".cc", ".cxx", ".c", ".hpp", ".hxx", ".h", ".qrc"}
+# Every source kind a Makefile under src/ compiles into a .o -- not just C/C++.
+# src/omnisim/Makefile builds omnisim.o from gui/omnisim.rc (windres), so a
+# matcher that only knew .cpp/.c read that live object as orphan and deleted
+# it on every post-checkout hook run, forcing a relink (2026-09-02, 3x in a
+# day). .qrc -> qrc_<stem>.o, .ui -> ui_<stem>.h, .cu/.cuh -> nvcc objects.
+SOURCE_EXTS = {
+    ".cpp", ".cc", ".cxx", ".c", ".hpp", ".hxx", ".h",
+    ".qrc", ".ui", ".rc", ".cu", ".cuh",
+}
 BUILD_SUFFIXES = (".o", ".d")
 MOC_PREFIXES = ("moc_", "qrc_")
 

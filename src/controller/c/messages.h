@@ -47,7 +47,16 @@
 // hundreds of controller processes at once (especially on Windows). Wrong protocol bytes
 // are rejected immediately, so a longer deadline does not weaken fail-fast ABI detection.
 // Both sides may override this default with OMNISIM_IPC_HANDSHAKE_TIMEOUT_MS.
-#define OMNISIM_IPC_HANDSHAKE_DEFAULT_TIMEOUT_MS 60000
+// 60 s was the budget until 2026-09-03, and public issue #15 measured how thin that is:
+// a cold load to finalize on a mid-range laptop with a second engine running took 31.1 s --
+// half the budget -- while everything worked. The engine writes its hello when it ACCEPTS the
+// connection, so a controller spawned early waits out the rest of the world load; a machine
+// ~2x slower, or a cold warp kernel compile on a busy CI box, reaches 60 s with nothing wrong.
+// The timeout only fires when NO bytes ever arrive: a genuinely mismatched build is caught by
+// the magic/version checks the instant the hello lands, so a longer budget does not slow any
+// real mismatch down. 300 s costs a hung pair four extra minutes and buys everyone else the
+// margin. OMNISIM_IPC_HANDSHAKE_TIMEOUT_MS overrides (1000..300000).
+#define OMNISIM_IPC_HANDSHAKE_DEFAULT_TIMEOUT_MS 300000
 
 // for any device
 

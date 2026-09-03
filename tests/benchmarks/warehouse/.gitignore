@@ -1,0 +1,8 @@
+# results/ is run output: bench_omnilink.py, goals_suite.py, robot_qa*.py and
+# clearance_monitor.py all write `--out results/<name>.json`, and the next run
+# recreates whatever it needs. Five uncited one-off records were deleted on
+# 2026-09-02. The three that stay tracked are cited --
+# 2026-07-28_goals_{offline,omnilink}.json by GOALS_SUITE.md and
+# 2026-07-29_robot_qa.json by the OmniLink bridge controllers -- and a new
+# record a doc cites needs `git add -f`.
+/results/

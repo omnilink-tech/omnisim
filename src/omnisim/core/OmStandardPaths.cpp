@@ -267,7 +267,7 @@ bool OmStandardPaths::webotsTmpPathCreate(const int id) {
   if (username.isEmpty()) {
     username = qgetenv("USERNAME");
     if (username.isEmpty()) {
-      OmLog::error(QObject::tr("USER or USERNAME environment variable not set, falling back to 'default' username."));
+      OmLog::error(QObject::tr("USER or USERNAME environment variable not set, falling back to 'default' username. The controller IPC directory becomes /tmp/webots/default/<port>/, shared by every user on this host; export USER=<name> (or USERNAME) in the shell that launches OmniSim -- containers and CI runners often omit it."));
       username = "default";
     }
   }
@@ -283,7 +283,7 @@ bool OmStandardPaths::webotsTmpPathCreate(const int id) {
   else {
     cWebotsTmpPath = QString("/tmp/webots/%1/%2/").arg(username).arg(id);
     OmLog::error(QObject::tr("OmniSim has not been started regularly. Some features may not work. "
-                             "Please start OmniSim from its launcher."));
+                             "Please start OmniSim from its launcher. The launcher exports OMNISIM_TMPDIR; when omnisim-bin is run directly, set OMNISIM_TMPDIR to an existing writable directory (the controller IPC dir is created under it) to clear this."));
   }
 #endif
 #endif

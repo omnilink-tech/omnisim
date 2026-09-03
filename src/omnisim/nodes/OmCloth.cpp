@@ -42,6 +42,8 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 
+// Qt-include ratchet exception (2026-09-02): QFileInfo is used as a COMPLETE type below
+// (exists() / fileName() on the mesh path) and no header this file already includes supplies it.
 #include <QtCore/QFileInfo>
 
 #include <algorithm>
@@ -594,7 +596,7 @@ void OmCloth::onPhysicsStepStarted() {
   OmPhysicsBackend *const raw = OmPhysicsBackendRegistry::newtonBackend();
   if (raw == NULL || !raw->isAvailable()) {
     OmLog::warning(tr("Cloth '%1' is inert: the Newton runtime is not available, so there is no solver to "
-                      "simulate its particles. The patch renders at its authored rest pose and will not move.")
+                      "simulate its particles. The patch renders at its authored rest pose and will not move. Run `python -m omnisim doctor`; on Windows stage the runtime with `make -C src/omnisim bundle-newton-runtime`, on Linux pip newton/warp/mujoco into the system python3 (docs/developer/newton-runtime-bundle.md).")
                      .arg(usefulName()));
     return;
   }

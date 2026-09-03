@@ -22,7 +22,6 @@
 class OmNewtonBackend;
 class OmSensor;
 class OmVector3;
-typedef double dQuaternion[4];
 
 class OmConnector : public OmSolidDevice {
   Q_OBJECT
@@ -91,7 +90,6 @@ private:
   // other stuff
   FaceType mFaceType;    // UNKNOWN, SYMMETRIC, ACTIVE or PASSIVE
   double mMinDist2;      // squared distanceTolerance
-  dJointID mFixedJoint;  // ODE joint that does the connection
   OmConnector *mPeer;    // peer connector or NULL
   bool mStartup;         // do once flag
   OmSensor *mSensor;     // presence sensor
@@ -116,8 +114,7 @@ private:
   bool isReadyToAttachTo(const OmConnector *other) const;
   void attachTo(OmConnector *other);
   void detachFromPeer();
-  void createFixedJoint(OmConnector *other, const dBodyID b1, const dBodyID b2);
-  void destroyFixedJoint();
+  void createFixedJoint(OmConnector *other);
   void createNewtonWeld(OmConnector *other, int newtonBody1, int newtonBody2);
   void releaseNewtonWeld();
   void lock();
@@ -131,12 +128,6 @@ private:
   bool isZAlignedWith(const OmConnector *other) const;
   void detachIfForceExceedStrength();
   double findClosestRotationalAlignment(double alpha) const;
-  void snapXAxes(OmConnector *other, dQuaternion q, const dBodyID b1, const dBodyID b2);
-  void snapOrigins(OmConnector *other, const dBodyID b1, const dBodyID b2);
-  void snapRotation(OmConnector *other, const OmVector3 &z1, const OmVector3 &z2, const dBodyID b1, const dBodyID b2);
-  void rotateBodies(OmConnector *other, const dQuaternion q, const dBodyID b1, const dBodyID b2);
-  void getOriginInWorldCoordinates(double out[3]) const;
-  void snapNow(OmConnector *other, const dBodyID b1, const dBodyID b2);
   double getEffectiveTensileStrength() const;
   double getEffectiveShearStrength() const;
   void init();

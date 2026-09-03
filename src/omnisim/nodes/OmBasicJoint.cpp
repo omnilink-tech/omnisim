@@ -33,7 +33,6 @@
 #include "OmSolidMerger.hpp"
 #include "OmSolidReference.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 #include <QtCore/QPointer>
 #include <QtCore/QSet>
 #include <cassert>
@@ -262,9 +261,6 @@ int OmBasicJoint::registerNewtonMultiDof(OmNewtonBackend *, int, int, const OmVe
 }
 
 void OmBasicJoint::init() {
-  mJoint = NULL;
-  mIsReverseJoint = false;
-  mSpringAndDamperMotor = NULL;
   mIsEndPointPositionChangedByJoint = false;
   mNewtonJointIndex = -1;
 
@@ -290,9 +286,7 @@ OmBasicJoint::~OmBasicJoint() {
   if (s && !s->isBeingDeleted())
     s->removeJointParent(this);
 
-  mJoint = NULL;
 
-  mSpringAndDamperMotor = NULL;
 }
 
 void OmBasicJoint::downloadAssets() {
@@ -394,31 +388,27 @@ void OmBasicJoint::createOdeObjects() {
     s->createOdeObjects();
 }
 
-// Newton enforcement (2026-06-29 default: no silent Newton->ODE). A joint whose articulation resolved
-// to Newton but whose endpoint body never registered a Newton body is "silently inert" -- the joint
-// drops out and that limb runs on ODE while the rest of the robot is on Newton. Under enforcement that is
-// a hard error. Fires ONLY when the MISSING endpoint actually wanted Newton (its effective backend is not
-// an explicit "ode"); a joint that legitimately belongs to an ODE articulation has no Newton body by
-// design and is left alone. Body registration runs before joint registration (OmSimulationWorld), so a
-// negative index here is a genuine miss, not a transient ordering artifact.
+// Newton enforcement (2026-06-29 default: no silent drop-out). A joint whose articulation resolved to
+// Newton but whose endpoint body never registered a Newton body is "silently inert" -- the joint drops
+// out and that limb is simulated by nothing while the rest of the robot is on Newton. Under enforcement
+// that is a hard error. Fires ONLY when the MISSING endpoint actually wanted Newton (the §4.1 capability
+// gate did not keep its articulation off Newton -- that case is named by OmSolid's own sweep). Body
+// registration runs before joint registration (OmSimulationWorld), so a negative index here is a genuine
+// miss, not a transient ordering artifact.
 static void enforceNewtonJointEndpoints(const OmSolid *parent, const OmSolid *child,
                                         int parentIdx, int childIdx) {
   if (!OmPhysicsBackendRegistry::newtonEnforced())
     return;
-  static const QString kOde = QStringLiteral("ode");
-  const bool parentMissing =
-      parentIdx < 0 && parent != nullptr && parent->effectivePhysicsBackendName() != kOde;
-  const bool childMissing =
-      childIdx < 0 && child != nullptr && child->effectivePhysicsBackendName() != kOde;
+  const bool parentMissing = parentIdx < 0 && parent != nullptr && !parent->gatedAwayFromNewton();
+  const bool childMissing = childIdx < 0 && child != nullptr && !child->gatedAwayFromNewton();
   if (!parentMissing && !childMissing)
     return;
   const OmSolid *const missing = parentMissing ? parent : child;
   OmLog::fatal(
       QString("[newton-enforce] A joint's %1 body '%2' resolved to Newton but never registered a "
-              "Newton body, so the joint would be silently inert -- and with ODE removed there is no "
-              "backend left for that part of the articulation to fall back to, so it would run with "
-              "no physics at all. Fix the model so the body registers with Newton. (physicsBackend "
-              "\"ode\" and OMNISIM_ALLOW_ODE_FALLBACK=1 no longer select anything.)")
+              "Newton body, so the joint would be silently inert -- and Newton is the only backend, so "
+              "that part of the articulation would run with no physics at all. Fix the model so the "
+              "body registers with Newton.")
           .arg(parentMissing ? QStringLiteral("parent") : QStringLiteral("child"))
           .arg(missing != nullptr ? missing->name() : QStringLiteral("?")));
 }
@@ -428,8 +418,8 @@ bool OmBasicJoint::wantsNewtonRegistration() const {
   // comment there): endpoint + parent Solids present, not a kinematic
   // (no-Physics) endpoint under native-kinematic mode, a Hinge/Slider
   // family joint (the OmHingeJoint cast deliberately captures Hinge2 and
-  // Ball, which inherit from it), and neither side pinned to the retired
-  // "ode" backend.
+  // Ball, which inherit from it), and neither side kept off Newton by the
+  // capability gate.
   OmSolid *const s = solidEndPoint();
   OmSolid *const parent = solidParent();
   const bool kinematicEndpoint =
@@ -437,8 +427,7 @@ bool OmBasicJoint::wantsNewtonRegistration() const {
   return parent != nullptr && s != nullptr && !kinematicEndpoint &&
          (dynamic_cast<const OmHingeJoint *>(this) != nullptr ||
           dynamic_cast<const OmSliderJoint *>(this) != nullptr) &&
-         parent->effectivePhysicsBackendName() != QStringLiteral("ode") &&
-         s->effectivePhysicsBackendName() != QStringLiteral("ode");
+         !parent->gatedAwayFromNewton() && !s->gatedAwayFromNewton();
 }
 
 void OmBasicJoint::requeueAllNewtonJointsForRebuild() {
@@ -1074,14 +1063,12 @@ bool OmBasicJoint::setJoint() {
   return true;
 }
 
-void OmBasicJoint::setOdeJoint(dBodyID body, dBodyID parentBody) {
-  assert(mJoint && upperSolid() && (solidEndPoint() || (solidReference() && solidReference()->pointsToStaticEnvironment())));
-  // linked to static environment: ODE internally requires the first body to be not NULL and switches the two bodies
-  mIsReverseJoint = parentBody == NULL;
-  // ODE removed: the dJointEnable/Disable that used to follow (enabled unless
-  // BOTH bodies are NULL) is gone. Joint enablement is now purely a Newton
-  // question -- see OmBasicJoint::isEnabled(), which reports mNewtonJointIndex.
-  applyToOdeSpringAndDampingConstants(body, parentBody);
+void OmBasicJoint::setOdeJoint() {
+  assert(upperSolid() && (solidEndPoint() || (solidReference() && solidReference()->pointsToStaticEnvironment())));
+  // The ODE dJoint attach / enable that lived here is gone. Joint enablement
+  // is a Newton question -- see OmBasicJoint::isEnabled(), which reports
+  // mNewtonJointIndex. Subclasses hang their axis / anchor / stop bookkeeping
+  // (the position offsets the Newton path reads) off this call.
 }
 
 void OmBasicJoint::reset(const QString &id) {
@@ -1165,10 +1152,9 @@ void OmBasicJoint::updateEndPointPosition() {
 }
 
 void OmBasicJoint::updateSpringAndDampingConstants() {
-  const OmSolid *const s = solidEndPoint();
-  const OmSolid *const us = upperSolid();
-  if (areOdeObjectsCreated() && s && us)
-    applyToOdeSpringAndDampingConstants(s->body(), us->bodyMerger());
+  // JointParameters.springConstant / dampingConstant and Brake damping were
+  // realised as an ODE AMotor companion joint; no Newton equivalent is wired,
+  // so they are UNIMPLEMENTED and this signal sink does nothing.
 }
 
 // Utility functions

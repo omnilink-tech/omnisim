@@ -38,7 +38,7 @@ public:
   bool isAValidBoundingObject(bool checkOde = false, bool warning = true) const override;
   bool isSuitableForInsertionInBoundingObject(bool warning = false) const override;
 
-  dGeomID createOdeGeom(dSpaceID space) override;
+  bool createOdeGeom() override;
   void setOdePosition(const OmVector3 &translation) override;
   void setOdeRotation(const OmMatrix3 &matrix) override;
 

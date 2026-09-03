@@ -27,7 +27,6 @@
 #include "OmPropeller.hpp"
 #include "OmSolid.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 #include <cassert>
 
@@ -71,12 +70,8 @@ double OmRotationalMotor::computeFeedback() const {
 
   const OmJoint *j = joint();
   if (j == NULL) {  // function available for motorized joints only
-    warn(tr("Feedback is available for motorized joints only"));
+    warn(tr("Feedback is available for motorized joints only: this motor is not the 'device' of a Joint (a Propeller or a bare Motor has no joint to measure), so the reading stays 0. Place the motor in a HingeJoint/SliderJoint 'device' field to measure it -- see docs/reference/rotationalmotor.md."));
     return 0.0;
   }
-  const dJointID jID = j->jointID();
-  if (!jID)  // we need physics enabled to compute torque feedback
-    return 0.0;
-
-  return 0.0;  // unreachable (jID is always null now); the dJointFeedback math this replaced went with ODE
+  return 0.0;  // the dJointFeedback math this replaced went with ODE; no Newton force-feedback service yet
 }

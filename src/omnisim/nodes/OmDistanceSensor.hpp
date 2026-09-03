@@ -27,8 +27,6 @@ class OmLookupTable;
 
 class QDataStream;
 class SensorRay;
-typedef struct dxGeom *dGeomID;
-struct dContactGeom;
 
 class OmDistanceSensor : public OmSolidDevice {
   Q_OBJECT
@@ -52,7 +50,6 @@ public:
   bool refreshSensorIfNeeded() override;
 
   // other functions
-  void rayCollisionCallback(OmGeometry *object, dGeomID rayGeom, const dContactGeom *);
 
 private slots:
   void updateRaySetup();

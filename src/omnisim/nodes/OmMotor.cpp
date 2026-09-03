@@ -37,7 +37,6 @@
 #include "OmTrack.hpp"
 #include "OmUrl.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 #include <QtCore/QDataStream>
 #include <QtCore/QUrl>
@@ -178,12 +177,9 @@ void OmMotor::createWrenObjects() {
 }
 
 void OmMotor::setupJointFeedback() {
-  const OmJoint *const j = joint();
-  if (!j)
-    return;
-  dJointID jID = j->jointID();
-  if (!jID)
-    return;
+  // Force/torque feedback was read from the ODE joint feedback; there is no
+  // Newton force-feedback service yet, so there is nothing to set up (readings
+  // stay 0, see the one-shot warning in the refresh-rate handler).
 }
 
 double OmMotor::energyConsumption() const {
@@ -356,10 +352,10 @@ void OmMotor::setTargetPosition(double position) {
   if (maxp != minp && !velocityControl) {
     if (mTargetPosition > maxp) {
       mTargetPosition = maxp;
-      warn(QString("too big requested position: %1 > %2").arg(position).arg(maxp));
+      warn(QString("too big requested position: %1 > %2 -- the target is clamped to 'maxPosition'. Command within [minPosition, maxPosition], or raise 'maxPosition' on the motor (and 'maxStop' on its joint) in the world; see docs/reference/motor.md.").arg(position).arg(maxp));
     } else if (mTargetPosition < minp) {
       mTargetPosition = minp;
-      warn(QString("too low requested position: %1 < %2").arg(position).arg(minp));
+      warn(QString("too low requested position: %1 < %2 -- the target is clamped to 'minPosition'. Command within [minPosition, maxPosition], or lower 'minPosition' on the motor (and 'minStop' on its joint) in the world; see docs/reference/motor.md.").arg(position).arg(minp));
     }
   }
 
@@ -372,7 +368,7 @@ void OmMotor::setVelocity(double velocity) {
 
   const double m = mMaxVelocity->value();
   if (fabs(mTargetVelocity) > m) {
-    warn(tr("The requested velocity %1 exceeds 'maxVelocity' = %2.").arg(mTargetVelocity).arg(m));
+    warn(tr("The requested velocity %1 exceeds 'maxVelocity' = %2. It is clamped to the limit, so the motor runs slower than commanded; raise 'maxVelocity' on the motor in the world or command within it -- see docs/reference/motor.md.").arg(mTargetVelocity).arg(m));
     mTargetVelocity = mTargetVelocity >= 0.0 ? m : -m;
   }
 
@@ -394,9 +390,9 @@ void OmMotor::setForceOrTorque(double forceOrTorque) {
   if (fabs(mRawInput) > mMotorForceOrTorque) {
     if (mCoupledMotors.size() == 0) {  // silence warning for coupled motors
       if (nodeType() == WB_NODE_ROTATIONAL_MOTOR)
-        warn(tr("The requested motor torque %1 exceeds 'maxTorque' = %2").arg(mRawInput).arg(mMotorForceOrTorque));
+        warn(tr("The requested motor torque %1 exceeds 'maxTorque' = %2. It is clamped to the limit; raise 'maxTorque' on the RotationalMotor in the world or command within it -- see docs/reference/rotationalmotor.md.").arg(mRawInput).arg(mMotorForceOrTorque));
       else
-        warn(tr("The requested motor force %1 exceeds 'maxForce' = %2").arg(mRawInput).arg(mMotorForceOrTorque));
+        warn(tr("The requested motor force %1 exceeds 'maxForce' = %2. It is clamped to the limit; raise 'maxForce' on the LinearMotor in the world or command within it -- see docs/reference/linearmotor.md.").arg(mRawInput).arg(mMotorForceOrTorque));
     }
 
     mRawInput = mRawInput >= 0.0 ? mMotorForceOrTorque : -mMotorForceOrTorque;
@@ -413,9 +409,9 @@ void OmMotor::setAvailableForceOrTorque(double availableForceOrTorque) {
   if (mMotorForceOrTorque > m) {
     if (mCoupledMotors.size() == 0) {  // silence warning for coupled motors
       if (nodeType() == WB_NODE_ROTATIONAL_MOTOR)
-        warn(tr("The requested available motor torque %1 exceeds 'maxTorque' = %2").arg(mMotorForceOrTorque).arg(m));
+        warn(tr("The requested available motor torque %1 exceeds 'maxTorque' = %2. It is clamped to the limit; raise 'maxTorque' on the RotationalMotor in the world or request within it -- see docs/reference/rotationalmotor.md.").arg(mMotorForceOrTorque).arg(m));
       else
-        warn(tr("The requested available motor force %1 exceeds 'maxForce' = %2").arg(mMotorForceOrTorque).arg(m));
+        warn(tr("The requested available motor force %1 exceeds 'maxForce' = %2. It is clamped to the limit; raise 'maxForce' on the LinearMotor in the world or request within it -- see docs/reference/linearmotor.md.").arg(mMotorForceOrTorque).arg(m));
     }
     mMotorForceOrTorque = m;
   }
@@ -650,7 +646,7 @@ void OmMotor::enableMotorFeedback(int rate) {
   const OmJoint *const j = joint();
 
   if (j == NULL) {
-    warn(tr("Feedback is available for motorized joints only"));
+    warn(tr("Feedback is available for motorized joints only: this motor is not the 'device' of a Joint (a Propeller or a bare Motor has no joint to measure), so the reading stays 0. Place the motor in a HingeJoint/SliderJoint 'device' field to measure it -- see docs/reference/motor.md."));
     return;
   }
 
@@ -658,15 +654,15 @@ void OmMotor::enableMotorFeedback(int rate) {
 
   if (s == NULL) {
     warn(nodeType() == WB_NODE_ROTATIONAL_MOTOR ?
-           tr("wb_motor_enable_torque_feedback(): cannot be invoked for a Joint with no end point.") :
-           tr("wb_motor_enable_force_feedback(): cannot be invoked for a Joint with no end point."));
+           tr("wb_motor_enable_torque_feedback(): cannot be invoked for a Joint with no end point. The feedback stays 0; set the Joint's 'endPoint' to a Solid that has a Physics node.") :
+           tr("wb_motor_enable_force_feedback(): cannot be invoked for a Joint with no end point. The feedback stays 0; set the Joint's 'endPoint' to a Solid that has a Physics node."));
     return;
   }
 
   if (s->physics() == NULL) {
     warn(nodeType() == WB_NODE_ROTATIONAL_MOTOR ?
-           tr("wb_motor_enable_torque_feedback(): cannot be invoked for a Joint whose end point has no Physics node.") :
-           tr("wb_motor_enable_force_feedback(): cannot be invoked for a Joint whose end point has no Physics node."));
+           tr("wb_motor_enable_torque_feedback(): cannot be invoked for a Joint whose end point has no Physics node. The feedback stays 0; add a Physics node to the Joint's endPoint Solid.") :
+           tr("wb_motor_enable_force_feedback(): cannot be invoked for a Joint whose end point has no Physics node. The feedback stays 0; add a Physics node to the Joint's endPoint Solid."));
     return;
   }
 
@@ -678,12 +674,10 @@ void OmMotor::enableMotorFeedback(int rate) {
     return;
   }
 
-  dJointID jID = j->jointID();
   // The measurement source was ODE's joint feedback, which has been removed,
   // and there is no Newton force-feedback service yet -- the sensor stays
   // enabled but reads its no-data default (0). One-shot warning so the zero is
   // never mistaken for a measured torque/force.
-  (void)jID;
   if (rate) {
     static bool cNoFeedbackWarned = false;
     if (!cNoFeedbackWarned) {

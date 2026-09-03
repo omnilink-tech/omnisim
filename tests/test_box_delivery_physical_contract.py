@@ -186,10 +186,16 @@ def test_baton_supports_opt_in_per_specialist_handover_tuning() -> None:
 
 
 def test_box_demo_disables_mujoco_islands_before_first_physics_step() -> None:
-    backend = _text("src/omnisim/physics/OmNewtonBackend.cpp")
-    construct = backend.index("self.solver = newton.solvers.SolverMuJoCo")
+    # The Newton runtime was extracted from the C++ string literal in
+    # OmNewtonBackend.cpp into its own module (AGENTS.md: "EDITING THE PHYSICS
+    # RUNTIME? IT NO LONGER LIVES IN THE C++ STRING"); the contract is unchanged.
+    backend = _text("src/omnisim/physics/omnisim_newton_runtime.py")
     early_disable = backend.index('if _force_mujoco and _os.environ.get("OMNISIM_NEWTON_DISABLE_ISLAND")')
-    rolling_friction = backend.index("# OPT-IN ROLLING FRICTION")
+    # The SolverMuJoCo construction that PRECEDES the island switch: the module
+    # builds a solver in several places, and only the nearest one is the
+    # finalize path this ordering is about.
+    construct = backend.rindex("self.solver = newton.solvers.SolverMuJoCo", 0, early_disable)
+    rolling_friction = backend.index("# OPT-IN ROLLING FRICTION", early_disable)
 
     assert construct < early_disable < rolling_friction
     assert "mjtDisableBit.mjDSBL_ISLAND" in backend[early_disable:rolling_friction]

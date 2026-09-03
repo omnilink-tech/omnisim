@@ -57,7 +57,7 @@ public:
   int nodeType() const override { return WB_NODE_ELEVATION_GRID; }
   void preFinalize() override;
   void postFinalize() override;
-  dGeomID createOdeGeom(dSpaceID space) override;
+  bool createOdeGeom() override;
   void createWrenObjects() override;
   void createResizeManipulator() override;
   bool isAValidBoundingObject(bool checkOde = false, bool warning = true) const override;

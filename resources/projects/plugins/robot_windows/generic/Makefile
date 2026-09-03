@@ -27,8 +27,14 @@ LIBRARIES = -lgeneric_robot_window
 # what locates resources/Makefile.include below -- leave it empty and make fails
 # with "No rule to make target '/resources/Makefile.include'" instead of an
 # explanation. WEBOTS_HOME is deprecated; export OMNISIM_HOME.
+# Adopt the legacy name ONLY when it names a directory that EXISTS: a machine that
+# once had Webots keeps WEBOTS_HOME after the install is removed, and adopting that
+# phantom path resolves every include and library under a directory that is not there.
+# `test -d`, not $(wildcard): wildcard splits on spaces and would reject a real
+# "C:\Program Files\..." install.
+OM_LEGACY_HOME := $(strip $(if $(strip $(WEBOTS_HOME)),$(if $(strip $(shell test -d "$(WEBOTS_HOME)" && echo yes)),$(WEBOTS_HOME))))
 ifeq ($(strip $(OMNISIM_HOME)),)
- OMNISIM_HOME := $(WEBOTS_HOME)
+ OMNISIM_HOME := $(OM_LEGACY_HOME)
 endif
 
 null :=

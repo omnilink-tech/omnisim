@@ -28,6 +28,8 @@ import math
 
 import pytest
 
+from omniworld.validation import _wbt_scan as _scan
+from omniworld.validation import _wbt_tree as _tree
 from omniworld.validation import validate
 from omniworld.validation._wbt_tree import ProtoIndex, parse_wbt
 from omniworld.validation.viewpoint import (
@@ -451,6 +453,76 @@ def test_check_is_wired_into_omniworld_validate(tmp_path):
     assert result.passed is False
     assert "set_viewpoint.py" in result.detail
     assert report.ok is False
+
+
+# --------------------------------------------------------------------------
+# The per-text memos are PURE caches (2026-09-02): same text -> same tree,
+# same placements, same report. Nothing here may change a verdict.
+# --------------------------------------------------------------------------
+
+
+def _memo_world(tmp_path, name="memo.wbt"):
+    body = (HEADER + _framed_viewpoint((0, 0, 0.45), 1.2) + _urdf_robot()
+            + "DEF CRATE Transform {\n  translation 3 0 0.5\n  children [\n"
+            "    Shape { geometry Box { size 1 1 1 } }\n  ]\n}\n")
+    return _write(tmp_path, name, body)
+
+
+def test_validate_report_is_identical_cached_and_uncached(tmp_path):
+    """The second ``validate()`` of one text answers from the parse and
+    placement memos; its report must be exactly what the cold path produced,
+    and a byte-different text of the same length must never be served."""
+    path = _memo_world(tmp_path)
+    _tree._PARSE_MEMO.clear()
+    _scan._SCAN_MEMO.clear()
+
+    cold = validate(path)
+    assert (_tree._PARSE_MEMO.misses, _tree._PARSE_MEMO.hits) == (1, 0)
+    # spawn + overlap scan the same text: one miss, then a hit.
+    assert (_scan._SCAN_MEMO.misses, _scan._SCAN_MEMO.hits) == (1, 1)
+
+    warm = validate(path)
+    assert (_tree._PARSE_MEMO.misses, _tree._PARSE_MEMO.hits) == (1, 1)
+    assert (_scan._SCAN_MEMO.misses, _scan._SCAN_MEMO.hits) == (1, 3)
+    assert warm.results == cold.results
+    assert warm.format() == cold.format()
+    assert cold.ok, cold.format()
+
+    text = path.read_text(encoding="utf-8")
+    assert _tree.parse_wbt_cached(text) == parse_wbt(text)
+    moved = text.replace("translation 3 0 0.5", "translation 3 0 0.6")
+    assert len(moved) == len(text) and moved != text
+    assert _tree.parse_wbt_cached(moved) == parse_wbt(moved)
+    assert _tree._PARSE_MEMO.misses == 2
+    assert _tree.parse_wbt_cached(moved)[-1].floats("translation", 3) == (3.0, 0.0, 0.6)
+    assert _tree.parse_wbt_cached(text)[-1].floats("translation", 3) == (3.0, 0.0, 0.5)
+
+
+def test_text_memo_is_bounded_lru():
+    memo = _tree.TextMemo(max_entries=2)
+    memo.put("a", 1)
+    memo.put("b", 2)
+    memo.put("c", 3)
+    assert len(memo) == 2
+    assert memo.get("a") is _tree.MISS
+    assert memo.get("b") == 2          # refreshes b ...
+    memo.put("d", 4)                   # ... so c is the one evicted
+    assert memo.get("c") is _tree.MISS
+    assert memo.get("b") == 2 and memo.get("d") == 4
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("a # c\nb", ["a", "b"]),                        # comment runs to end of line
+    ('"a # b" c', ['"a # b"', "c"]),                 # a hash inside a string is not a comment
+    ("12%<x>%34", ["12", "34"]),                     # a blanked template block never fuses its neighbours
+    ("DEF %<= n >% Pose {", ["DEF", "Pose", "{"]),   # the template-DEF shape (AdvertisingBoard.proto)
+    ('"%<" x', ['"%<"', "x"]),                       # a template start inside a string
+    ('%< x "y"', ["%", "<", "x", '"y"']),            # an unterminated template is ordinary text
+    ('x "unterminated', ["x", '"unterminated']),
+    ("-1.5e3 .5 +2 - .", ["-1.5e3", ".5", "+2", "-", "."]),
+])
+def test_tokenizer_lexical_rules(text, expected):
+    assert _tree._tokenize(text) == expected
 
 
 # --------------------------------------------------------------------------

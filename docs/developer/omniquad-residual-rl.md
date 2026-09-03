@@ -344,7 +344,7 @@ After the URDF fix, the same residual recipe (gait + IK + balance + tiny MLP) wa
 | Yaw drift          | -9.4°                        | **+3.2°**                         |
 | Verdict            | STRAIGHT                     | **STRAIGHT** ✓                    |
 
-This is the **first working OmniQuad walker under Newton on this codebase.** The prior two Newton training attempts (`omniquad_newton_v3`, `omniquad_newton_v4`, documented in [archive/spot-newton-state.md](archive/spot-newton-state.md) — kept under its Spot-era filename because that is what the archived run was called) both used from-scratch PPO with no model layer — `v3` converged on B-mode (joint-limit riding) and NaN'd on deploy, `v4` never even learned to stand. The model+residual recipe sidesteps both failure modes because the gait engine already produces a competent walker before training begins, so PPO is refining rather than discovering.
+This is the **first working OmniQuad walker under Newton on this codebase.** The prior two Newton training attempts (`omniquad_newton_v3`, `omniquad_newton_v4`, documented in archive/spot-newton-state.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — kept under its Spot-era filename because that is what the archived run was called) both used from-scratch PPO with no model layer — `v3` converged on B-mode (joint-limit riding) and NaN'd on deploy, `v4` never even learned to stand. The model+residual recipe sidesteps both failure modes because the gait engine already produces a competent walker before training begins, so PPO is refining rather than discovering.
 
 ### The key insight: under Newton, the model walker alone is already a walker
 

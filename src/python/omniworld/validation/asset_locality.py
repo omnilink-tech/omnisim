@@ -29,11 +29,34 @@ from pathlib import Path
 
 _REMOTE_RE = re.compile(r"\b(?:https?|ftp)://", re.IGNORECASE)
 
+# The longest scheme the pattern accepts (``https``) precedes the ``://``.
+_SCHEME_MAX = 5
+
+
+def _has_remote_ref(text: str) -> bool:
+    """Would ``_REMOTE_RE`` match anywhere in ``text``? Same answer, via the
+    ``://`` occurrences (``str.find`` is a C scan) instead of a full search."""
+    q = text.find("://")
+    while q >= 0:
+        if _REMOTE_RE.search(text, max(0, q - _SCHEME_MAX), q + 3) is not None:
+            return True
+        q = text.find("://", q + 3)
+    return False
+
 
 def check_asset_locality(path: Path, text: str):
     from . import CheckResult  # local import breaks the top-level cycle
 
     del path  # unused; kept in signature for uniformity with other checks
+    # The verdict is decided without splitting the text into lines (0.3 s on
+    # an 8 MB generated world, and a whole-text ``_REMOTE_RE.search`` costs
+    # the same: ``\b`` plus the alternation is tried at every position).
+    # Every match contains the literal ``://``, so only the windows around
+    # those occurrences can match; ``search(pos, endpos)`` keeps ``\b``
+    # looking at the real preceding character. The per-line pass below
+    # then runs only to NUMBER the hits, so the messages are unchanged.
+    if not _has_remote_ref(text):
+        return CheckResult(name="asset_locality", passed=True)
     hits: list[str] = []
     for i, line in enumerate(text.splitlines(), start=1):
         if _REMOTE_RE.search(line):

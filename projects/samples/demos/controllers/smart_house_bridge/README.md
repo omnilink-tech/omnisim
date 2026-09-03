@@ -178,4 +178,4 @@ hanging.
 pytest tests/harness/test_smart_house_bridge.py      # 29 tests, pure model
 ```
 
-Live verification transcript + screenshots: [VERIFICATION.md](VERIFICATION.md).
+Live verification transcript + screenshots: VERIFICATION.md (archived 2026-09-02, see [docs/ARCHIVE.md](../../../../../docs/ARCHIVE.md)).

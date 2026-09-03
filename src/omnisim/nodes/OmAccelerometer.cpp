@@ -190,7 +190,7 @@ void OmAccelerometer::computeValue() {
     // manufacture a spike of |v|/dt out of nothing.
   } else {
     if (!mWarningWasPrinted) {
-      warn(tr("Parent of Accelerometer node has no physics: measurements may be wrong."));
+      warn(tr("Parent of Accelerometer node has no physics: measurements may be wrong. Only the gravity term is published (there is no body to difference velocity against), so the reading is at best -g. Add a Physics node to the Solid carrying this sensor (or to the ancestor it is folded into) -- see docs/reference/accelerometer.md."));
       mWarningWasPrinted = true;
     }
     // No body to difference velocities against, but the gravity term computed

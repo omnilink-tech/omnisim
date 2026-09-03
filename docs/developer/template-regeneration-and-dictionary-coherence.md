@@ -211,8 +211,8 @@ If the answer to the fourth question is no, the architecture is probably still t
 
 After regeneration or dictionary changes, validate with:
 
-- `python scripts/dev/omnisim_dev.py test-group protos`
-- `python scripts/dev/omnisim_dev.py test-world tests/protos/worlds/template_deterministic.omniworld`
+- `python -m omnisim test-group protos`
+- `python -m omnisim test-world tests/protos/worlds/template_deterministic.omniworld`
 - one mutation-heavy editor workflow if desktop behavior changed
 
 The important thing is to verify both:

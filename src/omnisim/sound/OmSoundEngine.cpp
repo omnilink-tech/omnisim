@@ -16,9 +16,7 @@
 
 #include "OmSoundEngine.hpp"
 #include "../physics/OmPhysicsBackend.hpp"
-#include "../ode/OmOdeContact.hpp"
 
-#include "OmContactSoundManager.hpp"
 #include "OmLog.hpp"
 #include "OmPreferences.hpp"
 #include "OmSFRotation.hpp"
@@ -137,7 +135,6 @@ void OmSoundEngine::setWorld(OmWorld *world) {
     updateListener();
   } else {
     gWorld = NULL;
-    OmContactSoundManager::clearAllContactSoundSources();
     OmMotorSoundManager::clearAllMotorSoundSources();
     clearSources();
     clearSounds();
@@ -223,27 +220,22 @@ void OmSoundEngine::updateAfterPhysicsStep() {
     return;
   assert(gWorld);
 
-  // CONTACT SOUND IS SILENT ON THE NEWTON BACKEND, and has been since Newton
-  // became the default -- not a consequence of retiring ODE. Its producer is
-  // odeContacts(), filled by odeNearCallback, which never fires for Newton
-  // bodies; and the whole subsystem is keyed on ODE GEOM ids (OmContactSound
-  // holds dGeomID pairs and derives volume from dContactGeom depth), whereas
-  // native contacts are body-indexed. Restoring it means re-keying
-  // OmContactSound onto Newton body pairs and deriving energy from
-  // OmNewtonContact::forceMag -- feature restoration work, tracked separately,
-  // NOT a blocker for the ODE deletion it predates. Say so once rather than
+  // CONTACT SOUND IS NOT IMPLEMENTED ON NEWTON, and has not been since Newton
+  // became the default. The old subsystem (OmContactSound / OmContactSoundManager)
+  // was keyed on ODE geom ids and fed by the ODE near-callback; it was deleted
+  // with the ODE stub layer on 2026-09-02. Restoring it means keying contact
+  // sounds on Newton body pairs and deriving energy from OmNewtonContact::
+  // forceMag -- feature work, tracked separately. Say so once rather than
   // leaving users to wonder why collisions are mute.
-  const QList<OmOdeContact> &contacts = gWorld->odeContacts();
-  if (contacts.isEmpty()) {
+  {
     static bool warned = false;
     if (!warned && OmPhysicsBackendRegistry::newtonBackend() != NULL &&
         OmPhysicsBackendRegistry::newtonBackend()->isAvailable()) {
       warned = true;
-      OmLog::info(QObject::tr("Contact sounds are not produced on the Newton physics backend: the subsystem reads "
-                              "ODE contact geoms, which Newton does not create. Motor sounds are unaffected."));
+      OmLog::info(QObject::tr("Contact sounds are not produced on the Newton physics backend (the ODE-keyed contact "
+                              "sound subsystem was removed). Motor sounds are unaffected."));
     }
   }
-  OmContactSoundManager::update(contacts);
   OmMotorSoundManager::update();
 }
 
@@ -337,7 +329,6 @@ void OmSoundEngine::clearAllMotorSoundSources() {
 }
 
 void OmSoundEngine::clearAllContactSoundSources() {
-  OmContactSoundManager::clearAllContactSoundSources();
 }
 
 #ifdef __APPLE__

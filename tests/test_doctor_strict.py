@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""`omnisim doctor --strict` -- the Tier 0 install-coherence gate.
+"""`omnisim doctor` -- the Tier 0 install-coherence gate.
 
 The cross-machine determinism tiers all ask whether a run BEHAVES the same.
 None can catch a stale libController, because that failure produces NO tick to
 compare: the world finalises and then every controller blocks forever in
-Robot() while the run still exits 0 (commit 6eea9d76). `--strict` is the layer
-below them -- it exits non-zero when the install is not even coherent enough to
-run -- and these tests pin both directions of that gate, plus the two hard
-constraints it must never break: plain `doctor` never gates, and every line it
-can print is safe on a cp1252 Windows console.
+Robot() while the run still exits 0 (commit 6eea9d76). Coherence is the layer
+below them, and since 2026-08-28 PLAIN `doctor` is the gate: it always prints
+a VERDICT line and its exit code follows it (a broken install reported at exit
+0 was read as a pass by every script, CI lane and agent branching on `$?`).
+`--strict` survives only as a deprecated alias -- it must run, and it must
+exit and report exactly like plain `doctor`. These tests pin both directions
+of the gate in both spellings, the alias equivalence, and the one hard
+constraint that outlives every contract change: every line doctor can print
+is safe on a cp1252 Windows console.
 """
 
 import io
@@ -133,40 +137,73 @@ def _run(argv):
     return rc, buf.getvalue()
 
 
-def test_strict_exits_zero_when_coherent(monkeypatch):
+def _coherent(monkeypatch):
+    """Pin every gating input to its healthy value, so the test measures the
+    exit-code contract and not this clone's state: a vendored runtime older
+    than its source is itself a FAIL row (3de513525), so another lane editing
+    the runtime source would otherwise turn this test red."""
     monkeypatch.setattr(doctor, "_build_provenance", _ok_build)
     monkeypatch.setattr(doctor, "_env_landmines", lambda: [])
-    rc, out = _run(["--strict"])
+    monkeypatch.setattr(doctor, "_physics_runtime",
+                        lambda _binary: {"status": "present", "source": "stub",
+                                         "detail": "stubbed", "fix": None})
+    monkeypatch.setattr(doctor, "_runtime_bundle_status",
+                        lambda _source, _bundle: {"status": "ok", "source": "s",
+                                                  "bundle": "b", "detail": "stubbed"})
+
+
+def _verdict_lines(text: str) -> list[str]:
+    return [ln for ln in text.splitlines() if ln.startswith("VERDICT")]
+
+
+@pytest.mark.parametrize("argv", [[], ["--strict"]])
+def test_doctor_exits_zero_and_says_ready_when_coherent(monkeypatch, argv):
+    _coherent(monkeypatch)
+    rc, out = _run(argv)
     assert rc == 0
-    assert "strict      OK" in out
+    assert "VERDICT     READY" in out
 
 
-def test_strict_exits_nonzero_on_abi_mismatch(monkeypatch):
+@pytest.mark.parametrize("argv", [[], ["--strict"]])
+def test_doctor_exits_nonzero_and_says_not_ready_on_abi_mismatch(monkeypatch, argv):
+    """The gate is plain `doctor` now: an incoherent install exits 1 with or
+    without the deprecated alias. (The old "plain doctor never gates" contract
+    was retired on 2026-08-28: a broken install reported at exit 0 read as a
+    pass to every caller branching on `$?`.)"""
     monkeypatch.setattr(doctor, "_build_provenance", _incompatible_build)
-    rc, out = _run(["--strict"])
+    rc, out = _run(argv)
     assert rc == 1
-    assert "strict      FAIL" in out
+    assert "VERDICT     NOT READY" in out
     assert "ABI mismatch" in out
 
 
-def test_strict_json_exits_nonzero_on_abi_mismatch(monkeypatch):
-    monkeypatch.setattr(doctor, "_build_provenance", _incompatible_build)
-    rc, out = _run(["--strict", "--json"])
-    assert rc == 1
+def test_json_exits_nonzero_on_abi_mismatch_and_records_the_alias(monkeypatch):
     import json
+    monkeypatch.setattr(doctor, "_build_provenance", _incompatible_build)
+    rc, out = _run(["--json"])
     payload = json.loads(out)
-    assert payload["strict"] is True
+    assert rc == 1
+    assert payload["strict"] is False
+    assert payload["coherence"]["ok"] is False
+    rc, out = _run(["--strict", "--json"])
+    payload = json.loads(out)
+    assert rc == 1
+    assert payload["strict"] is True  # still recorded, for callers that read it
     assert payload["coherence"]["ok"] is False
 
 
-def test_plain_doctor_never_gates_even_when_incoherent(monkeypatch):
-    """Preserve the existing contract: plain `doctor` is a report, not a gate --
-    it must exit 0 even on a definitively broken install."""
-    monkeypatch.setattr(doctor, "_build_provenance", _incompatible_build)
-    rc, _ = _run([])
-    assert rc == 0
-    rc_json, _ = _run(["--json"])
-    assert rc_json == 0
+def test_strict_is_an_alias_that_exits_like_plain_doctor(monkeypatch):
+    """`--strict` is kept for .githooks/pre-push and existing CI. It must keep
+    parsing, and it must change nothing: the same exit code and the same
+    VERDICT line as plain `doctor`, on a coherent install AND on a broken one."""
+    for build, expected_rc in ((_ok_build, 0), (_incompatible_build, 1)):
+        _coherent(monkeypatch)
+        monkeypatch.setattr(doctor, "_build_provenance", build)
+        rc_plain, out_plain = _run([])
+        rc_alias, out_alias = _run(["--strict"])
+        assert rc_plain == rc_alias == expected_rc
+        assert len(_verdict_lines(out_plain)) == 1
+        assert _verdict_lines(out_plain) == _verdict_lines(out_alias)
 
 
 # --- cp1252 safety (Windows console must never UnicodeEncodeError) ----------
@@ -188,7 +225,8 @@ def test_missing_binary_real_path_is_fatal_and_cp1252_safe(monkeypatch):
     monkeypatch.setattr(doctor, "resolve_omnisim_binary", lambda: None)
     monkeypatch.setattr(doctor, "_env_landmines", lambda: [])
     rc_plain, out_plain = _run([])
-    assert rc_plain == 0  # plain doctor never gates, even with no binary
+    assert rc_plain == 1  # no binary is a blocking problem; plain doctor gates on it
+    assert "engine binary not found" in out_plain
     out_plain.encode("cp1252")
     rc_strict, out_strict = _run(["--strict"])
     assert rc_strict == 1

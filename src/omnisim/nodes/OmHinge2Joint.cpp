@@ -22,8 +22,6 @@
 #include "OmMathsUtilities.hpp"
 #include "OmMotor.hpp"
 #include "OmNewtonBackend.hpp"
-#include "OmOdeContext.hpp"
-#include "OmOdeUtilities.hpp"
 #include "OmPhysicsBackend.hpp"
 #include "OmPositionSensor.hpp"
 #include "OmQuaternion.hpp"
@@ -39,8 +37,6 @@ void OmHinge2Joint::init() {
   mDevice2 = findMFNode("device2");
 
   // spring and dampingConstant
-  mSpringAndDampingConstantsAxis1On = false;
-  mSpringAndDampingConstantsAxis2On = false;
 
   // hidden field
   mPosition2 = findSFDouble("position2")->value();
@@ -107,15 +103,11 @@ bool OmHinge2Joint::setJoint() {
   if (!OmBasicJoint::setJoint())
     return false;
 
-  const OmSolid *const s = solidEndPoint();
-  dBodyID body = s ? s->body() : NULL;
-  dBodyID parentBody = upperSolid()->bodyMerger();
-  if (body && parentBody)
-    setOdeJoint(body, parentBody);
-  else {
-    parsingWarn(tr("Hinge2Joint nodes can only connect Solid nodes that have a Physics node."));
-    return false;
-  }
+  // The "can only connect Solid nodes that have a Physics node" warning that
+  // used to fire here keyed on ODE bodies, which never existed after ODE went
+  // away, so it fired for EVERY Hinge2Joint. Newton registers the joint
+  // separately (OmBasicJoint flush) and reports a missing endpoint there.
+  setOdeJoint();
 
   return true;
 }
@@ -172,8 +164,6 @@ void OmHinge2Joint::updateOdePositionOffset() {
 }
 
 void OmHinge2Joint::applyToOdeAxis() {
-  assert(mJoint);
-
   updateOdePositionOffset();
 
   const OmMatrix4 &m4 = upperPose()->matrix();
@@ -196,52 +186,6 @@ void OmHinge2Joint::applyToOdeMinAndMaxStop() {
   // per-axis LoStop/HiStop. On the (default-OFF) Newton d6 path the limits are
   // set once at registration from newtonAxisSpec, so nothing is pushed per
   // update; with that path off, Hinge2 hard stops are UNIMPLEMENTED.
-}
-
-void OmHinge2Joint::applyToOdeSpringAndDampingConstants(dBodyID body, dBodyID parentBody) {
-  const OmJointParameters *const p = parameters();
-  const OmJointParameters *const p2 = parameters2();
-
-  const double brakingDampingConstant = brake() ? brake()->getBrakingDampingConstant() : 0.0;
-  const double brakingDampingConstant2 = brake2() ? brake2()->getBrakingDampingConstant() : 0.0;
-
-  if ((p == NULL && p2 == NULL && brakingDampingConstant == 0.0 && brakingDampingConstant2 == 0.0) ||
-      (body == NULL && parentBody == NULL)) {
-    if (mSpringAndDamperMotor) {
-      mSpringAndDamperMotor = NULL;
-    }
-    return;
-  }
-  assert((body || parentBody) && (p || p2 || brake() || brake2()));
-
-  double s = p ? p->springConstant() : 0.0;
-  double d = p ? p->dampingConstant() : 0.0;
-  double s2 = p2 ? p2->springConstant() : 0.0;
-  double d2 = p2 ? p2->dampingConstant() : 0.0;
-
-  d += brakingDampingConstant;
-  d2 += brakingDampingConstant2;
-
-  mSpringAndDampingConstantsAxis1On = s != 0.0 || d != 0.0;
-  mSpringAndDampingConstantsAxis2On = s2 != 0.0 || d2 != 0.0;
-
-  if (!mSpringAndDampingConstantsAxis1On && !mSpringAndDampingConstantsAxis2On) {
-    if (mSpringAndDamperMotor) {
-      mSpringAndDamperMotor = NULL;
-    }
-    return;
-  }
-
-  double cfm, erp, cfm2, erp2;
-  const OmWorldInfo *const wi = OmWorld::instance()->worldInfo();
-  const double t = wi->basicTimeStep() * 0.001;
-  OmOdeUtilities::convertSpringAndDampingConstants(s, d, t, cfm, erp);
-  OmOdeUtilities::convertSpringAndDampingConstants(s2, d2, t, cfm2, erp2);
-
-  (void)cfm;
-  (void)erp;
-  (void)cfm2;
-  (void)erp2;
 }
 
 void OmHinge2Joint::prePhysicsStep(double ms) {
@@ -460,7 +404,7 @@ void OmHinge2Joint::postPhysicsStep() {
     }
   }
 
-  assert(mJoint || mNewtonJointIndex >= 0);
+  assert(mNewtonJointIndex >= 0);
   const OmRotationalMotor *const rm = rotationalMotor();
   const OmRotationalMotor *const rm2 = rotationalMotor2();
 
@@ -609,9 +553,6 @@ void OmHinge2Joint::updateMinAndMaxStop(double min, double max) {
         p->parsingWarn(tr("HingeJoint 'maxStop' must be greater or equal to RotationalMotor 'maxPosition'."));
     }
   }
-
-  if (mJoint)
-    applyToOdeMinAndMaxStop();
 }
 
 void OmHinge2Joint::updateParameters() {

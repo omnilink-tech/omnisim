@@ -17,7 +17,7 @@ A [Muscle](#muscle) node can be used to graphically display the contraction of a
 The artificial muscle is represented using a spheroid where the symmetry axis is the vector between the joint's closest upper [Pose](pose.md) node and the `endPoint` [Solid](solid.md) node.
 The other two axes have the same length computed based on the symmetry axis length so that the volume remains constant during stretching.
 
-Note that the [Muscle](#muscle) node cannot be used in case of a [Motor](motor.md) device included in a [Track](track.md) node.
+Note that the [Muscle](#muscle) node cannot be used in case of a [Motor](motor.md) device included in a Track (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) node.
 
 ### Field Summary
 

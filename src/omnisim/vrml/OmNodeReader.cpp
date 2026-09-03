@@ -63,7 +63,7 @@ OmNode *OmNodeReader::createNode(const QString &modelName, OmTokenizer *tokenize
   if (proto)
     return OmNode::createProtoInstance(proto, tokenizer, worldPath);
 
-  tokenizer->reportError(QObject::tr("Skipped unknown '%1' node or PROTO").arg(modelName));
+  tokenizer->reportError(QObject::tr("Skipped unknown '%1' node or PROTO -- it and its children are absent from the scene and the load continues without them. Declare the PROTO with an EXTERNPROTO line at the top of the file, or fix the node name").arg(modelName));
   return NULL;
 }
 

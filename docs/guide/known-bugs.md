@@ -7,5 +7,5 @@ For an exhaustive list of OmniSim bugs, please refer to the [OmniSim issue track
 
 ## Sections
 
-- [General bugs](general-bugs.md)
+- General bugs (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))
 - [Linux](linux.md)

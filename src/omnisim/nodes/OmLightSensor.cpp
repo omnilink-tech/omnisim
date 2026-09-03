@@ -24,7 +24,6 @@
 #include "OmMFVector3.hpp"
 #include "OmMathsUtilities.hpp"
 #include "OmMatrix3.hpp"
-#include "OmOdeContext.hpp"
 #include "OmRobot.hpp"
 #include "OmSFBool.hpp"
 #include "OmSFColor.hpp"
@@ -58,7 +57,8 @@ static bool isNewtonRaycastEnabled() {
     // DEFAULT ON since 2026-08-07: every ray consumer answers from the
     // Newton service (mj_ray on the live mjModel), incl. the LASER
     // transparency re-cast and the joint-descending exclusion walk.
-    // =0 reverts to the ODE ray verdicts while src/ode still ships.
+    // =0 declines the service; ODE is deleted (bdc02139), so no other ray
+    // path answers in its place.
     sGate = (v == "0" || v == "false" || v == "off" || v == "no") ? 0 : 1;
   }
   return sGate == 1;
@@ -76,7 +76,7 @@ static void collectRobotNewtonBodies(const OmRobot *robot, QVector<int> &out) {
 class LightRay {
 public:
   LightRay(OmLightSensor *sensor, const OmVector3 &lightDirection, double distance, const OmLight *light, double direct,
-           double attenuation, dSpaceID spaceId) :
+           double attenuation) :
     mLight(light),
     mSensor(sensor),
     mDirect(direct),
@@ -85,8 +85,6 @@ public:
     // ODE is gone: no ray geom exists; carry the segment in plain
     // members so the Newton raycast service (the live occlusion answer in
     // this build) still gets the exact sensor->light ray.
-    (void)spaceId;
-    mGeom = NULL;
     mStart = sensor->matrix().translation();
     mSegmentDir = lightDirection;
     mSegmentLength = distance;
@@ -103,7 +101,6 @@ public:
   const OmLight *light() const { return mLight; }
   double directIntensity() const { return mDirect; }
   double attenuation() const { return mAttenuation; }
-  dGeomID geom() const { return mGeom; }
   // Native segment accessors (the ODE ray geom used to be the carrier)
   const OmVector3 &segmentStart() const { return mStart; }
   const OmVector3 &segmentDirection() const { return mSegmentDir; }
@@ -132,7 +129,6 @@ private:
   double mDirect;
   double mAttenuation;
   bool mCollided;  // the geom has collided yet
-  dGeomID mGeom;   // geom that checks collision of this packet
   OmVector3 mStart;       // native segment carrier (see ctor)
   OmVector3 mSegmentDir;
   double mSegmentLength;
@@ -288,7 +284,7 @@ void OmLightSensor::setupRaysAndComputeDirectContributions(bool finalSetup) {
         // we need collision detection if the light source is in front of the sensor plate
         // and if occlusion check is required by the user
         mRayList.append(
-          new LightRay(this, lightDirection, distance, light, direct, attenuation, OmOdeContext::instance()->space()));
+          new LightRay(this, lightDirection, distance, light, direct, attenuation));
       } else
         // otherwise, this light's contribution can be added immediately
         addSingleLightContribution(light, direct, attenuation);
@@ -458,16 +454,5 @@ void OmLightSensor::postProcessLightMeasurement() {
 
   // clear list
   mRayList.clear();
-}
-
-void OmLightSensor::rayCollisionCallback(dGeomID geom) {
-  foreach (LightRay *ray, mRayList) {
-    if (ray->geom() == geom) {
-      ray->setCollided();
-      return;
-    }
-  }
-
-  assert(0);  // should never be reached
 }
 

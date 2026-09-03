@@ -877,65 +877,6 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // OMNISIM_PROBE_BACKENDS -- headless backend-resolution probe (architectural-baseline.md §5
-    // reversibility lever). Reports which physics + render backends the registries RESOLVE to under the
-    // CURRENT environment, so reversibility_check.py can assert that OMNISIM_LEGACY=1 (and the per-arm
-    // OMNISIM_FORCE_ODE / OMNISIM_FORCE_WREN) revert the whole process to ODE+WREN. Pure resolve() calls
-    // through the two registries -- no world, no window; resolve() only touches GPU/Python if the env
-    // actually selects the new backend (it does not under LEGACY/FORCE). Run via --help, like the others.
-    if (qEnvironmentVariableIsSet("OMNISIM_PROBE_BACKENDS")) {
-      QFile pf(qEnvironmentVariable("OMNISIM_PROBE_BACKENDS"));
-      if (pf.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        OmRenderBackendRegistry::initialise();
-        OmPhysicsBackendRegistry::initialise();
-        auto rkind = [](OmRenderBackend *b) -> const char * {
-          if (!b)
-            return "null";
-          switch (b->kind()) {
-            case OmRenderBackendKind::Wren:
-              return "Wren";
-            case OmRenderBackendKind::Vulkan:
-              return "Vulkan";
-            default:
-              return "Unknown";
-          }
-        };
-        auto pkind = [](OmPhysicsBackend *b) -> const char * {
-          if (!b)
-            return "null";
-          switch (b->kind()) {
-            case OmPhysicsBackendKind::Ode:
-              return "Ode";
-            case OmPhysicsBackendKind::Newton:
-              return "Newton";
-            case OmPhysicsBackendKind::Auto:
-              return "Auto";
-            default:
-              return "Unknown";
-          }
-        };
-        // Render first + FLUSH: resolving render is cheap (wgpu device probe ~100ms), but resolving
-        // physics may init Newton (embedded Python + warp kernel compile, tens of seconds on a cold
-        // cache) -- so capture the render verdict before that, so a slow/killed physics resolve never
-        // loses the render result. (F1: FORCE_WREN/LEGACY are retired warned no-ops and no longer
-        // skip the wgpu probe.)
-        OmRenderBackend *const r = OmRenderBackendRegistry::resolve(OmRenderBackendKind::Vulkan);
-        pf.write(QString("render=%1 kind=%2 available=%3\n")
-                   .arg(r ? r->name() : "null")
-                   .arg(rkind(r))
-                   .arg(r && r->isAvailable() ? 1 : 0)
-                   .toUtf8());
-        pf.flush();
-        OmPhysicsBackend *const p = OmPhysicsBackendRegistry::resolve(OmPhysicsBackendKind::Newton);
-        pf.write(QString("physics=%1 kind=%2 available=%3\n")
-                   .arg(p ? p->name() : "null")
-                   .arg(pkind(p))
-                   .arg(p && p->isAvailable() ? 1 : 0)
-                   .toUtf8());
-        pf.close();
-      }
-    }
-
     const int probe = qEnvironmentVariableIntValue("OMNISIM_PROBE_WGPU");
     if (probe >= 1) {
       OmRenderBackend *vulkan = OmRenderBackendRegistry::vulkanBackend();
@@ -1366,7 +1307,12 @@ int main(int argc, char *argv[]) {
   // X/Wayland/Xvfb requirement for compute-only runs entirely. Decided here because the
   // platform is locked in when the QApplication below constructs; an explicit
   // QT_QPA_PLATFORM from the caller always wins.
-  if (qEnvironmentVariableIsSet("OMNISIM_NO_GL") && !qEnvironmentVariableIsSet("QT_QPA_PLATFORM"))
+  // 2026-09-02: value-parsed. This read was presence-gated, so `OMNISIM_NO_GL=0` ARMED compute-only
+  // mode (the OMNISIM_REQUIRE_NEWTON trap); unset/empty/"0"/"false"/"off" now mean OFF. Same parse
+  // as OmGuiApplication.cpp's envSwitchOn(), which owns the mode decision itself.
+  const QString noGl = QString::fromUtf8(qgetenv("OMNISIM_NO_GL")).trimmed().toLower();
+  if (!(noGl.isEmpty() || noGl == "0" || noGl == "false" || noGl == "off") &&
+      !qEnvironmentVariableIsSet("QT_QPA_PLATFORM"))
     qputenv("QT_QPA_PLATFORM", "minimal");
 
   OmGuiApplication app(argc, argv);

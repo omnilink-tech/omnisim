@@ -36,9 +36,12 @@
 #include "OmVrmlNodeUtilities.hpp"
 
 #include <QtCore/QDir>
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QDirIterator>
 #include <QtCore/QCryptographicHash>
 #include <QtCore/QFile>
+#include <QtCore/QFileInfo>
+#include <QtCore/QHash>
 #include <QtCore/QRegularExpression>
 #include <QtCore/QUrl>
 #include <QtCore/QXmlStreamReader>
@@ -105,7 +108,14 @@ OmProtoModel *OmProtoManager::readModel(const QString &url, const QString &world
   const bool prevInstantiateMode = OmNode::instantiateMode();
   try {
     OmNode::setInstantiateMode(false);
+    QElapsedTimer modelTimer;
+    if (OmProtoLoadProfile::enabled())
+      modelTimer.start();
     OmProtoModel *model = new OmProtoModel(&tokenizer, worldPath, url, prefix, baseTypeList);
+    if (OmProtoLoadProfile::enabled()) {
+      OmProtoLoadProfile::instance().modelReadNs += modelTimer.nsecsElapsed();
+      ++OmProtoLoadProfile::instance().modelsRead;
+    }
     OmNode::setInstantiateMode(prevInstantiateMode);
     return model;
   } catch (...) {
@@ -180,7 +190,7 @@ OmProtoModel *OmProtoManager::findModel(const QString &modelName, const QString 
       const QString errorMessage =
         (!protoDeclaration.isEmpty() || isProtoInCategory(modelName, PROTO_OMNISIM)) ?
           tr("Missing declaration for '%1', add: 'EXTERNPROTO \"%2\"' to '%3'.").arg(modelName).arg(url).arg(parentFilePath) :
-          tr("Missing declaration for '%1', unknown node.").arg(modelName);
+          tr("Missing declaration for '%1', unknown node. The node and everything inside it are skipped, so the rest of the world loads without them. If '%1' is a PROTO, declare it at the top of the file with EXTERNPROTO \"<path-or-URL>/%1.proto\"; if it is a misspelt base node, fix the spelling (docs/reference/nodes-and-keywords.md lists them).").arg(modelName);
 
       displayMissingDeclarations(errorMessage);
     }
@@ -249,28 +259,76 @@ OmProtoModel *OmProtoManager::findModel(const QString &modelName, const QString 
   return NULL;
 }
 
+namespace {
+  // Per-file EXTERNPROTO declaration table, keyed on (path, mtime, size).
+  //
+  // findModel() asks for the declaration of EVERY PROTO instance it parses, and until
+  // 2026-09-02 each request re-opened the parent file, readAll()'d it, compiled a fresh
+  // name-specific QRegularExpression and global-matched the whole text -- once per
+  // INSTANCE, not once per (file, name), so a warehouse with hundreds of shelf/box/pallet
+  // instances scanned its own multi-hundred-KB world file hundreds of times during one
+  // load. The declarations of a file cannot change while its mtime and size do not, so
+  // one pass builds the name -> url table and every later lookup is a hash probe. Web
+  // URLs are keyed on the URL string (OmNetwork serves a stable local copy). Semantics
+  // are preserved exactly: the first matching declaration wins, and a name matches only a
+  // URL that ends in "<name>.proto" preceded by '/', a backslash or the opening quote.
+  struct ExternProtoTable {
+    QHash<QString, QString> urlByName;
+  };
+
+  QHash<QString, ExternProtoTable> &externProtoTables() {
+    static QHash<QString, ExternProtoTable> tables;
+    return tables;
+  }
+
+  // OMNISIM_EXTERNPROTO_SCAN_CACHE=0 (value-parsed) rebuilds the table on every lookup, which
+  // reproduces the per-instance full-file scan for an A/B without changing what is matched.
+  bool externProtoScanCacheEnabled() {
+    static const bool enabled = []() {
+      const QByteArray v = qgetenv("OMNISIM_EXTERNPROTO_SCAN_CACHE").trimmed().toLower();
+      return v.isEmpty() || (v != "0" && v != "false" && v != "off");
+    }();
+    return enabled;
+  }
+
+  QString externProtoNameOf(const QString &declaredUrl) {
+    if (!declaredUrl.endsWith(".proto"))
+      return QString();
+    const int slash = declaredUrl.lastIndexOf(QRegularExpression("[/\\\\]"));
+    const QString base = declaredUrl.mid(slash + 1);
+    return base.left(base.size() - 6);  // strip ".proto"
+  }
+}  // namespace
+
 QString OmProtoManager::findExternProtoDeclarationInFile(const QString &url, const QString &modelName) {
   if (url.isEmpty())
     return QString();
 
-  QFile file(OmUrl::isWeb(url) ? OmNetwork::instance()->get(url) : url);
-  if (!file.open(QIODevice::ReadOnly)) {
-    OmLog::error(tr("Could not search for EXTERNPROTO declarations in '%1' because the file is not readable.").arg(url));
-    return QString();
+  const QString localPath = OmUrl::isWeb(url) ? OmNetwork::instance()->get(url) : url;
+  const QFileInfo info(localPath);
+  const QString key = url + QLatin1Char('|') + QString::number(info.lastModified().toMSecsSinceEpoch()) +
+                      QLatin1Char('|') + QString::number(info.size());
+  QHash<QString, ExternProtoTable> &tables = externProtoTables();
+  auto it = externProtoScanCacheEnabled() ? tables.constFind(key) : tables.constEnd();
+  if (it == tables.constEnd()) {
+    QFile file(localPath);
+    if (!file.open(QIODevice::ReadOnly)) {
+      OmLog::error(tr("Could not search for EXTERNPROTO declarations in '%1' because the file is not readable.").arg(url));
+      return QString();
+    }
+    ExternProtoTable table;
+    static const QRegularExpression re("^\\s*(?:IMPORTABLE\\s+)?EXTERNPROTO\\s+\"([^\"]*)\"", QRegularExpression::MultilineOption);
+    QRegularExpressionMatchIterator matches = re.globalMatch(QString::fromUtf8(file.readAll()));
+    while (matches.hasNext()) {
+      const QRegularExpressionMatch match = matches.next();
+      const QString declared = match.captured(1);
+      const QString name = externProtoNameOf(declared);
+      if (!name.isEmpty() && !table.urlByName.contains(name))
+        table.urlByName.insert(name, declared);
+    }
+    it = tables.insert(key, table);
   }
-  QString identifier = modelName;
-  identifier.replace("+", "\\+").replace("-", "\\-").replace("_", "\\_");
-  const QString regex = QString("^\\s*(?:IMPORTABLE\\s+)?EXTERNPROTO\\s+\"(.*(?:/|\\\\|(?<=\"))%1\\.proto)\"").arg(identifier);
-  const QRegularExpression re(regex, QRegularExpression::MultilineOption);
-  QRegularExpressionMatchIterator it = re.globalMatch(file.readAll());
-
-  while (it.hasNext()) {
-    const QRegularExpressionMatch match = it.next();
-    if (match.hasMatch())
-      return match.captured(1);
-  }
-
-  return QString();
+  return it->urlByName.value(modelName);
 }
 
 QMap<QString, QString> OmProtoManager::undeclaredProtoNodes(const QString &filename) {
@@ -740,7 +798,14 @@ OmProtoInfo *OmProtoManager::generateInfoFromProtoFile(const QString &protoFileN
   try {
     OmNode::setGlobalParentNode(NULL);
     OmNode::setInstantiateMode(false);
+    QElapsedTimer modelTimer;
+    if (OmProtoLoadProfile::enabled())
+      modelTimer.start();
     protoModel = new OmProtoModel(&tokenizer, mCurrentWorld, url);
+    if (OmProtoLoadProfile::enabled()) {
+      OmProtoLoadProfile::instance().modelReadNs += modelTimer.nsecsElapsed();
+      ++OmProtoLoadProfile::instance().modelsRead;
+    }
     OmNode::setInstantiateMode(previousInstantiateMode);
     OmNode::setGlobalParentNode(previousParent);
   } catch (...) {

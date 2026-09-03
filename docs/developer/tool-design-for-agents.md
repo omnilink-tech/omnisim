@@ -242,7 +242,7 @@ Stated plainly, because a principle without limits is marketing.
 
 ## 6. What this means for how we judge our own surface
 
-[`agent-native-api.md`](agent-native-api.md) scores our harness against ROS 2
+`agent-native-api.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) scores our harness against ROS 2
 `simulation_interfaces` at **6 ahead, 5 partial, 10 missing**. That is a useful inventory and
 it measures the wrong axis for this purpose: it counts **which verbs exist**, not **whether the
 verbs that exist tell the truth**.
@@ -285,6 +285,6 @@ more than a quarter of prompt engineering, and it costs a string.
 
 - [`agents/AGENT_PATTERNS.md`](../../agents/AGENT_PATTERNS.md) — pattern 9 is the short form of this
 - [`PROTOCOL.md`](../../PROTOCOL.md) — the wire contract for bridges
-- [`agent-native-api.md`](agent-native-api.md) — the verb-level capability inventory (§6 above)
+- `agent-native-api.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — the verb-level capability inventory (§6 above)
 - [`tests/benchmarks/omnilink_tasks/`](../../tests/benchmarks/omnilink_tasks/) — where the
   task-level lift will be measured

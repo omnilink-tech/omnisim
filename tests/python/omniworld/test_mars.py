@@ -13,7 +13,13 @@
 # limitations under the License.
 
 """mars biome tests — shares the outdoor-biome invariants plus the
-sky / terrain color overrides specific to this recipe."""
+sky / terrain color overrides specific to this recipe.
+
+Every read-only test takes its world from the session-scoped
+``generated_world`` fixture (``conftest.py``): one build per distinct
+``(recipe, seed, params)`` instead of one per test. The results are shared
+read-only; ``test_mars_deterministic`` is the test that proves a fresh build
+is byte-identical to the shared one."""
 
 from __future__ import annotations
 
@@ -28,9 +34,9 @@ def test_mars_registered():
     assert "mars" in list_recipes()
 
 
-def test_mars_generates_and_validates(tmp_path: Path):
-    out = tmp_path / "mars.wbt"
-    result = generate("mars", seed=42, out=out)
+def test_mars_generates_and_validates(generated_world):
+    result = generated_world("mars", 42)
+    out = result.world_path
     assert out.exists()
     text = out.read_text(encoding="utf-8")
     # Mars now uses the Hillaire 2020 procedural sky (T1.3 session 4+).
@@ -56,30 +62,30 @@ def test_mars_generates_and_validates(tmp_path: Path):
     assert report.ok, report.format()
 
 
-def test_mars_deterministic(tmp_path: Path):
-    a = tmp_path / "a.wbt"
-    b = tmp_path / "b.wbt"
-    generate("mars", seed=3, out=a)
-    generate("mars", seed=3, out=b)
-    assert a.read_bytes() == b.read_bytes()
+def test_mars_deterministic(tmp_path: Path, generated_world):
+    """Same (recipe, seed, params) -> byte-identical output, and independent
+    of the ``out`` path. A FRESH build into this test's own tmp_path is
+    compared against the session-shared one, which is also what licenses
+    every other test here to read the shared result."""
+    shared = generated_world("mars", 42)
+    fresh = tmp_path / "fresh.wbt"
+    generate("mars", seed=42, out=fresh)
+    assert fresh.read_bytes() == shared.world_path.read_bytes()
 
 
-def test_mars_different_seeds_differ(tmp_path: Path):
-    a = tmp_path / "a.wbt"
-    b = tmp_path / "b.wbt"
-    generate("mars", seed=1, out=a)
-    generate("mars", seed=2, out=b)
+def test_mars_different_seeds_differ(generated_world):
+    a = generated_world("mars", 42).world_path
+    b = generated_world("mars", 7).world_path
     assert a.read_bytes() != b.read_bytes()
 
 
-def test_mars_clearing_is_empty(tmp_path: Path):
+def test_mars_clearing_is_empty(generated_world):
     """The solver approximates the circular clearing as a 24-vertex
     polygon whose inscribed radius is slightly less than the nominal
     ``clearing_radius``. Assert rocks stay outside the inscribed disk."""
     import math
 
-    out = tmp_path / "mars.wbt"
-    result = generate("mars", seed=7, out=out)
+    result = generated_world("mars", 7)
     size = 80.0
     cx, cy = size / 2.0, size / 2.0
     nominal_r = 5.5
@@ -91,12 +97,18 @@ def test_mars_clearing_is_empty(tmp_path: Path):
         )
 
 
-def test_mars_world_age_affects_output(tmp_path: Path):
-    young = tmp_path / "y.wbt"
-    old = tmp_path / "o.wbt"
-    generate("mars", seed=42, out=young, params={"world_age": 0.0})
-    generate("mars", seed=42, out=old, params={"world_age": 0.9})
-    assert young.read_bytes() != old.read_bytes()
+def test_mars_world_age_affects_output(generated_world):
+    """``world_age`` must change the output. The control is the session-
+    shared default world (``world_age`` 0.45, pinned below so the pair
+    really does differ only in age); only the aged world is a fresh build.
+    Before 2026-09-02 this built two private worlds (0.0 and 0.9) for the
+    same assertion, ~3.4 s of the file's runtime."""
+    from omniworld.biomes.mars import DEFAULT_PARAMS
+
+    assert DEFAULT_PARAMS["world_age"] == 0.45
+    default = generated_world("mars", 42)
+    aged = generated_world("mars", 42, {"world_age": 0.9})
+    assert default.world_path.read_bytes() != aged.world_path.read_bytes()
 
 
 def test_mars_rejects_unknown_param(tmp_path: Path):
@@ -104,11 +116,10 @@ def test_mars_rejects_unknown_param(tmp_path: Path):
         generate("mars", seed=0, out=tmp_path / "w.wbt", params={"bogus": True})
 
 
-def test_mars_rocks_are_procedural_meshes(tmp_path: Path):
+def test_mars_rocks_are_procedural_meshes(generated_world):
     """Every rock is a unique displaced icosphere, not a Rock.proto
     instance. Two rocks must have different vertex lists."""
-    out = tmp_path / "mars.wbt"
-    result = generate("mars", seed=42, out=out)
+    result = generated_world("mars", 42)
     solids = result.description.solids
     assert len(solids) > 10, f"expected many rock solids, got {len(solids)}"
     first_verts = solids[0].vertices
@@ -118,25 +129,20 @@ def test_mars_rocks_are_procedural_meshes(tmp_path: Path):
     )
 
 
-def test_mars_has_fill_light(tmp_path: Path):
-    out = tmp_path / "mars.wbt"
-    generate("mars", seed=42, out=out)
-    text = out.read_text(encoding="utf-8")
+def test_mars_has_fill_light(generated_world):
+    text = generated_world("mars", 42).world_path.read_text(encoding="utf-8")
     # Two DirectionalLight nodes: main sun + fill.
     assert text.count("DirectionalLight {") == 2
 
 
-def test_mars_has_fog(tmp_path: Path):
-    out = tmp_path / "mars.wbt"
-    generate("mars", seed=42, out=out)
-    text = out.read_text(encoding="utf-8")
+def test_mars_has_fog(generated_world):
+    text = generated_world("mars", 42).world_path.read_text(encoding="utf-8")
     assert "Fog {" in text
     assert "visibilityRange" in text
 
 
-def test_mars_has_three_scatter_layers(tmp_path: Path):
-    out = tmp_path / "mars.wbt"
-    result = generate("mars", seed=42, out=out)
+def test_mars_has_three_scatter_layers(generated_world):
+    result = generated_world("mars", 42)
     extras = result.manifest.extra
     assert extras["debris_count"] > 0
     assert extras["rock_count"] > 0
@@ -145,12 +151,11 @@ def test_mars_has_three_scatter_layers(tmp_path: Path):
     assert extras["boulder_count"] < extras["rock_count"] < extras["debris_count"]
 
 
-def test_mars_rocks_are_ground_fitted(tmp_path: Path):
+def test_mars_rocks_are_ground_fitted(generated_world):
     """Rocks on sloped terrain should be tilted — their rotation axis
     should not be pure +Z everywhere. Rocks now live in
     ``description.solids`` as inline meshes."""
-    out = tmp_path / "mars.wbt"
-    result = generate("mars", seed=42, out=out)
+    result = generated_world("mars", 42)
     non_trivial = 0
     for s in result.description.solids:
         ax, ay, _, angle = s.rotation
@@ -159,18 +164,17 @@ def test_mars_rocks_are_ground_fitted(tmp_path: Path):
     assert non_trivial > 10, f"expected many tilted rocks, got {non_trivial}"
 
 
-def test_mars_has_craters(tmp_path: Path):
+def test_mars_has_craters(generated_world):
     """The default recipe stamps ``crater_count`` craters. Asserting
     by counting: with 7 craters we expect craters to appear in the
     world; the concrete visible effect is checked by the metadata."""
-    out = tmp_path / "mars.wbt"
-    result = generate("mars", seed=42, out=out)
+    result = generated_world("mars", 42)
     hm = result.description.heightmap
     assert hm is not None
     assert result.manifest.extra["crater_count"] == 7
 
 
-def test_mars_crater_walls_are_drivable(tmp_path: Path):
+def test_mars_crater_walls_are_drivable(generated_world):
     """Crater walls must stay below ~30° so a Husky can climb back
     out. We sample the heightmap across every crater region and check
     the maximum local gradient does not exceed 0.6 (≈ arctan(0.6) ≈ 31°)."""
@@ -178,8 +182,7 @@ def test_mars_crater_walls_are_drivable(tmp_path: Path):
 
     from omniworld.primitives.heightmap import crater_pattern
 
-    out = tmp_path / "mars.wbt"
-    result = generate("mars", seed=42, out=out)
+    result = generated_world("mars", 42)
     hm = result.description.heightmap
     assert hm is not None
     # Sample wall slope directly from crater_pattern defaults — the
@@ -201,33 +204,26 @@ def test_mars_crater_walls_are_drivable(tmp_path: Path):
     )
 
 
-def test_mars_crater_count_zero_disables(tmp_path: Path):
-    out = tmp_path / "mars.wbt"
-    result = generate("mars", seed=42, out=out, params={"crater_count": 0})
+def test_mars_crater_count_zero_disables(generated_world):
+    result = generated_world("mars", 42, {"crater_count": 0})
     assert result.manifest.extra["crater_count"] == 0
 
 
-def test_mars_spawn_urdf_places_rover(tmp_path: Path):
-    out = tmp_path / "mars_rover.wbt"
-    result = generate(
-        "mars", seed=9, out=out,
-        params={"spawn_urdf": "../robots/cube_bot.urdf"},
+def test_mars_spawn_urdf_places_rover(generated_world):
+    result = generated_world(
+        "mars", 9, {"spawn_urdf": "../robots/cube_bot.urdf"},
     )
-    text = out.read_text(encoding="utf-8")
+    text = result.world_path.read_text(encoding="utf-8")
     assert "URDFRobot {" in text
     # Rover spawn name (different from desert/forest which use "robot").
     assert 'name "rover"' in text
     assert validate(result.world_path).ok
 
 
-def test_mars_husky_fleet(tmp_path: Path):
+def test_mars_husky_fleet(generated_world):
     """husky_count spawns N Clearpath Huskies in a circle on the clearing."""
-    out = tmp_path / "mars_huskies.wbt"
-    result = generate(
-        "mars", seed=42, out=out,
-        params={"husky_count": 5},
-    )
-    text = out.read_text(encoding="utf-8")
+    result = generated_world("mars", 42, {"husky_count": 5})
+    text = result.world_path.read_text(encoding="utf-8")
     assert text.count("URDFRobot {") == 5
     for i in range(5):
         assert f'name "husky_{i}"' in text
@@ -239,34 +235,32 @@ def test_mars_husky_fleet(tmp_path: Path):
     assert validate(result.world_path).ok
 
 
-def test_mars_husky_controller_override(tmp_path: Path):
+def test_mars_husky_controller_override(generated_world):
     """User can set controller to ``<none>`` for stationary huskies."""
-    out = tmp_path / "mars_static.wbt"
-    generate("mars", seed=1, out=out,
-             params={"husky_count": 3, "husky_controller": "<none>"})
-    text = out.read_text(encoding="utf-8")
+    result = generated_world(
+        "mars", 1, {"husky_count": 3, "husky_controller": "<none>"},
+    )
+    text = result.world_path.read_text(encoding="utf-8")
     assert 'controller "<none>"' in text
     assert "husky_random" not in text
 
 
-def test_mars_husky_count_fewer(tmp_path: Path):
-    out = tmp_path / "mars_huskies.wbt"
-    result = generate("mars", seed=1, out=out, params={"husky_count": 2})
-    text = out.read_text(encoding="utf-8")
+def test_mars_husky_count_fewer(generated_world):
+    result = generated_world("mars", 1, {"husky_count": 2})
+    text = result.world_path.read_text(encoding="utf-8")
     assert text.count("URDFRobot {") == 2
     assert 'name "husky_0"' in text
     assert 'name "husky_1"' in text
     assert 'name "husky_2"' not in text
 
 
-def test_mars_husky_circle_separation(tmp_path: Path):
+def test_mars_husky_circle_separation(generated_world):
     """Five huskies on the default 12 m circle should sit well apart
     so they don't pile up at spawn. Closest neighbours on a 5-point
     circle of radius 12 m are at 2 * 12 * sin(pi/5) ~= 14 m."""
     import math
 
-    out = tmp_path / "mars_circle.wbt"
-    result = generate("mars", seed=1, out=out, params={"husky_count": 5})
+    result = generated_world("mars", 1, {"husky_count": 5})
     # The world also spawns a `mars_observer` Supervisor (091dacfc), so filter
     # to the huskies rather than asserting on the whole spawn list.
     spawns = [s for s in result.description.spawns
@@ -282,14 +276,13 @@ def test_mars_husky_circle_separation(tmp_path: Path):
             )
 
 
-def test_mars_huskies_carry_crater_data_and_are_supervisors(tmp_path: Path):
+def test_mars_huskies_carry_crater_data_and_are_supervisors(generated_world):
     """Each Husky spawn must carry the JSON-encoded crater list as
     customData and have supervisor=True so the controller can read
     its own pose."""
     import json
 
-    out = tmp_path / "mars.wbt"
-    result = generate("mars", seed=42, out=out, params={"husky_count": 5})
+    result = generated_world("mars", 42, {"husky_count": 5})
     huskies = [s for s in result.description.spawns if s.name.startswith("husky_")]
     assert len(huskies) == 5
     for s in huskies:
@@ -305,25 +298,22 @@ def test_mars_huskies_carry_crater_data_and_are_supervisors(tmp_path: Path):
             assert cr > 0
 
 
-def test_mars_emitted_world_has_supervisor_and_custom_data(tmp_path: Path):
-    out = tmp_path / "mars.wbt"
-    generate("mars", seed=42, out=out, params={"husky_count": 3})
-    text = out.read_text(encoding="utf-8")
+def test_mars_emitted_world_has_supervisor_and_custom_data(generated_world):
+    result = generated_world("mars", 42, {"husky_count": 3})
+    text = result.world_path.read_text(encoding="utf-8")
     # 3 huskies + the mars_observer Supervisor added in 091dacfc.
     assert text.count("supervisor TRUE") == 4
     assert text.count("customData ") >= 3
 
 
-def test_mars_husky_corners_formation(tmp_path: Path):
+def test_mars_husky_corners_formation(generated_world):
     """Corner formation places huskies near the four world corners
     (inset by husky_corner_margin). They should sit much further apart
     than a circle formation."""
     import math
 
-    out = tmp_path / "mars_corners.wbt"
-    result = generate(
-        "mars", seed=42, out=out,
-        params={"husky_count": 4, "husky_formation": "corners"},
+    result = generated_world(
+        "mars", 42, {"husky_count": 4, "husky_formation": "corners"},
     )
     huskies = [s for s in result.description.spawns
                if s.name.startswith("husky_")]
@@ -353,15 +343,13 @@ def test_mars_husky_corners_formation(tmp_path: Path):
             )
 
 
-def test_mars_corner_pads_are_flat(tmp_path: Path):
+def test_mars_corner_pads_are_flat(generated_world):
     """When formation==corners, the recipe stamps a level pad at
     each corner so the husky lands on flat ground."""
-    out = tmp_path / "mars_corners.wbt"
-    generate(
-        "mars", seed=42, out=out,
-        params={"husky_count": 4, "husky_formation": "corners"},
+    result = generated_world(
+        "mars", 42, {"husky_count": 4, "husky_formation": "corners"},
     )
-    text = out.read_text(encoding="utf-8")
+    text = result.world_path.read_text(encoding="utf-8")
     # 4 corner pads + 1 centre clearing pad in the .wbt body.
     # We check by looking for the DEF terrain and ElevationGrid is
     # present. Stamps are baked into the heightmap; their visible
@@ -369,11 +357,10 @@ def test_mars_corner_pads_are_flat(tmp_path: Path):
     assert "ElevationGrid {" in text
 
 
-def test_mars_payload_carries_world_bounds(tmp_path: Path):
+def test_mars_payload_carries_world_bounds(generated_world):
     import json
 
-    out = tmp_path / "mars.wbt"
-    result = generate("mars", seed=1, out=out, params={"husky_count": 3})
+    result = generated_world("mars", 1, {"husky_count": 3})
     huskies = [s for s in result.description.spawns
                if s.name.startswith("husky_")]
     payload = json.loads(huskies[0].custom_data)
@@ -384,14 +371,12 @@ def test_mars_payload_carries_world_bounds(tmp_path: Path):
     assert payload["boundary_margin"] >= 1.0
 
 
-def test_mars_corners_falls_back_for_high_counts(tmp_path: Path):
+def test_mars_corners_falls_back_for_high_counts(generated_world):
     """corners formation only supports up to 5 (4 corners + centre).
     Higher counts must fall back to the circle formation rather than
     raising."""
-    out = tmp_path / "mars_circle_fallback.wbt"
-    result = generate(
-        "mars", seed=2, out=out,
-        params={"husky_count": 6, "husky_formation": "corners"},
+    result = generated_world(
+        "mars", 2, {"husky_count": 6, "husky_formation": "corners"},
     )
     huskies = [s for s in result.description.spawns
                if s.name.startswith("husky_")]
@@ -413,10 +398,9 @@ def test_mars_husky_mutually_exclusive_with_spawn_urdf(tmp_path: Path):
                  params={"husky_count": 2, "spawn_urdf": "any.urdf"})
 
 
-def test_mars_husky_spawn_height_above_clearing(tmp_path: Path):
+def test_mars_husky_spawn_height_above_clearing(generated_world):
     """Huskies must spawn above the clearing pad surface, not below it."""
-    out = tmp_path / "mars_huskies.wbt"
-    result = generate("mars", seed=3, out=out, params={"husky_count": 3})
+    result = generated_world("mars", 3, {"husky_count": 3})
     # Default height_scale=5.5 * 0.28 = 1.54 m clearing surface, plus the
     # 0.1 m drop set by b22457ca (was 1.5 m, which hit the pad at ~5 m/s)
     # = ~1.64 m z. The point of the test is unchanged: ABOVE the pad, not

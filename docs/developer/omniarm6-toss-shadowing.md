@@ -50,7 +50,7 @@ python projects/policies/research/shadowing/preview_omniarm6_toss.py      # 2D s
 A fully-actuated, fixed arm tracks a feasible joint trajectory directly, so the **tracker collapsed
 to classical control** and the **generator collapsed to designed-playback** (MPPI went chaotic on a
 fast fling — the doc's own warning). The piece that genuinely earned its keep vs. "just script it"
-(as the [bin-pick](omniarm6-suction-bin-pick-journey.md) does) is the **feasibility layer** — see below.
+(as the bin-pick (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) does) is the **feasibility layer** — see below.
 
 ## Key findings
 
@@ -140,5 +140,5 @@ two-arm **throw-and-catch** (the catch is a genuine feedback problem).
 
 ## Related
 - [shadowing.md](shadowing.md) — the method + paper scaffold (this is an E3 generality result).
-- [omniarm6-suction-bin-pick-journey.md](omniarm6-suction-bin-pick-journey.md) — the quasi-static contrast.
+- omniarm6-suction-bin-pick-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — the quasi-static contrast.
 - [real-grasp-and-the-cold-first-load-trap.md](real-grasp-and-the-cold-first-load-trap.md) — `warmup_reload`.

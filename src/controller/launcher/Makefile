@@ -20,7 +20,13 @@
 # is still accepted as a deprecated legacy alias so a pre-rebrand shell profile keeps building;
 # the build-variable contract it used to name (WEBOTS_HOME_PATH, WEBOTS_DEPENDENCY_PATH and the
 # rest) was renamed to OMNISIM_* across every Makefile in one atomic change.
-OMNISIM_ROOT := $(if $(OMNISIM_HOME),$(OMNISIM_HOME),$(WEBOTS_HOME))
+# Adopt the legacy name ONLY when it names a directory that EXISTS: a machine that
+# once had Webots keeps WEBOTS_HOME after the install is removed, and adopting that
+# phantom path resolves every include and library under a directory that is not there.
+# `test -d`, not $(wildcard): wildcard splits on spaces and would reject a real
+# "C:\Program Files\..." install.
+OM_LEGACY_HOME := $(strip $(if $(strip $(WEBOTS_HOME)),$(if $(strip $(shell test -d "$(WEBOTS_HOME)" && echo yes)),$(WEBOTS_HOME))))
+OMNISIM_ROOT := $(if $(OMNISIM_HOME),$(OMNISIM_HOME),$(OM_LEGACY_HOME))
 ifeq ($(OMNISIM_ROOT),)
 OMNISIM_HOME_PATH = ../../..
 else

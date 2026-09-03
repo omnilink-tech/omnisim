@@ -29,7 +29,7 @@
 >
 > **Every Atlas row below this banner is HISTORY.** It records what was measured while the robot
 > was in-tree; none of it is actionable now, and `--robot atlas` no longer resolves. The negative
-> result itself is preserved in [atlas-stand-rl-journey.md](atlas-stand-rl-journey.md) — read it
+> result itself is preserved in atlas-stand-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — read it
 > before anyone proposes re-importing Atlas. Recover the code from git history prior to the
 > removal commit.
 
@@ -654,7 +654,7 @@
 >   rests on a faithful extract.
 > - **BINARY-level parity now CERTIFIED (2026-06-26) — NEW.** Every proof above compared the trainer
 >   against the Python *extract*, stepped in-process — never the real `omnisim-bin`. A deterministic
->   open-loop probe ([binary-parity-probe.md](binary-parity-probe.md)) runs the SAME scripted G1
+>   open-loop probe (binary-parity-probe.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))) runs the SAME scripted G1
 >   sweep in the trainer Python AND the actual binary and diffs them. Chaos-free **welded lane: the
 >   binary matches the trainer to ~1e-5 rad (median 4.7e-5 rad / 0.003°, float32 floor), base error
 >   0 → PASS** — same physics to machine precision. (Free-base stand is looser, ~0.15°, purely from
@@ -758,27 +758,27 @@
 > the unstable biped. So **a durable ≥80 % deploy walk is OPEN**, entangled with the months-long G1
 > trainer↔deploy durability gap. Full honest journal:
 > [g1-ghost-fidelity-journey.md](g1-ghost-fidelity-journey.md); recipe in
-> [g1-deploy-walk.md](g1-deploy-walk.md).
+> g1-deploy-walk.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 
 **Last updated: 2026-06-25** (**H1 row updated 2026-06-25** with the executed
 **pure-RL + closed-loop campaign** and its honest result: the closed-loop architecture
 [obs frame-stacking + speed-regulating reward, commit `f7a6ac0d`] works, but **durability
 is NOT solved — the best policy walks ~0.5 m and falls every ~1.7 s in the TRAINER
 itself**, exposed by running the honest survival/distance eval instead of the auto-reset-
-inflated reward curves; full journal [h1-walk-rl-journey.md §7](h1-walk-rl-journey.md).
+inflated reward curves; full journal h1-walk-rl-journey.md §7 (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 Prior 2026-06-24: status-by-robot table extended to cover **H1,
 Go2, B2**; **H1 row + method §2** record the
 verified **deploy-physics fine-tuning REGRESSION** and the *"same solver ≠ matched
 physics; the launch IC + obs pipeline must also match"* finding — see
-[h1-walk-rl-journey.md](h1-walk-rl-journey.md); the OmniQuad/Newton-deploy row reconciled
+h1-walk-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)); the OmniQuad/Newton-deploy row reconciled
 to the 2026-06-23 "OmniQuad walks on Newton" finding; G1 sections re-verified 2026-06-19;
 Atlas section dates to 2026-05-29). This is the single source of truth for *where OmniSim's RL work
 actually stands today*. The per-robot / per-topic docs carry the deep journeys and recipes —
-for **G1** see [g1-deploy-walk.md](g1-deploy-walk.md) (deploy recipe),
+for **G1** see g1-deploy-walk.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) (deploy recipe),
 [g1-ghost-fidelity-journey.md](g1-ghost-fidelity-journey.md) (honest ghost journal),
 [g1-single-source-of-truth.md](g1-single-source-of-truth.md) (physics spec),
-[rl-two-layer-architecture.md](rl-two-layer-architecture.md) (the Ghost Method); for
-others [atlas-stand-rl-journey.md](atlas-stand-rl-journey.md),
+[rl-two-layer-architecture.md](shadowing.md) (the Ghost Method); for
+others atlas-stand-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)),
 [omniquad-residual-rl.md](omniquad-residual-rl.md). **This doc carries the honest "is it
 done?" answer** and the open gaps. If a headline elsewhere disagrees with this file,
 this file is right — fix the headline.
@@ -812,7 +812,7 @@ walk** — the durable-walk goal remains OPEN there too.
 
 | Robot | Artifacts (verified on disk) | Newton **deploy** | Honest one-line verdict |
 |--|--|--|--|
-| **H1** (Unitree humanoid, 5-DOF legs) — **newest, current HEAD** | trainers [`gpu_mjwarp_h1_walk_trainer.py`](../../projects/policies/research/training/gpu_mjwarp_h1_walk_trainer.py) (champion) + [`gpu_newton_h1_walk_trainer.py`](../../projects/policies/research/training/gpu_newton_h1_walk_trainer.py) (deploy-solver fine-tune); matched-physics MJCF [`h1_legs_newton.mjcf.xml`](../../projects/robots/unitree/h1/urdf/h1_legs_newton.mjcf.xml); ONNX residual wired into [`humanoid_walk_deploy.py`](../../projects/policies/research/controllers/humanoid_walk_deploy/humanoid_walk_deploy.py) (`HUMANOID_WALK_ONNX`); world [`h1_walk_deploy.omniworld`](../../projects/policies/research/worlds/h1_walk_deploy.omniworld); run script `run_humanoid_walk_deploy.ps1`. Commits `b82d53fa`..`da8b171a`. Full journal: [h1-walk-rl-journey.md](h1-walk-rl-journey.md). | **Walks a short ~2 s bout.** Deploy champion = **run 3** (`gpu_h1_walk_v3`, mjwarp-trained): **FORWARD +1.45 m at fall / +2.11 m peak, first-fall 2.03 s**; reproduces exactly (GUI + headless). The launch-settle OOD fix (`e4125fa6`, settle 0.3 s) was the enabler. **No durable H1 walk.** | ⚠️ **Phase-2 deploy-physics fine-tuning was RUN and REGRESSED the deploy** (`cf200cdc`, `da8b171a`): fine-tuning run 3 through the exact deploy `SolverMuJoCo` gives **1.58 s back** (fresh-URDF model) / **0.66 s back** (matched-MJCF model) — both worse than run 3's 2.03 s fwd. Verified twofold: (1) *same solver ≠ matched physics* — a fresh `add_urdf`+`add_ground_plane` uses newton's DEFAULT friction not the deploy's μ=2.0; loading the dumped MJCF via `add_mjcf` (`da8b171a`) lifted batched survival fidelity 1.26→1.85 s; (2) *even matched model+solver isn't enough* — run 3 and the fine-tune are byte-identical in the batched trainer (2.05 s/−0.72 m) yet the batched trainer walks **backward** where the deploy walks **forward**. Binding gap = the **launch IC** (deploy's 0.3 s settle lean + residual velocity, absent in the batched reset) + the **obs pipeline** (world-frame `getVelocity`/finite-diff qd vs trainer's exact MuJoCo-frame qvel), *not* the solver. Lever toward a durable 10-20 m walk = launch-IC + obs alignment, NOT fine-tuning. **⚠️ STRATEGIC COURSE-CORRECTION (2026-06-25):** the deeper diagnosis is that **Shadowing is the wrong architecture for the H1 walk** — a hand-designed *kinematic* ghost is not a balance solution (balance lives in reactive foot placement + push-off timing, absent from a joint-angle curve), and the bounded residual (res_scale 0.3) has too little authority *and* fights the ghost → it gives the natural gait but falls ~2 s, with no tuning that fixes it. The capture-point (DCM) foot-placement law (`726815ae`, `1cc72a69`) was the right idea but sagittal-only, and H1's fall went **lateral** (5-DOF legs, NO ankle-roll → weak lateral balance). **Decision: switch the H1 walk to full-authority RL + reward shaping (stability primary, fall-termination, naturalness as a SOFT term); keep Shadowing for feasible-reference non-continuous-balance motions (get-up, reach, sit-to-stand, toss-place). NEXT: train H1 pure-RL.** (⚠️ 2026-07-11: the original line here read *"on Modal H100"* — **the cloud path was REMOVED (`ef46a52e`); OmniSim trains LOCAL + IN-ENGINE**, [`projects/policies/training/`](../../projects/policies/training/) / `run_walk_rl.sh`. Never point at Modal/H100/cloud.) See [locomotion-shadowing-vs-pure-rl.md](locomotion-shadowing-vs-pure-rl.md). **▶ EXECUTED 2026-06-25 (pure-RL + closed-loop campaign, full journal [h1-walk-rl-journey.md §7](h1-walk-rl-journey.md)):** pure RL trains a walk after two fixes — anti-reward-hacking (it first *marched in place* at vx 0.12 → make velocity-tracking primary, survival cheap) and **closed-loop** (the naive policy was observation-INDEPENDENT / open-loop — a 1 rad/s qd perturbation moved the action <5%; fix = obs **frame-stacking** `--obs-history` + a speed-regulating `--overspeed` reward, commit `f7a6ac0d`; the policy is then genuinely feedback-driven + speed-regulating). **⚠️ HONEST RESULT: durability NOT solved.** Running the survival/distance eval (NOT the auto-reset-inflated reward/value curves, which read +0.87/+23 and HID the fall frequency) on the best policy (`runs/gpu_h1_purerl_cl3`): **~0.31 m/s, ~0.5 m (max ~2.1 m) before falling, falls every ~1.7 s IN THE TRAINER ITSELF**; deploy consistent (~0.3–0.7 m, <1 s). **Pure RL MATCHED Shadowing's ~2 m wall, did not break it.** Ruled out for the deploy gap (don't relearn): policy quality (closed-loop fails same), reward, qd (`H1_ENV_CORE` matched it), **CoM-forward pose** (the G1 cause — H1 statically stable, CoM 0.20 m behind foot front, long 0.28 m foot → G1's fatal 35 mm foot-shift harmless to H1), warmup phantom velocity (found+fixed `HW_NO_WARMUP=1`, +0.3 s, not root). **The wall is DURABILITY (sim AND deploy), not sim-to-deploy.** |
+| **H1** (Unitree humanoid, 5-DOF legs) — **newest, current HEAD** | trainers [`gpu_mjwarp_h1_walk_trainer.py`](../../projects/policies/research/training/gpu_mjwarp_h1_walk_trainer.py) (champion) + [`gpu_newton_h1_walk_trainer.py`](../../projects/policies/research/training/gpu_newton_h1_walk_trainer.py) (deploy-solver fine-tune); matched-physics MJCF [`h1_legs_newton.mjcf.xml`](../../projects/robots/unitree/h1/urdf/h1_legs_newton.mjcf.xml); ONNX residual wired into [`humanoid_walk_deploy.py`](../../projects/policies/research/controllers/humanoid_walk_deploy/humanoid_walk_deploy.py) (`HUMANOID_WALK_ONNX`); world [`h1_walk_deploy.omniworld`](../../projects/policies/research/worlds/h1_walk_deploy.omniworld); run script `run_humanoid_walk_deploy.ps1`. Commits `b82d53fa`..`da8b171a`. Full journal: h1-walk-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)). | **Walks a short ~2 s bout.** Deploy champion = **run 3** (`gpu_h1_walk_v3`, mjwarp-trained): **FORWARD +1.45 m at fall / +2.11 m peak, first-fall 2.03 s**; reproduces exactly (GUI + headless). The launch-settle OOD fix (`e4125fa6`, settle 0.3 s) was the enabler. **No durable H1 walk.** | ⚠️ **Phase-2 deploy-physics fine-tuning was RUN and REGRESSED the deploy** (`cf200cdc`, `da8b171a`): fine-tuning run 3 through the exact deploy `SolverMuJoCo` gives **1.58 s back** (fresh-URDF model) / **0.66 s back** (matched-MJCF model) — both worse than run 3's 2.03 s fwd. Verified twofold: (1) *same solver ≠ matched physics* — a fresh `add_urdf`+`add_ground_plane` uses newton's DEFAULT friction not the deploy's μ=2.0; loading the dumped MJCF via `add_mjcf` (`da8b171a`) lifted batched survival fidelity 1.26→1.85 s; (2) *even matched model+solver isn't enough* — run 3 and the fine-tune are byte-identical in the batched trainer (2.05 s/−0.72 m) yet the batched trainer walks **backward** where the deploy walks **forward**. Binding gap = the **launch IC** (deploy's 0.3 s settle lean + residual velocity, absent in the batched reset) + the **obs pipeline** (world-frame `getVelocity`/finite-diff qd vs trainer's exact MuJoCo-frame qvel), *not* the solver. Lever toward a durable 10-20 m walk = launch-IC + obs alignment, NOT fine-tuning. **⚠️ STRATEGIC COURSE-CORRECTION (2026-06-25):** the deeper diagnosis is that **Shadowing is the wrong architecture for the H1 walk** — a hand-designed *kinematic* ghost is not a balance solution (balance lives in reactive foot placement + push-off timing, absent from a joint-angle curve), and the bounded residual (res_scale 0.3) has too little authority *and* fights the ghost → it gives the natural gait but falls ~2 s, with no tuning that fixes it. The capture-point (DCM) foot-placement law (`726815ae`, `1cc72a69`) was the right idea but sagittal-only, and H1's fall went **lateral** (5-DOF legs, NO ankle-roll → weak lateral balance). **Decision: switch the H1 walk to full-authority RL + reward shaping (stability primary, fall-termination, naturalness as a SOFT term); keep Shadowing for feasible-reference non-continuous-balance motions (get-up, reach, sit-to-stand, toss-place). NEXT: train H1 pure-RL.** (⚠️ 2026-07-11: the original line here read *"on Modal H100"* — **the cloud path was REMOVED (`ef46a52e`); OmniSim trains LOCAL + IN-ENGINE**, [`projects/policies/training/`](../../projects/policies/training/) / `run_walk_rl.sh`. Never point at Modal/H100/cloud.) See locomotion-shadowing-vs-pure-rl.md. **▶ EXECUTED 2026-06-25 (pure-RL + closed-loop campaign, full journal h1-walk-rl-journey.md §7):** pure RL trains a walk after two fixes — anti-reward-hacking (it first *marched in place* at vx 0.12 → make velocity-tracking primary, survival cheap) and **closed-loop** (the naive policy was observation-INDEPENDENT / open-loop — a 1 rad/s qd perturbation moved the action <5%; fix = obs **frame-stacking** `--obs-history` + a speed-regulating `--overspeed` reward, commit `f7a6ac0d`; the policy is then genuinely feedback-driven + speed-regulating). **⚠️ HONEST RESULT: durability NOT solved.** Running the survival/distance eval (NOT the auto-reset-inflated reward/value curves, which read +0.87/+23 and HID the fall frequency) on the best policy (`runs/gpu_h1_purerl_cl3`): **~0.31 m/s, ~0.5 m (max ~2.1 m) before falling, falls every ~1.7 s IN THE TRAINER ITSELF**; deploy consistent (~0.3–0.7 m, <1 s). **Pure RL MATCHED Shadowing's ~2 m wall, did not break it.** Ruled out for the deploy gap (don't relearn): policy quality (closed-loop fails same), reward, qd (`H1_ENV_CORE` matched it), **CoM-forward pose** (the G1 cause — H1 statically stable, CoM 0.20 m behind foot front, long 0.28 m foot → G1's fatal 35 mm foot-shift harmless to H1), warmup phantom velocity (found+fixed `HW_NO_WARMUP=1`, +0.3 s, not root). **The wall is DURABILITY (sim AND deploy), not sim-to-deploy.** |
 | **Go2** (Unitree quadruped) | policies `gpu_go2_walk_main` + `gpu_go2_walk_vc_main`; run scripts `run_go2_walk_deploy.ps1` / `run_go2_walk_vc_deploy.ps1`. | **Walks on Newton: +66 m, 0 falls** (OmniQuad residual stack retargeted to a Unitree quad; ~0.38 m/s). | Same recipe as the OmniQuad Newton walker; quadrupeds carry across Unitree quads cleanly. |
 | **B2** (Unitree quadruped, large) | policies `gpu_b2_walk_main` + `gpu_b2_getup_main` (+ hill/stand checkpoints); run scripts `run_b2_walk_deploy.ps1` / `run_b2_getup_deploy.ps1` / `run_b2_hill_deploy.ps1`. | **Walks on Newton: +95 m, 0 falls.** Get-up (rise) also solved via Shadowing; hill-walk RL tracker is BLOCKED at the flat→ramp transition. | Walk + rise are real Newton deploys; the harder hill/transition motions are still open. |
 
@@ -863,7 +863,7 @@ different maturity; keep them separate:
    **obs pipeline** (world-frame vel / finite-diff qd) differ. So this method is
    **not the lever it was hypothesized to be**; the lever is aligning the
    trainer's launch IC + obs to the deploy first. Full writeup:
-   [h1-walk-rl-journey.md](h1-walk-rl-journey.md).
+   h1-walk-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
    (The older G1 foundation note: [`build_g1_native.py`](../../projects/policies/research/training/build_g1_native.py),
    commit `179a8d63`, builds a native-Newton G1-legs articulation that simulates
    faithfully under `SolverMuJoCo` with no NaN/explosion; a G1 trainer on top of
@@ -891,9 +891,9 @@ and the *native-Newton-joint build pattern* (`omniquad_native.py` →
 (Layer 1) + a bounded RL residual that augments it for the unmodeled regime
 (Layer 2). This is the deliberate, evidence-backed answer to the heavy-DR-pure-PPO
 deploy failures. Full spec, interface contract, and phased plan:
-[rl-two-layer-architecture.md](rl-two-layer-architecture.md). **Phase A (the
+[rl-two-layer-architecture.md](shadowing.md). **Phase A (the
 deterministic G1 balancer) is being validated now** — running log + findings +
-resume steps: [rl-phase-a-validation-log.md](rl-phase-a-validation-log.md).
+resume steps: rl-phase-a-validation-log.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 Interim (verdict PENDING): passive G1 topples ~1.1 s (forward, sagittal); no
 position-mode ankle gain set has held yet; torque mode is the decisive next test.
 
@@ -1102,7 +1102,7 @@ hypothesis.
 **Fix path:** train inside the deploy solver (method #2 above). Foundation is
 built + verified; the trainer is the next dedicated effort.
 
-**FINDING (2026-06-09 — harness + deploy-verified, see [rl-phase-a-validation-log.md](rl-phase-a-validation-log.md)
+**FINDING (2026-06-09 — harness + deploy-verified, see rl-phase-a-validation-log.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))
 §"Session 2026-06-09"):** the 1.55 s collapse is **partly** the deploy's too-soft
 joint PD. In the legs-only native-Newton harness, a passive NOMINAL hold at
 **ke=400/kd=60 holds ≥30 s with zero policy** (vs 1.12 s at ke=20); naive PD balance
@@ -1267,7 +1267,7 @@ keep on OmniQuad is, as of today, unproven.
   H1 (~6 s) / Valkyrie (~18 s) that hold all cubes passively. **Rule: on a static-balance
   task, gate any correction layer (learned or hand-coded) on a measured per-robot delta
   over the bare hold; if the bare hold passes, ship it and add nothing.** Mechanism +
-  evidence: [rl-two-layer-architecture.md §3.8](rl-two-layer-architecture.md#38-stand-and-hold-cubes--passenger-vs-saboteur-and-why-a-residual-on-a-static-stand-goes-net-negative-2026-06-23);
+  evidence: [rl-two-layer-architecture.md §3.8](shadowing.md);
   demo: [humanoid-deterministic-stand.md](humanoid-deterministic-stand.md).
 - **DR is double-edged.** The exact lever that "closed" the in-sim gap *hurts*
   deploy: G1 more-DR → contact explosion; Atlas mass-DR → per-run lottery,
@@ -1289,7 +1289,7 @@ keep on OmniQuad is, as of today, unproven.
   `getVelocity`/finite-diff qd vs the trainer's exact body-frame qvel) are *not*
   matched. A batched-trainer metric can be a poor proxy for a single-robot
   deploy launch even with identical physics. Full evidence:
-  [h1-walk-rl-journey.md](h1-walk-rl-journey.md).
+  h1-walk-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 - **The "standard method" is documentation, not infrastructure** (see method
   §3). The registry runs OmniQuad; humanoid policies came from standalone scripts.
 - **Almost everything rests on un-re-run `_scratch` logs and self-reported
@@ -1434,32 +1434,32 @@ numerical blowup); it does **not** make G1 stand past 1.55 s — that's method #
   (pipeline-parity vs durability), the enumerated + re-verified divergence table, and
   Unitree's proven deploy recipe** as the durability answer. Routes to the owners
   below; defers all status to this file.
-- [g1-deploy-walk.md](g1-deploy-walk.md) — the deploy walk recipe + honest status
+- g1-deploy-walk.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — the deploy walk recipe + honest status
   (5.9 m / 33.8 s; ghost ≥80 % not durable).
 - [g1-ghost-fidelity-journey.md](g1-ghost-fidelity-journey.md) — the honest
   ghost-similarity journal (the ~67 % human wall, the 84–88 % feasible ghost over a
   window, the durability correction).
 - [g1-single-source-of-truth.md](g1-single-source-of-truth.md) — the trainer↔deploy
   single-physics-spec work + conformance/CI.
-- [train-deploy-unification.md](train-deploy-unification.md) — the loop unification
+- train-deploy-unification.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — the loop unification
   (one engine, one step): Layer A/B/C, Phase 0/1/2, the qd + launch-IC divergences.
-- [locomotion-shadowing-vs-pure-rl.md](locomotion-shadowing-vs-pure-rl.md) — why a
+- locomotion-shadowing-vs-pure-rl.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — why a
   kinematic ghost is not a balance solution, and the architecture choice for walking.
-- [rl-two-layer-architecture.md](rl-two-layer-architecture.md) — the Ghost Method
+- [rl-two-layer-architecture.md](shadowing.md) — the Ghost Method
   (Shadow + Ghost + Mimic) standard recipe.
 - [g1-stand-rl-playbook.md](g1-stand-rl-playbook.md) — the early G1 stand journey,
   recipe, the 8 dead ends, and the floor-contact regression analysis (historical).
-- [atlas-stand-rl-journey.md](atlas-stand-rl-journey.md) — porting to 30 DOF,
+- atlas-stand-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — porting to 30 DOF,
   the mass-DR lottery, the PPO ceiling.
 - [omniquad-residual-rl.md](omniquad-residual-rl.md) — the quadruped model+residual
   recipe and the "policy is a passenger" finding.
-- [h1-walk-rl-journey.md](h1-walk-rl-journey.md) — the H1 walk + deploy-physics
+- h1-walk-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — the H1 walk + deploy-physics
   fine-tuning journey: the run-3 champion (2.03 s fwd), why deploy-solver
   fine-tuning **regressed** the deploy, the `add_mjcf` matched-model fix, and the
   launch-IC + obs-pipeline lever toward a durable 10-20 m walk.
 - [sim-to-deploy-rl-recipe.md](sim-to-deploy-rl-recipe.md) — the generalized
   heavy-DR recipe (with the new scope caveat).
-- [humanoid-balance-gap.md](humanoid-balance-gap.md) — historical "why bipeds
+- humanoid-balance-gap.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) — historical "why bipeds
   are hard" analysis (its original LIPM conclusion was wrong; kept for context).
 - [engine-migration-plan.md](engine-migration-plan.md) §13.3 — the P6/P8 Newton
   contact + statics work that the deploy gap is entangled with (this doc is the

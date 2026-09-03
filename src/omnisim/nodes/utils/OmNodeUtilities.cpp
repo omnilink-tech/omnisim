@@ -1226,22 +1226,6 @@ const OmShape *OmNodeUtilities::findIntersectingShape(const OmRay &ray, double m
   return shape;
 }
 
-dBodyID OmNodeUtilities::findBodyMerger(const OmNode *node) {
-  if (!node)
-    return NULL;
-
-  const OmNode *n = node;
-  while (n) {
-    const OmSolid *s = dynamic_cast<const OmSolid *>(n);
-    if (s && s->bodyMerger())
-      return s->bodyMerger();
-    if (dynamic_cast<const OmBasicJoint *>(n))
-      break;
-    n = n->parentNode();
-  }
-  return NULL;
-}
-
 bool OmNodeUtilities::isTrackAnimatedGeometry(const OmNode *node) {
   if (node == NULL)
     return false;

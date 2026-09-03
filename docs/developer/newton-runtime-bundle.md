@@ -2,8 +2,9 @@
 
 **Audience:** whoever produces an OmniSim release build. **Goal:** a downloaded
 install runs the Newton physics backend with **no** manual `pip`/PATH step —
-closing the last gap before the `physicsBackend "auto"` default actually means
-Newton on an end-user box. This is the L6 build/runtime layer of
+closing the last gap before a stock install actually runs Newton on an end-user
+box. (`physicsBackend` parses but selects nothing: omit it or write `"newton"`;
+`"ode"` means NO physics, and the field inside `WorldInfo` is a load ERROR.) This is the L6 build/runtime layer of
 [default-flip-plan.md §4.3.1](default-flip-plan.md).
 
 > ⚠ **2026-08-08 — THE PREMISE OF THIS DOC CHANGED: there is no ODE to fall back
@@ -208,9 +209,10 @@ error for the Newton-capable release matrix.
 
 ## Status (2026-06-09, lane L6)
 
-Mechanism and the bundler's staging output are **verified** on the dev box: the
-staged `python.exe` imports warp 1.13.0 / newton 1.2.0 / mujoco_warp / pxr under
-`-E -S` isolation with only bundle paths on `sys.path`. **Pending the release
-box:** producing the actual vendored installer against a freshly-built binary and
-confirming a PATH-stripped binary brings Newton up from the bundle (the script's
-`--verify`/`--verify-binary` is that gate).
+The tooling (bundler + `make` target + `windows_distro` guard) **landed on
+`main` 2026-06-09**. Mechanism and the bundler's staging output are **verified**
+on the dev box: the staged `python.exe` imports warp 1.13.0 / newton 1.2.0 /
+mujoco_warp / pxr under `-E -S` isolation with only bundle paths on `sys.path`.
+**Pending the release box:** producing the actual vendored installer against a
+freshly-built binary and confirming a PATH-stripped binary brings Newton up from
+the bundle (the script's `--verify`/`--verify-binary` is that gate).

@@ -26,8 +26,9 @@ The three models -- all derived from the SINGLE SOURCE OF TRUTH
                  (``gpu_newton_g1_walk_trainer._build_g1_full_prim_builder``),
                  finalized. add_urdf on the full 23-DOF URDF (visuals + mesh
                  colliders stripped, the two SPEC foot boxes kept), gains 100/5.
-  P2 deploy   -- the LITERAL deploy runtime (``g1_deploy_runtime.World``, a
-                 verbatim extract of the native backend's embedded Python),
+  P2 deploy   -- the LITERAL deploy runtime (``omnisim_newton_runtime.World``,
+                 the very module the native backend's embedded interpreter
+                 imports, taken from src/omnisim/physics -- no mirror copy),
                  driven by ``build_deploy_model`` below which feeds it standard
                  URDF kinematics + inertia exactly the way OmSolid.cpp /
                  OmBasicJoint.cpp do. The deploy-specific physics (gain
@@ -66,6 +67,14 @@ import numpy as np
 REPO = next(_p for _p in Path(__file__).resolve().parents if (_p / "projects" / "policies").is_dir() or (_p / "AGENTS.md").exists() or (_p / ".git").exists())
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
+# The deploy physics runtime is imported from its SOURCE location -- the same
+# module the engine's embedded interpreter runs (bundled from this file). Until
+# 2026-09-02 a 10.5k-line byte-mirror (backends/g1_deploy_runtime.py) plus a
+# sync test stood in for it; importing the source directly makes the parity
+# proof hold against the deploy by construction, with nothing to keep in sync.
+_RUNTIME_DIR = REPO / "src" / "omnisim" / "physics"
+if str(_RUNTIME_DIR) not in sys.path:
+    sys.path.insert(0, str(_RUNTIME_DIR))
 
 from projects.policies.research.backends import g1_physics_spec as SPEC  # noqa: E402
 
@@ -226,7 +235,7 @@ def _normalize(v):
 def build_deploy_model(urdf_path: Optional[Path] = None):
     """Build the LITERAL deploy model and return (World, n_revolute, info).
 
-    Mirrors the native backend's drive of ``g1_deploy_runtime.World``:
+    Mirrors the native backend's drive of ``omnisim_newton_runtime.World``:
 
       * FK the URDF kinematic tree at the REST configuration (all joints = 0)
         with the floating base at z = SPEC.SPAWN_Z to get every link's WORLD
@@ -244,7 +253,9 @@ def build_deploy_model(urdf_path: Optional[Path] = None):
     self-collision filter) come for free from the extracted World. The driver
     only supplies standard URDF kinematics + inertia + the SPEC foot boxes.
     """
-    from projects.policies.research.backends import g1_deploy_runtime as DEPLOY
+    # Lazy: this pulls in warp + newton (+ mujoco_warp). _RUNTIME_DIR is on
+    # sys.path (module top), so this is src/omnisim/physics/omnisim_newton_runtime.py.
+    import omnisim_newton_runtime as DEPLOY
     urdf_path = urdf_path or SPEC.URDF_PRIM
     links, joints = parse_urdf(urdf_path)
 
@@ -884,7 +895,7 @@ def run_structural() -> int:
           f"nbody={mjm3.nbody} njnt={mjm3.njnt} ngeom={mjm3.ngeom}")
 
     # ---- Build P2 + validate ----
-    print("\n[P2] building LITERAL deploy model (g1_deploy_runtime.World) ...")
+    print("\n[P2] building LITERAL deploy model (omnisim_newton_runtime.World) ...")
     p2_trustworthy = False
     mjm2 = None
     try:

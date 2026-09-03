@@ -34,7 +34,7 @@
 > The H1 walk work showed the *same rule must extend past the model* — to the **initial
 > condition (launch state)** and the **observation pipeline**. See
 > [the H1 corollary](#2026-06-24--the-h1-corollary-matched-solver--matched-model-is-still-not-enough)
-> below, [h1-walk-rl-journey.md](h1-walk-rl-journey.md), and [rl-current-state.md](rl-current-state.md).
+> below, h1-walk-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)), and [rl-current-state.md](rl-current-state.md).
 
 ### 2026-06-24 — the H1 corollary: matched solver + matched model is still not enough
 
@@ -77,7 +77,7 @@ runs on the local GPU) and the OmniSim **deploy** (the embedded-Python Newton ba
 `OmNewtonBackend.cpp`) now derive their physical model from **one place** instead of
 re-declaring it on each side. This document is the map.
 
-It is the structural follow-through on [g1-deploy-walk.md](g1-deploy-walk.md), whose
+It is the structural follow-through on g1-deploy-walk.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)), whose
 method — *"train in the deploy solver, **byte-match** the physics"* — worked but kept
 the two sides in agreement **by hand** across ~20 parameters in 8+ files. That manual
 parity was the root of months of "G1 collapses at ~1 s" debugging (a silent solver
@@ -122,7 +122,7 @@ All five commits sit on `main` above the foundation; every value migration was p
 | 1 — one model | `62caf2a8` | Foot collider box single-sourced from `SPEC.FOOT_BOX_*` across all 3 sites (trainer in-memory strip, `build_g1_native_prim`, `make_g1_deploy_prim_urdf`) so colliders can't drift. **The trainer→prebaked-URDF file switch was *declined*** — see "deferred" below. |
 | 2 — one knob set | `62caf2a8` (trainer) + `be47d149` (deploy) | Trainer reads `KE/KD/SUBSTEPS/DT/SPAWN_Z/RES_SCALE`, clamp `lo/hi/vel` from SPEC. Deploy: new `projects/policies/research/runners/g1_deploy_launch.py` emits the `OMNISIM_NEWTON_*` env from `SPEC.newton_env()` (no more hand-pasted env wall); the deploy controller reads `LIM_LO/HI/ACT_SCALE/STEP_DT/NOMINAL/ARM_NOMINAL/NJ/OBS_DIM` from SPEC. |
 | 3 — enforcement | `a2a99288` | 18-test conformance suite (16 pass / 2 skips: 1 GPU/Newton golden-trajectory, 1 gated on the deploy `controller` module import) + GitHub Actions CI on `projects/policies/**`. Tier 1 (CPU) pins every scalar + the full leg limit arrays and asserts both consumers equal SPEC; Tier 2 is the GPU golden-trajectory scaffold. |
-| 4 — north star | `2b0b5cb8` | Canonical MJCF [`g1_23dof_omnisim.mjcf`](../../projects/robots/unitree/g1/mjcf/g1_23dof_omnisim.mjcf) generated from SPEC+URDF via `scripts/dev/make_g1_mjcf.py`, validated on MuJoCo CPU (gains byte-equivalent to ke=100/kd=5). See [g1-mjcf-single-model.md](g1-mjcf-single-model.md). |
+| 4 — north star | `2b0b5cb8` | Canonical MJCF [`g1_23dof_omnisim.mjcf`](../../projects/robots/unitree/g1/mjcf/g1_23dof_omnisim.mjcf) generated from SPEC+URDF via `scripts/dev/make_g1_mjcf.py`, validated on MuJoCo CPU (gains byte-equivalent to ke=100/kd=5). See g1-mjcf-single-model.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)). |
 
 ---
 
@@ -137,7 +137,7 @@ Physics env comes from `SPEC.newton_env()`; per-policy gait/balance vars are lau
 defaults you can still override from the environment.
 
 **Train:** unchanged entry point; the trainer now imports `SPEC` for its physics
-constants. The recipe in [g1-deploy-walk.md](g1-deploy-walk.md) still applies.
+constants. The recipe in g1-deploy-walk.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) still applies.
 
 **Change a physics knob for BOTH sides:** edit `g1_physics.json`, run the conformance
 test, then retrain + redeploy to validate. Do **not** edit a literal on one side.
@@ -157,7 +157,7 @@ switches that change the model build and therefore need real validation:
 - **Deploy builds the robot from the MJCF** (instead of the Webots node tree): lives in
   compiled native code (`OmNewtonBackend.cpp`) → needs a **native rebuild**, which is
   currently blocked on this machine (Qt5/Qt6 link failure). Design-complete in
-  [g1-mjcf-single-model.md](g1-mjcf-single-model.md); deferred.
+  g1-mjcf-single-model.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)); deferred.
 
 ### Deferred: trainer → prebaked-URDF file switch (Stage 1 ideal)
 The cleanest end state is the trainer loading the same `g1_23dof_omnisim_prim.urdf` file
@@ -198,7 +198,7 @@ the G1 three ways from the spec, compiles each to a MuJoCo `MjModel`, diffs ever
 field name-aligned, and steps each on GPU mjwarp with an identical action sequence:
 - **P1 trainer** — the actual trainer builder (`_build_g1_full_prim_builder`)
 - **P2 deploy** — the **literal** deploy runtime, extracted verbatim into
-  [`g1_deploy_runtime.py`](../../projects/policies/research/backends/g1_deploy_runtime.py) from
+  [`omnisim_newton_runtime.py`](../../src/omnisim/physics/omnisim_newton_runtime.py) (the `g1_deploy_runtime.py` mirror was deleted 2026-09-02) from
   `kNewtonRuntimeSource` (a CI test, `tests/test_g1_deploy_runtime_sync.py`, keeps it byte-in-sync)
 - **P3 mjcf** — the Stage-4 canonical MJCF
 

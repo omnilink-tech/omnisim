@@ -1,6 +1,7 @@
 #include "StandardPaths.hpp"
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QFileInfo>
 #include <QtCore/QProcessEnvironment>
 
 #ifdef _WIN32
@@ -32,12 +33,21 @@ static void foo() {
 // name (AGENTS.md §1); WEBOTS_HOME is kept as a fallback so a pre-rebrand
 // environment still works. Returns "" when neither is set -- same as before,
 // the caller appends "/" and downstream code copes with a bare relative path.
+//
+// The legacy name is adopted only when it names a directory that EXISTS. Windows
+// keeps a machine-level WEBOTS_HOME after Webots is uninstalled, and adopting
+// that phantom path sent every robot-window resource lookup under a directory
+// that is not there -- silently, because the caller just appends "/" and gets
+// nothing. An absent directory is treated exactly like an unset variable.
 static QString resolveHomeFromEnv() {
   const QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
   const QString omnisimHome = env.value("OMNISIM_HOME");
   if (!omnisimHome.isEmpty())
     return omnisimHome;
-  return env.value("WEBOTS_HOME");
+  const QString legacyHome = env.value("WEBOTS_HOME");
+  if (!legacyHome.isEmpty() && QFileInfo(legacyHome).isDir())
+    return legacyHome;
+  return QString();
 }
 
 const QString &StandardPaths::getWebotsHomePath() {

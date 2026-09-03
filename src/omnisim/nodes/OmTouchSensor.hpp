@@ -51,8 +51,6 @@ public:
 
 protected:
   // reimplemented protected functions
-  dJointID createJoint(dBodyID body, dBodyID parentBody, dWorldID world) const override;
-  bool needJointToUpperSolid(const OmSolid *upperSolid) const override { return true; }
 
 private:
   Type mDeviceType;

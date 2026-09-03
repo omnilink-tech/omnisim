@@ -30,6 +30,7 @@
 #include <QtCore/QTemporaryFile>
 #include <QtCore/QTextStream>
 #include <QtCore/QVector>
+#include <QtCore/QElapsedTimer>
 #include <QtQml/QJSEngine>
 
 #include <cassert>
@@ -101,9 +102,24 @@ bool OmTemplateEngine::generate(QHash<QString, QString> tags, const QString &log
   return output;
 }
 
+OmTemplateEngineProfile &OmTemplateEngineProfile::instance() {
+  static OmTemplateEngineProfile p;
+  return p;
+}
+
 bool OmTemplateEngine::generateJavascript(QHash<QString, QString> tags, const QString &logHeaderName) {
   mResult.clear();
   mError = "";
+  static const bool profiling = !qEnvironmentVariableIsEmpty("OMNISIM_RELOAD_PROFILE");
+  QElapsedTimer phase;
+  if (profiling)
+    phase.start();
+  auto mark = [&](int i) {
+    if (profiling) {
+      OmTemplateEngineProfile::instance().ns[i] += phase.nsecsElapsed();
+      phase.restart();
+    }
+  };
 
   QString initialDir = QDir::currentPath();
 
@@ -118,6 +134,29 @@ bool OmTemplateEngine::generateJavascript(QHash<QString, QString> tags, const QS
   QString javaScriptBody = "";
   QString javaScriptImport = "";
 
+  // STATIC-TEXT HOISTING (2026-09-02). The plain-VRML stretches between template tokens used to be
+  // pasted into the generated module as JavaScript template literals, so QJSEngine::importModule
+  // lexed and compiled every byte of a PROTO's static body on every evaluation. A stretch whose
+  // text contains no backslash and no "${" reads IDENTICALLY as a template literal and as a plain
+  // string VALUE, so those stretches are handed to the engine as data -- a global array set before
+  // the import -- and the module references them by index. Stretches that DO carry a backslash or
+  // "${" keep the literal form so their (undocumented but live) template-literal escape and
+  // interpolation semantics are untouched. The generated VRML is byte-identical either way;
+  // OMNISIM_RELOAD_PROFILE=1 prints an order-sensitive hash of every template result so an A/B can
+  // prove it. OMNISIM_TEMPLATE_CHUNK_HOIST=0 (value-parsed) restores the inline literals.
+  static const bool hoistStaticText = []() {
+    const QByteArray v = qgetenv("OMNISIM_TEMPLATE_CHUNK_HOIST").trimmed().toLower();
+    return v.isEmpty() || (v != "0" && v != "false" && v != "off");
+  }();
+  QStringList staticChunks;
+  auto emitStatic = [&](const QString &text) {
+    if (hoistStaticText && !text.contains(QLatin1Char('\\')) && !text.contains(QLatin1String("${"))) {
+      javaScriptBody += "___vrml += render(___chunks[" + QString::number(staticChunks.size()) + "]);";
+      staticChunks.append(text);
+    } else
+      javaScriptBody += "___vrml += render(`" + text + "`);";
+  };
+
   int indexClosingToken = 0;
   int lastIndexClosingToken = -1;
   mTemplateContent = mTemplateContent.toUtf8();
@@ -128,8 +167,7 @@ bool OmTemplateEngine::generateJavascript(QHash<QString, QString> tags, const QS
       if (indexClosingToken < mTemplateContent.size()) {
         // what comes after the last closing token is plain vrml
         // note: ___vrml is a local variable to the generateVrml javascript function
-        javaScriptBody +=
-          "___vrml += render(`" + mTemplateContent.mid(indexClosingToken, mTemplateContent.size() - indexClosingToken) + "`);";
+        emitStatic(mTemplateContent.mid(indexClosingToken, mTemplateContent.size() - indexClosingToken));
         break;
       }
     }
@@ -144,12 +182,11 @@ bool OmTemplateEngine::generateJavascript(QHash<QString, QString> tags, const QS
 
     if (indexOpeningToken > 0 && lastIndexClosingToken == -1)
       // what comes before the first opening token should be treated as plain vrml
-      javaScriptBody += "___vrml += render(`" + mTemplateContent.left(indexOpeningToken) + "`);";
+      emitStatic(mTemplateContent.left(indexOpeningToken));
 
     if (lastIndexClosingToken != -1 && indexOpeningToken - lastIndexClosingToken > 0)
       // what is between the previous closing token and the current opening token should be treated as plain vrml
-      javaScriptBody +=
-        "___vrml += render(`" + mTemplateContent.mid(lastIndexClosingToken, indexOpeningToken - lastIndexClosingToken) + "`);";
+      emitStatic(mTemplateContent.mid(lastIndexClosingToken, indexOpeningToken - lastIndexClosingToken));
 
     // anything inbetween the tokens is either an expression or plain JavaScript
     QString statement = mTemplateContent.mid(indexOpeningToken, indexClosingToken - indexOpeningToken);
@@ -194,6 +231,7 @@ bool OmTemplateEngine::generateJavascript(QHash<QString, QString> tags, const QS
   javaScriptTemplate.replace("%fields%", tags["fields"]);
   javaScriptTemplate.replace("%body%", javaScriptBody);
 
+  mark(0);
   // write to file (note: can't evaluate directly because the evaluator doesn't support importing of modules)
   QFile outputFile("jsTemplateFilled.js");
   if (!outputFile.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
@@ -204,6 +242,7 @@ bool OmTemplateEngine::generateJavascript(QHash<QString, QString> tags, const QS
   QTextStream outputStream(&outputFile);
   outputStream << javaScriptTemplate;
   outputFile.close();
+  mark(1);
 
   // create engine and define global space
   QJSEngine engine;
@@ -216,6 +255,14 @@ bool OmTemplateEngine::generateJavascript(QHash<QString, QString> tags, const QS
   engine.globalObject().setProperty("stdout", jsStdOut);
   QJSValue jsStdErr = engine.newArray();
   engine.globalObject().setProperty("stderr", jsStdErr);
+  // static VRML stretches as DATA (see hoistStaticText above); an empty array when none were hoisted
+  QJSValue jsChunks = engine.newArray(static_cast<quint32>(staticChunks.size()));
+  for (int i = 0; i < staticChunks.size(); ++i)
+    jsChunks.setProperty(static_cast<quint32>(i), staticChunks.at(i));
+  engine.globalObject().setProperty("___chunks", jsChunks);
+  mark(2);
+  if (profiling)
+    OmTemplateEngineProfile::instance().bytes += javaScriptTemplate.size();
   // import filled template as module
   QJSValue module = engine.importModule("jsTemplateFilled.js");
   if (module.isError()) {
@@ -223,14 +270,20 @@ bool OmTemplateEngine::generateJavascript(QHash<QString, QString> tags, const QS
     return false;
   }
 
+  mark(3);
   QJSValue generateVrml = module.property("generateVrml");
   QJSValue r = generateVrml.call();
+  mark(4);
+  if (profiling)
+    ++OmTemplateEngineProfile::instance().calls;
   if (r.isError()) {
     mError = tr("failed to execute JavaScript template: %1").arg(r.property("message").toString());
     return false;
   }
 
   mResult = r.toString().toUtf8();
+  if (profiling)
+    OmTemplateEngineProfile::instance().resultHash ^= static_cast<qint64>(qHash(mResult)) * (OmTemplateEngineProfile::instance().calls + 1);
 
   // display stream messages
   for (int i = 0; i < jsStdOut.property("length").toInt(); ++i)

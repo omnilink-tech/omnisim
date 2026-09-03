@@ -47,8 +47,6 @@
 #include "OmMotor.hpp"
 #include "OmNodeOperations.hpp"
 #include "OmNodeUtilities.hpp"
-#include "OmOdeContact.hpp"
-#include "OmOdeContext.hpp"
 #include "OmNewtonBackend.hpp"
 #include "OmPhysics.hpp"
 #include "OmPhysicsBackend.hpp"
@@ -98,9 +96,6 @@ QPointer<OmSolidMerger> OmSolid::solidMerger() const {
   return mSolidMerger;
 }
 
-void OmSolid::addMass(OmBaseNode *node) {
-  OmSolidUtilities::addMass(mReferenceMass, node, 1000);
-}
 #include <QtCore/QStringList>
 
 #include <cstdlib>
@@ -121,11 +116,6 @@ QList<const OmSolid *> OmSolid::cSolids;
 int OmSolid::cNewtonFlushGeneration = 0;
 
 void OmSolid::init() {
-  // ODE stuff
-  mJoint = NULL;
-  mOdeMass = NULL;
-  mMassAroundCoM = NULL;
-  mReferenceMass = NULL;
 
   // Webots physics data
   mGlobalMass = 0.0;
@@ -141,7 +131,6 @@ void OmSolid::init() {
   mHasExtractedContactPoints = false;
   mUseInertiaMatrix = false;
   mNativeInertiaValid = false;
-  mWarnedOdePinInert = false;
   mIsPermanentlyKinematic = false;
   mIsKinematic = false;
   mUpdatedInStep = false;
@@ -488,19 +477,13 @@ void OmSolid::postFinalize() {
   if (physics())
     physics()->postFinalize();
 
-  // P2/P3 of cuda-newton-physics-plan.md: trigger backend resolution at
-  // world-load time for any Solid that opts into a non-default backend.
-  // Actual registration is deferred to flushPendingNewtonRegistrations()
-  // (driven by OmSimulationWorld::step before finalizeWorld) so that
-  // matrix() returns correct world coordinates -- at this point the
-  // parent transform chain may not yet be computed for nested Solids
-  // (e.g. wheels under a HingeJoint).
-  //
-  // A Solid explicitly pinned to the retired "ode" selector skips this: there is
-  // no backend to bring up for it (the resolved object is an inert stub), and
-  // the string compare keeps it free. Everything else warms the registry once.
-  if (physicsBackendName() != QStringLiteral("ode"))
-    (void)physicsBackend();  // bring up backend if needed; registry call_once
+  // Trigger backend resolution at world-load time (registry call_once; the
+  // Newton runtime is normally already preloaded). Actual registration is
+  // deferred to flushPendingNewtonRegistrations() (driven by
+  // OmSimulationWorld::step before finalizeWorld) so that matrix() returns
+  // correct world coordinates -- at this point the parent transform chain may
+  // not yet be computed for nested Solids (e.g. wheels under a HingeJoint).
+  (void)physicsBackend();
 
   // A new Solid exists, so the registration flush must look again -- this is
   // the hook that keeps the flush's skip-gate honest for mid-run spawns
@@ -746,8 +729,6 @@ void OmSolid::setSolidMerger() {
 }
 
 void OmSolid::setJointParents() {
-  // TouchSensor special joint or fixed joint to static environment
-  setOdeJointToUpperSolid();
 
   // new joints
   typedef QList<OmBasicJoint *>::const_iterator LCI;
@@ -769,21 +750,11 @@ void OmSolid::setupSolidMerger() {
   // Sets the new solid merger
   setSolidMerger();
 
-  dGeomID g = odeGeom();
-  if (boundingObject() && g == NULL)
-    createOdeGeoms();
-  else if (g && mSolidMerger)
-    mSolidMerger->addGeomToSpace(g);
-
   if (mSolidMerger) {
     assert(isDynamic());  // At this point mSolidMerger == NULL if mIsKinematic == false
     if (!mNativeInertiaValid)
-      createOdeMass();  // OFF mode: computes only the native mirror (the Newton inertia feed)
+      createOdeMass();  // computes the native inertia mirror (the Newton inertia feed)
     mSolidMerger->appendSolid(this);
-    // Recursively assigns the OmSolid body to every non-space ODE dGeom
-    g = odeGeom();
-    if (g)
-      mSolidMerger->attachGeomsToBody(g);
     if (mSolidMerger->isSet())
       mSolidMerger->mergeMass(this, false);
   }
@@ -837,8 +808,7 @@ void OmSolid::setBodiesAndJointsToParents() {
     connect(p, &OmPhysics::centerOfMassChanged, this, &OmSolid::updateOdeCenterOfMass, Qt::UniqueConnection);
     connect(p, &OmPhysics::inertialPropertiesChanged, this, &OmSolid::updateOdeInertiaMatrix, Qt::UniqueConnection);
     connect(p, &OmPhysics::dampingChanged, this, &OmSolid::updateOdeDamping, Qt::UniqueConnection);
-  } else
-    updateOdeGeomPosition();  // for kinematic solids
+  }
 
   // Recurses through solid descendants
   foreach (OmSolid *const solid, mSolidChildren)
@@ -849,10 +819,6 @@ void OmSolid::setBodiesAndJointsToParents() {
     pj->updateAfterParentPhysicsChanged();  // needed also in kinematic mode
 
   if (isSolidMerger()) {
-    // Sets joints
-    setOdeJointToUpperSolid();
-
-    // Sets 'new' joints
     if (pj)
       pj->setJoint();
   }
@@ -880,26 +846,16 @@ void OmSolid::resetJoints() {
     solid->resetJoints();
 }
 
-void OmSolid::createOdeGeoms() {
-  // ODE is gone: there are no collision geoms to create. (OmOdeContext still
-  // exists as a stub and instance() is non-null, but it owns no space.)
-}
-
 void OmSolid::createOdeGeomFromInsertedGroupItem(OmBaseNode *node) {
   assert(node);
 
-  dSpaceID space = upperSpace();
-
-  dGeomID insertedGeom = createOdeGeomFromNode(space, node);
-  if (!insertedGeom)  // if the inserted node has no Geometry child or it has an indexed face set which is invalid
+  if (!createOdeGeomFromNode(node))  // if the inserted node has no Geometry child or it has an indexed face set which is invalid
     return;
 
   if (isDynamic()) {
     assert(mSolidMerger);
-    addMass(node);
     adjustOdeMass();
-  } else
-    updateOdeGeomPosition(insertedGeom);
+  }
 }
 
 // Methods modifying the mass
@@ -926,30 +882,7 @@ void OmSolid::adjustOdeMass(bool mergeMass) {
 
 void OmSolid::addMassFromInsertedNode(OmBaseNode *node) {  // node is a OmGeometry or a OmPose
   assert(isDynamic() && mSolidMerger);
-  addMass(node);
   adjustOdeMass();
-}
-
-void OmSolid::subtractOdeMass(const dMass *mass, bool adjustSolidMass) {
-  if (mIsKinematic)
-    return;
-
-  // ODE is gone: no dMass bookkeeping exists any more
-  (void)mass;
-  (void)adjustSolidMass;
-}
-
-void OmSolid::correctOdeMass(const dMass *mass, OmBaseNode *node, bool adjustSolidMass) {
-  if (mIsKinematic)
-    return;
-
-  subtractOdeMass(mass, false);
-  addMass(node);
-
-  if (adjustSolidMass) {  // default case
-    adjustOdeMass();
-    awake();
-  }
 }
 
 void OmSolid::removeBoundingGeometry() {
@@ -962,28 +895,13 @@ void OmSolid::removeBoundingGeometry() {
     mNativeInertiaValid = false;
 }
 
-// This is the default joint creation behavior
-// this method is overridden in the OmTouchSensor class
-dJointID OmSolid::createJoint(dBodyID body, dBodyID parentBody, dWorldID world) const {
-  (void)body;
-  (void)parentBody;
-  (void)world;
-  return NULL;  // ODE is gone: no fixed joint to create
-}
-
-void OmSolid::setJoint(dJointID joint, dBodyID body, dBodyID parentBody) const {
-  (void)joint;
-  (void)body;
-  (void)parentBody;
-}
-
 void OmSolid::printKinematicWarningIfNeeded() {
   if (mKinematicWarningPrinted || !mHasDynamicSolidDescendant || !belongsToStaticBasis())
     return;
 
   mKinematicWarningPrinted = true;
   parsingWarn(tr("This node is controlled in kinematics mode "
-                 "but some Solid descendant nodes have physics and won't move along with this node."));
+                 "but some Solid descendant nodes have physics and won't move along with this node. Either add a Physics node to this Solid so the whole chain is simulated, or remove the descendants' Physics nodes so they follow it kinematically -- see docs/reference/solid.md."));
 }
 
 OmVector3 OmSolid::relativeLinearVelocity(const OmSolid *parentSolid) const {
@@ -1069,15 +987,6 @@ void OmSolid::updateIsAngularVelocityNull() {
   mIsAngularVelocityNull = mAngularVelocity->value().isNull();
 }
 
-dBodyID OmSolid::bodyMerger() const {
-  assert(mIsKinematic || mSolidMerger);
-  return isDynamic() ? mSolidMerger->body() : NULL;
-}
-
-dBodyID OmSolid::body() const {
-  return isSolidMerger() ? mSolidMerger->body() : NULL;
-}
-
 void OmSolid::appendJointParent(OmBasicJoint *joint) {
   mJointParents.append(joint);
 }
@@ -1086,35 +995,9 @@ void OmSolid::removeJointParent(OmBasicJoint *joint) {
   mJointParents.removeOne(joint);
 }
 
-bool OmSolid::needJointToUpperSolid(const OmSolid *upperSolid) const {
-  // create a fixed joint to the static environment only if
-  // this node doesn't have any joint ancestor and any dynamic solid ancestor
-  return mJointParents.isEmpty() && upperSolid->belongsToStaticBasis();
-}
-
-void OmSolid::setOdeJointToUpperSolid() {
-  const OmSolid *const us = jointParent() ? NULL : upperSolid();
-  const bool b = us && needJointToUpperSolid(us) && isSolidMerger() && (us->isDynamic() || us->belongsToStaticBasis());
-  if (mJoint == NULL && b) {
-    return;
-  }
-
-  if (mJoint == NULL)
-    return;
-
-  if (b)
-    // if the upper solid has no body, the solid is fixed to the static environment
-    setJoint(mJoint, body(), us->bodyMerger());
-  else
-    // Removes the joint from simulation without destroying it
-    setJoint(mJoint, NULL, NULL);
-}
-
-void OmSolid::setGeomMatter(dGeomID g, OmBaseNode *node) {
-  if (mSolidMerger) {
-    (void)g;  // ODE is gone: no geom to attach
+void OmSolid::setGeomMatter(OmBaseNode *node) {
+  if (mSolidMerger)
     addMassFromInsertedNode(node);
-  }
 }
 /////////////////////
 // Update Methods  //
@@ -1177,7 +1060,7 @@ void OmSolid::syncNewtonPoseFromFields() {
     return;
   OmPhysicsBackend *const raw = OmPhysicsBackendRegistry::newtonBackend();
   if (raw == nullptr || !raw->isAvailable())
-    return;  // refusal lives in OmSimulationWorld::step -- see refuseIfBrokenAndNewtonWanted
+    return;  // refusal lives in OmSimulationWorld::step -- see refuseIfNewtonBroken
   OmNewtonBackend *const newton = static_cast<OmNewtonBackend *>(raw);
   if (!newton->isWorldRunning())
     return;
@@ -1391,14 +1274,6 @@ void OmSolid::updateBoundingObject() {
       // postpone bounding object update after finalization
       return;
 
-    createOdeGeoms();
-    updateOdeGeomPosition();
-    dGeomID g = odeGeom();
-    if (g && mSolidMerger) {
-      mSolidMerger->attachGeomsToBody(g);
-      createOdeMass(false);
-      mSolidMerger->mergeMass(this);
-    }
   }
 
   mBoundingObjectHasChanged = true;
@@ -1531,8 +1406,6 @@ void OmSolid::updateChildren() {
 bool OmSolid::resetJointPositions(bool allParents) {
   bool b = false;
 
-  setOdeJointToUpperSolid();
-
   foreach (OmBasicJoint *const j, mJointParents) {
     if (allParents || j->upperSolid()->belongsToStaticBasis())
       b |= j->resetJointPositions();
@@ -1639,16 +1512,16 @@ void OmSolid::setDefaultMassSettings(bool applyCenterOfMassTranslation, bool war
   if (fieldMass > 0.0) {
     if (warning)
       parsingWarn(
-        tr("Undefined inertia matrix: using the identity matrix. Please specify 'boundingObject' or 'inertiaMatrix' values."));
+        tr("Undefined inertia matrix: using the identity matrix. Please specify 'boundingObject' or 'inertiaMatrix' values. The Solid has a 'mass' but nothing to derive its inertia from, so it gets 1 kg.m^2 on every axis (far too much for a small part: it will tumble sluggishly). Set a 'boundingObject' (the inertia is derived from it) or declare 'inertiaMatrix' plus 'centerOfMass' -- see docs/reference/physics.md."));
   } else {
     if (warning) {
       if (physics()->density() > 0.0)
         parsingWarn(
           tr("Mass is invalid because 'boundingObject' is not defined. Using default mass properties: mass = 1, inertia "
-             "matrix = identity"));
+             "matrix = identity. 'density' needs a 'boundingObject' to integrate over: add one, or set 'mass' (kg) directly -- see docs/reference/physics.md."));
       else
         parsingWarn(
-          tr("Mass is invalid: %1. Using default mass properties: mass = 1, inertia matrix = identity").arg(fieldMass));
+          tr("Mass is invalid: %1. Using default mass properties: mass = 1, inertia matrix = identity. Set Physics.mass to a positive value in kg (or 'density' with a 'boundingObject') -- see docs/reference/physics.md.").arg(fieldMass));
     }
   }
 
@@ -1671,7 +1544,6 @@ void OmSolid::createOdeMass(bool reset) {
   const OmPhysics *const p = physics();
   const bool customMass = p->mode() == OmPhysics::CUSTOM_INERTIA_MATRIX;
   // needed for average density and average damping
-  OmSolidUtilities::addMass(mReferenceMass, boundingObject(), REFERENCE_DENSITY, !customMass);
 
   // Checks whether there is a valid inertia matrix, and uses it if so
   if (customMass)
@@ -2090,7 +1962,6 @@ void OmSolid::prePhysicsStep(double ms) {
     childrenJerk();
 
   if (mIsKinematic && robot()) {
-    updateOdeGeomPosition();
     // OMNISIM_NEWTON_KINEMATIC: the Newton-side analogue of the ODE geom
     // refresh above. A robot-owned kinematic Solid's WORLD pose changes when
     // its ancestors move (the chassis drives, the arm's world placement
@@ -2138,10 +2009,6 @@ OmBasicJoint *OmSolid::jointParent() const {
   return dynamic_cast<OmBasicJoint *>(parentNode());
 }
 
-dBodyID OmSolid::upperSolidBody() const {
-  return upperSolid()->bodyMerger();
-}
-
 OmSolid *OmSolid::findSolid(const QString &name, const OmSolid *const exception) {
   if (this->name() == name && this != exception)
     return this;
@@ -2182,31 +2049,19 @@ OmPhysics *OmSolid::physics() const {
 }
 
 // Resolves the physicsBackend SFString to a OmPhysicsBackend* via the
-// process-wide registry. The schema default is "auto", which resolves to
-// OmNewtonBackend -- the only real backend. There is no longer a fall-back:
-// when the Newton runtime is unavailable the registry hands out the inert
-// OmOdeBackend tombstone and logs one error saying the world will load and
-// then stand still. A world that pins "ode" explicitly gets that same inert
-// object BY REQUEST, and warns (see the boundingObject/physics-scoped warning
-// below) -- which is also how the G1 ghost worlds keep a hologram robot out of
-// the solver on purpose.
+// process-wide registry. Every value resolves to OmNewtonBackend, the only
+// backend; when the Newton runtime is unavailable the registry still hands out
+// that object (inert: nothing registers with it) and logs one error saying the
+// world will load and then stand still. Retired values ("ode") are warned about
+// once per world in effectivePhysicsBackendName() and run on Newton too.
 const QString &OmSolid::physicsBackendName() const {
   // OmSolidDevice subclass models (Accelerometer.wrl, Camera.wrl, GPS.wrl, …)
   // don't declare the `physicsBackend` field, so findSFString returns NULL on
   // their OmSolid base sub-object. Without a guard here, every world containing
-  // any OmSolidDevice subclass crashed in postFinalize.
-  //
-  // ⚠ The guard returns "auto", NOT "ode" (changed 2026-08-08). A MISSING field
-  // is the absence of a choice, and "ode" is not a neutral value:
-  // effectivePhysicsBackendName() treats "ode"/"newton" as an EXPLICIT local
-  // choice that "always wins" and stops the ancestor walk — so a device
-  // sub-object was overriding its own robot's explicit "newton", and since
-  // bdc02139 deleted ODE, "ode" resolves to an inert stub. Net effect before
-  // this change: every device Solid was skipped by
-  // flushPendingNewtonRegistrations, and any that declared a boundingObject or
-  // physics (a bumper TouchSensor does) also tripped the "NO gravity and NO
-  // contact" warning. "auto" makes a device inherit its articulation's backend,
-  // which is the only correct answer for a node that is part of a robot.
+  // any OmSolidDevice subclass crashed in postFinalize. A MISSING field is the
+  // absence of a choice, so it reads as "auto": the device inherits its
+  // articulation's backend, the only correct answer for a node that is part of
+  // a robot.
   static const QString kAuto = QStringLiteral("auto");
   if (!mPhysicsBackend)
     return kAuto;
@@ -2219,14 +2074,8 @@ OmPhysicsBackend *OmSolid::physicsBackend() const {
 }
 
 OmBodyHandle OmSolid::bodyHandle() const {
-  // Newton wins when both backends own a body for this Solid: the ODE
-  // body in that case is a collision-only bridge proxy and its
-  // dynamic state is whatever the bridge last wrote, not the truth.
-  // Newton's body_q is the truth.
   if (mNewtonBodyIndex >= 0)
     return OmNewtonBackend::handleFromIndex(mNewtonBodyIndex);
-  if (dBodyID b = bodyMerger())
-    return static_cast<OmBodyHandle>(b);
   return nullptr;
 }
 
@@ -2271,60 +2120,87 @@ OmSolid *OmSolid::findSolidByNewtonBodyIndex(int idx) {
   return nullptr;
 }
 
+// Retired physicsBackend values. "ode" (and anything else the schema let
+// through that is not "newton" / "auto" / "") used to select OmOdeBackend, an
+// inert stub: the Solid was registered with NO solver -- no gravity, no
+// contact -- while the world loaded clean and only a per-Solid warning said so.
+// That trap was closed on 2026-09-02: a retired value now reads as "auto" (the
+// Solid runs on Newton like every other) and the world is told ONCE, naming
+// the first offender. Keyed on the live OmWorld through a QPointer so a reload
+// warns again and a recycled address cannot suppress it.
+static bool physicsBackendValueIsRetired(const QString &v) {
+  return !v.isEmpty() && v != QStringLiteral("auto") && v != QStringLiteral("newton");
+}
+
+static void warnRetiredPhysicsBackendOncePerWorld(const QString &value, const QString &where) {
+  static QPointer<const OmWorld> sWarnedWorld;
+  const OmWorld *const w = OmWorld::instance();
+  if (w != nullptr && sWarnedWorld == w)
+    return;
+  sWarnedWorld = w;
+  OmLog::warning(QObject::tr("physicsBackend \"%1\" is retired; this Solid runs on Newton, the only backend "
+                             "(first seen on %2; reported once per world). ODE was removed, and since 2026-09-02 "
+                             "a retired value no longer leaves a Solid with no physics. Delete the field or "
+                             "write \"newton\".")
+                   .arg(value, where),
+                 false, OmLog::ODE);
+}
+
+bool OmSolid::gatedAwayFromNewton() const {
+  bool gated = false;
+  effectivePhysicsBackendName(&gated);
+  return gated;
+}
+
 QString OmSolid::effectivePhysicsBackendName(bool *downgradedByGate) const {
   if (downgradedByGate != nullptr)
     *downgradedByGate = false;
-  static const QString kOde = QStringLiteral("ode");
   static const QString kNewton = QStringLiteral("newton");
-  const QString local = physicsBackendName();
-  // An EXPLICIT local choice ("ode" or "newton") always wins.
-  if (local == kOde || local == kNewton)
+  static const QString kAuto = QStringLiteral("auto");
+  const QString &local = physicsBackendName();
+  // An EXPLICIT local "newton" always wins.
+  if (local == kNewton)
     return local;
-  // local is "auto" (the Phase-D Solid/Robot default, baa1c104): a robot
-  // is one coupled multibody system and MUST resolve to a single solver,
-  // so an EXPLICIT backend on any ancestor governs this whole subtree.
-  // Walk up for the nearest ancestor Solid that explicitly chose a
-  // backend and inherit it.
-  //
-  // Before this guard, a descendant's *default* "auto" was returned
-  // immediately (it's != "ode"), overriding an ancestor URDFRobot that
-  // was explicitly set to "ode": the chassis stayed ODE while the
-  // imported leg Solids (hip/upper_leg/lower_leg default "auto") each got
-  // a Newton body, so hip_y/knee registered as Newton joints inside an
-  // otherwise-ODE robot. ODE actuated those joints correctly but their
-  // position sensors read Newton's never-advancing seed angle (Newton
-  // wasn't stepping that robot) -- the Spot "frozen joint sensor"
-  // regression that blinded the residual walker's closed-loop obs.
+  if (physicsBackendValueIsRetired(local))
+    warnRetiredPhysicsBackendOncePerWorld(local, QStringLiteral("Solid '%1'").arg(usefulName()));
+  // local is "auto" (the Phase-D Solid/Robot default, baa1c104) or a retired value that reads as
+  // "auto": a robot is one coupled multibody system and MUST resolve to a single solver, so an
+  // EXPLICIT backend on any ancestor governs this whole subtree. Walk up for the nearest ancestor
+  // Solid that explicitly chose "newton" and inherit it. (Historically this walk is what stopped a
+  // descendant's default from overriding its URDFRobot's explicit choice -- the Spot "frozen joint
+  // sensor" regression, where leg joints registered with one solver inside a robot on another.)
   for (OmNode *n = parentNode(); n != nullptr; n = n->parentNode()) {
     const OmSolid *p = dynamic_cast<const OmSolid *>(n);
     if (p == nullptr)
       continue;
-    const QString a = p->physicsBackendName();
-    if (a == kOde || a == kNewton)
-      return a;  // explicit ancestor governs the whole articulation
+    if (p->physicsBackendName() == kNewton)
+      return kNewton;  // explicit ancestor governs the whole articulation
   }
   // No explicit ancestor: consult the world-level default (default-flip-plan.md §3.2) before
-  // resolving bare "auto". A world can thus pin every still-"auto" Solid to "ode" (the legacy
-  // fallback) or "newton" without editing each node. Inert when unset (empty -> falls through). An
-  // explicit local or ancestor backend already returned above, so this never overrides one.
+  // resolving bare "auto". A world can thus pin every still-"auto" Solid to "newton" without editing
+  // each node -- which is also what "auto" means, so the field is inert unless it carries a retired
+  // value, which warns once. An explicit local or ancestor backend already returned above.
   const OmWorldInfo *const wi = OmWorld::instance() ? OmWorld::instance()->worldInfo() : nullptr;
   if (wi != nullptr) {
     const QString &wd = wi->defaultPhysicsBackend();
-    if (wd == kOde || wd == kNewton)
+    if (wd == kNewton)
       return wd;
+    if (physicsBackendValueIsRetired(wd))
+      warnRetiredPhysicsBackendOncePerWorld(wd, QStringLiteral("WorldInfo.defaultPhysicsBackend"));
   }
   // Still bare "auto": capability gate (default-flip-plan.md §4.1). If this articulation uses a
-  // Newton-unsupported feature (non-Hinge/Slider joint = correctness; mesh collision = fidelity), keep
-  // it on ODE so it's never silently degraded or solver-mixed. Monotonically safe (ODE handles all).
-  // This is the ONE return that is a genuine SILENT Newton->ODE downgrade (the other "ode" returns above
-  // are explicit choices), so flag it for the enforcement sweep in flushPendingNewtonRegistrations.
+  // Newton-unsupported feature (non-Hinge/Slider joint = correctness; a kinematic chain under
+  // OMNISIM_NEWTON_KINEMATIC=0), it is NOT registered with Newton -- and since there is no other solver,
+  // that is a genuine SILENT omission, so flag it for the enforcement sweep in
+  // flushPendingNewtonRegistrations (which fatals under newtonEnforced() unless the reason is a
+  // kinematic chain, which the scene tree animates).
   if (!articulationNewtonCapable()) {
     if (downgradedByGate != nullptr)
       *downgradedByGate = true;
-    return kOde;
+    return kAuto;
   }
-  // bare "auto", Newton-capable -> resolve it (Newton when available).
-  return local;
+  // bare "auto", Newton-capable -> Newton.
+  return kAuto;
 }
 
 // P3.10j: Walk the boundingObject sub-tree looking for a mesh
@@ -2417,22 +2293,10 @@ bool OmSolid::newtonKinematicNativeEnabled() {
 static bool solidSubtreeNewtonCapable(const OmSolid *s, const char **reasonOut = nullptr) {
   if (s == nullptr)
     return true;
-  // Tier B (fidelity): mesh collision geometry. Newton now handles triangle-mesh collision NATIVELY
-  // (add_shape_mesh, newton-ode-replacement-plan.md W1) -- it no longer just AABB-approximates -- so a
-  // mesh boundingObject no longer forces the articulation onto ODE by default. OMNISIM_NEWTON_MESH_TO_ODE=1
-  // restores the old conservative routing (mesh -> ODE) without editing worlds, for any mesh class that
-  // proves unfaithful under Newton (the plan's "flip per-shape, cautiously" lever).
-  if (qEnvironmentVariableIsSet("OMNISIM_NEWTON_MESH_TO_ODE")) {
-    OmBaseNode *const bo = s->boundingObject();
-    if (bo != nullptr) {
-      double hx, hy, hz, cx, cy, cz;
-      if (computeBoundingObjectMeshAabb(bo, &hx, &hy, &hz, &cx, &cy, &cz)) {
-        if (reasonOut != nullptr)
-          *reasonOut = "mesh";
-        return false;
-      }
-    }
-  }
+  // Mesh collision geometry is NOT a disqualifier: Newton handles triangle-mesh collision natively
+  // (add_shape_mesh, newton-ode-replacement-plan.md W1; convexified -- see the hard-won rules). The
+  // OMNISIM_NEWTON_MESH_TO_ODE=1 lever that used to route mesh-collider articulations "to ODE" was
+  // deleted on 2026-09-02: with ODE gone it routed them to no physics at all.
   // Tier A (correctness): a joint to a child that Newton can't register (only Hinge/Slider are).
   for (OmBasicJoint *const j : s->jointChildren()) {
     // EXACT type via nodeType(), NOT dynamic_cast: OmBallJoint + OmHinge2Joint both INHERIT OmHingeJoint,
@@ -2450,10 +2314,9 @@ static bool solidSubtreeNewtonCapable(const OmSolid *s, const char **reasonOut =
     // types with per-axis actuation and reading their angles back from Newton (OmBasicJoint::
     // registerNewtonMultiDof + the postPhysicsStep overrides). Worlds affected today: the motor2 /
     // motor3 / muscle / gyro samples and the api joint worlds.
-    // ⚠ SINCE ODE'S DELETION THERE IS NO WORKAROUND LEFT. The old advice -- pin those worlds to
-    // physicsBackend "ode", or run with OMNISIM_FORCE_ODE=1 -- selects nothing now, so a motorised
-    // Hinge2Joint / BallJoint with the gate off has NO actuation path at all. Making
-    // OMNISIM_NEWTON_BALL_HINGE2 work is the only fix.
+    // ⚠ THERE IS NO WORKAROUND: a motorised Hinge2Joint / BallJoint with the gate off has NO actuation
+    // path at all (there is no second solver to pin it to). Making OMNISIM_NEWTON_BALL_HINGE2 work is
+    // the only fix.
     const int nt = j->nodeType();
     if (nt != WB_NODE_HINGE_JOINT && nt != WB_NODE_SLIDER_JOINT && nt != WB_NODE_HINGE_2_JOINT &&
         nt != WB_NODE_BALL_JOINT) {
@@ -2522,7 +2385,7 @@ bool OmSolid::articulationNewtonCapable(const char **reasonOut) const {
     *reasonOut = reason;  // "capable" | "mesh" | "joint" | "kinematic" -- for the OMNISIM_PROBE_GATE coverage sweep
   if (!capable && mNewtonArticulationCapable != 0)
     OmLog::info(tr("[capability-gate] '%1' uses a Newton-unsupported feature (%2); its \"auto\" physics "
-                   "stays on ODE.")
+                   "is not registered with Newton.")
                   .arg(name())
                   .arg(QString::fromUtf8(reason)));
   mNewtonArticulationCapable = capable ? 1 : 0;
@@ -3217,7 +3080,7 @@ static QString attachNewtonShapeFromBoundingObject(OmNewtonBackend *newton, int 
     } else {
       // Not a warning-free silent drop any more: say which field is wrong.
       OmLog::warning(QString("ElevationGrid boundingObject needs xDimension and yDimension >= 2 to "
-                             "be a collider (got %1 x %2); it will not collide.")
+                             "be a collider (got %1 x %2); it will not collide. Set both to at least 2 (they count height samples, so 'height' must then hold xDimension*yDimension values) -- see docs/reference/elevationgrid.md.")
                        .arg(xDim).arg(yDim));
     }
   } else if (OmTriangleMeshGeometry *const tmg = dynamic_cast<OmTriangleMeshGeometry *>(bo)) {
@@ -3464,41 +3327,21 @@ void OmSolid::flushPendingNewtonRegistrations() {
     OmSolid *const s = const_cast<OmSolid *>(cs);
     if (s == nullptr || s->mNewtonBodyIndex >= 0)
       continue;
-    // P3.10: pick up inherited backend from any ancestor Solid (e.g.
-    // URDFRobot-generated chassis Solids inherit from the outer Robot).
-    bool gatedToOde = false;
-    if (s->effectivePhysicsBackendName(&gatedToOde) == QStringLiteral("ode")) {
-      // ⚠ AN EXPLICIT physicsBackend "ode" IS NO LONGER AN OPT-OUT -- IT IS AN
-      // OPT-OUT OF PHYSICS. Until 2026-08-08 this branch was correctly silent:
-      // the Solid simply ran on the other backend that shipped. src/ode was
-      // DELETED (bdc02139), so what it now selects is OmOdeBackend's inert stub
-      // -- every verb returns -1 -- and the Solid gets NO gravity and NO
-      // contact while the world loads clean. That is precisely the failure
-      // class this whole campaign refused to accept ("a world simulated by a
-      // backend nobody chose is a wrong result, not a degraded one"), except
-      // worse: simulated by NO backend. So the deliberate opt-out now WARNS,
-      // once per Solid, naming the node and what it costs. It is a warning and
-      // not a FATAL because legacy worlds must still load, and because a
-      // physics-less prop is sometimes what the author actually wants (a
-      // hologram, a fiducial marker) -- but they must be told, not guessed at.
-      // Only warn when the pin actually COSTS something. A Solid with neither a
-      // boundingObject nor a Physics node was never going to be simulated
-      // anyway -- it is a visual-only body (a hologram, a marker, a ghost link),
-      // and "no physics" is exactly what its author wanted. Warning about those
-      // is pure noise: the G1 ghost robots alone would emit ~30 each. Warn for a
-      // node that DOES declare collision or mass, because that one silently
-      // stopped falling and stopped colliding.
-      if (!s->mWarnedOdePinInert && (s->boundingObject() != nullptr || s->physics() != nullptr)) {
-        s->mWarnedOdePinInert = true;
-        s->parsingWarn(tr("This Solid asks for physicsBackend \"ode\", which no longer selects a physics engine: "
-                          "ODE was removed and Newton is the only backend. The node will have NO gravity and NO "
-                          "contact -- it is a visual-only body. Delete the field to simulate it with Newton."));
-      }
-      // Newton enforcement (2026-06-29 default: no silent Newton->ODE). A
-      // bare-"auto" articulation that the §4.1 capability gate routed to ODE --
-      // because it uses a Newton-unsupported feature -- is a SILENT downgrade:
-      // the world reports Newton yet part of it is simulated by nothing.
-      if (gatedToOde && OmPhysicsBackendRegistry::newtonEnforced()) {
+    // Pick up the inherited backend from any ancestor Solid (e.g. URDFRobot-
+    // generated chassis Solids inherit from the outer Robot). Every value
+    // resolves to Newton -- a retired "ode" pin warns once per world inside
+    // effectivePhysicsBackendName() and registers like everything else (until
+    // 2026-09-02 it skipped registration here and the Solid had NO physics).
+    // The only thing that keeps a Solid out of Newton is the §4.1 capability
+    // gate, and that is a SILENT omission the enforcement below has to name.
+    bool gatedFromNewton = false;
+    s->effectivePhysicsBackendName(&gatedFromNewton);
+    if (gatedFromNewton) {
+      // Newton enforcement (2026-06-29 default: no silent drop-out). A
+      // bare-"auto" articulation that the §4.1 capability gate kept off Newton
+      // -- because it uses a Newton-unsupported feature -- would otherwise be
+      // simulated by nothing while the world reports Newton.
+      if (OmPhysicsBackendRegistry::newtonEnforced()) {
         const char *reason = "capable";
         s->articulationNewtonCapable(&reason);
         if (qstrcmp(reason, "kinematic") == 0) {
@@ -3523,10 +3366,9 @@ void OmSolid::flushPendingNewtonRegistrations() {
         } else {
           OmLog::fatal(
               tr("[newton-enforce] Solid '%1' would silently drop out of the simulation: its \"auto\" "
-                 "articulation uses a Newton-unsupported feature (%2), so the capability gate routed it "
-                 "away from Newton -- and ODE, which used to catch it, has been removed, so it would run "
-                 "with no physics at all. Fix: make the feature Newton-compatible. (physicsBackend "
-                 "\"ode\" and OMNISIM_ALLOW_ODE_FALLBACK=1 no longer select anything.)")
+                 "articulation uses a Newton-unsupported feature (%2), so the capability gate kept it "
+                 "off Newton -- and Newton is the only backend, so it would run with no physics at all. "
+                 "Fix: make the feature Newton-compatible.")
                   .arg(s->name(), QString::fromUtf8(reason)));
         }
       }
@@ -3663,9 +3505,6 @@ void OmSolid::flushPendingNewtonRegistrations() {
         }
         if (kinColliders.isEmpty())
           continue;  // nothing collidable -- pure scene-tree animation suffices
-        OmPhysicsBackend *kback = OmPhysicsBackendRegistry::resolve(OmPhysicsBackendKind::Newton);
-        if (kback == nullptr || kback->kind() != OmPhysicsBackendKind::Newton)
-          continue;
         if (newton->ensureWorldOpen() != 0)
           return;
         for (OmSolid *const kc : kinColliders) {
@@ -3814,9 +3653,6 @@ void OmSolid::flushPendingNewtonRegistrations() {
       }
       if (staticColliders.isEmpty())
         continue;
-      OmPhysicsBackend *sback = OmPhysicsBackendRegistry::resolve(OmPhysicsBackendKind::Newton);
-      if (sback == nullptr || sback->kind() != OmPhysicsBackendKind::Newton)
-        continue;
       if (newton->ensureWorldOpen() != 0)
         return;
       for (OmSolid *const sc : staticColliders) {
@@ -3839,17 +3675,8 @@ void OmSolid::flushPendingNewtonRegistrations() {
       continue;
     }
 
-    // Resolve via the local physicsBackend() so the registry's
-    // fall-back layer still applies for the rare case of an
-    // explicitly-set "newton" being unavailable.
-    OmPhysicsBackend *back = s->physicsBackend();
-    if (back == nullptr || back->kind() != OmPhysicsBackendKind::Newton) {
-      // Local says "ode" but ancestor says "newton". Trust the ancestor.
-      back = OmPhysicsBackendRegistry::resolve(OmPhysicsBackendKind::Newton);
-      if (back == nullptr || back->kind() != OmPhysicsBackendKind::Newton)
-        continue;
-    }
-
+    // `newton` (resolved and availability-checked once above the loop) is the
+    // backend for every Solid that reaches this point.
     if (newton->ensureWorldOpen() != 0)
       return;
 
@@ -3962,8 +3789,8 @@ void OmSolid::flushPendingNewtonRegistrations() {
         // ODE-free native composer (OmSolidUtilities::addInertia mirrored in
         // createOdeMass), parity-proven against the dMass pipeline it
         // replaces (tests/test_newton_native_inertia_parity.py, <=1e-12 on
-        // primitives). OMNISIM_NEWTON_NATIVE_INERTIA=0 reverts to the dMass
-        // feed while src/ode still ships (value-parsed; default ON).
+        // primitives). OMNISIM_NEWTON_NATIVE_INERTIA=0 USED to revert to the
+        // dMass feed while src/ode still shipped (value-parsed; default ON).
         // ODE is gone: the native composer is the ONLY tensor source;
         // OMNISIM_NEWTON_NATIVE_INERTIA=0 has no dMass feed to revert to and
         // is ignored.
@@ -4102,7 +3929,7 @@ void OmSolid::flushPendingNewtonRegistrations() {
       if (!shapeDesc.isEmpty() && (shapeDesc.contains("fallback") || shapeDesc.contains("placeholder") ||
                                    shapeDesc.contains("was cylinder"))) {
         OmLog::warning(QObject::tr("Solid '%1': the physics collider is NOT the authored geometry -- using %2. The "
-                                   "body will contact the world at a different size or place than the scene shows.")
+                                   "body will contact the world at a different size or place than the scene shows. To collide as authored, declare a 'boundingObject' on this Solid (Box, Sphere, Capsule, Cylinder, Plane or a mesh; a Group of several needs WorldInfo.newtonCompoundColliders TRUE) -- a Robot with none gets the 1 mm placeholder by design. See docs/guide/newton-physics-backend.md.")
                          .arg(s->name())
                          .arg(shapeDesc),
                        false, OmLog::ODE);
@@ -4139,8 +3966,6 @@ void OmSolid::flushPendingNewtonRegistrations() {
       // -- forces don't accumulate, contacts don't fire, position
       // doesn't update. Newton's per-step writeback in postPhysicsStep
       // is what now drives the visible pose.
-      if (s->mSolidMerger && s->mSolidMerger->body() != nullptr)
-        s->mSolidMerger->setBodyArtificiallyDisabled(true);
     }
   }
 
@@ -4221,8 +4046,6 @@ void OmSolid::flushPendingNewtonRegistrations() {
     ts->mNewtonBodyIndex = idx;
     ++registeredThisFlush;
     // Same ODE hand-off as the main path: Newton owns this body now.
-    if (ts->mSolidMerger && ts->mSolidMerger->body() != nullptr)
-      ts->mSolidMerger->setBodyArtificiallyDisabled(true);
   }
 
   // ---- Weld-slot sweep (Connector / VacuumGripper, OMNISIM_NEWTON_WELDS).
@@ -4753,8 +4576,6 @@ void OmSolid::save(const QString &id) {
 void OmSolid::jerk(bool resetVelocities, bool rootJerk) {
   if (isSolidMerger())
     mSolidMerger->setGeomAndBodyPositions(resetVelocities, mJointParents.size() == 0 && !isTopSolid());
-  else
-    updateOdeGeomPosition();
 
   foreach (OmSolid *const solid, mSolidChildren)
     solid->jerk(resetVelocities, false);
@@ -4778,7 +4599,6 @@ void OmSolid::notifyChildJerk(OmPose *childNode) {
 }
 
 void OmSolid::childrenJerk() {
-  updateOdeGeomPosition();
   foreach (const OmPose *childNode, mMovedChildren) {
     QVector<OmSolid *> solidChildrenList;
     QVector<OmBasicJoint *> jointChildrenList;
@@ -4885,8 +4705,6 @@ void OmSolid::extractContactPoints() {
     return;
 
   const OmWorld *const world = OmWorld::instance();
-  const QList<OmOdeContact> &fullList = world->odeContacts();
-  const int size = fullList.size();
 
   // W4.2c: for a Newton-backed Solid with native contacts enabled, the native pass below is the SOLE source
   // -- skip the ODE-bridge accumulation entirely. Multi-body verification showed a Robot's disabled ODE
@@ -4925,52 +4743,15 @@ void OmSolid::extractContactPoints() {
   // query is indistinguishable from "nothing is touching", and that ambiguity
   // once cost an agent a working grasp proof. Reachable only via
   // OMNISIM_NEWTON_NATIVE_CONTACTS=0 now that the default is on.
-  if (mNewtonBodyIndex >= 0 && !useNative && fullList.isEmpty()) {
+  if (mNewtonBodyIndex >= 0 && !useNative) {
     static bool sWarnedNewtonContactBlind = false;
     if (!sWarnedNewtonContactBlind) {
       sWarnedNewtonContactBlind = true;
-      // W1.5 freebie: this used to offer physicsBackend "ode" as the second
-      // option. ODE was deleted in bdc02139, so that pin now means the Solid is
-      // registered with NO solver -- no gravity, no contact -- i.e. the advice
-      // for "I cannot read contacts" was "have no physics".
       OmLog::warning(QObject::tr("Contact queries on Newton-backed Solids return an EMPTY set: the native contact "
                                  "readback is off, so getContactPoints cannot see this backend's contacts and its "
                                  "answer means 'unknown', not 'nothing is touching'. Unset "
                                  "OMNISIM_NEWTON_NATIVE_CONTACTS (or set it to 1) to read them."),
                      false, OmLog::ODE);
-    }
-  }
-  // ODE is gone: the bridge list is always empty (its producer,
-  // odeNearCallback, is compiled out); native contacts below are the source.
-  (void)size;
-
-  // W4.2 (gated): compare the NATIVE Newton contacts for this Solid against the ODE-bridge list just built
-  // from world->odeContacts(), so native/ODE parity can be proven before the source is swapped (W4.2c) and
-  // the bridge retired (W4.3). Inert unless OMNISIM_NEWTON_CONTACTS_CMP=<file> is set. ODE and Newton are
-  // different narrow-phases, so the match is qualitative (same body pairs, contacts near the same surface),
-  // not point-identical.
-  if (mNewtonBodyIndex >= 0 && qEnvironmentVariableIsSet("OMNISIM_NEWTON_CONTACTS_CMP")) {
-    OmPhysicsBackend *const rawN = OmPhysicsBackendRegistry::newtonBackend();
-    if (rawN != nullptr && rawN->isAvailable()) {
-      std::vector<OmNewtonContact> nc;
-      static_cast<OmNewtonBackend *>(rawN)->getContacts(nc);
-      int nativeForThis = 0;
-      QString detail;
-      for (size_t i = 0; i < nc.size(); ++i) {
-        const OmNewtonContact &c = nc[i];
-        if (c.bodyA == mNewtonBodyIndex || c.bodyB == mNewtonBodyIndex) {
-          ++nativeForThis;
-          detail += QString("  native p=(%1,%2,%3) depth=%4 other=%5\n")
-                        .arg(c.point[0], 0, 'f', 3).arg(c.point[1], 0, 'f', 3).arg(c.point[2], 0, 'f', 3)
-                        .arg(c.depth, 0, 'f', 4)
-                        .arg(c.bodyA == mNewtonBodyIndex ? c.bodyB : c.bodyA);
-        }
-      }
-      QFile cf(qEnvironmentVariable("OMNISIM_NEWTON_CONTACTS_CMP"));
-      if (cf.open(QIODevice::Append | QIODevice::Text))
-        cf.write(QString("solid=%1 newtonIdx=%2 ODE_pts=%3 native_pts=%4\n%5")
-                     .arg(name()).arg(mNewtonBodyIndex)
-                     .arg(mListOfContactPoints.size()).arg(nativeForThis).arg(detail).toUtf8());
     }
   }
 

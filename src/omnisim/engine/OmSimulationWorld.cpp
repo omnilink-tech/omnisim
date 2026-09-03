@@ -24,8 +24,6 @@
 #include "OmMotor.hpp"
 #include "OmNodeOperations.hpp"
 #include "OmNodeUtilities.hpp"
-#include "OmOdeContact.hpp"
-#include "OmOdeContext.hpp"
 #include "OmBasicJoint.hpp"
 #include "OmNewtonBackend.hpp"
 #include "OmPaintTexture.hpp"
@@ -36,7 +34,6 @@
 #include "OmRandom.hpp"
 #include "OmRobot.hpp"
 #include "OmSFString.hpp"
-#include "OmSimulationCluster.hpp"
 #include "OmSimulationState.hpp"
 #include "OmSoundEngine.hpp"
 #include "OmTemplateManager.hpp"
@@ -57,8 +54,6 @@ OmSimulationWorld *OmSimulationWorld::instance() {
 
 OmSimulationWorld::OmSimulationWorld(OmTokenizer *tokenizer) :
   OmWorld(tokenizer),
-  mCluster(NULL),
-  mOdeContext(new OmOdeContext()),  // stub since ODE's deletion: owns no world or space
   mTimer(new QTimer(this)),
   mSimulationHasRunAfterSave(false) {
   if (mWorldLoadingCanceled)
@@ -91,11 +86,7 @@ OmSimulationWorld::OmSimulationWorld(OmTokenizer *tokenizer) :
   OmSimulationState::instance()->resetTime();
   // Reset random seed to ensure reproducible simulations.
   updateRandomSeed();
-  updateNumberOfThreads();
-  connect(OmPreferences::instance(), &OmPreferences::changedByUser, this, &OmSimulationWorld::updateNumberOfThreads);
 
-  // create clusters and start threads
-  mCluster = new OmSimulationCluster(mOdeContext);
 
   emit worldLoadingStatusHasChanged(tr("Loading plugins (if any)"));
 
@@ -135,8 +126,12 @@ OmSimulationWorld::OmSimulationWorld(OmTokenizer *tokenizer) :
       }
     }
     setNeedsTextures(needsTextures);
-    if (!needsTextures && OmSimulationState::instance()->startedWithoutRendering() &&
-        !qEnvironmentVariableIsSet("OMNISIM_EAGER_TEXTURE_DECODE"))
+    // 2026-09-02: value-parsed. This read was presence-gated, so `OMNISIM_EAGER_TEXTURE_DECODE=0`
+    // ARMED the revert (the OMNISIM_REQUIRE_NEWTON trap); unset/empty/"0"/"false"/"off" now keep the
+    // gate and anything else reverts. Same parse as OmImageTexture.cpp's eagerTextureDecodeForced().
+    const QString eager = QString::fromUtf8(qgetenv("OMNISIM_EAGER_TEXTURE_DECODE")).trimmed().toLower();
+    const bool eagerDecodeForced = !(eager.isEmpty() || eager == "0" || eager == "false" || eager == "off");
+    if (!needsTextures && OmSimulationState::instance()->startedWithoutRendering() && !eagerDecodeForced)
       OmLog::info(tr("headless load: eager texture decode skipped (no Camera/IR-sensor/Pen in world). "
                      "OMNISIM_EAGER_TEXTURE_DECODE=1 reverts."));
   }
@@ -151,7 +146,6 @@ OmSimulationWorld::OmSimulationWorld(OmTokenizer *tokenizer) :
 
   emit worldLoadingStatusHasChanged(tr("Initializing plugins (if any)"));
 
-  mCluster->handleInitialCollisions();
 
   OmPaintTexture::init();
 
@@ -171,7 +165,6 @@ OmSimulationWorld::OmSimulationWorld(OmTokenizer *tokenizer) :
   connect(this, &OmSimulationWorld::physicsStepStarted, s, &OmSimulationState::physicsStepStarted);
   connect(this, &OmSimulationWorld::physicsStepEnded, s, &OmSimulationState::physicsStepEnded);
   connect(this, &OmSimulationWorld::cameraRenderingStarted, s, &OmSimulationState::cameraRenderingStarted);
-  connect(worldInfo(), &OmWorldInfo::optimalThreadCountChanged, this, &OmSimulationWorld::updateNumberOfThreads);
   connect(worldInfo(), &OmWorldInfo::randomSeedChanged, this, &OmSimulationWorld::updateRandomSeed);
 
   if (OmTokenizer::worldFileVersion() < OmVersion(2021, 1, 1))
@@ -210,11 +203,6 @@ OmSimulationWorld::~OmSimulationWorld() {
   // this must be done before deleting the space and world (right below)
   root()->deleteAllChildren();
 
-  // this must be called after the nodes have been destroyed
-  delete mCluster;
-
-  // delete (spaces, worlds) etc.
-  delete mOdeContext;
 
   mAddedNode.clear();
 
@@ -300,15 +288,8 @@ void OmSimulationWorld::step() {
   // runs before the world is parsed (refusing there rejected explicit-ODE
   // worlds, 4/4 measured). Here the world IS parsed and no backend is needed.
   //
-  // Inert unless the runtime is installed-and-broken. (The old
-  // `if (!odeForced())` guard around this is gone with the FORCE_ODE switch:
-  // there is no forced-ODE process any more.)
-  {
-    const OmWorldInfo *const wi = worldInfo();
-    if (wi != nullptr)
-      OmNewtonBackend::refuseIfBrokenAndNewtonWanted(
-        wi->defaultPhysicsBackend().compare("ode", Qt::CaseInsensitive) != 0);
-  }
+  // Inert unless the runtime is installed-and-broken.
+  OmNewtonBackend::refuseIfNewtonBroken();
   if (newton != nullptr) {
     // Physics-bracket sub-profile (OMNISIM_NEWTON_STEP_PROFILE=1, same gate as
     // the Python-side split). Exists because differencing the Python profile
@@ -361,39 +342,6 @@ void OmSimulationWorld::step() {
     }
   }
 
-  // THE ODE PASS RUNS IN EVERY NEWTON WORLD -- AND IT MEASURES FREE. MEASURED,
-  // SO NOBODY HAS TO RUN THIS EXPERIMENT AGAIN.
-  //
-  // dWorldStepAndSpaceCollide is unconditional, so a fully-Newton scene looks
-  // like it pays a second, entirely redundant broad+narrow phase over the same
-  // geometry: Newton-backed Solids get their ODE *body* artificially disabled
-  // (OmSolidMerger::setBodyArtificiallyDisabled) but their *geoms* stay in the
-  // space, and odeNearCallback has no disabled-pair early-out. That reads like
-  // an obvious win, and a code audit flagged it as one.
-  //
-  // It is not. Measured 2026-08-06 on a 200-box Newton world (omnibench
-  // step_cost, differenced windows so the ~2.5 s world-finalize cancels), FOUR
-  // INTERLEAVED PAIRS because a sequential run of the same comparison drifted
-  // 5.7 -> 9.7 ms/step across one session and was worthless:
-  //
-  //     paired deltas  -0.6531, -0.1446, +0.1214, +1.3385 ms/step
-  //     median         -0.0116 ms/step (-0.2% of the tick), signs DISAGREE
-  //
-  // i.e. zero, inside the noise. The likely reason is that a disabled body is
-  // never integrated, so its broadphase AABB never moves and ODE's near phase
-  // re-derives a static configuration cheaply. Do not "optimise" this without
-  // a measurement that beats +-28% run-to-run spread.
-  //
-  // OMNISIM_NEWTON_SKIP_ODE_PASS=1 is the MEASUREMENT GATE that produced the
-  // numbers above, kept so the claim stays falsifiable. It is NOT A FEATURE and
-  // is not safe to ship on: the same call also drives ray/range sensor updates
-  // (odeSensorRaysUpdate), TouchSensor, kinematic-collision handling,
-  // cross-backend contacts (a Newton wheel on an ODE
-  // floor is bridged THROUGH this pass), and the ODE-side contact list
-  // getContactPoints falls back to when native Newton contacts are off.
-  static const bool skipOdePass = !qEnvironmentVariableIsEmpty("OMNISIM_NEWTON_SKIP_ODE_PASS");
-  if (!(skipOdePass && newton != nullptr && newton->isWorldRunning()))
-    mCluster->step();
   if (log) {
     log->stopMeasure(OmPerformanceLog::PHYSICS_STEP);
     log->startMeasure(OmPerformanceLog::POST_PHYSICS_STEP);
@@ -525,12 +473,6 @@ void OmSimulationWorld::rayTracingEnabled() {
   OmBoundingSphere::enableUpdates(true, root()->boundingSphere());
 }
 
-void OmSimulationWorld::updateNumberOfThreads() {
-  int numberOfthreads =
-    qMin(OmPreferences::instance()->value("General/numberOfThreads", 1).toInt(), OmWorld::instance()->optimalThreadCount());
-  mOdeContext->setNumberOfThreads(numberOfthreads);
-}
-
 void OmSimulationWorld::updateRandomSeed() {
   assert(worldInfo());
   int seed = worldInfo()->randomSeed();
@@ -568,7 +510,6 @@ void OmSimulationWorld::reset(bool restartControllers) {
     root()->reset("__init__");
   }
   OmTemplateManager::instance()->blockRegeneration(false);
-  mCluster->handleInitialCollisions();
 
   // P7 reset hook: give the physics backend a chance to flush world-scope
   // state that the per-Solid reset cascade missed. Newton re-runs eval_fk

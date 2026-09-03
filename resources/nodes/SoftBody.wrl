@@ -167,11 +167,12 @@ SoftBody {
   # UVs are static-draw buffers uploaded once), which shows the block at its
   # authored rest pose for a single frame before the next readback lands.
   field SFFloat    creaseAngle     0.8       # max angle (rad) between adjacent faces that still share a smoothed normal
-  # Same story as Cloth: TRUE used to fault the GL driver because WrDynamicMesh's
-  # second, shadow-pass vertex array (mShadowCoords) was never given a data store
-  # when a node filled its mesh before building the Renderable that attaches the
-  # ShadowVolumeCaster. Fixed in src/wren/DynamicMesh.cpp::updateGlShadow, which
-  # re-derives mShadowCoords whenever it disagrees with the coords — so the
-  # default is TRUE and the ordering this node uses is a supported one.
+  # Same story as Cloth (WREN-era history; WREN was deleted 2026-08-23, 976b9449d,
+  # and under wgpu this is a plain shadow-caster toggle): TRUE used to fault the GL
+  # driver because WrDynamicMesh's second, shadow-pass vertex array (mShadowCoords)
+  # was never given a data store when a node filled its mesh before building the
+  # Renderable that attaches the ShadowVolumeCaster. Fixed in WREN's
+  # DynamicMesh.cpp::updateGlShadow (since deleted), which re-derived mShadowCoords
+  # whenever it disagreed with the coords — so the default is TRUE.
   field SFBool     castShadows     TRUE      # whether the block casts a shadow (silhouette is recomputed per light per frame)
 }

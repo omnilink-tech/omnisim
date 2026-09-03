@@ -104,7 +104,6 @@ private:
 
   void applyToOdeGeomRotation();
   void applyToOdeGeomPosition(bool correctMass = true);
-  void applyToOdeMass(OmGeometry *g, dGeomID geom);
   void destroyPreviousOdeGeoms();
   OmShape *shape() const;
 

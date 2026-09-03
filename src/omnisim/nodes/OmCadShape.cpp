@@ -40,8 +40,6 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 
-#include <QtCore/QtGlobal>
-
 #include <cmath>
 #include <cstring>
 #include <utility>

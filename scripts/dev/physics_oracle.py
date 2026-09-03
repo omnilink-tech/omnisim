@@ -367,65 +367,6 @@ def main():
     print("[oracle] Frozen ODE reference values: tests/goldens/ode_oracle_goldens.json")
     return 2
 
-    # Unreachable, kept so the recorded method stays readable next to the reason
-    # it can no longer run (git history has the working version at bdc02139~1).
-    warn_if_already_running()
-    tmp = tempfile.mkdtemp(prefix="physics_oracle_")
-    ode_csv = os.path.join(tmp, "ode.csv")
-    new_csv = os.path.join(tmp, "newton.csv")
-
-    print("[oracle] reference run (OMNISIM_LEGACY=1 -> ODE) ...")
-    h1, d1 = capture(args.world, ode_csv, args.steps, True, "reference/ODE")
-    print("[oracle] candidate run (migration default -> Newton when available) ...")
-    h2, d2 = capture(args.world, new_csv, args.steps, False, "candidate/Newton")
-    if h1 is None or h2 is None:
-        print("[oracle] FAILED to capture trajectories (controller/world wiring?).")
-        print("         ode rows=%s newton rows=%s  (dir: %s)"
-              % (None if d1 is None else len(d1), None if d2 is None else len(d2), tmp))
-        return 0
-    if h1 != h2:
-        print("[oracle] header mismatch between runs:\n  ODE:    %s\n  Newton: %s" % (h1, h2))
-        return 0
-
-    bodies = bodies_from_header(h1)
-    steps = sorted(set(d1) & set(d2))
-    print("\n[oracle] %d bodies, %d aligned steps, eps=%g m\n" % (len(bodies), len(steps), args.eps))
-
-    overall_max = 0.0
-    print("  %-12s %14s %16s" % ("body", "max |dpos| (m)", "first-diverge step"))
-    print("  " + "-" * 46)
-    for bi, name in enumerate(bodies):
-        cx = 1 + bi * 3  # offset into the value row (no step col there); d[*] excludes step
-        base = bi * 3
-        max_d = 0.0
-        first = None
-        for s in steps:
-            a = d1[s]
-            b = d2[s]
-            if base + 2 >= len(a) or base + 2 >= len(b):
-                continue
-            dx = a[base] - b[base]
-            dy = a[base + 1] - b[base + 1]
-            dz = a[base + 2] - b[base + 2]
-            dist = (dx * dx + dy * dy + dz * dz) ** 0.5
-            if dist > max_d:
-                max_d = dist
-            if first is None and dist > args.eps:
-                first = s
-        overall_max = max(overall_max, max_d)
-        print("  %-12s %14.6f %16s" % (name, max_d, "-" if first is None else str(first)))
-
-    print("\n[oracle] overall max divergence: %.6f m" % overall_max)
-    if overall_max < args.eps:
-        print("[oracle] NOTE: near-zero divergence everywhere. Either Newton matches ODE to tol, OR")
-        print("         Newton was unavailable and run (B) fell back to ODE (check the build / Warp /")
-        print("         that you launched from PowerShell). A real Newton contact run diverges at landing.")
-    else:
-        print("[oracle] Newton diverges from the ODE reference at contact (as expected); the table above")
-        print("         localizes where. This is legacy verifying the new backend.")
-    print("[oracle] raw CSVs: %s" % tmp)
-    return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

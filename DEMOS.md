@@ -60,6 +60,8 @@ no in-hand manipulation**.
 | Universal Robots UR10e | [`omnilink_ur10e.omniworld`](projects/samples/demos/worlds/chat/omnilink_ur10e.omniworld) | [`omnilink_arm_bridge`](projects/samples/demos/controllers/omnilink_arm_bridge/) |
 | Three UR5e arms *(one console each)* | [`omnilink_multi_arm.omniworld`](projects/samples/demos/worlds/chat/omnilink_multi_arm.omniworld) | [`omnilink_arm_bridge`](projects/samples/demos/controllers/omnilink_arm_bridge/) ×3 (ports 8765–8767) |
 | OmniArm 6 | [`omnilink_omniarm6.omniworld`](projects/samples/demos/worlds/chat/omnilink_omniarm6.omniworld) | [`omnilink_arm_bridge`](projects/samples/demos/controllers/omnilink_arm_bridge/) (`--robot omniarm6`) |
+| Talk to Ari | [`omniarm6_talk.omniworld`](projects/samples/demos/worlds/chat/omniarm6_talk.omniworld) | `omnilink_arm_bridge` — Talk to Ari - an OmniArm 6 6-DOF arm driven by an OmniLink agent. |
+| OmniLink — OmniArm 6 + Robotiq 2F-140, talk to it (friction hold, no weld) | [`omnilink_omniarm6_2f140.omniworld`](projects/samples/demos/worlds/chat/omnilink_omniarm6_2f140.omniworld) | `omnilink_arm_bridge` |
 
 ### Mobile bases
 
@@ -93,7 +95,7 @@ These showcase **OmniSim's own engine** — the URDF importer, the Newton/MuJoCo
 
 **Locomotion + Humanoid (Tiers B/C)** — these are **RL deploy** worlds that need a set of Newton env vars + a policy `.onnx`, so they launch via their `scripts/dev/run_*deploy*.ps1` script (which sets that env), **not** a bare world load. Add `-Gui` to watch live.
 
-> **Platform note.** The `bash …/*.sh` launchers run on both Windows (git-bash) and Linux; the `.ps1` launchers are Windows. As of v5.1 every deploy demo has a `.sh` sibling, so all the demos below run on Linux too (NVIDIA/CUDA GPU + the Newton wheels in the system `python3` required — see the [quickstart's Linux section](docs/developer/quickstart.md#linux-quickstart-ubuntu)).
+> **Platform note.** The `bash …/*.sh` launchers run on both Windows (git-bash) and Linux; the `.ps1` launchers are Windows. As of v5.1 every deploy demo has a `.sh` sibling — every `scripts/dev/run_*_deploy.ps1` (13 today) has a `.sh` twin exporting the identical env-var set, checked pair-by-pair on 2026-09-02 — so all the demos below run on Linux too (NVIDIA/CUDA GPU + the Newton wheels in the system `python3` required — see the [quickstart's Linux section](docs/developer/quickstart.md#linux-quickstart-ubuntu)).
 
 > **Honest status is canonical.** Every one-liner below is sourced from [`docs/developer/rl-current-state.md`](docs/developer/rl-current-state.md) — the single source of truth for OmniSim RL. "Stands" ≠ "stands via RL"; "walks" ≠ "walks durably". Read it before quoting any robot result.
 
@@ -112,7 +114,7 @@ Build + watch: `python projects/metazoa/metazoa.py --epochs 1 --cells 14
 --organisms 2 --seed-length 4 --epoch-s 480 --arena 10` then
 `python projects/metazoa/watch_metazoa.py` (lean render profile; never leave
 a second engine running). Plan, design and every measurement:
-[`projects/metazoa/PLAN.md`](projects/metazoa/PLAN.md),
+`projects/metazoa/PLAN.md` (archived 2026-09-02, see [docs/ARCHIVE.md](docs/ARCHIVE.md)),
 [`README.md`](projects/metazoa/README.md).
 
 ### Living ecosystem (alife) ⭐ *flagship artificial-life demo*
@@ -136,6 +138,19 @@ projects/alife/watch_life.py`. Full measured story (what broke and why):
 |---|---|---|
 | OmniLink Warehouse *(OmniArm 6 + two OmniTug 500 tugs)* | [`warehouse_omnilink.omniworld`](projects/samples/demos/worlds/flagship/warehouse_omnilink.omniworld) | [`omnilink_arm_bridge`](projects/samples/demos/controllers/omnilink_arm_bridge/) (vacuum) + [`omnilink_mobile_bridge`](projects/samples/demos/controllers/omnilink_mobile_bridge/) ×2 |
 | OmniArm 6 bin picking + colour sort | [`omniarm6_bin_picking.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_bin_picking.omniworld) | [`omniarm6_bin_picking`](projects/samples/demos/controllers/omniarm6_bin_picking/) |
+| OmniArm 6 two-arm throw & catch *(Shadowing)* | [`omniarm6_throw_catch.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_throw_catch.omniworld) — launch via `scripts/dev/run_omniarm6_throw_catch_demo.ps1` (GUI real-time; `-Headless` for no window). The launcher stiffens the Newton position servo so the thrower tracks its certified swing; torque and joint speed stay clamped to the URDF datasheet | [`omniarm6_throw_arm`](projects/samples/demos/controllers/omniarm6_throw_arm/) + [`omniarm6_catch_arm`](projects/samples/demos/controllers/omniarm6_catch_arm/) |
+| OmniArm 6 adaptive ballistic intercept *(or its fixed-cup control)* | [`omniarm6_adaptive_intercept.omniworld`](projects/samples/demos/worlds/showcase/omniarm6_adaptive_intercept.omniworld) — launch via `scripts/dev/run_omniarm6_adaptive_intercept.ps1` (runs the adaptive intercept or the fixed-cup control arm) | [`omniarm6_throw_arm`](projects/samples/demos/controllers/omniarm6_throw_arm/) + [`omniarm6_adaptive_catcher`](projects/samples/demos/controllers/omniarm6_adaptive_catcher/), with [`adaptive_intercept_observer`](projects/samples/demos/controllers/adaptive_intercept_observer/) and a film-camera supervisor |
+| OmniLink — OmniArm 6 + Robotiq 2F-140 real pick & place (friction only) | [`omniarm6_2f140_cloth.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_2f140_cloth.omniworld) | `omniarm6_2f140_cloth` |
+| OmniLink — OmniArm 6 + Robotiq 2F-140 real pick & place (friction only) | [`omniarm6_2f140_pick_place.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_2f140_pick_place.omniworld) | `omniarm6_2f140_pick_place` |
+| OmniLink — OmniArm 6 AnyPick (mixed shapes, sort by shape) | [`omniarm6_anypick.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_anypick.omniworld) | `omniarm6_anypick`, `bin_camera` |
+| OmniLink — OmniArm 6 AnyPick line (L-conveyor, mixed shapes) | [`omniarm6_anypick_line.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_anypick_line.omniworld) | `omniarm6_anypick_line`, `anypick_cam` |
+| OmniLink — OmniArm 6 assembly cell (two arms, unbin -> handoff -> build) | [`omniarm6_assembly_cell.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_assembly_cell.omniworld) | `omniarm6_cell_feeder`, `omniarm6_cell_builder`, `universal_cam` |
+| OmniLink — OmniArm 6 folds a hanging cloth | [`omniarm6_cloth_fold.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_cloth_fold.omniworld) | `omniarm6_cloth_fold` |
+| OmniLink — OmniArm 6 picks up a CLOTH (friction only) | [`omniarm6_cloth_pick.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_cloth_pick.omniworld) | `omniarm6_cloth_pick` |
+| OmniLink — OmniArm 6 physics pick & place | [`omniarm6_physics_pick_place.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_physics_pick_place.omniworld) | `omniarm6_pickplace_demo` |
+| OmniLink — OmniArm 6 pick & place | [`omniarm6_pick_place.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_pick_place.omniworld) | `omnilink_arm_bridge` — OmniArm 6 arm with a runtime-selectable gripper doing kinematic pick & place. |
+| OmniLink — OmniArm 6 toss-to-place (Shadowing) | [`omniarm6_toss_demo.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_toss_demo.omniworld) | `omniarm6_toss_deploy` |
+| OmniLink — OmniArm 6 universal pick (unknown objects, depth-only) | [`omniarm6_universal_pick.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_universal_pick.omniworld) | `omniarm6_universal_pick`, `universal_cam` |
 
 Both load and step under Newton/MuJoCo. Two caveats worth knowing before you judge
 the physics: the arm's authored cylinder colliders are substituted by the solver
@@ -158,6 +173,8 @@ RL-deploy walking / recovery under OmniSim Newton (MuJoCo solver). Launch each v
 | B2 walk | `scripts/dev/run_b2_walk_deploy.ps1` | ⚠️ trot-model + RL-policy deploy harness present (bare-model baseline ~0.22 m/s); run it to see current forward progress |
 | OmniQuad jump | `scripts/dev/run_omniquad_jump_deploy.ps1` | ⚠️ experimental deploy harness |
 | OmniQuad / B2 hill walk | `scripts/dev/run_omniquad_hill_deploy.ps1`, `run_b2_hill_deploy.ps1` | ⚠️ ghost pipeline done + owner-approved — **BLOCKED** at the flat→ramp transition + slope roll-instability (~2.3 m cap) |
+| B2 hill-walk ghost preview *(ghost only)* | `scripts/dev/run_b2_hill_ghost_preview.ps1` (`-Duration 60`, `-Fast` skips real-time pacing) | no RL, no physics — a translucent, physics-free B2 hologram replays its generated up-over-down 15° hill ghost (Shadowing Component 1): flat → pitch up → crest → pitch down → flat. It is the reference the tracker shadows and the ghost-first sign-off view for the hill row above |
+| Go2 velocity-conditioned walk / stop / walk beside its ghost | `scripts/dev/run_go2_walk_vc_ghost_demo.ps1` (`-WalkFor 6 -StandFor 4 -Duration 60 -Fast`) | the real Go2 (VC policy + trot model, Newton) walks, STOPS and resumes on a schedule while the translucent ghost plays the same schedule beside it in lock-step, standing on four feet during the stop windows — the gap between the two is the RL correction |
 
 ### Humanoid (RL deploy)
 
@@ -216,6 +233,17 @@ python projects/policies/skills/skill_lib.py verify-demos            # proves th
 
 Skills span robots (G1 / H1 / Go2 / OmniQuad) and methods (Shadowing / Unitree re-host / deterministic overlay), each carrying its own `verified` / `experimental` / `open` status — `turn_in_place` is **experimental** and `climb_stairs` is **open**, and the CLI says so. Full reference: [`docs/developer/skill-library.md`](docs/developer/skill-library.md) · [`projects/policies/skills/README.md`](projects/policies/skills/README.md).
 
+
+### Other flagship worlds (load-checked 2026-09-02)
+
+Flagship-directory worlds that were authored but never catalogued; load-checked 2026-09-02 (LOAD only).
+
+| Demo | World | Controllers -- what the file says it is |
+|---|---|---|
+| Husky Unseen Maze — b1aa122b97 | [`husky_unseen_maze.omniworld`](projects/samples/demos/worlds/flagship/husky_unseen_maze.omniworld) | `husky_unseen_maze` — A frozen sensor-only planner must reach the southeast beacon. |
+| Industrial Warehouse | [`warehouse_industrial.omniworld`](projects/samples/demos/worlds/flagship/warehouse_industrial.omniworld) | no controller |
+
+
 ---
 
 ## 3. OmniLink agent demos (agent layer on top of OmniSim)
@@ -270,6 +298,16 @@ argument in simulation form.
 | Engine | `g1-engine` (Gemini). Other engines need their own BYOK key or return 402. |
 | Status | Verified end-to-end LIVE (2026-08-19, machine `9722d23d12a3`, real `/api/chat` turns): with the occupant present both arms are byte-identical (s1: 567 Wh, same 14 actions — persistence adds nothing when you're there, measured). While away/asleep, hourly wakes vs none: oven-left-on caught in **60 vs 480 house-min**, **5.47 vs 19.69 kWh**, kitchen peak **31.5 vs 45.9 °C** (s2); a 02:10 door breach alerted CRITICAL at the 03:00 wake, **50 vs 285 house-min** (s3); morning prep pre-warmed the house and had coffee ready before a 07:30 return vs a cold house and coffee started after walking in (s4, where the persistent arm honestly spends MORE energy — 7.95 vs 6.87 kWh — buying comfort). All numbers from `/scenario/metrics` (simulator ground truth), never the agent's self-report; results in `benchmark/results/`. The plan walls fire for real: a 5-min cadence → 402 `WAKE_CADENCE_NOT_ON_PLAN`, a 4th persistent agent → 402 `PERSISTENT_AGENT_LIMIT_REACHED` (Builder limit 3). ⚠️ Platform standing orders REGISTER but do not FIRE today (hosted tick disabled 2026-04-11) — the benchmark's wake loop is the local equivalent of the standing-order pattern, and says so. |
 
+### OmniTug 500 warehouse courier — natural-language pick-and-deliver
+
+An operator (or the OmniLink agent) tells the rover, in plain language, which package to pick from which bay and which dock to deliver it to.
+
+| | |
+|---|---|
+| World | [`omnitug500_courier.omniworld`](projects/robots/omnisim/omnitug500/worlds/omnitug500_courier.omniworld) |
+| Controller | [`omnitug500_courier`](projects/robots/omnisim/omnitug500/controllers/omnitug500_courier/) — A*-routes the aisle grid from a known facility map, loads the package onto its deck, drives to the dock and sets it down; multi-stop routes supported |
+| Run | `powershell -File scripts/dev/run_omnitug500_courier.ps1` (windowed, interactive chat). Offline it uses the controller's regex router; set `OMNI_KEY` for the OmniLink agent |
+
 ---
 
 ## 4. Specialist agent templates *(starter kits)*
@@ -298,6 +336,18 @@ See [`agents/templates/README.md`](agents/templates/README.md) for the pattern c
 | BattleBox duel (spinner vs wedge) | [`battlebox_duel.omniworld`](projects/robot_combat/battlebots/worlds/battlebox_duel.omniworld) | Phase-2 headliner — two `BattleBot` PROTOs with different weapons + match director + broadcast cuts |
 | BattleBox royal rumble | [`battlebox_royal_rumble.omniworld`](projects/robot_combat/battlebots/worlds/battlebox_royal_rumble.omniworld) | All 5 weapon archetypes free-for-all — last bot standing |
 | Sponge dishwashing | [`newton_vbd_sponge_dishwash.omniworld`](projects/samples/demos/worlds/physics/newton_vbd_sponge_dishwash.omniworld) | A rigid gripper picks up a **volumetric tet-FEM `SoftBody`** and scrubs a dish with it — deformable-as-tool, on `newtonSolver "vbd"` |
+| newton cloth coupling roster | [`newton_cloth_coupling_roster.omniworld`](projects/samples/demos/worlds/physics/newton_cloth_coupling_roster.omniworld) | no controller |
+| newton cloth drape | [`newton_cloth_drape.omniworld`](projects/samples/demos/worlds/physics/newton_cloth_drape.omniworld) | no controller |
+| newton cloth material | [`newton_cloth_material.omniworld`](projects/samples/demos/worlds/physics/newton_cloth_material.omniworld) | no controller |
+| newton cloth tshirt hang | [`newton_cloth_tshirt_hang.omniworld`](projects/samples/demos/worlds/physics/newton_cloth_tshirt_hang.omniworld) | no controller |
+| Dual-read regression: a legacy .wbt world still loads | [`newton_dual_read_legacy.wbt`](projects/samples/demos/worlds/physics/newton_dual_read_legacy.wbt) | no controller |
+| newton granular bed drop | [`newton_granular_bed_drop.omniworld`](projects/samples/demos/worlds/physics/newton_granular_bed_drop.omniworld) | no controller |
+| newton granular bed drop control | [`newton_granular_bed_drop_control.omniworld`](projects/samples/demos/worlds/physics/newton_granular_bed_drop_control.omniworld) | no controller |
+| newton heightfield terrain | [`newton_heightfield_terrain.omniworld`](projects/samples/demos/worlds/physics/newton_heightfield_terrain.omniworld) | no controller |
+| newton softbody drop | [`newton_softbody_drop.omniworld`](projects/samples/demos/worlds/physics/newton_softbody_drop.omniworld) | no controller |
+| P8.2 Newton static collider smoke | [`newton_static_collider_smoke.omniworld`](projects/samples/demos/worlds/physics/newton_static_collider_smoke.omniworld) | no controller |
+| newton tshirt fold | [`newton_tshirt_fold.omniworld`](projects/samples/demos/worlds/physics/newton_tshirt_fold.omniworld) | `vbd_tshirt_fold` |
+| newton tshirt hero | [`newton_tshirt_hero.omniworld`](projects/samples/demos/worlds/physics/newton_tshirt_hero.omniworld) | no controller |
 
 ### ⚠ The deformable demos do not launch from the launcher, and that is not an oversight
 
@@ -357,6 +407,21 @@ Procedurally generated scaffolds (omniworld + seeds), all browsable from the in-
 | The Living City | [`city_traffic.omniworld`](projects/samples/demos/worlds/showcase/city_traffic.omniworld) | Generator-driven 4×4 city — 48 cars routing with traffic signals, pedestrians on crossings, a city bus, day/night cycle. Follow a car: click it → right-click → *Follow Object* (or `F5`). Regenerate via [`gen_city_traffic.py`](scripts/dev/gen_city_traffic.py) |
 | Desert ruins | [`desert_ruins.omniworld`](projects/samples/demos/worlds/environments/desert_ruins.omniworld) | Rough-terrain outdoor navigation |
 | Husky rocks traverse | [`husky_rocks_traverse.omniworld`](projects/samples/demos/worlds/showcase/husky_rocks_traverse.omniworld) | Lunar/Mars-style traverse |
+| wgpu main view, live | any world — default [`warehouse_husky.omniworld`](projects/samples/demos/worlds/showcase/warehouse_husky.omniworld) | `powershell -File scripts\dev\show_wgpu_demo.ps1 [world]` opens the world in the wgpu main view (full-material PBR + multi-cascade shadows + world-general ambient) from your own terminal, so the window stays until you close it. wgpu has been the default renderer since 2026-08-19; this is the one-command way to eyeball a world in it |
+| Construction Site (dev, editable) | [`construction_site_dev.omniworld`](projects/samples/demos/worlds/dev/construction_site_dev.omniworld) | `site_screenshot` |
+| Construction site env preview | [`site_env_preview.omniworld`](projects/samples/demos/worlds/dev/site_env_preview.omniworld) | `site_screenshot` |
+| Vehicle preview | [`vehicle_preview.omniworld`](projects/samples/demos/worlds/dev/vehicle_preview.omniworld) | `vehicle_preview` |
+| Forest | [`forest.omniworld`](projects/samples/demos/worlds/environments/forest.omniworld) | no controller |
+| Northgate Depot | [`northgate_depot.omniworld`](projects/samples/demos/worlds/environments/northgate_depot.omniworld) | no controller |
+| contact self check | [`contact_self_check.omniworld`](projects/samples/demos/worlds/misc/contact_self_check.omniworld) | `contact_self_check` |
+| Khepera III | [`cylinder_stack.omniworld`](projects/samples/demos/worlds/misc/cylinder_stack.omniworld) | `contact_points_supervisor` — The model of the Khepera III robot |
+| ManiSkill PickCube-v1 contract | [`maniskill_pickcube.omniworld`](projects/samples/demos/worlds/portability/maniskill_pickcube.omniworld) | no controller |
+| Agent Fleet - Shared Target Failure | [`agent_fleet_collision.omniworld`](projects/samples/demos/worlds/showcase/agent_fleet_collision.omniworld) | `fleet_goal` |
+| Agent Fleet - Contact-Aware Replan | [`agent_fleet_replan.omniworld`](projects/samples/demos/worlds/showcase/agent_fleet_replan.omniworld) | `fleet_goal` |
+| Husky Fleet - Arena | [`husky_fleet_arena.omniworld`](projects/samples/demos/worlds/showcase/husky_fleet_arena.omniworld) | `husky_random` |
+| Jackal URDF Drive Demo | [`jackal_drive.omniworld`](projects/samples/demos/worlds/showcase/jackal_drive.omniworld) | `husky_random` — Single Clearpath Jackal loaded natively from URDF via URDFRobot. |
+| TurtleBot3 Trio (URDF Import) | [`turtlebot3_drive.omniworld`](projects/samples/demos/worlds/showcase/turtlebot3_drive.omniworld) | `tb3_random` — Three TurtleBot3 variants -- burger, waffle, waffle_pi -- loaded natively from URDF and driven by tb3_random. |
+| Minimal friction grasp | [`friction_grasp_minimal.omniworld`](projects/samples/demos/worlds/starter/friction_grasp_minimal.omniworld) | `friction_grasp_minimal` |
 
 ---
 
@@ -370,6 +435,105 @@ Procedurally generated scaffolds (omniworld + seeds), all browsable from the in-
 | Docs | [`agents/bridges/README.md`](agents/bridges/README.md) |
 
 Same `/list_robots` / `/prompt` / `/tool` / `/get_robot_state` / `/stop_robot` HTTP surface as the sim bridges. Drop in a real robot driver and the same OmniLink agents work unchanged.
+
+---
+
+## 9. Research and lab worlds (load-checked 2026-09-02)
+
+Worlds that load (`python -m omnisim validate-worlds`, one engine hot-reloading each, 2026-09-02) but are research, robot-package or lab content rather than polished demos: no launcher entry, no screenshot, no guarantee beyond "it loads". Controller names are the ones the world file declares. Physics sanity is NOT asserted -- a load PASS is a log verdict (AGENTS.md section 3b).
+
+| World | File | Controllers -- what the file says it is |
+|---|---|---|
+| OmniSim alife - evolved champions | [`alife_champions.omniworld`](projects/alife/worlds/alife_champions.omniworld) | `terrarium_showcase` |
+| Alife terrarium - probe 0 | [`terrarium_probe_0.omniworld`](projects/alife/worlds/terrarium_probe_0.omniworld) | `terrarium_director` |
+| Omniscience | [`example.omniworld`](projects/languages/cpp/worlds/example.omniworld) | `slave`, `driver` — The user drives a Supervisor by the Keyboard which drives slaves robots by using an emitter device. |
+| Omniscience | [`example.omniworld`](projects/languages/python/worlds/example.omniworld) | `slave`, `driver` — The user drives a Supervisor by the Keyboard which drives slaves robots by using an emitter device. |
+| omni quest fleet | [`omni_quest_fleet.omniworld`](projects/omni_quest/worlds/omni_quest_fleet.omniworld) | `omni_quest_nav`, `omni_quest_eye` |
+| omni quest intersection | [`omni_quest_intersection.omniworld`](projects/omni_quest/worlds/omni_quest_intersection.omniworld) | `omni_quest_nav`, `omni_quest_eye` |
+| omni quest offroad | [`omni_quest_offroad.omniworld`](projects/omni_quest/worlds/omni_quest_offroad.omniworld) | `omni_quest_nav`, `omni_quest_eye` |
+| omni quest swarm | [`omni_quest_swarm.omniworld`](projects/omni_quest/worlds/omni_quest_swarm.omniworld) | `omni_quest_nav`, `omni_quest_eye` |
+| omni quest waypoints | [`omni_quest_waypoints.omniworld`](projects/omni_quest/worlds/omni_quest_waypoints.omniworld) | `omni_quest_nav` |
+| omni quest world | [`omni_quest_world.omniworld`](projects/omni_quest/worlds/omni_quest_world.omniworld) | `omni_quest_nav`, `omni_quest_eye`, `omni_quest_wander` |
+| B2 hill-walk ghost (preview) | [`b2_hill_ghost_preview.omniworld`](projects/policies/research/worlds/b2_hill_ghost_preview.omniworld) | `hill_ghost_preview` |
+| B2 hill-walk ghost (preview) | [`b2_hill_shot.omniworld`](projects/policies/research/worlds/b2_hill_shot.omniworld) | `hill_ghost_preview`, `hill_shot` |
+| B2 walk deploy | [`b2_rough_track.omniworld`](projects/policies/research/worlds/b2_rough_track.omniworld) | `b2_walk_deploy` |
+| B2 walk deploy | [`b2_walk_deploy.omniworld`](projects/policies/research/worlds/b2_walk_deploy.omniworld) | `b2_walk_deploy` |
+| B2 walk + gait-model ghost | [`b2_walk_ghost_demo.omniworld`](projects/policies/research/worlds/b2_walk_ghost_demo.omniworld) | `b2_walk_deploy`, `b2_ghost` |
+| Unitree G1 full-body walking PPO deploy (legs + arms) | [`g1_torque_balance.omniworld`](projects/policies/research/worlds/g1_torque_balance.omniworld) | `g1_torque_balance` |
+| Unitree G1 official walk (their algorithm) in OmniSim | [`g1_unitree_deploy.omniworld`](projects/policies/research/worlds/g1_unitree_deploy.omniworld) | `g1_unitree_deploy` |
+| Unitree G1 full-body walking PPO deploy (legs + arms) | [`g1_walk_arms_deploy.omniworld`](projects/policies/research/worlds/g1_walk_arms_deploy.omniworld) | `g1_walk_deploy` |
+| Unitree G1 full-body walking PPO deploy (mjwarp, visible floor) | [`g1_walk_arms_deploy_mjwarp_floor.omniworld`](projects/policies/research/worlds/g1_walk_arms_deploy_mjwarp_floor.omniworld) | `g1_walk_deploy` |
+| Unitree G1 full-body walking PPO deploy (legs + arms, PRIMITIVE collision) | [`g1_walk_arms_deploy_prim.omniworld`](projects/policies/research/worlds/g1_walk_arms_deploy_prim.omniworld) | `g1_walk_deploy` |
+| Unitree G1 canonical walk deploy | [`g1_walk_canon_deploy.omniworld`](projects/policies/research/worlds/g1_walk_canon_deploy.omniworld) | `g1_walk_canon_deploy` |
+| go2 deterministic parity probe (free base) | [`go2_parity_probe_free.omniworld`](projects/policies/research/worlds/go2_parity_probe_free.omniworld) | `parity_probe` |
+| Go2 walk deploy | [`go2_rough_track.omniworld`](projects/policies/research/worlds/go2_rough_track.omniworld) | `go2_walk_deploy` |
+| Go2 shadow policy on rough terrain | [`go2_rough_track_shadow.omniworld`](projects/policies/research/worlds/go2_rough_track_shadow.omniworld) | `go2_shadow_deploy` |
+| Unitree H1 official walk (their algorithm) in OmniSim | [`h1_unitree_deploy.omniworld`](projects/policies/research/worlds/h1_unitree_deploy.omniworld) | `h1_unitree_deploy` |
+| OMNIQUAD hill-walk ghost (preview) | [`omniquad_hill_ghost_preview.omniworld`](projects/policies/research/worlds/omniquad_hill_ghost_preview.omniworld) | `hill_ghost_preview` |
+| OMNIQUAD hill-walk ghost (preview) | [`omniquad_hill_shot.omniworld`](projects/policies/research/worlds/omniquad_hill_shot.omniworld) | `hill_ghost_preview`, `hill_shot` |
+| OmniQuad walk deploy | [`omniquad_rough_track.omniworld`](projects/policies/research/worlds/omniquad_rough_track.omniworld) | `omniquad_walk_deploy` |
+| OmniQuad BIGFOOT terrain -- deterministic MPC walk (foot-redesign A/B) | [`omniquad_terrain_mpc_bigfoot.omniworld`](projects/policies/research/worlds/omniquad_terrain_mpc_bigfoot.omniworld) | `omniquad_walk_deploy` |
+| G1 Shadowing headless numerical evaluation | [`g1_walk_headless_eval.omniworld`](projects/policies/worlds/g1_walk_headless_eval.omniworld) | `humanoid_stand_deploy` |
+| warp contact A box on floor | [`warp_contact_A_box_on_floor.omniworld`](projects/policies/worlds/repro/warp_contact_A_box_on_floor.omniworld) | no controller |
+| warp contact B box on cart | [`warp_contact_B_box_on_cart.omniworld`](projects/policies/worlds/repro/warp_contact_B_box_on_cart.omniworld) | no controller |
+| warp contact C box stack | [`warp_contact_C_box_stack.omniworld`](projects/policies/worlds/repro/warp_contact_C_box_stack.omniworld) | no controller |
+| G1 book-grasp arena: REAL Newton box, physics-only pick (no rig writes) | [`warp_contact_D_g1_stand_box_far.omniworld`](projects/policies/worlds/repro/warp_contact_D_g1_stand_box_far.omniworld) | `humanoid_stand_deploy` |
+| G1 book-grasp arena: REAL Newton box, physics-only pick (no rig writes) | [`warp_contact_E_g1_stand_box_cart.omniworld`](projects/policies/worlds/repro/warp_contact_E_g1_stand_box_cart.omniworld) | `humanoid_stand_deploy` |
+| G1 book-grasp arena: REAL Newton box, physics-only pick (no rig writes) | [`warp_contact_H_g1_nobox.omniworld`](projects/policies/worlds/repro/warp_contact_H_g1_nobox.omniworld) | `humanoid_stand_deploy` |
+| G1 book-grasp arena: REAL Newton box, physics-only pick (no rig writes) | [`warp_contact_I_g1_hand_touch.omniworld`](projects/policies/worlds/repro/warp_contact_I_g1_hand_touch.omniworld) | `humanoid_stand_deploy` |
+| Hydra vs Gravedigger — Flipper vs Bar Spinner | [`hydra_vs_gravedigger.omniworld`](projects/robot_combat/battlebots/worlds/hydra_vs_gravedigger.omniworld) | `battlebot_brain`, `battlebot_damage_director`, `duel_tracker` |
+| OmniArm 6 | [`omniarm6.omniworld`](projects/robots/omnisim/omniarm6/worlds/omniarm6.omniworld) | `omniarm6_wave` |
+| OmniArm 6 Fleet | [`omniarm6_fleet.omniworld`](projects/robots/omnisim/omniarm6/worlds/omniarm6_fleet.omniworld) | `omniarm6_wave` |
+| OmniArm 7 | [`omniarm7.omniworld`](projects/robots/omnisim/omniarm7/worlds/omniarm7.omniworld) | `omniarm7_wave` |
+| OmniTug 500 - Explore & Map (physics collision) | [`omnitug500_explore_physics.omniworld`](projects/robots/omnisim/omnitug500/worlds/omnitug500_explore_physics.omniworld) | `omnitug500_explore`, `omnitug500_explore_cam` — OMNITUG500 explores an unknown two-room space; rover is a dynamic Newton body. |
+| OmniTug 500 - Live Laser Scanners | [`omnitug500_lidar.omniworld`](projects/robots/omnisim/omnitug500/worlds/omnitug500_lidar.omniworld) | `omnitug500_lidar` — OMNITUG500 rover with its two corner safety laser scanners wired as real Lidar devices. |
+| OmniTug 500 - Moving Laser-Scanner Coverage | [`omnitug500_lidar_patrol.omniworld`](projects/robots/omnisim/omnitug500/worlds/omnitug500_lidar_patrol.omniworld) | `omnitug500_lidar_patrol`, `omnitug500_cam` — OMNITUG500 drives an elliptical patrol while its two corner laser scanners stay live; the fused red coverage area follows the rover around the room. |
+| OmniTug 500 - Patrol Demo | [`omnitug500_patrol.omniworld`](projects/robots/omnisim/omnitug500/worlds/omnitug500_patrol.omniworld) | `omnitug500_patrol` — OMNITUG500 (URDF from STEP CAD) patrolling a floor loop, driven kinematically by the omnitug500_patrol supervisor controller. |
+| OmniTug 500 - Showroom | [`omnitug500_wall.omniworld`](projects/robots/omnisim/omnitug500/worlds/omnitug500_wall.omniworld) | no controller — OmniTug 500 rover (URDF converted from STEP CAD) on a display dais in front of a designed wall. |
+| Vacuum suction gripper | [`vacuum_gripper.omniworld`](projects/samples/devices/worlds/vacuum_gripper.omniworld) | `vacuum_gripper` — Example world demonstrating how to use the VacuumGripper device to simulate a vacuum suction gripper. |
+
+---
+
+## 10. Rendering and sensor smoke worlds (load-checked 2026-09-02)
+
+wgpu Camera / Lidar / RangeFinder smoke and control worlds under `projects/samples/demos/worlds/rendering/`. They exist for the renderer tests (`tests/rendering/`), load-checked 2026-09-02; each pairs a `_smoke` with a `_control` where an A/B is the point.
+
+| World | File | Controllers -- what the file says it is |
+|---|---|---|
+| Beauty Bench | [`beauty_bench.omniworld`](projects/samples/demos/worlds/rendering/beauty_bench.omniworld) | no controller — The standing render-quality benchmark: a small house lot exercising PBR maps, transparency, multi-light, emissive, GTAO, shadows and tiled textures in one... |
+| P1 gate CONTROL -- identical scene with NO Cloth | [`camera_cloth_wgpu_control.omniworld`](projects/samples/demos/worlds/rendering/camera_cloth_wgpu_control.omniworld) | `camera_cloth_wgpu_smoke` |
+| P1 gate -- wgpu Camera sees a draping Cloth | [`camera_cloth_wgpu_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_cloth_wgpu_smoke.omniworld) | `camera_cloth_wgpu_smoke` |
+| P9 gate -- wgpu Camera sees GranularGroup particles | [`camera_granular_wgpu_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_granular_wgpu_smoke.omniworld) | `camera_cloth_wgpu_smoke` |
+| P11 control -- the same scene with the texture field removed | [`camera_legacy_texture_wgpu_control.omniworld`](projects/samples/demos/worlds/rendering/camera_legacy_texture_wgpu_control.omniworld) | `camera_cloth_wgpu_smoke` |
+| P11 gate -- wgpu Camera sees a legacy Appearance texture | [`camera_legacy_texture_wgpu_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_legacy_texture_wgpu_smoke.omniworld) | `camera_cloth_wgpu_smoke` |
+| P2 control -- the same joint with no Muscle | [`camera_muscle_wgpu_control.omniworld`](projects/samples/demos/worlds/rendering/camera_muscle_wgpu_control.omniworld) | `wgpu_gate_driver`, `camera_cloth_wgpu_smoke` |
+| P2 gate -- wgpu Camera sees a Muscle stretching | [`camera_muscle_wgpu_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_muscle_wgpu_smoke.omniworld) | `wgpu_gate_driver`, `camera_cloth_wgpu_smoke` |
+| P2 control -- the same Track with no animatedGeometry | [`camera_track_wgpu_control.omniworld`](projects/samples/demos/worlds/rendering/camera_track_wgpu_control.omniworld) | `wgpu_gate_driver`, `camera_cloth_wgpu_smoke` |
+| P2 gate -- wgpu Camera sees a Track belt advancing | [`camera_track_wgpu_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_track_wgpu_smoke.omniworld) | `wgpu_gate_driver`, `camera_cloth_wgpu_smoke` |
+| wgpu emissive HDR smoke | [`camera_wgpu_emissive_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_emissive_smoke.omniworld) | `camera_wgpu_smoke` — T1.1 emissive HDR source - black box, bright blue emissive, AgX compresses |
+| wgpu Camera golden reference | [`camera_wgpu_golden.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_golden.omniworld) | `camera_wgpu_smoke` — wgpu Camera golden-image reference — centred box with visible edges |
+| Lane E1 wgpu Camera motionBlur smoke | [`camera_wgpu_motionblur_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_motionblur_smoke.omniworld) | `camera_wgpu_motionblur_smoke` — Lane E1 smoke -- wgpu Camera applies the authored motion blur (CPU port) |
+| Phase δ — Newton → wgpu interop demo | [`camera_wgpu_newton_delta.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_newton_delta.omniworld) | `drive_forward`, `camera_wgpu_smoke` |
+| Lane E1 wgpu Camera noise smoke | [`camera_wgpu_noise_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_noise_smoke.omniworld) | `camera_wgpu_noise_smoke` — Lane E1 smoke -- wgpu Camera applies the authored per-channel gaussian noise |
+| R3.4-step-4 wgpu scene smoke | [`camera_wgpu_scene_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_scene_smoke.omniworld) | `camera_wgpu_smoke` — R3.4-step-4 smoke — wgpu scene-walk renders a colored box |
+| camera wgpu shadow cast | [`camera_wgpu_shadow_cast.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_shadow_cast.omniworld) | `camera_wgpu_smoke` |
+| camera wgpu shadow nocaster | [`camera_wgpu_shadow_nocaster.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_shadow_nocaster.omniworld) | `camera_wgpu_smoke` |
+| R3.3b wgpu camera smoke | [`camera_wgpu_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_smoke.omniworld) | `camera_wgpu_smoke` — R3.3b smoke world — Camera with renderBackend 'wgpu' |
+| wgpu specular rough reference | [`camera_wgpu_specular_rough_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_specular_rough_smoke.omniworld) | `camera_wgpu_smoke` — T1.1 specular A/B rough reference - rough 1.0 box, no specular |
+| wgpu specular HDR smoke | [`camera_wgpu_specular_smoke.omniworld`](projects/samples/demos/worlds/rendering/camera_wgpu_specular_smoke.omniworld) | `camera_wgpu_smoke` — T1.1 specular HDR source - smooth (rough 0.85) box, Blinn-Phong via AgX |
+| R5g wgpu Lidar azimuth-orientation | [`lidar_wgpu_azimuth_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_azimuth_smoke.omniworld) | `lidar_wgpu_azimuth_smoke` — R5g azimuth test -- box offset +y must map to +theta (left) |
+| R5k wgpu multi-layer rotating Lidar smoke | [`lidar_wgpu_ml_rotating_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_ml_rotating_smoke.omniworld) | `lidar_wgpu_ml_rotating_smoke` — R5k smoke -- wgpu multi-layer rotating Lidar (azimuth + elevation) |
+| R5h wgpu multi-layer wide-FOV Lidar smoke | [`lidar_wgpu_ml_widefov_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_ml_widefov_smoke.omniworld) | `lidar_wgpu_ml_widefov_smoke` — R5h smoke -- wgpu multi-layer + wide-FOV Lidar |
+| R5f wgpu multi-layer Lidar smoke | [`lidar_wgpu_multilayer_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_multilayer_smoke.omniworld) | `lidar_wgpu_multilayer_smoke` — R5f smoke -- wgpu multi-layer Lidar (asymmetric elevation) |
+| Lane E1 wgpu Lidar noise smoke | [`lidar_wgpu_noise_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_noise_smoke.omniworld) | `lidar_wgpu_noise_smoke` — Lane E1 smoke -- wgpu Lidar applies the authored gaussian range noise |
+| Lane E1 wgpu Lidar resolution smoke | [`lidar_wgpu_resolution_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_resolution_smoke.omniworld) | `lidar_wgpu_resolution_smoke` — Lane E1 smoke -- wgpu Lidar applies the authored range quantization |
+| R5j wgpu rotating Lidar smoke | [`lidar_wgpu_rotating_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_rotating_smoke.omniworld) | `lidar_wgpu_rotating_smoke` — R5j smoke -- wgpu rotating-head Lidar exact-column partial-sweep |
+| R5e wgpu Lidar smoke | [`lidar_wgpu_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_smoke.omniworld) | `lidar_wgpu_smoke` — R5e smoke -- wgpu single-layer Lidar renders metric range |
+| R5i wgpu Lidar tilt | [`lidar_wgpu_tilt_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_tilt_smoke.omniworld) | `lidar_wgpu_tilt_smoke` — R5i smoke -- wgpu Lidar tilt (pitch the scan up) |
+| R5l wgpu wide rotating Lidar smoke | [`lidar_wgpu_wide_rotating_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_wide_rotating_smoke.omniworld) | `lidar_wgpu_wide_rotating_smoke` — R5l smoke -- wgpu wide-FOV multi-layer rotating Lidar |
+| R5g wgpu wide-FOV Lidar smoke | [`lidar_wgpu_widefov_smoke.omniworld`](projects/samples/demos/worlds/rendering/lidar_wgpu_widefov_smoke.omniworld) | `lidar_wgpu_widefov_smoke` — R5g smoke -- wgpu wide-FOV Lidar (2-frustum stitch) |
+| Lane E1 wgpu RangeFinder post-FX smoke | [`rangefinder_wgpu_postfx_smoke.omniworld`](projects/samples/demos/worlds/rendering/rangefinder_wgpu_postfx_smoke.omniworld) | `rangefinder_wgpu_postfx_smoke` — Lane E1 smoke -- wgpu RangeFinder applies authored noise + quantization |
+| R5c wgpu RangeFinder smoke | [`rangefinder_wgpu_smoke.omniworld`](projects/samples/demos/worlds/rendering/rangefinder_wgpu_smoke.omniworld) | `rangefinder_wgpu_smoke` — R5c smoke — wgpu RangeFinder device node renders metric depth |
 
 ---
 

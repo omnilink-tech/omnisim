@@ -21,11 +21,17 @@ import json
 import os
 
 
+# Re-pinned 2026-09-02. The only change since the 2026-07-25 pin is the world
+# extension migration (6f495ca01, 2026-08-15): every sequence's WALK_WORLD
+# went `g1_box_grasp.wbt` -> `g1_box_grasp.omniworld`. Attributed exactly --
+# reversing `.omniworld` -> `.wbt` in the assembled values reproduces all four
+# previous digests bit-for-bit, so key sets and every other value are
+# unchanged. Counts are unchanged for the same reason.
 G1_ENV_BASELINES = {
-    "box_delivery": (92, "40c24c1c5bf4ced0e29a3707ae5ca19280ba5352e533320784553903b0ed5197"),
-    "box_delivery_classic": (30, "f85d670540aeac455505c2e41f3c2868689046c21c0276332325aac2399a140d"),
-    "turn_solo": (35, "cebfcbd708a4c9b9e8e72a6085a4a87fd7fe97f00c253f7972d2cced614217c5"),
-    "walk_turn_walk": (40, "111e19f139a9d86eaa127fe74548f548e4375bb4a00e491d1feefbb1308bc0c3"),
+    "box_delivery": (92, "56e74c7d53d1e0bd64f76fa5263dbbf2f513fd48531b945f3deefc2f6e8dffba"),
+    "box_delivery_classic": (30, "aa9dde41592cb7a488b1dc0a3a49df976bd6854b8fe604495daf2835d09c0c57"),
+    "turn_solo": (35, "7b053881f1d9670fdf0f1bd323b18208c1389ae49edc2f7043e1588d7c71c73a"),
+    "walk_turn_walk": (40, "41ac094466896879834a1d18b3dc672d0dad1e6568e4efc5384fb68f26e7fcfd"),
 }
 
 

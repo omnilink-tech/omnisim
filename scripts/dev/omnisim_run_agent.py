@@ -175,7 +175,7 @@ def find_omnisim_binary() -> Path:
         if c.exists():
             return c
     raise FileNotFoundError(
-        f"omnisim-bin not found under {REPO_ROOT}. Run scripts/dev/omnisim_dev.py build all."
+        f"omnisim-bin not found under {REPO_ROOT}. Run `python -m omnisim build all`."
     )
 
 

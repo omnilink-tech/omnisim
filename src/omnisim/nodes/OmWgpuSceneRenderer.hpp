@@ -34,8 +34,6 @@
 // follow-up (engine-migration-plan.md §14.4); until then keep the two in sync.
 //
 
-#include <QtCore/QList>
-
 #include <array>
 #include <cstddef>
 #include <vector>
@@ -50,6 +48,7 @@ class OmCadShape;
 class OmGeometry;
 class OmWgpuTextureCache;
 class QObject;
+template <typename T> class QList;  // hiddenNodes is only ever a pointer here; the .cpp includes <QtCore/QList>
 struct OmWgpuSolidDraw;
 
 namespace OmWgpuSceneRenderer {

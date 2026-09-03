@@ -200,8 +200,8 @@ This order pays down the biggest blind spots first.
 
 After telemetry changes, validate with:
 
-- `python scripts/dev/omnisim_dev.py profile-world resources/projects/worlds/empty.omniworld`
-- `python scripts/dev/omnisim_dev.py benchmarks`
+- `python -m omnisim profile-world resources/projects/worlds/empty.omniworld`
+- `python -m omnisim benchmarks`
 - one sensor-heavy scenario
 - one controller-heavy scenario
 

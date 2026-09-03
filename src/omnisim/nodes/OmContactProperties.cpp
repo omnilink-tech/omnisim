@@ -306,6 +306,6 @@ void OmContactProperties::updateSlideSound() {
 
 void OmContactProperties::enableBodies() {
   // when a value is changed, we need to re-enable the bodies,
-  // otherwise the new value is not applied in OmSimulationCluster::fillSurfaceParameters
+  // otherwise a sleeping body would keep its old contact parameters
   OmWorld::instance()->awake();
 }

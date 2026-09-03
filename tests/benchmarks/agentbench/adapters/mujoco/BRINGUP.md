@@ -17,7 +17,7 @@ number in this tree names the box that produced it.)
 
 | item | value |
 |---|---|
-| package | `mujoco` **3.8.1** (`mj_versionString()` `3.8.1`, `mujoco.__version__` `3.8.1`) |
+| package | `mujoco` **3.8.1** (`mj_versionString()` `3.8.1`, `mujoco.__version__` `3.8.1`) at bring-up; the pinned runtime is now `mujoco` 3.11.0 / `newton` 1.5.0 / `warp-lang` 1.16.0 (`scripts/packaging/newton_runtime_pins.py`) |
 | interpreter | the system CPython 3.12.9 at `C:/Users/<user>/AppData/Local/Programs/Python/Python312/python.exe` |
 | how it got there | **it was already present as a Newton dependency.** OmniSim's only physics backend resolves `newton` / `warp` / `mujoco` out of the system interpreter (AGENTS.md), and `python -c "import mujoco"` reported 3.8.1 before this arm existed. `machine_fingerprint()` lists it in the repo's own stack: `newton 1.2.0`, `warp_lang 1.13.0`, **`mujoco 3.8.1`**, `mujoco_warp 3.8.0.3`, `torch 2.5.1+cu121` |
 | pip actions taken | **none.** Disturbing the system interpreter would break physics for the whole repo, and there was nothing to fix: the version present is current and is now pinned in [`sims.py`](../../sims.py) |

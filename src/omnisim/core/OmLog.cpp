@@ -23,6 +23,7 @@
 #include <fstream>
 #include <mutex>
 
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDateTime>
 #include <QtCore/QDir>
@@ -49,7 +50,23 @@ static void fileLogWrite(const char *message) {
     // (silencing the per-joint queued-log + capping repeated warnings)
     // already eliminated the high-rate log sites that made per-call
     // flush a world-load bottleneck.
-    gLogFile << message << "\n" << std::flush;
+    // OMNISIM_LOG_TIMESTAMPS=1 (value-parsed, default off) appends " [t+<ms>ms]" -- milliseconds
+    // since the log opened -- to every file-log line, so a load or a step sequence can be timed
+    // from the log alone instead of by polling the file from outside (the 2026-09-02 campaigns
+    // did exactly that). Appended, not prefixed, so the level and the "[Om...]" tags stay at
+    // the start of the line for every matcher; off by default because a few matchers are
+    // end-anchored.
+    static const bool stamp = []() {
+      const QByteArray v = qgetenv("OMNISIM_LOG_TIMESTAMPS").trimmed().toLower();
+      return !v.isEmpty() && v != "0" && v != "false" && v != "off";
+    }();
+    static QElapsedTimer sinceOpen;
+    if (stamp) {
+      if (!sinceOpen.isValid())
+        sinceOpen.start();
+      gLogFile << message << " [t+" << sinceOpen.elapsed() << "ms]" << "\n" << std::flush;
+    } else
+      gLogFile << message << "\n" << std::flush;
   }
 }
 
@@ -94,6 +111,15 @@ void OmLog::initFileLog(const QString &logPath) {
     // in preference to scraping the log so the on-screen physics label can't
     // mislabel a Newton run as ODE.
     QFile::remove(path + QStringLiteral(".newton.json"));
+    // Same rule for libController's APPEND-ONLY "<log>.connect_error.txt": it tags
+    // each entry with run=<engine pid>, and headless_runner filters on this run's
+    // pid -- but Windows reuses pids freely, so an entry a previous run appended
+    // under the same pid reads as THIS run's handshake failure. Measured
+    // 2026-09-02: a healthy 8-Husky swarm run FAILed on three entries an
+    // omniquad session had appended 11 hours earlier under pid 28720. The log is
+    // truncated here, so every earlier entry is stale by definition; drop them
+    // with it.
+    QFile::remove(path + QStringLiteral(".connect_error.txt"));
   }
 }
 

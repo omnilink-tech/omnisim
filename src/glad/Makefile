@@ -16,8 +16,14 @@
 # this Makefile's own location. Resolved in one := so a set-but-empty variable
 # cannot leave OMNISIM_HOME defined-and-empty, which would make ?= skip the
 # fallback and silently produce "/resources/Makefile.os.include".
+# Adopt the legacy name ONLY when it names a directory that EXISTS: a machine that
+# once had Webots keeps WEBOTS_HOME after the install is removed, and adopting that
+# phantom path resolves every include and library under a directory that is not there.
+# `test -d`, not $(wildcard): wildcard splits on spaces and would reject a real
+# "C:\Program Files\..." install.
+OM_LEGACY_HOME := $(strip $(if $(strip $(WEBOTS_HOME)),$(if $(strip $(shell test -d "$(WEBOTS_HOME)" && echo yes)),$(WEBOTS_HOME))))
 ifeq ($(strip $(OMNISIM_HOME)),)
- OMNISIM_HOME := $(if $(strip $(WEBOTS_HOME)),$(WEBOTS_HOME),../..)
+ OMNISIM_HOME := $(if $(OM_LEGACY_HOME),$(OM_LEGACY_HOME),../..)
 endif
 
 null :=

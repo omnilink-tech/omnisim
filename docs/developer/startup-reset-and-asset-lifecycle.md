@@ -193,9 +193,9 @@ That order keeps determinism and benchmark quality improving throughout the refa
 
 After startup or reset work, validate with:
 
-- `python scripts/dev/omnisim_dev.py test-smoke`
-- `python scripts/dev/omnisim_dev.py profile-world resources/projects/worlds/empty.omniworld`
-- `python scripts/dev/omnisim_dev.py benchmarks`
+- `python -m omnisim test-smoke`
+- `python -m omnisim profile-world resources/projects/worlds/empty.omniworld`
+- `python -m omnisim benchmarks`
 
 Then compare:
 

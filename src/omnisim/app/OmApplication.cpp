@@ -31,6 +31,8 @@
 #include "OmPreferences.hpp"
 #include "OmProject.hpp"
 #include "OmProtoManager.hpp"
+#include "OmProtoModel.hpp"
+#include "OmTemplateEngine.hpp"
 #include "OmSimulationState.hpp"
 #include "OmSolid.hpp"
 #include "OmStandardPaths.hpp"
@@ -142,12 +144,20 @@ OmApplication::~OmApplication() {
 void OmApplication::setup() {
   OmNodeOperations *nodeOperations = OmNodeOperations::instance();
 
-  // Probe the CUDA compute layer once at startup so the device name and
-  // compute capability land in omnisim_log.txt before any subsystem tries to
-  // allocate buffers. OmCudaContext::instance() is a no-op on non-CUDA builds
-  // and silently returns null on NVIDIA-less boxes (subsystems still see
-  // available()==false and route to CPU fallbacks).
-  OmCudaContext::instance();
+  // The CUDA compute layer (OmCudaContext) is LAZY: it initialises on the first
+  // consumer (GranularGroup / the CUDA smoke) and logs "CUDA initialized: ..."
+  // then. Until 2026-09-02 it was probed eagerly here, so every world -- the
+  // overwhelming majority of which never touch OmCudaContext (Newton/warp has
+  // its own CUDA init) -- paid a cudaSetDevice + cudaGetDeviceProperties +
+  // cudaStreamCreate on the main thread before the world file was even opened
+  // (~250 ms on the reference RTX 3060 laptop). OMNISIM_CUDA_EAGER_INIT=1
+  // (value-parsed) restores the eager probe for anyone who wants the device
+  // line at the top of every log.
+  {
+    const QByteArray eager = qgetenv("OMNISIM_CUDA_EAGER_INIT").trimmed().toLower();
+    if (!eager.isEmpty() && eager != "0" && eager != "false" && eager != "off")
+      OmCudaContext::instance();
+  }
   // Run the in-process buffer round-trip if OMNISIM_CUDA_SMOKE=1. No-op
   // otherwise; cost in normal runs is one env-var lookup.
   OmCudaSmoke::runIfRequested();
@@ -336,6 +346,17 @@ void OmApplication::loadWorld(QString worldName, bool reloading, bool isLoadingA
     OmLog::info(QString("[runtime-cycle] world load tokenize=%1 ms parse=%2 ms teardown=%3 ms construct=%4 ms finish=%5 ms total=%6 ms")
                   .arg(tokenizeMs).arg(parseMs).arg(teardownMs).arg(constructMs).arg(reloadTimer.elapsed())
                   .arg(tokenizeMs + parseMs + teardownMs + constructMs + reloadTimer.elapsed()));
+    if (profileReload) {
+      OmLog::info(QString("[runtime-cycle] ") + OmProtoLoadProfile::instance().report());
+      {
+        const OmTemplateEngineProfile &tp = OmTemplateEngineProfile::instance();
+        OmLog::info(QString("[runtime-cycle] template engine: %1 calls: translate %2 ms + write %3 ms + engine ctor %4 ms + "
+                            "importModule %5 ms + call %6 ms; %7 KB of filled templates; result hash %8")
+                      .arg(tp.calls).arg(tp.ns[0] / 1000000).arg(tp.ns[1] / 1000000).arg(tp.ns[2] / 1000000)
+                      .arg(tp.ns[3] / 1000000).arg(tp.ns[4] / 1000000).arg(tp.bytes / 1024)
+                      .arg(QString::number(static_cast<qulonglong>(tp.resultHash), 16)));
+      }
+    }
 }
 
 void OmApplication::takeScreenshot(const QString &fileName, int quality) {

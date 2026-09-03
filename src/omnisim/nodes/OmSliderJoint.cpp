@@ -20,14 +20,11 @@
 #include "OmJointParameters.hpp"
 #include "OmLinearMotor.hpp"
 #include "OmNewtonBackend.hpp"
-#include "OmOdeContext.hpp"
-#include "OmOdeUtilities.hpp"
 #include "OmPhysicsBackend.hpp"
 #include "OmSolid.hpp"
 #include "OmSolidMerger.hpp"
 #include "OmWorld.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 #include <cassert>
 
 // Constructors
@@ -79,8 +76,7 @@ bool OmSliderJoint::setJoint() {
   if (!OmBasicJoint::setJoint())
     return false;
 
-  const OmSolid *const s = solidEndPoint();
-  setOdeJoint(s ? s->body() : NULL, upperSolid()->bodyMerger());
+  setOdeJoint();
 
   return true;
 }
@@ -94,11 +90,6 @@ void OmSliderJoint::applyToOdeMinAndMaxStop() {
 
 void OmSliderJoint::applyToOdeAxis() {
   updateOdePositionOffset();
-
-  assert(mJoint);
-  const OmMatrix4 &m4 = upperPose()->matrix();
-  const OmVector3 &a = -m4.sub3x3MatrixDot(axis());  // ODE convention reverses the axis
-  (void)a;  // ODE is gone: no ODE joint exists
 }
 
 void OmSliderJoint::updatePosition() {
@@ -144,44 +135,6 @@ void OmSliderJoint::updateMinAndMaxStop(double min, double max) {
         p->parsingWarn(tr("SliderJoint 'maxStop' must be greater or equal to LinearMotor 'maxPosition'."));
     }
   }
-
-  if (mJoint)
-    applyToOdeMinAndMaxStop();
-}
-
-void OmSliderJoint::applyToOdeSpringAndDampingConstants(dBodyID body, dBodyID parentBody) {
-  const OmJointParameters *const p = parameters();
-  const double brakingDampingConstant = brake() ? brake()->getBrakingDampingConstant() : 0.0;
-
-  if ((p == NULL && brakingDampingConstant == 0.0) || body == NULL) {
-    if (mSpringAndDamperMotor) {
-      mSpringAndDamperMotor = NULL;
-    }
-    return;
-  }
-
-  assert(body && (p || brake()));
-
-  double d = brakingDampingConstant;
-  double s = 0.0;
-  if (p) {
-    d += p->dampingConstant();
-    s += p->springConstant();
-  }
-
-  if (s == 0.0 && d == 0.0) {
-    if (mSpringAndDamperMotor) {
-      mSpringAndDamperMotor = NULL;
-    }
-    return;
-  }
-
-  double cfm, erp;
-  const OmWorldInfo *const wi = OmWorld::instance()->worldInfo();
-  OmOdeUtilities::convertSpringAndDampingConstants(s, d, wi->basicTimeStep() * 0.001, cfm, erp);
-
-  (void)cfm;
-  (void)erp;
 }
 
 void OmSliderJoint::updateParameters() {

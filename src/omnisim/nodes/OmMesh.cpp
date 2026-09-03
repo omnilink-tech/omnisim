@@ -374,7 +374,7 @@ void OmMesh::updateUrl() {
   if (isAValidBoundingObject()) {
     if (mBoundingObjectNeedUpdate) {
       OmMatter *boundingObjectAncestor = OmNodeUtilities::findBoundingObjectAncestor(this);
-      if (boundingObjectAncestor && boundingObjectAncestor->odeGeom() == NULL)
+      if (boundingObjectAncestor)
         boundingObjectAncestor->updateBoundingObject();
       mBoundingObjectNeedUpdate = false;
     }

@@ -2,7 +2,7 @@
 
 ### Hardware
 
-- A 64-bit (x86-64) PC. A quad-core CPU and 8 GB of RAM are a comfortable baseline; building from source is much faster with more cores (~7 minutes on 24 cores, up to ~25 minutes on a laptop).
+- A 64-bit (x86-64) PC. A quad-core CPU and 8 GB of RAM are a comfortable baseline; building from source is faster with more cores (a first build takes 5–15 min).
 - **A GPU and driver supporting Vulkan 1.2 or D3D12.** OmniSim renders through **wgpu-native**, and since WREN was deleted on 2026-08-23 (commit `976b9449d`) it is the only renderer — there is no OpenGL path and no fallback tier. A host whose wgpu-native cannot initialise has **no renderer at all**: it logs one line and keeps going, so physics and controllers still run and nothing draws. Recent NVIDIA and AMD adapters with vendor drivers are the tested configuration; Intel integrated graphics generally satisfies Vulkan 1.2 but is not tested here.
 - **The Newton physics runtime is mandatory, not optional.** Newton/MuJoCo has been the only physics backend since ODE was deleted on 2026-08-08 (commit `bdc02139`), so there is no CPU fallback engine any more: a build that cannot import `newton` / `warp` / `mujoco` through its embedded interpreter has **no physics at all**. On Windows a stock release bundles the runtime for you (~600 MB); on Linux, pip the wheels into the **system** `python3`.
 - **A CUDA GPU is needed only for the GPU solver.** The default `WorldInfo.newtonSolver` is the **CPU** `mj_step`, which runs on any supported machine — so demos, world authoring and single-robot deploy do not require NVIDIA hardware. An **NVIDIA GPU with CUDA** is required for `newtonSolver "mujoco_warp"`, and therefore for batched RL training and the locomotion training pipeline.

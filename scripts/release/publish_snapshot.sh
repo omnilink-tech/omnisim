@@ -273,128 +273,30 @@ else
     fi
 fi
 
-# ---- bump omniSimVersion if stale ------------------------------------------
-# The binary's About dialog and the auto-update notifier both read
-# omniSimVersionString from src/omnisim/core/OmApplicationInfo.cpp. Before
-# this block existed the bump was manual and drifted across releases
-# (we shipped v1.0.10 and v2.0.0 with the previous string still baked in).
-# Bumping here, before SOURCE_TREE is resolved, guarantees the public
-# snapshot's binary reports the released version. The bump is a no-op
-# if the string already matches, so reruns don't pile up duplicate
-# commits. Like the CHANGELOG step, this only runs against HEAD —
-# bumping an unrelated ref would land the change in a tree the snapshot
-# never sees.
-VERSION_FILE="$REPO_ROOT/src/omnisim/core/OmApplicationInfo.cpp"
+# ---- bump every version site (ONE commit) ----------------------------------
+# All five version sites -- omniSimVersionString (OmApplicationInfo.cpp),
+# omnisim.__version__, scripts/packaging/omnisim_version.txt, Dockerfile.train's
+# OMNISIM_TAG and train-image.yml's tag -- are rewritten by
+# scripts/release/bump_version.py in ONE commit, gated by the version
+# consistency test. Until 2026-09-02 this script carried four separate
+# sed+commit blocks (four "version: bump ..." commits per release -- 20 in the
+# four days before), and its blanket sed over the tag files rewrote prose that
+# merely mentioned a version. As before, the bump only runs against HEAD:
+# bumping an unrelated ref would land the change in a tree the snapshot never
+# sees. A rerun at the same version is a no-op.
 TARGET_VERSION="${VERSION#v}"
-
-if [[ ! -f "$VERSION_FILE" ]]; then
-    log "WARNING: $VERSION_FILE not found — skipping omniSimVersion bump"
-elif grep -q "static const QString omniSimVersionString = \"$TARGET_VERSION\";" \
-        "$VERSION_FILE"; then
-    log "version-bump  : omniSimVersionString already $TARGET_VERSION (no-op)"
+BUMP_SCRIPT="$REPO_ROOT/scripts/release/bump_version.py"
+[[ -f "$BUMP_SCRIPT" ]] || err "$BUMP_SCRIPT not found"
+BUMP_PREVIEW="$(python "$BUMP_SCRIPT" "$TARGET_VERSION" --dry-run 2>&1)"     || err "bump_version.py refused: $BUMP_PREVIEW"
+if printf '%s
+' "$BUMP_PREVIEW" | grep -q '^no change:'; then
+    log "version-bump  : all version sites already $TARGET_VERSION (no-op)"
 else
-    [[ "$FROM_REF" == "HEAD" ]] \
-        || err "omniSimVersionString in OmApplicationInfo.cpp is stale and
-       --from $FROM_REF is set; auto-bump only modifies HEAD. Either
-       bump the string manually or rerun with --from HEAD."
-
-    # Portable across BSD/GNU sed: write to temp file then mv, instead
-    # of sed -i which has different syntax on macOS vs Linux.
-    TMP_VERSION_FILE="$(mktemp)"
-    sed -E "s/(static const QString omniSimVersionString = )\"[^\"]+\";/\1\"$TARGET_VERSION\";/" \
-        "$VERSION_FILE" > "$TMP_VERSION_FILE"
-    if ! grep -q "static const QString omniSimVersionString = \"$TARGET_VERSION\";" \
-            "$TMP_VERSION_FILE"; then
-        rm -f "$TMP_VERSION_FILE"
-        err "sed rewrite of OmApplicationInfo.cpp produced unexpected output —
-       the omniSimVersion() function signature may have changed upstream"
-    fi
-    mv "$TMP_VERSION_FILE" "$VERSION_FILE"
-
-    git add "$VERSION_FILE"
-    git commit -m "version: bump omniSimVersion to $TARGET_VERSION" >/dev/null \
-        || err "failed to commit omniSimVersion bump
-       (check pre-commit hooks and signing config; the file is staged)"
-    log "version-bump  : committed omniSimVersion -> $TARGET_VERSION"
-fi
-
-# The Python CLI carries its own copy, and `omnisim doctor` -- the first
-# command AGENTS.md tells an agent to run -- prints it. Bumping only the C++
-# string left doctor announcing the PREVIOUS release; keep the two together.
-PY_VERSION_FILE="$REPO_ROOT/omnisim/__init__.py"
-if [[ ! -f "$PY_VERSION_FILE" ]]; then
-    log "WARNING: $PY_VERSION_FILE not found — skipping __version__ bump"
-elif grep -q "^__version__ = \"$TARGET_VERSION\"$" "$PY_VERSION_FILE"; then
-    log "version-bump  : omnisim.__version__ already $TARGET_VERSION (no-op)"
-else
-    [[ "$FROM_REF" == "HEAD" ]] \
-        || err "omnisim/__init__.py __version__ is stale and --from $FROM_REF
-       is set; auto-bump only modifies HEAD."
-    TMP_PY_VERSION_FILE="$(mktemp)"
-    sed -E "s/^(__version__ = )\"[^\"]+\"$/\1\"$TARGET_VERSION\"/" \
-        "$PY_VERSION_FILE" > "$TMP_PY_VERSION_FILE"
-    if ! grep -q "^__version__ = \"$TARGET_VERSION\"$" "$TMP_PY_VERSION_FILE"; then
-        rm -f "$TMP_PY_VERSION_FILE"
-        err "sed rewrite of omnisim/__init__.py produced unexpected output"
-    fi
-    mv "$TMP_PY_VERSION_FILE" "$PY_VERSION_FILE"
-    git add "$PY_VERSION_FILE"
-    git commit -m "version: bump omnisim.__version__ to $TARGET_VERSION" >/dev/null \
-        || err "failed to commit omnisim.__version__ bump"
-    log "version-bump  : committed omnisim.__version__ -> $TARGET_VERSION"
-fi
-
-# Distribution packages previously kept the inherited Webots release label in
-# scripts/packaging/omnisim_version.txt, so an OmniSim v8 tag would produce an
-# `omnisim-R2025a_setup.exe`. Keep package metadata and asset names on the same
-# SemVer as the binary and Python CLI. The leading `v` is intentional: the
-# Linux packager removes its first character when forming a Debian version.
-PACKAGE_VERSION_FILE="$REPO_ROOT/scripts/packaging/omnisim_version.txt"
-if [[ ! -f "$PACKAGE_VERSION_FILE" ]]; then
-    log "WARNING: $PACKAGE_VERSION_FILE not found — skipping package version bump"
-elif grep -qx "$VERSION" "$PACKAGE_VERSION_FILE"; then
-    log "version-bump  : package version already $VERSION (no-op)"
-else
-    [[ "$FROM_REF" == "HEAD" ]] \
-        || err "scripts/packaging/omnisim_version.txt is stale and --from
-       $FROM_REF is set; auto-bump only modifies HEAD."
-    printf '%s\n' "$VERSION" > "$PACKAGE_VERSION_FILE"
-    git add "$PACKAGE_VERSION_FILE"
-    git commit -m "version: bump distribution package to $VERSION" >/dev/null \
-        || err "failed to commit distribution package version bump"
-    log "version-bump  : committed package version -> $VERSION"
-fi
-
-# The GPU training image pins the release it builds FROM, in two files that
-# must agree. Left unbumped they point at the PREVIOUS release -- and if that
-# release was never published (v5.3.0 was not), a triggered build clones a ref
-# the public remote does not have and fails. train-image.yml also triggers on
-# a push touching these paths, so the bump and the build stay in step.
-for TAG_FILE in "$REPO_ROOT/docker/Dockerfile.train" \
-                "$REPO_ROOT/.github/workflows/train-image.yml"; do
-    [[ -f "$TAG_FILE" ]] || { log "WARNING: $TAG_FILE not found — skipping tag bump"; continue; }
-    if ! grep -qE "v[0-9]+\.[0-9]+\.[0-9]+" "$TAG_FILE"; then
-        log "version-bump  : no release tag in $(basename "$TAG_FILE") (no-op)"
-        continue
-    fi
-    # Any release tag in the file that is not already $VERSION?
-    if [[ -z "$(grep -oE "v[0-9]+\.[0-9]+\.[0-9]+" "$TAG_FILE" | grep -vx "$VERSION" || true)" ]]; then
-        log "version-bump  : $(basename "$TAG_FILE") already $VERSION (no-op)"
-        continue
-    fi
-    [[ "$FROM_REF" == "HEAD" ]] \
-        || err "$TAG_FILE pins a stale release tag and --from $FROM_REF is set;
-       auto-bump only modifies HEAD."
-    TMP_TAG_FILE="$(mktemp)"
-    sed -E "s/v[0-9]+\.[0-9]+\.[0-9]+/$VERSION/g" "$TAG_FILE" > "$TMP_TAG_FILE"
-    mv "$TMP_TAG_FILE" "$TAG_FILE"
-    git add "$TAG_FILE"
-done
-if ! git diff --cached --quiet -- "$REPO_ROOT/docker/Dockerfile.train" \
-        "$REPO_ROOT/.github/workflows/train-image.yml" 2>/dev/null; then
-    git commit -m "version: bump training-image tag to $VERSION" >/dev/null \
-        || err "failed to commit training-image tag bump"
-    log "version-bump  : committed training-image tag -> $VERSION"
+    [[ "$FROM_REF" == "HEAD" ]]         || err "the version sites are stale and --from $FROM_REF is set; the bump only
+       modifies HEAD. Either run: python scripts/release/bump_version.py $TARGET_VERSION --commit
+       or rerun with --from HEAD."
+    python "$BUMP_SCRIPT" "$TARGET_VERSION" --commit >/dev/null         || err "bump_version.py $TARGET_VERSION --commit failed (its output is above)"
+    log "version-bump  : committed every version site -> $TARGET_VERSION (one commit)"
 fi
 
 # ---- resolve source tree ----------------------------------------------------

@@ -53,7 +53,6 @@ public:
 
   static void transmitPacket(OmDataPacket *packet);
 
-  void rayCollisionCallback(dGeomID geom, OmSolid *obstacle);
 
   // field accessors
   double aperture() const { return mAperture->value(); }

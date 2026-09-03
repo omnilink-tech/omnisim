@@ -1206,7 +1206,7 @@ void OmGranularGroup::allocateDeviceBufferIfPossible() {
     if (!warnedOnce) {
       warnedOnce = true;
       const QString msg = tr("GranularGroup is inert: CUDA is not available on this build/box. "
-                             "Particles will not simulate; the world remains loadable.");
+                             "Particles will not simulate; the world remains loadable. Run `python -m omnisim doctor` to see why CUDA is unavailable (no NVIDIA GPU, a driver too old, or a build without the CUDA kernels); on a CPU-only box remove the GranularGroup or accept that it stays inert.");
       OmLog::diagnostic("CUDA_NOT_AVAILABLE", msg);
       OmLog::warning(msg);
     }

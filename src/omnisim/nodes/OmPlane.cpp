@@ -31,7 +31,6 @@
 #include "OmWrenAbstractResizeManipulator.hpp"
 #include "OmWriter.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 #include <algorithm>
 
@@ -147,7 +146,7 @@ void OmPlane::updateSize() {
 bool OmPlane::isSuitableForInsertionInBoundingObject(bool warning) const {
   const bool invalidDimensions = (mSize->x() <= 0.0 || mSize->y() <= 0.0);
   if (warning && invalidDimensions)
-    parsingWarn(tr("All 'size' components must be positive for a Plane used in a 'boundingObject'."));
+    parsingWarn(tr("All 'size' components must be positive for a Plane used in a 'boundingObject'. The Plane is rejected as a collider, so nothing rests on it; set both 'size' components to positive metres."));
 
   return !invalidDimensions;
 }
@@ -162,12 +161,11 @@ QStringList OmPlane::fieldsToSynchronizeWithW3d() const {
 // ODE objects //
 /////////////////
 
-dGeomID OmPlane::createOdeGeom(dSpaceID space) {
+bool OmPlane::createOdeGeom() {
   double d;
   OmVector3 n;
   computePlaneParams(n, d);
-  (void)space;
-  return NULL;  // ODE is gone: no collision geoms
+  return true;
 }
 
 bool OmPlane::isAValidBoundingObject(bool checkOde, bool warning) const {

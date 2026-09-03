@@ -42,7 +42,7 @@ public:
   void preFinalize() override;
   void createWrenObjects() override;
   void setScaleNeedUpdate() override;
-  dGeomID createOdeGeom(dSpaceID space) override;
+  bool createOdeGeom() override;
   bool isAValidBoundingObject(bool checkOde = false, bool warning = true) const override;
   bool isSuitableForInsertionInBoundingObject(bool warning = false) const override;
 

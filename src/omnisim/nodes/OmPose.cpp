@@ -17,7 +17,6 @@
 #include "OmPose.hpp"
 
 #include "OmNodeUtilities.hpp"
-#include "OmOdeContext.hpp"
 #include "OmSolid.hpp"
 
 void OmPose::init() {
@@ -219,16 +218,11 @@ void OmPose::createOdeGeom(int index) {
 }
 
 void OmPose::destroyPreviousOdeGeoms() {
-  OmNode *const secondChild = child(1);
-  const OmShape *const s = dynamic_cast<OmShape *>(secondChild);
-  OmGeometry *g = NULL;
-  if (s) {
-    g = s->geometry();
+  // The ODE geom of the displaced second child went with ODE; only the Shape
+  // geometry-field listener needs detaching.
+  const OmShape *const s = dynamic_cast<OmShape *>(child(1));
+  if (s)
     s->disconnectGeometryField();
-  } else
-    g = dynamic_cast<OmGeometry *>(secondChild);
-  if (g && g->odeGeom())
-    g->destroyOdeObjects();  // D1.4: the deleteWrenRenderable() that followed is gone with OmGeometry's WREN renderable
 }
 
 bool OmPose::isSuitableForInsertionInBoundingObject(bool warning) const {
@@ -250,7 +244,7 @@ bool OmPose::isAValidBoundingObject(bool checkOde, bool warning) const {
   }
 
   if (cc > 1 && warning)
-    parsingWarn(tr("A Transform placed inside a 'boundingObject' can only contain one child. Remaining children are ignored."));
+    parsingWarn(tr("A Transform placed inside a 'boundingObject' can only contain one child. Remaining children are ignored. To collide with several shapes, make the boundingObject a Group of Pose/Shape children and set WorldInfo.newtonCompoundColliders TRUE (the default registers only children[0]) -- see docs/reference/solid.md."));
 
   const OmGeometry *const g = geometry();
   if (g == NULL) {
@@ -263,7 +257,7 @@ bool OmPose::isAValidBoundingObject(bool checkOde, bool warning) const {
   if (g->isAValidBoundingObject(checkOde, warning) == false)
     return false;
 
-  if (checkOde && g->odeGeom() == NULL)
+  if (checkOde)  // no ODE geom ever exists; see OmGeometry::isAValidBoundingObject
     return false;
 
   return true;
@@ -283,11 +277,6 @@ void OmPose::applyToOdeGeomPosition(bool correctMass) {
 }
 
 void OmPose::applyToOdeGeomRotation() {
-}
-
-void OmPose::applyToOdeMass(OmGeometry *g, dGeomID geom) {
-  (void)g;
-  (void)geom;  // ODE is gone: no dMass bookkeeping
 }
 
 OmShape *OmPose::shape() const {

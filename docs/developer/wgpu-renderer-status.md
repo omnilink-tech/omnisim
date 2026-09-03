@@ -20,7 +20,7 @@ naming the cause. Physics, controllers and the supervisor are unaffected — the
 just does not draw ([`OmRenderBackend.cpp:146`](../../src/omnisim/render/OmRenderBackend.cpp)).
 Before D1.4 that path resolved to WREN; there is nothing to resolve to now.
 
-The campaign that got here: [wren-retirement-plan.md](wren-retirement-plan.md) (the audit, the
+The campaign that got here: wren-retirement-plan.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) (the audit, the
 corrections, the what-would-a-user-lose table) and
 [wren-deletion-runbook.md](wren-deletion-runbook.md) (the ordered work list, the per-step gates,
 the post-deletion endgame pass). **When this document and the runbook disagree, the runbook is the
@@ -175,7 +175,7 @@ Verified against the source on 2026-08-24. Everything below is **default ON** un
   volume sample per frame. See [omnilight.md](omnilight.md); `OMNILIGHT=0` is the value-parsed
   revert, `OMNILIGHT_RAYS` / `OMNILIGHT_SPACING` / `OMNILIGHT_SCALE` tune it. Volumetrics ride the
   same volume (`OMNISIM_WGPU_VOLUMETRIC=0`). The most recent falloff correction is written up in
-  [wgpu-shadow-aura.md](wgpu-shadow-aura.md), and the misattribution there is the more useful half
+  wgpu-shadow-aura.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)), and the misattribution there is the more useful half
   of the story.
 - **AA:** MSAA 4× plus a **wired** TAA resolve (`OMNISIM_WGPU_TAA=0` skips), ±½-LSB dither.
 - **Transparency** (`490a7b5b0`): sorted src-over alpha blending — PBRAppearance and plain-Material
@@ -471,6 +471,6 @@ therefore lives on the cache entry (`OmWgpuMeshCache::vertexEpochIs`), never in 
 go red. ⚠️ Which consumer freezes depends on who wins the race — the defect is the shared flag, not
 a fixed victim.
 
-Earlier tracker, kept for provenance: [r4-completion-checklist.md](r4-completion-checklist.md), the
+Earlier tracker, kept for provenance: r4-completion-checklist.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)), the
 pre-flip R4 → wgpu-default task list. Its unchecked boxes are superseded by the campaign documents
 above.

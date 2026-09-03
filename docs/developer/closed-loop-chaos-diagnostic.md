@@ -69,7 +69,7 @@ chaotic, and the policy's *walk* (its balancing strategy) lands in a different p
 each run. The same tool, run on the **earlier** traces that still had the
 angular-velocity obs bug, instead returns `[BUG?]` and points straight at the
 `rate` channel (off by 2.1 rad/s at tick 1) — exactly the bug that was then fixed
-([binary-parity-probe.md](binary-parity-probe.md) finding 4).
+(binary-parity-probe.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) finding 4).
 
 ## Why chaos is not a gap you can close
 
@@ -129,6 +129,6 @@ robot-agnostic: any two traces in the schema work.
   Don't theorise about the physics until you've classified the divergence.
 - A new RL deploy target (new robot, new controller) should ship a free-lane and a
   welded-lane trace pair, so the `[MATCH]`/`[CHAOS]` baseline is on record.
-- See also [binary-parity-probe.md](binary-parity-probe.md) (the open-loop physics
+- See also binary-parity-probe.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) (the open-loop physics
   probe — certifies the engine; this closed-loop tool certifies the obs pipeline and
   separates chaos) and [rl-current-state.md](rl-current-state.md) (canonical status).

@@ -49,6 +49,7 @@ Determinism contract:
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import math
 from dataclasses import dataclass
@@ -177,11 +178,21 @@ class Heightmap:
 # ---------------------------------------------------------------------------
 
 
+#: Memo bound for ``_hash_value``. The value-noise samplers ask for the same
+#: lattice corner many times over -- every sample touches 4 corners and a
+#: corner is shared by every sample in its cell, so a 264x264 map at 10 octaves
+#: made 2.9 M blake2b calls for a few thousand distinct keys (MEASURED: 13.3 s
+#: of a 20 s Mars build). The function is a pure hash of its four ints, so a
+#: cache changes nothing about the output; the bound only caps memory.
+_HASH_VALUE_CACHE_SIZE = 1 << 17
+
+
+@functools.lru_cache(maxsize=_HASH_VALUE_CACHE_SIZE)
 def _hash_value(seed: int, i: int, j: int, salt: int = 0) -> float:
     """Deterministic uniform sample in ``[0, 1)`` keyed by (seed, i, j, salt).
 
     Blake2b so the output does not depend on ``PYTHONHASHSEED`` and is
-    stable across platforms.
+    stable across platforms. Memoised (pure function of its arguments).
     """
     key = (seed & 0xFFFFFFFFFFFFFFFF).to_bytes(8, "little", signed=False)
     # Allow large negative indices (after frequency scaling) by using signed

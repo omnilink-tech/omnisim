@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -44,6 +45,7 @@ REQUIRED_WORLD_MARKERS = (
     "castShadows TRUE",
     "PBRAppearance",
 )
+FRAME_NAME_RE = re.compile(r"frame_\d+\.png")
 
 
 def sha256(path: Path) -> str:
@@ -171,7 +173,84 @@ def _encode_fingerprint(frame_dir: Path, fps: int, crf: int) -> dict:
     }
 
 
-def encode(frame_dir: Path, output: Path, fps: int, crf: int) -> bool:
+def _cleanup_verified_frame_spool(
+    frame_dir: Path,
+    output: Path,
+    receipt: Path,
+    receipt_payload: dict,
+) -> dict:
+    """Remove only the exact PNG spool bound to a verified encoded output."""
+    frame_dir = frame_dir.resolve()
+    output = output.resolve()
+    if not frame_dir.is_dir() or frame_dir.is_symlink():
+        raise ValueError(f"frame spool is not a regular directory: {frame_dir}")
+    if frame_dir.parent != output.parent:
+        raise ValueError("refusing frame cleanup outside the encoded output directory")
+    if "frame" not in frame_dir.name.lower():
+        raise ValueError(f"refusing non-frame directory cleanup: {frame_dir}")
+    entries = list(frame_dir.iterdir())
+    if not entries or any(
+            not path.is_file() or not FRAME_NAME_RE.fullmatch(path.name)
+            for path in entries):
+        raise ValueError(f"frame spool contains unexpected entries: {frame_dir}")
+    if not output.is_file() or output.stat().st_size == 0:
+        raise ValueError(f"encoded output is missing or empty: {output}")
+    expected_sha = receipt_payload.get("output_sha256")
+    if not expected_sha or sha256(output) != expected_sha:
+        raise ValueError(f"encoded output hash does not match receipt: {output}")
+    fingerprint = receipt_payload.get("input", {})
+    output_probe = receipt_payload.get("output_probe", {})
+    if output_probe.get("frames") != fingerprint.get("frame_count"):
+        raise ValueError(f"encoded output frame count does not match spool: {output}")
+    if (output_probe.get("width"), output_probe.get("height")) != (1920, 1080):
+        raise ValueError(f"encoded output dimensions are not 1920x1080: {output}")
+
+    removed_bytes = sum(path.stat().st_size for path in entries)
+    removed_files = len(entries)
+    shutil.rmtree(frame_dir)
+    cleanup = {
+        "status": "removed_after_verified_encode",
+        "frame_dir": str(frame_dir),
+        "removed_files": removed_files,
+        "removed_bytes": removed_bytes,
+    }
+    receipt_payload["frame_cleanup"] = cleanup
+    receipt.write_text(json.dumps(receipt_payload, indent=2) + "\n", encoding="utf-8")
+    return cleanup
+
+
+def _probe_encoded_output(output: Path) -> dict:
+    ffprobe = shutil.which("ffprobe")
+    if ffprobe is None:
+        raise SystemExit("ffprobe is required on PATH before frame cleanup")
+    completed = subprocess.run([
+        ffprobe, "-v", "error", "-count_frames", "-select_streams", "v:0",
+        "-show_entries", "stream=nb_read_frames,width,height",
+        "-of", "json", str(output),
+    ], check=True, capture_output=True, text=True)
+    payload = json.loads(completed.stdout)
+    streams = payload.get("streams", [])
+    if len(streams) != 1:
+        raise ValueError(f"encoded output has no single video stream: {output}")
+    stream = streams[0]
+    try:
+        return {
+            "frames": int(stream["nb_read_frames"]),
+            "width": int(stream["width"]),
+            "height": int(stream["height"]),
+        }
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"encoded output probe is incomplete: {output}") from exc
+
+
+def encode(
+    frame_dir: Path,
+    output: Path,
+    fps: int,
+    crf: int,
+    *,
+    keep_frames: bool = False,
+) -> bool:
     """Encode a verified frame spool, reusing a hash-bound local result when fresh."""
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None:
@@ -179,6 +258,8 @@ def encode(frame_dir: Path, output: Path, fps: int, crf: int) -> bool:
     output.parent.mkdir(parents=True, exist_ok=True)
     fingerprint = _encode_fingerprint(frame_dir, fps, crf)
     receipt = output.with_suffix(output.suffix + ".encode.json")
+    reused = False
+    receipt_payload: dict = {}
     if output.exists() and receipt.exists():
         try:
             cached = json.loads(receipt.read_text(encoding="utf-8"))
@@ -186,22 +267,45 @@ def encode(frame_dir: Path, output: Path, fps: int, crf: int) -> bool:
             cached = {}
         if (cached.get("input") == fingerprint and
                 cached.get("output_sha256") == sha256(output)):
-            return True
-    subprocess.run([
-        ffmpeg, "-y", "-hide_banner", "-loglevel", "error",
-        "-framerate", str(fps),
-        "-i", str(frame_dir / "frame_%06d.png"),
-        "-vf", "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080",
-        "-c:v", "libx264", "-preset", "slow", "-crf", str(crf),
-        "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(output),
-    ], check=True)
-    receipt.write_text(json.dumps({
-        "version": 1,
-        "input": fingerprint,
-        "output": str(output.resolve()),
-        "output_sha256": sha256(output),
-    }, indent=2) + "\n", encoding="utf-8")
-    return False
+            reused = True
+            receipt_payload = cached
+    if not reused:
+        subprocess.run([
+            ffmpeg, "-y", "-xerror", "-hide_banner", "-loglevel", "error",
+            "-framerate", str(fps),
+            "-i", str(frame_dir / "frame_%06d.png"),
+            "-vf", "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080",
+            "-c:v", "libx264", "-preset", "slow", "-crf", str(crf),
+            "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(output),
+        ], check=True)
+        receipt_payload = {
+            "version": 1,
+            "input": fingerprint,
+            "output": str(output.resolve()),
+            "output_sha256": sha256(output),
+        }
+        receipt.write_text(json.dumps(receipt_payload, indent=2) + "\n", encoding="utf-8")
+
+    output_probe = _probe_encoded_output(output)
+    receipt_payload["output_probe"] = output_probe
+    receipt.write_text(json.dumps(receipt_payload, indent=2) + "\n", encoding="utf-8")
+    if output_probe["frames"] != fingerprint["frame_count"]:
+        raise ValueError(
+            f"encoded {output_probe['frames']} of {fingerprint['frame_count']} frames; "
+            f"retaining spool for repair: {frame_dir.resolve()}"
+        )
+
+    if keep_frames:
+        receipt_payload["frame_cleanup"] = {
+            "status": "retained_by_request",
+            "frame_dir": str(frame_dir.resolve()),
+            "removed_files": 0,
+            "removed_bytes": 0,
+        }
+        receipt.write_text(json.dumps(receipt_payload, indent=2) + "\n", encoding="utf-8")
+    else:
+        _cleanup_verified_frame_spool(frame_dir, output, receipt, receipt_payload)
+    return reused
 
 
 def main() -> None:
@@ -217,12 +321,19 @@ def main() -> None:
     encode_parser.add_argument("--output", type=Path, required=True)
     encode_parser.add_argument("--fps", type=int, default=30)
     encode_parser.add_argument("--crf", type=int, default=12)
+    encode_parser.add_argument(
+        "--keep-frames", action="store_true",
+        help="retain the verified PNG spool after encoding (off by default)",
+    )
     args = parser.parse_args()
     if args.command == "verify":
         report = verify(args.frames, args.log, args.world, args.out)
         print(json.dumps({"passed": True, "frames": report["frame_count"], "dimensions": report["dimensions"]}))
     else:
-        reused = encode(args.frames, args.output, args.fps, args.crf)
+        reused = encode(
+            args.frames, args.output, args.fps, args.crf,
+            keep_frames=args.keep_frames,
+        )
         print(f"{'reused' if reused else 'encoded'}: {args.output.resolve()}")
 
 

@@ -415,6 +415,33 @@ def platform_plugin_hint(log_text: str) -> list[str]:
     return lines
 
 
+def writable_log_path(preferred: "Path") -> tuple["Path", str | None]:
+    """`preferred`, or a per-user temp fallback when its directory refuses writes.
+
+    A stock Windows install lands in C:/Program Files, where a non-elevated
+    process cannot create files -- so the default omnisim_log.txt (and the
+    .stdout/.stderr sinks derived from it) died with PermissionError on the
+    documented first-run path (public issue #14's report). Probe by actually
+    creating a file: existence and os.access() both lie under Windows ACLs.
+    Returns (path, note) -- note is None when the preferred path is used.
+    """
+    probe = preferred.parent / (preferred.name + ".probe")
+    try:
+        preferred.parent.mkdir(parents=True, exist_ok=True)
+        with open(probe, "w"):
+            pass
+        probe.unlink()
+        return preferred, None
+    except OSError:
+        import tempfile
+        fallback = Path(tempfile.gettempdir()) / "omnisim" / preferred.name
+        fallback.parent.mkdir(parents=True, exist_ok=True)
+        return fallback, (
+            f"{preferred.parent} is not writable (a Program Files install, most "
+            f"likely) -- logging to {fallback} instead. Set OMNISIM_LOG_PATH to "
+            f"choose the location yourself.")
+
+
 # Distinct exit code for "every attempt hit the startup race". 75 is
 # sysexits.h EX_TEMPFAIL ("temporary failure, the user is invited to retry"),
 # which is exactly the claim: nothing was learned about the world. A caller
@@ -820,6 +847,22 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--completion-pattern",
                         help="Python regular expression that ends the run when it appears in "
                              "--completion-log")
+    parser.add_argument("--profile", action="store_true",
+                        help="Ask the engine where the load went and print it after the run: sets "
+                             "OMNISIM_RELOAD_PROFILE=1 (stage split, PROTO phases, template-engine split), "
+                             "OMNISIM_NEWTON_PRELOAD_PROFILE=1 (the runtime preload and how long the main "
+                             "thread blocked on it) and OMNISIM_LOG_TIMESTAMPS=1 (every log line carries "
+                             "[t+<ms>ms]), then echoes the engine's [runtime-cycle] lines. Zero engine cost "
+                             "without the flag.")
+    parser.add_argument("--settle-after-step", type=float, default=0.5,
+                        help="--until-finalized only: seconds to keep watching the log AFTER the first "
+                             "physics step has been observed, then stop. The run used to sit out the full "
+                             "--completion-grace (2 s) after finalize even when the step had landed "
+                             "milliseconds later -- pure sleep on every load check (measured: the engine "
+                             "reaches step 1 ~50 ms after finalize on a CPU world, then the runner waited "
+                             "~2 s doing nothing). 0.5 s is enough for a controller that crashes at import "
+                             "to be reported. Pass a larger value to watch longer; --completion-grace still "
+                             "bounds the no-step case.")
     parser.add_argument("--completion-grace", type=float, default=2.0,
                         help="Seconds to keep stepping after the completion pattern appears "
                              "before shutdown (default: 2)")
@@ -1047,7 +1090,7 @@ def run_once(args) -> int:
     home_env = os.environ.get("OMNISIM_HOME")
     if not home_env:
         legacy = os.environ.get("WEBOTS_HOME")
-        if legacy and (Path(legacy) / "scripts" / "dev" / "omnisim_dev.py").exists():
+        if legacy and (Path(legacy) / "omnisim" / "cli.py").exists():  # an OmniSim checkout, not upstream Webots
             home_env = legacy
         else:
             if legacy:
@@ -1077,6 +1120,9 @@ def run_once(args) -> int:
     # AGENTS.md §3e); otherwise default to omnisim_log.txt at OMNISIM_HOME.
     env_log = os.environ.get("OMNISIM_LOG_PATH")
     log_path = Path(env_log) if env_log else omnisim_home / "omnisim_log.txt"
+    log_path, log_note = writable_log_path(log_path)
+    if log_note:
+        print(f"[headless] NOTE: {log_note}")
 
     # --until-finalized: stop as soon as the world has PROVEN it loads.
     #
@@ -1200,6 +1246,10 @@ def run_once(args) -> int:
     # (also overrides any stale system WEBOTS_HOME from an old Webots install).
     env["WEBOTS_HOME"] = str(omnisim_home)
     env["OMNISIM_LOG_PATH"] = str(log_path)
+    if args.profile:
+        env["OMNISIM_RELOAD_PROFILE"] = "1"
+        env["OMNISIM_NEWTON_PRELOAD_PROFILE"] = "1"
+        env["OMNISIM_LOG_TIMESTAMPS"] = "1"
     if args.require_newton:
         # Assert Newton actually initialises -- the engine OmLog::fatal()s (non-zero
         # exit) instead of silently degrading to ODE. Guards against the silent-ODE-
@@ -1458,7 +1508,14 @@ def run_once(args) -> int:
                                   "(reported below).")
                         elif now < step_deadline:
                             waiting_for_step = True
-                if now - completion_at >= max(0.0, args.completion_grace) and not waiting_for_step:
+                settled_after_step = (until_finalized_mode and step_seen_at is not None
+                                      and now - step_seen_at >= max(0.0, args.settle_after_step))
+                if settled_after_step or (now - completion_at >= max(0.0, args.completion_grace)
+                                          and not waiting_for_step):
+                    if settled_after_step:
+                        print(f"[headless] first physics step landed and the log settled for "
+                              f"{args.settle_after_step:g}s; stopping simulator (load + finalize + step proven).")
+                        break
                     if until_finalized_mode and step_seen_at is None and step_deadline is not None \
                             and now >= step_deadline:
                         print(f"[headless] no first physics step within "
@@ -1547,7 +1604,9 @@ def run_once(args) -> int:
                 print("[headless] note: the --completion-pattern never appeared, so the "
                       "full --duration was paid.")
             break
-        time.sleep(0.5)
+        # --until-finalized is a load check whose whole cost is latency: poll the log at 100 ms
+        # so finalize and the first step are seen within ~0.1 s of landing, not up to 0.5 s.
+        time.sleep(0.1 if until_finalized_mode else 0.5)
 
     if proc.poll() is None:
         proc.terminate()
@@ -1560,6 +1619,13 @@ def run_once(args) -> int:
     stdout_sink.close()
     stderr_sink.close()
 
+    if args.profile and log_path.exists():
+        # The engine's own attribution, verbatim: world-load stages, PROTO phases, the template
+        # engine split, the Newton preload. (The [t+..ms] stamps on every line are the timeline.)
+        print("[headless] --profile: the engine's [runtime-cycle] lines:")
+        for line in log_path.read_text(errors="replace").splitlines():
+            if "[runtime-cycle]" in line:
+                print("[headless]   " + line.split("[runtime-cycle]", 1)[1].strip())
     # Analyze log
     errors = 0
     warnings = 0

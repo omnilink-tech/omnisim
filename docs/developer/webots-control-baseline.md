@@ -156,7 +156,7 @@ Upstream's default TCP port is **1234** — the same default OmniSim uses, and a
 `omnisim-bin.exe` was observed LISTENING on it during this work. Separation, in
 order of reliability: (a) WSL2's network namespace — a WSL process bound
 `0.0.0.0:1234` successfully *while* a Windows process held 1234; (b) pass
-`--port` outside OmniSim's `1234-1244` auto-scan range (1500/1502/1504 were
+`--port` outside OmniSim's `[1234, 1294]` auto-scan range (1500/1502/1504 were
 used); (c) never pin OmniSim's `--port` into the Webots range.
 
 ## 7. Maintenance state (verified, not inherited)

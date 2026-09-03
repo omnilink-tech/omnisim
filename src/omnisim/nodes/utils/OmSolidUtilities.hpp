@@ -23,12 +23,8 @@ class OmGeometry;
 class OmInertia;
 class OmNode;
 
-struct dMass;
-typedef struct dxGeom *dGeomID;
-typedef struct dxSpace *dSpaceID;
 
 namespace OmSolidUtilities {
-  void addMass(dMass *const mass, OmNode *const node, double density, bool warning = true);
   // ODE-free mirror of addMass over OmInertia -- the Newton-side mass-property
   // composer (parity-tested against the dMass pipeline while ODE still ships).
   // Warning-free by design: the dMass pass already emitted the user warnings.
@@ -40,12 +36,10 @@ namespace OmSolidUtilities {
   // rule excluded it). The shared exclusion walk for all five ray consumers.
   void collectNewtonBodies(OmNode *const root, QVector<int> &out);
   void subtractInertiaMatrix(double *I, const double *J);
-  dSpaceID dynamicCastInSpaceID(dGeomID g);
   bool checkBoundingObject(OmNode *const node);  // debug method for testing the validity of a boundingObject
   // extracts the OmGeometry placed into a simple bounding object, i.e. a OmGeometry of a OmShape
   OmGeometry *geometry(OmNode *const node);
   bool isPermanentlyKinematic(const OmNode *node);  // depends on node parent, hence can't be called in node's destructor
-  void setDefaultMass(dMass *m);
 };  // namespace OmSolidUtilities
 
 #endif  // OM_SOLID_UTILITIES_HPP

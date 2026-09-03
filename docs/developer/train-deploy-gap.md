@@ -4,7 +4,7 @@
 > "is it done?" answer, [rl-current-state.md](rl-current-state.md) is the single
 > source of truth — if any status claim here disagrees with it, that file wins.
 > This doc ties together the *mechanics* (already owned by
-> [train-deploy-unification.md](train-deploy-unification.md) and
+> train-deploy-unification.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) and
 > [g1-single-source-of-truth.md](g1-single-source-of-truth.md)) with the
 > *external gold-standard recipe* for a policy that deploys durably, and lays out
 > the plan. Written 2026-06-26 from a 5-agent audit (G1 code, H1 code, the C++
@@ -56,7 +56,7 @@ this has stayed open**:
 > trained on. Fix: replace engine ang-vel with the reproducible **finite-diff of
 > `proj_gravity`** in trainer+eval+deploy → the from-scratch G1 **stand stands 32 s
 > / 0 falls in the binary** (commit `1416d52c`,
-> [rl-current-state.md](rl-current-state.md) top, [binary-parity-probe.md](binary-parity-probe.md)
+> [rl-current-state.md](rl-current-state.md) top, binary-parity-probe.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))
 > finding 4). **Takeaway:** before attributing a deploy fall to durability, run the
 > closed-loop obs diff — "marginal even in the trainer" is the durability signature;
 > "durable in the trainer, falls in deploy" is the pipeline signature. The **walk**
@@ -84,7 +84,7 @@ Training steps batched `mujoco_warp` on GPU; deploy steps one Newton world via
   `OMNISIM_NEWTON_MJWARP` ([`:1430`](../../src/omnisim/physics/OmNewtonBackend.cpp#L1430) →
   `use_mujoco_cpu=False`). NVIDIA's `SolverMuJoCo` is an adapter over standalone
   `mujoco_warp` — identical kernels (vendored Newton 1.3.0 / mjwarp 3.10.0 /
-  warp 1.14.0, per [train-deploy-unification.md](train-deploy-unification.md) §1).
+  warp 1.14.0, per train-deploy-unification.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) §1).
 - Model parity is **single-sourced + CI-enforced**: trainer and deploy derive
   every physics constant from `g1_physics.json` + `g1_physics_spec.py` + the prim
   URDF; proven 0 real-physics field gaps + 8.5 mm/10-tick golden trajectory. Owned
@@ -92,7 +92,7 @@ Training steps batched `mujoco_warp` on GPU; deploy steps one Newton world via
 - **BINARY-level confirmation (2026-06-26):** until now every parity proof above
   compared the trainer against the `g1_deploy_runtime.py` Python *extract*, stepped
   by the same in-process solver — never the real `omnisim-bin`. A deterministic
-  open-loop probe ([binary-parity-probe.md](binary-parity-probe.md)) now runs the
+  open-loop probe (binary-parity-probe.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))) now runs the
   SAME scripted stand in the trainer Python and in the **actual binary** and diffs
   the trajectories: they track to **~0.15° median / ~0.3° plateau** per joint, and
   the binary's compiled robot mass (28.03 kg) equals the trainer's exactly
@@ -242,7 +242,7 @@ env-core path is behind the default-OFF `G1_ENV_CORE` flag, so **the shipped
 policy trains under the un-matched defaults** (exact qvel, teleport IC). The
 parity contract exists and is tested — it is simply not the default the policy is
 trained against. That is the whole "built but not wired" story. Full mechanics:
-[train-deploy-unification.md](train-deploy-unification.md).
+train-deploy-unification.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 
 ---
 
@@ -251,7 +251,7 @@ trained against. That is the whole "built but not wired" story. Full mechanics:
 Even with a perfectly matched pipeline, the policy is fragile **in the trainer
 itself** (status owned by [rl-current-state.md](rl-current-state.md);
 [g1-ghost-fidelity-journey.md](g1-ghost-fidelity-journey.md);
-[h1-walk-rl-journey.md](h1-walk-rl-journey.md)):
+h1-walk-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))):
 
 - **G1**: champion lives ~7.3 s in the trainer Newton env (the 33.8 s deploy bout
   leaned on the *wrong* origin-COM; correcting it drops to ~11.7 s).
@@ -313,7 +313,7 @@ This recipe sits **between** our two camps — neither full ghost-tracking
 (Shadowing) nor pure-RL on nominal. It is **full-ish authority (0.25 rad) on a
 static default**, with the gait emerging from a phase-clock + contact reward. Our
 own evidence (Shadowing falls ~2 s; pure-RL hit the same ~2 m wall) points
-exactly here. See [locomotion-shadowing-vs-pure-rl.md](locomotion-shadowing-vs-pure-rl.md)
+exactly here. See locomotion-shadowing-vs-pure-rl.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))
 for why Shadowing can't stabilise a continuous-balance walk.
 
 ---
@@ -365,9 +365,9 @@ standard DR set, trainer **harder** than deploy.
 
 | Topic | Owner doc |
 |---|---|
-| Loop unification, Layer A/B/C, Phase 0/1/2, qd + IC mechanics | [train-deploy-unification.md](train-deploy-unification.md) |
+| Loop unification, Layer A/B/C, Phase 0/1/2, qd + IC mechanics | train-deploy-unification.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) |
 | The *model* single-source contract + golden parity + CI | [g1-single-source-of-truth.md](g1-single-source-of-truth.md) |
 | The heavy-DR recipe + dump-deploy-MJCF trick | [sim-to-deploy-rl-recipe.md](sim-to-deploy-rl-recipe.md) |
-| Why Shadowing ≠ a balance solution; the architecture choice | [locomotion-shadowing-vs-pure-rl.md](locomotion-shadowing-vs-pure-rl.md) |
-| Per-robot ledgers (the honest numbers) | [h1-walk-rl-journey.md](h1-walk-rl-journey.md), [g1-ghost-fidelity-journey.md](g1-ghost-fidelity-journey.md) |
+| Why Shadowing ≠ a balance solution; the architecture choice | locomotion-shadowing-vs-pure-rl.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) |
+| Per-robot ledgers (the honest numbers) | h1-walk-rl-journey.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)), [g1-ghost-fidelity-journey.md](g1-ghost-fidelity-journey.md) |
 | **Canonical status — is it done?** | [rl-current-state.md](rl-current-state.md) |

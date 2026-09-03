@@ -11,9 +11,9 @@ Use this to catch compile and link errors quickly.
 Examples:
 
 ```bash
-python scripts/dev/omnisim_dev.py build gui
-python scripts/dev/omnisim_dev.py build renderer
-python scripts/dev/omnisim_dev.py build controller-libs
+python -m omnisim build gui
+python -m omnisim build renderer
+python -m omnisim build controller-libs
 ```
 
 ### Lane 2: Fast smoke
@@ -21,8 +21,8 @@ python scripts/dev/omnisim_dev.py build controller-libs
 Use this as the default post-build check for most simulator changes.
 
 ```bash
-python scripts/dev/omnisim_dev.py test-smoke
-python scripts/dev/omnisim_dev.py test-smoke --nomake
+python -m omnisim test-smoke
+python -m omnisim test-smoke --nomake
 ```
 
 The smoke set currently includes:
@@ -38,8 +38,8 @@ The smoke set currently includes:
 Use this when the change is localized and you already know the relevant world.
 
 ```bash
-python scripts/dev/omnisim_dev.py test-world tests/api/worlds/accelerometer.omniworld --nomake
-python scripts/dev/omnisim_dev.py run-headless tests/api/worlds/accelerometer.omniworld
+python -m omnisim test-world tests/api/worlds/accelerometer.omniworld --nomake
+python -m omnisim run-headless tests/api/worlds/accelerometer.omniworld
 ```
 
 ### Lane 4: One existing test group
@@ -47,10 +47,10 @@ python scripts/dev/omnisim_dev.py run-headless tests/api/worlds/accelerometer.om
 Use this when the change clearly belongs to one subsystem.
 
 ```bash
-python scripts/dev/omnisim_dev.py test-group api --nomake
-python scripts/dev/omnisim_dev.py test-group physics --nomake
-python scripts/dev/omnisim_dev.py test-group rendering --nomake
-python scripts/dev/omnisim_dev.py test-group protos --nomake
+python -m omnisim test-group api --nomake
+python -m omnisim test-group physics --nomake
+python -m omnisim test-group rendering --nomake
+python -m omnisim test-group protos --nomake
 ```
 
 ### Lane 5: Benchmark and performance comparison
@@ -58,8 +58,8 @@ python scripts/dev/omnisim_dev.py test-group protos --nomake
 Use this when the change affects load time, physics throughput, rendering cost, or sensor cost.
 
 ```bash
-python scripts/dev/omnisim_dev.py profile-world tests/rendering/worlds/normals.omniworld
-python scripts/dev/omnisim_dev.py benchmarks --nomake
+python -m omnisim profile-world tests/rendering/worlds/normals.omniworld
+python -m omnisim benchmarks --nomake
 ```
 
 ### Lane 6: Full regression
@@ -97,10 +97,10 @@ Use headless validation when:
 Use:
 
 ```bash
-python scripts/dev/omnisim_dev.py build renderer
-python scripts/dev/omnisim_dev.py build gui
-python scripts/dev/omnisim_dev.py test-world tests/rendering/worlds/normals.omniworld --nomake
-python scripts/dev/omnisim_dev.py benchmarks --nomake
+python -m omnisim build renderer
+python -m omnisim build gui
+python -m omnisim test-world tests/rendering/worlds/normals.omniworld --nomake
+python -m omnisim benchmarks --nomake
 ```
 
 ### Runtime, node, or controller-orchestration changes
@@ -108,9 +108,9 @@ python scripts/dev/omnisim_dev.py benchmarks --nomake
 Use:
 
 ```bash
-python scripts/dev/omnisim_dev.py build core
-python scripts/dev/omnisim_dev.py test-smoke --nomake
-python scripts/dev/omnisim_dev.py test-group physics --nomake
+python -m omnisim build core
+python -m omnisim test-smoke --nomake
+python -m omnisim test-group physics --nomake
 ```
 
 ### Parser, PROTO, or template-regeneration changes
@@ -118,9 +118,9 @@ python scripts/dev/omnisim_dev.py test-group physics --nomake
 Use:
 
 ```bash
-python scripts/dev/omnisim_dev.py build gui
-python scripts/dev/omnisim_dev.py test-world tests/protos/worlds/template_deterministic.omniworld --nomake
-python scripts/dev/omnisim_dev.py test-group protos --nomake
+python -m omnisim build gui
+python -m omnisim test-world tests/protos/worlds/template_deterministic.omniworld --nomake
+python -m omnisim test-group protos --nomake
 ```
 
 If you need parser coverage specifically, run it on a platform where that group is supported.
@@ -130,8 +130,8 @@ If you need parser coverage specifically, run it on a platform where that group 
 Use:
 
 ```bash
-python scripts/dev/omnisim_dev.py build gui
-python scripts/dev/omnisim_dev.py run-world resources/projects/worlds/empty.omniworld
+python -m omnisim build gui
+python -m omnisim run-world resources/projects/worlds/empty.omniworld
 ```
 
 If the GUI change also affects world loading or rendering setup, add `test-smoke --nomake`.
@@ -141,8 +141,8 @@ If the GUI change also affects world loading or rendering setup, add `test-smoke
 Use:
 
 ```bash
-python scripts/dev/omnisim_dev.py build controller-libs
-python scripts/dev/omnisim_dev.py test-group api --nomake
+python -m omnisim build controller-libs
+python -m omnisim test-group api --nomake
 ```
 
 ## Known Blind Spots

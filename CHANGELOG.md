@@ -29,6 +29,407 @@ top of that foundation.
 
 Nothing yet.
 
+## [v8.3.0] — 2026-09-03
+
+The optimization and housekeeping round, plus the first release whose headline
+fixes were all found by people outside the project. Every number is measured on
+machine `9722d23d12a3` (RTX 3060 laptop, Windows, CPU `mj_step`); every engine
+change carries a value-parsed revert switch.
+
+### Reported by beta testers
+
+Three fixes that came from outside reports, each reproduced here before it was
+changed, and each measured on machine `9722d23d12a3`.
+
+- **The parked Mavic no longer slides away** (#14). With rotors off and
+  `mode=idle` the airframe settled and then slid steadily along its own
+  heading at 0.056–0.075 m/s — 3.4–4.5 m per simulated minute, unattended — so
+  any measurement taken a few seconds after world load started somewhere
+  unintended. Bisected with a probe controller that reproduces one piece of the
+  bridge's init at a time: the propeller motors commanded exactly as `mode=idle`
+  does drift not at all, the device enables drift not at all, no controller at
+  all drifts 1 mm over 491 s, and **the camera-pitch gimbal servo alone
+  reproduces the full 4.5 m**. The servo's small sustained horizontal reaction
+  was not being held by the ground. Fixed in the world with
+  `newtonGroundMu 1.5`; the number is not arbitrary, because unset and an
+  explicit `1.0` drift *identically* (`+0.394, -7.471` after 60 s — the same
+  values to three decimals, so the documented 1.0 default applies correctly and
+  simply is not enough here), while 1.5 parks it: pose byte-identical from
+  t=18 s to t=61 s, residual 0.0009 m/s. Flight is unchanged — hover settles at
+  1.016 m, climb to 1.5 m at 1.515 m, steady-state error +0.015 m. ⚠ Two things
+  this does **not** claim: spawning at the ~0.04 m resting height instead of 0.1
+  starts the collider inside the contact margin and flips the airframe
+  (roll → −π), so the 6 cm drop stays; and the mechanism is unexplained — a
+  servo holding a 43 g camera needs micro-newton-metres, not the ~10 N it takes
+  to slide a 1.03 kg body against µ=1.0, which points at solver-level energy
+  injection at `basicTimeStep 8` and is logged as an open engine question.
+- **A wedged aircraft says so** (#14). A 17-flight waypoint campaign measured two
+  flights that pinned themselves against an obstacle and sat there for 212 s and
+  40 s while the bridge still reported `mode=goto` and `fault=None`. The Mavic
+  bridge now tracks closest approach and sets `fault="no_progress"` when it has
+  not improved by 0.25 m for 12 s of sim time, clearing itself if progress
+  resumes. **Report only** — the mode is untouched, because `goto_waypoint` is a
+  position setpoint with no planner behind it and giving up is the operator's
+  call. The check is skipped inside `WAYPOINT_REACH_TOL_M`: holding a hover at
+  the target makes no progress by definition, and the first version would have
+  called every stationary hover a fault. `stall_verdict` is a pure function with
+  6 unit tests; a real 9 m goto reports `fault=None` across all 51 samples.
+- **The IPC handshake budget is 300 s, and it announces itself while waiting**
+  (#15). A tester's cold load to finalize took 31.1 s against the old 60 s
+  budget — half of it, with nothing wrong. The engine writes its hello when it
+  *accepts* the connection, so a controller spawned early waits out the rest of
+  the world load, and a machine ~2× slower reaches 60 s while healthy and is
+  then told it has a build mismatch. The timeout only fires when no bytes ever
+  arrive (a real mismatch is caught by the magic/version checks the instant the
+  hello lands), so the longer budget slows no real failure down; the override
+  ceiling moved to 900 s so the default is still raisable. The wait is sliced,
+  so every 30 s the controller says what it is waiting for instead of looking
+  hung.
+- **And the message that sent that reporter down the wrong path is fixed.**
+  libController's scheduler already distinguished four handshake failures —
+  unrecognised hello bytes, protocol-version mismatch, a stale-pipe nonce
+  crossing, and a timeout — but `robot.c` wrote one generic "engine and
+  libController are different builds" line into the durable sidecar for all
+  four, and only two of them are build mismatches. A timeout therefore read as
+  an ABI mismatch and pointed at `doctor`, which then reported the builds
+  compatible — a closed loop. The sidecar now names the check that failed, with
+  its values.
+
+### Performance
+
+- **PROTO-heavy worlds parse and construct faster.** Two per-instance costs
+  in the PROTO machinery are gone: the model constructor compiled a regex per
+  (token, field) to find template-regenerator fields (now once per field, and
+  tokens that cannot name a field are skipped), and every instance re-lexed
+  its body text character by character (tokens are now cached per exact body
+  text and deep-copied). Stage timings under `OMNISIM_RELOAD_PROFILE=1`, same
+  machine, interleaved: city_traffic PROTO model reads **510 → 195 ms**, parse
+  stage **~1000 → ~700 ms**, per-instance tokenize **1.0–1.6 s → 0.35 s**;
+  warehouse_industrial model reads 100 → 33 ms, parse 545 → 455 ms.
+  `OMNISIM_PROTO_TOKEN_CACHE=0` reverts the token cache.
+- **`omniworld validate()` parses a 1 M-token world 2.8× faster** (Mars: 3.2 →
+  1.07 s cold, 0.09 s on a repeat text): a `str.find`-driven tokeniser with one
+  C-level `findall`, direct-index bracket loops, a memoised placement scan and
+  an asset-locality verdict that no longer splits 8 MB into lines. Proven pure
+  on all 8,381 tracked worlds/PROTOs (identical token streams, trees and
+  placements). With that, the engine-free lane is **50 s of pytest (57 s
+  wall) for 1,255 tests**, down from 5 min 05 s this morning.
+- **The engine-free test lane runs in 71 s instead of 5 min 05 s** (1,229 tests,
+  same assertions): the Mars generator hashed 2.9 M lattice corners for 3,000
+  distinct keys (a bounded `lru_cache` on the pure hash takes `omniworld
+  generate mars` from **6.73 → 1.58 s**, forest 0.66 → 0.12 s, desert
+  1.24 → 0.23 s, byte-identical output); generated worlds are shared per
+  `(recipe, seed, params)` across tests; a 15 s hot-reload test waited on a
+  knob it never lowered (now 0.2 s); the roll-check corpus scan enumerates
+  tracked worlds and skips files that name no joint (10.3 → 0.8 s).
+- **PROTO template evaluation compiles less JavaScript.** Static VRML
+  stretches are handed to the engine as data instead of being pasted into the
+  compiled module: city_traffic's filled templates shrink from 2,321 to
+  1,312 KB and `importModule` from ~2.25 to ~2.05 s, with an order-sensitive
+  result hash proving byte-identical output on both arms. Two heavier ideas
+  were measured and refuted the same day (a per-instance syntax-pass cache;
+  one shared `QJSEngine`, whose apparent 2× turned out to be three test lanes
+  loading the machine). `OMNISIM_TEMPLATE_CHUNK_HOIST=0` reverts.
+- **A Camera or RangeFinder on a big scene steps 2.0× faster.** Every
+  camera-family device rebuilt its whole draw list on every rendered frame
+  (the Solid walk, dynamic_casts, ambient/uv fills, texture lookups) while the
+  main view had cached its list since the wgpu flip. Devices now keep one
+  cached list each, refreshed in place and rebuilt on the main view's hooks.
+  Measured with a 320×240 camera enabled every step, interleaved arms: on
+  `city_traffic` (4,587 draws) the per-frame collect drops **32.3 → ~4 ms** and
+  the engine step **103 → 52 ms**; on the fleet arena (105 draws) it is a
+  wash because that scene is controller-bound. `OMNISIM_WGPU_SENSOR_DRAW_CACHE=0`
+  reverts; `OMNISIM_WGPU_REPORT=1` prints the per-device collect telemetry.
+- **World loads are self-describing under `OMNISIM_RELOAD_PROFILE=1`.** The
+  "construct" stage is now attributed to the PROTO machinery per phase
+  (model reads, template engine, tokenize, syntax, readNode, aliasing) and
+  the JavaScript template path is split further. On the city the finding is
+  that `QJSEngine::importModule` compiling each filled template is 2.3 s of
+  the 6 s construction (60 calls, ~38 ms each); a shared engine is ruled out
+  because `wbrandom.js` keeps module state, so this is recorded as the next
+  lever rather than taken.
+- **A headless load check is 21–40% faster.** `python -m omnisim run-headless
+  <world> --until-finalized`, best of 2: husky_fleet_arena **8.03 → 4.81 s**,
+  warehouse_industrial **8.83 → 6.35 s**, newton_cloth_drape **7.01 → 5.52 s**;
+  engine-only process-start → first physics step 5.95 → 3.91 / 6.4 → 5.25 /
+  5.4 → 4.7 s. Same PASS, same sidecar. Five levers:
+  - every Python controller start ran two synchronous `python -c` probe
+    subprocesses (~80 ms each) and never cached the answer — 11 controllers on
+    the fleet arena spent 1.63 s serially re-probing one interpreter between
+    parse and the first step. `OmLanguageTools::pythonCommand` now caches per
+    (command, PATH, PYTHONHOME, PYTHONPATH). `OMNISIM_PYTHON_PROBE_CACHE=0`
+    reverts.
+  - a `--no-rendering` run still drew one full main-view frame on its first
+    paint, lazily initialising wgpu-native (~300 ms) and launching the
+    OmniLight probe bake (11,200 probes, ~450 ms trace) for a run that never
+    shows a pixel. The main view now declines while the process was started
+    with `--no-rendering` and rendering is off; screenshots and camera devices
+    use their own paths and are unaffected.
+  - `OmCudaContext` is lazy (first GranularGroup / CUDA-smoke use) instead of
+    being probed on the main thread before the world file is opened (~250 ms;
+    Newton/warp has its own CUDA init). `OMNISIM_CUDA_EAGER_INIT=1` restores
+    the eager probe and its log line.
+  - the Newton preload blocks `pxr` before `import newton`, so newton takes
+    its documented no-USD branch: the Pixar USD stack was 240–330 ms of the
+    ~1.5 s import for an authoring path the engine never calls.
+    `OMNISIM_NEWTON_USD=1` keeps it importable.
+  - `--until-finalized` stops `--settle-after-step` (0.5 s) after the first
+    physics step lands and polls the log at 100 ms, instead of sitting out the
+    fixed 2 s `--completion-grace` after finalize (the engine reaches step 1
+    ~50 ms after finalize on a CPU world; the runner then waited ~2 s).
+- **The engine edit loop is shorter.** `src/omnisim/Makefile` ran ~10
+  `$(shell)` toolchain probes at parse time on every invocation (~1.1 s on
+  MSYS, where a process spawn is ~40 ms). `build_probes.sh` answers them in
+  one spawn and caches a makefile fragment keyed on PATH, CXX, OSTYPE and the
+  toolchain binaries' mtimes. No-op `make release` **1.64 → 1.03 s**,
+  touch-one-TU + relink **2.69 → 2.29 s**; `make -n` output byte-identical
+  either way. `OMNISIM_PROBE_CACHE=0` runs the probes inline.
+- `OmProtoManager` no longer re-reads and regex-scans the parent world file
+  for every PROTO instance; declarations are tabled once per (file, mtime,
+  size). Within noise even on `city_traffic` (a quadratic pattern removed, not
+  a measured second); `OMNISIM_EXTERNPROTO_SCAN_CACHE=0` reproduces the scan.
+
+### Fixed
+
+- **A stale `WEBOTS_HOME` no longer becomes the install root.** Windows keeps a
+  machine-level `WEBOTS_HOME` after Webots is uninstalled, and every
+  legacy-alias site adopted it verbatim whenever `OMNISIM_HOME` was unset. The
+  install root then became a directory that is not there: a standalone `make`
+  in a controller directory failed with a bare "No rule to make target
+  'C:/Program Files/Webots/resources/...'", and qt_utils resolved every
+  robot-window resource under the phantom path. That is the normal state of a
+  machine migrating from Webots, not an exotic one. All twelve adoption sites
+  now check the directory exists first and otherwise behave exactly as if the
+  variable were unset: `resources/Makefile.include` and
+  `resources/Makefile.os.include` inline, the ten leaf Makefiles that must
+  resolve the root before they can include anything from it via one shared
+  `OM_LEGACY_HOME` line, and `StandardPaths.cpp` at runtime. The test is
+  `test -d`, not `$(wildcard)`, which splits on spaces and would report a real
+  `C:\Program Files\...` install as missing. A `WEBOTS_HOME` naming a real
+  directory is still adopted, and `doctor` now reports a stale one as clutter
+  rather than a landmine, with the exact removal command.
+
+- **The main view no longer crashes on a scene whose textures exceed the VRAM
+  budget.** `environments/city.omniworld` (159 textures, 750 MB) aborted with a
+  wgpu panic -- "TextureView does not exist", then "BindGroup is invalid" --
+  the moment the main view rendered it: in the GUI, under the harness flags and
+  in every capture, while passing every headless load check. Two causes, both
+  in the 512 MB budget path: `OmWgpuTextureCache::acquire()` ran the LRU
+  eviction synchronously, releasing views that draws collected earlier in the
+  same frame still referenced; and the render target's texture+shadow bind
+  groups are keyed by raw view handles, which wgpu recycles, so a new view
+  could alias a dead one. Eviction now runs only at a draw-list rebuild point
+  (`OmWgpuTextureCache::evictStale()`), never inside `acquire()`, and releases
+  only entries nothing has touched since the previous rebuild; when it releases
+  anything the owner flushes the view-keyed bind groups. An over-budget scene
+  keeps its working set resident and says so once in the log instead of
+  re-uploading it. The city now runs 75 s under `--batch --mode=fast
+  --minimize` with zero panics; it aborted in under 5 s before.
+
+- **`physicsBackend "ode"` no longer leaves a Solid with no physics -- the
+  ODE stub layer is gone.** Since ODE's deletion (`bdc02139`) a Solid or
+  world pinned to `"ode"` resolved to an inert `OmOdeBackend` stub and was
+  registered with NO solver -- no gravity, no contacts -- while the world
+  loaded clean. Every backend value now resolves to Newton; a retired value
+  warns once per world, naming the first offender. Proven on a throwaway
+  world: a 1 kg box pinned to `"ode"` fell 1.997 -> 0.832 -> 0.099 m over
+  60 steps and rested on the floor, with the warning printed once. Deleted
+  with it: `OmOdeBackend` (278 lines), `src/omnisim/ode/` (362),
+  `OmSimulationCluster` (157), the ODE-keyed contact-sound subsystem, the
+  ~186 always-NULL `dBodyID`/`dGeomID`/`dJointID`/`dMass` members across 67
+  files and every branch they guarded, the `OMNISIM_PROBE_BACKENDS` probe,
+  the Makefile's `ODE_*` variables and `ode/` rules, and six env vars that
+  selected nothing (`OMNISIM_FORCE_ODE`, `OMNISIM_LEGACY` physics arm,
+  `OMNISIM_ALLOW_ODE_FALLBACK`, `OMNISIM_NEWTON_SKIP_ODE_PASS`,
+  `OMNISIM_NEWTON_MESH_TO_ODE` -- which routed mesh-collider articulations
+  to no physics -- and `OMNISIM_NEWTON_CONTACTS_CMP`). Net under
+  `src/omnisim`: +563/-3,557 lines. Fixed on the way: every `Hinge2Joint`
+  warned "can only connect Solid nodes that have a Physics node" (the check
+  keyed on ODE bodies that never existed), and the ALT+click force/torque
+  drag keyed on an ODE body merger, so it could never engage.
+- **Both CI workflows are green again.** `linux-build` had been red since the
+  2026-09-02 round-one push: its smoke greps the main view's lazy
+  `wgpu-native init OK` line as proof the build has a renderer, and a
+  `--no-rendering` run stopped drawing that frame. `OMNISIM_RENDERER_PROBE=1`
+  restores the first frame on request and the Linux smoke sets it (an ordinary
+  load check keeps the ~1 s saving: 4.93 s with the probe vs 3.87 s without on
+  the smoke world). `Licence and provenance` had been red since before the
+  session: eight tracked pilot artifacts under `social/launch/pilots/` had no
+  provenance record; two `PROVENANCE.md` files now name them as OmniLink's own
+  generated outputs.
+- The `public` remote no longer embeds a GitHub token in `.git/config`; the
+  publish script builds its own remote from `PUBLIC_REMOTE` and `GITHUB_TOKEN`,
+  so nothing depended on it. Rotate that token.
+- `publish_snapshot.sh` bumps every version site through `bump_version.py` in
+  one commit instead of four sed+commit blocks (whose blanket `sed` rewrote
+  prose that merely mentioned a version).
+- Four of the six direct Qt includes owed after the ratchet re-baseline were
+  drained (each claim checked against the Qt headers); the two that remain
+  need the complete type and carry a dated comment. Ratchet total 387 → 384.
+- A healthy run could FAIL `run-headless` with "libController recorded
+  connect/handshake failures for this run": libController's
+  `<log>.connect_error.txt` is append-only and tagged `run=<engine pid>`, and
+  Windows reuses pids, so entries another session appended hours earlier under
+  the same pid read as this run's. `OmLog` now drops that sidecar when it
+  truncates the log, as it already did for `.newton.json`.
+
+### Agent-facing
+
+- **`python -m omnisim run-headless <world> --profile`** prints the engine's
+  own load attribution after the run (stage split, PROTO phases, the
+  template-engine split, the Newton preload and how long the main thread
+  blocked on it) and stamps every log line with `[t+<ms>ms]`
+  (`OMNISIM_LOG_TIMESTAMPS=1` on its own does the stamping). Until now the
+  timeline of a load could only be reconstructed by polling the log file
+  from outside.
+- **`python -m omnisim doctor` reports CI.** A new advisory `ci` row asks
+  `gh` for the newest run per workflow on the current branch and prints
+  `N/M workflows green on <sha>` (or which ones are red / in flight, how far
+  behind HEAD the newest run is, and the `gh run view --log-failed` command).
+  It cost the project a day of red CI that no local gate showed; the row is
+  capped at 1.5 s and reads `unknown (<reason>)` offline or without `gh`.
+- **The startup-race stress workflow ran for real:** dispatched once on
+  2026-09-02, two rounds of two concurrent launches, zero races, zero
+  failures, 18 minutes.
+- **`POST /world/load` runs LIGHT by default.** The documented rule was "load
+  with `light: true` or the harness is slower than the thing it replaces", and
+  an agent that forgot the flag got the slow path. A request that names
+  neither `light` nor `tracking` now injects the light supervisor; an explicit
+  `light: false` or a `tracking` object keeps the trackers, the response says
+  `default_applied: true` with the way back, `GET /capabilities` reports the
+  default, and `OMNISIM_HARNESS_LIGHT=0` restores the old default
+  process-wide. A consumer audit found no shipped caller that silently loses a
+  tracker. Measured on the fleet arena with the 2026-09-02 engine: load 5.2 →
+  4.65 s, `/sim/step 1` 54 → 23 ms (the August figures of 12.1 s vs 4.1 s and
+  17–47× predate the controller-probe cache and immediate-burst fixes and
+  are now quoted only as history).
+- **One command bumps the version.** `scripts/release/bump_version.py X.Y.Z`
+  rewrites the five version sites (the four the consistency test pinned plus
+  `scripts/packaging/omnisim_version.txt`) in one commit; a release used to be
+  four separate bump commits and the strings had drifted once. A weekly
+  `launch-race-stress.yml` workflow runs the startup-race stress script that
+  had no CI lane (not yet run in CI; its header says what to check first).
+- **Every `OMNISIM_*` environment variable is documented in one generated
+  page**, `docs/reference/environment-variables.md` (437 variables, 1,483 read
+  sites, kind = presence / value / int / string, read locations, harvested
+  description), produced by `scripts/dev/gen_env_reference.py` and pinned by a
+  docs test that fails when the page drifts from the source. 191 variables
+  were documented nowhere before. Three boolean hatches that were
+  presence-gated (so `=0` ARMED them) now parse their value:
+  `OMNISIM_EAGER_TEXTURE_DECODE`, `OMNISIM_NO_WINDOW`, `OMNISIM_NO_GL`.
+- **The engine's most-hit warnings name their consequence and fix.** 73
+  message strings across 30 files (Physics/inertia, collider rejections,
+  motor clamps, feedback preconditions, unknown nodes, URDF open, the Newton
+  readback plumbing lines) were rewritten to say what breaks and what to set
+  or run; every substring a matcher greps for was preserved. Actionable
+  messages 117 → 183 of 677 by the census in the commit.
+- **`make tests-unit` is green: 1,211 passed, 0 failed, 5 min 05 s** (it was
+  7 failed at 7 min 10 s). The seven failures were all stale pins — the
+  `#OMNISIM` header, the runtime's licence header, a `.wbt→.omniworld`
+  digest, a WSL reparse point crashing a corpus walk, the roll-check baseline,
+  a retired `doctor --strict` contract, and a Qt-include ratchet that counted
+  a WREN-deletion file move as new dependence (re-baselined with an
+  engine-wide `TOTAL` assertion).
+- `python -m omnisim doctor` gained seven advisory rows: vendored-runtime
+  staleness (the bundle copy of `omnisim_newton_runtime.py` vs `src/`; gating),
+  renderer DLL beside the binary, Pillow, `core.hooksPath`, ffmpeg, running
+  engines with their worlds, and whether port 6789 is a harness and on which
+  world.
+- `omnisim-mcp` exposes a tool for every harness route (damage group,
+  `read_bench`, `scene_node_particles`) and its descriptions match the
+  2026-09-01 harness (HTTP/1.1, `physics: "rebuild"` on spawn/delete, the
+  light-mode rule and `tracking` toggles, `frame` before `screenshot`).
+- `docs/developer/README.md` indexes fifteen plans and notes nothing else
+  linked to; `DEMOS.md` lists six launchers the catalogue was missing.
+- **AGENTS.md is a bootstrap again: 198 KB (~50k tokens) → 48 KB (~12k),
+  loaded into every agent session and subagent.** Every long table cell and
+  hard-won rule moved VERBATIM into `docs/developer/agents-first-moves.md`,
+  `agents-hard-won-rules.md`, `harness-endpoint-reference.md` and
+  `agents-reference-sections.md`, each summarised in one line with a link; a
+  mechanical inventory check (numbers, env vars, commit hashes, code spans,
+  links, paths) preserved 2110/2141 items, the 31 misses being the 13 stale
+  `#Lnnn` line anchors that were corrected to symbol names. Contradictions
+  resolved in the summaries (`--until-finalized` vs `--duration` budgets, the
+  light-mode step cost, BallJoint/TouchSensor marked RESOLVED, one harness
+  spelling); seven CLI verbs AGENTS.md never named are listed.
+- `GET /capabilities` → `not_supported` told the truth again (the
+  BallJoint/Hinge2 entries still said "gated OFF … UNIMPLEMENTED"; every
+  `source` cites a symbol instead of a rotted line number; a
+  `track.propulsion` entry added). Every one of the 56 harness diagnostic
+  codes now carries a next-action `hint` (31 had none), served through
+  `hint_for()`.
+- **An engine-free test lane exists: `make tests-unit`** (`pytest -m "not
+  engine"`, ~7 min, 1204 tests; the `engine` marker is applied at collection by
+  `tests/conftest.py`), plus a bring-up skip cap: a session whose Newton
+  bring-up skips exceed `OMNISIM_BRINGUP_SKIP_CAP` (default 2) fails instead
+  of reading green. `tests/test_version_consistency.py` pins the four version
+  sites to one value; `tests/dev/test_headless_runner_verdicts.py` pins the
+  runner's verdict functions against synthetic logs. `tests/README.md`
+  describes the real lanes (it was upstream-era).
+- `python -m omnisim doctor` no longer dies with a `UnicodeEncodeError` when a
+  commit subject, path or world name carries a character the Windows console
+  codepage cannot encode (it printed a traceback and exited 1).
+
+### Housekeeping
+
+- **The tree now holds only what the product, its tests and its cited evidence
+  reach.** Everything removed is recorded in [docs/ARCHIVE.md](docs/ARCHIVE.md)
+  with the commit that still holds it (`git show <sha>:<path>`), and each class
+  was deleted only after a reachability check, not on a name pattern: 113 stale,
+  duplicated, campaign-log and finished-plan documents; 208 unreferenced media
+  and image-source files; ~7.5k lines of Python no tracked file imports (27
+  files, plus the 10.5k-line duplicate of the deploy runtime under
+  `projects/policies`); 345 files and 105 MB of `projects/` residue (robot
+  descriptions no world reaches, meshes no URDF names, PROTOs nothing
+  instantiates, controllers no live world names, training artefacts and ghost
+  lookup tables); 145 regenerable benchmark result files nothing cites; and 7
+  one-off pod drivers. The measured effect on the working tree:
+
+  | | before | after |
+  |---|---|---|
+  | files | 12,746 | 11,884 |
+  | size | 1,239.7 MB | 1,072.6 MB |
+  | Markdown files | 728 | 617 |
+  | `docs/*.md` | 383 | 291 |
+  | `docs/` | 1,001 files, 172.1 MB | 698 files, 108.3 MB |
+  | `projects/` | 4,216 files, 854.2 MB | 3,842 files, 752.9 MB |
+
+- **An agent's searches return far less that is not engineering.** `.rgignore`
+  keeps ripgrep out of the two non-engineering workspaces (`social/`, the
+  evaluation results), and the deletions above removed the rest. Files matched
+  by the canonical agent queries, ripgrep over the whole tree, before and after:
+  `newtonSolver` **1,252 → 591**, `wgpu` **534 → 287**, `harness` **739 → 604**,
+  `OMNISIM_NEWTON` 450 → 376, `URDFRobot` 456 → 425, `Camera` 513 → 478,
+  `physicsBackend` 298 → 259, `run-headless` 157 → 127, `simulationQuit`
+  161 → 135. Two searches an agent runs constantly now return half as many
+  files, and the ones that remain are code, worlds and reference docs.
+
+- **Every authored world is catalogued or archived.** 122 worlds that loaded but
+  were listed nowhere are now in [DEMOS.md](DEMOS.md); the 4 that could not load
+  were archived. The rule an agent can rely on: a world not in the catalogue
+  does not exist.
+
+- 33 stale engine-binary variants (`omnisim-bin-*.exe`, `.bak`, `.inuse-*`,
+  dated copies; none referenced, none newer than 2026-08-15) were removed
+  from the runtime directory; the live binary, its launchers and every
+  referenced or recent variant stay. Most of the remaining copies are
+  hard-linked into the AgentBench A/B worktrees and free nothing until those
+  are retired.
+- `_scratch/` went from 4.2 GB to 0.6 GB: an audit classified all 1,907
+  top-level entries (build input, referenced by tracked docs or scripts,
+  recent, regenerable, stale, unsure), and only the regenerable and stale
+  classes were deleted (1,752 entries plus 82 warp-cache tags older than a
+  week); `wgpu-native`, everything a doc or script names, anything touched in
+  the last seven days and 47 unsure entries were kept.
+- ~62 MB of ignored residue removed from the tree (dead Codex session dirs,
+  stackdumps, 79 leaked `.harness_*` scratch worlds, 122 `__pycache__` dirs in
+  source trees, 43 empty directories); `.gitignore` consolidated (18 subsumed
+  or producer-less rules removed, `/.tmp-*/`, `/.tmp_*`, `.benchmarks/` added);
+  three self-declared dead scripts retired; stale ODE/WREN references fixed in
+  two docs, one script, one test and seven comments; `git gc` took `.git`
+  from 7.8 GB to 2.9 GB (5,717 loose objects, 16 garbage files); three
+  dangling remote-tracking refs and one fully merged branch deleted.
+
 ## [v8.2.0] — 2026-09-01
 
 The performance release. Every number below is measured on machine
@@ -1000,7 +1401,7 @@ against the exact model the solver steps, as a pure preview.
   there is no public predecessor to migrate a world *from*, which is the only thing a rename map
   would have been for. Spot is named because it is a different vendor and the reasoning for
   removing its geometry is a compliance record worth publishing: see
-  [`docs/developer/spot-provenance-research.md`](docs/developer/spot-provenance-research.md).
+  `docs/developer/spot-provenance-research.md` (archived 2026-09-02, see [docs/ARCHIVE.md](docs/ARCHIVE.md)).
 
   66 worlds and 15 demo controller directories were renamed with the packages; the arm bridge's
   `--robot` id is now `omniarm6`, the warehouse courier agent is `omnitug500_warehouse`, and the

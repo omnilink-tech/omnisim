@@ -202,7 +202,7 @@ When reviewing a physics or collision change, ask:
 
 After contact or collision changes, validate with:
 
-- `python scripts/dev/omnisim_dev.py benchmarks`
+- `python -m omnisim benchmarks`
 - a contact-heavy world such as `tests/physics/worlds/contact_points.omniworld`
 - one deterministic baseline run
 - one throughput-oriented run if multithreading or collision scheduling changed

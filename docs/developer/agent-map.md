@@ -110,7 +110,7 @@ Search:
 Search:
 - `Makefile`
 - `src/omnisim/Makefile`
-- `scripts/dev/omnisim_dev.py`
+- `omnisim/cli.py` and `omnisim/dev/commands.py` (the `python -m omnisim` developer CLI)
 - `.github/workflows`
 - `docs/developer/build-and-iteration.md`
 - `docs/developer/ci-and-fast-feedback.md`
@@ -118,18 +118,18 @@ Search:
 ## Preferred Fast Paths
 
 ### Build
-- full product: `python scripts/dev/omnisim_dev.py build all`
-- core/runtime-oriented path: `python scripts/dev/omnisim_dev.py build core`
+- full product: `python -m omnisim build all`
+- core/runtime-oriented path: `python -m omnisim build core`
 - renderer: there is no separate renderer build any more — `build renderer` refuses with an explanation (the wgpu backend compiles into the engine, so use `build core` / `build gui`)
-- desktop shell: `python scripts/dev/omnisim_dev.py build gui`
-- controller libs: `python scripts/dev/omnisim_dev.py build controller-libs`
+- desktop shell: `python -m omnisim build gui`
+- controller libs: `python -m omnisim build controller-libs`
 
 ### Validate
-- fast smoke suite: `python scripts/dev/omnisim_dev.py test-smoke`
-- one existing test group: `python scripts/dev/omnisim_dev.py test-group api`
-- one world: `python scripts/dev/omnisim_dev.py test-world tests/api/worlds/accelerometer.omniworld`
-- one supported headless world run: `python scripts/dev/omnisim_dev.py run-headless tests/api/worlds/accelerometer.omniworld`
-- performance log for one world: `python scripts/dev/omnisim_dev.py profile-world tests/rendering/worlds/normals.omniworld`
+- fast smoke suite: `python -m omnisim test-smoke`
+- one existing test group: `python -m omnisim test-group api`
+- one world: `python -m omnisim test-world tests/api/worlds/accelerometer.omniworld`
+- one supported headless world run: `python -m omnisim run-headless tests/api/worlds/accelerometer.omniworld`
+- performance log for one world: `python -m omnisim profile-world tests/rendering/worlds/normals.omniworld`
 
 ## Safe Assumptions
 

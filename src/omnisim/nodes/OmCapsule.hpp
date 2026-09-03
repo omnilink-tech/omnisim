@@ -34,7 +34,7 @@ public:
   int nodeType() const override { return WB_NODE_CAPSULE; }
   void postFinalize() override;
   void createWrenObjects() override;
-  dGeomID createOdeGeom(dSpaceID space) override;
+  bool createOdeGeom() override;
   void createResizeManipulator() override;
   bool isAValidBoundingObject(bool checkOde = false, bool warning = true) const override;
   bool isSuitableForInsertionInBoundingObject(bool warning = false) const override;
@@ -83,7 +83,6 @@ private:
   void init();
 
   // ODE
-  void applyToOdeData(bool correctSolidMass = true) override;
 
   // ray tracing
   double computeLocalCollisionPoint(OmVector3 &point,

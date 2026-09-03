@@ -40,9 +40,9 @@ def test_outdoor_forest_registered():
     assert "outdoor_forest" in list_recipes()
 
 
-def test_outdoor_forest_generates_and_validates(tmp_path: Path):
-    out = tmp_path / "forest.omniworld"
-    result = generate("outdoor_forest", seed=42, out=out)
+def test_outdoor_forest_generates_and_validates(generated_world):
+    result = generated_world("outdoor_forest", 42)
+    out = result.world_path
     assert out.exists()
     text = out.read_text(encoding="utf-8")
     # ElevationGrid terrain must be present.
@@ -55,26 +55,25 @@ def test_outdoor_forest_generates_and_validates(tmp_path: Path):
     assert report.ok, report.format()
 
 
-def test_outdoor_forest_deterministic(tmp_path: Path):
-    a = tmp_path / "a.wbt"
-    b = tmp_path / "b.wbt"
-    generate("outdoor_forest", seed=7, out=a)
-    generate("outdoor_forest", seed=7, out=b)
-    assert a.read_bytes() == b.read_bytes()
+def test_outdoor_forest_deterministic(tmp_path: Path, generated_world):
+    """A FRESH build into this test's own tmp_path is byte-identical to the
+    session-shared one -- which is also what licenses the other tests here
+    to read the shared result."""
+    shared = generated_world("outdoor_forest", 42)
+    fresh = tmp_path / "fresh.wbt"
+    generate("outdoor_forest", seed=42, out=fresh)
+    assert fresh.read_bytes() == shared.world_path.read_bytes()
 
 
-def test_outdoor_forest_different_seeds_differ(tmp_path: Path):
-    a = tmp_path / "a.wbt"
-    b = tmp_path / "b.wbt"
-    generate("outdoor_forest", seed=1, out=a)
-    generate("outdoor_forest", seed=2, out=b)
+def test_outdoor_forest_different_seeds_differ(generated_world):
+    a = generated_world("outdoor_forest", 42).world_path
+    b = generated_world("outdoor_forest", 3).world_path
     assert a.read_bytes() != b.read_bytes()
 
 
-def test_outdoor_forest_clearing_is_empty(tmp_path: Path):
+def test_outdoor_forest_clearing_is_empty(generated_world):
     """Every placed prop must be outside the exclusive centre clearing."""
-    out = tmp_path / "forest.omniworld"
-    result = generate("outdoor_forest", seed=3, out=out)
+    result = generated_world("outdoor_forest", 3)
     descr = result.description
     size = 50.0
     centre = (size / 2.0, size / 2.0)
@@ -122,14 +121,13 @@ def test_outdoor_forest_manifest_records_prop_count(tmp_path: Path):
     assert result.manifest.extra.get("prop_count", 0) > 0
 
 
-def test_outdoor_forest_every_placement_has_unique_name(tmp_path: Path):
+def test_outdoor_forest_every_placement_has_unique_name(generated_world):
     """Webots warns on sibling Solids that share a name. Every emitted
     prop must carry a unique ``name`` field — either supplied by the
     recipe or synthesised by the emitter."""
     import re
 
-    out = tmp_path / "forest.omniworld"
-    generate("outdoor_forest", seed=42, out=out)
+    out = generated_world("outdoor_forest", 42).world_path
     text = out.read_text(encoding="utf-8")
     # Every top-level non-EXTERNPROTO node block should contain a
     # ``name "..."`` line (the emitter guarantees this).

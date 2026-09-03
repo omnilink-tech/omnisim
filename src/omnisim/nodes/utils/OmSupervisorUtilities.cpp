@@ -65,7 +65,6 @@
 #include "../../../include/controller/c/omnisim/supervisor.h"
 #include "../../controller/c/messages.h"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 #include <cmath>
 #include <vector>
@@ -1278,9 +1277,8 @@ void OmSupervisorUtilities::handleMessage(QDataStream &stream) {
           OmPhysicsBackend *const backend = solid->physicsBackend();
           backend->setBodyEnabled(h, true);
           // W3.1: a pure torque -> Newton's external-wrench path (force=0, so the reference point is moot).
-          // For non-Newton Solids applyExternalForceNewton returns false and we fall through to the generic
-          // dispatch, which on the inert tombstone returns -1 and therefore warns. That is the honest
-          // outcome for a Solid pinned to the retired "ode" selector: the torque is not applied.
+          // For a Solid with no Newton body applyExternalForceNewton returns false and we fall through to
+          // the generic dispatch, which returns -1 and therefore warns: the torque is not applied.
           if (!solid->applyExternalForceNewton(OmVector3(), solid->matrix().translation(), torque)) {
             const double t[3] = {torque.x(), torque.y(), torque.z()};
             if (backend->addBodyTorque(h, t) != 0)

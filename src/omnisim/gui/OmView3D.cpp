@@ -1583,6 +1583,28 @@ bool OmView3D::renderMainFrameViaWgpu(bool culling, bool offScreen) {
   (void)culling;
   if (offScreen || mWgpuMainViewUnavailable || mWgpuMainViewSuspended)
     return false;  // offscreen/sensor/screenshot or mid-(re)load → stay on WREN; a prior failure → WREN
+  // --no-rendering means exactly that. Until 2026-09-02 a `--batch --no-rendering --minimize` load
+  // check still drew a full main-view frame on its first paint: it lazily initialised wgpu-native
+  // (~300 ms on the reference machine) and kicked off the OmniLight CPU probe bake (11,200 probes,
+  // ~450 ms of trace on husky_fleet_arena) -- for a run that never shows a pixel. Gate on the CLI
+  // intent AND the live flag together, so a --no-rendering session that later turns rendering back
+  // on (View > Rendering) renders normally; a screenshot request goes through the offscreen path
+  // above and is unaffected. Camera/RangeFinder/Lidar DEVICES have their own wgpu path and still
+  // render (they do not come through here).
+  // OMNISIM_RENDERER_PROBE=1 (value-parsed) keeps the old behaviour -- a first frame is drawn even
+  // under --no-rendering -- because that frame's lazy wgpu-native init is the only line a headless
+  // smoke can grep to prove the BUILD has a renderer ("[OmWgpuBackend] wgpu-native init OK").
+  // linux_bootstrap.sh's smoke sets it; the Linux CI went red the day the gate above shipped
+  // without it (2026-09-02: "wgpu-native did not initialise -- this build has NO renderer").
+  {
+    static const bool rendererProbe = []() {
+      const QByteArray v = qgetenv("OMNISIM_RENDERER_PROBE").trimmed().toLower();
+      return !v.isEmpty() && v != "0" && v != "false" && v != "off";
+    }();
+    const OmSimulationState *const sim = OmSimulationState::instance();
+    if (!rendererProbe && sim && sim->startedWithoutRendering() && !sim->isRendering())
+      return false;
+  }
   // Stale-world guard: during a reload the old world is freed before setWorld() updates mWorld, so a
   // paint event firing in that window would deref a dangling mWorld → crash (WREN dodges this by using
   // OmWorld::instance()). Skip the wgpu path whenever mWorld isn't the current global world; it resumes
@@ -1725,6 +1747,10 @@ bool OmView3D::renderMainFrameViaWgpu(bool culling, bool offScreen) {
   if (mWgpuDrawListDirty || mWgpuRefreshList.empty() || mWgpuDrawListAge >= 600 ||
       !OmWgpuSceneRenderer::refreshWorldDraws(modelStorage, mWgpuRefreshList, &draws)) {
     invalidateWgpuDrawList();
+    // Rebuild point: the texture cache may release textures nothing used since the last rebuild;
+    // the view-keyed bind groups must go with them (see OmWgpuTextureCache::evictStale).
+    if (mWgpuTextureCache && mWgpuTextureCache->evictStale() && mWgpuRenderTarget)
+      mWgpuRenderTarget->forgetTextureBindGroups();
     // No GL bracket here any more (W1c). collectWorldDraws arms WREN's context itself, only
     // around the readback that needs it, and releases it in a destructor — which is what the
     // old bracket's own warning demanded: makeWrenCurrent/doneWren PUSH/POP a context-state
@@ -3989,7 +4015,7 @@ void OmView3D::mouseMoveEvent(QMouseEvent *event) {
     OmSolid *selectedSolid;
     while (1) {
       selectedSolid = dynamic_cast<OmSolid *>(node);
-      if (selectedSolid && selectedSolid->bodyMerger() != NULL)
+      if (selectedSolid && selectedSolid->effectiveNewtonBodyIndex() >= 0)
         break;
 
       node = node->parentNode();

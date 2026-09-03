@@ -17,7 +17,6 @@
 #ifndef OM_SOLID_MERGER_HPP
 #define OM_SOLID_MERGER_HPP
 
-#include "OmOdeTypes.hpp"
 #include "OmVector3.hpp"
 
 #include <QtCore/QMap>
@@ -25,7 +24,6 @@
 
 class OmMatrix4;
 class OmSolid;
-struct dMass;
 
 class OmSolidMerger : public QObject {
   Q_OBJECT
@@ -36,18 +34,12 @@ public:
   virtual ~OmSolidMerger();
 
   OmSolid *solid() const { return mSolid; }
-  dBodyID body() const { return mBody; }
-  dSpaceID space() const { return mSpace; }
-  dSpaceID reservedSpace();
   void removeExtraSpace();
   const OmVector3 &centerOfMass() const { return mCenterOfMass; }
   const OmVector3 &absoluteCenterOfMass() const { return mAbsoluteCenterOfMass; }
-  const QMap<OmSolid *, dMass *> &mergedSolids() const;
   void appendSolid(OmSolid *solid);
-  void attachGeomsToBody(dGeomID g);
   void removeSolid(OmSolid *solid);
   void mergeMass(OmSolid *const solid, bool subtract = true);
-  void addGeomToSpace(dGeomID g);
   void setGeomAndBodyPositions(bool zeroVelocities = false, bool resetJoints = false);
   void setupOdeBody();
   void updateMasses();
@@ -63,13 +55,9 @@ private:
   OmSolidMerger(const OmSolidMerger &other);
   OmSolidMerger &operator=(const OmSolidMerger &other);
   OmSolid *mSolid;
-  dSpaceID mSpace;
   OmVector3 mCenterOfMass;
   OmVector3 mAbsoluteCenterOfMass;
   void updateCenterOfMass();
-  dMass *mOdeMass;
-  dBodyID mBody;
-  QMap<OmSolid *, dMass *> mMergedSolids;
   bool mBodyArtificiallyDisabled;
 
   void addMassToBody();

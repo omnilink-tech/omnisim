@@ -638,6 +638,13 @@ QByteArray OmTokenizer::expandWorldIncludes(const QByteArray &contents,
   return out.toUtf8();
 }
 
+void OmTokenizer::adoptTokens(const QVector<OmToken *> &tokens) {
+  mIndex = 0;
+  mVector.reserve(mVector.size() + tokens.size());
+  foreach (const OmToken *token, tokens)
+    mVector.append(new OmToken(*token));
+}
+
 int OmTokenizer::tokenizeString(const QString &string) {
   mIndex = 0;
 

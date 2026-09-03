@@ -1,6 +1,6 @@
 # WREN deletion runbook — the remaining steps, in order, with exit gates
 
-**Status: OPEN. `src/wren` (106 files, 19,847 lines) + `src/omnisim/wren` (68 files) are still
+**Status: DONE 2026-08-23 (`976b9449d`) — `src/wren`, `include/wren`, `src/omnisim/wren` and 86 shaders are deleted; wgpu-native is the only renderer.** Everything below is the runbook as it was executed and is kept as the record; `wren_deletion_audit.py` went with the code it audited. Status as last written: OPEN. `src/wren` (106 files, 19,847 lines) + `src/omnisim/wren` (68 files) are still
 present. Gate: `python scripts/dev/wren_deletion_audit.py` → NOT DELETION-READY, 349 blocking,
 0 retirable** (347 before P7/P8). ⚠️ The +5 is P7/P8 and it is expected, not a regression: a port
 that reads a WREN-side MODEL adds findings until D1 moves that model. **P2 + P11 (`adc7cc0a6`)
@@ -14,7 +14,7 @@ sites"). ⚠️ Read this number from a COMMITTED tree: the audit scans git-trac
 reading it while a new source file is still untracked under-counts (it read 348/349 mid-work and
 352 once both commits landed).
 
-This is the execution plan for [wren-retirement-plan.md](wren-retirement-plan.md)'s endgame. That
+This is the execution plan for wren-retirement-plan.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md))'s endgame. That
 document is the audit, the history and the corrections; this one is the ordered work list.
 
 ## Why the "347 blocking" number is not the plan

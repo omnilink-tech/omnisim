@@ -41,11 +41,6 @@ public:
   const QString &model() const { return mModel->value(); }
   OmBaseNode *boundingObject() const;
 
-  // ODE objects accessors
-  dGeomID odeGeom() const;
-  dSpaceID upperSpace() const;  // the smallest ODE space containing the boudingObject, possibly itself
-  dSpaceID space() const;       // the largest space containing the boundingObject
-  dSpaceID groupSpace() const;  // returns the ODE space associated to a Group if the bounding object is a group
 
   // collision flags
   bool isColliding() const;
@@ -72,7 +67,6 @@ public:
   bool isLocked() const { return mLocked->value(); }
 
   // ODE positioning
-  void updateOdeGeomPosition() { updateOdeGeomPosition(odeGeom()); }
 
   // Always false in practice: the single caller (OmMultimediaStreamingServer) passes false
   // and nothing else writes it, so a matter refreshes its overlays on deselection only.
@@ -105,12 +99,13 @@ protected:
   bool checkBoundingObject() const;
   bool mBoundingObjectHasChanged;
 
-  dGeomID createOdeGeomFromNode(dSpaceID space, OmBaseNode *node);
-  dGeomID createOdeGeomFromBoundingObject(dSpaceID space);
-  void updateOdeGeomPosition(dGeomID g);
+  // The boundingObject walk: validates each geometry as a collider (warns on a
+  // bad one) and wires the insertion/removal signals. Returns false when the
+  // node contributes no collider. The collider itself is registered with
+  // Newton by OmSolid::flushPendingNewtonRegistrations.
+  bool createOdeGeomFromNode(OmBaseNode *node);
   bool handleJerkIfNeeded();
 
-  virtual bool isInsertedOdeGeomPositionUpdateRequired() const { return true; }
 
   // Sleep flag
   void updateSleepFlag();
@@ -136,20 +131,16 @@ private:
 
   bool mNeedToHandleJerk;
 
-  void updateOdePlaceableGeomPosition(dGeomID g);
   virtual void handleJerk() = 0;
 
-  // Update static geom position
-  void updateOdePlanePosition(dGeomID plane);
 
-  dGeomID createOdeGeomFromGroup(dSpaceID space, OmGroup *group);
-  dGeomID createOdeGeomFromGeometry(dSpaceID space, OmGeometry *geometry, bool setOdeData = true);
-  dGeomID createOdeGeomFromPose(dSpaceID space, OmPose *pose);
+  bool createOdeGeomFromGroup(OmGroup *group);
+  bool createOdeGeomFromGeometry(OmGeometry *geometry, bool listenForRemoval = true);
+  bool createOdeGeomFromPose(OmPose *pose);
   void disconnectFromBoundingObjectUpdates(const OmNode *node) const;
 
-  virtual void createOdeGeoms() = 0;
 
-  virtual void setGeomMatter(dGeomID g, OmBaseNode *node = NULL) = 0;
+  virtual void setGeomMatter(OmBaseNode *node = NULL) = 0;
 
   void connectNameUpdates() const;
 

@@ -27,7 +27,6 @@
 #include "OmSolidReference.hpp"
 #include "OmVector3.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 void OmJoint::init() {
   mDevice = findMFNode("device");
@@ -246,14 +245,11 @@ void OmJoint::updateAxis() {
   // update the current endPoint pose based on the new axis value
   // but do not modify the initial endPoint pose
   updatePosition();
-
-  if (mJoint)
-    applyToOdeAxis();
 }
 
-void OmJoint::updateMinAndMaxStop(double min, double max) {
-  if (mJoint)
-    applyToOdeMinAndMaxStop();
+void OmJoint::updateMinAndMaxStop(double, double) {
+  // Hard stops reach Newton through the joint registration; the ODE
+  // dParamLoStop/HiStop update this used to do is gone.
 }
 
 OmVector3 OmJoint::axis() const {
@@ -262,8 +258,8 @@ OmVector3 OmJoint::axis() const {
   return p ? p->axis() : DEFAULT_AXIS;
 }
 
-void OmJoint::setOdeJoint(dBodyID body, dBodyID parentBody) {
-  OmBasicJoint::setOdeJoint(body, parentBody);
+void OmJoint::setOdeJoint() {
+  OmBasicJoint::setOdeJoint();
 
   // compute and set the orientation of rotation axis
   applyToOdeAxis();

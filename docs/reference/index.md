@@ -1,6 +1,6 @@
 # OmniSim Reference Manual
 
-OmniSim v7.0.0 — for the authoritative version and release notes, see the root [`CHANGELOG.md`](https://github.com/omnilink-tech/omnisim/blob/main/CHANGELOG.md).
+OmniSim v8.2.0 — for the authoritative version and release notes, see the root [`CHANGELOG.md`](https://github.com/omnilink-tech/omnisim/blob/main/CHANGELOG.md).
 
 %figure
 ![ImageData](images/1234web.png)

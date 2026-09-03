@@ -74,10 +74,21 @@
 # controller directory has no other way to find the install root, and dropping
 # the alias would fail here with a bare "No rule to make target". Named, not
 # silent, so the warning is a migration prompt rather than a mystery.
+# Adopt it ONLY when it names a directory that exists. A machine that once had
+# Webots installed keeps WEBOTS_HOME in the environment after the install is
+# removed, and the pre-2026-09-02 code adopted that phantom path -- every include
+# and library path then resolved under it and the build failed with a bare "No
+# rule to make target", pointing at nothing. `test -d` rather than $(wildcard):
+# wildcard splits on spaces, so it reports a real "C:\Program Files\..." install
+# as missing.
 ifeq ($(strip $(OMNISIM_HOME)),)
  ifneq ($(strip $(WEBOTS_HOME)),)
-  OMNISIM_HOME := $(WEBOTS_HOME)
-  $(warning OMNISIM_HOME is not set; falling back to the legacy WEBOTS_HOME ($(WEBOTS_HOME)). Export OMNISIM_HOME instead -- WEBOTS_HOME is deprecated and will stop being read.)
+  ifeq ($(strip $(shell test -d "$(WEBOTS_HOME)" && echo yes)),yes)
+   OMNISIM_HOME := $(WEBOTS_HOME)
+   $(warning OMNISIM_HOME is not set; falling back to the legacy WEBOTS_HOME ($(WEBOTS_HOME)). Export OMNISIM_HOME instead -- WEBOTS_HOME is deprecated and will stop being read.)
+  else
+   $(warning WEBOTS_HOME is set to "$(WEBOTS_HOME)", which is not a directory -- it is a leftover from an uninstalled Webots. IGNORING it rather than resolving every path under a phantom install. Export OMNISIM_HOME=<install or clone root> for this build.)
+  endif
  endif
 endif
 

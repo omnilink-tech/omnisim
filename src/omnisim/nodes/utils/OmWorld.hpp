@@ -35,7 +35,6 @@ class OmSolid;
 class OmTokenizer;
 class OmViewpoint;
 
-class OmOdeContact;
 
 class OmWorld : public QObject {
   Q_OBJECT;
@@ -140,8 +139,6 @@ public:
   double basicTimeStep() const { return mWorldInfo->basicTimeStep(); }
   int optimalThreadCount() const { return mWorldInfo->optimalThreadCount(); }
 
-  const QList<OmOdeContact> &odeContacts() const { return mOdeContacts; }
-  void appendOdeContact(const OmOdeContact &odeContact);
 
   void retrieveNodeNamesWithOptionalRendering(QStringList &centerOfMassNodeNames, QStringList &centerOfBuoyancyNodeNames,
                                               QStringList &supportPolygonNodeNames) const;
@@ -172,8 +169,6 @@ public slots:
   }
 
 protected:
-  // collecting contact and immersion geometries
-  QList<OmOdeContact> mOdeContacts;
   bool mWorldLoadingCanceled;
   bool mResetRequested;
   bool mRestartControllers;
@@ -203,7 +198,6 @@ private:
   QList<OmSolid *> mTopSolids;
   QList<OmSolid *> mRadarTargets;
   QList<OmSolid *> mCameraRecognitionObjects;
-  QMutex mOdeContactsMutex;
   double mLastAwakeningTime;
   bool mIsLoading;
   bool mIsCleaning;

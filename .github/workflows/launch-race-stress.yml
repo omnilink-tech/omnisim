@@ -1,0 +1,285 @@
+# Measure the engine STARTUP-RACE rate on Linux, on a schedule, on a NAMED binary.
+#
+# WHY THIS EXISTS
+#   The startup race (public issue #3) was attributed FIVE different ways over
+#   three months before it was pinned:
+#     * "roughly one launch in three"             AgentBench adapter, 2026-07
+#     * a Qt teardown signature                   headless_runner.looks_like_startup_race
+#     * 1-of-19 / 3-of-10 back-to-back spawns     batch_validate.py, 2026-08-15
+#     * a KILL by the capture lane's orphan detector (85bb046d0, 2026-08-29)
+#     * the real one: an engine handed a stdout that was NOT a pipe attached
+#       to its launcher's console, found fd 1 dead by the time the embedded
+#       interpreter first wrote to it (EBADF out of newton.ModelBuilder()),
+#       FATAL, exit 1 -- main.cpp RedirectIOToConsole, fixed 0e666b52b
+#   Every attribution was made on a different binary on the same laptop, and
+#   scripts/dev/launch_race_stress.py -- the instrument that finally reproduced
+#   it (--concurrent 2 --stagger 12: 3 of 7 second starters died pre-fix; 0 of
+#   8 through a pipe) -- ran in NO workflow. A regression would be attributed a
+#   sixth time. This lane runs the reproducing shape weekly on a fixed machine
+#   class, so the rate has a standing value for a binary the provenance line
+#   names by sha256.
+#
+# WHAT A RESULT MEANS HERE
+#   The fixed cause was Windows-specific (AttachConsole) and cannot recur on
+#   Linux. What this lane measures is the launcher-shape-independent claim: two
+#   engines starting 12 s apart -- the second AGAINST one already running, with
+#   controllers up -- must both finalise, and neither may die non-zero with zero
+#   ERROR/FATAL lines. Exit 75 here is a NEW race (port scan, tmp-dir salt, IPC
+#   nonce, ...), not the fixed one. Rounds alternate the two launcher shapes
+#   that reproduced: --stdio devnull (a bare Popen) and --stdio file (the shape
+#   run-headless and the capture service hand the engine). The pipe shape (the
+#   harness) never reproduced and is not run.
+#
+# HOW IT IS BUILT
+#   Every step up to "Physics runtime" is linux-build.yml's job skeleton -- the
+#   same bootstrap phases the README hands to Linux users, so the binary under
+#   test is the one a user gets. If linux-build.yml changes a setup step, change
+#   it here too; a private dependency list is how the fontconfig hole survived.
+#
+# ⚠ NOT YET RUN IN CI. Written 2026-09-02 on a Windows box with no way to
+#   exercise a Linux runner, so the first run IS the validation. On it, check:
+#     1. The control smoke (CPU world, OMNISIM_NO_WINDOW=1) is green. If it is
+#        not, the stress verdict is void: every round would exit 1 ("failed for
+#        a non-race reason"), and that is the runner or the world, not the race.
+#     2. Each round's `launch_race_stress:` provenance line names bin/omnisim-bin
+#        with a sha256 and `mode: concurrent2+stagger12s`; every row reads
+#        `finalised: true` and carries a `ports` list with ONE distinct port per
+#        engine (`shared_port_rounds` in summary.json is a finding of its own).
+#     3. Round wall time. --timeout 300 is a per-round ceiling chosen blind:
+#        linux-build measured a CPU-solver world finalising in 39 s on 22.04,
+#        and the control smoke warms the warp kernel cache first. A row with
+#        `finalised: false` and `rc: null` hit the ceiling -- that is not a
+#        race; raise --timeout before reading anything into it.
+#     4. The summaries artifact uploaded; on a red run, the engine logs too
+#        (per-launch OMNISIM_LOG_PATH files under .local-runs/launch_race_stress).
+#     5. Total job time against timeout-minutes below. The cold build dominates;
+#        the ccache key is shared with linux-build so a warm main is cheap.
+name: launch-race-stress
+
+on:
+  schedule:
+    # Sunday 03:00 UTC. GitHub runs schedules only on the default branch, and
+    # disables them after 60 days without repository activity.
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      rounds:
+        description: "Rounds of 2 engines starting 12 s apart"
+        required: false
+        default: "4"
+
+concurrency:
+  group: launch-race-stress-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-and-stress:
+    name: ${{ matrix.os }}
+    # COST GUARD. The schedule fires wherever this file lives, and on the
+    # private development remote Actions minutes are metered; a weekly build
+    # there buys nothing the public repo's run does not. Manual dispatch still
+    # works anywhere. Same guard shape as train-image.yml.
+    if: github.event_name == 'workflow_dispatch' || github.repository_owner == 'omnilink-tech'
+    runs-on: ${{ matrix.os }}
+    # linux-build.yml sets no job timeout (GitHub's 360 min default). This lane
+    # is smaller -- one OS, one control smoke, a few rounds -- so it pins a
+    # ceiling well under that; the cold build is the bulk of it.
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        # One leg. The race is not an OS-version question, and 24.04 is the
+        # cheaper of linux-build's two (system 3.12, no deadsnakes phase). Add
+        # ubuntu-22.04 here if a finding needs the second leg.
+        os: [ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # glm and stb are real submodules (.gitmodules); without them the
+          # build fails on missing headers.
+          submodules: true
+
+      # ⛔ DO NOT ADD actions/setup-python HERE.
+      # The engine EMBEDS CPython and links libpython3.12 -- the system python of
+      # ubuntu-24.04. actions/setup-python puts a different interpreter first on
+      # PATH, so the build would link one interpreter while the physics wheels
+      # land in another (the "two interpreters" trap docker/Dockerfile.train
+      # asserts against). See linux-build.yml for the full note.
+      - name: Report and pin the interpreter this leg is evidence about
+        run: |
+          v="$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')"
+          echo "system python3: $v (os=${{ matrix.os }})"
+          case "${{ matrix.os }}" in
+            ubuntu-24.04) test "$v" = "3.12" || { echo "FATAL: expected 3.12, got $v"; exit 1; } ;;
+            ubuntu-22.04) test "$v" = "3.10" || { echo "FATAL: expected 3.10, got $v -- this leg exists to prove the deadsnakes path FROM 3.10"; exit 1; } ;;
+          esac
+
+      - name: Physics interpreter (the bootstrap's own python phase)
+        run: bash scripts/install/linux_bootstrap.sh python
+
+      - name: System dependencies (the same list the docs give users)
+        run: bash scripts/install/linux_bootstrap.sh deps
+
+      # Same key as linux-build.yml on purpose: this lane compiles the same
+      # tree with the same flags, so on a warm main the build is mostly hits.
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: linux-build-${{ matrix.os }}-${{ github.ref_name }}
+          max-size: 800M
+
+      # wgpu-native BEFORE the build -- the only renderer, and the only way the
+      # wgpu translation units get compiled AND linked on Linux. Through the
+      # bootstrap phase, as the user recipe does.
+      - name: wgpu-native
+        run: bash scripts/install/linux_bootstrap.sh wgpu
+
+      - name: Build
+        env:
+          JOBS: 4
+        run: bash scripts/install/linux_bootstrap.sh build
+
+      - name: Assert the binary is coherent
+        run: |
+          BIN=bin/omnisim-bin
+          ldd "$BIN" | grep -q 'libpython3\.12' \
+            || { echo "FATAL: omnisim-bin does not link libpython3.12"; ldd "$BIN" | grep -i python || true; exit 1; }
+          echo "OK: links libpython3.12"
+          test -f lib/webots/libwgpu_native.so \
+            || { echo "FATAL: libwgpu_native.so not staged -- this build has NO renderer"; exit 1; }
+          echo "OK: renderer library staged"
+
+      # OMNISIM_SKIP_TORCH=1: torch is training-only and a ~2.5 GB download a
+      # GPU-less runner cannot use. onnxruntime, the hard inference dependency,
+      # is still installed.
+      - name: Physics runtime (pinned from the repo SSOT, no torch)
+        env:
+          OMNISIM_SKIP_TORCH: "1"
+        run: bash scripts/install/linux_bootstrap.sh gpu
+
+      # CONTROL, not the measurement. One ordinary headless run of the exact
+      # world the stress rotates (newton_smoke_test, CPU mj_step), with no main
+      # view -- on this GPU-less runner the Vulkan device is lavapipe, and a
+      # main view can block in wgpuDevicePoll for the whole window (the 22.04
+      # stall linux-build.yml documents). If THIS is red, the stress cannot
+      # distinguish a race from a runner that cannot load the world at all.
+      # It also warms the warp kernel cache, so the timed rounds below do not
+      # pay a cold JIT that would read as a hit ceiling.
+      - name: Control smoke - the stress world loads once, no main view
+        env:
+          WORLD: projects/samples/demos/worlds/physics/newton_smoke_test.omniworld
+          OMNISIM_NO_WINDOW: "1"
+          OMNISIM_NEWTON_LOG: ${{ github.workspace }}/newton_solver.control.log
+          DURATION: "480"
+          RETRY_DURATION: "480"
+        run: bash scripts/install/linux_bootstrap.sh smoke
+
+      # THE MEASUREMENT. Each round is one invocation of the stress script in
+      # the shape that reproduced the race: two engines, the second starting
+      # 12 s after the first (against a running, finalised engine), watched
+      # through finalize plus an 8 s grace for a post-finalize death. The
+      # script's exit codes are the contract: 0 = no launch raced, 75
+      # (EX_TEMPFAIL, the runner's own race code) = at least one did, 1 = a
+      # launch failed for any OTHER reason, 2 = world not found. Any non-zero
+      # round fails the job, but the verdict names which of those it was --
+      # "the world would not load" must never be read as "the flake".
+      - name: Startup-race stress (N rounds of 2 engines, 12 s apart)
+        env:
+          ROUNDS: ${{ inputs.rounds || '4' }}
+          OMNISIM_NO_WINDOW: "1"
+          OMNISIM_REQUIRE_NEWTON: "1"
+          QT_QPA_PLATFORM: xcb
+          WEBOTS_TMPDIR: /tmp
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          export OMNISIM_HOME="$PWD" WEBOTS_HOME="$PWD"
+          export LD_LIBRARY_PATH="$PWD/lib/webots${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          OUT="$PWD/.local-runs/launch_race_stress"
+          mkdir -p "$OUT"
+          status=0; raced=0; other=0
+          rows=""
+          for round in $(seq 1 "$ROUNDS"); do
+            # Odd rounds: the null device (a bare Popen). Even rounds: a file
+            # (run-headless / capture). Both non-pipe shapes reproduced pre-fix.
+            if (( round % 2 )); then stdio=devnull; else stdio=file; fi
+            echo "::group::round $round of $ROUNDS  (--concurrent 2 --stagger 12 --stdio $stdio)"
+            set +e
+            xvfb-run -a --server-args="-screen 0 1280x1024x24" \
+              python3 scripts/dev/launch_race_stress.py \
+                --concurrent 2 --stagger 12 -n 2 --stdio "$stdio" --timeout 300 \
+                --out "$OUT/round$round" | tee "$OUT/round$round.stdout"
+            rc=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+            summary="$(grep -m1 '^SUMMARY ' "$OUT/round$round.stdout" || echo '(no SUMMARY line)')"
+            case $rc in
+              0)  verdict="no race" ;;
+              75) verdict="STARTUP RACE (exit 75)"; raced=$((raced+1)); status=1
+                  echo "::error::round $round: a launch RACED -- $OUT/round$round/summary.json names it" ;;
+              1)  verdict="NON-race failure (exit 1)"; other=$((other+1)); status=1
+                  echo "::error::round $round: a launch failed for a non-race reason -- the runner or the world, not the race" ;;
+              *)  verdict="unexpected exit $rc"; other=$((other+1)); status=1
+                  echo "::error::round $round: unexpected exit $rc" ;;
+            esac
+            echo "round $round: $verdict -- $summary"
+            rows="$rows| $round | $stdio | $rc | $verdict | \`$summary\` |"$'\n'
+          done
+          {
+            echo "## launch-race-stress: $ROUNDS rounds x 2 engines, 12 s apart (${{ matrix.os }})"
+            echo
+            echo "raced rounds: **$raced** -- non-race failures: **$other** -- verdict: **$([ $status = 0 ] && echo GREEN || echo RED)**"
+            echo
+            echo "| round | stdio | exit | verdict | script summary |"
+            echo "|---|---|---|---|---|"
+            printf '%s' "$rows"
+            echo
+            echo "Provenance (binary sha256 + machine) is the first line of each round's stdout."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+      - name: Upload stress summaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-race-stress-${{ matrix.os }}-summaries
+          path: |
+            .local-runs/launch_race_stress/round*.stdout
+            .local-runs/launch_race_stress/round*/summary.json
+          if-no-files-found: warn
+
+      # Every launch wrote its own OMNISIM_LOG_PATH (launchNNN.log, plus the
+      # .stdout twin in --stdio file rounds and the .newton.json sidecar when
+      # it finalised). These are what attribute a red round.
+      - name: Upload engine logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-race-stress-${{ matrix.os }}-engine-logs
+          path: |
+            .local-runs/launch_race_stress/
+            omnisim_log.txt
+            omnisim_log.txt.stderr
+            omnisim_log.txt.stdout
+            newton_solver.control.log
+          if-no-files-found: warn
+
+      - name: Engine logs + host state on failure
+        if: failure()
+        run: |
+          for f in .local-runs/launch_race_stress/round*/launch*.log; do
+            echo "::group::tail -60 $f"
+            tail -60 "$f" 2>/dev/null || echo "(absent)"
+            echo "::endgroup::"
+          done
+          echo "::group::control smoke log"
+          tail -80 omnisim_log.txt 2>/dev/null || echo "(absent)"
+          echo "::endgroup::"
+          echo "::group::host (OOM / swap / faults, processes, sockets)"
+          sudo dmesg -T 2>/dev/null | tail -40 || echo "(dmesg unavailable)"
+          free -m; nproc; df -h / | tail -1
+          ps -ef --forest | grep -vE 'ps -ef|grep' | tail -30
+          ss -ltnp 2>/dev/null | head -20
+          echo "::endgroup::"

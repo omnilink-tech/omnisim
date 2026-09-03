@@ -254,6 +254,28 @@ MAX_PITCH_DISTURBANCE = -1.0   # negative = pitch nose down to fly forward
 
 # Approach-target precision (meters).
 WAYPOINT_REACH_TOL_M = 0.6
+
+# Stall detection (public issue #14). A flight campaign measured two flights that
+# wedged against an obstacle and sat there for 212 s and 40 s while the bridge
+# still reported `mode=goto` and `fault=None`: "the aircraft does not detect the
+# obstacle, does not report a fault, and does not give up." There is no planner
+# here and none is claimed -- goto_waypoint is a position setpoint -- but a
+# harness cannot distinguish "flying there" from "pinned against a shelf" without
+# a signal, and that is cheap to provide. We REPORT and do not act: giving up is
+# the operator's call, so the mode is left alone and only `fault` is set.
+STALL_PROGRESS_TOL_M = 0.25   # closer than this to the best-so-far is "no progress"
+STALL_TIMEOUT_S = 12.0        # sim seconds without progress before reporting
+
+
+def stall_verdict(dist_xy, best_dist, since_progress_s):
+    """(is_stalled, new_best) for one tick of a goto.
+
+    Pure so it can be tested without an engine. `best_dist` is the closest the
+    aircraft has been to this target so far; progress resets the clock.
+    """
+    if best_dist is None or dist_xy < best_dist - STALL_PROGRESS_TOL_M:
+        return False, dist_xy
+    return since_progress_s >= STALL_TIMEOUT_S, best_dist
 ALTITUDE_REACH_TOL_M = 0.4
 
 # Gimbal pitch motor range (camera pitch). 0 = forward, pi/2 = down.
@@ -482,6 +504,10 @@ class BridgeState:
         self.gimbal_pitch_actual = 0.0
         self.mode = "idle"        # idle | takeoff | hover | goto | land | landed
         self.fault: Optional[str] = None
+        # Stall detection (issue #14): closest approach to the live target and
+        # the sim time at which it was achieved.
+        self.stall_best: Optional[float] = None
+        self.stall_since: float = 0.0
         self.sim_time = 0.0
         self.last_tick_at = time.time()
         self.tick_period_s = 0.008
@@ -950,6 +976,8 @@ def make_handler(state: BridgeState):
             if action == "takeoff":
                 altitude = finite_number(body.get("altitude", DEFAULT_TAKEOFF_ALTITUDE), "altitude")
                 with state.lock:
+                    state.stall_best = None
+                    state.stall_since = state.sim_time
                     state.target_altitude = max(0.5, altitude)
                     anchor = state.reset_anchor
                     state.reset_anchor = None
@@ -1015,6 +1043,10 @@ def make_handler(state: BridgeState):
                     state.target_altitude = target_alt
                     state.mode = "goto"
                     state.fault = None
+                    # A new target restarts progress tracking (issue #14): the
+                    # previous target's best-approach must not leak into it.
+                    state.stall_best = None
+                    state.stall_since = state.sim_time
                 if body.get("wait"):
                     timeout_s = finite_number(body.get("timeout_s", 60.0), "timeout_s")
                     res = _wait_until_arrived(state, tx, ty, target_alt, timeout_s)
@@ -1340,6 +1372,20 @@ def main():
                 # error + velocity damping, clamped, and the clamp IS the cruise
                 # limit (MAX_HOLD_TILT / K_XY_V = ~1.0 m/s). Yaw steering stays
                 # only so the camera faces the direction of travel.
+                # Stall check (issue #14) -- report only, never act. Skipped once the
+                # aircraft is within the reach tolerance: sitting still AT the target
+                # is not progress either, and holding a hover must never be a fault.
+                if dist_xy > WAYPOINT_REACH_TOL_M:
+                    with state.lock:
+                        _stalled, state.stall_best = stall_verdict(
+                            dist_xy, state.stall_best, state.sim_time - state.stall_since)
+                        if state.stall_best == dist_xy:
+                            state.stall_since = state.sim_time
+                        if _stalled and state.fault is None:
+                            state.fault = "no_progress"
+                        elif not _stalled and state.fault == "no_progress":
+                            state.fault = None
+
                 e_fwd = dx * cy + dy * sy
                 e_right = dx * sy - dy * cy
                 # +pitch_input lifts the FRONT pair -> nose up -> backward.

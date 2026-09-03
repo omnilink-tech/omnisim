@@ -1,6 +1,6 @@
 # omniworld User Guide
 
-`omniworld` is the OmniSim procedural world generation library. This guide documents the parts that have actually landed. For the forward-looking roadmap — biomes, scenarios, real-world import, learned generation — see [procedural-world-generation-plan.md](procedural-world-generation-plan.md).
+`omniworld` is the OmniSim procedural world generation library. This guide documents the parts that have actually landed. For the forward-looking roadmap — biomes, scenarios, real-world import, learned generation — see procedural-world-generation-plan.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 
 ## Status
 

@@ -24,7 +24,6 @@
 #include "OmSolid.hpp"
 #include "OmSolidMerger.hpp"
 
-#include "OmOdeTypes.hpp"  // opaque handle typedefs only
 
 void OmPropeller::init() {
   mShaftAxis = findSFVector3("shaftAxis");
@@ -203,7 +202,7 @@ void OmPropeller::prePhysicsStep(double ms) {
     // Gate on the NEWTON body instead, the same handle applyExternalForceNewton
     // resolves a few lines down.
     if (us->bodyHandle() == NULL) {
-      parsingWarn(tr("Adds a Physics node to Solid ancestors to enable thrust and torque effect."));
+      parsingWarn(tr("Adds a Physics node to Solid ancestors to enable thrust and torque effect. Without a Newton body on the nearest Solid ancestor this Propeller produces NO thrust and NO torque (the rotor spins, the airframe never moves): set `physics Physics { mass ... }` on that Solid and confirm it reached the solver in the '[OmNewtonBackend] registered N dynamic' log line -- see docs/reference/propeller.md."));
       return;
     }
 

@@ -36,7 +36,6 @@ export OMNISIM_WITH_CUDA=OFF
 rm -f src/omnisim/build/release/OmCuda*.o
 echo "=== toolchain ==="
 gcc --version | head -1
-echo "=== ode ===";     make -C src/ode      release
 echo "=== glad ===";    make -C src/glad     release
 echo "=== omnisim ==="; make -C src/omnisim  release
 echo "=== DONE ==="

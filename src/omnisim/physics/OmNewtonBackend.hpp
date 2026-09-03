@@ -21,35 +21,31 @@
 #include <vector>
 
 //
-// OmNewtonBackend — opt-in GPU-resident physics backend, wraps NVIDIA
-// Newton (Apache 2.0, https://github.com/newton-physics/newton). Lives
-// alongside OmOdeBackend; world authors opt a OmSolid into this
-// backend via the (forthcoming) `physicsBackend "newton"` field.
+// OmNewtonBackend — THE physics backend: wraps NVIDIA Newton (Apache 2.0,
+// https://github.com/newton-physics/newton) with its MuJoCo solver, embedded
+// through the stable CPython API. Every Solid resolves to it (the
+// `physicsBackend` field is "auto"/"newton"; "ode" is a retired selector that
+// warns and lands here too).
 //
 // Build modes
 // -----------
 //
 // OMNISIM_WITH_NEWTON=ON (default since the Stage 3 build-flag flip,
 // 2026-06-06 -- see src/omnisim/Makefile + docs/developer/default-flip-plan.md):
-//   - Newton library code is compiled in. isAvailable() actually brings up
-//     the Newton runtime (warp + newton Python packages, embedded via the
-//     stable CPython API) and returns true on success; on a box without the
-//     runtime (it is NOT bundled) or without NVIDIA hardware it returns
-//     false and the dispatcher falls back to OmOdeBackend -- safe, but not
-//     actually Newton. The upstream PyPI package was renamed from
-//     `newton-physics` to `newton` in late 2025; install with
-//     `pip install "newton[examples]" warp-lang`.
+//   - Newton library code is compiled in. isAvailable() brings up the Newton
+//     runtime (warp + newton Python packages from the vendored bundle, see
+//     `make -C src/omnisim bundle-newton-runtime`) and returns true on
+//     success; without the runtime it returns false and the world loads with
+//     NO physics, saying so once at ERROR level (OMNISIM_REQUIRE_NEWTON makes
+//     that a FATAL).
 //
 // OMNISIM_WITH_NEWTON=OFF:
-//   - Pure-ODE legacy build: OmNewtonBackend exists but isAvailable()
-//     returns false, every Newton request falls back to OmOdeBackend at the
-//     dispatcher layer, and zero Newton library code is linked into the
-//     binary.
+//   - A binary with NO physics at all: OmNewtonBackend exists but
+//     isAvailable() returns false and zero Newton library code is linked.
+//     There is no legacy solver to fall back to.
 //
-// This file is included on every build, regardless of
-// OMNISIM_WITH_NEWTON, because the dispatcher needs to know that
-// "newton" is a recognised backend kind even when the runtime is
-// unavailable. The .cpp toggles the actual runtime hookup.
+// This file is included on every build, regardless of OMNISIM_WITH_NEWTON;
+// the .cpp toggles the actual runtime hookup.
 //
 
 #include "OmPhysicsBackend.hpp"
@@ -916,11 +912,12 @@ public:
   // projects the world's gravity vector onto that same up vector.
   int applyCoordinateSystemToWorld();
 
-  // Refuse to run on ODE when the world asked for Newton and the INSTALLED
-  // runtime would not come up. Called once the world's own backend choice is
-  // known -- not at construction, which happens before the world is parsed.
-  // Returns true if it refused (having logged a FATAL, which exits).
-  static bool refuseIfBrokenAndNewtonWanted(bool newtonWanted);
+  // Refuse to run when the INSTALLED Newton runtime would not come up (as
+  // opposed to a runtime that was never bundled, which OMNISIM_REQUIRE_NEWTON
+  // governs). Called from the first world step, not at construction, so the
+  // world loads far enough to be inspected. Returns true if it refused (having
+  // logged a FATAL, which exits).
+  static bool refuseIfNewtonBroken();
 
   // Cumulative seconds spent inside the embedded step call, for
   // OMNISIM_NEWTON_STEP_PROFILE. Untouched when profiling is off.

@@ -25,8 +25,8 @@
 (builds B's table), [`projects/policies/controllers/ghost_hologram/ghost_hologram.py`](../../projects/policies/controllers/ghost_hologram/ghost_hologram.py)
 (self-walking ghost), [`projects/policies/research/worlds/g1_shadow_demo.omniworld`](../../projects/policies/research/worlds/g1_shadow_demo.omniworld),
 [`projects/policies/research/runners/run_g1_shadow_demo.ps1`](../../projects/policies/research/runners/run_g1_shadow_demo.ps1).
-**Related:** [`g1-deterministic-brain.md`](g1-deterministic-brain.md),
-[`g1-mpc-deterministic-brain-research.md`](g1-mpc-deterministic-brain-research.md).
+**Related:** `g1-deterministic-brain.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)),
+`g1-mpc-deterministic-brain-research.md` (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)).
 
 ## Why
 

@@ -673,6 +673,11 @@ public:
                                  const struct OmWgpuSolidDraw *draws, uint32_t numDraws,
                                  float *outMeters);
 
+  // Drop every cached texture+shadow bind group (they are keyed by raw texture-view handles).
+  // Call after OmWgpuTextureCache::evictStale() released anything: wgpu recycles handle values,
+  // so a new view can alias a dead one and the cached bind group would be invalid at submit.
+  void forgetTextureBindGroups() { releaseTexShadowBgCache(); }
+
 private:
   OmVulkanBackend *mBackend;  // non-owning
   uint32_t mWidth;
