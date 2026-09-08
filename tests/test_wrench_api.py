@@ -135,6 +135,11 @@ DEF PROBE Robot {
 
 
 def _binary():
+    """The engine to run. $OMNISIM_BIN first, so a source clone with no built
+    engine can be tested against an installed one."""
+    override = os.environ.get("OMNISIM_BIN")
+    if override and Path(override).exists():
+        return Path(override)
     for c in (REPO / "msys64/mingw64/bin/omnisim-bin.exe", REPO / "bin/omnisim-bin"):
         if c.exists():
             return c
@@ -142,7 +147,8 @@ def _binary():
 
 
 pytestmark = pytest.mark.skipif(_binary() is None,
-                                reason="no omnisim-bin in this clone")
+                                reason="no omnisim-bin in this clone; set "
+                                       "$OMNISIM_BIN to an installed engine")
 
 
 def _run(tmp_path, attempt):
