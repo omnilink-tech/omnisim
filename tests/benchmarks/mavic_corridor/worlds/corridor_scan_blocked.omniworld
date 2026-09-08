@@ -1,0 +1,115 @@
+#OMNISIM R2025a utf8
+
+# Copyright 2026 OmniLink
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Warehouse corridor, built deliberately from the reference geometry in
+# omnisim_scene_protocol.md section 2 so that it matches baseline_metrics.py
+# exactly. This is the CONTROLLED world for the navigation comparison; the
+# scene-authoring measurement is a separate run from the prompt alone.
+#
+#   shelves  x in [0,3] [5,8] [10,13],  y in [0,4],  z in [0,2]
+#   aisles   x in [3,5] and [8,10]
+#   flight   altitude 1.0 m -- mid-shelf, so horizontal clearance governs
+
+WorldInfo {
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  # The Mavic's base_link needs its own collider or it balances on a 1 mm point.
+  newtonRobotColliders TRUE
+  title "corridor scan -- drone-gcs mission"
+}
+Viewpoint {
+  position 6.5 -14 12
+  orientation 1 0 0 0.9
+}
+Background { skyColor [ 0.35 0.45 0.55 ] }
+DirectionalLight {
+  direction -0.4 0.5 -1
+  intensity 3
+  castShadows TRUE
+}
+PointLight {
+  location 6.5 2 6
+  intensity 12
+}
+
+DEF FLOOR Solid {
+  translation 6.75 2.0 -0.05
+  name "floor"
+  children [
+    DEF FLOOR_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.35 0.35 0.38 roughness 1 metalness 0 }
+      geometry Box { size 21.0 12.0 0.1 }
+    }
+  ]
+  boundingObject USE FLOOR_SHAPE
+  locked TRUE
+}
+
+DEF SHELF_E1 Solid {
+  translation 1.5 2.0 1.0
+  name "shelf_e1"
+  children [
+    DEF SHELF_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.55 0.42 0.20 roughness 1 metalness 0 }
+      geometry Box { size 3 4 2 }
+    }
+  ]
+  boundingObject USE SHELF_SHAPE
+  locked TRUE
+}
+
+DEF SHELF_E2 Solid {
+  translation 6.5 2.0 1.0
+  name "shelf_e2"
+  children [ USE SHELF_SHAPE ]
+  boundingObject USE SHELF_SHAPE
+  locked TRUE
+}
+
+DEF SHELF_E3 Solid {
+  translation 11.5 2.0 1.0
+  name "shelf_e3"
+  children [ USE SHELF_SHAPE ]
+  boundingObject USE SHELF_SHAPE
+  locked TRUE
+}
+
+# BLOCKED condition: a 0.6 x 0.6 m obstacle spanning the flight altitude, in the
+# centre of aisle 1 at (4.0, 2.0) -- the same AABB baseline_metrics.py uses,
+# clear of both shelf faces by 0.7 m.
+DEF BLOCKER Solid {
+  translation 4.0 2.0 1.0
+  name "blocker"
+  children [
+    DEF BLOCKER_SHAPE Shape {
+      appearance PBRAppearance { baseColor 0.75 0.15 0.15 roughness 1 metalness 0 }
+      geometry Box { size 0.6 0.6 2.0 }
+    }
+  ]
+  boundingObject USE BLOCKER_SHAPE
+  locked TRUE
+}
+
+# Starts on the floor at the first lane's entry point, (-0.5, -0.5).
+DEF MAVIC URDFRobot {
+  url "../../../../projects/robots/dji/mavic/urdf/mavic_2_pro.urdf"
+  translation -0.5 -0.5 0.1
+  rotation 0 0 1 1.5708
+  name "Mavic 2 PRO"
+  controller "mavic_omnilink_bridge"
+  controllerArgs [ "--port" "6090" "--name" "mavic2pro" ]
+  supervisor TRUE
+}
