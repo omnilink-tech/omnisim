@@ -28,6 +28,13 @@ WorldInfo {
   coordinateSystem "ENU"
   # The Mavic's base_link needs its own collider or it balances on a 1 mm point.
   newtonRobotColliders TRUE
+  # Ground friction for the parked airframe (public issue #14). At the engine
+  # default (unset = 1.0) the gimbal servo's sustained horizontal reaction slides
+  # the parked Mavic at ~0.077 m/s, so the start guard either refuses the flight
+  # or every flight starts somewhere different. 1.5 parks it. The shipped
+  # omnilink_mavic.omniworld declares this for the same reason; a benchmark whose
+  # whole point is a reproducible start pose cannot leave it unset.
+  newtonGroundMu 1.5
   title "corridor scan -- drone-gcs mission"
 }
 Viewpoint {
