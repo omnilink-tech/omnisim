@@ -12,6 +12,10 @@ shelves by millimetres.
                                             blocker at (4.0, 2.0) in lane two
     controllers/mavic_omnilink_bridge/      a relay, see below
     corridor_mission.py                     flies the mission and measures it
+    lane_scoring.py                         scores lane offset and recovery from
+                                            kept samples, with a CLI to re-score
+                                            a past campaign
+    test_lane_scoring.py                    its three rules, no engine
     baseline_metrics.py                     the kinematic baseline, and the
                                             shared geometry both sides score
                                             against
@@ -72,3 +76,41 @@ complete 3/3. The two failure signatures this benchmark exists to catch:
   - hull clearance collapsing toward zero while completion stays at 8/8, which
     is corner-cutting, not a navigation failure, and
   - a flight that stops making progress and is not reported as such.
+
+## Lane offset, and the signature that needs it
+
+A contact the aircraft survives is not free. It delays the return to the lane,
+and an obstacle corner sitting inside that recovery distance is what collects.
+Nothing in the summary metrics distinguishes this from ordinary corner-cutting:
+completion stays 8/8, and minimum clearance moves only at the one corner.
+
+`lane_scoring.py` measures it from samples already in the report, so a question
+about a past campaign is answered by re-scoring rather than re-flying:
+
+    python lane_scoring.py run.json --leg 3 --stations 0.6 0.9
+
+Measured on v8.4.0, leg 4 ((4.0, -0.5) to (9.0, -0.5)), offset toward the shelf
+side at 0.6 m and 0.9 m along it, against minimum hull clearance to shelf 2
+whose near corner is at (5.0, 0.0):
+
+    six none flights          0.164-0.190   0.067-0.094   0.260-0.306
+    blocked, light graze      0.166         0.091         0.264
+    blocked, hard graze       0.318-0.433   0.275-0.390   0.000-0.103
+
+The light-graze flight is the control inside the condition: same world, same
+start, same bridge, and indistinguishable from the unblocked flights at every
+station. The only variable is whether contact happened.
+
+Two things this is not. It is not a threshold: the `blocked` condition does not
+deliver the same outcome mix on two machines, and where one campaign completed
+6/6 another wedged three flights against the blocker, all three labelled
+correctly. So the population the table describes is the sub-population that gets
+past the obstacle. And it is not a claim that the flight stays off-lane, which is
+the opposite of what the samples say: after the graze the later legs track the
+lane at least as well as the control, and the deepest graze tracks it best, which
+is what losing energy to a contact looks like.
+
+A station is a distance along the leg, not a coordinate, and a station inside the
+turn is reported as `in-turn` rather than as a number. The reason is in
+`lane_scoring.py`; the short version is that a wide corner crosses a near station
+three times and the three readings on one flight differed by 2.5 m.

@@ -41,6 +41,7 @@ import time
 import urllib.error
 import urllib.request
 
+import lane_scoring
 from baseline_metrics import (SHELF_BOXES, BLOCKING_BOX, dist_to_box, LANE_A,
                               LANE_B, LANE_C, LANE_D, Y_LO, Y_HI, Z_FIJO)
 
@@ -347,6 +348,15 @@ def main():
     ap.add_argument("--altitude", type=float, default=Z_FIJO)
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--keep-trajectories", action="store_true")
+    ap.add_argument("--lane-leg", type=int, default=3,
+                    help="0-based leg for the lane station table; 3 is "
+                         "(4.0,-0.5)->(9.0,-0.5), the leg that collects a "
+                         "delayed recovery after a contact on the leg before")
+    ap.add_argument("--lane-stations", type=float, nargs="*", default=(0.6, 0.9),
+                    help="metres along that leg from its start waypoint. 0.6 and "
+                         "0.9 are past the turn in every flight measured so far; "
+                         "0.3 is inside it, and lane_scoring reports such a "
+                         "station as in-turn rather than giving it a number")
     ap.add_argument("--out", default="mission.json")
     args = ap.parse_args()
 
@@ -411,6 +421,12 @@ def main():
               "summary": summary, "runs": runs}
     if args.keep_trajectories:
         report["trajectories"] = trajectories
+        # Lane offset is scored from the kept samples, never from live state, so
+        # the number in the report and the number anyone recomputes later from
+        # the same file are the same number by construction.
+        report["lane"] = [lane_scoring.score_run(t, ROUTE, args.lane_leg,
+                                                 args.lane_stations)
+                          for t in trajectories]
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=1)
 
