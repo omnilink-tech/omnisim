@@ -164,7 +164,7 @@ Run that lane on its own: `--categories honesty --tasks honest_bridge_down_token
 | 2 | the `HuskySwarm` coordinator on **51520** | the tool surface | `python agents/production/husky_swarm/swarm_agent.py` |
 | 3 | the four unit agents on **51521-51524** | the delegation lane | `python agents/production/husky_swarm/husky_unit_agent.py --husky ne` (…`nw`, `se`, `sw`) |
 | 4 | the **OmniLink edge connector** | delegation is executed *server-side*, and the child agent's tools run on your machine over the edge socket | `OMNI_KEY=olink_... python -m omnilink.edge_connector` |
-| 5 | `OMNI_KEY` | any non-`local` engine | `python -m omnisim key --check` |
+| 5 | `OMNI_KEY` | **every** engine, `local` included — the bridge's `/prompt` requires it | `python -m omnisim key` |
 | 6 | a provider credential | otherwise every engine 402s | `python -m omnisim byok` |
 
 The runner refuses to start if 1-2 are missing (a dead stack scores as model
@@ -180,7 +180,7 @@ won the race.
 ## Running it
 
 ```bash
-# The whole matrix. `local` is the no-LLM control — include it.
+# The whole matrix. `local` is the single-bridge control — include it.
 python tests/benchmarks/omnilink_tasks/matrix.py \
     --engines g1-engine,g3-engine,local --repeat 3 --pace 30
 
@@ -196,11 +196,34 @@ python tests/benchmarks/omnilink_tasks/matrix.py \
 
 ### Why `local` is in the default engine list
 
-`local` sends the prompt straight to a bridge's **regex intent router** — no
-model, no tools, no delegation. It is the control arm: it shows what the
-harness scores with nothing in the loop. **A task the control also passes is
-measuring the scaffolding, not the agent.** Reporting a suite score without
-the control is how a benchmark flatters itself.
+⚠️ **`local` is no longer a no-LLM arm.** The target it used to hit — a
+bridge's keyword ladder — was deleted on
+2026-09-22. What `LocalRouterDriver` does today is POST the prompt to a single
+bridge's `/prompt` and read the reply. That endpoint needs an OmniKey like
+every other lane (without one it answers `401 omnikey_required` and the arm
+records an error), and behind it the bridge interprets with the deterministic
+parser first and calls the model only on what the parser declines.
+
+So `local` is now the **single-bridge control**: one robot, no coordinator
+agent, no delegation, no cross-robot tools — what the suite scores when the
+agent layer is taken away but the bridge is not. It is still worth running for
+exactly the old reason: **a task the control also passes is measuring the
+scaffolding, not the agent.** Reporting a suite score without the control is
+how a benchmark flatters itself.
+
+Two consequences to carry into any reading. The code now says all of this
+itself — `matrix.py --list`, its `--engines` help text and its per-engine
+banner print **single-bridge control** (they printed `no-LLM control` until the
+driver rewrite on 2026-09-22), the `LocalRouterDriver` docstring carries the
+same correction, and a run with no `OMNI_KEY` is refused for *every* engine,
+`local` included — it is no longer the one arm that could run without one, and
+the runner no longer offers it as such. And result rows
+recorded under `engine: "local"` before 2026-09-22 were
+produced by the keyword ladder that was deleted that day, so read them as
+ladder runs rather than as runs of this arm; they are also labelled with the
+old `stop_reason` values `router answered` / `router error`, which new rows
+record as `bridge answered` / `bridge error`. Those files are evidence and are
+not edited to match.
 
 ### `--repeat` is not optional in spirit
 
@@ -382,7 +405,7 @@ an absence, and the *Not graded* section says why.
 
 - **It does not compare OmniLink to any other agent harness.** There is no
   LangChain/AutoGen/plain-API arm. It compares *engines within OmniLink*, plus
-  a no-LLM control.
+  the single-bridge control.
 - **It does not measure model quality in general.** Sixteen tasks, one robot
   class, one arena, one tool surface, one prompt style. A model that wins here
   may lose on anything else.
@@ -499,7 +522,7 @@ This suite is the **customer-facing** one. It differs on purpose:
   pass rate;
 - it carries machine + git + cost + latency provenance on every row;
 - it has an offline dry-run path, so the harness is testable without a sim;
-- it includes a no-LLM control arm.
+- it includes a single-bridge control arm (no coordinator, no delegation).
 
 They overlap and that is fine — a regression should show in both.
 
@@ -515,12 +538,17 @@ task ships: `mobile_drive_1m` (Husky displacement ≥ 0.9 m).
 It is still useful as a **world smoke check** — "does this demo world load,
 spawn a bridge, and respond to a prompt at all" — and it is the only lane that
 launches a world for you. It is *not* an agent benchmark: its recorded runs
-were made in `mode: "local"` with `engine: null`, i.e. the regex intent router
-with no LLM anywhere.
+were made in `mode: "local"` with `engine: null`, i.e. against the keyword
+ladder that used to answer a keyless `/prompt`, with no LLM anywhere. That
+ladder was deleted on 2026-09-22 and `/prompt` now requires an OmniKey, so
+those rows are historical — a re-run today needs `OMNI_KEY` set and goes
+through the parser-then-model path like every other lane.
 
 ```bash
+export OMNI_KEY=olink_...
 python tests/benchmarks/omnilink_tasks/run.py --list
 python tests/benchmarks/omnilink_tasks/run.py --only mobile_drive_1m
 ```
 
-Unchanged, and it stays that way.
+The lane itself is unchanged and stays that way; what changed underneath it is
+that `/prompt` now needs the key.

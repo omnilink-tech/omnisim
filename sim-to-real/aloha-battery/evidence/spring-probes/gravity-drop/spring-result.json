@@ -1,0 +1,75 @@
+{
+  "complete": true,
+  "case": "drop",
+  "parameters": {
+    "stiffness_n_m": 100.0,
+    "damping_n_s_m": 0.18,
+    "preload_n": 0.15,
+    "travel_m": 0.01,
+    "contact_mass_kg": 0.002,
+    "coil_rest_length_m": 0.014,
+    "spring_rest_face_x": 0.0005,
+    "positive_face_x": 0.0435,
+    "slot_y": -0.0095,
+    "battery_axis_z": 0.0128,
+    "battery_length_m": 0.049,
+    "battery_radius_m": 0.0068
+  },
+  "passed": false,
+  "floor_contact_observed": false,
+  "final": {
+    "time_s": 2.4,
+    "position_m": 0.0,
+    "compression_m": -0.0,
+    "velocity_m_s": 0.0,
+    "spring_force_n": 0.15,
+    "probe_load_n": 0.0,
+    "battery_in_remote": [
+      0.019706615984439853,
+      -0.009776397079229351,
+      3.4753258132934572
+    ],
+    "battery_rotation": [
+      -0.12598683258486273,
+      0.004782674553799159,
+      0.9920203848910295,
+      0.040858291714541334,
+      0.9991648821356354,
+      0.0003718938710559755,
+      -0.9911901522984393,
+      0.04057911200352131,
+      -0.12607703064239126
+    ],
+    "remote_rotation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "battery_position": [
+      -0.03829338401556015,
+      0.033223602920770645,
+      3.485325813293457
+    ],
+    "negative_points": [],
+    "positive_points": [],
+    "floor_points": [],
+    "contact_points": []
+  },
+  "upward_test_force_n": 0.6,
+  "test_interval_s": [
+    1.4,
+    1.8
+  ],
+  "runtime_environment": {
+    "OMNISIM_NEWTON_FINGER_KE": "2000",
+    "OMNISIM_NEWTON_MULTICCD": "1"
+  },
+  "body_pose_writes": 0,
+  "scope": "Isolated mechanism/geometry test, not a robot insertion"
+}

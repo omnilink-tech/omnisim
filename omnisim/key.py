@@ -14,12 +14,9 @@
 
 """`python -m omnisim key` -- get, set and check your OmniLink Omni Key.
 
-The Omni Key is the one thing OmniSim cannot do for you. Everything else in
-a fresh clone works offline: with no key the chat bridges fall back to a
-local Ollama model, and failing that to a regex intent router, so the demos
-run with no account at all. The key is what upgrades them to a real agent --
-cloud model routing, voice, cross-session memory, usage telemetry, and the
-profile sync that makes each robot show up on the platform.
+An OmniKey and model connection are required for OmniLink chat. Without
+them, prompts report a connection error. Ordinary OmniSim controls remain
+available independently. The key identifies the OmniLink account.
 
 This command exists because "sign up and generate a key" used to be one
 sentence in a guide, and the operator was then left to work out which of
@@ -232,9 +229,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="omnisim key",
         description=(
-            "Get, set and check the OmniLink Omni Key. Without a key the "
-            "chat demos still run -- on a local Ollama model, or an offline "
-            "regex router -- so this is an upgrade, not a prerequisite."
+            "Get, set and check your OmniKey. OmniLink chat requires an "
+            "OmniKey and model connection, including on the Free plan."
         ),
     )
     parser.add_argument(
@@ -298,11 +294,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print("OMNI_KEY is not set.")
     print()
-    print("  The chat demos still work without it -- they fall back to a local")
-    print("  Ollama model if one is running, and to an offline regex router if")
-    print("  not. A key upgrades them to a real agent: cloud models, voice,")
-    print("  memory that survives a restart, and your robots showing up on the")
-    print("  platform. Free tier, no card.")
+    print("  OmniLink chat requires an OmniKey and a model connection.")
+    print("  Interactive access is available on Free; model usage is separate.")
+    print("  Ordinary OmniSim controls and Stop remain available without it.")
     print()
     _print_get_instructions(shell)
     return 0

@@ -1,0 +1,63 @@
+{
+  "complete": true,
+  "frames": 600,
+  "max_battery_height_m": 0.016592813655734062,
+  "max_battery_speed_m_s": 2.1597313661914086e-06,
+  "final_battery_position": [
+    0.08500000089406967,
+    0.01600000075995922,
+    0.016592765226960182
+  ],
+  "final_battery_in_remote": [
+    0.13885658832442369,
+    -0.014038146295216953,
+    0.006724078624609812
+  ],
+  "final_battery_rotation": [
+    -3.422854171747217e-08,
+    0.0,
+    0.9999999999999994,
+    0.0,
+    1.0,
+    0.0,
+    -0.9999999999999994,
+    0.0,
+    -3.422854171747217e-08
+  ],
+  "final_remote_rotation": [
+    0.9837613331434995,
+    0.17948157327733688,
+    6.531169122075742e-05,
+    -0.17948124263585,
+    0.9837601015112023,
+    -0.0015956868615756928,
+    -0.0003506474243587821,
+    0.0015580528107243194,
+    0.9999987247580983
+  ],
+  "final_battery_velocity": [
+    0.0,
+    0.0,
+    2.0859510299620077e-11,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "actuation": "Motor.setPosition",
+  "timed_episode_pose_writes": 0,
+  "motion_mode": "authored",
+  "metric_sampling_hz": 50,
+  "runtime_environment": {
+    "OMNISIM_NEWTON_FINGER_KE": "2000"
+  },
+  "bilateral_airborne_s": 0.0,
+  "max_carry_slip_m": 0.0,
+  "bilateral_transport_m": 0.0,
+  "strict_grip_stability_passed": false,
+  "left_brace_contact_s": 5.62,
+  "carried": false,
+  "inside_slot": false,
+  "settled": true,
+  "released": true,
+  "task_success": false
+}

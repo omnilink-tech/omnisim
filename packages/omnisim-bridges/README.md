@@ -1,3 +1,5 @@
+> **Access policy (2026-09-22):** OmniLink requires an OmniKey and model connection. No keyless AI mode or automatic basic-command fallback. Direct OmniSim controls remain separate. See [setup guide](../../docs/guide/omnilink-chat-demos.md).
+
 # omnisim-bridges
 
 > OmniLink-driven bridge primitives for OmniSim and real robots.
@@ -14,6 +16,15 @@ Zero Webots dependency. The same primitives OmniSim's
 **OmniLink-driven bridge for a real robot in under 30 lines of new
 code**.
 
+## Repository placement
+
+This package owns reusable client-side robot integration. Demo controllers,
+worlds and robot windows stay under `projects/samples/demos/`; video assets live
+in `docs/media/omnilink-husky/`. Real-recording comparison studies live in
+`sim-to-real/`, with runnable implementations in their robot projects.
+The private OmniLink service remains in the separate OmniLink project.
+See the [integration map](../../docs/guide/omnilink-sim-to-real.md#integration-locations).
+
 ## What you get
 
 | Export | What it is |
@@ -21,8 +32,8 @@ code**.
 | `BridgeBase` | Abstract base class. Implement `act_stop` + any action methods your robot supports. Unsupported actions return clean `{"error": "..."}` responses. |
 | `serve_http(bridge, port)` | Spin up the Axis-normalised HTTP server. Same routes as OmniSim's bridges (`/list_robots`, `/get_robot_state`, `/prompt`, `/tool`, `/usage`, `/set_tcp_target`, `/drive_forward`, ...). |
 | `Tool` | One named action with a JSON-schema params spec. Used by `OmniLinkRelay`. |
-| `OmniLinkRelay` | Optional in-bridge chat-with-tools loop. Wraps `OmniLinkClient.chat()` so your bridge can host its own chat surface without round-tripping through the OmniLink web UI. Drops in tokens-per-hour usage telemetry + cross-session short-term memory. |
-| `IntentRouter` | Tiny regex-based offline fallback. Pre-LLM router so `/prompt` does something useful when `OMNI_KEY` is unset. |
+| `OmniLinkRelay` | Optional in-bridge chat-with-tools loop. Wraps `OmniLinkClient.chat()` so your bridge can host its own chat surface without round-tripping through the OmniLink web UI. Drops in tokens-per-hour usage telemetry + cross-session short-term memory. An OmniKey is required to construct one. |
+| `gate` | The deterministic veto every vetted path calls. `gate.reject_toolcall(tool, args, utterance, surface=...)` is the one implementation; see [`GATE_COVERAGE.md`](GATE_COVERAGE.md) for which paths reach it and which do not. |
 
 ## 30-second example
 

@@ -85,12 +85,43 @@ def is_enabled() -> bool:
     )
 
 
+def safety_gate_summary(
+    surface: Optional[str] = None,
+    *,
+    gated_paths: Optional[List[str]] = None,
+    ungated_paths: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """The `safetyGate` block for the profile -- the same object `/capabilities`
+    serves, built by the same function.
+
+    ONE BUILDER, because the whole point of publishing it is that a client
+    can compare what the profile promises with what the bridge answers. Two
+    builders would be the drift the gate parity work exists to end. Falls
+    back to an explicitly UNKNOWN block when `bridge_base` will not import,
+    rather than claiming a gate is present.
+    """
+    try:
+        from .bridge_base import safety_gate_block
+    except Exception as exc:                  # pragma: no cover - defensive
+        return {"present": None, "surface": surface,
+                "gated_paths": list(gated_paths or []),
+                "ungated_paths": list(ungated_paths or []),
+                "note": f"gate block unavailable in this build ({exc})"}
+    return safety_gate_block(surface,
+                             gated_paths=gated_paths,
+                             ungated_paths=ungated_paths)
+
+
 def build_settings(
     *,
     main_task: str,
     tool_defs: List[Dict[str, Any]],
     engine: str,
     tool_callback_url: Optional[str] = None,
+    prompt_callback_url: Optional[str] = None,
+    surface: Optional[str] = None,
+    actions: Optional[List[str]] = None,
+    safety_gate: Optional[Dict[str, Any]] = None,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Construct the `settings` dict pushed into the profile.
@@ -102,6 +133,33 @@ def build_settings(
       allowToolUse          -- bool
       engine                -- "g1-engine" / "g2-engine" / ...
       toolCallbackUrl       -- where the UI POSTs tool calls
+
+    And, added for the v9 loop (D3):
+      promptCallbackUrl     -- the bridge's `/prompt`, so the platform can
+                               hand an operator's SENTENCE to the
+                               deterministic parser instead of paying a
+                               model to interpret it. The web and unattended
+                               loops fall back to `/api/chat` + `/tool` when
+                               this is absent or unreachable, so an old
+                               platform against a new profile is unaffected.
+      surface               -- this bridge's robot class, which is what picks
+                               the magnitude rail for a tool two classes
+                               share (`move_body{vertical}`: a 120 m climb on
+                               a drone, a 1.0 m body shift on a quadruped).
+      actions               -- the doors this bridge serves, e.g.
+                               ["tool", "prompt"]. Derived from the URLs
+                               above when not given: a caller that passed a
+                               prompt URL has just told us `/prompt` is
+                               served. A NEW FRAME KIND IS DECLARED BEFORE
+                               IT IS SENT -- that is what stops a new
+                               platform breaking an old bridge.
+      safetyGate            -- `safety_gate_summary()`; the same block
+                               `/capabilities` serves, including the
+                               `ungated_paths` a client needs in order to
+                               know which commands it must bound itself.
+
+    Every key here is OPTIONAL and additive. A platform that has never heard
+    of them reads the profile exactly as it did before.
     """
     settings: Dict[str, Any] = {
         "mainTask": main_task,
@@ -112,6 +170,21 @@ def build_settings(
     }
     if tool_callback_url:
         settings["toolCallbackUrl"] = tool_callback_url
+    if prompt_callback_url:
+        settings["promptCallbackUrl"] = prompt_callback_url
+    if surface:
+        settings["surface"] = surface
+    if actions is None:
+        derived = []
+        if tool_callback_url:
+            derived.append("tool")
+        if prompt_callback_url:
+            derived.append("prompt")
+        actions = derived or None
+    if actions:
+        settings["actions"] = list(actions)
+    if safety_gate:
+        settings["safetyGate"] = dict(safety_gate)
     if extra:
         settings.update(extra)
     return settings
@@ -125,12 +198,25 @@ def ensure_profile(
     tool_defs: List[Dict[str, Any]],
     engine: str,
     tool_callback_url: Optional[str] = None,
+    prompt_callback_url: Optional[str] = None,
+    surface: Optional[str] = None,
+    actions: Optional[List[str]] = None,
+    safety_gate: Optional[Dict[str, Any]] = None,
     extra_settings: Optional[Dict[str, Any]] = None,
 ) -> Optional[str]:
     """Idempotent profile push. Returns the profile id, or None on error.
 
     Errors are caught and logged. Profile sync is a convenience — the
     side-menu chat keeps working even when this fails.
+
+    ⚠️ READ `agent_name_for` ABOVE BEFORE ADDING A CALLER. The agent name
+    keys the profile AND the memory, so a scratch run that reuses a
+    production robot id does not coexist with the live demo, it TAKES IT
+    OVER -- measured twice in one day. `promptCallbackUrl` makes that worse
+    in exactly one way and no more: there is now a SECOND dead URL to
+    repoint, so a scratch run without `OMNILINK_AGENT_TAG` now silently
+    breaks the live demo's sentence door as well as its tool door. The fix
+    is unchanged and is still the only fix: tag the run.
     """
     try:
         settings = build_settings(
@@ -138,6 +224,10 @@ def ensure_profile(
             tool_defs=tool_defs,
             engine=engine,
             tool_callback_url=tool_callback_url,
+            prompt_callback_url=prompt_callback_url,
+            surface=surface,
+            actions=actions,
+            safety_gate=safety_gate,
             extra=extra_settings,
         )
         profiles = client.list_profiles()

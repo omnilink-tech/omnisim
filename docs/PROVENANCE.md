@@ -30,6 +30,15 @@ renamed files, and without it a rename reads as an addition.
 | added by this repository's own commits | **28** |
 | **total** | **508** |
 
+Those are the counts **as measured**, and they are kept because they are what the
+split was established on. The tree holds fewer today: the 2026-09-02
+documentation cleanup deleted the images no page referenced any more, and v9
+deleted the last seven unreferenced demo screenshots and added the two-file
+README film. Re-measured on 2026-09-22 with the same enumeration:
+**328 tracked binary assets under `docs/`, 27 of them authored here.** Neither
+number changes the licence position — every survivor of the import is still
+inherited, and every asset added since is still OmniLink's own work.
+
 ## 1. Inherited from upstream Webots — 480 files
 
 Apache License, Version 2.0 — Copyright 1996-2024 Cyberbotics Ltd.
@@ -83,7 +92,7 @@ Those files predate this record and are left exactly as they are. This entry
 exists so that a future reader does not fold the fonts into the Cyberbotics
 grant, which would be wrong for Raleway.
 
-## 2. Authored in this repository — 32 files
+## 2. Authored in this repository — 27 files
 
 Copyright 2026 OmniLink. Apache License, Version 2.0, i.e. the repository's own
 `LICENSE`. These are renders, plots and screenshots produced by this project's
@@ -92,8 +101,8 @@ own simulator, benchmarks and analysis scripts.
 | count | directory | what they are | added by |
 |---:|---|---|---|
 | 13 | `docs/developer/shadowing_paper/figs/` | Shadowing-method paper figures: architecture, generality, learnability, throughput plots, and G1/Go2/OmniQuad/B2 stills rendered in OmniSim | `e1f23c40f`, `b3038e3ae` |
-| 9 | `docs/media/screenshots/` | OmniSim screenshots of the Husky maze and warehouse demo worlds | `47234849f` |
 | 6 | `docs/media/videos/` | `cuda_showcase.{gif,mp4}`, `omniarm6_real_pick.{gif,mp4}` and `omniarm6_universal_pick.{gif,mp4}` — captures rendered by OmniSim from worlds and controllers in this repository; the Universal Pick master is reproducible from `scripts/capture/shotlists/marketing_omniarm6_universal_pick.json` | `4228ce0b0`, public-beta launch and OmniLink README refresh |
+| 2 | `docs/media/omnilink-husky/` | `omnilink-husky-live-ai.mp4` and `preview.gif` — the README film: one Husky in the shipped `omnilink_husky.omniworld`, driven by live OmniLink model calls, captured with OmniSim's own native renderer. No third-party footage in any frame; recording notes and what the film does and does not show are in `docs/media/omnilink-husky/README.md` | v9 |
 | 2 | `docs/paper/figs/` | `fig_learnability.png`, `fig_scatter.png` | `22998d566` |
 | 2 | `docs/guide/images/samples/` | `omnisim_box.png`, `omnisim_box.thumbnail.jpg` — an OmniSim render of this repo's own sample box world, sitting among the inherited sample stills | `28a0cd99b` |
 | 1 | `docs/developer/baton_paper/figs/` | `fig_arch.png` | `7356cd9d9` |

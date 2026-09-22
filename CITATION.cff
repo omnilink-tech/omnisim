@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If OmniSim supports your research, please cite the software and the exact release you used."
-title: "OmniSim: an agent-facing robotics simulator"
+title: "OmniSim: an agent-facing robotics simulator instrumented for debugging"
 type: software
 authors:
   - name: "OmniLink"
@@ -13,6 +13,8 @@ url: "https://www.omnilink-agents.com/omnisim"
 license: Apache-2.0
 keywords:
   - robotics simulation
+  - debugging
+  - observability
   - AI agents
   - Model Context Protocol
   - ROS 2

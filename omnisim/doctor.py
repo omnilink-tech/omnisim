@@ -245,9 +245,21 @@ def _bridges_dep(binary: str | None) -> dict:
     if exe is None:
         info["detail"] = "no interpreter to check the bridge imports with"
         return info
+    # ⚠️ Name modules a bridge ACTUALLY imports at run time, and keep this list
+    # honest when one is deleted. It read `omnisim_bridges.intent_router` until
+    # 2026-09-22, when the five keyword ladders and that shared module were
+    # removed -- so the probe imported a module that no longer existed and
+    # doctor reported a WARN against a package that was perfectly healthy. A
+    # health check that fails for its own stale reason is worse than no check,
+    # because the next real fault reads as the same noise.
+    #
+    # `route` is the parser-first executor and `gate` is the safety veto; both
+    # are on every `/prompt` and every `/tool`, so if either fails to import
+    # the bridges are genuinely broken. `intents` stays -- it is the deferred
+    # intent store, and it is what the detail line below is about.
     probe = (
         "import sys; sys.path.insert(0, r'%s'); "
-        "import omnisim_bridges.intent_router, omnisim_bridges.intents; "
+        "import omnisim_bridges.route, omnisim_bridges.gate, omnisim_bridges.intents; "
         "print('ok')" % src
     )
     try:
@@ -272,6 +284,102 @@ def _bridges_dep(binary: str | None) -> dict:
     return info
 
 
+def _omnilink_deps(binary: str | None) -> dict:
+    from .omnilink_runtime import probe
+    exe = None
+    if os.name == "nt" and binary:
+        bundled = Path(binary).parent / "newton-runtime" / "python.exe"
+        if bundled.is_file():
+            exe = str(bundled)
+    exe = exe or shutil.which("python3") or shutil.which("python") or sys.executable
+    info = probe(exe, REPO_ROOT)
+    info["fix"] = (
+        "Windows bundle: rebuild with scripts/packaging/bundle_newton_runtime.py "
+        "--controller-deps-only; source install: use the controller Python with "
+        "-m pip install -r scripts/packaging/requirements-omnilink.txt"
+    ) if info["status"] != "ok" else None
+    return info
+
+
+# ── The OmniLink edge connector (D8) ─────────────────────────────────
+#
+# A standing order the platform fires with no browser open dispatches its
+# tool calls down a websocket held by `omnilink.edge_connector`, which the
+# relay now starts in-process beside the bridge -- one per machine, claimed
+# with a heartbeat lock file. Nothing else reports whether that slot is
+# taken, and the failure it hides is silent: the order simply comes back
+# "edge not connected" on the platform, minutes later, on a surface the
+# operator is not looking at.
+#
+# ⚠️ THE PATH IS DUPLICATED, DELIBERATELY AND MINIMALLY. The owning copy is
+# `omnisim_bridges.relay.edge_lock_path`, but that module pulls in the
+# OmniLink SDK and truststore and lives on the CONTROLLER interpreter --
+# doctor must answer on a clone where it does not import at all. So this
+# repeats the two-line convention rather than the module, and
+# `packages/omnisim-bridges/tests/test_edge_start.py` asserts the two agree.
+EDGE_LOCK_NAME = "edge.lock"
+EDGE_LOCK_STALE_S = 95.0
+
+
+def _edge_lock_path() -> Path:
+    import tempfile
+    base = (os.environ.get("OMNILINK_INTENT_STATE_DIR")
+            or os.path.join(tempfile.gettempdir(), "omnisim_intents"))
+    return Path(base) / EDGE_LOCK_NAME
+
+
+def _edge_status() -> dict:
+    """Is a bridge on this machine holding the edge slot? Never raises."""
+    import time as _time
+    info: dict = {"state": "unknown", "detail": "", "lock": str(_edge_lock_path()),
+                  "holder": None, "age_s": None}
+    raw = os.environ.get("OMNILINK_EDGE")
+    if raw is not None and raw.strip().lower() in ("0", "false", "no", "off", ""):
+        info["state"] = "off"
+        info["detail"] = ("OMNILINK_EDGE=0 -- no bridge will connect the edge "
+                          "socket, so standing orders need a browser open")
+        return info
+    record = None
+    try:
+        with open(_edge_lock_path(), "r", encoding="utf-8") as fh:
+            loaded = json.load(fh)
+        record = loaded if isinstance(loaded, dict) else None
+    except Exception:
+        record = None
+    if record is not None:
+        try:
+            beat = float(record.get("beat") or record.get("started_at") or 0.0)
+        except (TypeError, ValueError):
+            beat = 0.0
+        age = max(0.0, _time.time() - beat) if beat else None
+        info["holder"] = record.get("agent")
+        info["pid"] = record.get("pid")
+        info["age_s"] = round(age, 1) if age is not None else None
+        if age is not None and age < EDGE_LOCK_STALE_S:
+            info["state"] = "connected"
+            info["detail"] = (
+                f"{record.get('agent') or 'a bridge'} (pid {record.get('pid')}) "
+                f"holds the machine edge slot, last beat {age:.0f}s ago")
+            return info
+        info["state"] = "stale"
+        info["detail"] = (
+            f"the edge lock names pid {record.get('pid')} "
+            f"({record.get('agent') or 'unknown agent'}) but it stopped "
+            f"beating{f' {age:.0f}s ago' if age is not None else ''}; the next "
+            f"bridge to start will take the slot")
+        return info
+    info["state"] = "idle"
+    if not os.environ.get("OMNI_KEY", "").strip():
+        info["detail"] = (
+            "no bridge holds the edge slot, and OMNI_KEY is not set in THIS "
+            "shell -- note the bridge may have been launched from another one")
+    else:
+        info["detail"] = (
+            "no bridge holds the edge slot; a standing order fired with no "
+            "browser open will fail with \"edge not connected\"")
+    return info
+
+
 def _controller_deps(binary: str | None) -> dict:
     """Can the interpreter the engine spawns for CONTROLLERS run a shipped policy?
 
@@ -285,9 +393,8 @@ def _controller_deps(binary: str | None) -> dict:
       * `python -m omnisim run-headless` / `run-agent` PREPEND
         `msys64/mingw64/bin/newton-runtime` to PATH -- so the controller runs
         on the BUNDLED interpreter (headless_runner.py, omnisim_run_agent.py);
-      * `launch.bat` / the installer's shortcut do not (launcher.c adds only
-        the engine dir, `cpp/` and msys `usr/bin`) -- so the controller runs
-        on the user's system `python`.
+      * `run-world`, `launch.bat` and native shortcuts also prefer the
+        verified bundle; its controller .pth exposes the vendored wheels.
 
     The bundle shipped without `onnxruntime` while the developer's own python
     had it, so 26 shipped controllers (every *_deploy / *_mimic under
@@ -588,6 +695,17 @@ def _git_hooks_status() -> dict:
     }
 
 
+def _redact_remote_url(url: str) -> str:
+    """`https://<token>@github.com/o/r` -> `https://***@github.com/o/r` (pure).
+
+    A publish remote can legitimately carry credentials in its URL, and doctor's
+    output gets pasted into issues, transcripts and agent reports. The only place
+    a remote URL is ever printed is the `not-github` detail below, so it is
+    redacted there rather than trusted not to hold one.
+    """
+    return re.sub(r"(://)[^/@\s]+@", r"\1***@", url)
+
+
 def _github_repo_from_remote(url: str | None) -> str | None:
     """`owner/repo` from an origin URL (https, ssh or scp-style); None otherwise (pure)."""
     if not url:
@@ -701,30 +819,44 @@ def _ci_finish(info: dict, runs: list, behind=None) -> dict:
     return info
 
 
-def _ci_launch(head_sha: str | None, branch: str | None) -> dict:
-    """Start the one `gh run list` call; `_ci_collect` reaps it.
+def _git_remotes() -> set[str]:
+    """The names of this clone's git remotes (empty when git cannot answer)."""
+    out = _git("remote")
+    return set(out.split()) if out else set()
+
+
+def _ci_launch(head_sha: str | None, branch: str | None, remote: str = "origin") -> dict:
+    """Start ONE `gh run list` call for `remote`; `_ci_collect` reaps it.
 
     Split in two so `run()` can overlap gh's ~1 s round-trip with the local
     checks instead of paying it serially. Returns a terminal ``info`` (no
-    ``_proc``) whenever there is nothing to ask: no gh on PATH, no origin,
-    origin not on GitHub, detached HEAD.
+    ``_proc``) whenever there is nothing to ask: no gh on PATH, no such
+    remote, the remote is not on GitHub, detached HEAD.
+
+    `remote` exists because this clone can publish to more than one GitHub
+    repository, and the two do not run the same CI. Pre-release validation
+    runs on a release-candidate snapshot pushed to the PUBLIC repo, so the
+    answer an agent needs before a cut lives under the `public` remote, not
+    under `origin`. One call per remote, still bounded, still the only
+    network doctor does.
     """
     info: dict = {
-        "available": False, "repo": None, "branch": branch, "head_sha": head_sha,
-        "workflows": [], "green": None, "reason": None, "detail": "",
-        "newest_sha": None, "behind": None, "next": None,
+        "available": False, "repo": None, "remote": remote, "branch": branch,
+        "head_sha": head_sha, "workflows": [], "green": None, "reason": None,
+        "detail": "", "newest_sha": None, "behind": None, "next": None,
     }
     gh = shutil.which("gh")
     if not gh:
         info["reason"], info["detail"] = "no-gh", "the gh CLI is not on PATH"
         return info
-    remote = _git("remote", "get-url", "origin")
-    if not remote:
-        info["reason"], info["detail"] = "no-remote", "no `origin` remote (or no git)"
+    url = _git("remote", "get-url", remote)
+    if not url:
+        info["reason"], info["detail"] = "no-remote", f"no `{remote}` remote (or no git)"
         return info
-    repo = _github_repo_from_remote(remote)
+    repo = _github_repo_from_remote(url)
     if not repo:
-        info["reason"], info["detail"] = "not-github", f"origin is not on github.com ({remote})"
+        info["reason"], info["detail"] = (
+            "not-github", f"{remote} is not on github.com ({_redact_remote_url(url)})")
         return info
     info["repo"] = repo
     if not branch or branch in ("?", "HEAD"):
@@ -777,18 +909,42 @@ def _ci_collect(info: dict) -> dict:
     return _ci_finish(info, runs)
 
 
-def _ci_status(head_sha: str | None = None, branch: str | None = None) -> dict:
+def _ci_status(head_sha: str | None = None, branch: str | None = None,
+               remote: str = "origin") -> dict:
     """The serial form: launch + collect. `run()` overlaps the two instead."""
-    return _ci_collect(_ci_launch(head_sha, branch))
+    return _ci_collect(_ci_launch(head_sha, branch, remote))
+
+
+def _ci_row_label(info: dict) -> str:
+    """`ci` for origin, `ci (<remote>)` otherwise, padded to the 12-column gutter.
+
+    An info with no ``remote`` key at all is origin's, so every caller that
+    predates the second row keeps the exact row it had.
+    """
+    remote = info.get("remote") or "origin"
+    label = "ci" if remote == "origin" else f"ci ({remote})"
+    return f"{label:<11} "
 
 
 def _ci_row_lines(info: dict) -> list[str]:
-    """The `ci` row for the text report (pure). WARN when anything is not green."""
+    """One CI row for the text report (pure). WARN when anything is not green.
+
+    ADVISORY BY CONTRACT: no CI row ever reaches `_coherence`, so none of them
+    can change doctor's exit code. That is deliberate and load-bearing -- the
+    pre-push gate runs `doctor --strict`, and a hosted-CI verdict is a fact
+    about a remote server, not about whether THIS install can run a world.
+    It also has to survive the obvious accident: when the account funding a
+    repo's Actions lapses, every workflow on it reports failure for reasons
+    that have nothing to do with the tree, and wiring that into the verdict
+    would wedge every push until somebody paid a bill. Report it, name the
+    run to look at, never gate on it.
+    """
+    label = _ci_row_label(info)
     if not info.get("available"):
-        return [f"ci          unknown ({info.get('reason') or 'unavailable'})"]
+        return [f"{label}unknown ({info.get('reason') or 'unavailable'})"]
     n, k = info.get("total", 0), info.get("green_count", 0)
     if n == 0:
-        return ["ci          unknown (no-runs)"]
+        return [f"{label}unknown (no-runs)"]
     newest, head = info.get("newest_sha") or "", info.get("head_sha") or ""
     where = f"on {newest[:7] or '?'}"
     if newest != head:
@@ -800,9 +956,9 @@ def _ci_row_lines(info: dict) -> list[str]:
         else:
             where += ", ahead of HEAD"
     if info.get("green"):
-        return [f"ci          {k}/{n} workflows green {where}"]
+        return [f"{label}{k}/{n} workflows green {where}"]
     names = ", ".join(f"{w['name']}: {w['label']}" for w in info.get("non_green", []))
-    lines = [f"ci          WARN: {k}/{n} workflows green {where} ({names})"]
+    lines = [f"{label}WARN: {k}/{n} workflows green {where} ({names})"]
     if info.get("next"):
         lines.append(f"            next: {info['next']}")
     return lines
@@ -1155,6 +1311,7 @@ def run(argv: list[str]) -> int:
         "Plain `doctor` now exits non-zero on a blocking problem, so this flag "
         "no longer changes anything.",
     )
+    parser.add_argument("--omnilink", action="store_true", help="Fail if the controller cannot run the connected OmniLink demo (no key or network required)")
     args = parser.parse_args(argv)
 
     fingerprint = None
@@ -1169,8 +1326,19 @@ def run(argv: list[str]) -> int:
     commit = _git("rev-parse", "--short", "HEAD") or "?"
     recent = _git("log", "-3", "--format=%h %s") or ""
     # Started first and reaped last: the gh round-trip (~1 s) overlaps the
-    # local checks below instead of adding to them. One subprocess, bounded.
-    ci = _ci_launch(_git("rev-parse", "HEAD"), branch)
+    # local checks below instead of adding to them. One subprocess per repo,
+    # bounded, and the only network call doctor makes.
+    #
+    # A second row when a `public` remote exists. This clone publishes a
+    # squashed snapshot to a SEPARATE GitHub repository, and that repository
+    # runs its own Actions -- so "is CI green?" has two different answers and
+    # the one that matters before a release is the public one. Discovered from
+    # the remote list rather than a flag: a clone with no `public` remote
+    # prints exactly the report it always printed.
+    _head_sha = _git("rev-parse", "HEAD")
+    ci = _ci_launch(_head_sha, branch)
+    ci_public = (_ci_launch(_head_sha, branch, remote="public")
+                 if "public" in _git_remotes() else None)
     webots = resolve_omnisim_binary()
     worlds = _worlds()
 
@@ -1188,6 +1356,8 @@ def run(argv: list[str]) -> int:
     )
     controller_deps = _controller_deps(webots)
     bridges_dep = _bridges_dep(webots)
+    omnilink_dep = _omnilink_deps(webots)
+    edge = _edge_status()
     wgpu = _wgpu_native_status(webots)
     pillow = _pillow_status()
     hooks = _git_hooks_status()
@@ -1195,12 +1365,17 @@ def run(argv: list[str]) -> int:
     engines = _engine_processes()
     harness = _harness_probe(HARNESS_PORT) if ports["harness"] == "in-use" else None
     ci = _ci_collect(ci)
+    if ci_public is not None:
+        ci_public = _ci_collect(ci_public)
     coherence = _coherence(build, physics, runtime_bundle)
     # A fatal coherence problem means the install cannot run a controller-driven
     # world. Reporting that and exiting 0 made every caller -- a script, a CI
     # lane, an agent branching on $? -- read a broken install as a pass, so the
     # exit code now follows the verdict. --strict is kept as an explicit alias
     # for callers (.githooks/pre-push) that already ask for gate semantics.
+    if args.omnilink and omnilink_dep["status"] != "ok":
+        coherence["ok"] = False
+        coherence["fatal"].append("OmniLink controller dependencies missing or incompatible: " + omnilink_dep["detail"])
     exit_code = 0 if coherence["ok"] else 1
 
     if args.json:
@@ -1218,10 +1393,14 @@ def run(argv: list[str]) -> int:
                     "runtime_bundle": runtime_bundle,
                     "controller_deps": controller_deps,
                     "bridges": bridges_dep,
+                    "omnilink": omnilink_dep,
+                    "omnilink_edge": edge,
                     "wgpu_native": wgpu,
                     "pillow": pillow,
                     "git_hooks": hooks,
                     "ci": ci,
+                    # null unless this clone has a `public` remote; same shape as "ci".
+                    "ci_public": ci_public,
                     "ffmpeg": ffmpeg,
                     "engine_processes": engines,
                     "harness": harness,
@@ -1302,6 +1481,16 @@ def run(argv: list[str]) -> int:
     # not vendored. Controller stdout/stderr reach neither the log nor the
     # run-headless capture, so this row is the only place a headless operator
     # can see that the bridges are running as stubs.
+    print("omnilink    " + ("OK: " if omnilink_dep["status"] == "ok" else "MISSING: ") + omnilink_dep["detail"])
+    if omnilink_dep["fix"]:
+        print("            fix:  " + omnilink_dep["fix"])
+    # ADVISORY, never a gate. An operator who never fires a standing order
+    # needs no edge connector at all, and OMNILINK_EDGE=0 is a supported
+    # choice -- so this row reports and does not fail the install.
+    print("edge        " + {
+        "connected": "CONNECTED: ", "idle": "IDLE: ",
+        "stale": "STALE: ", "off": "OFF: ",
+    }.get(edge["state"], "?  ") + edge["detail"])
     if bridges_dep["status"] == "ok":
         print(f"bridges     {bridges_dep['detail']}")
     elif bridges_dep["status"] == "missing":
@@ -1344,8 +1533,12 @@ def run(argv: list[str]) -> int:
         print(f"            fix:  {hooks['fix']}")
     # Hosted CI. The pre-push smoke is local and Windows-only, so a red Linux
     # or provenance lane is invisible here unless someone asks -- this asks.
+    # Both rows are advisory: see _ci_row_lines for why neither can gate.
     for line in _ci_row_lines(ci):
         print(line)
+    if ci_public is not None:
+        for line in _ci_row_lines(ci_public):
+            print(line)
     print(f"ffmpeg      INFO: {ffmpeg['detail']}")
     if engines["count"] == 0:
         print(f"engines     {engines['detail']}")

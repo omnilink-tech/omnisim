@@ -1,0 +1,82 @@
+#OMNISIM R2025a utf8
+# Fixture for the break-on-event live check (v9 C2), CASE 1.
+#
+# BREAK_BOX falls 4.9 m and lands ~1.0 s in. BREAK_WITNESS falls from 25 m and
+# needs ~2.2 s, so it is still ~20 m up when the box lands.
+#
+# Both heights are chosen against MEASURED behaviour, 2026-09-22:
+#
+# * The FALL has to span many supervisor ticks. The engine free-runs in
+#   --mode=fast and the injected supervisor is an ordinary non-synchronised
+#   controller, so one supervisor tick was measured at anything from 8 to
+#   ~600 ms of engine time depending on machine load. A contact tracker diffs
+#   the contact SET between ticks -- so a body that is lifted and lands again
+#   inside ONE tick produces no contact.began at all, and a break on it cannot
+#   fire. A ~1 s fall survives even a badly loaded machine.
+# * The WITNESS is the discriminator. BREAK_BOX's contact height and its
+#   resting height are the same number and cannot tell "frozen at the event"
+#   from "settled"; a body still in free fall can. Being in free fall, its
+#   height is also a clock (t = sqrt(2 (25 - z) / g)), which independently
+#   checks the engine clock the harness reports.
+# * The witness is a 0.6 m box, not 0.2 m: from 25 m it arrives at ~22 m/s,
+#   which is 17.6 cm per 8 ms step -- a 0.2 m box tunnels straight through the
+#   floor (measured: it reached z = -999 m and tripped the base-divergence
+#   guard).
+WorldInfo {
+  basicTimeStep 8
+  newtonStatics TRUE
+  newtonSolver "mujoco"
+}
+Viewpoint {
+  position 3 -3 2
+}
+DEF BREAK_FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "break floor"
+  boundingObject Box {
+    size 4 4 0.1
+  }
+}
+DEF BREAK_BOX Solid {
+  translation -0.4 0 5
+  children [
+    Shape {
+      geometry Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  name "break box"
+  boundingObject Box {
+    size 0.2 0.2 0.2
+  }
+  physics Physics {
+    density -1
+    mass 1
+  }
+}
+DEF BREAK_WITNESS Solid {
+  translation 0.4 0 25
+  children [
+    Shape {
+      geometry Box {
+        size 0.6 0.6 0.6
+      }
+    }
+  ]
+  name "break witness"
+  boundingObject Box {
+    size 0.6 0.6 0.6
+  }
+  physics Physics {
+    density -1
+    mass 1
+  }
+}

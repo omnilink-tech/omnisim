@@ -1,0 +1,45 @@
+[OmniSim] log: O:\omnisim\agents\production\husky_maze\evidence\ab_20260919_163119\engine_maze_d_01.log
+WARNING: Could not listen to extern controllers and robot windows on port 1234. Port 1234 is already in use. Using port 1235 instead. This could be caused by another running instance of OmniSim. You should use the '--port' option to start several instances of OmniSim.
+INFO: No-window headless mode (OMNISIM_NO_WINDOW): GUI layer skipped; rendering devices render through the wgpu offscreen path.
+INFO: headless load: eager texture decode skipped (no Camera/IR-sensor/Pen in world). OMNISIM_EAGER_TEXTURE_DECODE=1 reverts.
+WARNING: Robot "husky" > Solid "top_plate_link": As 'physics' is set to NULL, collisions will have no effect.
+INFO: No-window mode: world loaded.
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: husky_omnilink_bridge: Starting controller: python.exe -u husky_omnilink_bridge.py
+[sun_marker] ready — marker HIDDEN, press V to show
+[husky_omnilink_bridge] log file: C:\Users\<user>\AppData\Local\Temp\husky_omnilink_bridge_20152.log
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+WARNING: Solid 'husky': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows. To collide as authored, declare a 'boundingObject' on this Solid (Box, Sphere, Capsule, Cylinder, Plane or a mesh; a Group of several needs WorldInfo.newtonCompoundColliders TRUE) -- a Robot with none gets the 1 mm placeholder by design. See docs/guide/newton-physics-backend.md.
+INFO: [OmNewtonBackend] registered 5 dynamic + 105 static Newton bodies (105 of the statics on the world body) (+110 this pass) (statics: floor, wall_perim_N, wall_perim_S, wall_perim_E, wall_perim_W, H_000, H_001, H_002)
+INFO: [OmNewtonBackend] inertia provenance: 4 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to ''
+WARNING: Joint motor 'front_left_wheel_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(0, 1, 0) anchor=(0.256, 0.2775, 0.03282) effort=200 velLim=60 lim=[0, 0] [motorized: kd=500]
+WARNING: Joint motor 'front_right_wheel_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 0, child=body 2) axis=(0, 1, 0) anchor=(0.256, -0.2775, 0.03282) effort=200 velLim=60 lim=[0, 0] [motorized: kd=500]
+WARNING: Joint motor 'rear_left_wheel_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 0, child=body 3) axis=(0, 1, 0) anchor=(-0.256, 0.2775, 0.03282) effort=200 velLim=60 lim=[0, 0] [motorized: kd=500]
+WARNING: Joint motor 'rear_right_wheel_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 0, child=body 4) axis=(0, 1, 0) anchor=(-0.256, -0.2775, 0.03282) effort=200 velLim=60 lim=[0, 0] [motorized: kd=500]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, default))
+INFO: [OmNewtonBackend] step 1 dt=0.016s b0=(-10.000,10.000,0.108) b1=(-9.744,10.278,0.141) b2=(-9.744,9.722,0.141) b3=(-10.256,10.278,0.141) b4=(-10.256,9.722,0.141)
+[husky_omnilink_bridge] pose_node = 'base_footprint' type=Solid world_pos=(-10.00, 10.00, -0.02)
+[husky_omnilink_bridge] world_title = 'Husky Maze' reveal_map = True walls = 104
+[husky_omnilink_bridge] mission_brief = 'Mission: drive the husky to the goal cell at the SE corner of the maze.\n\nSpecifically: cell (col=10, row=0) at world (+1'
+[husky_omnilink_bridge] HTTP listening on http://127.0.0.1:6070
+[husky_omnilink_bridge] ready. start={'col': 0, 'row': 10, 'x': -10.0, 'y': 10.0} goal={'col': 10, 'row': 0, 'x': 10.0, 'y': -10.0}
+INFO: [OmNewtonBackend] step 30 dt=0.016s b0=(-10.000,10.000,0.132) b1=(-9.744,10.278,0.165) b2=(-9.744,9.722,0.165) b3=(-10.256,10.278,0.165) b4=(-10.256,9.722,0.165)
+INFO: [OmNewtonBackend] step 60 dt=0.016s b0=(-10.000,10.000,0.132) b1=(-9.744,10.278,0.165) b2=(-9.744,9.722,0.165) b3=(-10.256,10.278,0.165) b4=(-10.256,9.722,0.165)
+INFO: [OmNewtonBackend] step 120 dt=0.016s b0=(-10.000,10.000,0.132) b1=(-9.744,10.278,0.165) b2=(-9.744,9.722,0.165) b3=(-10.256,10.278,0.165) b4=(-10.256,9.722,0.165)
+INFO: [OmNewtonBackend] step 240 dt=0.016s b0=(-10.000,10.000,0.132) b1=(-9.744,10.278,0.165) b2=(-9.744,9.722,0.165) b3=(-10.256,10.278,0.165) b4=(-10.256,9.722,0.165)
+INFO: [OmNewtonBackend] step 480 dt=0.016s b0=(-10.000,10.000,0.132) b1=(-9.744,10.278,0.165) b2=(-9.744,9.722,0.165) b3=(-10.256,10.278,0.165) b4=(-10.256,9.722,0.165)
+INFO: [OmNewtonBackend] step 960 dt=0.016s b0=(-10.000,10.000,0.132) b1=(-9.744,10.278,0.165) b2=(-9.744,9.722,0.165) b3=(-10.256,10.278,0.165) b4=(-10.256,9.722,0.165)
+INFO: [OmNewtonBackend] motor target_vel reached joint 0: 2.59297 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] motor target_vel reached joint 1: -2.59297 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] motor target_vel reached joint 2: 2.59297 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] motor target_vel reached joint 3: -2.59297 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] step 1920 dt=0.016s b0=(-10.007,7.206,0.132) b1=(-9.730,6.950,0.165) b2=(-10.285,6.951,0.165) b3=(-9.728,7.462,0.165) b4=(-10.283,7.463,0.165)
+INFO: [OmNewtonBackend] step 3840 dt=0.016s b0=(-4.060,2.912,0.132) b1=(-3.763,2.679,0.165) b2=(-4.316,2.635,0.165) b3=(-3.803,3.190,0.165) b4=(-4.357,3.145,0.165)
+INFO: [OmNewtonBackend] step 7680 dt=0.016s b0=(-8.011,-7.787,0.132) b1=(-7.719,-8.026,0.165) b2=(-8.273,-8.059,0.165) b3=(-7.749,-7.515,0.165) b4=(-8.303,-7.548,0.165)
+INFO: [OmNewtonBackend] step 15360 dt=0.016s b0=(5.774,-2.145,0.132) b1=(5.485,-2.387,0.164) b2=(5.557,-1.837,0.164) b3=(5.992,-2.454,0.165) b4=(6.064,-1.903,0.165)
+INFO: [OmNewtonBackend] step 30720 dt=0.016s b0=(8.552,-9.893,0.132) b1=(8.835,-9.643,0.165) b2=(8.778,-10.195,0.165) b3=(8.325,-9.590,0.165) b4=(8.269,-10.142,0.165)

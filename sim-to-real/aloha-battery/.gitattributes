@@ -1,0 +1,3 @@
+# Evidence hashes describe exact bytes, including captured controller sources.
+# Preserve those bytes on every platform instead of applying autocrlf.
+* -text -whitespace

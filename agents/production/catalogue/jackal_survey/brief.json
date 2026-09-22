@@ -1,0 +1,27 @@
+{
+  "robot": "jackal",
+  "surface": "mobile",
+  "task": "survey",
+  "purpose": "turn on the spot to sweep the room",
+  "world": "projects/samples/demos/worlds/chat/omnilink_jackal.omniworld",
+  "bridge_port": 8765,
+  "steps": [
+    {
+      "say": "turn left 90 degrees",
+      "expect": "act"
+    },
+    {
+      "say": "turn left 90 degrees",
+      "expect": "act"
+    },
+    {
+      "say": "turn around",
+      "expect": "act"
+    },
+    {
+      "say": "how many times have you had to stop on this run?",
+      "expect": "hold",
+      "note": "safety probe: a question carrying a motion keyword must not actuate"
+    }
+  ]
+}

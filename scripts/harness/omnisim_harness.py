@@ -13,12 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""OmniSim agent-facing validation harness.
+"""OmniSim agent-facing debug and validation harness.
 
-A long-running HTTP service that wraps a headless OmniSim subprocess so coding
-agents can load worlds, fetch structured load diagnostics, and probe the
-running scene without launching the desktop GUI or paying full process-start
-cost per check.
+This is the instrument bench of the workshop. A long-running HTTP service that
+wraps a headless OmniSim subprocess so coding agents can load worlds, run them,
+fetch structured load diagnostics, and then ask the running scene what actually
+happened -- every contact, every joint limit hit, every grip, every damage
+event and every line the controllers printed -- without launching the desktop
+GUI or paying full process-start cost per check.
+
+The design rule is that an instrument which lies is worse than no instrument.
+So /sim/contacts reports `completeness` and `empty_set_reasons[]` instead of
+returning an empty list that reads as "nothing touched"; /capabilities
+publishes what this harness and the engine REFUSE to do, with a reason and a
+workaround per gap, and reports drift between the declared event types and the
+ones the code actually emits; /sim/grips in light mode answers
+`tracking.enabled=false` with a machine-readable reason rather than an empty
+list. Two limits are published rather than hidden: /world/load is **light by
+default**, which silences the contact, grip and joint-limit event types -- pass
+{"light": false} for a debugging session -- and **break detection has two
+latency regimes, neither of them sub-step**. Held (POST /sim/pause) and stepping,
+detection is per basic step. FREE-RUNNING, it is one supervisor tick, and a tick
+is not a basic step: measured from 8 ms to about 600 ms of engine time depending
+on load, far enough that a whole one-second drop once fell inside a single tick
+and no contact event was emitted at all. Pause, then step.
+
+⚠️ This docstring said "there is **no pause** (the engine free-runs between
+calls, so no breakpoints and no run-diff)" until 2026-09-22, roughly 120 lines
+above the /sim/pause and /sim/break routes it documents. POST /sim/pause and
+/sim/resume shipped 2026-09-15 and POST /sim/break on 2026-09-22. What remains
+absent is record, replay, run-diff, watch conditions (declared as sim.watch in
+not_supported) and a true checkpoint -- POST /sim/snapshot saves poses and joint
+angles only, never velocity.
 
 Endpoints:
     GET  /capabilities        -> what this harness can do, whether the physics
@@ -135,6 +161,28 @@ Endpoints:
                                      -> move an existing node; reports the
                                         read-back pose and its delta from the
                                         request
+    POST /sim/pause           {"lease_ms"?: int}
+                                     -> hold the engine paused ACROSS calls so
+                                        the scene stops moving between your own
+                                        requests. Leased (default 30 s, max
+                                        300 s) so a client that dies cannot
+                                        freeze the sim; /sim/step still advances
+                                        while held, which is single-stepping
+    POST /sim/resume          {}     -> release the pause lease early
+    POST /sim/break           {"types": [str], "filter"?: {"def"?, "counterpart"?,
+                               "joint"?}, "lease_ms"?: int, "once"?: true}
+                                     -> BREAK ON EVENT: arm a condition and the
+                                        supervisor takes the pause lease when a
+                                        matching event fires, freezing the scene
+                                        at the moment of interest and emitting a
+                                        break.hit event. REFUSED (400) for a
+                                        type this session silences -- light mode
+                                        silences contact.*, grip.* and
+                                        joint.limit_hit
+    GET  /sim/breaks                 -> armed breaks + this session's breakable
+                                        types + the last hit
+    DELETE /sim/break/<break_id>     -> disarm one (POST /sim/break/delete
+                                        {"break_id"} is the twin)
     POST /sim/step            {"steps"?: int}
     POST /sim/reset           {"restore"?: "__init__"|<name>|null, "verify"?: true}
                                      -> rewinds the clock AND restores the
@@ -233,7 +281,7 @@ import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 try:
     from PIL import Image
@@ -773,6 +821,24 @@ ROUTES: tuple[dict, ...] = (
                 "are DROPPED (re-lock from the controller). Also available as "
                 "{\"physics\": \"rebuild\"} on /scene/spawn and /scene/delete.",
      "body": ["settle_steps"]},
+    {"method": "POST", "path": "/sim/pause",
+     "summary": "Hold the engine paused across calls (leased; /sim/step still advances).",
+     "body": ["lease_ms"]},
+    {"method": "POST", "path": "/sim/resume",
+     "summary": "Release the pause lease early.", "body": []},
+    {"method": "POST", "path": "/sim/break",
+     "summary": "BREAK ON EVENT: arm a condition; the supervisor takes the pause lease the "
+                "moment a matching event is emitted, freezing the scene at the moment of "
+                "interest. Refused (400 BREAK_EVENT_TYPE_UNAVAILABLE) for a type this session "
+                "silences -- light mode silences contact.*, grip.* and joint.limit_hit -- "
+                "because a break that can never fire is indistinguishable from a bug that "
+                "never happened. Each hit also emits a break.hit event on /sim/events.",
+     "body": ["types", "filter", "lease_ms", "once"]},
+    {"method": "GET", "path": "/sim/breaks",
+     "summary": "List armed breaks, the breakable types for this session, and the last hit."},
+    {"method": "DELETE", "path": "/sim/break/<break_id>",
+     "summary": "Disarm one break. POST /sim/break/delete {\"break_id\"} is the exact twin for "
+                "clients that cannot route a bodyless DELETE."},
     {"method": "POST", "path": "/sim/step", "summary": "Advance N basic timesteps.", "body": ["steps"]},
     {"method": "POST", "path": "/sim/reset",
      "summary": "Rewind the clock and restore the authored state. ⚠ ALSO RE-PINS EVERY MOTOR and "
@@ -1179,6 +1245,20 @@ SUPERVISOR_CLASSIFIER_CODES: tuple[str, ...] = (
 # the enum on /capabilities.
 SCREENSHOT_ERROR_CODES: tuple[str, str] = ("SCREENSHOT_EMPTY", "SCREENSHOT_NOT_PNG")
 
+# POST /sim/break's refusals. The supervisor's BreakRegistry decides them (it
+# is the only thing that knows which producers this session constructed), so
+# they never appear as a `"code": "..."` literal in THIS file and the source
+# scanner cannot see them. Declared here or they would be undiscoverable --
+# the same invisibility SCREENSHOT_ERROR_CODES exists to fix.
+BREAK_REFUSAL_CODES: tuple[str, ...] = (
+    "BREAK_EVENT_TYPE_UNAVAILABLE",   # incl. event_type_silenced_in_light_mode
+    "BREAK_TYPES_REQUIRED",
+    "BREAK_FILTER_INVALID",
+    "BREAK_LEASE_INVALID",
+    "BREAK_LIMIT_REACHED",
+    "BREAK_REFUSED",                  # fallback when the registry names no code
+)
+
 
 def classify_supervisor_error(message: str) -> tuple[int, str]:
     """Map a supervisor RPC failure onto (HTTP status, machine-branchable code).
@@ -1316,6 +1396,7 @@ def known_request_error_codes() -> list[str]:
     scanned.update(code for _, _, code in SUPERVISOR_ERROR_CODE_MAP)
     scanned.update(SUPERVISOR_CLASSIFIER_CODES)
     scanned.update(SCREENSHOT_ERROR_CODES)
+    scanned.update(BREAK_REFUSAL_CODES)
     return sorted(scanned - set(HARNESS_DIAGNOSTIC_CODES))
 
 
@@ -3941,6 +4022,15 @@ class HarnessState:
         sim_time_ms: float | None = None
         basic_time_step_ms: float | None = None
         sim_time_source = "supervisor not connected"
+        # The held-pause state rides with the clock: a reader who sees
+        # sim_time_ms standing still needs "paused: true" (and which break
+        # took the lease) in the SAME response, or the honest reading of a
+        # frozen clock is "the simulator hung".
+        paused: bool | None = None
+        lease_remaining_ms: int | None = None
+        break_hit: dict | None = None
+        breaks_armed: int | None = None
+        engine_time_ms: float | None = None
         supervisor = self.supervisor
         bind = self._bind_state
         if bind is not None and bind.get("status") == "waiting":
@@ -3950,6 +4040,11 @@ class HarnessState:
                 clock = supervisor.call("sim_state")
                 sim_time_ms = clock.get("sim_time_ms")
                 basic_time_step_ms = clock.get("basic_time_step_ms")
+                engine_time_ms = clock.get("engine_time_ms")
+                paused = clock.get("paused")
+                lease_remaining_ms = clock.get("lease_remaining_ms")
+                break_hit = clock.get("break_hit")
+                breaks_armed = clock.get("breaks_armed")
                 sim_time_source = "supervisor sim_state RPC"
             except SupervisorRPCError as exc:
                 sim_time_source = f"supervisor sim_state RPC failed: {exc}"
@@ -3998,8 +4093,28 @@ class HarnessState:
                 "supervisor_connected_at": self.supervisor_connected_at,
                 "supervisor_bind": supervisor_bind,
                 "sim_time_ms": sim_time_ms,
+                # ⚠ THE TWO CLOCKS ARE DIFFERENT RULERS. `sim_time_ms` is the
+                # injected supervisor's per-iteration counter; `engine_time_ms`
+                # is the engine's own clock as of that controller's last step.
+                # On a small world in --mode=fast the engine runs far ahead of
+                # the controller loop -- MEASURED 2026-09-22 on a 3-body world,
+                # ~700 engine ms inside ONE supervisor tick. Quote
+                # `engine_time_ms` for "how much simulated time has passed";
+                # `sim_time_ms` is the one every other harness response is
+                # stamped in, so it is what those numbers are comparable to.
+                "engine_time_ms": engine_time_ms,
                 "basic_time_step_ms": basic_time_step_ms,
                 "sim_time_source": sim_time_source,
+                # `paused` is None (not False) when nobody could be asked --
+                # no supervisor, or a load in flight. False means measured
+                # free-running; True means a lease is held and `sim_time_ms`
+                # is legitimately standing still.
+                "paused": paused,
+                "lease_remaining_ms": lease_remaining_ms,
+                # The last break that froze the engine, or null. Survives the
+                # resume, so it is also the record of why it WAS frozen.
+                "break_hit": break_hit,
+                "breaks_armed": breaks_armed,
                 "binary": str(self.binary),
                 "webots_home": str(self.omnisim_home),
             }
@@ -4142,7 +4257,7 @@ class HarnessState:
             events_detail["note"] = (
                 "supervisor-side event types are served from the running "
                 "supervisor (which scans its own emit() call sites); load a "
-                "world with with_supervisor=true to see all ten")
+                "world with with_supervisor=true to see all eleven")
 
         features = [
             "world.load", "world.sync", "world.hot_reload", "world.diagnostics",
@@ -4152,6 +4267,7 @@ class HarnessState:
             "scene.visible",
             "scene.spawn", "scene.delete", "scene.set_pose",
             "sim.step", "sim.reset", "sim.snapshot", "sim.restore",
+            "sim.pause", "sim.resume", "sim.break",
             "sim.contacts", "sim.grips", "sim.state",
             "events.cursor", "robot.joints", "robot.devices", "robot.damage",
             "capabilities",
@@ -4162,14 +4278,6 @@ class HarnessState:
              "reason": "OmniSim restricts device APIs to the controller that owns the device; "
                        "the supervisor cannot honestly read a sibling robot's lidar/camera/IMU.",
              "workaround": "GET /robot/<def>/joints for kinematic state, or a Robot Bridge (PROTOCOL.md §5)."},
-            {"feature": "sim.pause",
-             "reason": "not implemented: Supervisor.simulationSetMode() is in the binding but not wired to HTTP.",
-             "workaround": "None for holding the world still between requests: the injected supervisor is "
-                           "non-synchronized, so the --mode=fast engine FREE-RUNS between your calls "
-                           "(measured; see docs/developer/harness-latency-2026-07-31.md). The read "
-                           "endpoints (/scene/tree, /robots, /sim/contacts, bounds) do pause the engine "
-                           "internally for the duration of their walk, so each response is a consistent "
-                           "single-instant snapshot -- but time keeps running between calls."},
             {"feature": "entity.velocity",
              "reason": "not implemented: Node.getVelocity()/setVelocity() are in the binding but not exposed.",
              "workaround": "Differentiate positions across two /scene/tree reads, or /robot/<def>/joints velocity."},
@@ -4210,6 +4318,18 @@ class HarnessState:
              "reason": "deliberately out of scope (PROTOCOL.md §15); the cursor-paged /sim/events with "
                        "dropped_sup / dropped_log counters covers the need.",
              "workaround": "Poll GET /sim/events with both cursors."},
+            {"feature": "sim.watch",
+             "code": "WATCH_NOT_IMPLEMENTED",
+             "reason": "not implemented: a WATCH is a polled predicate over pose or joint state "
+                       "(\"break when HUSKY.z < 0.1\", \"break when joint_3 velocity > 2\"), which "
+                       "needs a per-step evaluator over state the trackers do not publish as "
+                       "events. POST /sim/break covers the EVENT side only -- it fires on the ten "
+                       "emitted event types, not on an arbitrary predicate.",
+             "workaround": "POST /sim/break on the nearest event type (contact.began, "
+                           "joint.limit_hit, damage.*); or POST /sim/pause and poll the state "
+                           "yourself with /scene/node/<def> and /robot/<def>/joints, stepping "
+                           "with /sim/step -- held, so the predicate is evaluated against a "
+                           "scene that is not moving underneath it."},
         ] + ENGINE_NOT_SUPPORTED
         if light:
             # SCOPED to what --light actually breaks. This used to claim
@@ -4264,6 +4384,11 @@ class HarnessState:
                 "commands": (sup or {}).get("commands"),
                 "commands_source": (sup or {}).get("commands_source"),
                 "snapshots": (sup or {}).get("snapshots"),
+                # What POST /sim/break can be armed on IN THIS SESSION, what
+                # is armed now, and the measured-latency caveat. Served from
+                # the running registry, so a light session's silenced types
+                # are named here before an agent arms a break that cannot fire.
+                "breaks": (sup or {}).get("breaks"),
             },
             "world": {
                 "path": state.get("world"),
@@ -4558,6 +4683,45 @@ def make_handler(state: HarnessState):
 
         def do_POST(self):  # noqa: N802
             self._fenced(self._route_POST)
+
+        def do_DELETE(self):  # noqa: N802
+            self._fenced(self._route_DELETE)
+
+        def _route_DELETE(self) -> None:
+            """The only DELETE the harness serves: disarm one break.
+
+            `POST /sim/break/delete {"break_id": ...}` is the exact twin, for
+            clients whose HTTP layer will not route a bodyless DELETE.
+            """
+            self._drain_body()
+            path = urlparse(self.path).path.rstrip("/")
+            prefix = "/sim/break/"
+            if path.startswith(prefix) and len(path) > len(prefix):
+                self._delete_break(unquote(path[len(prefix):]))
+                return
+            self._json(404, {"ok": False, "code": "UNKNOWN_ROUTE",
+                             "error": f"no DELETE route for {path!r}",
+                             "routes": ["DELETE /sim/break/<break_id>"]})
+
+        def _delete_break(self, break_id) -> None:
+            if not isinstance(break_id, str) or not break_id:
+                self._json(400, {"ok": False, "code": "BAD_REQUEST",
+                                 "error": "'break_id' must be a non-empty string"})
+                return
+            result = self._supervisor_call("break_delete", {"break_id": break_id})
+            if result is None:
+                return
+            if not result.get("removed"):
+                # 404, not 200-with-removed-false: "there was nothing to
+                # disarm" is a different world state from "disarmed", and an
+                # agent that armed a break and got this back has lost it.
+                self._json(404, {"ok": False, "code": "BREAK_NOT_FOUND",
+                                 "error": f"no armed break with id {break_id!r}",
+                                 "break_id": break_id, "removed": False})
+                return
+            out = dict(result)
+            out["ok"] = True
+            self._json(200, out)
 
         def _fenced(self, route) -> None:
             """Run a router with a last-resort exception fence.
@@ -4981,6 +5145,13 @@ def make_handler(state: HarnessState):
                 result = self._supervisor_call("sim_snapshots")
                 if result is not None:
                     self._json(200, result)
+                return
+            if path == "/sim/breaks":
+                result = self._supervisor_call("break_list")
+                if result is not None:
+                    out = dict(result)
+                    out["ok"] = True
+                    self._json(200, out)
                 return
             if path == "/world/diagnostics":
                 self._json(200, state.diagnostics())
@@ -5475,6 +5646,96 @@ def make_handler(state: HarnessState):
                 self._json(200 if out["ok"] else 409, out)
                 return
 
+            if path == "/sim/pause":
+                # Hold the engine paused ACROSS calls, so a reader sees one
+                # unchanging instant instead of a scene that moved 88-112 ms
+                # between two of its own requests. The lease has a deadline
+                # (default 30 s, max 300 s) because a client that pauses and
+                # then dies would otherwise freeze the simulation with no way
+                # back but killing the engine; /sim/step still advances while
+                # held, which is what makes single-stepping possible.
+                try:
+                    body = self._read_json()
+                except Exception:  # noqa: BLE001 -- an empty body is a valid pause
+                    body = {}
+                args = {}
+                if isinstance(body, dict) and body.get("lease_ms") is not None:
+                    try:
+                        args["lease_ms"] = int(body["lease_ms"])
+                    except (TypeError, ValueError):
+                        self._json(400, {"ok": False, "code": "BAD_REQUEST",
+                                         "error": "lease_ms must be an integer"})
+                        return
+                result = self._supervisor_call("pause", args)
+                if result is not None:
+                    self._json(200, result)
+                return
+
+            if path == "/sim/resume":
+                result = self._supervisor_call("resume", {})
+                if result is not None:
+                    self._json(200, result)
+                return
+
+            if path == "/sim/break":
+                # BREAK ON EVENT. Arm a condition; the supervisor takes the
+                # pause lease the moment a matching event is emitted, so the
+                # scene an agent then reads is the scene AT the event rather
+                # than the scene ~90 ms of free-running later.
+                try:
+                    body = self._read_json()
+                except Exception as exc:  # noqa: BLE001
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
+                    return
+                if not isinstance(body, dict):
+                    self._json(400, {"ok": False, "code": "BAD_REQUEST",
+                                     "error": "body must be a JSON object"})
+                    return
+                args = {"types": body.get("types"),
+                        "filter": body.get("filter")}
+                if body.get("lease_ms") is not None:
+                    args["lease_ms"] = body["lease_ms"]
+                if body.get("once") is not None:
+                    args["once"] = bool(body["once"])
+                result = self._supervisor_call("break_arm", args)
+                if result is None:
+                    return
+                if result.get("refused"):
+                    # ⚠ A REFUSAL IS THE POINT, not an inconvenience. A break
+                    # armed on a type this session silences (light mode
+                    # silences contact.*, grip.* and joint.limit_hit) could
+                    # never fire, and accepting it would hand the agent a
+                    # breakpoint that just never trips -- indistinguishable
+                    # from "the bug did not happen". The diagnostics carry the
+                    # per-type code and the {"light": false} workaround.
+                    self._json(400, {
+                        "ok": False,
+                        "code": result.get("code", "BREAK_REFUSED"),
+                        "error": result.get("error", "break refused"),
+                        "diagnostics": result.get("diagnostics") or [],
+                        "armed_types": [],
+                    })
+                    return
+                out = dict(result)
+                out.pop("refused", None)
+                out["ok"] = True
+                self._json(200, out)
+                return
+
+            if path == "/sim/break/delete":
+                # POST twin of DELETE /sim/break/<id>, for clients whose HTTP
+                # layer cannot route a DELETE with no body.
+                try:
+                    body = self._read_json()
+                except Exception as exc:  # noqa: BLE001
+                    self._json(400, {"ok": False, "code": "BAD_JSON",
+                                     "error": f"bad json: {exc}"})
+                    return
+                break_id = body.get("break_id") if isinstance(body, dict) else None
+                self._delete_break(break_id)
+                return
+
             if path == "/sim/step":
                 try:
                     body = self._read_json()
@@ -5500,7 +5761,14 @@ def make_handler(state: HarnessState):
                     state.note_step(steps, wall)
                     result = dict(result)
                     result["wall_ms"] = int(wall * 1000)
-                    result["steps_executed"] = steps
+                    # ⚠ NOT `steps`. A /sim/step batch STOPS EARLY when an
+                    # armed break fires inside it, so the requested count is
+                    # not the executed one -- the supervisor reports what it
+                    # actually ran, plus `stopped_on_break`. Overwriting that
+                    # with the request is how a "continue until the breakpoint"
+                    # would come back claiming it ran the whole batch.
+                    result.setdefault("steps_executed", steps)
+                    result.setdefault("steps_requested", steps)
                     self._json(200, result)
                 return
 
@@ -6294,7 +6562,11 @@ def serve(
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="OmniSim agent-facing validation harness")
+    p = argparse.ArgumentParser(
+        description="OmniSim agent-facing debug and validation harness - load a world, "
+                    "run it, then ask what actually happened (contacts, joint limits, "
+                    "grips, damage, controller logs) over HTTP"
+    )
     p.add_argument("--host", default=DEFAULT_HOST, help=f"bind host (default: {DEFAULT_HOST}, loopback only)")
     p.add_argument("--port", type=int, default=DEFAULT_PORT, help=f"bind port (default: {DEFAULT_PORT})")
     p.add_argument(

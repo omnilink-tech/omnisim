@@ -1,0 +1,137 @@
+#OMNISIM R2025a utf8
+
+# OmniSim DEBUGGING DEMO — the SAME cell with the fault repaired
+#
+# THIS IS THE FIX. It is omniarm6_drop_fault.omniworld with one physics field
+# changed back:
+#
+#   WorldInfo.newtonGroundMu   1.5  ->  6
+#
+# Nothing else about the cell moves -- same arm, same tables, same 0.30 kg
+# block, same solver settings. `diff` the two files and the only functional
+# line is that number. All five payloads of the 0.15-0.35 kg set are carried
+# and placed here; on the faulty sibling two of them are dropped.
+#
+# ⚠ This arm is NOT nominal, and the demo says so. It carries the block, but
+# the block still slides ~16 mm down through the pads during the 0.47 m carry
+# and the controller's own `pinched` assertion fails. That is a separate,
+# previously unreported regression against the 3-4 mm this cell was built on
+# (docs/guide/friction-grasp.md). It is written up in README.md as an OPEN
+# defect rather than hidden -- the instruments found it while the demo was
+# being built, which is the point of the instruments.
+#
+# NOTHING HERE IS WELDED. The block is held by contact friction between two
+# Robotiq 2F-85 pads and nothing else -- it is not named DEF GRASP_*, so
+# ArmBridge._attach_nearest is structurally unable to weld it. That is why the
+# faulty sibling drops it, and why this one holding it means something.
+#
+# HOW YOU KNOW THE FIX WORKED, over the wire. On the faulty world the event
+# stream shows the final `grip.released` for BLOCK with no preceding
+# `contact.began BLOCK <-> PLACE_TABLE`. Here that contact arrives FIRST: the
+# block reaches the destination still gripped, and the release is deliberate.
+# ⚠ Do not detect on `grip.released` alone -- a healthy carry emits two
+# release/re-acquire flickers. See README.md and tests/test_drop_detector.py.
+#
+# Run it:
+#   python -m omnisim run-headless projects/samples/demos/worlds/debug/omniarm6_drop_fault_fixed.omniworld --duration 90
+#   (PICK_AUTOQUIT=1 cuts that to ~11 s; PICK_OUT=<path> keeps the result JSON
+#    out of the flagship controller's directory)
+#
+# Verify the fix across the whole payload set (5/5 here, 3/5 faulty):
+#   python scripts/dev/drop_payload_sweep.py --both
+#
+# Full write-up, with the measured numbers and the honest caveats:
+#   projects/samples/demos/worlds/debug/README.md
+#
+# ⚠ The three physics fields below are NOT the fault and must not be "fixed":
+# basicTimeStep 8, condim 4 and the elliptic cone + impratio are the flagship
+# recipe (docs/guide/friction-grasp.md). Changing them changes the demo.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "OmniSim debugging demo — the arm drops the box (FIXED: newtonGroundMu 6)"
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  newtonCompoundColliders TRUE
+  # ⚠ THE FAULT. The flagship cell ships 6. At 1.5 the pads still hold the
+  # lighter payloads and lose the 0.30 / 0.35 kg ones in mid-carry. Friction is
+  # global here: one ShapeConfig serves the whole world, so this single number
+  # sets how grippy the pads are.
+  newtonGroundMu 6
+  newtonContactKe 8000
+  newtonContactKd 200
+  newtonCone "elliptic"
+  newtonImpratio 100
+  newtonCondim 4
+  newtonIterations 150
+  newtonLsIterations 50
+}
+Viewpoint { orientation -0.30 0.13 0.945 2.33 position 1.85 -1.75 1.25 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage { floorSize 4 4 }
+
+DEF OMNIARM6 URDFRobot {
+  url "../../../../robots/omnisim/omniarm6/omniarm6_2f85_grip.urdf"
+  translation 0 0 0
+  name "omniarm6"
+  supervisor TRUE
+  staticBase TRUE
+  physicsBackend "newton"
+  controller "omniarm6_real_pick_place"
+}
+
+# Pick pedestal, top face at z=0.20
+DEF PICK_TABLE Solid {
+  translation 0.46 0 0.10
+  children [
+    DEF PT_SH Shape {
+      appearance PBRAppearance { baseColor 0.40 0.43 0.48 roughness 1 metalness 0 }
+      geometry Box { size 0.26 0.26 0.20 }
+    }
+  ]
+  name "pick_table"
+  boundingObject USE PT_SH
+}
+
+# Place pedestal. The carry between the two is where the grip is lost, and
+# `contact.began BLOCK <-> PLACE_TABLE` is the event that says the carry
+# SUCCEEDED -- on a dropped run it is never emitted at all.
+DEF PLACE_TABLE Solid {
+  translation 0.24 -0.42 0.10
+  children [
+    DEF PL_SH Shape {
+      appearance PBRAppearance { baseColor 0.82 0.68 0.15 roughness 1 metalness 0 }
+      geometry Box { size 0.24 0.24 0.20 }
+    }
+  ]
+  name "place_table"
+  boundingObject USE PL_SH
+}
+
+# ⚠ NOT named DEF GRASP_* on purpose: ArmBridge._attach_nearest only ever
+# yields DEF GRASP_* nodes, so this block is STRUCTURALLY ineligible for the
+# kinematic weld. The hold cannot be faked by accident.
+#
+# 0.30 kg is the payload the fault drops. scripts/dev/drop_payload_sweep.py
+# rewrites this one number to walk the 0.15 / 0.20 / 0.25 / 0.30 / 0.35 kg set.
+# ⚠ The behaviour is NOT monotonic in mass outside that band -- 0.45 kg holds
+# here and drops on the fixed world. Stay inside 0.15-0.35 kg.
+DEF BLOCK Solid {
+  translation 0.46 0 0.245
+  children [
+    DEF BLK_SH Shape {
+      appearance PBRAppearance { baseColor 0.85 0.25 0.20 roughness 1 metalness 0 }
+      geometry Box { size 0.05 0.05 0.09 }
+    }
+  ]
+  name "block"
+  boundingObject USE BLK_SH
+  physics Physics { density -1 mass 0.30 }
+}

@@ -60,6 +60,7 @@ in a log nobody opened.
 from __future__ import annotations
 
 import argparse
+import ctypes
 import os
 import shutil
 import signal
@@ -68,6 +69,63 @@ import sys
 import time
 
 WIN_SMI = "C:\\Windows\\System32\\nvidia-smi.exe"
+
+
+class WindowsJob:
+    """Own the launched workload and descendants, even if its parent exits.
+
+    taskkill /T needs process-enumeration privileges which a sandbox may not
+    have. A job handle can stop precisely its members without those privileges.
+    Closing this handle also reaps children left behind by a failed wrapper.
+    """
+    def __init__(self):
+        from ctypes import wintypes
+        class Limits(ctypes.Structure):
+            _fields_ = [('process_time',ctypes.c_int64),('job_time',ctypes.c_int64),
+                        ('flags',wintypes.DWORD),('min_ws',ctypes.c_size_t),
+                        ('max_ws',ctypes.c_size_t),('active',wintypes.DWORD),
+                        ('affinity',ctypes.c_size_t),('priority',wintypes.DWORD),
+                        ('scheduling',wintypes.DWORD)]
+        class IO(ctypes.Structure):
+            _fields_ = [(name,ctypes.c_uint64) for name in
+                        ('reads','writes','other','read_bytes','write_bytes','other_bytes')]
+        class Extended(ctypes.Structure):
+            _fields_ = [('basic',Limits),('io',IO),('process_memory',ctypes.c_size_t),
+                        ('job_memory',ctypes.c_size_t),('peak_process',ctypes.c_size_t),
+                        ('peak_job',ctypes.c_size_t)]
+        self.api = ctypes.WinDLL('kernel32',use_last_error=True)
+        self.api.CreateJobObjectW.argtypes = [ctypes.c_void_p,wintypes.LPCWSTR]
+        self.api.CreateJobObjectW.restype = wintypes.HANDLE
+        self.api.SetInformationJobObject.argtypes = [wintypes.HANDLE,ctypes.c_int,ctypes.c_void_p,wintypes.DWORD]
+        self.api.SetInformationJobObject.restype = wintypes.BOOL
+        self.api.AssignProcessToJobObject.argtypes = [wintypes.HANDLE,wintypes.HANDLE]
+        self.api.AssignProcessToJobObject.restype = wintypes.BOOL
+        self.api.TerminateJobObject.argtypes = [wintypes.HANDLE,wintypes.UINT]
+        self.api.TerminateJobObject.restype = wintypes.BOOL
+        self.api.CloseHandle.argtypes = [wintypes.HANDLE]
+        self.api.CloseHandle.restype = wintypes.BOOL
+        self.handle = self.api.CreateJobObjectW(None,None)
+        if not self.handle:
+            raise ctypes.WinError(ctypes.get_last_error())
+        info = Extended()
+        info.basic.flags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        if not self.api.SetInformationJobObject(self.handle,9,ctypes.byref(info),ctypes.sizeof(info)):
+            error = ctypes.WinError(ctypes.get_last_error())
+            self.close()
+            raise error
+
+    def assign(self,proc):
+        if not self.api.AssignProcessToJobObject(self.handle,int(proc._handle)):
+            raise ctypes.WinError(ctypes.get_last_error())
+
+    def terminate(self):
+        if not self.api.TerminateJobObject(self.handle,3):
+            raise ctypes.WinError(ctypes.get_last_error())
+
+    def close(self):
+        if self.handle:
+            self.api.CloseHandle(self.handle)
+            self.handle = None
 
 
 def smi_path():
@@ -106,7 +164,9 @@ def engines_running():
 
 
 def kill_tree(proc):
-    if os.name == "nt":
+    if getattr(proc,"_thermal_job",None) is not None:
+        proc._thermal_job.terminate()
+    elif os.name == "nt":
         subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)],
                        capture_output=True, text=True)
     else:
@@ -152,6 +212,11 @@ def cmd_run(args):
               "report from it.", file=sys.stderr)
         return 2
 
+    if t0 is not None and t0 >= args.ceiling:
+        print("thermal_guard: REFUSING to start -- %d C >= ceiling %d C"
+              % (t0, args.ceiling), file=sys.stderr)
+        return 3
+
     if t0 is not None and args.precool is not None:
         rc = cmd_wait(argparse.Namespace(below=args.precool, timeout=args.cool_timeout,
                                          interval=args.interval))
@@ -161,15 +226,38 @@ def cmd_run(args):
     popen_kw = {}
     if os.name != "nt":
         popen_kw["preexec_fn"] = os.setsid
-    proc = subprocess.Popen(args.command, **popen_kw)
+    # Establish ownership before starting expensive work; never silently fall
+    # back to a tree-kill mechanism we cannot enforce on this host.
+    job = WindowsJob() if os.name == "nt" else None
+    try:
+        proc = subprocess.Popen(args.command, **popen_kw)
+        if job:
+            try:
+                job.assign(proc)
+            except OSError:
+                proc.kill()
+                proc.wait()
+                raise
+            proc._thermal_job = job
+    except BaseException:
+        if job:
+            job.close()
+        raise
 
     peak = t0 if t0 is not None else -1
     breached = False
+    sensor_lost = False
     try:
         while proc.poll() is None:
             time.sleep(args.interval)
             t = read_temp()
             if t is None:
+                if not args.unguarded:
+                    sensor_lost = True
+                    print("thermal_guard: temperature UNREADABLE -- KILLING the load",
+                          file=sys.stderr, flush=True)
+                    kill_tree(proc)
+                    break
                 continue
             peak = max(peak, t)
             if t >= args.ceiling:
@@ -181,11 +269,15 @@ def cmd_run(args):
     except KeyboardInterrupt:
         kill_tree(proc)
         raise
+    finally:
+        if job:
+            job.close()
     rc = proc.wait()
     print("thermal_guard: peak=%d C ceiling=%d C end=%s C %s"
           % (peak, args.ceiling, read_temp(),
+             "SENSOR LOST (load killed)" if sensor_lost else
              "BREACHED (load killed)" if breached else "ok"))
-    return 3 if breached else rc
+    return 2 if sensor_lost else 3 if breached else rc
 
 
 def main():

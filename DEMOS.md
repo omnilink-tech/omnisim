@@ -14,7 +14,10 @@ For interactive browsing inside OmniSim itself, run `launch.bat` with no argumen
 
 | Goal | Demo |
 |---|---|
+| **Find out WHY a robot failed** ⭐ | [The arm drops the box two times in five](#debugging--find-out-why-a-robot-failed) — a real, reproducible fault, diagnosed from `GET /sim/events` alone: no screenshot, no world source, no result file |
 | Hello world | [Warehouse Husky](#warehouse-husky-onboarding) |
+| SO101 picks a cube and places it in a box | [SO101 physical pick and place](projects/robots/therobotstudio/README.md) — authored simulation trajectory, contact friction, open-gripper control. The recorded LeRobot comparison remains unverified. |
+| Reconstruct a public ALOHA battery task | [ALOHA battery study](projects/robots/trossen/aloha/README.md) — real recording, a spring-loaded compartment reconstruction with compression and fingertip seating, an archived placement prototype, and a separate recorded-action diagnostic. Use the documented CLI for coordinated evidence. Geometry and forces are estimates; no hardware transfer validation. |
 | Hold a part with a real friction grip | [`omniarm6_real_pick_place.omniworld`](projects/samples/demos/worlds/flagship/omniarm6_real_pick_place.omniworld) — friction only, nothing welded, and it ships a drop control (`PICK_CONTROL_DROP=1` must leave the block behind). Run with `--duration 45`. Guide: [docs/guide/friction-grasp.md](docs/guide/friction-grasp.md) |
 | Quadruped walking (RL deploy) | [OmniQuad / Go2 / B2](#quadruped-locomotion-rl-deploy) |
 | Humanoid stand & walk (RL deploy) | [G1 / H1](#humanoid-rl-deploy) |
@@ -23,8 +26,21 @@ For interactive browsing inside OmniSim itself, run `launch.bat` with no argumen
 | Browse / run / compose every G1 skill | [The Skill Library](#the-skill-library--one-cli-for-all-of-the-above) |
 | Type to talk to a robot | [Chat demos](#1-chat-demos--single-robot-natural-language-console) |
 | City traffic — follow a car | [The Living City](#7-misc--showcase) |
+| Play an original robot combat encounter | [ORC: Foundry](projects/robot_combat/orc/README.md#foundry-playable-encounter) — two armed robots in an industrial yard; manual driving or AI duel, contact damage and free rigid-body debris. Use its guarded launcher for a 75°C GPU shutdown threshold. |
 
 ---
+
+## Featured: OmniLink × Husky
+
+The README's live-AI film uses the existing
+[`omnilink_husky.omniworld`](projects/samples/demos/worlds/chat/omnilink_husky.omniworld):
+one robot in one arena. [Watch the film](docs/media/omnilink-husky/omnilink-husky-live-ai.mp4)
+and [connect your OmniKey and model](docs/guide/omnilink-chat-demos.md) before launching.
+The world stays in `worlds/chat`; its reusable controller stays in `controllers`.
+
+For real-recording comparisons, see [SO101](sim-to-real/so101/README.md) and
+[ALOHA](sim-to-real/aloha-battery/README.md). Both are simulation studies, not
+validated transfer to hardware.
 
 ## Onboarding starter
 
@@ -40,15 +56,53 @@ The default demo. Supervisor-enabled Husky random-walks a 30 × 18 m warehouse w
 
 ---
 
+## Debugging — find out why a robot failed
+
+⭐ *The flagship debugging demo.*
+
+**"The arm drops the box two times in five. An agent finds out why from the event stream alone."**
+
+A robot cell with a genuine, reproducible fault in it. One physics field is wrong; the gripper loses the part in mid-air on the two heaviest of five payloads and carries the other three. The end-of-run screenshot looks fine either way — a dropped block routinely lands inside the place tolerance and scores `placed=True`. The whole diagnosis comes off **one endpoint**, `GET /sim/events` in full-tracking mode: no screenshot, no world source, no result file.
+
+Honest claim: **90 seconds to the diagnosis, ~2 minutes to the verified fix.** The demo also ships with a *known open defect* in its own "fixed" arm, stated out loud — see the README.
+
+| | |
+|---|---|
+| Faulty world | [`projects/samples/demos/worlds/debug/omniarm6_drop_fault.omniworld`](projects/samples/demos/worlds/debug/omniarm6_drop_fault.omniworld) |
+| Fixed world | [`projects/samples/demos/worlds/debug/omniarm6_drop_fault_fixed.omniworld`](projects/samples/demos/worlds/debug/omniarm6_drop_fault_fixed.omniworld) |
+| Controller | [`omniarm6_real_pick_place`](projects/samples/demos/controllers/omniarm6_real_pick_place/) *(shared with the flagship friction-grasp demo — unmodified)* |
+| Diagnose | `python scripts/dev/diagnose_drop.py projects/samples/demos/worlds/debug/omniarm6_drop_fault.omniworld` |
+| Prove the fault is load-dependent | `python scripts/dev/drop_payload_sweep.py --both` → **3/5 vs 5/5** |
+| Detector regression | `pytest tests/test_drop_detector.py` *(engine-free; pins that a healthy carry's two grip flickers are not reported as drops)* |
+| Write-up | [`projects/samples/demos/worlds/debug/README.md`](projects/samples/demos/worlds/debug/README.md) |
+| Positioning it proves | [`docs/developer/positioning.md`](docs/developer/positioning.md) |
+
+---
+
 ## 1. Chat demos — single robot, natural-language console
 
-Right-click the robot → *Show Robot Window* → a chat side panel opens. Type `home`, `wave hello`, `forward 1 m`, `turn left 90 degrees`, `stop`. Offline = regex intent router. Set `OMNI_KEY` for full LLM routing through OmniLink.
+**21 chat demos = 20 `omnilink_<robot>.omniworld` worlds + `omniarm6_talk.omniworld`**, across four
+robot classes and four bridge controllers: 7 arms, 7 mobile bases, 6 quadrupeds, 1 drone. Every one of
+the 21 is a row below, is a card in the [launcher catalogue](projects/samples/demos/controllers/omnilink_launcher/demos.json),
+and is a row in the [folder index](projects/samples/demos/worlds/chat/OMNILINK_CHAT_DEMOS.md);
+[`tests/test_demo_catalogue.py`](tests/test_demo_catalogue.py) fails if the three disagree.
+`chat/omnilink_husky_langsoak.omniworld` is the 22nd tracked file in that folder and is deliberately **not** one
+of the 21 — it is the [langsoak](tests/benchmarks/langsoak/) benchmark fixture (port 8775), catalogued as
+such in [WORLDS.md §1a](WORLDS.md#1a-chat-demos-one-robot-talk-to-it).
+
+Connect your OmniKey and a model provider, then right-click the robot → *Show Robot Window*. OmniLink chat requires a connection on every plan. The direct Stop button and ordinary simulator controls remain available independently.
+
+⚠️ **Run one chat demo at a time.** 20 of the 21 pin their bridge to port **8765** — the Mavic serves 6090
+and `omnilink_multi_arm` numbers its three consoles 8765/8766/8767. A second demo launched on top of a
+running one cannot bind its port, and an orphaned bridge left behind by a killed engine keeps 8765 and
+answers for the *next* world, which reads as the new robot ignoring you. Stop the running demo and confirm
+the port is closed first.
 
 Full guide: [`docs/guide/omnilink-chat-demos.md`](docs/guide/omnilink-chat-demos.md). Index: [`projects/samples/demos/worlds/chat/OMNILINK_CHAT_DEMOS.md`](projects/samples/demos/worlds/chat/OMNILINK_CHAT_DEMOS.md).
 
-### Arms
+### Arms (7)
 
-All four drive over the [`omnilink_arm_bridge`](projects/samples/demos/controllers/omnilink_arm_bridge/) HTTP surface
+All seven drive over the [`omnilink_arm_bridge`](projects/samples/demos/controllers/omnilink_arm_bridge/) HTTP surface
 (§4 of [AGENTS.md](AGENTS.md)). Verified driving: joint tracking to ~0.02–0.03 rad, and damped-least-squares IK
 reaching a Cartesian target to ~4.6 cm. Position control and suction / parallel-jaw picking — **no force control and
 no in-hand manipulation**.
@@ -63,7 +117,9 @@ no in-hand manipulation**.
 | Talk to Ari | [`omniarm6_talk.omniworld`](projects/samples/demos/worlds/chat/omniarm6_talk.omniworld) | `omnilink_arm_bridge` — Talk to Ari - an OmniArm 6 6-DOF arm driven by an OmniLink agent. |
 | OmniLink — OmniArm 6 + 140 mm two-finger gripper, talk to it (friction hold, no weld) | [`omnilink_omniarm6_2f140.omniworld`](projects/samples/demos/worlds/chat/omnilink_omniarm6_2f140.omniworld) | `omnilink_arm_bridge` |
 
-### Mobile bases
+### Mobile bases (7)
+
+All seven drive over the [`omnilink_mobile_bridge`](projects/samples/demos/controllers/omnilink_mobile_bridge/).
 
 | Demo | World | Bridge controller |
 |---|---|---|
@@ -75,7 +131,9 @@ no in-hand manipulation**.
 | TurtleBot3 Waffle | [`omnilink_tb3_waffle.omniworld`](projects/samples/demos/worlds/chat/omnilink_tb3_waffle.omniworld) | [`omnilink_mobile_bridge`](projects/samples/demos/controllers/omnilink_mobile_bridge/) |
 | TurtleBot3 Waffle Pi | [`omnilink_tb3_waffle_pi.omniworld`](projects/samples/demos/worlds/chat/omnilink_tb3_waffle_pi.omniworld) | [`omnilink_mobile_bridge`](projects/samples/demos/controllers/omnilink_mobile_bridge/) |
 
-### Quadruped
+### Quadrupeds (6)
+
+All six drive over the [`omnilink_quadruped_bridge`](projects/samples/demos/controllers/omnilink_quadruped_bridge/), which selects the robot from `--robot` in [`_quadruped_configs.py`](projects/samples/demos/controllers/omnilink_quadruped_bridge/_quadruped_configs.py). Poses on all six; real wheeled driving on the M20 family. **No learned gait anywhere in this class** — "walk" cycles the legs in place.
 
 | Demo | World | Bridge controller |
 |---|---|---|
@@ -86,11 +144,11 @@ no in-hand manipulation**.
 | Deep Robotics M20S | [`omnilink_m20s.omniworld`](projects/samples/demos/worlds/chat/omnilink_m20s.omniworld) | same bridge, `--robot m20s` |
 | Deep Robotics M20 + AgileX Piper arm *(base drives; the arm holds its zero pose)* | [`omnilink_m20_piper.omniworld`](projects/samples/demos/worlds/chat/omnilink_m20_piper.omniworld) | same bridge, `--robot m20_piper` |
 
-### Aerial
+### Aerial (1)
 
 | Demo | World | Bridge controller |
 |---|---|---|
-| DJI Mavic 2 Pro | [`omnilink_mavic.omniworld`](projects/samples/demos/worlds/chat/omnilink_mavic.omniworld) | [`mavic_omnilink_bridge`](projects/samples/demos/controllers/mavic_omnilink_bridge/) |
+| DJI Mavic 2 Pro *(bridge on port **6090**, not 8765)* | [`omnilink_mavic.omniworld`](projects/samples/demos/worlds/chat/omnilink_mavic.omniworld) | [`mavic_omnilink_bridge`](projects/samples/demos/controllers/mavic_omnilink_bridge/) |
 
 ---
 
@@ -240,22 +298,28 @@ python projects/policies/skills/skill_lib.py verify-demos            # proves th
 Skills span robots (G1 / H1 / Go2 / OmniQuad) and methods (Shadowing / Unitree re-host / deterministic overlay), each carrying its own `verified` / `experimental` / `open` status — `turn_in_place` is **experimental** and `climb_stairs` is **open**, and the CLI says so. Full reference: [`docs/developer/skill-library.md`](docs/developer/skill-library.md) · [`projects/policies/skills/README.md`](projects/policies/skills/README.md).
 
 
-### Other flagship worlds (load-checked 2026-09-02)
+### Other flagship worlds
 
-Flagship-directory worlds that were authored but never catalogued; load-checked 2026-09-02 (LOAD only).
+Flagship-directory worlds that were authored but never catalogued here. The first three were
+load-checked 2026-09-02 (LOAD only); the three build-film worlds below them were catalogued on
+2026-09-22 from their world files and controller sources and carry **no load check of their own**
+— run `python -m omnisim run-headless <world> --until-finalized` before quoting anything about them.
 
 | Demo | World | Controllers -- what the file says it is |
 |---|---|---|
 | Husky Extreme Terrain | [`husky_extreme_terrain.omniworld`](projects/samples/demos/worlds/flagship/husky_extreme_terrain.omniworld) | `husky_extreme_terrain` — Matched fixed-throttle and pose-feedback runs through a three-gate boulder course; the feedback mode uses exact simulated pose and a frozen known centerline. |
 | Husky Unseen Maze — b1aa122b97 | [`husky_unseen_maze.omniworld`](projects/samples/demos/worlds/flagship/husky_unseen_maze.omniworld) | `husky_unseen_maze` — A frozen sensor-only planner must reach the southeast beacon. |
 | Industrial Warehouse | [`warehouse_industrial.omniworld`](projects/samples/demos/worlds/flagship/warehouse_industrial.omniworld) | no controller |
+| Four robots. One passage. *(build film)* | [`husky_one_passage.omniworld`](projects/samples/demos/worlds/flagship/husky_one_passage.omniworld) | [`passage_robot`](projects/samples/demos/controllers/passage_robot/) ×4 + [`passage_director`](projects/samples/demos/controllers/passage_director/) — four real Husky bodies (A–D) must cross one narrow passage from both ends. The A/B is **coordination only**: same bodies, same physics, with and without a passage reservation. Warm neutral warehouse lighting, authored for the long-form film. |
+| Two robots. Twenty blocks. One tower. *(build film)* | [`two_robots_tower.omniworld`](projects/samples/demos/worlds/flagship/two_robots_tower.omniworld) | [`tower_builder`](projects/samples/demos/controllers/tower_builder/) ×2 + [`tower_director`](projects/samples/demos/controllers/tower_director/) — two Cartesian gantry builders with real motor joints and **friction-only finger grips** stack twenty free dynamic blocks (`newtonGroundMu 1.5`, elliptic cone, `newtonImpratio 10`). Nothing is welded; a dropped block stays dropped. The director's `customData` selects the course (`mode`, `count`) and the thermal pause/resume thresholds. |
+| Two robots. One hundred boxes. *(build film, part two)* | [`two_robots_100_boxes.omniworld`](projects/samples/demos/worlds/flagship/two_robots_100_boxes.omniworld) | [`tower100_builder`](projects/samples/demos/controllers/tower100_builder/) ×2 + [`tower100_director`](projects/samples/demos/controllers/tower100_director/) — the same two builders against **one hundred** free boxes, with the constraint budget raised for it (`newtonNjmax 8192`, `newtonNconmax 2048`, `basicTimeStep 8`). The bonded-quad mode and the wider stack live in the director's `customData`. |
 
 
 ---
 
 ## 3. OmniLink agent demos (agent layer on top of OmniSim)
 
-The full-fat **agent-driven** demos — each pairs a bespoke world with a production-grade OmniLink agent (set `OMNI_KEY` for full LLM routing; several also run offline). These used to be the flagship set; they now live here so the flagship slot can showcase the OmniSim engine itself. See [`agents/ROADMAP.md`](agents/ROADMAP.md) for the build roadmap.
+Additional **agent-driven** demos pair worlds with OmniLink agent examples. OmniLink requires an OmniKey and a model connection. Start with the single-Husky demo above, then explore these larger scenarios. See [`agents/ROADMAP.md`](agents/ROADMAP.md) for the build roadmap.
 
 ### Husky Maze — vision-driven navigation
 
@@ -313,7 +377,7 @@ An operator (or the OmniLink agent) tells the rover, in plain language, which pa
 |---|---|
 | World | [`omnitug500_courier.omniworld`](projects/robots/omnisim/omnitug500/worlds/omnitug500_courier.omniworld) |
 | Controller | [`omnitug500_courier`](projects/robots/omnisim/omnitug500/controllers/omnitug500_courier/) — A*-routes the aisle grid from a known facility map, loads the package onto its deck, drives to the dock and sets it down; multi-stop routes supported |
-| Run | `powershell -File scripts/dev/run_omnitug500_courier.ps1` (windowed, interactive chat). Offline it uses the controller's regex router; set `OMNI_KEY` for the OmniLink agent |
+| Run | `powershell -File scripts/dev/run_omnitug500_courier.ps1` (windowed, interactive chat). Requires `OMNI_KEY` and a connected model for chat; direct controls remain available |
 
 ---
 
@@ -425,6 +489,7 @@ Procedurally generated scaffolds (omniworld + seeds), all browsable from the in-
 | Demo | World | What it shows |
 |---|---|---|
 | The Living City | [`city_traffic.omniworld`](projects/samples/demos/worlds/showcase/city_traffic.omniworld) | Generator-driven 4×4 city — 48 cars routing with traffic signals, pedestrians on crossings, a city bus, day/night cycle. Follow a car: click it → right-click → *Follow Object* (or `F5`). Regenerate via [`gen_city_traffic.py`](scripts/dev/gen_city_traffic.py) |
+| City *(environment, no robot)* | [`city.omniworld`](projects/samples/demos/worlds/environments/city.omniworld) | Hand-built mixed urban street block on the canonical recipe: a 12 m two-lane avenue crossed by a 9 m side street, mixed buildings, a pocket park, and one passive controller-less `Robot` hosting the intersection's traffic-light fixtures. **No mobile robot by design** — the asphalt is flat and the sidewalks real so a ground robot can be composed on top (copy the file, add your robot). Sibling of `forest.omniworld` and `desert_ruins.omniworld`; not the generator-driven [Living City](#7-misc--showcase) traffic scene |
 | Desert ruins | [`desert_ruins.omniworld`](projects/samples/demos/worlds/environments/desert_ruins.omniworld) | Rough-terrain outdoor navigation |
 | Husky rocks traverse | [`husky_rocks_traverse.omniworld`](projects/samples/demos/worlds/showcase/husky_rocks_traverse.omniworld) | Lunar/Mars-style traverse |
 | wgpu main view, live | any world — default [`warehouse_husky.omniworld`](projects/samples/demos/worlds/showcase/warehouse_husky.omniworld) | `powershell -File scripts\dev\show_wgpu_demo.ps1 [world]` opens the world in the wgpu main view (full-material PBR + multi-cascade shadows + world-general ambient) from your own terminal, so the window stays until you close it. wgpu has been the default renderer since 2026-08-19; this is the one-command way to eyeball a world in it |

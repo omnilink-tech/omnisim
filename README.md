@@ -1,35 +1,78 @@
 # OmniSim
 
-**The simulator you can talk to.** Describe a scene and an agent builds it; describe a behaviour and
-an agent wires the controller. Everything runs over plain HTTP/JSON, so the agent loads the world,
-steps physics, takes a screenshot and hot-reloads — without leaving the conversation.
+**An open-source robotics workshop for agents.**
+
+If you're learning robotics, building a robot, or have an idea but don't have access to the
+hardware, OmniSim is built for you.
+
+OmniSim is more than a simulator. It's an open-source robotics workshop designed for agentic
+development — a place where an agent has everything it needs to work on any robotic system. You
+can simulate complete robotic systems with high-fidelity physics, build digital twins, connect
+simulation to real robots, and give AI agents a workshop to program, test, and debug your system.
+
+**You can do all of that simply by talking to it.**
+
+## Give it an instruction. See it move.
+
+[![OmniLink drives a Husky in OmniSim — watch the full demo](docs/media/omnilink-husky/preview.gif)](docs/media/omnilink-husky/omnilink-husky-live-ai.mp4)
+
+*One Husky. One arena. Live AI instructions, follow-up questions, and a return
+to base. [Watch the full 100-second video](docs/media/omnilink-husky/omnilink-husky-live-ai.mp4)
+· [Run this demo](docs/guide/omnilink-chat-demos.md). Silent native OmniSim footage;
+waiting removed and motion time-compressed. The preview shows the opening 32 seconds.*
+
+**OmniSim is the free robotics workshop. [OmniLink](https://www.omnilink-agents.com/)
+is the connected AI agent.** OmniLink requires an OmniKey and a model connection,
+including on Free; model usage is billed separately.
+[Connect your account](https://www.omnilink-agents.com/agents/start).
+The recorded result is simulation, not a hardware demonstration.
+
+
+- **No robot?** Simulate one. [Newton](https://github.com/newton-physics/newton) physics — rigid
+  bodies, contacts, cloth, soft bodies, CUDA granular media — 52 demo worlds, and a procedural
+  world generator.
+- **Already have a robot?** Build its digital twin. Native URDF import, CAD import from STEP, and
+  20+ vendor robot packages under [`projects/robots/`](projects/robots/).
+- **Want it to reach the real machine?** The same agent tools and the same bridge protocol address
+  the simulated robot and the physical one, alongside a [ROS 2 sidecar](packages/omnisim-ros2/)
+  speaking the `simulation_interfaces` standard. What is portable is the software above the driver:
+  the driver itself is yours to wire, and no policy trained here has been validated on hardware —
+  see the [sim-to-real guide](docs/guide/omnilink-sim-to-real.md).
+- **Don't know how to program it?** Let an agent help build and debug it. The first-party
+  [MCP server](packages/omnisim-mcp/) gives Claude Code and Cursor 37 tools onto a running
+  simulation, and when the robot misbehaves the agent can ask what actually happened — every
+  contact, every joint limit, every grip, every line your controller printed, on one cursor-paged
+  HTTP stream. On the CPU solver (`newtonSolver "mujoco"`, the default) the same scene runs
+  bitwise identically across cold launches — measured on contact-rich ten-robot scenes, and
+  refuted on the GPU solver — so a failure you can reproduce is a failure you can fix.
+
+The goal is simple: **make robotics accessible to anyone with an idea.** OmniSim is completely free
+and open source, Apache-2.0.
 
 Built by agents, for agents: the HTTP harness, the Newton physics integration, the cloth and
 soft-body stack, the RL pipeline and the ROS 2 sidecar were written by an AI agent under human
-direction. Physics is [Newton](https://github.com/newton-physics/newton), the only backend.
-Apache-2.0, with a first-party [MCP server](packages/omnisim-mcp/) for Claude Code and Cursor,
-and a [ROS 2 sidecar](packages/omnisim-ros2/) speaking the `simulation_interfaces` standard.
+direction. And when the instruments cannot see, they say so instead of guessing: `GET /sim/contacts`
+returns its own `completeness` and `empty_set_reasons[]` rather than an empty list that reads as
+"nothing touched". What OmniSim does **not** do is control time inside a run — no pause, no
+breakpoints, no record/replay/diff, and snapshot is a pose teleport rather than a checkpoint. And
+Windows has the only prebuilt package: Linux is a source build, macOS is not supported. Those gaps
+are itemised in [what OmniSim is worse at](#what-omnisim-is-worse-at).
 
 [**Join the public beta**](BETA.md) · [Builder challenge](BUILDERS.md) · [For research labs](LABS.md) · [Latest release](https://github.com/omnilink-tech/omnisim/releases/latest) ·
 [Demos](DEMOS.md) · [Agent entry point](AGENTS.md) · [Protocol](PROTOCOL.md)
 
-[![OmniArm 6 uses depth perception to pick unknown objects in OmniSim](docs/media/videos/omniarm6_universal_pick.gif)](docs/media/videos/omniarm6_universal_pick.mp4)
-
-*The OmniArm 6 Universal Pick demo uses a top-down depth camera to choose grasp
-points on arbitrary, previously unmodelled shapes and move them from the bin to
-the tote. Normal picks use no object registry, classifier or authored pick
-anchors; the controller documents its limited recovery and suction-bookkeeping
-paths. [Play the MP4](docs/media/videos/omniarm6_universal_pick.mp4).*
 
 > **Public beta:** we are looking for the first ten external developers willing
 > to spend 20 minutes installing OmniSim, running one demo, and reporting the
-> first confusing or broken step. Windows has the first downloadable package;
+> first confusing or broken step — and, better still, to bring us something that
+> misbehaves and find out whether OmniSim can explain it.
+> Windows has the first downloadable package;
 > Linux is a source build; macOS is not supported.
 > [Take the 20-minute challenge →](BETA.md)
 
 ---
 
-## Run a real robot demo
+## Run your first simulation
 
 Three minutes on Windows. About half an hour on Linux, because you build it.
 
@@ -63,7 +106,8 @@ Three minutes on Windows. About half an hour on Linux, because you build it.
    python -m omnisim demo
    ```
 
-   That is the real friction-grasp demo above. `python -m omnisim demos` lists
+   This runs the self-contained OmniArm friction-grasp demo. For the Husky
+   conversation shown above, follow the [OmniLink setup guide](docs/guide/omnilink-chat-demos.md). `python -m omnisim demos` lists
    all of them (52 as of 2026-09-01), by category — the launcher's `demos.json`
    is the live catalogue.
 
@@ -85,6 +129,36 @@ If any step is confusing or fails, that is exactly what the
 
 ---
 
+## Real recordings and simulation comparisons
+
+Two supporting studies show how real robot tasks can be reconstructed in
+OmniSim. **These are authored simulation motions beside real recordings,
+not validated transfer to hardware.**
+
+### SO101 · pick and place
+
+[![SO101 real recording beside authored simulation](sim-to-real/so101/videos/comparison-poster.jpg)](sim-to-real/so101/videos/real-vs-authored.mp4)
+
+[Watch the 21-second comparison](sim-to-real/so101/videos/real-vs-authored.mp4)
+· [Evidence, source attribution and reproduction](sim-to-real/so101/README.md).
+The authored simulation picks and places the cube; exact recorded-action replay
+still fails with the estimated calibration.
+
+### ALOHA · spring-loaded battery insertion
+
+[![ALOHA real recording beside the spring-insertion reconstruction](sim-to-real/aloha-battery/videos/spring-insertion-poster.png)](sim-to-real/aloha-battery/videos/real-vs-spring-insertion.mp4)
+
+[Watch the 28-second comparison](sim-to-real/aloha-battery/videos/real-vs-spring-insertion.mp4)
+· [Evidence, source attribution and reproduction](sim-to-real/aloha-battery/README.md).
+The simulation demonstrates grasping, spring compression and fingertip seating.
+Geometry and mechanism parameters are estimates; recorded actions do not reproduce
+the insertion. No electrical or physical-hardware validation is claimed.
+
+[Browse both studies](sim-to-real/README.md)
+· [Connect the same control surface to a hardware driver](docs/guide/omnilink-sim-to-real.md).
+
+---
+
 ## How OmniSim compares
 
 Every OmniSim cell is **measured by us** and is reproducible from this repo. Every row names the
@@ -96,16 +170,31 @@ machine says so in the row. The machines are a **laptop RTX 3060 (6 GB), Ryzen 1
 published documentation**, dated and linked; we did not measure their engines. Where we lose is in
 [its own section](#what-omnisim-is-worse-at).
 
-### 1. Agent-native
+### 1. Observability, and the agent-native surface it rides on
+
+The first two rows are the debugger; the rest are how an agent reaches it.
 
 |  | **OmniSim** | Gazebo Jetty | Isaac Sim 6.0.1 |
 |---|---|---|---|
-| First-party HTTP/JSON scene API | **38 endpoints** | none | none |
-| Typed external control | 38 harness + 15 capture verbs, **plus ROS 2 `simulation_interfaces` (15 svc + 1 action) and a `ros2_control` `SystemInterface`** | ROS 2 `simulation_interfaces` (18 svc + 1 action) + `ros2_control` | ROS 2 + `ros2_control`, **plus raw Python over TCP :8226** |
-| First-party MCP server | **18 tools**, stdio, zero deps | none | **5 tools — docs search; none touch a running sim** |
-| Structured load diagnostics | **50+ codes** (open enum; `GET /capabilities` serves the live set) | — | — |
 | Typed runtime events | **10**, with drop counters | — | — |
+| Structured load diagnostics | **50+ codes** (open enum; `GET /capabilities` serves the live set) | — | — |
+| First-party HTTP/JSON scene API | **38 endpoints** | none | none |
+| First-party MCP server | **37 tools**, stdio, zero deps — each one HTTP call to the same harness a human drives | none | **5 tools — docs search; none touch a running sim** |
+| Typed external control | 38 harness + 15 capture verbs, **plus ROS 2 `simulation_interfaces` (15 svc + 1 action) and a `ros2_control` `SystemInterface`** | ROS 2 `simulation_interfaces` (18 svc + 1 action) + `ros2_control` | ROS 2 + `ros2_control`, **plus raw Python over TCP :8226** |
 | `AGENTS.md` at repo root | **701 lines** | none | **yes, + 25 `SKILL.md` skills** |
+
+That event-type list is not maintained by hand. The simulator regex-scans its own emit call sites and
+reports any drift between code and declaration as `undeclared` / `declared_not_emitted` on
+`GET /capabilities`
+([`event_bus.py`](projects/default/controllers/harness_supervisor/event_bus.py)) — so the row above is
+a count of what the code emits, not of what the docs remember. Reproduction is scoped the same way:
+on the CPU MuJoCo path (`newtonSolver "mujoco"`, the default) OmniSim reproduces contact-rich
+ten-robot scenes bitwise across cold launches on one machine, and across two machines running the
+**same binary**; on the GPU `mujoco_warp` path it does not, and that is refuted rather than
+unmeasured — 0 of 24 same-config pairs
+([determinism-scope.md](docs/benchmarks/determinism-scope.md)). We do not compare that against other
+simulators here: determinism only compares like with like, solver against solver
+([why](docs/developer/simulator-comparison.md#33-determinism--a-row-worth-having-but-it-must-be-compared-like-with-like)).
 
 ### 2. Performance and resources
 
@@ -185,6 +274,39 @@ vendor-claim: [docs/developer/simulator-comparison.md](docs/developer/simulator-
 
 ## What OmniSim is worse at
 
+- **Command checks are not collision avoidance or a safety certification.** Direct
+  simulator controls have different protections from the connected chat path; see
+  [actuation coverage](packages/omnisim-bridges/GATE_COVERAGE.md). A successful Husky
+  recording does not establish safe unattended operation or equivalent performance
+  on every robot class.
+- **Repeated motion can drift.** The earlier square-loop experiment accumulated
+  position error. A short successful return to base does not establish reliable
+  operation over a shift without localisation.
+- **You cannot control time inside a run.** OmniSim observes and certifies well; it does not stop the
+  clock. There is **no pause over HTTP** — the engine free-runs between calls, ~88–112 ms of sim time
+  per idle poll — and therefore **no breakpoints and no watch conditions**. There is **no record,
+  replay or run-diff** surface. And `POST /sim/snapshot` is **not a checkpoint**: it saves poses and
+  joint angles only. Velocity is never captured (`OmSolid::saveHiddenFieldValues()` is an empty
+  function) and solver state is never touched, so restore teleports bodies to the saved poses while
+  they keep their live Newton velocities, and does not rewind the clock. Identical forward evolution
+  from a restore is not achievable, and we do not claim it. All four gaps are blocked by the same
+  missing primitive — the pause guard exists internally and every read path already uses it, but it
+  is not exposed.
+- **Light mode is the default, and it silences 5 of the 10 event types** (`contact.*`, `grip.*`,
+  `joint.limit_hit`). Load the world with `{"light": false}` for a debugging session; `/sim/contacts`
+  answers either way. Separately, controller logs and physics events **cannot be put on one
+  timeline**: log events carry a wall clock (`t_wall`), supervisor events carry sim milliseconds
+  (`t_sim_ms`), and `seq` collides across the two sides.
+- **Sensors are not readable through the debug surface.** `GET /robot/<def>/sensor/<name>` is a
+  deliberate 501 — cameras, lidar and IMUs are read by the controller that owns them, not by the
+  instrument. Joints, contacts, grips, devices and bounds are readable; sensor samples are not.
+- **Fault injection is structural impact damage only.** No sensor dropout, no encoder drift, no
+  actuator degradation, no injected latency, no thermal derating. It binds to a robot named `husky`
+  by default and idles silently otherwise, and its `WHEEL_TORQUE_SCALE` is written into `customData`
+  for a cooperating controller to honour — **the motor is never touched.**
+- **A green `run-headless` is a log verdict, not a physics verdict.** A hologram floor lets a body
+  reach z = −69 km and still PASS. Add `--duration N --fail-on-runaway` when the claim is about
+  physics.
 - **ROS 2 support is new and incomplete.** OmniSim implements the ROS 2
   [`simulation_interfaces`](packages/omnisim-ros2/) standard plus `/clock`, `/tf`, `JointState`,
   `/odom`, `cmd_vel`, sensor topics (`Imu`, `LaserScan`, GPS) and a **`ros2_control`
@@ -252,18 +374,42 @@ quietly.
 
 ## What you can ask for
 
+Find out what happened:
+
+```text
+"The gripper drops the box when it starts 2 cm left of centre. Run both placements and tell me what differs."
+"Which joints hit their limits during that run, and at what sim time?"
+"Did the fork and the pallet ever actually touch? Show me the contact set, not a screenshot."
+"Why isn't the camera seeing the red cylinder?"
+"Run this world twice on the CPU solver and tell me whether the two runs are bitwise identical."
+```
+
+Build the thing you need to debug:
+
 ```text
 "Launch the warehouse demo."
 "Generate a Mars world with a 5-Husky fleet and run it headless for 30 seconds."
-"Add three red cylinders in front of the Husky and make it avoid them."
 "Wire a Jackal on a flat platform, expose it on HTTP, and drive it forward 2 m."
-"Why isn't the camera seeing the red cylinder?"
 ```
 
-The agent builds the world, edits controllers, runs the simulator, and verifies its own work through
-the [validation harness](scripts/harness/). For runtime control of robots in a live scene, point
+For the first kind, the agent loads the world with `{"light": false}`, steps it, and reads
+`/sim/events`, `/sim/contacts` and `/robot/<def>/joints` — the same HTTP surface you can `curl`
+yourself ([endpoints](docs/developer/harness-endpoint-reference.md) ·
+[protocol](PROTOCOL.md#7-world-harness)). For the second, it builds the world, edits controllers,
+runs the simulator, and verifies its own work through the
+[validation harness](scripts/harness/). For runtime control of robots in a live scene, point
 [OmniLink agents](https://www.omnilink-agents.com) at the per-robot HTTP bridges
-([protocol](PROTOCOL.md)).
+([protocol](PROTOCOL.md)). The chat demos — right-click a robot, type `drive forward 1 m` —
+are one of those bridges with a panel on the front ([guide](docs/guide/omnilink-chat-demos.md)).
+
+OmniLink requires an OmniKey and a connected model. Missing setup or model
+errors do not switch chat into a basic-command fallback. The robot's direct
+Stop control remains independent of the model. See the
+[v9 release preview](docs/RELEASE_NOTES_v9.md) for the current scope.
+
+These controls are not a safety certification or a guarantee of collision-free
+operation. [Actuation coverage](packages/omnisim-bridges/GATE_COVERAGE.md) documents
+the limits of the shipped interfaces.
 
 ## Robots
 
@@ -308,6 +454,7 @@ it — training a policy that does is the open problem.
 |---|---|
 | Installing it (per platform, prerequisites) | [Installation procedure](docs/guide/installation-procedure.md) · [System requirements](docs/guide/system-requirements.md) |
 | AI coding agent in this repo | [AGENTS.md](AGENTS.md) |
+| Debugging a controller, investigating a failure | [Harness endpoints](docs/developer/harness-endpoint-reference.md) · [agent first moves](docs/developer/agents-first-moves.md#debug-a-controller) · [PROTOCOL.md §7](PROTOCOL.md#7-world-harness) |
 | Picking a demo | [DEMOS.md](DEMOS.md) |
 | First-time human contributor | [Developer Quickstart](docs/developer/quickstart.md) |
 | Engine developer | [docs/developer/](docs/developer/) |

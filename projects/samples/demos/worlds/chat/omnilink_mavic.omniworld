@@ -7,7 +7,13 @@
 #  1. Chat surface — right-click the drone → *Show Robot Window* → side-
 #     panel chat. Operator types "takeoff", "forward 1 m", "up 2 m",
 #     "left 1 m", "turn left 90 degrees", "goto 2 3", "hover", "land",
-#     "stop", "reset". IntentRouter dispatches one action per prompt.
+#     "stop", "reset". The panel routes to the bridge's OmniLink relay, so
+#     OMNI_KEY must be set before launch: the deterministic parser
+#     (interpret.py, surface="drone") interprets first, the model takes
+#     what it declines, and the safety gate vets whatever produced the
+#     frames. Without a key the panel reports that the connection is
+#     required and nothing actuates. The panel's Stop is handled locally
+#     by the bridge and never goes through the AI path.
 #
 #  2. Survey mission surface — the same bridge advertises a rich tool
 #     surface (get_capabilities, scan_for_markers, read_camera,
@@ -22,9 +28,10 @@
 #     unowned — bring your own agent, or recover that one from git
 #     history.
 #
-# Both surfaces share the same mavic_omnilink_bridge controller — the
-# /action HTTP endpoint serves the agent, the wwi-chat IntentRouter
-# serves the human. Same BridgeState, same flight loop.
+# Both surfaces share the same mavic_omnilink_bridge controller — /action,
+# /prompt and /tool serve the agent (all three gated), and the robot-window
+# chat reaches the same OmniLink relay through mavic_chat_router.
+# Same BridgeState, same flight loop.
 #
 # Eight coloured ground markers (3 red + 5 distractors) are scattered
 # around a warehouse-sized footprint. The agent must reason about world

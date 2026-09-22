@@ -73,8 +73,10 @@ missing from the shipped prompt's layer list until this release.
 ## Showcase prompts
 
 Every prompt below is a **composition** of the 45 primitives —
-nothing is pre-baked. A regex-based intent router cannot do any of
-these.
+nothing is pre-baked. None of them is reachable by keyword matching: the
+keyword ladders that used to sit under the bridges were deleted on
+2026-09-22, and the deterministic parser that replaced them declines a
+request of this shape and hands it to the model.
 
 ```text
 # Discovery + parallel

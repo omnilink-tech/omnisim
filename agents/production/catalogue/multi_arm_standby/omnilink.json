@@ -1,0 +1,15 @@
+{
+  "name": "multi_arm_standby",
+  "display_name": "Multi Arm Standby",
+  "world": "projects/samples/demos/worlds/chat/omnilink_multi_arm.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/multi_arm_standby/run.py",
+  "description": "multi_arm \u2014 hold the pose and answer for itself. Catalogue brief, 3 checked steps.",
+  "tags": [
+    "arm",
+    "standby",
+    "multi_arm",
+    "catalogue",
+    "generated"
+  ]
+}

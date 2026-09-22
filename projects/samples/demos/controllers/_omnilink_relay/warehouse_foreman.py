@@ -383,9 +383,29 @@ def ask_robot(robot: Any, question: Any = "") -> Dict[str, Any]:
     except Exception as e:
         return {"robot": key, "reachable": False,
                 "error": f"{key} did not answer on :{port} ({type(e).__name__}: {e})"}
-    return {"robot": key, "role": role, "reachable": True,
-            "asked": str(question or "state"),
-            "state": _disambiguate(state)}
+    out = {"robot": key, "role": role, "reachable": True,
+           "asked": str(question or "state"),
+           "state": _disambiguate(state)}
+    # Plan D4: what the robot has REPORTED about itself since the Foreman
+    # last looked -- a joint on its stop, a motion that timed out, a refusal
+    # on an ungated path. Read from the bridge's own `/state.events` summary
+    # rather than a second request, so a crew sweep costs the same number of
+    # round trips it always did.
+    events = state.get("events") if isinstance(state, dict) else None
+    if isinstance(events, dict):
+        last = events.get("last")
+        out["events"] = {
+            "total": events.get("total"),
+            "last": ({"type": last.get("type"),
+                      "sim_time": last.get("sim_time"),
+                      "detail": last.get("detail")}
+                     if isinstance(last, dict) else None),
+            "note": ("the robot's own event stream; GET /events?since="
+                     f"{events.get('next_since')} on its bridge for the rest. "
+                     "An EMPTY stream is not evidence that nothing happened "
+                     "-- see the blind spots each event declares."),
+        }
+    return out
 
 
 def _disambiguate(state: Any) -> Any:
@@ -442,8 +462,37 @@ def command_robot(robot: Any, command: Any = "") -> Dict[str, Any]:
         after = _bridge_post(port, "/state", {}, BRIDGE_READ_TIMEOUT_S)
     except Exception as e:
         after = {"error": f"state read-back failed ({type(e).__name__}: {e})"}
-    return {"robot": key, "delivered": True, "command": text,
-            "robot_reply": result, "state_after": after}
+    # ⚠️ `delivered` ONLY EVER MEANT "the bridge answered 200". A robot that
+    # UNDERSTOOD the order and refused it -- a question routed to a motor, a
+    # magnitude off the rails, a busy slot -- answers 200 with a top-level
+    # `error` and one or more `actions[].result == "refused"`, and the
+    # Foreman reported that as delivered work. The two facts are now
+    # separate fields, because "I told it" and "it did it" are different
+    # claims and this layer is the one that reports labour to an operator.
+    #
+    # ⚠️ The envelope's top-level `error` is a STRING (PROTOCOL.md §5.7.2). A
+    # motion result's `error` is the CONTROL error, a float -- 4.3e-11 after
+    # a perfect stop -- so the test is the TYPE, never truthiness.
+    reply = result if isinstance(result, dict) else {}
+    reply_error = reply.get("error")
+    refused = [a for a in (reply.get("actions") or [])
+               if isinstance(a, dict) and a.get("result") == "refused"]
+    out = {"robot": key, "delivered": True, "command": text,
+           "accepted": not (isinstance(reply_error, str) and reply_error.strip()),
+           # Which stage answered the robot: "parser" (deterministic, free)
+           # or "relay" (a model turn). §5.7.2 / plan D3.
+           "via": reply.get("via"),
+           "robot_reply": result, "state_after": after}
+    if refused:
+        out["refused"] = [{"tool": a.get("tool"), "rule": a.get("rule"),
+                           "summary": a.get("summary")} for a in refused]
+        out["note"] = ("the robot UNDERSTOOD this order and REFUSED it; "
+                       "nothing was actuated. Do not reissue it unchanged -- "
+                       "read `refused[].rule` and tell the operator.")
+    elif isinstance(reply_error, str) and reply_error.strip():
+        out["note"] = ("the robot reported an error carrying this order out: "
+                       + reply_error)
+    return out
 
 
 HANDLERS = {"ask_robot": ask_robot, "command_robot": command_robot}

@@ -1,0 +1,15 @@
+{
+  "name": "husky_delivery",
+  "display_name": "Husky Delivery",
+  "world": "projects/samples/demos/worlds/chat/omnilink_husky.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/husky_delivery/run.py",
+  "description": "husky \u2014 run to a coordinate and come home. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "mobile",
+    "delivery",
+    "husky",
+    "catalogue",
+    "generated"
+  ]
+}

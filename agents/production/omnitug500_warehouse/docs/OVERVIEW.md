@@ -13,7 +13,7 @@ call.
 Operator @ omnilink-agents.com  ──or──  chat side-panel in the world
         │ chat() -> toolCalls                      │ "prompt:<text>"
         ▼                                           ▼
-  omnitug500_warehouse_agent.py (this agent)     in-controller relay / regex router
+  omnitug500_warehouse_agent.py (this agent)     in-controller OmniLink relay (key)
         │ POST /tool (tool dispatch)                │
         └──────────────┬────────────────────────────┘
                        ▼  POST /goto_station /pick_package /deliver_package /run_route
@@ -33,8 +33,11 @@ Operator @ omnilink-agents.com  ──or──  chat side-panel in the world
 There are **two ways to drive it**, both onto the same bridge surface:
 
 1. **Chat side-panel** (no agent process): open the world, right-click the rover
-   → *Show Robot Window*, type. Offline it uses the controller's regex intent
-   router; with `OMNI_KEY` set the controller's own OmniLink relay handles it.
+   → *Show Robot Window*, type. The controller's own OmniLink relay handles it,
+   so `OMNI_KEY` has to be set in the shell that launches the world — the relay
+   is built once, at controller start. Without it the panel answers that the
+   OmniLink connection is required, `POST /prompt` answers `401 omnikey_required`
+   and nothing actuates; the direct bridge verbs and Stop still work.
 2. **This productized agent** (autonomous, `run-agent` launchable): a separate
    process that pushes its own OmniLink profile and drives the bridge's HTTP
    endpoints — the form you reach for to script, automate, or expose the courier
@@ -45,8 +48,15 @@ There are **two ways to drive it**, both onto the same bridge surface:
 A headless multi-stop run (pick Bay A in the NW, pick Bay F in the SE, deliver
 both to Dock 2) completes end-to-end with a **minimum oriented-footprint
 clearance ≈ 0.33 m** — genuinely collision-safe, two packages on the deck at
-once. The offline NL router resolves bay letters, colours ("the green package"),
-dock numbers, multi-stop routes, status, and stop/reset.
+once.
+
+⚠️ The resolution of bay letters, colours ("the green package"), dock numbers,
+multi-stop routes, status and stop/reset was measured against the controller's
+keyword router, `courier_intent.CourierIntent` — which was **deleted on
+2026-09-22** with the other four ladders (it had in fact been constructed and
+threaded through the controller without ever being called). Those phrasings are
+now resolved by the model's tool call behind an OmniKey, and that has **not**
+been re-measured.
 
 ## Run it
 

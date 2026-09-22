@@ -1568,7 +1568,7 @@ class World:
         return 0
 
     def add_shape_mesh(self, body_idx, vertices, indices, n_vertices, cx=0.0, cy=0.0, cz=0.0,
-                       qx=0.0, qy=0.0, qz=0.0, qw=1.0):
+                       qx=0.0, qy=0.0, qz=0.0, qw=1.0, mu=-1.0, mu_t=-1.0, mu_r=-1.0):
         # Native triangle-mesh collision (newton-ode-replacement-plan.md W1) -- replaces the old AABB-box
         # approximation. `vertices` is a flat [x0,y0,z0, x1,y1,z1, ...] list, `indices` a flat 3-per-triangle
         # list of vertex indices. compute_inertia=False: the body's mass + inertia are already set by
@@ -1586,7 +1586,7 @@ class World:
         return self._note_shape(body_idx, self._builder_add(_b, self.builder.add_shape_mesh,
                         xform=_xf,
             mesh=mesh,
-            cfg=self._shape_cfg(),
+            cfg=self._shape_cfg_override(mu=mu, mu_t=mu_t, mu_r=mu_r),
         ), _loc)
 
     def add_shape_heightfield(self, body_idx, heights, x_dimension, y_dimension,
@@ -6706,6 +6706,13 @@ class World:
                     "determinism. OMNISIM_NEWTON_CLOTH_CPU_MJ=1 restores the CPU "
                     "entry." % (self.model.device,))
             _kw = {"use_mujoco_cpu": _use_cpu}
+            # OMNISIM_NEWTON_MULTICCD enables multiple contact points for convex
+            # mesh pairs. An opt-in for small manipulation parts: a 49 x 13.6 mm
+            # flat-ended battery rocks/sinks with the single-contact default.
+            # Unset preserves Newton's default; =0/false/off/no disables it.
+            _multiccd = _os.environ.get("OMNISIM_NEWTON_MULTICCD")
+            if _multiccd not in (None, ""):
+                _kw["enable_multiccd"] = _multiccd.strip().lower() not in ("0", "false", "off", "no")
             # Contact-stability knobs for DENSE manipulation (env-tunable; unset
             # -> MuJoCo defaults = exact current physics). MuJoCo recommends a
             # HIGH impratio + ELLIPTIC cone + more iterations for grasping /
@@ -7207,6 +7214,30 @@ class World:
             self._pending_body_vel = {}
             for (_bi, _ang), (_vx, _vy, _vz) in _pend.items():
                 self.set_body_vel(_bi, _vx, _vy, _vz, _ang)
+            # Rebuild replay includes articulated links, not only free bases.
+            # Their body_qd is derived from joint_qd: restoring body_qd alone
+            # used to reset every surviving wheel/spinner to zero relative
+            # speed. Recover joint rates from the complete saved body twists.
+            # Select only explicitly restored non-free children, so an ordinary
+            # t=0 free-base setVelocity still carries its children with it.
+            _children = self.model.joint_child.numpy()
+            _types = self.model.joint_type.numpy()
+            _restored = {bi for bi, _ in _pend}
+            _links = [j for j, child in enumerate(_children)
+                      if int(child) in _restored and int(_types[j]) != int(newton.JointType.FREE)]
+            if _links:
+                _q = wp.empty_like(self.state_a.joint_q)
+                _qd = wp.empty_like(self.state_a.joint_qd)
+                newton.eval_ik(self.model, self.state_a, _q, _qd)
+                _rates = self.state_a.joint_qd.numpy()
+                _recovered = _qd.numpy()
+                _starts = self.model.joint_qd_start.numpy()
+                for _j in _links:
+                    _start = int(_starts[_j])
+                    _end = int(_starts[_j+1]) if _j+1 < len(_starts) else len(_rates)
+                    _rates[_start:_end] = _recovered[_start:_end]
+                self.state_a.joint_qd.assign(_rates)
+                self._mjc_dirty = True
 
     # ---- In-engine MPC (sampling rollouts in the SAME solver the deploy steps) ----
     def _mpc_log(self, msg):

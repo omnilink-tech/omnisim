@@ -89,8 +89,8 @@ def omnisim_env() -> dict[str, str]:
     bundled msys2 mingw64 bin is also prepended to `PATH` so Qt6 / mingw
     runtime DLLs resolve without the user editing their shell profile.
 
-    PATH ORDER CHOOSES THE CONTROLLER INTERPRETER -- see the long note on the
-    newton-runtime entry below before reordering anything here.
+    PATH ORDER CHOOSES THE CONTROLLER INTERPRETER -- the bundled runtime
+    takes precedence over an unrelated system Python.
     """
     env = os.environ.copy()
     env["OMNISIM_HOME"] = str(REPO_ROOT)
@@ -131,79 +131,11 @@ def omnisim_env() -> dict[str, str]:
             if candidates:
                 env["PYTHON_HOME"] = str(candidates[-1])
                 env.setdefault("PYTHON_LIB", f"-l{candidates[-1].name.lower()}")
-        # ── newton-runtime goes ON THE TAIL, not the front ────────────────
-        # This used to be PREPENDED, which silently degraded every OmniLink
-        # demo launched through `python -m omnisim run-world` /
-        # `run-headless`:
-        #
-        #   The engine spawns each Python controller as the BARE COMMAND
-        #   "python.exe" (OmLanguageTools::pythonCommand -> QProcess),
-        #   resolved from this PATH. Prepending handed every bridge the
-        #   bundled physics interpreter, which has no `omnisim_bridges` on
-        #   sys.path, so the deferred-intent tool layer and the shared
-        #   status/resume intents fell back to their "package absent" stubs
-        #   behind a bare `except Exception`. Nothing said so: controller
-        #   stdout never reaches the log (OmLog::appendStdout writes to
-        #   std::cout and emits a Qt signal but never calls fileLog(), and
-        #   omnisim-bin.exe is a GUI-subsystem binary), so the demo came up
-        #   quietly missing features. Measured 2026-07-28: with the old
-        #   order `python` resolved to
-        #   msys64\mingw64\bin\newton-runtime\python.exe on this path, and
-        #   `import omnisim_bridges` fails there.
-        #
-        # This was never what made Newton work, so moving it costs nothing.
-        # The engine's embedded interpreter is not resolved through PATH:
-        # omnisim-bin.exe loads python312.dll from its OWN directory (the
-        # application directory is searched before PATH) and the
-        # python312._pth beside that DLL puts sys.path on
-        # newton-runtime/{Lib,DLLs,site-packages}. Verified: 22 launches via
-        # scripts/dev/headless_runner.py all wrote
-        # {"backend":"newton","degraded":false,"finalised":true,
-        # "solver":"MuJoCo (cpu/mj_step, ...)"} to <log>.newton.json.
-        #
-        # ⚠ THIS TAIL ORDER IS OVERRIDDEN DOWNSTREAM, and the sentence above
-        # used to claim otherwise ("headless_runner.py -- which never puts
-        # newton-runtime on PATH"). That stopped being true on 2026-08-26
-        # (549734211): scripts/dev/headless_runner.py now PREPENDS
-        # newton-runtime and sets PYTHONPATH to its site-packages, and so does
-        # scripts/dev/omnisim_run_agent.py:omnisim_env(). So a controller
-        # started by `run-headless` / `run-agent` runs on the BUNDLED
-        # interpreter regardless of what this function does -- measured
-        # 2026-09-11 with a probe controller: sys.executable =
-        # msys64\mingw64\bin\newton-runtime\python.exe. Consequences live:
-        # onnxruntime was absent from that bundle (fixed the same day by
-        # pinning it in scripts/packaging/newton_runtime_pins.py), and
-        # `omnisim_bridges` -- the very package this tail order was chosen to
-        # protect -- was absent from it too.
-        #
-        # THE omnisim_bridges HALF IS NOW CLOSED, and NOT by vendoring it:
-        # the package is an editable install precisely so edits to it take
-        # effect immediately, and a wheel in the bundle would shadow the tree
-        # with a stale copy. Its canonical source ships in the checkout AND in
-        # the installer (files_core.txt: `packages/omnisim-bridges [recurse]`),
-        # so headless_runner.py and omnisim_run_agent.py now add that src dir
-        # to the controller PYTHONPATH beside the bundle's site-packages, and
-        # every bridge controller ALSO bootstraps the same path for itself
-        # before its first `omnisim_bridges` import -- which covers launch
-        # paths nobody here controls (launch.bat, the installer shortcut).
-        # `python -m omnisim doctor` reports it as the `bridges` row.
-        #
-        # SO THE TAIL/PREPEND SPLIT NO LONGER DECIDES WHETHER A BRIDGE WORKS.
-        # It still decides WHICH interpreter a controller gets, and therefore
-        # what else is importable (the bundle has numpy/warp/newton/onnxruntime
-        # and no system site-packages; the system python is whatever the
-        # developer installed). Anything reasoning about which interpreter a
-        # controller gets must read headless_runner.py too, not this comment
-        # alone. The ordering itself is deliberately UNCHANGED -- see
-        # docs/developer/newton-runtime-bundle.md, "Which interpreter does a
-        # controller get?", for the evidence and the open recommendation.
-        #
-        # Kept on the TAIL for its one real service: a box with no system
-        # Python still resolves an interpreter, so controllers start
-        # (degraded) instead of every one dying "Python was not found".
+        # Match the GUI shortcut and headless runners: the verified bundle
+        # supplies controller dependencies, independent of system Python.
         bundled_python = msys_bin / "newton-runtime" / "python.exe"
         if bundled_python.exists():
-            env["PATH"] = f"{env['PATH']}{os.pathsep}{bundled_python.parent}"
+            env["PATH"] = os.pathsep.join([str(msys_bin), str(bundled_python.parent), env["PATH"]])
     # On LINUX every one of these subprocesses spawns bin/omnisim-bin directly,
     # bypassing the omnisim-linux.sh launcher shell that would export the Qt
     # runtime vars. Without LD_LIBRARY_PATH=$OMNISIM_HOME/lib/webots the bundled

@@ -1,0 +1,108 @@
+#OMNISIM R2025a utf8
+# Fixture for the break-on-event live check (v9 C2), CASE 2.
+#
+# BREAK_ARM is a static-base robot carrying one hinge with hard stops at
+# +/- 0.9 rad. The link starts horizontal, so gravity alone drives it into the
+# stop -- no controller, no actuation, nothing for the test to get wrong. The
+# motor is present only so JointLimitTracker has a device name to report
+# ("arm_motor"), which is what the break's `filter.joint` matches on.
+#
+# BREAK_WITNESS is the same trick as break_drop.omniworld: a body still in
+# free fall when the limit is hit, so a frozen scene is distinguishable from a
+# settled one.
+
+WorldInfo {
+  basicTimeStep 8
+  newtonStatics TRUE
+  newtonSolver "mujoco"
+}
+Viewpoint {
+  position 3 -3 2
+}
+DEF BREAK_FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      geometry Box {
+        size 6 6 0.1
+      }
+    }
+  ]
+  name "break floor"
+  boundingObject Box {
+    size 6 6 0.1
+  }
+}
+DEF BREAK_ARM Robot {
+  translation 0 0 1.5
+  children [
+    Shape {
+      geometry Box {
+        size 0.12 0.12 0.12
+      }
+    }
+    DEF BREAK_HINGE HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0 0 0
+        minStop -0.9
+        maxStop 0.9
+      }
+      device [
+        RotationalMotor {
+          # DELIBERATELY unlimited: the joint's own hard stops (+/- 0.9) are
+          # what the break is armed on, and a motor whose minPosition /
+          # maxPosition are NARROWER than the stops can never push into one.
+          # Declaring motor limits WIDER than the stops works but logs two
+          # engine warnings, so declare none at all.
+          name "arm_motor"
+          maxTorque 30
+        }
+        PositionSensor {
+          name "arm_sensor"
+        }
+      ]
+      endPoint DEF BREAK_LINK Solid {
+        translation 0.35 0 0
+        children [
+          Shape {
+            geometry Box {
+              size 0.7 0.08 0.08
+            }
+          }
+        ]
+        name "break link"
+        boundingObject Box {
+          size 0.7 0.08 0.08
+        }
+        physics Physics {
+          density -1
+          mass 1.5
+        }
+      }
+    }
+  ]
+  name "break arm"
+  controller "<none>"
+  boundingObject Box {
+    size 0.12 0.12 0.12
+  }
+}
+DEF BREAK_WITNESS Solid {
+  translation 1.2 0 25
+  children [
+    Shape {
+      geometry Box {
+        size 0.6 0.6 0.6
+      }
+    }
+  ]
+  name "break witness"
+  boundingObject Box {
+    size 0.6 0.6 0.6
+  }
+  physics Physics {
+    density -1
+    mass 1
+  }
+}

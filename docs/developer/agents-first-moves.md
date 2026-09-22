@@ -13,6 +13,11 @@ This is the complete text of every row of the **First moves by task type** table
 
 **Your first move:** Call `harness_status` first. Unreachable means the harness is not running: start it with `python -m omnisim harness` from this directory (use the module form, not the raw script — it puts the bundled Qt DLLs on PATH for the simulator subprocess). ⚠ `harness_status` reports on the HARNESS, not the engine: it can read reachable on an install that cannot load a world, so run `doctor` if a load fails. Then `load_world {"path": ..., "light": true}` → `get_scene_tree` → `frame` → `screenshot`. Setup: [`packages/omnisim-mcp/`](../../packages/omnisim-mcp/); Claude Code registers it from the repo-root `.mcp.json` with no install.
 
+**⭐ 45 tools as of v9** (37 before). Eight are new and two of them change what you can do from an MCP client at all:
+
+- **The debugger.** `sim_pause` / `sim_resume` hold the engine across calls (leased: 30 s default, 300 s cap, so a dead client cannot freeze the sim), and `sim_break` / `sim_breaks` / `sim_break_clear` arm a breakpoint on an event. `sim_step` then stops early on the break and reports `steps_executed` + `stopped_on_break`. ⚠️ Load with `light: false` first — a break on a silenced type is refused, deliberately. ⚠️ Detection is never sub-step and has two latency regimes ([Break latency](agents-hard-won-rules.md#break-latency)).
+- **The command surface.** `robot_prompt {text, port?}`, `robot_tool {tool, args, port?}` and `robot_state {port?}` reach a robot's OmniLink bridge, so you no longer have to curl it. Default port `8765`; the Mavic serves `6090`. They go through the bridge's **gated** `/prompt` and `/tool` and never the ungated REST verbs (`/drive_forward`, `/turn`, `/set_velocity`, `/stop_robot`). The bridge's envelope passes through untouched, including `refused_by_gate` and the `{commanded, achieved, error, settled}` result, and a bridge with no relay attached answers `401 omnikey_required`.
+
 ## Run a demo
 
 **User asks for:** **Run / see a demo**
@@ -53,7 +58,27 @@ This is the complete text of every row of the **First moves by task type** table
 
 **User asks for:** **Debug a misbehaving controller**
 
-**Your first move:** Harness on `:6789` + poll `GET /sim/events?since=...&log_since=...`. Branch on `controller.log` (the controller's own stdout/stderr), `joint.limit_hit`, `contact.began`, `damage.*`. Event taxonomy: §5.
+**Your first move (v9): ⭐ ARM A BREAK, DO NOT POLL.** Harness on `:6789`, then run it like a debugger:
+
+```bash
+POST /world/load  {"path": "...", "light": false}   # light silences 5 of the 11 event types
+POST /sim/pause   {"lease_ms": 60000}               # hold the engine ACROSS your calls
+POST /sim/break   {"types": ["contact.began"], "filter": {"def": "BOX", "counterpart": "FLOOR"}}
+POST /sim/step    {"steps": 400}                    # -> steps_executed 118, stopped_on_break "brk1"
+GET  /scene/tree                                    # a STILL scene, at the moment of interest
+POST /sim/step    {"steps": 10}                     # single-step forward
+POST /sim/resume
+```
+
+`POST /sim/step` **stops early** on the step a break fires and reports `steps_executed` and `stopped_on_break`, which is what makes it *continue-to-breakpoint* — never read `steps_requested` as what happened. The hit also lands on the event stream as `break.hit` (the eleventh event type), and `GET /sim/state` carries `paused`, `lease_remaining_ms`, `break_hit` and `breaks_armed`.
+
+⚠️ **Load with `{"light": false}` for a debugging session, and expect a refusal if you forget.** Light mode is the default and silences `contact.*`, `grip.*` and `joint.limit_hit`; a break armed on one of those comes back `400 BREAK_EVENT_TYPE_UNAVAILABLE` with an `event_type_silenced_in_light_mode` diagnostic naming the producer and the workaround, rather than arming a breakpoint that could never trip. The refusal is scoped — `damage.*` survives light mode and still arms. Check `GET /sim/breaks` (`breakable_types` / `silenced_types`) before arming.
+
+⚠️ **Detection is never sub-step, and there are two latency regimes** — held plus `/sim/step` is per basic step; free-running is one supervisor tick (8 ms to ~600 ms of engine time), and a transient can be missed entirely. Pause, then step. Full numbers: [agents-hard-won-rules.md § Break latency](agents-hard-won-rules.md#break-latency). Wire contract: PROTOCOL.md §7.38–§7.40.
+
+**Then poll** `GET /sim/events?since=...&log_since=...`. Branch on `break.hit`, `controller.log` (the controller's own stdout/stderr), `joint.limit_hit`, `contact.began`, `damage.*`. Event taxonomy: §5.
+
+The pause and the break are also MCP tools — `sim_pause`, `sim_resume`, `sim_break`, `sim_breaks`, `sim_break_clear` — so an agent in Claude Code or Cursor drives the same loop without curl.
 
 If the symptom is *the loaded motion fails while the unloaded one is fine* (drives straight but will not pivot; a wheel spins free and stalls under load), check [agents-hard-won-rules.md § Wheel stall torque](agents-hard-won-rules.md#wheel-stall-torque) before blaming friction or the controller.
 
@@ -79,13 +104,19 @@ If the symptom is *the loaded motion fails while the unloaded one is fine* (driv
 
 **User asks for:** **Cinematic capture**
 
-**Your first move:** `python -m omnisim capture` (port `6791`); `/capture/sequence` is the keyframe → mp4 path. See [scripts/capture/README.md](../../scripts/capture/README.md).
+**Your first move:** Follow [cinematic replay](../../scripts/cinema/CINEMATIC_REPLAY.md): record OmniSim world-space poses, bind them to geometry in an authored Blender scene, render a Cycles proxy, inspect it, then render final footage. This is the default beauty-footage method. `python -m omnisim capture` (port `6791`) remains the explicit native path for debugging, sensor pictures and live-renderer evidence. Never silently substitute it for requested cinematic quality.
+
+## OmniLink demo video
+
+**User asks for:** An OmniLink robot command demonstration video.
+
+**Your first move:** Use the owner-approved [minimal native style](../../scripts/cinema/OMNILINK_DEMOS.md): one robot in one arena, a fixed camera, silence, and prompt → action. Capture entirely in OmniSim. Show only the current instruction or a brief actual answer; retain telemetry and verification in separate production notes. This specific default was approved on 2026-09-21 and takes precedence over the general Blender cinematic route below.
 
 ## Cinematic video
 
 **User asks for:** **Cinematic *video*** (storyboard → branded multi-aspect deliverables, with a vision-critique reshoot loop)
 
-**Your first move:** `python -m omnisim cinema render <storyboard.json>`. Subject-relative camera vocabulary, named looks, brand cards, 16:9/9:16/1:1/etc. Storyboard schema, beats, primitives, looks: see [scripts/cinema/README.md](../../scripts/cinema/README.md).
+**Your first move:** `python -m omnisim cinema new` creates a Blender replay manifest. Follow [CINEMATIC_REPLAY.md](../../scripts/cinema/CINEMATIC_REPLAY.md): design purposeful action, record and verify actual simulation motion, prepare the cinematic scene, `replay-validate` → `render` (proxy) → inspect → `replay-review` → `render --profile final`, then edit. Retain source evidence and disclose offline replay. Old native storyboards require `renderer: "native"` or `--renderer native`. See [scripts/cinema/README.md](../../scripts/cinema/README.md).
 
 ## Agent Build Film
 

@@ -1,0 +1,15 @@
+{
+  "name": "rosbot_standby",
+  "display_name": "Rosbot Standby",
+  "world": "projects/samples/demos/worlds/chat/omnilink_rosbot.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/rosbot_standby/run.py",
+  "description": "rosbot \u2014 hold station and answer for itself. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "mobile",
+    "standby",
+    "rosbot",
+    "catalogue",
+    "generated"
+  ]
+}

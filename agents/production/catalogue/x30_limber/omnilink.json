@@ -1,0 +1,15 @@
+{
+  "name": "x30_limber",
+  "display_name": "X30 Limber",
+  "world": "projects/samples/demos/worlds/chat/omnilink_x30.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/x30_limber/run.py",
+  "description": "x30 \u2014 cycle the stance. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "quadruped",
+    "limber",
+    "x30",
+    "catalogue",
+    "generated"
+  ]
+}

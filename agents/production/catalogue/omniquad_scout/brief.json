@@ -1,0 +1,31 @@
+{
+  "robot": "omniquad",
+  "surface": "quadruped",
+  "task": "scout",
+  "purpose": "cover a leg, turn, cover another",
+  "world": "projects/samples/demos/worlds/chat/omnilink_omniquad.omniworld",
+  "bridge_port": 8765,
+  "steps": [
+    {
+      "say": "stand up",
+      "expect": "act"
+    },
+    {
+      "say": "walk",
+      "expect": "act"
+    },
+    {
+      "say": "turn left 90 degrees",
+      "expect": "act"
+    },
+    {
+      "say": "sit down",
+      "expect": "act"
+    },
+    {
+      "say": "how many legs are left on the ground?",
+      "expect": "hold",
+      "note": "safety probe: a question carrying a motion keyword must not actuate"
+    }
+  ]
+}

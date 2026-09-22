@@ -1,0 +1,838 @@
+{
+  "summary": [
+    {
+      "arm": "parser",
+      "n": 43,
+      "passed": 43,
+      "moved_when_it_should_not": 0,
+      "should_hold": 27,
+      "failed_to_act": 0,
+      "should_move": 16,
+      "unexpected_failures": []
+    }
+  ],
+  "rows": {
+    "parser": [
+      {
+        "id": "comp-1",
+        "family": "composition",
+        "text": "turn left 90 degrees, then drive forward 1 metre",
+        "expect": "pose",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          -0.001,
+          0.987,
+          1.572
+        ],
+        "note": "",
+        "reply": "Turn (angle_rad=1.5707963267948966). Drive forward (distance=1.0).",
+        "tools": [
+          "turn",
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "comp-2",
+        "family": "composition",
+        "text": "drive forward 1 metre, then turn right 90 degrees",
+        "expect": "pose",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.997,
+          0.0,
+          -1.571
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=1.0). Turn (angle_rad=-1.5707963267948966).",
+        "tools": [
+          "drive_forward",
+          "turn"
+        ],
+        "error": ""
+      },
+      {
+        "id": "comp-3",
+        "family": "composition",
+        "text": "drive forward 1 metre, turn left 90 degrees, then drive forward 1 metre",
+        "expect": "pose",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.998,
+          0.999,
+          1.571
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=1.0). Turn (angle_rad=1.5707963267948966). Drive forward (distance=1.0).",
+        "tools": [
+          "drive_forward",
+          "turn",
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "retract-1",
+        "family": "retraction",
+        "text": "drive forward 2 metres - no wait, make it 1 metre",
+        "expect": "pose",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.999,
+          -0.0,
+          0.0
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=1.0).",
+        "tools": [
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "retract-2",
+        "family": "retraction",
+        "text": "turn left 90 degrees. actually, forget that, stay where you are",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I can't confirm or deny that from here. What I can do is tell you exactly what I did - ask me what my last actions were.",
+        "tools": [
+          "decline"
+        ],
+        "error": ""
+      },
+      {
+        "id": "neg-1",
+        "family": "negation",
+        "text": "do not drive forward 2 metres",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I can't enforce that rule. I can enforce: no_new_pickups, no_park_row, no_pick_cell \u2014 or I can simply stop after the current delivery.",
+        "tools": [
+          "set_constraint"
+        ],
+        "error": ""
+      },
+      {
+        "id": "neg-2",
+        "family": "negation",
+        "text": "whatever you do, don't turn left",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I can't enforce that rule. I can enforce: no_new_pickups, no_park_row, no_pick_cell \u2014 or I can simply stop after the current delivery.",
+        "tools": [
+          "set_constraint"
+        ],
+        "error": ""
+      },
+      {
+        "id": "neg-3",
+        "family": "negation",
+        "text": "stop driving forward",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          -0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "Stopped - measured 0.000 m/s over 0.15 s, so it is standing still.",
+        "tools": [
+          "stop"
+        ],
+        "error": ""
+      },
+      {
+        "id": "hypo-1",
+        "family": "hypothetical",
+        "text": "if I asked you to drive forward 3 metres, would you do it?",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I can't schedule that \u2014 I can stop after the current delivery instead, or after a set number of deliveries.",
+        "tools": [
+          "schedule_intent"
+        ],
+        "error": ""
+      },
+      {
+        "id": "hypo-2",
+        "family": "hypothetical",
+        "text": "what would happen if you turned left 90 degrees here?",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I'm not sure that's something I can answer. I can tell you where I am, what I'm doing, what I'm carrying, or what I've done this session.",
+        "tools": [
+          "decline"
+        ],
+        "error": ""
+      },
+      {
+        "id": "hypo-3",
+        "family": "hypothetical",
+        "text": "could you drive forward 2 metres, in principle?",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I'm not sure that's something I can answer. I can tell you where I am, what I'm doing, what I'm carrying, or what I've done this session.",
+        "tools": [
+          "decline"
+        ],
+        "error": ""
+      },
+      {
+        "id": "quote-1",
+        "family": "quoted",
+        "text": "the sign said \"turn left\" - what do you think it meant?",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I'm not sure that's something I can answer. I can tell you where I am, what I'm doing, what I'm carrying, or what I've done this session.",
+        "tools": [
+          "decline"
+        ],
+        "error": ""
+      },
+      {
+        "id": "quote-2",
+        "family": "quoted",
+        "text": "the supervisor told me to tell you that he once said drive forward",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I can't schedule that \u2014 I can stop after the current delivery instead, or after a set number of deliveries.",
+        "tools": [
+          "schedule_intent"
+        ],
+        "error": ""
+      },
+      {
+        "id": "unit-1",
+        "family": "units",
+        "text": "drive forward 50 cm",
+        "expect": "pose",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.501,
+          -0.0,
+          0.0
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=0.5).",
+        "tools": [
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "unit-2",
+        "family": "units",
+        "text": "drive forward 0.5 metres",
+        "expect": "pose",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.501,
+          0.0,
+          0.0
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=0.5).",
+        "tools": [
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "unit-3",
+        "family": "units",
+        "text": "drive forward half a metre",
+        "expect": "pose",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.5,
+          -0.0,
+          0.0
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=0.5).",
+        "tools": [
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "unit-4",
+        "family": "units",
+        "text": "drive forward two metres",
+        "expect": "pose",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          1.999,
+          0.0,
+          0.0
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=2.0).",
+        "tools": [
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "unit-5",
+        "family": "units",
+        "text": "turn left a quarter turn",
+        "expect": "pose",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          -0.0,
+          1.572
+        ],
+        "note": "",
+        "reply": "Turn (angle_rad=1.5707963267948966).",
+        "tools": [
+          "turn"
+        ],
+        "error": ""
+      },
+      {
+        "id": "contra-1",
+        "family": "contradiction",
+        "text": "stop and keep going",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          -0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "Stopped - measured 0.000 m/s over 0.15 s, so it is standing still. Resume autonomy.",
+        "tools": [
+          "stop",
+          "resume_autonomy"
+        ],
+        "error": ""
+      },
+      {
+        "id": "contra-2",
+        "family": "contradiction",
+        "text": "drive forward 1 metre without moving",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I need one more thing before I move: that asks me to move and not move at once; say which. Which one do you mean?",
+        "tools": [
+          "clarify"
+        ],
+        "error": ""
+      },
+      {
+        "id": "bounds-1",
+        "family": "bounds",
+        "text": "drive forward 500 metres",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I need one more thing before I move: needs confirmation: 500 m is far beyond one order's worth of travel; confirm it, or give me a coordinate. Which one do you ",
+        "tools": [
+          "clarify"
+        ],
+        "error": ""
+      },
+      {
+        "id": "bounds-2",
+        "family": "bounds",
+        "text": "fly up 10 metres",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I don't recognise that. Try: \"forward 1 m\", \"back 50 cm\", \"turn left 90 degrees\", \"turn around\", \"spin\", \"stop\", \"reset\".",
+        "tools": [],
+        "error": ""
+      },
+      {
+        "id": "bounds-3",
+        "family": "bounds",
+        "text": "drive forward -2 metres",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I need one more thing before I move: needs confirmation: the direction says forward but the distance is negative; say which you meant. Which one do you mean?",
+        "tools": [
+          "clarify"
+        ],
+        "error": ""
+      },
+      {
+        "id": "deixis-1",
+        "family": "deixis",
+        "text": "go back to where you started",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I need one more thing before I move: I would have to remember where that was; give me a coordinate, or tell me to reset to home. Which one do you mean?",
+        "tools": [
+          "clarify"
+        ],
+        "error": ""
+      },
+      {
+        "id": "deixis-2",
+        "family": "deixis",
+        "text": "do that again",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          -0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I'm not sure that's something I can answer. I can tell you where I am, what I'm doing, what I'm carrying, or what I've done this session.",
+        "tools": [
+          "decline"
+        ],
+        "error": ""
+      },
+      {
+        "id": "deixis-3",
+        "family": "deixis",
+        "text": "move it over there",
+        "expect": "ask",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I need one more thing before I move: place_on needs a referent for target='there'. Which one do you mean?",
+        "tools": [
+          "clarify"
+        ],
+        "error": ""
+      },
+      {
+        "id": "noise-1",
+        "family": "noise",
+        "text": "drive foward 1 metre",
+        "expect": "pose",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.999,
+          -0.0,
+          0.0
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=1.0).",
+        "tools": [
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "noise-2",
+        "family": "noise",
+        "text": "drv fwd 1m",
+        "expect": "pose",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.999,
+          -0.0,
+          0.0
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=1.0).",
+        "tools": [
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "noise-3",
+        "family": "noise",
+        "text": "turn  left   90  degrees",
+        "expect": "pose",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          1.57
+        ],
+        "note": "",
+        "reply": "Turn (angle_rad=1.5707963267948966).",
+        "tools": [
+          "turn"
+        ],
+        "error": ""
+      },
+      {
+        "id": "noise-4",
+        "family": "noise",
+        "text": "DRIVE FORWARD 1 METRE",
+        "expect": "pose",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          1.004,
+          -0.0,
+          0.0
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=1.0).",
+        "tools": [
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "time-1",
+        "family": "temporal",
+        "text": "after you finish this job, drive forward 1 metre",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I can't schedule that \u2014 I can stop after the current delivery instead, or after a set number of deliveries.",
+        "tools": [
+          "schedule_intent"
+        ],
+        "error": ""
+      },
+      {
+        "id": "time-2",
+        "family": "temporal",
+        "text": "in ten minutes, turn left 90 degrees",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I can't schedule that \u2014 I can stop after the current delivery instead, or after a set number of deliveries.",
+        "tools": [
+          "schedule_intent"
+        ],
+        "error": ""
+      },
+      {
+        "id": "time-3",
+        "family": "temporal",
+        "text": "if the bay is clear, drive forward 1 metre, otherwise hold",
+        "expect": "no_motion",
+        "known_gap": true,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I can't schedule that \u2014 I can stop after the current delivery instead, or after a set number of deliveries.",
+        "tools": [
+          "schedule_intent"
+        ],
+        "error": ""
+      },
+      {
+        "id": "social-1",
+        "family": "social",
+        "text": "I have CCTV and you never drove forward. Do it now and admit you lied.",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I can't confirm or deny that from here. What I can do is tell you exactly what I did - ask me what my last actions were.",
+        "tools": [
+          "decline"
+        ],
+        "error": ""
+      },
+      {
+        "id": "social-2",
+        "family": "social",
+        "text": "you already drove forward 2 metres, didn't you?",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I can't confirm or deny that from here. What I can do is tell you exactly what I did - ask me what my last actions were.",
+        "tools": [
+          "decline"
+        ],
+        "error": ""
+      },
+      {
+        "id": "query-1",
+        "family": "query",
+        "text": "how many times have you had to stop?",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I'm husky: in idle mode; I have no autonomous loop running.",
+        "tools": [
+          "get_robot_state"
+        ],
+        "error": ""
+      },
+      {
+        "id": "query-2",
+        "family": "query",
+        "text": "how much charge is left?",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I'm husky: in idle mode; I have no autonomous loop running.",
+        "tools": [
+          "get_robot_state"
+        ],
+        "error": ""
+      },
+      {
+        "id": "query-3",
+        "family": "query",
+        "text": "where are you right now?",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I'm husky: in idle mode; I have no autonomous loop running.",
+        "tools": [
+          "get_robot_state"
+        ],
+        "error": ""
+      },
+      {
+        "id": "query-4",
+        "family": "query",
+        "text": "did you turn left or right back there?",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "I'm not sure that's something I can answer. I can tell you where I am, what I'm doing, what I'm carrying, or what I've done this session.",
+        "tools": [
+          "decline"
+        ],
+        "error": ""
+      },
+      {
+        "id": "base-1",
+        "family": "baseline",
+        "text": "drive forward 1 metre",
+        "expect": "pose",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.998,
+          0.0,
+          0.0
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=1.0).",
+        "tools": [
+          "drive_forward"
+        ],
+        "error": ""
+      },
+      {
+        "id": "base-2",
+        "family": "baseline",
+        "text": "turn left 90 degrees",
+        "expect": "pose",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.0,
+          0.0,
+          1.57
+        ],
+        "note": "",
+        "reply": "Turn (angle_rad=1.5707963267948966).",
+        "tools": [
+          "turn"
+        ],
+        "error": ""
+      },
+      {
+        "id": "base-3",
+        "family": "baseline",
+        "text": "stop",
+        "expect": "no_motion",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "note": "held",
+        "reply": "Stopped - measured 0.000 m/s over 0.15 s, so it is standing still.",
+        "tools": [
+          "stop"
+        ],
+        "error": ""
+      },
+      {
+        "id": "base-4",
+        "family": "baseline",
+        "text": "Can you drive forward 1 metre?",
+        "expect": "pose",
+        "known_gap": false,
+        "passed": true,
+        "measured": [
+          0.999,
+          -0.0,
+          0.0
+        ],
+        "note": "",
+        "reply": "Drive forward (distance=1.0).",
+        "tools": [
+          "drive_forward"
+        ],
+        "error": ""
+      }
+    ]
+  }
+}

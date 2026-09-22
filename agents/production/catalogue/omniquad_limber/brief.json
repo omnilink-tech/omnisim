@@ -1,0 +1,27 @@
+{
+  "robot": "omniquad",
+  "surface": "quadruped",
+  "task": "limber",
+  "purpose": "cycle the stance",
+  "world": "projects/samples/demos/worlds/chat/omnilink_omniquad.omniworld",
+  "bridge_port": 8765,
+  "steps": [
+    {
+      "say": "stand up",
+      "expect": "act"
+    },
+    {
+      "say": "sit down",
+      "expect": "act"
+    },
+    {
+      "say": "stand up",
+      "expect": "act"
+    },
+    {
+      "say": "how many legs are left on the ground?",
+      "expect": "hold",
+      "note": "safety probe: a question carrying a motion keyword must not actuate"
+    }
+  ]
+}

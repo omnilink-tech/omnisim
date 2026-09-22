@@ -1,0 +1,87 @@
+{
+  "complete": true,
+  "frames": 1400,
+  "max_battery_height_m": 0.09387292712926865,
+  "max_battery_speed_m_s": 0.2527576566785672,
+  "final_battery_position": [
+    -0.07533209770917892,
+    0.03525729477405548,
+    0.022785326465964317
+  ],
+  "final_battery_in_remote": [
+    0.019000206195905246,
+    -0.009115903553031164,
+    0.012786912453899388
+  ],
+  "final_battery_rotation": [
+    -0.002325854208148051,
+    0.007801249451903669,
+    0.9999668649056286,
+    -0.10615249608216956,
+    0.9943176465656333,
+    -0.008004080440967218,
+    -0.9943471415847323,
+    -0.10616759503337006,
+    -0.0014845157806213116
+  ],
+  "final_remote_rotation": [
+    0.9999711514885692,
+    0.007595798777260141,
+    5.617896472563565e-06,
+    -0.007595798731642789,
+    0.9999711514719128,
+    -8.097251062566862e-06,
+    -5.679239494239599e-06,
+    8.054345058026224e-06,
+    0.9999999999514371
+  ],
+  "final_battery_velocity": [
+    -1.3006807648707763e-06,
+    -2.6980165657164434e-08,
+    -2.930611913143366e-07,
+    -5.683253334609617e-08,
+    -3.685408955789171e-08,
+    -5.5426216931664385e-06
+  ],
+  "actuation": "Motor.setPosition",
+  "timed_episode_pose_writes": 0,
+  "motion_mode": "spring-insertion",
+  "metric_sampling_hz": 50,
+  "runtime_environment": {
+    "OMNISIM_NEWTON_FINGER_KE": "2000",
+    "OMNISIM_NEWTON_MULTICCD": "1"
+  },
+  "bilateral_airborne_s": 4.3,
+  "max_carry_slip_m": 0.0005782261312335263,
+  "bilateral_transport_m": 0.09991399934615289,
+  "strict_grip_stability_passed": true,
+  "left_brace_contact_s": 18.48,
+  "carried": true,
+  "inside_slot": true,
+  "settled": true,
+  "released": true,
+  "task_success": true,
+  "placement_success": true,
+  "spring_compression_peak_m": 0.009482329711318016,
+  "spring_compressed_while_held": true,
+  "seated_before_release": false,
+  "pressed_to_seat": true,
+  "tool_press_lowering_m": 0.005829023893733638,
+  "both_terminals_after_release": true,
+  "negative_contact_peak_depth_m": 0.00046030727248025697,
+  "contact_depth_measured": true,
+  "housing_contact_peak_depth_m": 0.00043747292555480614,
+  "contact_depth_passed": true,
+  "success_scope": "Mechanically compressed and seated; electrical conductivity is not simulated",
+  "physics_step_audit": {
+    "complete": true,
+    "sampling_hz": 1000.0,
+    "samples": 29001,
+    "negative_contact_peak_depth_m": 0.0004999465594189383,
+    "housing_contact_peak_depth_m": 0.0004386913722694202,
+    "spring_compression_peak_m": 0.009924805723130703,
+    "housing_peak_time_s": 11.049999999999999,
+    "negative_peak_time_s": 21.089,
+    "contact_depth_passed": true
+  }
+}

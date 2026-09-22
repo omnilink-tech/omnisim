@@ -55,7 +55,13 @@ Worth knowing generally: `.omniworld` / `.wbt` world files and controllers are *
 
 ## Questions about the OmniLink platform
 
-OmniSim runs fully offline and needs no account — the demos fall back to a local model and then to an offline intent router. Questions about the platform itself (keys, billing, the agent runtime) belong at [omnilink-agents.com](https://www.omnilink-agents.com), not in this repository's issue tracker.
+OmniSim and OmniLink are two different things, and it is worth knowing which one your question is about.
+
+**OmniSim** is the simulator in this repository. It is free and open source, you run it on your own machine, and every world, controller, typed control and the Stop button work without any account.
+
+**OmniLink** is the connected AI experience — the part you talk to. It requires an OmniKey on every plan, including Free, plus a connected model provider whose usage is billed by that provider. If the key is missing or the connection fails, the chat panel reports an error and the robot does not move; there is no keyless chat mode and nothing is substituted for the connection. OmniSim's own typed controls and Stop are unaffected and keep working.
+
+Questions about the platform itself (keys, billing, the agent runtime) belong at [omnilink-agents.com](https://www.omnilink-agents.com), not in this repository's issue tracker. Setup lives in the [connected robot guide](docs/guide/omnilink-chat-demos.md).
 
 ## Upstream Webots questions
 

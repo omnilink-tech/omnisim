@@ -1,0 +1,15 @@
+{
+  "name": "tb3_burger_patrol",
+  "display_name": "Tb3 Burger Patrol",
+  "world": "projects/samples/demos/worlds/chat/omnilink_tb3_burger.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/tb3_burger_patrol/run.py",
+  "description": "tb3_burger \u2014 walk a rectangular beat and halt on the operator's word. Catalogue brief, 6 checked steps.",
+  "tags": [
+    "mobile",
+    "patrol",
+    "tb3_burger",
+    "catalogue",
+    "generated"
+  ]
+}

@@ -9,8 +9,8 @@ projects/robot_combat/
 │                  faithful to real-world Tombstone, Bite Force,
 │                  Hydra, HUGE, ... in a tribute BattleBox arena.
 ├── orc/           Open Robot Combat — original OmniSim-native
-│                  combat-robot sport (stub layout, ready for new
-│                  designs).
+│                  combat-robot sport, including the playable
+│                  Foundry industrial-yard encounter.
 ├── worlds/        Husky-on-Husky brawls + older physics test
 │                  worlds (legacy, predates the leagues).
 ├── controllers/   Shared husky-flavoured controllers

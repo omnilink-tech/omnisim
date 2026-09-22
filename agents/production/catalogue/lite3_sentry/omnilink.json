@@ -1,0 +1,15 @@
+{
+  "name": "lite3_sentry",
+  "display_name": "Lite3 Sentry",
+  "world": "projects/samples/demos/worlds/chat/omnilink_lite3.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/lite3_sentry/run.py",
+  "description": "lite3 \u2014 come up and hold the post. Catalogue brief, 3 checked steps.",
+  "tags": [
+    "quadruped",
+    "sentry",
+    "lite3",
+    "catalogue",
+    "generated"
+  ]
+}

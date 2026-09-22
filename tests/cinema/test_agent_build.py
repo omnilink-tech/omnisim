@@ -483,5 +483,100 @@ class AgentBuildContractTests(unittest.TestCase):
             self.assertEqual(resumed["cache"], {"hits": 1, "misses": 0})
 
 
+class RetiredSourceSpoolTests(unittest.TestCase):
+    """A graded film must not leave its lossless originals behind."""
+
+    def _run_dir(self, root: Path, *, raw_frames: int = 5,
+                 encoded_frames: int = 5, stray: str | None = None):
+        run = root / "run"
+        run.mkdir(exist_ok=True)
+        raw = run / "frames"
+        raw.mkdir(exist_ok=True)
+        for index in range(raw_frames):
+            (raw / f"frame_{index:06d}.png").write_bytes(b"RAWPNG" * 10)
+        if stray is not None:
+            (raw / stray).write_bytes(b"x")
+        output = run / "capture.mp4"
+        output.write_bytes(b"ENCODED-MASTER-BYTES")
+        receipt = run / "capture.mp4.encode.json"
+        payload = {
+            "version": 1,
+            "input": {"frame_count": encoded_frames},
+            "output": str(output),
+            "output_sha256": sim_quality.sha256(output),
+            "output_probe": {"frames": encoded_frames, "width": 1920, "height": 1080},
+            "frame_cleanup": {
+                "status": "removed_after_verified_encode",
+                "frame_dir": str((run / "graded_frames").resolve()),
+            },
+        }
+        receipt.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        return run, raw, output, receipt, payload
+
+    def test_raw_spool_is_retired_after_a_verified_graded_encode(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run, raw, output, receipt, payload = self._run_dir(Path(directory))
+            cleanup = sim_quality.cleanup_retired_source_spool(raw, output, receipt, payload)
+
+            self.assertFalse(raw.exists(), "raw spool should be retired")
+            self.assertEqual(cleanup["removed_files"], 5)
+            self.assertEqual(
+                cleanup["status"], "removed_after_verified_encode_of_derived_spool")
+            self.assertTrue(output.is_file(), "the master must survive cleanup")
+            saved = json.loads(receipt.read_text(encoding="utf-8"))
+            self.assertEqual(saved["source_cleanup"]["removed_files"], 5)
+
+    def test_cleanup_fails_closed_and_keeps_the_spool(self) -> None:
+        cases = {
+            "master no longer matches its receipt hash":
+                lambda p: p.__setitem__("output_sha256", "0" * 64),
+            "master encoded a different frame count":
+                lambda p: p["output_probe"].__setitem__("frames", 99),
+            "spool holds fewer frames than the master encoded":
+                lambda p: p["input"].__setitem__("frame_count", 7),
+            "spool is the encoded spool, not an upstream one":
+                None,  # handled below, needs the raw path
+        }
+        for label, mutate in cases.items():
+            with self.subTest(refusal=label):
+                with tempfile.TemporaryDirectory() as directory:
+                    run, raw, output, receipt, payload = self._run_dir(Path(directory))
+                    if mutate is None:
+                        payload["frame_cleanup"]["frame_dir"] = str(raw.resolve())
+                    else:
+                        mutate(payload)
+                    with self.assertRaises(ValueError):
+                        sim_quality.cleanup_retired_source_spool(
+                            raw, output, receipt, payload)
+                    self.assertTrue(raw.exists(), "a refused cleanup must keep the spool")
+
+    def test_cleanup_refuses_a_spool_with_a_non_frame_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run, raw, output, receipt, payload = self._run_dir(
+                Path(directory), stray="notes.txt")
+            with self.assertRaises(ValueError):
+                sim_quality.cleanup_retired_source_spool(raw, output, receipt, payload)
+            self.assertTrue(raw.exists())
+
+    def test_cleanup_refuses_a_spool_outside_the_output_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run, raw, output, receipt, payload = self._run_dir(root)
+            stray = root / "elsewhere" / "frames"
+            stray.mkdir(parents=True)
+            (stray / "frame_000000.png").write_bytes(b"x")
+            with self.assertRaises(ValueError):
+                sim_quality.cleanup_retired_source_spool(stray, output, receipt, payload)
+            self.assertTrue(stray.exists())
+
+    def test_cleanup_refuses_a_missing_master(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run, raw, output, receipt, payload = self._run_dir(Path(directory))
+            output.unlink()
+            with self.assertRaises(ValueError):
+                sim_quality.cleanup_retired_source_spool(raw, output, receipt, payload)
+            self.assertTrue(raw.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

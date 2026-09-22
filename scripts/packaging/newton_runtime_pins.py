@@ -59,6 +59,14 @@ To bump the runtime: change it here, re-pin projects/policies/research/training/
 the SHARED_STACK (the test tells you if you forgot), and re-run the bundler.
 """
 from __future__ import annotations
+from pathlib import Path
+
+
+def controller_requirements() -> list[str]:
+    """Public SDK, transport and capture dependencies for robot controllers."""
+    path = Path(__file__).with_name("requirements-omnilink.txt")
+    return [line.strip() for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")]
 
 # Present on BOTH sides and determinism-critical → parity-checked against the
 # standalone trainer requirements. Keys are PyPI names.
@@ -122,7 +130,8 @@ DEPLOY_STACK: dict[str, str] = {
 
 def bundle_requirements() -> list[str]:
     """Exact `name==version` specs the local Newton runtime bundle vendors."""
-    return [f"{n}=={v}" for n, v in {**SHARED_STACK, **DEPLOY_STACK}.items()]
+    return ([f"{n}=={v}" for n, v in {**SHARED_STACK, **DEPLOY_STACK}.items()]
+            + controller_requirements())
 
 
 def physics_specs() -> dict[str, str]:
@@ -132,6 +141,11 @@ def physics_specs() -> dict[str, str]:
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--controllers", action="store_true",
+                        help="Print only the public OmniLink controller dependencies")
+    args = parser.parse_args()
     # `python scripts/packaging/newton_runtime_pins.py` prints the canonical set.
-    for spec in bundle_requirements():
+    for spec in controller_requirements() if args.controllers else bundle_requirements():
         print(spec)

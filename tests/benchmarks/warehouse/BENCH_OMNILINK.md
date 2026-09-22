@@ -1,10 +1,19 @@
 # What does OmniLink add, and is it more than generic LLM tool calling?
 
 `bench_omnilink.py` answers that question with numbers, on the
-`warehouse_omnilink` demo. The local-Ollama condition is essential: offline
-regex versus either LLM measures the value of language-model tool calling;
-local Ollama versus OmniLink is the comparison that can isolate
-**OmniLink-specific** value.
+`warehouse_omnilink` demo. The local-engine condition is the one that can
+isolate **OmniLink-specific** value: a local engine against the platform holds
+language-model tool calling fixed and varies only what OmniLink adds around it.
+
+⚠️ **Two of the four conditions this harness was built around no longer have a
+target (2026-09-22).** Both `--mode offline`, which aimed at a bridge's keyword
+ladder, and `--mode local`, which aimed at a keyless local relay, were deleted
+that day. An OmniKey is now required for every OmniLink AI experience, Free
+included, and a bridge without one refuses `/prompt` with
+`401 omnikey_required` instead of answering it some other way. A local engine is still runnable, but only as an explicit OmniLink
+configuration — see §2.2. The retired arms, their gate rows and their
+`offline_expectation` predictions are kept below as the record of an experiment
+that was run, not as instructions.
 
 ---
 
@@ -121,9 +130,10 @@ their idle loops. `--realtime` matters: without it `headless_runner.py` passes
 > and serve HTTP normally — but `OmniLinkRelay.__init__` calls
 > `check_omnilink_installation()` (`relay.py:422`), which raises because
 > `omnilink` is missing. `setup_omnilink_relay` catches it and returns `None`,
-> so **the offline regex router answers every `/prompt`** and `GET /usage`
-> reports `enabled: false`. A run labelled `--mode omnilink` would be measuring
-> the regex router.
+> so **every `/prompt` answers `401 omnikey_required` (or 503) and nothing
+> actuates**, while `GET /usage` reports `enabled: false`. A run labelled
+> `--mode omnilink` would be measuring refusals, and every capability probe in
+> it would score zero for a reason that has nothing to do with the model.
 >
 > **Correction to a claim you may have been told:** that fallback is *not*
 > silent in current source. The `except` tail of `setup_omnilink_relay` prints
@@ -170,26 +180,25 @@ be shown to disagree (§2.3).
 python tests/benchmarks/warehouse/bench_omnilink.py --mode none \
     --duration 900 --out tests/benchmarks/warehouse/results/none.json
 
-# ---- B: OFFLINE regex router ---------------------------------------------
-#   unset OMNI_KEY and set OMNISIM_OLLAMA=0 BEFORE launching the world,
-#   so no relay is constructed at controller start.
-#     Windows:  set OMNI_KEY=  &&  set OMNISIM_OLLAMA=0
-#     bash:     unset OMNI_KEY; export OMNISIM_OLLAMA=0
-python tests/benchmarks/warehouse/bench_omnilink.py --mode offline \
-    --duration 900 --out tests/benchmarks/warehouse/results/offline.json
+# ---- B: RETIRED 2026-09-22. `--mode offline` aimed at a bridge's keyword
+#   ladder, and that ladder was deleted. Launching with OMNI_KEY unset no
+#   longer produces anything that answers: every /prompt returns
+#   401 omnikey_required and nothing actuates, so the run would measure
+#   refusals, not a router. The recorded offline.json results stay as history.
 
-# ---- C: LOCAL Ollama -- generic LLM tool-calling control -----------------
-#   unset OMNI_KEY and make sure Ollama is answering on 127.0.0.1:11434
-#   BEFORE launching the world. Do not set OMNISIM_OLLAMA=0.
-#     Windows:  set OMNI_KEY=  &&  set OMNISIM_OLLAMA=1
-#     bash:     unset OMNI_KEY; export OMNISIM_OLLAMA=1
+# ---- C: LOCAL engine -- generic LLM tool-calling control -----------------
+#   A local engine is reached THROUGH OmniLink, not instead of it: set
+#   OMNI_KEY *and* set OMNILINK_ENGINE to the local engine you connected
+#   during onboarding, BEFORE launching the world. Nothing is selected
+#   automatically because a server happens to be listening. See
+#   projects/samples/demos/worlds/chat/LOCAL_OLLAMA.md.
 python tests/benchmarks/warehouse/bench_omnilink.py --mode local \
     --duration 900 --out tests/benchmarks/warehouse/results/local.json
 
 # ---- D: OMNILINK platform ------------------------------------------------
 #   set OMNI_KEY=olink_...   BEFORE launching the world, in the SAME shell
-#   that launches it. Also set OMNISIM_OLLAMA=0 unless you want the HYBRID
-#   relay, which serves ordinary turns from a LOCAL model (see 2.3).
+#   that launches it, with OMNILINK_ENGINE naming a hosted engine (see C
+#   for the local-engine form of the same setting).
 #   (`python -m omnisim key` prints the exact line; `python -m omnisim byok`
 #    connects a model-provider key, which is a separate second step.)
 python tests/benchmarks/warehouse/bench_omnilink.py --mode omnilink \
@@ -212,7 +221,9 @@ later.
 
 Interpret the comparisons separately:
 
-* `offline` → `local` asks whether generic LLM tool calling beats regex.
+* `offline` → `local` asked whether generic LLM tool calling beat the keyword
+  ladder, which was deleted on 2026-09-22, so that comparison is closed and the
+  `offline` column cannot be re-measured.
 * `local` → `omnilink` asks whether OmniLink itself adds anything on this
   suite. If those columns tie, this suite has **not** proven platform-specific
   value; memory, telemetry, voice and site-level Foreman workflows require
@@ -226,8 +237,10 @@ python tests/benchmarks/warehouse/bench_omnilink.py --selftest      # 114 unit t
 ### 2.3 Mode verification: what is now PROVEN, and what still cannot be
 
 `GET /usage` answers `{"enabled": false}` **exactly when the bridge has no
-relay** (`omnilink_mobile_bridge.py` `_route_get`: `if relay is None`) — the
-offline regex router is what answers `/prompt`.
+relay** (`omnilink_mobile_bridge.py` `_route_get`: `if relay is None`) — and a
+bridge with no relay refuses `/prompt` with `401 omnikey_required` (503 when the
+connection itself failed) rather than answering it. Nothing actuates on that
+bridge through chat, so a condition run against one measures refusals.
 
 **`enabled: true` is necessary but NOT sufficient for `--mode omnilink`.** A
 local `OllamaRelay` reports it too. The discriminator is the *shape* each relay
@@ -562,7 +575,7 @@ harness controls; do not assume the observed ordering generalises.
 
 **What it looks like in a result file, if nothing checks.** Measured:
 
-* two bridges reporting `enabled: false` — stale *offline-mode* corpses from a
+* two bridges reporting `enabled: false` — stale relay-less corpses from a
   previous run — while the third was genuinely live;
 * a `drive forward 1 meter` probe scoring `moved -0.346 m`, because the command
   reached a process whose `Supervisor` was dead, so nothing executed. The
@@ -666,33 +679,40 @@ marks the rest `unverified`.
 
 ## 10. Verified against the source — one correction worth knowing
 
-**The offline regex router *does* have a resume intent.** It is easy to
-believe otherwise, and the design of probe 7 depends on the truth:
+**Literal resume phrases are answered without a model; oblique ones are not.**
+It is easy to believe otherwise, and the design of probes 6 and 7 depends on the
+truth.
 
-* `omnilink_mobile_bridge.py:2207` and `omnilink_arm_bridge.py:2670` check
-  `shared_is_resume(s)` **first** in `IntentRouter.dispatch`, before every
-  motion rule.
-* It is `RESUME_RE` in
-  [`packages/omnisim-bridges/src/omnisim_bridges/intent_router.py`](../../../packages/omnisim-bridges/src/omnisim_bridges/intent_router.py):
-  `resume | carry on | keep going/working/at it | continue | as you were |
-  proceed | back to work/it | get back to work | go back to work/what you were
-  | restart your work/loop/autonomy | unpause`.
-* It is **conditional**: the import is wrapped in `try/except`, and a clone
-  without the `omnisim_bridges` package importable falls back to
-  `shared_is_resume = None`, which disables the intent entirely.
+⚠️ **This section was written against the keyword ladder, which was deleted on
+2026-09-22** (`IntentRouter.dispatch`, `shared_is_resume()`, `RESUME_RE` in
+`intent_router.py`). Everything below is restated against what runs now: the
+deterministic parser in
+[`packages/omnisim-bridges/src/omnisim_bridges/interpret.py`](../../../packages/omnisim-bridges/src/omnisim_bridges/interpret.py).
+
+* Its `resume_autonomy` rule matches `resume | carry on | keep going/working/at
+  it | continue | as you were | proceed | back to work/it | restart your
+  work/loop/autonomy | unpause`, and the parser runs **before** any model turn,
+  so those phrasings are answered without one and cannot be talked out of the
+  tool call.
+* It is **not** a fallback for a bridge with no relay. `/prompt` checks access
+  first, so a keyless bridge refuses the turn with `401 omnikey_required` and
+  the parser never sees it.
 
 So `t6_resume_literal` ("carry on, back to work") is expected to **pass**
-offline — it matches `RESUME_RE` — and it is kept precisely because it pins
-the contract and detects the no-package configuration. The real discriminator
-is **`t7_resume_oblique`**, phrased to carry the same intent while matching
-none of those alternatives (no *resume*, *carry on*, *keep going*, *continue*,
-*as you were*, *proceed*, *back to*, *restart*, *unpause*, and no bare *back*
-for the reverse-drive rule to eat). A regex router cannot get the robot
-working again from it; an LLM holding `resume_autonomy` can.
+whenever the bridge has a relay at all, and it is kept precisely because it
+pins that contract. The real discriminator is **`t7_resume_oblique`**, phrased
+to carry the same intent while matching none of those alternatives (no
+*resume*, *carry on*, *keep going*, *continue*, *as you were*, *proceed*,
+*back to*, *restart*, *unpause*, and no bare *back* for a reverse-drive rule to
+eat). The parser declines it, so it reaches the model — which is the thing the
+probe is there to measure.
 
 Each suite entry carries an `offline_expectation` field. **It is a prediction
 recorded for falsification and is never an input to any verdict.** If a run
 contradicts it, the prediction was wrong — update it, do not adjust the score.
+⚠️ Those predictions were written about the keyword ladder, which no longer
+exists (see §2.2), so read them as a record of what that ladder was expected to
+do rather than as expectations of any runnable condition.
 
 ---
 
@@ -711,8 +731,8 @@ Be blunt about all of this before quoting a number.
   believing any difference, and treat a one-probe swing as noise.
 * **LLMs are nondeterministic.** The same prompt to the same model can call a
   different tool on the next run. `--mode omnilink` is not reproducible in the
-  way `--mode offline` is, and a single omnilink run cannot be compared
-  against a single offline run with any confidence.
+  way the retired `--mode offline` was, and a single omnilink run cannot be
+  compared against a single recorded offline run with any confidence.
 * **The four conditions are not simultaneous.** They run in separate launches
   whose state trajectories (cart positions, park-row occupancy, queue depth)
   diverge. The baseline window inside each run exists to absorb some of that,

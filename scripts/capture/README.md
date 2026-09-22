@@ -1,5 +1,11 @@
 # scripts/capture/ — agent-facing capture service
 
+For advertisements, cinematic demos and photorealistic footage, follow the
+default [cinematic replay workflow](../cinema/CINEMATIC_REPLAY.md): record
+OmniSim motion, bind it to geometry in Blender, render and review a proxy, then
+render final footage. This low-level service remains the explicit **native
+image capture** path for debugging, sensors and live-renderer evidence.
+
 Long-running HTTP service on `127.0.0.1:6791` (sister to the validation harness on `:6789`) that wraps an OmniSim subprocess for cinematic output: high-resolution stills, real-time movie recording, and **deterministic offline frame-sequence renders that get encoded to mp4 / prores via ffmpeg**.
 
 The service injects a supervisor controller carrying an embedded `Camera` device sized to the requested output resolution, and **renders through that camera by default** — so renders are independent of the GUI viewport and arbitrary resolutions (4K, 8K) work. If the camera is unavailable the service falls back to `Supervisor.exportImage`, which is **viewport-bound** (typically ~1896x1184), and discloses the fallback rather than silently downgrading. Shot lists drive scripted multi-shot runs end-to-end.
@@ -18,14 +24,19 @@ The supervisor controller injected at world load is [`projects/default/controlle
 
 ## Reality check on render quality
 
-OmniSim renders with OpenGL (WREN), not a path-traced engine like Blender Cycles, so this service does not produce raytraced GI / caustics / spectral lighting. What it does give you, though, is meaningfully better than ad-hoc screenshots:
+OmniSim's native renderer is wgpu. This service captures that renderer; it does
+not perform the separate Blender Cycles geometry replay used for cinematic
+beauty footage. Its useful capture controls include:
 
 - **Deterministic, arbitrary-resolution output.** The `width`/`height` on `/world/load` size the embedded Camera device, so true 4K/8K renders are delivered independently of the host viewport. If the camera is unavailable the service falls back to `Supervisor.exportImage` (viewport-bound, typically ~1896x1184) and says so in the response.
 - **Deterministic frame-by-frame stepping**, so your final video is jitter-free even if the sim runs slowly.
 - **Lossless PNG intermediate** plus **CRF-controlled ffmpeg encode** for visually-lossless h264 or a ProRes 422 HQ master.
 - **Smooth camera moves** via Catmull-Rom spline + slerp, not the linear/jerky interpolation you'd get from a hand-rolled lerp.
 
-If you ever need true raytraced output, the recommended path is: render this service's PNG sequence, then drop it into a Blender compositor scene as the source — same camera path, full GI on top.
+For path-traced output, export **geometry and recorded world-space poses**, then
+render them in Blender using the [replay pipeline](../cinema/CINEMATIC_REPLAY.md).
+Putting a flat PNG into a compositor allows grading and overlays; it cannot
+reconstruct surfaces, new viewpoints, physical reflections or global illumination.
 
 ### Quality knobs at a glance
 
@@ -197,8 +208,8 @@ JSON or YAML. See [shotlists/orbit_warehouse.json](shotlists/orbit_warehouse.jso
 
 ## When to reach for it
 
-- **Cinematic demos and YouTube content** — drive a shot list, get a finished mp4. Source assets land next to the project's `social/youtube_videos/` scripts.
-- **Marketing / landing-page hero stills** — still mode renders at the resolution you request via the embedded Camera, independent of the host viewport (falling back to ~1896x1184 viewport-bound only if the camera is unavailable).
+- **Native simulator demonstrations** — use a shot list when the live-renderer appearance is what the video must show. For cinematic demos and marketing, use the replay workflow linked above.
+- **Native stills** — renders at the requested Camera resolution, with a disclosed viewport-bound fallback if unavailable.
 - **Regression video** — render the same shot list before and after a change, diff the videos.
 - **Building a Blender compositor scene** — use `keep_frames: true` to retain the PNG sequence, then load it as the source for offline grading or compositing.
 

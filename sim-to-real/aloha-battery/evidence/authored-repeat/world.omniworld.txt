@@ -1,0 +1,85 @@
+#OMNISIM R2025a utf8
+# ALOHA battery episode. Scene dimensions and dynamics are estimates.
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+WorldInfo {
+  title "ALOHA authored repeat verification"
+  basicTimeStep 2
+  newtonSolver "mujoco"
+  newtonCompoundColliders TRUE
+  newtonGroundMu 3
+  newtonCone "elliptic"
+  newtonImpratio 10
+  newtonNoslipIterations 5
+  newtonCondim 6
+}
+Viewpoint { position .01 -.12 1.08 orientation -0.5532104411566534 0.5532104411566534 0.6228293631409187 2.027518883682377 fieldOfView 1.15 exposure .85 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DEF TABLE Solid {
+ translation 0 0 -.015
+ name "table"
+ children [ Shape { appearance PBRAppearance { baseColor .08 .09 .10 roughness .72 metalness 0 } geometry Box { size 1.5 1 .05 } } ]
+ boundingObject Box { size 1.5 1 .05 }
+}
+DEF REMOTE Solid {
+ translation -.058 .043 0
+ name "remote"
+ children [
+ Pose { translation 0 0 0.003 children [ Shape { appearance PBRAppearance { baseColor .92 .92 .87 roughness .65 metalness 0 } geometry Box { size 0.134 0.041 0.006 } } ] }
+Pose { translation -0.0375 0 0.0095 children [ Shape { appearance PBRAppearance { baseColor .92 .92 .87 roughness .65 metalness 0 } geometry Box { size 0.052 0.041 0.019 } } ] }
+Pose { translation 0 0.019 0.011 children [ Shape { appearance PBRAppearance { baseColor .92 .92 .87 roughness .65 metalness 0 } geometry Box { size 0.134 0.003 0.016 } } ] }
+Pose { translation 0 -0.019 0.011 children [ Shape { appearance PBRAppearance { baseColor .92 .92 .87 roughness .65 metalness 0 } geometry Box { size 0.134 0.003 0.016 } } ] }
+Pose { translation -0.065 0 0.011 children [ Shape { appearance PBRAppearance { baseColor .92 .92 .87 roughness .65 metalness 0 } geometry Box { size 0.004 0.038 0.016 } } ] }
+Pose { translation 0.065 0 0.011 children [ Shape { appearance PBRAppearance { baseColor .92 .92 .87 roughness .65 metalness 0 } geometry Box { size 0.004 0.038 0.016 } } ] }
+Pose { translation 0 0 0.011 children [ Shape { appearance PBRAppearance { baseColor .92 .92 .87 roughness .65 metalness 0 } geometry Box { size 0.134 0.002 0.012 } } ] }
+Pose { translation -0.011 0 0.01 children [ Shape { appearance PBRAppearance { baseColor .92 .92 .87 roughness .65 metalness 0 } geometry Box { size 0.003 0.038 0.012 } } ] }
+Pose { translation 0.046 0 0.01 children [ Shape { appearance PBRAppearance { baseColor .92 .92 .87 roughness .65 metalness 0 } geometry Box { size 0.003 0.038 0.012 } } ] }
+ # The already-installed second battery is visual geometry fixed in the remote.
+ Pose { translation .0175 .0095 .0128 rotation 0 1 0 1.57079632679 children [ Shape { appearance PBRAppearance { baseColor .1 .1 .1 roughness .4 metalness .4 } geometry Cylinder { radius .0065 height .05 } } ] }
+ ]
+ boundingObject Group { children [ Pose { translation 0 0 0.003 children [ Box { size 0.134 0.041 0.006 } ] }
+Pose { translation -0.0375 0 0.0095 children [ Box { size 0.052 0.041 0.019 } ] }
+Pose { translation 0 0.019 0.011 children [ Box { size 0.134 0.003 0.016 } ] }
+Pose { translation 0 -0.019 0.011 children [ Box { size 0.134 0.003 0.016 } ] }
+Pose { translation -0.065 0 0.011 children [ Box { size 0.004 0.038 0.016 } ] }
+Pose { translation 0.065 0 0.011 children [ Box { size 0.004 0.038 0.016 } ] }
+Pose { translation 0 0 0.011 children [ Box { size 0.134 0.002 0.012 } ] }
+Pose { translation -0.011 0 0.01 children [ Box { size 0.003 0.038 0.012 } ] }
+Pose { translation 0.046 0 0.01 children [ Box { size 0.003 0.038 0.012 } ] } ] }
+ physics Physics { density -1 mass .055 }
+}
+DEF BATTERY Solid {
+ translation .085 .013 .007
+ rotation 0 1 0 1.57079632679
+ name "battery"
+ newtonFrictionRolling .0001
+ children [
+ Shape { appearance PBRAppearance { baseColor .06 .065 .07 roughness .35 metalness .3 } geometry Cylinder { radius .0068 height .049 } }
+ Pose { translation 0 0 .0195 children [ Shape { appearance PBRAppearance { baseColor .68 .44 .16 roughness .3 metalness .7 } geometry Cylinder { radius .0069 height .010 } } ] }
+ ]
+ boundingObject Pose { children [ Cylinder { radius .0068 height .049 } ] }
+ physics Physics {
+   density -1 mass .023 centerOfMass [ 0 0 0 ]
+   inertiaMatrix [ .000004867 .000004867 .00000053176 0 0 0 ]
+ }
+}
+DEF ALOHA_LEFT URDFRobot {
+ url "../aloha_left.urdf"
+ translation -.469 0 0
+ name "aloha_left"
+ staticBase TRUE
+ supervisor TRUE
+ controller "aloha_replay" controllerArgs [ "--config" "O:/omnisim/.tmp/aloha-battery/run21-repeat/config.json" ]
+}
+DEF ALOHA_RIGHT URDFRobot {
+ url "../aloha_right.urdf"
+ translation .469 0 0
+ rotation 0 0 1 3.14159265359
+ name "aloha_right"
+ staticBase TRUE
+ supervisor TRUE
+ controller "aloha_replay" controllerArgs [ "--config" "O:/omnisim/.tmp/aloha-battery/run21-repeat/config.json" ]
+}

@@ -1453,7 +1453,21 @@ void appendJointPhysicsParameters(QString &out, const UrdfJoint &joint, const QS
     const double kPiLimit = M_PI - 0.01;  // leave some slack for the <= pi check
     // Skip entirely if the URDF limits already cover a full revolution.
     const bool fullRange = (joint.lower <= -kPiLimit && joint.upper >= kPiLimit);
-    if (!fullRange) {
+    // A range that reaches past +/-pi at ONE end only used to be CLAMPED to the
+    // representable window, which silently deleted real travel: a KUKA KR6 R900
+    // sixx A2 (-190..+45 deg) stopped 10.573 deg short of its own declared
+    // limit, a -6.283..+0.785 joint lost 3.151 rad, and 59 joints across the
+    // shipped robots were affected -- the DR02 humanoids' shoulders by 40.6 deg
+    // each. Nothing was logged and the headless run still PASSed.
+    //
+    // minStop/maxStop cannot express it, so do what the full-range case already
+    // does: skip the stops and let the motor's minPosition/maxPosition below
+    // carry the declared range. That is NOT a weaker form of enforcement --
+    // both routes arrive at the solver as the same joint limit (verified in the
+    // "hinge joint N ... lim=[lo, hi]" backend line), so the joint is held to
+    // its authored range either way. No warning for that reason.
+    const bool partialRange = !fullRange && (joint.lower < -kPiLimit || joint.upper > kPiLimit);
+    if (!fullRange && !partialRange) {
       const double lo = std::max(-kPiLimit, std::min(kPiLimit, joint.lower));
       const double hi = std::max(-kPiLimit, std::min(kPiLimit, joint.upper));
       if (hi > lo) {
@@ -1632,12 +1646,19 @@ QString emitJoint(const UrdfJoint &j, const QString &indent,
     // range, which a sane controller never commands past -- so existing ODE
     // behavior is unchanged in practice (the joint mechanical stops are still
     // absent, leaving it free to rotate).
-    if (j.type == "revolute" && j.hasLower && j.hasUpper) {
-      const double kFullRange = M_PI - 0.01;
-      if (j.lower <= -kFullRange && j.upper >= kFullRange && j.upper > j.lower) {
-        out += indent + QString("      minPosition %1\n").arg(j.lower);
-        out += indent + QString("      maxPosition %1\n").arg(j.upper);
-      }
+    // Emitted for EVERY limited revolute joint since 2026-09-20, not only the
+    // full-range ones. Restricting it to full-range left an ordinary joint --
+    // anything inside +/-pi, which is most of them -- enforcing its limits
+    // through the stops while reporting NONE: Motor.getMinPosition() and
+    // getMaxPosition() both returned 0, so an agent or a controller reading the
+    // motor to discover the joint's envelope was told it could not move at all.
+    // Reported independently by two users the same week, on a KUKA KR6 and a
+    // Galbot R1. The stops still do the mechanical enforcement where they can;
+    // this is what makes the joint able to DESCRIBE itself, and for the
+    // partial-range case above it is also the only thing carrying the limit.
+    if (j.type == "revolute" && j.hasLower && j.hasUpper && j.upper > j.lower) {
+      out += indent + QString("      minPosition %1\n").arg(j.lower);
+      out += indent + QString("      maxPosition %1\n").arg(j.upper);
     }
     out += indent + "    }\n";
     // Pair the motor with a PositionSensor so controllers can read joint

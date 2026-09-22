@@ -28,7 +28,7 @@
           <div id="ol-robot-tagline">connecting…</div>
           <div id="ol-agent-line">
             <span class="ol-label">agent</span>
-            <span id="ol-agent-name" class="ol-value">local intent</span>
+            <span id="ol-agent-name" class="ol-value">OmniLink connection required</span>
           </div>
         </div>
         <button type="button" id="ol-popout" class="ol-icon-btn"
@@ -45,8 +45,9 @@
            suggestions list; each chip submits itself. -->
       <div id="ol-suggest-bar" hidden></div>
 
+      <p id="ol-connection" role="status">Connect your OmniKey and model to use OmniLink. <a href="https://www.omnilink-agents.com/agents/start" target="_blank" rel="noreferrer">Set up OmniLink ↗</a></p>
       <form id="ol-composer" autocomplete="off">
-        <textarea id="ol-input"
+        <textarea id="ol-input" disabled
                   placeholder="Tell the robot what to do…"
                   rows="2"
                   aria-label="prompt"></textarea>

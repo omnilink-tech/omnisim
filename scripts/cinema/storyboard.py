@@ -183,6 +183,7 @@ def template(title: str = "New Cinema Piece", subject: str = "omniquad",
     """Return a starter storyboard the agent can edit. Hits a clean 4-beat
     structure (establish → action → hero → resolve) at 30s total."""
     return {
+        "renderer": "native",
         "title": title,
         "subject": subject,
         "world": world,

@@ -33,15 +33,69 @@ One call, and the answer to "what am I talking to, what is driving the physics, 
 |---|---|
 | `physics` | **Which backend drove the run, read from the engine's own verdict** — the `<engine-log>.newton.json` sidecar `OmNewtonBackend::finalizeWorld` writes (`source: "sidecar"`, with `solver`, `degraded`, `finalised`). Provenance labels: `engine_log`, `sidecar_stale` (the sidecar predates this load → backend *unverified*), `sidecar_absent` (a load that never reached finalize — a short run proves nothing). The old ODE-vs-Newton step-cost contrast this row used to quote (1.15 s vs 0.0025 s on a 10-robot scene) is historical; for the live lever see `light` below. |
 | `limits.step_cost` + `recommended_max_steps_per_request` | A rolling median of the **measured** per-step cost on the world that is loaded, cleared by every load, plus `floor(0.6 × supervisor_rpc_timeout_s / cost)`. This is how you size a step budget instead of discovering the 120 s RPC timeout by killing your session. `?probe_step=1` advances one step to measure it if nothing has been measured yet. Telemetry only — nothing server-side branches on it. |
-| `event_types` + `event_types_detail` | The authoritative ten types, **served from the code**: the supervisor scans its own `emit()` call sites and cross-checks them against `event_bus.SUPERVISOR_EVENT_TYPES`, the harness does the same for its three log types, and `verified` / `undeclared` / `declared_not_emitted` come back in the response. `suppressed` names the types a `--light` session does **not** produce — `?types=` is an exact-match allowlist, so filtering on one of those returns an empty stream, not an error. |
+| `supervisor.breaks` | What `POST /sim/break` can be armed on **in this session** (`breakable_types`), what this session silences (`silenced_types`), what is armed right now, the filter keys, the `diagnostic_codes` enum, `max_armed` (32), the lease bounds, and a `hold_latency` sentence stating that detection is **not** sub-step. Read it before arming, rather than discovering the refusal. |
+| `event_types` + `event_types_detail` | The authoritative **eleven** types (ten before v9; `break.hit` is the eleventh), **served from the code**: the supervisor scans its own `emit()` call sites and cross-checks them against `event_bus.SUPERVISOR_EVENT_TYPES`, the harness does the same for its three log types, and `verified` / `undeclared` / `declared_not_emitted` come back in the response. `suppressed` names the types a `--light` session does **not** produce — `?types=` is an exact-match allowlist, so filtering on one of those returns an empty stream, not an error. |
 | `endpoints` + `endpoints_verification` | The route table, cross-checked against the request handler's own source. A route added to `do_GET`/`do_POST` and not declared shows up as `undeclared_literals`. |
-| `not_supported` | Every gap with a `reason` and a `workaround` — sensor reads (501 by design), pause, velocities, `world.validate` / `world.generate` / `world.save`, batch spawn, and the URDF-spawn constraint below. Session-specific entries appear too: a `--light` supervisor lists `sim.grips` + the suppressed contact/grip/joint **event** types. It does **not** list `/sim/contacts` — that endpoint walks the scene per call (`observe.collect_contacts`) and never reads a tracker, so it answers identically in light mode. Claiming otherwise sent agents into a ~790×-cost reload they did not need. |
+| `not_supported` | Every gap with a `reason` and a `workaround` — sensor reads (501 by design), velocities, **`sim.watch`** (`WATCH_NOT_IMPLEMENTED`: a polled predicate over pose or joint state; break on the nearest event type, or hold the pause and poll it yourself), `world.validate` / `world.generate` / `world.save`, batch spawn, and the URDF-spawn constraint below. ⚠️ **`pause` is no longer here** — `sim.pause`, `sim.resume` and `sim.break` are **features** (see *Holding the engine* below). Session-specific entries appear too: a `--light` supervisor lists `sim.grips` + the suppressed contact/grip/joint **event** types. It does **not** list `/sim/contacts` — that endpoint walks the scene per call (`observe.collect_contacts`) and never reads a tracker, so it answers identically in light mode. Claiming otherwise sent agents into a ~790×-cost reload they did not need. |
 | `supervisor.commands` | The live supervisor RPC vocabulary, scanned from `dispatch()`. |
 | `diagnostic_codes` / `request_error_codes` | The load-diagnostic enum (from `diagnostic_codes.py` plus the four the harness synthesizes) and the machine-branchable `code` values on 4xx bodies. |
 
 It never needs a supervisor: with no world loaded it answers with `supervisor.connected: false` and the three log event types.
 
 ⚠ **A `physics` block on a session with NO WORLD LOADED is not evidence of anything, and it used to read as if it were.** MEASURED 2026-08-12: `/capabilities` on a freshly started harness that had never loaded a world returned a full attestation — `backend: "newton"`, the solver named, a **50-body census** — with `source: "sidecar"` at `sidecar_age_s: 85.6`. The engine log and its `.newton.json` sidecar are files on disk left by whatever ran last (a `run-headless`, a previous harness, another lane), and the documented contract is that the sidecar's presence means *"Newton drove **this** run"* — so every provenance claim built on that response was void. Both the verdict and the census are now gated on this session having actually started a load: with none, `physics.source` is `sidecar_stale` (or `sidecar_absent`), `physics.backend` is `unverified`, and `physics.bodies.source` is `no_world_loaded`. The pre-existing "sidecar predates the current load" check now also drops `backend` to `unverified` instead of continuing to assert `newton` off a verdict it has just called stale.
+
+## Holding the engine: pause, single-step, break on event
+
+Every read endpoint below pauses the engine *internally*, for the duration of its own walk, so each response is one consistent instant — but the scene moves again the moment you get it. These three verbs are the guard you hold **yourself**, and they turn the harness into a debugger. Wire contract: PROTOCOL.md §7.38–§7.40.
+
+| Verb | What it does |
+|---|---|
+| `POST /sim/pause {"lease_ms"?}` | Hold the engine across calls. Returns `{paused, lease_remaining_ms, paused_at_sim_ms, lease_ms, rpc_ms}`. |
+| `POST /sim/resume` | Release early. Idempotent — a second call returns `was_paused: false`, not an error. |
+| `POST /sim/break {"types", "filter"?, "lease_ms"?, "once"?}` | Arm a breakpoint. The supervisor takes the lease the moment a matching event is emitted. |
+| `GET /sim/breaks` | Armed breaks + `breakable_types` / `silenced_types` for **this** session + the last hit. |
+| `DELETE /sim/break/<id>` | Disarm one. `POST /sim/break/delete {"break_id"}` is the exact twin for clients that cannot route a bodyless `DELETE`; both shipped. |
+
+```bash
+curl -s -X POST :6789/world/load -d '{"path":"...","light":false}'   # light silences 5 of the 11 types
+curl -s -X POST :6789/sim/pause  -d '{"lease_ms":60000}'
+curl -s -X POST :6789/sim/break  -d '{"types":["contact.began"],"filter":{"def":"BOX","counterpart":"FLOOR"}}'
+curl -s -X POST :6789/sim/step   -d '{"steps":400}'   # -> steps_executed 118, stopped_on_break "brk1"
+curl -s       :6789/scene/tree                         # a STILL scene
+curl -s -X POST :6789/sim/step   -d '{"steps":10}'     # single-step
+curl -s -X POST :6789/sim/resume
+```
+
+**The lease is a deadline, and that is a safety property.** Default 30 s, clamped to [1 s, 300 s]. A client that pauses and then dies would otherwise freeze the simulation with no way back but killing the engine; the lease self-expires and the main loop resumes on its own. A second `/sim/pause` while held **extends** it rather than erroring, and does not move `paused_at_sim_ms`. A held lease does **not** cross a `/world/load` — the supervisor releases it, clears every armed break and drops `break_hit`, because a second load of the same world can leave this process alive.
+
+**`POST /sim/step` gained four fields**: `steps_executed` (⚠️ it used to be the request echoed back), `steps_requested`, `stopped_on_break` and `engine_advanced_ms`, plus `engine_time_ms` and `requested_advance_ms`. A batch **stops early** on the step a break fires, which is what makes it *continue-to-breakpoint*.
+
+**`GET /sim/state` gained five**: `paused` (⚠️ `null`, not `false`, when nobody could be asked), `lease_remaining_ms`, `break_hit` (survives the resume, so it is also the record of *why* it was frozen), `breaks_armed` and `engine_time_ms`.
+
+⚠️ **`sim_time_ms` and `engine_time_ms` are different rulers.** `sim_time_ms` is the injected supervisor's per-iteration counter and is what stamps every other harness response; `engine_time_ms` is the engine's own clock as of that controller's last step. In `--mode=fast` the engine runs far ahead — measured 2026-09-22 (machine `9722d23d12a3`), about **700 engine-ms inside one supervisor tick** on a three-body world. `engine_time_ms` does not rewind on `/sim/reset`.
+
+⚠️ **`/sim/step` is exact on the supervisor clock and NOT on the engine clock.** `{"steps": 10}` advanced the supervisor clock by exactly 80 ms every time and the engine clock by 80–112 ms (0–4 basic steps of overshoot), because lifting the pause, stepping and re-queuing the pause is a race the supervisor binding cannot close. The response **reports** `engine_advanced_ms`; do not assert it.
+
+### ⚠️ Break latency: two regimes, and neither is sub-step
+
+| Regime | Detection | Measured (`basicTimeStep` 8 ms, three-body `break_drop`) |
+|---|---|---|
+| Held, driven by `/sim/step` | per **basic step** | `hold_latency_ms` 0.0, `hold_latency_steps` 0, `hold_latency_engine_ms_max` 8.0 |
+| Free-running | one **supervisor tick** | a tick is *not* a basic step: `engine_tick_ms` 8, 16, 48, 128 ms across the live cases; ~600 ms on a loaded full-tracking world |
+
+**Free-running can miss the event entirely.** On the three-body fixture a whole one-second drop fitted inside one supervisor tick: the live case armed a `contact.began` break, let the world free-run for 20 s, and recorded `fired: false` — no `contact.began` was emitted at all. **Pause, then step.** Every hit carries its own `hold_latency_ms` (supervisor clock, ~0 by construction) and `hold_latency_engine_ms_max` (the engine-clock width of the tick, which is the number that bounds the real thing).
+
+### ⚠️ A break that could never fire is REFUSED
+
+Light tracking is the default and silences `contact.*`, `grip.*` and `joint.limit_hit`. A break armed on one of those comes back `400 BREAK_EVENT_TYPE_UNAVAILABLE` with an `event_type_silenced_in_light_mode` diagnostic naming the producer (`ContactTracker`), the full silenced set and the `{"light": false}` workaround — because accepting it would hand you a breakpoint that never trips, which is indistinguishable from "the bug did not happen". This is the same instinct as `/sim/contacts` returning `empty_set_reasons[]` instead of an empty list.
+
+**The refusal is scoped, not blanket.** `damage.impact` and `damage.state_transition` survive light mode and a break on one is **accepted in the same session** that refused the `contact.began`. A refused break is **not armed**: `armed_types` is `[]` and `GET /sim/breaks` does not list it.
+
+Other refusals: `BREAK_TYPES_REQUIRED`, `BREAK_FILTER_INVALID` (keys are `def`, `counterpart`, `joint` and nothing else), `BREAK_LEASE_INVALID`, `BREAK_LIMIT_REACHED` (32 armed), `BREAK_NOT_FOUND` on delete. Non-fatal diagnostics ride along on a 200: `lease_ms_clamped`, and `filter_key_not_matchable_for_armed_types` when a filter key no armed type carries would fail to *narrow* the break rather than fail to fire it.
+
+### History: the pause shipped broken
+
+`0aafab096` (2026-09-15) shipped `PauseLease` with no test, no documentation and no MCP tool, and it **did not work**: `simulationSetMode` only queues, so the supervisor reported a frozen clock over a still-moving engine (a break fired at t = 168 ms and the engine ran on to ~400 ms); a lease expiry could hang the supervisor permanently; a held lease and a `break_hit` survived a `/world/load`; and detection lagged up to 17 basic steps. Seven defects, all fixed 2026-09-22 and covered by 43 engine-free tests plus four live cases in [`tests/harness/`](../../tests/harness/). "The pause exists" was true from 2026-09-15; "the pause worked" is true from 2026-09-22.
 
 ## Mutating the live scene: spawn, delete, set_pose
 

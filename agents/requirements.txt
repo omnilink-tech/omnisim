@@ -3,8 +3,8 @@
 # Pin the minimum library version that ships the APIs the SDK in
 # `_lib/runner_base.py` calls into: OmniLinkClient.list_profiles /
 # create_profile / update_profile / get_memory and UsageMeter.start /
-# snapshot. v0.6.1 (2026-04 release) is the floor.
-omnilink>=0.6.1
+# snapshot. v0.6.3 is the public SDK verified with the connected Husky demo.
+omnilink>=0.6.3
 
 # Core HTTP client used by every bridge proxy in agent `tools/` packages.
 requests>=2.31

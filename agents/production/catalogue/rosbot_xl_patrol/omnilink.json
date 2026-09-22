@@ -1,0 +1,15 @@
+{
+  "name": "rosbot_xl_patrol",
+  "display_name": "Rosbot Xl Patrol",
+  "world": "projects/samples/demos/worlds/chat/omnilink_rosbot_xl.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/rosbot_xl_patrol/run.py",
+  "description": "rosbot_xl \u2014 walk a rectangular beat and halt on the operator's word. Catalogue brief, 6 checked steps.",
+  "tags": [
+    "mobile",
+    "patrol",
+    "rosbot_xl",
+    "catalogue",
+    "generated"
+  ]
+}

@@ -6,7 +6,7 @@ For the current version and release notes, see the root [`CHANGELOG.md`](https:/
 ![ImageData](images/1234web.png)
 %end
 
-OmniSim is a robotics simulator built to be driven by AI coding agents. You talk to it; you don't configure it. This user guide walks through installation, the desktop UI, scene authoring, controller programming, sample worlds, and the web/cloud interface.
+OmniSim is **an open-source robotics workshop for agents** — more than a simulator: a place where an agent has everything it needs to work on any robotic system. Simulate a complete robot with high-fidelity physics, build a digital twin of one you already own, connect it to the real machine, and have an AI agent program, test and debug the system with you — much of it simply by talking to it. If you are learning robotics, building a robot, or have an idea but no access to the hardware, this guide is written for you: it walks through installation, the desktop UI, scene authoring, controller programming, sample worlds, and the web/cloud interface.
 
 OmniSim is a fork of Webots. Many pages in this book still reference Webots concepts and APIs — the underlying behaviour generally still applies in OmniSim, since OmniSim inherits the world-file format, controller API, and PROTO system. Pages are progressively being rebranded as the simulator evolves; if you spot a page that describes assumptions no longer true in OmniSim, please update it.
 

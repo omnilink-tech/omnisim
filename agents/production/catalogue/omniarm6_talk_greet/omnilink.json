@@ -1,0 +1,15 @@
+{
+  "name": "omniarm6_talk_greet",
+  "display_name": "Omniarm6 Talk Greet",
+  "world": "projects/samples/demos/worlds/chat/omniarm6_talk.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/omniarm6_talk_greet/run.py",
+  "description": "omniarm6_talk \u2014 acknowledge an operator at the cell. Catalogue brief, 3 checked steps.",
+  "tags": [
+    "arm",
+    "greet",
+    "omniarm6_talk",
+    "catalogue",
+    "generated"
+  ]
+}

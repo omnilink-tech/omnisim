@@ -254,6 +254,12 @@ projects/guided_tour.txt
 
 omnisim [recurse]
 scripts/dev [recurse]
+# Public controller dependency lock and the repair tool used by doctor.
+scripts/packaging/
+scripts/packaging/requirements-omnilink.txt
+scripts/packaging/newton_runtime_pins.py
+scripts/packaging/bundle_newton_runtime.py
+scripts/packaging/audit_dist_info.py
 # `omnisim verify-install` launches scripts/dev/omniworld.py for its HARD
 # determinism canary. That launcher imports omniworld.cli from src/python;
 # shipping the launcher without this package makes every clean install fail

@@ -133,7 +133,13 @@ def discover_agents(agents_dir: Path = AGENTS_DIR) -> Dict[str, AgentSpec]:
     out: Dict[str, AgentSpec] = {}
     if not agents_dir.exists():
         return out
-    for manifest in sorted(agents_dir.glob("*/omnilink.json")):
+    # One level for the hand-built agents, two for grouped ones such as
+    # `catalogue/`. Without the second glob a whole tree of manifests is
+    # invisible to `run-agent --list` and reads as missing rather than as
+    # nested.
+    manifests = (sorted(agents_dir.glob("*/omnilink.json"))
+                 + sorted(agents_dir.glob("*/*/omnilink.json")))
+    for manifest in manifests:
         spec = _load_manifest(manifest)
         if spec is None:
             continue

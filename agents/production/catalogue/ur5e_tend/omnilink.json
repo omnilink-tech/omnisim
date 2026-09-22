@@ -1,0 +1,15 @@
+{
+  "name": "ur5e_tend",
+  "display_name": "Ur5E Tend",
+  "world": "projects/samples/demos/worlds/chat/omnilink_ur5e.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/ur5e_tend/run.py",
+  "description": "ur5e \u2014 cycle the gripper as a line tender would. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "arm",
+    "tend",
+    "ur5e",
+    "catalogue",
+    "generated"
+  ]
+}

@@ -22,8 +22,11 @@ deterministic Python living inside the three bridge controllers. It needs no
 LLM, no OMNI_KEY and no network. **No chat layer can make the line faster.**
 The only two things an LLM chat layer can do in this suite are:
 
-  1. add OPERATOR CAPABILITY  -- understand instructions the regex router
-     cannot, and carry them out;
+  1. add OPERATOR CAPABILITY  -- understand instructions the keyword ladder
+     could not, and carry them out. (That ladder was deleted on 2026-09-22;
+     the deterministic parser that replaced it declines such instructions
+     rather than acting wrongly on them, so the comparison this harness was
+     built to make no longer has its original opponent.)
   2. COST THROUGHPUT          -- because any operator command instantly
      pauses that robot's idle loop.
 
@@ -73,11 +76,17 @@ Usage
     python tests/benchmarks/warehouse/bench_omnilink.py --mode none \\
         --duration 900 --out results/none.json
 
-    # B: offline regex router (start the world with nothing set)
-    python tests/benchmarks/warehouse/bench_omnilink.py --mode offline \\
-        --duration 900 --out results/offline.json
+    # B: RETIRED 2026-09-22 and now REFUSED at launch (exit 4). `--mode
+    #    offline` aimed at the keyword ladder, which was deleted; a bridge
+    #    with no relay answers 401 omnikey_required, so the run would measure
+    #    refusals AND the engine gate would stamp them 'verified'. The
+    #    refusal prints the whole story; the recorded offline rows stay
+    #    readable through --compare and the engine classifier.
+    python tests/benchmarks/warehouse/bench_omnilink.py --mode offline   # refused
 
-    # C: local Ollama (start the world with OMNI_KEY unset and Ollama live)
+    # C: local Ollama (start the world with its local relay configured, and
+    #    no cloud credential in the CONTROLLERS' environment, or the cloud
+    #    relay answers instead and the engine gate refuses the label)
     python tests/benchmarks/warehouse/bench_omnilink.py --mode local \\
         --duration 900 --out results/local.json
 
@@ -195,16 +204,18 @@ ROLES = ("tug", "arm")
 #
 # ONE module-level list on purpose: this is the experiment, and it has to be
 # auditable and editable without reading the rest of the file. Difficulty
-# rises down the list. `offline_expectation` is what the SOURCE of the regex
-# router predicts (projects/samples/demos/controllers/omnilink_mobile_bridge
-# /omnilink_mobile_bridge.py IntentRouter.dispatch, plus RESUME_RE / STATUS_RE
-# in packages/omnisim-bridges/src/omnisim_bridges/intent_router.py) -- it is a
+# rises down the list. `offline_expectation` is what the SOURCE of the keyword
+# ladder predicted (omnilink_mobile_bridge.py IntentRouter.dispatch, plus
+# RESUME_RE / STATUS_RE in omnisim_bridges/intent_router.py) -- it was a
 # PREDICTION recorded for falsification, never an input to any verdict.
+# ⚠️ Both of those were DELETED on 2026-09-22, so every `offline_expectation`
+# below is now a record of what that ladder would have done, not a prediction
+# about anything runnable. The values are left untouched on purpose.
 # ══════════════════════════════════════════════════════════════════════
 
 SUITE: List[Dict[str, Any]] = [
 
-    # ── Tier 1: literal. The regex router documents this one. ──────────
+    # ── Tier 1: literal. The deleted keyword ladder documented this one. ──
     {
         "key": "t1_stop_literal",
         "tier": "1-literal",
@@ -312,10 +323,11 @@ SUITE: List[Dict[str, Any]] = [
                "until the ~60 s quiet timer expires unless something actually "
                "calls resume_autonomy. Measured on idle_loop.paused, and the "
                "cause (agent tool vs the timer running out) is attributed "
-               "explicitly. NOTE: this phrasing matches RESUME_RE in "
-               "omnisim_bridges.intent_router, so the offline router IS "
-               "expected to pass it -- see t7 for the version that is not "
-               "handed to it.",
+               "explicitly. NOTE: this phrasing matched RESUME_RE in the "
+               "deleted omnisim_bridges.intent_router, so the keyword ladder "
+               "WAS expected to pass it -- see t7 for the version that was "
+               "not handed to it. The parser that replaced the ladder carries "
+               "the same phrases.",
         "offline_expectation": "pass (RESUME_RE matches 'carry on')",
     },
     {
@@ -333,8 +345,12 @@ SUITE: List[Dict[str, Any]] = [
                "that RESUME_RE does not match it (no resume / carry on / keep "
                "going / continue / as you were / proceed / back to work / "
                "restart / unpause, and no bare 'back' for the reverse-drive "
-               "rule to eat). A regex router cannot get the robot moving "
-               "again; an LLM with resume_autonomy in its toolbox can.",
+               "rule to eat). The deleted keyword ladder could not get the "
+               "robot moving again, and no keyword table could; an LLM with "
+               "resume_autonomy in its toolbox can. (The parser that "
+               "replaced the ladder declines this sentence by design and "
+               "hands it to the model, which is the same discrimination "
+               "measured one layer down.)",
         "offline_expectation": "fail (resumes only when the timer expires)",
     },
 
@@ -1930,8 +1946,9 @@ def listener_pids(ports: Sequence[int], timeout_s: float = 10.0
 # INTEGRITY GATE 3 -- ENGINE.  `enabled: true` is NOT "the cloud answered".
 #
 # GET /usage answers {"enabled": false} exactly when the bridge has NO relay
-# (omnilink_mobile_bridge.py _route_get: `if relay is None`), i.e. the offline
-# regex router is what answers /prompt. That much has always been checked.
+# (omnilink_mobile_bridge.py _route_get: `if relay is None`) -- which since
+# 2026-09-22 means /prompt is REFUSED with 401 omnikey_required rather than
+# answered by anything. That flag has always been checked.
 #
 # What was NOT checked, and is the reason a run can be mislabelled: an
 # OllamaRelay reports `enabled: true` too. The two write DIFFERENT shapes into
@@ -1957,7 +1974,7 @@ def listener_pids(ports: Sequence[int], timeout_s: float = 10.0
 #     Relay identity closes that observability gap without exposing a key.
 # ══════════════════════════════════════════════════════════════════════
 
-ENGINE_NONE = "none"                        # offline regex router
+ENGINE_NONE = "none"                        # no relay: /prompt is refused
 ENGINE_LOCAL_OLLAMA = "local_ollama"
 ENGINE_CLOUD = "cloud_omnilink"
 ENGINE_CLOUD_FALLBACK = "cloud_via_ollama_fallback"
@@ -1984,8 +2001,8 @@ def classify_engine(usage: Any) -> Dict[str, Any]:
     if not usage.get("enabled"):
         return {"engine_class": ENGINE_NONE, "engine": None, "cloud": False,
                 "evidence": "GET /usage reports enabled=false -- this bridge "
-                            "has NO relay, so the offline regex router is "
-                            "what answers /prompt"}
+                            "has NO relay, so /prompt is refused with "
+                            "401 omnikey_required and nothing actuates"}
     identity = usage.get("relay")
     identity = identity if isinstance(identity, dict) else {}
     relay_kind = str(identity.get("kind") or "").lower()
@@ -2093,8 +2110,11 @@ def engine_gate(mode: str, per_bridge: Dict[str, Dict[str, Any]],
         if offline:
             fatal.append(
                 f"--mode omnilink, but {', '.join(offline)} report "
-                f"GET /usage enabled=false: those prompts were answered by "
-                f"the OFFLINE REGEX ROUTER, not by an LLM. The usual cause is "
+                f"GET /usage enabled=false: those bridges have NO relay, so "
+                f"their /prompt was REFUSED with 401 omnikey_required -- not "
+                f"answered by an LLM, and not answered at all. (Until "
+                f"2026-09-22 a keyword ladder answered a relay-less bridge "
+                f"instead; it was deleted.) The usual cause is "
                 f"launching the world in a way that puts an interpreter "
                 f"without `omnilink` installed on PATH -- see "
                 f"BENCH_OMNILINK.md section 2 ('why not launch.bat').")
@@ -2125,18 +2145,21 @@ def engine_gate(mode: str, per_bridge: Dict[str, Dict[str, Any]],
         if offline:
             fatal.append(
                 f"--mode local, but {', '.join(offline)} report "
-                f"GET /usage enabled=false: those prompts were answered by "
-                f"the OFFLINE REGEX ROUTER, not by a local LLM. Start Ollama "
-                f"before launching the world and leave OMNI_KEY unset, or "
-                f"relabel this run.")
+                f"GET /usage enabled=false: those bridges have NO relay of "
+                f"any kind, so their /prompt was REFUSED with "
+                f"401 omnikey_required -- not answered by a local LLM, and "
+                f"not answered at all. (Until 2026-09-22 a keyword ladder "
+                f"answered a relay-less bridge instead; it was deleted.) "
+                f"Start Ollama and configure the bridges' local relay before "
+                f"launching the world, or relabel this run.")
         cloud = named(ENGINE_CLOUD, ENGINE_CLOUD_FALLBACK)
         if cloud:
             fatal.append(
                 f"--mode local, but {', '.join(cloud)} published an OmniLink "
                 f"CLOUD usage signature. This condition exists to isolate "
                 f"generic local-LLM tool-calling value from OmniLink-specific "
-                f"value. Leave OMNI_KEY unset and restart the world, or "
-                f"relabel this run.")
+                f"value. Point the controllers at the local relay and restart "
+                f"the world, or relabel this run as --mode omnilink.")
         unk = named(ENGINE_UNVERIFIED)
         if unk and not fatal:
             warnings.append(
@@ -2148,10 +2171,12 @@ def engine_gate(mode: str, per_bridge: Dict[str, Dict[str, Any]],
         live = named(ENGINE_LOCAL_OLLAMA, ENGINE_CLOUD, ENGINE_CLOUD_FALLBACK)
         if live:
             fatal.append(
-                f"--mode offline, but {', '.join(live)} published an LLM usage "
-                f"signature: an RELAY answered these prompts, not the regex "
-                f"router. Restart the world with OMNI_KEY unset AND "
-                f"OMNISIM_OLLAMA=0, or relabel this run.")
+                f"--mode offline, but {', '.join(live)} published an LLM "
+                f"usage signature: a RELAY answered these prompts. The "
+                f"`offline` label asserts that NO relay answered, and a new "
+                f"run in that mode is refused at launch anyway (it is "
+                f"retired: the keyword ladder it measured was deleted on "
+                f"2026-09-22). Relabel this run for the relay that answered.")
         maybe = named(ENGINE_UNVERIFIED)
         if maybe and not fatal:
             warnings.append(
@@ -2206,7 +2231,7 @@ def probe_modes(recs: Dict[str, "ml.Recorder"], timeout: float, token: str
     """What the bridges say about their own chat layer, read-only.
 
     `GET /usage` answers `{"enabled": false}` exactly when the bridge has NO
-    relay -- i.e. the offline regex router is what answers /prompt. On top of
+    relay -- i.e. /prompt is refused, not answered. On top of
     that flag every bridge's `latest` is classified (see classify_engine) so
     "a relay is live" and "the CLOUD relay is live" stop being the same claim.
     """
@@ -2679,6 +2704,94 @@ def do_compare(paths: Sequence[str], out: Any = sys.stdout) -> int:
 
 
 # ══════════════════════════════════════════════════════════════════════
+# THE RETIRED `offline` CONDITION -- refused at LAUNCH, read forever
+# ══════════════════════════════════════════════════════════════════════
+#
+# `engine_gate()` above still classifies `offline` in both directions, and
+# must: it is how a RECORDED run is read back, and test_bench_omnilink pins
+# it. What is refused is STARTING a new one. The two live in different
+# places on purpose -- interpreting old evidence and manufacturing new
+# evidence are not the same act.
+#
+# Shared with goals_suite.py, which imports this module as `bo` and has the
+# same retired condition and the same argparse default.
+
+_MODE_ALTERNATIVES_BENCH = (
+    "  --mode omnilink   the OmniLink platform relay (controllers launched\n"
+    "                    with OMNI_KEY). The deterministic parser answers\n"
+    "                    what it can and the model answers what it declines:\n"
+    "                    the shipped path, end to end.\n"
+    "  --mode local      the local-Ollama control, which separates generic\n"
+    "                    LLM tool-calling value from OmniLink-specific value.\n"
+    "  --mode none       the throughput control: no prompts are issued at all,\n"
+    "                    so no chat layer is exercised and none is needed.")
+
+
+def mode_refusal(prog: str, mode: Optional[str], alternatives: str) -> str:
+    """The refusal for a --mode this runner will not START. "" means run.
+
+    Two refusals share one explanation: the retired condition itself, and the
+    absence of any condition (which used to select the retired one). Every
+    other mode returns "" and runs -- this gate is about the retired
+    condition ONLY, and must never stand between an operator and a live one.
+    """
+    if mode is not None and mode != "offline":
+        return ""
+    if mode == "offline":
+        head = (
+            f"REFUSED: {prog} --mode offline is RETIRED (2026-09-22).\n"
+            "\n"
+            "WHAT IT MEASURED, AND WHY IT CANNOT BE RE-RUN\n"
+            "  It measured the bridges' keyword ladder: each bridge's\n"
+            "  IntentRouter plus the shared omnisim_bridges.intent_router\n"
+            "  module, which answered a keyless POST /prompt with no model\n"
+            "  anywhere. Both were DELETED on 2026-09-22, when an OmniKey\n"
+            "  became required for every OmniLink AI experience, Free\n"
+            "  included. A bridge with no relay now answers\n"
+            "  401 omnikey_required BEFORE the sentence is interpreted, and\n"
+            "  actuates nothing. The condition has no target left.\n"
+            "\n"
+            "WHY THIS IS A REFUSAL AND NOT A WARNING\n"
+            "  The run would finish, and it would be STAMPED. Every bridge\n"
+            "  would classify as engine 'none' -- exactly what this mode\n"
+            "  asserts -- so the engine gate would return verdict 'verified'\n"
+            "  over a run in which every prompt was refused. Every state\n"
+            "  predicate would fail for want of a robot that was ever\n"
+            "  commanded, and the safety column, 'moved when it should not',\n"
+            "  would read PERFECT, because a robot that is never commanded\n"
+            "  never moves. A certified, flattering, entirely empty result is\n"
+            "  worse than no result.\n")
+    else:
+        head = (
+            f"REFUSED: {prog} needs an explicit --mode.\n"
+            "\n"
+            "  It used to default to `offline`, which is RETIRED: that mode\n"
+            "  measured the bridges' keyword ladder, deleted on 2026-09-22\n"
+            "  when an OmniKey became required for every OmniLink AI\n"
+            "  experience, Free included. A bridge with no relay answers\n"
+            "  401 omnikey_required and actuates nothing, so the naive\n"
+            "  invocation was the broken one and no longer runs.\n"
+            "\n"
+            "  There is no replacement default. --mode is a LABEL you ASSERT\n"
+            "  about how the controllers were launched -- this harness cannot\n"
+            "  switch the chat layer and will not guess at it. The engine gate\n"
+            "  refuses a run whose measured engine contradicts the label, and\n"
+            "  a default would make the harness assert something you did not.\n")
+    return (head
+            + "\n"
+              "WHAT THE RECORDED `offline` ROWS MEAN\n"
+              "  results/ files and the offline columns of BENCH_OMNILINK.md\n"
+              "  and GOALS_SUITE.md are measurements of that ladder, taken\n"
+              "  before 2026-09-22. They are evidence of runs that happened,\n"
+              "  are never edited to match a later policy, and are not\n"
+              "  comparable with anything runnable today. They stay readable:\n"
+              "  the engine classifier and --compare are unchanged.\n"
+              "\n"
+              "WHAT TO RUN INSTEAD\n"
+            + alternatives + "\n")
+
+
+# ══════════════════════════════════════════════════════════════════════
 # CLI
 # ══════════════════════════════════════════════════════════════════════
 
@@ -2686,18 +2799,25 @@ def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="bench_omnilink.py",
         description="Measure what each chat layer adds on the OmniLink "
-                    "warehouse demo: offline regex, local Ollama, and the "
-                    "OmniLink platform. Verdicts come from measured robot "
+                    "warehouse demo. Verdicts come from measured robot "
                     "state, never from reply text.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    # REQUIRED since 2026-09-22 (default was `offline`, now retired). Kept as
+    # a CHOICE rather than dropped so that asking for it gets the explanation
+    # in mode_refusal() instead of argparse's bare "invalid choice".
     ap.add_argument("--mode", choices=("none", "offline", "local", "omnilink"),
-                    default="offline",
-                    help="the condition LABEL for this run. 'none' runs no "
-                         "prompts at all (the throughput control); 'local' is "
-                         "the Ollama LLM control needed to distinguish generic "
-                         "LLM tool calling from OmniLink-specific value. This "
-                         "does NOT switch the bridges' chat mode -- that is "
-                         "chosen when the controllers start.")
+                    default=None,
+                    help="REQUIRED: the condition LABEL for this run. 'none' "
+                         "runs no prompts at all (the throughput control); "
+                         "'local' is the Ollama LLM control needed to "
+                         "distinguish generic LLM tool calling from "
+                         "OmniLink-specific value; 'omnilink' is the platform "
+                         "relay. 'offline' is RETIRED (2026-09-22: it measured "
+                         "the deleted keyword ladder) and is refused with an "
+                         "explanation. This flag does NOT switch the bridges' "
+                         "chat mode -- that is chosen when the controllers "
+                         "start -- and it has no default, because a default "
+                         "would assert a condition you did not.")
     ap.add_argument("--duration", type=float, default=900.0,
                     help="total wall-clock seconds; the intervention window "
                          "gets whatever is left after --baseline-s and "
@@ -2827,6 +2947,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 0
     if args.compare:
         return do_compare(args.compare)
+
+    # ── The retired condition is refused HERE, at launch ──────────────
+    # After --selftest / --print-suite / --compare, so every read-only verb
+    # still works with no key, no bridges and no decision about --mode; and
+    # before anything touches a bridge, so a refused run costs nothing and
+    # writes nothing.
+    refusal = mode_refusal("bench_omnilink.py", args.mode,
+                           _MODE_ALTERNATIVES_BENCH)
+    if refusal:
+        print("\n" + refusal, file=sys.stderr)
+        return EXIT_ARGS
 
     if args.duration <= 0 or args.hz <= 0 or args.verify_hz <= 0:
         print("error: --duration, --hz and --verify-hz must be positive",

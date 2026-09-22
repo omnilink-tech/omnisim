@@ -60,6 +60,31 @@
 >    reported `cliff_detector_validated: false` (§1.6).
 > 5. Two evidence-hygiene defects elsewhere in the tree are **flagged, not fixed** (§9.4).
 
+> ## 🆕 2026-09-22 — THIS DOCUMENT'S "NO PAUSE, NO BREAKPOINTS" GAP IS HALF CLOSED
+>
+> §5.4 and §8 said OmniSim could not control time inside a run at all. That was true when
+> written and is **false as of v9**. `POST /sim/pause` / `/sim/resume` (a held, *leased*
+> pause) and `POST /sim/break` / `GET /sim/breaks` / `DELETE /sim/break/<id>` ship;
+> event types went 10 → **11** (`break.hit`), harness routes 41 → **44**, the MCP server
+> 37 → **45** tools. Both sections are rewritten in place, and two limits are attached to
+> every sentence that makes the claim, because without them it over-claims:
+>
+> - **Two latency regimes, neither sub-step.** Held and stepping, detection is per basic
+>   step. Free-running, it is one **supervisor tick** — and a tick is not a basic step:
+>   measured 8 ms to about 600 ms of engine time depending on load, far enough that a whole
+>   one-second drop once fell inside a single tick and no contact event fired at all. **The
+>   reliable workflow is pause, then step.**
+> - **A break on a silenced event type is refused, not accepted.** Light mode is the default
+>   and silences 5 of the 11 types.
+>
+> **Still absent, and still stated as such:** record, replay, run-diff, watch conditions,
+> and a true checkpoint (`POST /sim/snapshot` saves poses and joint angles only, never
+> velocity). ⚠️ **No comparison row was added for this.** We did not find published
+> documentation stating what Gazebo, Isaac Sim or the other columns do about programmatic
+> pause and break-on-event, and inventing one would be exactly the failure §0 exists to
+> prevent — so the capability matrix in §4 is unchanged and the claim lives in §5.4, where
+> it is ours alone and unranked. Honesty gate: [positioning.md](positioning.md) §7.
+
 **Rewritten 2026-07-26.** (Supersedes the 2026-07-10 edition; nothing verified there was
 deleted, several things were corrected — see §9.)
 
@@ -760,7 +785,7 @@ pricing is not published ✅ (2026-07-10 fetch, not re-verified this pass ◐).
 | **OmniSim / Newton `newtonSolver "mujoco"`** (CPU `mj_step`) | **Bitwise, 5/5** — including a 336-contact / 1344-constraint-row scene with ten live controllers, and a 64-box collapsing pile | 📊 [scope](../benchmarks/determinism-scope.md) §1 |
 | **OmniSim / Newton XPBD** (warp kernels) | **Bitwise** on the one light-contact sphere-drop world — 10/10 rows across 3 machines / 2 OSes / 2 compilers / 2 GPU models. ⚠️ **Untested at contact density**, and XPBD dispatches warp kernels, so do not read it as a GPU guarantee | 📊 §1.3 |
 | **OmniSim / Newton `newtonSolver "mujoco_warp"`** (GPU) | **Not reproducible — 0 bitwise of 24** same-config cold pairs across six scenes; 9.152 m deviation at 1000 steps. **Same position as MJWarp below, same cause** (`wp.atomic_add` contact-slot claiming) | 📊 [scope](../benchmarks/determinism-scope.md) §2 |
-| **OmniSim, cross-machine** | **Untested.** Every row above is one machine reproducing *itself*; no run compares trajectories *between* machines. What we do have cross-machine is lane-1 *metric* digit-identity to 15–16 s.f. on the CPU `mj_step` path (§1.1) — a weaker statement than trajectory bitwise identity | 📊 §1.1 |
+| **OmniSim, cross-machine** | **Measured 2026-08-17, and it holds — scoped to one binary.** Two RunPod hosts running *the same* Linux binary (sha256 `6f7e2217426a2088`), an RTX 4000 Ada / EPYC 7352 / 48t and an RTX 4090 / 32t, produced **byte-identical** recordings on both the 5-sphere scene (400 steps) and the contact-rich one (10 robots + 64-box tower, 336 contacts, ten live controllers, 120 steps). ⚠️ The scope is "same **binary**", NOT "same version": the Windows laptop's own build of a nearby tree differs on both scenes — different compiler, libm and OS. Lane 1 agrees: 107 of 114 comparable metric cells bit-identical, the other 7 at rel ≤ 2.7e-16 | 📊 [scope](../benchmarks/determinism-scope.md) §1.2 |
 | **Isaac Lab** | Identical results **only on the same hardware + same version**; explicitly **no determinism for non-rigid**; `enable_enhanced_determinism` defaults **False** | ◐ |
 | **Newton** | Contact **order** is nondeterministic unless `deterministic=True` (**default off**); **no cross-hardware claim**. Ships `tests/determinism/test_solver_determinism.py` ✅ | ◐ / ✅ |
 | **MuJoCo (C)** | Deterministic within one version + architecture | ◐ |
@@ -805,7 +830,7 @@ unless marked 📊.
 | **Hardware floor** | Laptop GPU; **CPU-only via CPU `mj_step`** 📊 — measured with every CUDA device hidden from the process (OmniBench lane 4c). ⚠ The old wording said "via ODE", a mechanism deleted in `bdc02139`; and this is **not** a GPU-less-*hardware* result — the box still has a driver, a CUDA runtime and the GPU wheels. Say "runs with no CUDA device visible to the process". Verdict + numbers: [lane4-capability-matrix.md](../benchmarks/lane4-capability-matrix.md) | **RTX 4080 + 16 GB VRAM** ✅; A100/H100 **unsupported** ✅ | CPU | Laptop GPU (CPU MuJoCo fine) | CPU | CUDA / ROCm / Metal ✅ | NVIDIA GPU | CPU | CPU | Mid GPU |
 | **Photoreal rendering** | No (WREN; wgpu opt-in) ⊘ | **Yes — RTX path tracing** | Limited | None built-in | Limited | Ray tracer (Luisa) ◐ | Rasterized, GPU-parallel ◐ | Minimal | Limited | **Yes** |
 | **Native URDF import** | Yes (`URDFRobot`) ⊘ | Yes | Yes (via SDF) | Yes | Yes | Yes | Yes | Yes | Yes | Yes ◐ |
-| **First-party ROS 2** | **Yes — sidecar** (`packages/omnisim-ros2/`); **no `ros2_control`** ⊘ | Bridge ✅; `ros2_control` *community* ✅ | **Yes — ros-controls hosted** ✅ | `ros2_control` **hosted** ✅ | `webots_ros2` (community) ✅ | No ✅ | No ✅ | No ✅ | No ✅ | Community-grade ◐ |
+| **First-party ROS 2** | **Yes — sidecar** (`packages/omnisim-ros2/`); **`ros2_control` for velocity-commanded bases, no arms** ⊘ | Bridge ✅; `ros2_control` *community* ✅ | **Yes — ros-controls hosted** ✅ | `ros2_control` **hosted** ✅ | `webots_ros2` (community) ✅ | No ✅ | No ✅ | No ✅ | No ✅ | Community-grade ◐ |
 | **ROS 2 `simulation_interfaces`** ⬅ *corrected row* | **Yes — sidecar, not native** (15 svc + 1 action, v2.1.0) ⊘ | **Yes — native** (`isaacsim.ros2.sim_control`, 19 services + 1 action) ◐ | **Yes — native** (`ros_gz/src/gz_simulation_interfaces/`) ◐ | No ◐ | No ◐ | No ◐ | No ◐ | No ◐ | No ◐ | **Yes — O3DE** (`Gems/SimulationInterfaces`) ◐ |
 | **Other remote control surface** ⬅ *corrected row* | HTTP/JSON harness + capture + bridges ⊘ 📊 (10/10 driveability) | Omniverse Kit `omni.services.transport.server.http` ◐ | — | MuJoCo MPC **gRPC agent server** ◐ | `--stream` + extern controllers on **TCP:1234** ◐ | — | — | `connect()` over **SHARED_MEMORY / UDP / TCP / gRPC** ◐ | vendor remote API ◐ | — |
 | **Transport / dependency of that surface** ⬅ *the actual differentiator* | **plain HTTP + JSON in the ENGINE. No ROS, no DDS, no in-process Python, no editor plugin** — ROS 2 is an optional sidecar over that same HTTP ⊘ | ROS 2 + DDS, **or** an in-process Kit extension | **ROS 2 + DDS** | in-process C/Python, or MPC's gRPC | own TCP protocol | — | — | in-process Python or Bullet's own protocol | vendor protocol | ROS 2 + DDS |
@@ -826,7 +851,14 @@ are in §1.6 and §2.3, and it is the engine to beat on that axis.
 
 ## 5. Where OmniSim is actually differentiated
 
-Three claims survive an adversarial reading. **One of them is narrower than the previous
+**Lead with §5.4.** OmniSim does not win the physics-fidelity, GPU-scale or ecosystem
+comparison this paper spends most of its length measuring, and it should not invite that
+comparison as its opening move. What it has that no column here has is a different *job*:
+it is built as an **instrument for finding out what a robot actually did**, and its
+read-outs refuse to overstate what they saw. That is §5.4, it is a property of the whole
+surface rather than a feature, and it is the claim to open with.
+
+Four claims survive an adversarial reading. **One of them is narrower than the previous
 edition said.**
 
 ### 5.1 The agent surface — corrected: it is the transport, not the existence
@@ -923,6 +955,104 @@ zero-shot transfer to **six** physical platforms — Go1, G1, Berkeley Humanoid,
 LEAP Hand, Franka. **OmniSim has not cleared it.** Our sim-to-real story is
 sim-to-*deploy*, in-engine. The canonical, unflattering status is
 [rl-current-state.md](rl-current-state.md).
+
+### 5.4 Instruments that refuse to lie — the claim to lead with
+
+This is the one no column in §4 has, and the one that survives the most hostile reading,
+because it is checkable from the source in five minutes. **A debugger that lies is worse
+than no debugger**, and OmniSim's read-outs are built to that rule rather than to a demo.
+
+- `GET /sim/contacts` **never claims to be complete.** It returns what it walked, plus
+  `completeness`, `empty_set_reasons[]`, and which bodies are physically inert. An empty
+  contact list is never silently sold as "no contact"
+  ([`omnisim_harness.py:160-171`](../../scripts/harness/omnisim_harness.py#L160-L171)).
+- `--fail-on-runaway` **refuses to certify on thin evidence.** Zero tracked bodies, or
+  fewer than `window+2` samples, is a FAIL and not a pass — because "an untracked world and
+  a healthy world produce byte-identical evidence"
+  ([`headless_runner.py:648-690`](../../scripts/dev/headless_runner.py#L648-L690)).
+- **The event-type list is generated from the code, not from the docs.** The simulator
+  scans its own emit call sites and reports drift as `undeclared` /
+  `declared_not_emitted` on `GET /capabilities`
+  ([`event_bus.py:109-122`](../../projects/default/controllers/harness_supervisor/event_bus.py#L109-L122)).
+- `GET /capabilities` **publishes what the simulator refuses to do**, with a reason and a
+  workaround per gap — engine gaps as well as harness gaps.
+- `GET /sim/grips` in light mode answers `tracking.enabled=false` with a machine-readable
+  reason and workaround, and emits a `world.warning`, rather than an empty list that reads
+  as "nothing gripped".
+- [`determinism-scope.md`](../benchmarks/determinism-scope.md) **publishes its own
+  refutation** — the false positive that briefly inflated our determinism claim and the
+  three defects that produced it — and states the rule: *an assertion that has never gone
+  red should be assumed broken until you make it go red on purpose.* Every corrected row in
+  this paper is the same habit.
+- **A breakpoint that could never fire is refused, not armed.** Light mode silences 5 of
+  the 11 event types, so `POST /sim/break` on a silenced type answers
+  `400 BREAK_EVENT_TYPE_UNAVAILABLE` with an `event_type_silenced_in_light_mode`
+  diagnostic naming the producer, the silenced set and the `{"light": false}` workaround —
+  rather than accepting a break that would sit quiet forever. The refusal is scoped:
+  `damage.*` survives light mode and is accepted in the same session
+  ([`event_bus.py:596-645`](../../projects/default/controllers/harness_supervisor/event_bus.py#L596-L645)).
+
+**What that buys, stated at its real size:** eleven code-verified event types on one
+cursor-paged stream with drop counters; contact, joint (`hit_limit`), device and bounds
+inspection that internally holds the engine for the duration of its own walk, so each
+response is one consistent instant (that guard is per-read and internal — the hold *you*
+take is `POST /sim/pause`, below); a **held pause, single-step and break-on-event**, so the
+scene can be frozen at the moment of interest and walked forward one basic step at a time;
+bitwise reproducibility on the CPU `newtonSolver "mujoco"` default (§3.3) so a failure you
+can reproduce is a failure you can fix; and 45 MCP tools — 42 of them one call each to the
+same harness a human uses, plus three that reach a robot's OmniLink bridge through the
+gated `/prompt` and `/tool`.
+
+**Time control: half of it now ships, and the half that does has two limits that travel
+with it.** ⊘ Self-attested, engine-free tests in-tree
+([`tests/harness/test_break_on_event.py`](../../tests/harness/test_break_on_event.py),
+[`test_break_integration.py`](../../tests/harness/test_break_integration.py)); live figures
+below measured 2026-09-22 on machine `9722d23d12a3`.
+
+- **Pause is held across calls and *leased*** (`POST /sim/pause` / `POST /sim/resume`,
+  default 30 s, min 1 s, max 300 s), so a client that dies cannot freeze the engine.
+  `POST /sim/step` while held is single-stepping, and it is exact on the **supervisor**
+  clock (10 steps → exactly 80 ms) but **not** on the engine clock (80–112 ms over the same
+  calls, 0–4 basic steps of overshoot) — the response *reports* `engine_advanced_ms`
+  rather than asserting it. ⚠️ The verbs shipped 2026-09-15 and **did not work** until
+  2026-09-22; only from that date is "OmniSim has a working pause" a true sentence.
+- **Breakpoints fire on events, and detection is never sub-step.** `POST /sim/break`,
+  `GET /sim/breaks`, `DELETE /sim/break/<id>`; an armed break takes the pause lease when a
+  matching event fires, emits `break.hit` (the eleventh event type), and `POST /sim/step`
+  stops early on that step and reports `steps_executed` + `stopped_on_break`, which makes it
+  continue-to-breakpoint. **Two latency regimes, neither sub-step.** Held and stepping:
+  0 supervisor-ms, at most one basic step of engine time. **Free-running: one supervisor
+  tick, and a tick is not a basic step** — measured from 8 ms to about 600 ms of engine time
+  depending on load, far enough that on the three-body `break_drop` fixture a whole
+  one-second drop fell inside a single tick and no `contact.began` fired at all. **The
+  reliable workflow is the debugger one: pause, then step.**
+- **No watch conditions.** A predicate over pose or joint state ("break when `HUSKY.z <
+  0.1`") needs a per-step evaluator over state the trackers do not publish as events. It is
+  declared on `GET /capabilities` under `not_supported` as `sim.watch` /
+  `WATCH_NOT_IMPLEMENTED`, with the workaround: break on the nearest event type, or hold the
+  pause and poll the predicate yourself against a scene that is not moving underneath you.
+- **No record, no replay, no run-diff** as a product surface — and they are blocked behind
+  the next bullet, not merely unbuilt.
+- **`POST /sim/snapshot` is not a checkpoint.** It saves poses and joint angles only —
+  velocity is never captured, because `OmSolid::saveHiddenFieldValues()` is an empty
+  function — and restore teleports bodies to the saved poses while they keep their live
+  solver velocities, without rewinding the clock. Identical forward evolution is not
+  achievable here and must never be claimed.
+
+**And the gaps that are not about time.**
+
+- **Light mode is the default** and silences 5 of the 11 event types (`contact.*`,
+  `grip.*`, `joint.limit_hit`); `/sim/contacts` still answers, and a break armed on a
+  silenced type is refused rather than quietly accepted. Load `{"light": false}` for a
+  debugging session.
+- **`/robot/<def>/sensor/<name>` is a deliberate 501.** Cameras, lidar and IMUs are not
+  readable through the debug surface.
+- **Fault injection is structural/impact damage only** — no sensor dropout, no encoder
+  drift, no actuator degradation, no latency, no thermal derating.
+- **A green `run-headless` is a log verdict, not a physics verdict**: a hologram floor lets
+  a body reach z = −69 km and still PASS. That is why `--fail-on-runaway` exists.
+
+Canonical wording and the full honesty gate: [positioning.md](positioning.md).
 
 ---
 
@@ -1120,24 +1250,51 @@ pick ODE (or `newtonSolver "mujoco"`) over the GPU path when a run has to be rep
 
 ## 8. The one-paragraph positioning
 
-> OmniSim is an Apache-2.0 robotics simulator that inherits Webots' breadth of robots,
-> sensors and worlds, and adds three things the incumbents do not combine: it **defaults to
-> Newton** (the Linux-Foundation, NVIDIA/DeepMind/Disney GPU physics engine that Isaac Lab
-> still carries as experimental); it exposes the whole simulator over **plain HTTP and JSON
-> with no ROS, no DDS, no in-process Python and no editor plugin** — where the competing
-> scene-control surfaces are real but reach you through a ROS 2 stack or an in-process
-> extension, and a ROS 2 sidecar is available on top for those who want one — with a
-> first-party MCP server and a measured 10/10 agent-driveability
-> score; and it runs the **GPU-batched RL path on a laptop GPU**, with a CPU `mj_step` path
-> that is also the only configuration in which it is bitwise reproducible, where Isaac Sim
-> requires an RT-core card and refuses to run on an A100. It is not photoreal, it has no
-> `ros2_control` plugin (so no Nav2 or MoveIt out of the box), its GPU integration layer had five
-> bugs in it as recently as 2026-07, and on
-> the one **real-world impact dataset it has ever been scored against it sits mid-field —
-> 24.8% of a cube width, behind Drake's 13.5%** (§1.6). For ROS-centric integration work, use
-> Gazebo. For photoreal perception and synthetic data, use Isaac Sim. For accuracy checked
-> against real-world impacts, read Drake's literature. For an agent-driven simulator you can
-> `curl`, on the hardware you already own, use OmniSim.
+> **OmniSim — an open-source robotics workshop for agents.** More than a simulator: a place
+> where an agent has everything it needs to work on any robotic system — simulate one on
+> high-fidelity physics, build the digital twin of a robot you already own from its own URDF
+> or CAD, address the simulated robot and the physical one across one control surface (what
+> is portable is the software above the driver; the shipped bridges run against mock
+> drivers), and have an agent program, test and debug the result while you talk to it. Its
+> deepest bench — and the one this paper compares on — is the last of those. Robots fail in
+> ways you cannot see: a
+> gripper that drops the box two times in five, a joint quietly pinned against its limit, a
+> contact that never happened. OmniSim is Apache-2.0, and that bench is built for answering
+> what actually happened — eleven code-verified event types (contacts,
+> grips, `joint.limit_hit`, damage, `break.hit`, and the controllers' own stdout) on one
+> cursor-paged
+> HTTP stream, plus contact, joint, device and bounds inspection that internally holds the
+> engine for the duration of its own walk, so each answer is one consistent instant. On the CPU
+> `newtonSolver "mujoco"` default it is **bitwise reproducible**, verified at 336 contacts
+> with ten live controllers, so a failure you can reproduce is a failure you can fix. **And
+> when the instruments cannot see, they say so instead of guessing** (§5.4): `/sim/contacts`
+> returns `completeness` and `empty_set_reasons[]` rather than an empty list,
+> `/capabilities` publishes what the simulator refuses to do with a reason per gap, and
+> `--fail-on-runaway` FAILs rather than passes when the evidence is too thin to certify.
+> The whole surface is **plain HTTP and JSON — no ROS, no DDS, no in-process Python and no
+> editor plugin** (a ROS 2 sidecar is available on top), with a first-party MCP server and a
+> measured 10/10 agent-driveability score; it inherits Webots' breadth of robots, sensors
+> and worlds; it **defaults to Newton**, the Linux-Foundation NVIDIA/DeepMind/Disney engine
+> Isaac Lab still carries as experimental; and it runs the GPU-batched RL path on a laptop
+> GPU where Isaac Sim requires an RT-core card and refuses to run on an A100. **Time
+> control, as of v9:** you can **hold** the run across calls (`POST /sim/pause`, leased, so a
+> client that dies cannot freeze the engine), single-step it, and **break on an event** —
+> but detection is **never sub-step**. Held and stepping it costs at most one basic step;
+> **free-running it costs one supervisor tick, and a tick is not a basic step** — measured
+> from 8 ms to about 600 ms of engine time, far enough that a whole one-second drop once
+> fell inside a single tick and nothing fired at all. Pause, then step. And a break armed on
+> an event type that light mode (the default) silenced is **refused**, not quietly armed.
+> **What it still does not do:** no watch conditions, no record, no replay and no run-diff —
+> and `POST /sim/snapshot` saves poses and joint angles
+> only, never velocity, so it is not a checkpoint. It is not photoreal, it has no
+> `ros2_control` plugin (so no Nav2 or MoveIt out of the box), its GPU path is **not**
+> reproducible (0 bitwise of 24 pairs) and its GPU integration layer had five bugs in it as
+> recently as 2026-07, and on the one real-world impact dataset it has ever been scored
+> against it sits mid-field — 24.8% of a cube width, behind Drake's 13.5% (§1.6). For
+> ROS-centric integration work, use Gazebo. For photoreal perception and synthetic data, use
+> Isaac Sim. For accuracy checked against real-world impacts, read Drake's literature. For
+> finding out why your robot did that — on the hardware you already own, driven by an agent
+> with `curl` — use OmniSim.
 
 ---
 
@@ -1225,7 +1382,18 @@ measured and committed in-tree:
     ROS-free. Second, the cost estimate was wrong in our own favour's *opposite* direction: the
     stated path was porting `webots_ros2` as a multi-week workstream, when in fact the harness
     already served every verb the standard asks for. **The remaining loss is real and narrower**:
-    no `ros2_control`, so no Nav2 and no MoveIt.
+    `ros2_control` support covers velocity-commanded bases only — no arms — and Nav2 is planning
+    and goal execution only, on ground-truth odometry.
+
+    ⚠️ **Corrected 2026-09-22.** This sentence read "no `ros2_control`, so no Nav2 and no MoveIt",
+    which was an UNDER-claim and had been false since the tier-3 work landed:
+    `packages/omnisim-ros2/src/omnisim_ros2_control/` ships an `OmniSimSystem` `SystemInterface`
+    and a `husky_diff_drive.launch.py`, and `omnisim_ros2_nav2/` ships the Nav2 bring-up. What is
+    still true is the narrower statement above, and **MoveIt is still out of reach** for a reason
+    that has nothing to do with `ros2_control`: the arm bridge treats a joint command as a goal and
+    answers `409 busy` to a setpoint arriving while the previous one is still interpolating, so a
+    trajectory would land in pieces. An under-claim is the safe direction to be wrong in, but it is
+    still wrong, and it contradicted the README, AGENTS.md and `ros2-integration.md` §Tier 3.
 
 ### 9.3 Still open
 
@@ -1376,7 +1544,9 @@ simulator**.
 
 ⚠️ **We publish no agent success rate, and the table must never imply one.** Both `agentbench/` and
 `omnilink_tasks/` gitignore their `results/`, so no score ships in this tree, and no recorded
-`omnilink_tasks` run has had an LLM in the loop — every one is the regex router. The one tool-surface
+`omnilink_tasks` run has had an LLM in the loop: every recorded run predates 2026-09-22 and was made
+against the keyword ladder that used to answer a keyless `/prompt`, which has since been deleted —
+those rows are history, not a description of the surface as it now stands. The one tool-surface
 ablation we ran declined to show a win: the bare shell tied the full HTTP surface on outcome with
 *fewer* calls. We claim surface size, never performance.
 

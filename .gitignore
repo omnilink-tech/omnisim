@@ -220,6 +220,8 @@ projects/_scratch/
 # `.omniperspective` is the only one written now.
 .*.wbproj
 .*.omniperspective
+# Foundry's camera lock is authored gameplay behavior: WASD controls the robot.
+!projects/robot_combat/orc/worlds/.orc_foundry.omniperspective
 
 # Machine-generated training data (PGM crops collected from sim runs,
 # consumed by scripts/dev/train_anypick_classifier.py). Regenerable, never committed.
@@ -442,6 +444,14 @@ packages/*/dist/
 # What we author, and want back after any checkout.
 !/social/launch/pilots/replies_*/*/**/*.md
 !/social/launch/pilots/replies_*/*/**/*.py
+# 2026-09-22: C++ too. The excitation-supervised port's adapter is a header
+# and two programs that LINK a correspondent's library, and they are the rig
+# behind a parity result already emailed to him -- a gitignored rig cannot
+# re-certify a figure we have already sent. Safe to re-include now only
+# because the `*_src/` rules below keep correspondents' own clones out.
+!/social/launch/pilots/replies_*/*/**/*.cpp
+!/social/launch/pilots/replies_*/*/**/*.hpp
+!/social/launch/pilots/replies_*/*/**/*.h
 !/social/launch/pilots/replies_*/*/**/*.omniworld
 !/social/launch/pilots/replies_*/*/**/*.wbt
 !/social/launch/pilots/replies_*/*/**/*.urdf
@@ -449,8 +459,47 @@ packages/*/dist/
 !/social/launch/pilots/replies_*/*/**/*.proto
 # Third-party material re-excluded: a correspondent's own repo, and the robot
 # description packages we clone to import from. Not ours to vendor.
+#
+# 2026-09-15: `repo/` and `fork/` are the names we USUALLY give a clone, not the
+# names every wave gave one. `replies_2026_09_12/ur5_pondinesh/ur5_repo/` is a
+# 55 MB nested checkout of the recipient's Pybullet_UR5_RRT (12 MB of it .git),
+# and the `*.py` / `*.md` re-includes above pulled its sources back in. The
+# suffix form covers `<anything>_repo/` without touching a tracked path -- there
+# are none.
 /social/launch/pilots/replies_*/*/repo/
+/social/launch/pilots/replies_*/*/*_repo/
 /social/launch/pilots/replies_*/*/fork/
+#
+# 2026-09-22: the same bug again, twice over. This wave cloned three
+# correspondents' repositories as `yash_src/`, `cbfjax_src/` and `ken_src/`,
+# and put them at the WAVE ROOT rather than inside a per-thread directory. So
+# neither the suffix (`_src`, not `_repo`) nor the depth (`replies_*/<clone>/`,
+# not `replies_*/<thread>/<clone>/`) matched anything above, and the `*.py` /
+# `*.md` re-includes pulled a correspondent's own sources back in -- including
+# a nested .git, which commits as an unresolvable gitlink.
+# Cover the `_src` suffix at both depths, and the clone-at-wave-root shape for
+# the suffixes already named.
+/social/launch/pilots/replies_*/*_src/
+/social/launch/pilots/replies_*/*/*_src/
+/social/launch/pilots/replies_*/repo/
+/social/launch/pilots/replies_*/*_repo/
+/social/launch/pilots/replies_*/fork/
+
+# Company-pilot workspaces (social/launch/pilots/companies/*). The rig we
+# author is TRACKED -- probe scripts, generated worlds, evidence dumps,
+# RESULT.md, DRAFT_EMAIL -- because a gitignored rig cannot re-certify a
+# figure we already emailed. What stays out is the recipient's own source,
+# cloned in beside the rig to import from: `repo/`, `repos/`, `upstream/` and
+# linorobot's `hardware/`. Four of those are nested git checkouts, which would
+# otherwise commit as an unresolvable gitlink rather than as files.
+#
+# Named directory by directory rather than ignoring the workspace by default
+# and re-including our file types -- see the replies_* note above for what the
+# default-ignore shape cost us on 2026-09-12.
+/social/launch/pilots/companies/*/repo/
+/social/launch/pilots/companies/*/repos/
+/social/launch/pilots/companies/*/upstream/
+/social/launch/pilots/companies/*/hardware/
 /social/launch/pilots/replies_*/*/external_now/
 /social/launch/pilots/replies_*/*/merged_copy/
 /social/launch/pilots/replies_*/**/external/
@@ -540,6 +589,16 @@ packages/*/dist/
 # measured in. That is the same failure the 2026-09-12 rewrite fixed, one layer
 # down. A wave's dot-prefixed sibling worlds stay tracked.
 !/social/launch/pilots/replies_*/**/.*.omniworld
+
+# ...but NOT `.harness_*`, which is the one dot-prefixed sibling the engine
+# writes for itself rather than the one we author. `**/.harness_*.omniworld`
+# near the top of this file says so everywhere else in the tree; the re-include
+# above is a later rule, so inside a reply wave it undid that. Re-excluded here,
+# after it, because last match wins. (13 are already tracked from the window
+# when the re-include covered them; tracked files ignore .gitignore, so they
+# stay put -- this only stops new ones joining them.)
+/social/launch/pilots/replies_*/**/.harness_*.omniworld
+/social/launch/pilots/replies_*/**/.harness_*.wbt
 
 # Third-party CAD submitted for an evaluation (2026-09-12): fusion_bot.urdf and
 # 4.3 MB of STL wheels, dropped beside the chat worlds while evaluating a

@@ -71,12 +71,38 @@ DEFAULT_PAGE = 10
 # context window by asking for everything.
 MAX_PAGE = 50
 
+# ── Crossing machines: how much of the journal rides in the memory row ──
+#
+# The disk file below survives a restart on ONE machine. It does not survive
+# a different machine, a different OmniSim instance, or a wiped temp dir --
+# and the relay's platform memory does. So the last EXPORT_ENTRIES entries
+# are exported into that memory row (relay._journal_section) and imported
+# back on boot, which is what makes "what did you do before the restart?"
+# answerable from a record rather than from narrative memory.
+#
+# Both bounds are load-bearing. The memory row is re-read and re-written on
+# every turn, so an unbounded section would grow the row (and the bytes on
+# every persist) without limit for a long-lived robot. 50 entries at ~3 kB
+# is the same order as the standing-notes tier next to it.
+EXPORT_ENTRIES = 50
+EXPORT_MAX_CHARS = 3000
+
 
 def _env_flag(name: str, default: bool) -> bool:
     raw = os.environ.get(name)
     if raw is None or raw == "":
         return default
     return raw.strip().lower() not in ("0", "false", "no", "off")
+
+
+def _as_float(value: Any) -> float:
+    """Number or 0.0. Entries can arrive from a memory row written by another
+    build, so every numeric read of an imported entry goes through here."""
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    return out if out == out else 0.0      # NaN is not an identity
 
 
 def _is_read_only(tool_name: str) -> bool:
@@ -117,6 +143,8 @@ class ActionJournal:
         self._capacity = max(1, int(capacity))
         self._entries: List[Dict[str, Any]] = []
         self._seq = 0
+        # Bumped by every mutation of the entry list; see `revision`.
+        self._revision = 0
         self._lock = threading.Lock()
 
         # EVIDENCE HAS TO OUTLIVE THE PROCESS, OR THE CURE IS WORSE THAN THE
@@ -137,6 +165,36 @@ class ActionJournal:
         self._last_write_failed = False
         if self._persist:
             self._restore()
+
+    def __len__(self) -> int:
+        """How many entries are held right now (presence reports this as
+        ``journal_len``). Cheap, locked, and never the sequence number --
+        the two differ as soon as the capacity bound bites."""
+        with self._lock:
+            return len(self._entries)
+
+    def revision(self) -> int:
+        """A marker that changes whenever the RECORD changes.
+
+        The relay's background sync compares this against the revision it
+        last got onto the platform, so an idle robot costs one integer
+        comparison per beat instead of an HTTP round trip. It is not the
+        sequence number: `_seq` counts records, and this also has to move
+        for a restore from disk and for an import from another machine,
+        both of which change what ought to travel without recording
+        anything. It is not a content hash either -- a hash would be
+        exact, but it would have to serialise the whole export on every
+        beat to find out that nothing happened, which is the cost this
+        exists to avoid.
+
+        The only guarantee callers may rely on: EQUAL means nothing has
+        changed since that value was read. Different does not promise the
+        content differs -- a restore of rows the platform already has
+        moves it -- so a consumer may pay one redundant write and must
+        never skip one.
+        """
+        with self._lock:
+            return self._revision
 
     # -- writing ----------------------------------------------------- #
 
@@ -172,6 +230,7 @@ class ActionJournal:
                 self._seq += 1
                 entry["n"] = self._seq
                 self._entries.append(entry)
+                self._revision += 1
                 if len(self._entries) > self._capacity:
                     del self._entries[: len(self._entries) - self._capacity]
                 self._flush_locked()
@@ -218,6 +277,12 @@ class ActionJournal:
             r["before_restart"] = True
         self._entries = kept
         self._restored = len(kept)
+        if kept:
+            # A restore is a change the platform has not necessarily seen:
+            # this file is the half of the record that survives a restart
+            # on THIS machine, and it is exactly the half that never
+            # reached another one.
+            self._revision += 1
         try:
             self._seq = max(int(data.get("seq") or 0), 0)
         except (TypeError, ValueError):
@@ -226,6 +291,108 @@ class ActionJournal:
             self._started_at = float(data.get("started_at") or self._started_at)
         except (TypeError, ValueError):
             pass
+
+    # -- travelling (D7: the journal follows the agent) ---------------- #
+
+    def export_entries(
+        self,
+        limit: int = EXPORT_ENTRIES,
+        *,
+        max_chars: int = EXPORT_MAX_CHARS,
+    ) -> List[Dict[str, Any]]:
+        """The newest entries, small enough to ride in the memory row.
+
+        Newest-first accumulation with a character budget, then re-ordered
+        oldest-first so the imported view reads chronologically. Returns
+        plain dicts -- the caller serialises them; this module does not know
+        what transport is carrying them.
+
+        Never raises: an export that throws would take down a memory write,
+        and a memory write that fails loses this session's conversation.
+        """
+        try:
+            with self._lock:
+                rows = list(self._entries)
+            try:
+                limit = max(1, min(int(limit), self._capacity))
+            except (TypeError, ValueError):
+                limit = EXPORT_ENTRIES
+            picked: List[Dict[str, Any]] = []
+            used = 0
+            for row in reversed(rows[-limit:]):
+                item = {k: v for k, v in row.items() if k != "before_restart"}
+                try:
+                    cost = len(json.dumps(item, default=str))
+                except Exception:
+                    continue
+                if picked and used + cost > max_chars:
+                    break
+                picked.append(item)
+                used += cost
+            picked.reverse()
+            return picked
+        except Exception:
+            return []
+
+    def import_entries(self, rows: Any) -> int:
+        """Merge exported entries back in. Returns how many were new.
+
+        MERGE, not replace. The disk file may already hold some of these (a
+        restart on the same machine restores both), and a second OmniSim
+        instance on the same key may hold entries this machine never saw.
+        Identity is (n, tool, t) rounded to the millisecond: two runs can
+        reuse sequence numbers, so the number alone is not an identity.
+
+        Imported entries are marked ``before_restart`` -- they did not happen
+        in this process -- and ``covers_last_seconds`` is widened to include
+        them, because claiming a narrow window over a wide record would
+        invite exactly the "that did not happen" fabrication the restore
+        exists to prevent.
+        """
+        if not isinstance(rows, list):
+            return 0
+        added = 0
+        try:
+            with self._lock:
+                seen = {self._identity(r) for r in self._entries}
+                for raw in rows:
+                    if not isinstance(raw, dict) or not raw.get("tool"):
+                        continue
+                    entry = dict(raw)
+                    entry["before_restart"] = True
+                    key = self._identity(entry)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    self._entries.append(entry)
+                    added += 1
+                if not added:
+                    return 0
+                # Chronological, with the sequence number as the tiebreak for
+                # entries stamped inside the same clock tick.
+                self._entries.sort(key=lambda e: (_as_float(e.get("t")),
+                                                  _as_float(e.get("n"))))
+                if len(self._entries) > self._capacity:
+                    del self._entries[: len(self._entries) - self._capacity]
+                self._seq = max(self._seq,
+                                int(max((_as_float(e.get("n"))
+                                         for e in self._entries), default=0)))
+                self._restored += added
+                self._revision += 1
+                oldest = min((_as_float(e.get("t")) for e in self._entries
+                              if _as_float(e.get("t")) > 0), default=0.0)
+                if oldest:
+                    self._started_at = min(self._started_at, oldest)
+                self._flush_locked()
+            return added
+        except Exception:
+            return added
+
+    @staticmethod
+    def _identity(entry: Dict[str, Any]) -> tuple:
+        return (int(_as_float(entry.get("n"))),
+                str(entry.get("tool") or ""),
+                round(_as_float(entry.get("t")), 3))
 
     # -- reading ----------------------------------------------------- #
 

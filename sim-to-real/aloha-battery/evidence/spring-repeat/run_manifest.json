@@ -1,0 +1,24 @@
+{
+  "mode": "spring-insertion",
+  "view": "insertion",
+  "world_sha256": "409f2bf7bf92b6036969a9c9946efc256e905348237cf9024a8cb96ca7e2cf01",
+  "config_sha256": "4aa76cb6439126f27cac92041edd0c810ecdc53341cc8b26683286e833fa5c46",
+  "model_sha256": {
+    "left": "0dc5c2c95fca0c0ab4b4828e145708c07e6538d8f13d65c2579d5513ae314b4c",
+    "right": "4445ce7588e15e99cdb8d0291f0ade32e4c3cdd4965110f0d91676cf04c05cee"
+  },
+  "source_revision": "06dc3da83c4fd3d1889b00f1dfd3780da8421f64",
+  "no_grip": false,
+  "actuation": "Motor.setPosition",
+  "timed_episode_pose_writes": 0,
+  "fixed_targets_sha256": null,
+  "controller_sha256": {
+    "controllers\\aloha_replay\\aloha_replay.py": "2b85a777bbbad84ba5444d5e11a3bc8abcca245b3a7972d3e2fbd3d1522bf65c",
+    "evaluate.py": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+    "insertion_control.py": "2495810c008acf37835049d9d67f46e3540b76a147efe147fc2d93af46eb1412",
+    "kinematics.py": "e8bced4a3a08cf2dc07c584671b1caed4b894147c6ba7e44bad1ff5a02058faa",
+    "compartment.py": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+    "controllers\\battery_compartment\\battery_compartment.py": "d870583574bbc76586fb9828593803c2bf209d98651887f4c9d229c0d2fd1697"
+  },
+  "bundled_runtime_sha256": "bd1f207f9153d47c2d2e533f1c313965c0cc03285807d09ce8643c4a49dc507e"
+}

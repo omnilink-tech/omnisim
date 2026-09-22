@@ -1,0 +1,376 @@
+{
+  "void": null,
+  "prompts": 16,
+  "minutes": 0.6,
+  "robot_commands": 5,
+  "distance_m": 2.83,
+  "by_parser": 5,
+  "model_calls": 0,
+  "tokens_in": 0,
+  "tokens_out": 0,
+  "usd": 0.0,
+  "gate_refusals": 0,
+  "transport_errors": 0,
+  "dispatches_that_did_not_run": [
+    [
+      14,
+      "turn",
+      503
+    ]
+  ],
+  "profile": "omniquad",
+  "surface": "quadruped",
+  "effort_label": "distance walked (m)",
+  "rows": [
+    {
+      "n": 1,
+      "prompt": "morning. you awake down there?",
+      "kind": "chat",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": true,
+      "pose": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 2,
+      "prompt": "where are you sat?",
+      "kind": "ask",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": true,
+      "pose": [
+        -0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 3,
+      "prompt": "anything logged against you from last night?",
+      "kind": "ask",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": true,
+      "pose": [
+        -0.0,
+        -0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 4,
+      "prompt": "right - up you get.",
+      "kind": "cmd",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": false,
+      "pose": [
+        -0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 5,
+      "prompt": "how's that feel, all four down?",
+      "kind": "ask",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": true,
+      "pose": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 6,
+      "prompt": "give us a wave.",
+      "kind": "cmd",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": false,
+      "pose": [
+        -0.0,
+        -0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 7,
+      "prompt": "good lad.",
+      "kind": "chat",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": true,
+      "pose": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 8,
+      "prompt": "sit back down a sec, i want to check the rear left.",
+      "kind": "cmd",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": false,
+      "pose": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 9,
+      "prompt": "ok. stand.",
+      "kind": "cmd",
+      "via": "parser",
+      "frames": [
+        "stand"
+      ],
+      "calls": [
+        [
+          "stand",
+          {}
+        ]
+      ],
+      "sent": [
+        [
+          "stand",
+          200
+        ]
+      ],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": false,
+      "pose": [
+        0.0,
+        -0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 10,
+      "prompt": "that's the shakedown done.",
+      "kind": "chat",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": true,
+      "pose": [
+        -0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 11,
+      "prompt": "walk on.",
+      "kind": "cmd",
+      "via": "parser",
+      "frames": [
+        "walk"
+      ],
+      "calls": [
+        [
+          "walk",
+          {}
+        ]
+      ],
+      "sent": [
+        [
+          "walk",
+          200
+        ]
+      ],
+      "gate_rules": [],
+      "moved": true,
+      "dist_m": 0.701,
+      "as_expected": true,
+      "pose": [
+        0.701,
+        0.0,
+        -0.0
+      ]
+    },
+    {
+      "n": 12,
+      "prompt": "where are you now?",
+      "kind": "ask",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": true,
+      "dist_m": 1.104,
+      "as_expected": false,
+      "pose": [
+        1.81,
+        0.0,
+        -0.0
+      ]
+    },
+    {
+      "n": 13,
+      "prompt": "stop there.",
+      "kind": "halt",
+      "via": "parser",
+      "frames": [
+        "stop"
+      ],
+      "calls": [
+        [
+          "stop",
+          {}
+        ]
+      ],
+      "sent": [
+        [
+          "stop_robot",
+          200
+        ]
+      ],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.005,
+      "as_expected": true,
+      "pose": [
+        1.843,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 14,
+      "prompt": "turn left 90 degrees.",
+      "kind": "cmd",
+      "via": "parser",
+      "frames": [
+        "turn"
+      ],
+      "calls": [
+        [
+          "turn",
+          {
+            "angle_rad": 1.5707963267948966
+          }
+        ]
+      ],
+      "sent": [
+        [
+          "turn",
+          503
+        ]
+      ],
+      "gate_rules": [],
+      "moved": false,
+      "dist_m": 0.0,
+      "as_expected": false,
+      "pose": [
+        1.843,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 15,
+      "prompt": "walk on again.",
+      "kind": "cmd",
+      "via": "parser",
+      "frames": [
+        "walk"
+      ],
+      "calls": [
+        [
+          "walk",
+          {}
+        ]
+      ],
+      "sent": [
+        [
+          "walk",
+          200
+        ]
+      ],
+      "gate_rules": [],
+      "moved": true,
+      "dist_m": 0.317,
+      "as_expected": true,
+      "pose": [
+        2.16,
+        -0.0,
+        0.0
+      ]
+    },
+    {
+      "n": 16,
+      "prompt": "hold it.",
+      "kind": "hold",
+      "via": "declined",
+      "frames": [],
+      "calls": [],
+      "sent": [],
+      "gate_rules": [],
+      "moved": true,
+      "dist_m": 0.706,
+      "as_expected": false,
+      "pose": [
+        2.875,
+        0.0,
+        -0.0
+      ]
+    }
+  ]
+}

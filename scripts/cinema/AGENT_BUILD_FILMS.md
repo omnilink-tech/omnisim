@@ -4,9 +4,16 @@ This is the locked workflow for videos in which an AI agent shows what it built
 in OmniSim. It generalizes the approved **Agent Build Story v9** film without
 loosening its visual, editorial, or evidence standards.
 
-The capture service and the ordinary Cinema storyboard system create real
-OmniSim footage. The Agent Build Film system is the story/edit layer above
-those captures.
+The Agent Build Film system is the story/edit layer above its source footage.
+For new cinematic presentation, prepare sources with the
+[cinematic replay workflow](CINEMATIC_REPLAY.md): actual OmniSim poses rendered
+in Blender, with visible replay disclosure and retained receipts. Native
+captures remain appropriate for UI, sensor or live-renderer evidence. The
+editor consumes prepared clips; it does not create Blender scenes itself.
+The real-footage rules below refer to recorded simulation behavior. A faithful,
+disclosed replay can show that behavior, but must never be described as native
+capture or used as proof of native graphics quality. Preserve its source type
+and provenance in the film's notes and claim boundaries.
 
 ## Action opening for YouTube
 

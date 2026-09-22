@@ -35,14 +35,13 @@ PKG_SRC = Path(__file__).resolve().parents[1] / "src"
 if str(PKG_SRC) not in sys.path:
     sys.path.insert(0, str(PKG_SRC))
 
-from omnisim_bridges import BridgeBase, Tool, IntentRouter, serve_http, __version__  # noqa: E402
+from omnisim_bridges import BridgeBase, Tool, serve_http, __version__  # noqa: E402
 
 
 def test_imports_and_version() -> None:
     assert __version__ == "0.1.0"
     assert BridgeBase is not None
     assert Tool is not None
-    assert IntentRouter is not None
     print("[test_imports_and_version] PASS")
 
 
@@ -63,17 +62,29 @@ def test_tool_to_definition() -> None:
     print("[test_tool_to_definition] PASS")
 
 
-def test_intent_router() -> None:
-    r = IntentRouter()
-    log = []
-    r.register(r"\bhello\b", lambda m: ("greet", "hi back"))
-    r.register(r"\bstop\b",  lambda m: ("stop", log.append("STOP") or "halted"))
-    assert r.dispatch("say hello") == ("greet", "hi back")
-    intent, _ = r.dispatch("stop now")
-    assert intent == "stop" and log == ["STOP"]
-    assert r.dispatch("fly to moon") == ("unknown", "fly to moon")
-    assert r.dispatch("") == ("empty", None)
-    print("[test_intent_router] PASS")
+def test_no_keyword_ladder_is_exported() -> None:
+    """The regex fallback is GONE, and importing it must fail loudly.
+
+    `IntentRouter` was a pre-LLM keyword ladder exported for external
+    bridges to subclass. It was deleted on 2026-09-22 together with every
+    in-tree copy: an OmniKey is required for every chat turn, so a router
+    that answers a keyless /prompt is the exact fallback the access policy
+    forbids. This pins the removal so nobody quietly re-adds it.
+    """
+    import omnisim_bridges
+    assert not hasattr(omnisim_bridges, "IntentRouter")
+    assert "IntentRouter" not in omnisim_bridges.__all__
+    try:
+        import omnisim_bridges.intent_router  # noqa: F401
+    except ImportError:
+        pass
+    else:                                        # pragma: no cover
+        raise AssertionError("omnisim_bridges.intent_router came back")
+    # describe_state survived the deletion -- it answers a QUESTION rather
+    # than actuating anything -- and now lives next to its one caller.
+    from omnisim_bridges import describe_state
+    assert "no state to report" in describe_state(None)
+    print("[test_no_keyword_ladder_is_exported] PASS")
 
 
 class _StubArm(BridgeBase):
@@ -174,6 +185,6 @@ def test_serve_http_round_trip() -> None:
 if __name__ == "__main__":
     test_imports_and_version()
     test_tool_to_definition()
-    test_intent_router()
+    test_no_keyword_ladder_is_exported()
     test_serve_http_round_trip()
     print("\nAll omnisim-bridges smoke tests passed.")

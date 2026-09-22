@@ -354,9 +354,11 @@ $ ... GetEntityState "{entity: 'NO_SUCH_THING'}"
 result=Result(result=2, error_message="no entity named 'NO_SUCH_THING'")   # NOT_FOUND
 
 $ ... SetSimulationState "{state: {state: 2}}"                             # PAUSED
-result=Result(result=0, error_message="OmniSim's engine free-runs and the harness
-  exposes no pause verb; SIMULATION_STATE_PAUSE is not advertised in
-  GetSimulatorFeatures")                                          # FEATURE_UNSUPPORTED
+result=Result(result=0, error_message="SIMULATION_STATE_PAUSE is not advertised in
+  GetSimulatorFeatures: the harness's pause (POST /sim/pause, v9) is LEASED -- it
+  carries a deadline and lifts itself on expiry -- which cannot honour the indefinite
+  paused state this service asks for. Wiring the two is an open design decision, not
+  an absent primitive")                                           # FEATURE_UNSUPPORTED
 ```
 
 ### Tier 2: topics
@@ -570,10 +572,25 @@ r=0.165100 b=0.570800 -> linear=0.050000 angular=0.000000` for a commanded
 Declared through the feature flags **and** repeated in
 `GetSimulatorFeatures.custom_info`, so a caller learns them from the API.
 
-1. **There is no pause.** OmniSim's engine free-runs and the harness exposes no
-   pause verb. `SIMULATION_STATE_PAUSE` is not advertised; `GetSimulationState`
-   answers `STATE_PLAYING` whenever a world is loaded; `StepSimulation` means
-   "advance at least N basic steps", not "exactly N from a frozen state".
+1. **This sidecar does not pause — and the reason is a semantics mismatch, not a
+   missing verb.** `SIMULATION_STATE_PAUSE` is not advertised; `GetSimulationState`
+   answers `STATE_PLAYING` whenever a world is loaded and running; `StepSimulation`
+   means "advance at least N basic steps", not "exactly N from a frozen state".
+
+   ⚠️ **Corrected 2026-09-22.** This entry used to read *"the harness exposes no
+   pause verb"*, and that became false on 2026-09-22: the harness does expose
+   `POST /sim/pause` / `POST /sim/resume`. But that pause is **leased** — default
+   30 s, min 1 s, max 300 s — and it lifts itself when the lease expires, on
+   purpose, so that a client which dies cannot freeze the engine for everyone
+   else. `simulation_interfaces` asks for the opposite shape: a caller sets
+   `STATE_PAUSED` and expects the simulator to stay paused *indefinitely*, and
+   expects `GetSimulationState` to keep answering `STATE_PAUSED`. A lease cannot
+   promise that. **Whether to wire ROS 2 pause onto the lease — and who renews it,
+   and what `GetSimulationState` should report the instant one expires — is an
+   open design decision for the project owner, deliberately not taken here.** One
+   consequence of not holding a lease: this node reports `STATE_PLAYING` even
+   while another harness client holds a pause; it does not read the harness's
+   `paused` flag.
 2. **`EntityState.twist` / `.acceleration` are not measured** and are returned as
    zeros — *unmeasured*, not observed-to-be-zero. Real velocities are on `/odom`
    and in `JointState.velocity`.

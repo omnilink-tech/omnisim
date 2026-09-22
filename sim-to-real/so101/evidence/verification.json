@@ -1,0 +1,314 @@
+{
+  "date": "2026-09-19",
+  "scope": "Authored physical simulation demo; exact real-recorded grasp not reproduced.",
+  "machine_id": "9722d23d12a3",
+  "environment": {
+    "physics": "newton/MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) (CPU)",
+    "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+    "scan": {
+      "log_found": true,
+      "newton_imported": true,
+      "finalised": true,
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "ode_fallback": false,
+      "source": "sidecar"
+    },
+    "engine_log": ".tmp\\so101-recovery\\engine.log",
+    "home": {
+      "root": "O:\\omnisim",
+      "source": "OMNISIM_HOME"
+    },
+    "load": "unknown",
+    "warmup_token": false,
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU (driver 596.36)",
+    "machine": {
+      "id": "9722d23d12a3",
+      "host": "hc385771a14",
+      "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "cpu": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+      "cores": 16
+    },
+    "build": "2d47aaad8",
+    "binary": {
+      "path": "msys64/mingw64/bin/omnisim-bin.exe",
+      "sha256": "d25c20b7b44fb050",
+      "size": 7617024,
+      "mtime": 1789261466,
+      "ipc_nonce": true
+    },
+    "libcontroller": {
+      "path": "lib/controller/Controller.dll",
+      "sha256": "0bd8db2b5018d7fe",
+      "size": 642048,
+      "mtime": 1788455211,
+      "ipc_nonce": true
+    },
+    "stack": {
+      "source": "bundle+pth",
+      "versions": {
+        "newton": "1.5.0",
+        "warp_lang": "1.16.0",
+        "mujoco": "3.11.0",
+        "mujoco_warp": "3.11.0",
+        "torch": null,
+        "onnxruntime": "1.26.0"
+      },
+      "origin": {
+        "newton": "bundle",
+        "warp_lang": "bundle",
+        "mujoco": "bundle",
+        "mujoco_warp": "bundle",
+        "torch": "absent",
+        "onnxruntime": "bundle"
+      },
+      "anomalies": []
+    },
+    "os": "Windows-11",
+    "python": "3.12.14",
+    "numpy": "2.3.5",
+    "onnxruntime": null,
+    "knobs": {},
+    "intent": {},
+    "warnings": [
+      "libController (lib/controller/Controller.dll) is >24h OLDER than the engine binary -- possible ABI/IPC drift. If controllers hang in Robot(), rebuild the controller lib; run 'python -m omnisim doctor'."
+    ],
+    "ok": true
+  },
+  "runs": {
+    "authored": {
+      "result": {
+        "complete": true,
+        "frames": 630,
+        "episode_duration_s": 21.0,
+        "initial_cube_position": [
+          0.2241462595058276,
+          -0.15932843267874947,
+          0.02
+        ],
+        "final_cube_position": [
+          0.20951513946056366,
+          -0.08106950670480728,
+          0.023892244324088097
+        ],
+        "box_position": [
+          0.2,
+          -0.08,
+          0.0
+        ],
+        "max_cube_height_m": 0.09964832663536072,
+        "max_cube_speed_m_s": 1.044379214078162,
+        "fast_cube_steps": [],
+        "lifted": true,
+        "bilateral_airborne_s": 4.133333333333334,
+        "max_carry_slip_m": 0.006607701863385708,
+        "carried": true,
+        "inside_box": true,
+        "released": true,
+        "settled": true,
+        "success": true,
+        "actuation": "Motor.setPosition",
+        "timed_episode_pose_writes": 0
+      },
+      "trace_sha256": "0792faca93c5f08e6bf1d78e30d3bc711b48d8ed71fe1375f023971e997981a8",
+      "manifest": {
+        "world": "O:\\omnisim\\projects\\robots\\therobotstudio\\worlds\\.harness_so101_0f8b42ea6a12468185fdbc699e97510b.omniworld",
+        "world_sha256": "c660c434f0019f2e32aadf8549cb897c4fe6ab94fd6fb19971c2be1d47d2104a",
+        "urdf_sha256": "6c6d185fdef14875e30a3a59f1a132c819506be864917cd878ab774074a2604e",
+        "trajectory_sha256": "2f1f227162b38ae9ed49276860fb1a2397e3cb774c500db5098c55adaef2b975",
+        "mode": "authored-simulation",
+        "calibration": null,
+        "source": {
+          "path": "pickplace_motion.json",
+          "sha256": "70484d7aff0c917f607c162b36ecb80c73bc03e596a97cc4aa23f15bc92a6aee"
+        },
+        "actuation": "Motor.setPosition",
+        "timed_episode_pose_writes": 0
+      }
+    },
+    "open_gripper_control": {
+      "result": {
+        "complete": true,
+        "frames": 630,
+        "episode_duration_s": 21.0,
+        "initial_cube_position": [
+          0.2241462595058276,
+          -0.15932843267874947,
+          0.02
+        ],
+        "final_cube_position": [
+          0.2342001348733902,
+          -0.16199985146522522,
+          0.019892243668437004
+        ],
+        "box_position": [
+          0.2,
+          -0.08,
+          0.0
+        ],
+        "max_cube_height_m": 0.02087443694472313,
+        "max_cube_speed_m_s": 0.1660446350492504,
+        "fast_cube_steps": [],
+        "lifted": false,
+        "bilateral_airborne_s": 0.0,
+        "max_carry_slip_m": 0.0,
+        "carried": false,
+        "inside_box": false,
+        "released": true,
+        "settled": true,
+        "success": false,
+        "actuation": "Motor.setPosition",
+        "timed_episode_pose_writes": 0
+      },
+      "trace_sha256": "736f111731407245323dedb507ed42e4a031007911e7b623f633c6e65a3ee42e",
+      "manifest": {
+        "world": "O:\\omnisim\\projects\\robots\\therobotstudio\\worlds\\.harness_so101_860fffad8f0342269ce08c637e17533c.omniworld",
+        "world_sha256": "34ab15a863d973e984f70406342e713536bcc8d66bc3f31ec5e0a8ac515b596c",
+        "urdf_sha256": "6c6d185fdef14875e30a3a59f1a132c819506be864917cd878ab774074a2604e",
+        "trajectory_sha256": "edfdc1642e4744330100ddae07ce8c8d765fe18d8e23084bd3887d9c96ea85d2",
+        "mode": "authored-simulation",
+        "calibration": null,
+        "source": {
+          "path": "pickplace_motion.json",
+          "sha256": "70484d7aff0c917f607c162b36ecb80c73bc03e596a97cc4aa23f15bc92a6aee"
+        },
+        "actuation": "Motor.setPosition",
+        "timed_episode_pose_writes": 0
+      }
+    },
+    "recorded_replay_estimated_calibration": {
+      "result": {
+        "complete": true,
+        "frames": 457,
+        "episode_duration_s": 15.232,
+        "initial_cube_position": [
+          0.22,
+          -0.129,
+          0.02
+        ],
+        "final_cube_position": [
+          0.2548341751098633,
+          -0.15710145235061646,
+          0.019892243668437004
+        ],
+        "box_position": [
+          0.217,
+          -0.066,
+          0.0
+        ],
+        "max_cube_height_m": 0.03264908492565155,
+        "max_cube_speed_m_s": 1.1819507032014056,
+        "fast_cube_steps": [],
+        "lifted": false,
+        "bilateral_airborne_s": 0.0,
+        "max_carry_slip_m": 0.0,
+        "carried": false,
+        "inside_box": false,
+        "released": true,
+        "settled": true,
+        "success": false,
+        "actuation": "Motor.setPosition",
+        "timed_episode_pose_writes": 0
+      },
+      "trace_sha256": "2194263b0af20bc46b792ffab63f2899ddea79ce209d156b7c994850f4b319df",
+      "manifest": {
+        "world": "O:\\omnisim\\projects\\robots\\therobotstudio\\worlds\\.harness_so101_ff00849b650340dcb8f6bf0d158fb705.omniworld",
+        "world_sha256": "08feb3603bbcbcc6b49b379fb65f9dfdb039b3c7923da0cd5e62b44dc20ea52a",
+        "urdf_sha256": "6c6d185fdef14875e30a3a59f1a132c819506be864917cd878ab774074a2604e",
+        "trajectory_sha256": "9cb41be1d46556f2653fced8592687baabc51c5b1feb1c18b0af09fd78ba5f4d",
+        "mode": "recorded-replay",
+        "calibration": {
+          "status": "estimated",
+          "units": "normalised",
+          "description": "Diagnostic estimate only. Encoder spans inferred from follower observation quantisation; signs assumed positive, zeros estimated. Not hardware calibration.",
+          "encoder_spans_ticks": [
+            2441,
+            2316,
+            2231,
+            2392,
+            3864,
+            907
+          ],
+          "ticks_per_revolution": 4096,
+          "joints": {
+            "shoulder_pan": {
+              "scale_deg_per_unit": 1.072705078125,
+              "offset_deg": 0
+            },
+            "shoulder_lift": {
+              "scale_deg_per_unit": 1.0177734375,
+              "offset_deg": 0
+            },
+            "elbow_flex": {
+              "scale_deg_per_unit": 0.980419921875,
+              "offset_deg": -5
+            },
+            "wrist_flex": {
+              "scale_deg_per_unit": 1.051171875,
+              "offset_deg": -6
+            },
+            "wrist_roll": {
+              "scale_deg_per_unit": 1.698046875,
+              "offset_deg": 0
+            },
+            "gripper": {
+              "scale_deg_per_unit": 0.79716796875,
+              "offset_deg": -4
+            }
+          }
+        },
+        "source": {
+          "path": "O:\\omnisim\\.tmp\\so101-recovery\\dataset\\data\\chunk-000\\file-000.parquet",
+          "sha256": "1389458555b049b5e444230293d9fdd570f175b24fdd4bd3271a6503fa7cceb0",
+          "episode": 0,
+          "column": "action",
+          "first_frame": 0,
+          "frames": 457
+        },
+        "actuation": "Motor.setPosition",
+        "timed_episode_pose_writes": 0
+      }
+    }
+  },
+  "repeated_authored_final_positions_identical": true,
+  "tracked_inputs_sha256": {
+    "so101\\so101.urdf": "6c6d185fdef14875e30a3a59f1a132c819506be864917cd878ab774074a2604e",
+    "pickplace_motion.json": "70484d7aff0c917f607c162b36ecb80c73bc03e596a97cc4aa23f15bc92a6aee",
+    "worlds\\so101_pickplace.omniworld": "860a0bacf37a0e02485abe4fba74543254ad3660007effe10e01b964214daf4c",
+    "estimated_calibration.json": "efb226f6d2ce24e0dc70764408129bc206348dd380eb44b5160d952e0174b501"
+  },
+  "validation": {
+    "focused_unit_tests": {
+      "passed": 6
+    },
+    "urdf_variants": "both pass topology and physics validation",
+    "engine_free_repository_lane": {
+      "passed": 1368,
+      "failed": 15,
+      "skipped": 15,
+      "deselected": 40,
+      "failure_reasons": [
+        "7 Warp cache permission failures",
+        "8 missing omnilink-lib dependency failures"
+      ]
+    },
+    "documentation_tests": {
+      "passed": 16
+    },
+    "direct_world_launcher": {
+      "passed": true,
+      "final_cube_position": [
+        0.20951513946056366,
+        -0.08106950670480728,
+        0.023892244324088097
+      ]
+    }
+  },
+  "videos": {
+    "SO101-pick-and-place.mp4": {
+      "sha256": "8d549d55de62dbc63ef9fc1aff3579a8ab18158a397a9fbfb53d9d3967629d6f"
+    },
+    "SO101-recorded-comparison.mp4": {
+      "sha256": "da09c5d65bc2f166e13e3c8bc62c63ab1e41863a0eafab45abe29ff95d974aa8"
+    }
+  }
+}

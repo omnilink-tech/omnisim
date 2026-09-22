@@ -25,9 +25,10 @@ with supervisor=TRUE and controller="mavic_omnilink_bridge". The
 controller runs inside the Mavic's process, so `Supervisor.getSelf()`
 returns the Mavic node and we can read its world pose every tick.
 The bridge speaks two contracts on the same BridgeState: HTTP /action
-for the OmniLink agent, wwi-chat text via the IntentRouter (defined in
-mavic_chat_router.py) for the human operator typing into the right-
-click Robot Window side panel.
+and /prompt + /tool for the OmniLink agent, and wwi-chat text (handled
+in mavic_chat_router.py) for the human operator typing into the right-
+click Robot Window side panel. Both need an OmniKey: there is no
+keyword fallback underneath either of them.
 
 Single-process design (vs. husky's bridge + eye-sidecar split): the
 Mavic URDF declares Camera/IMU/GPS via <gazebo><sensor> blocks under
@@ -157,7 +158,174 @@ from _omnilink_relay.http_security import (  # noqa: E402
 )
 
 from mavic_dynamics import RotorDynamics
-from mavic_chat_router import IntentRouter, handle_wwi_message, push_configure
+from mavic_chat_router import (handle_wwi_message, push_configure,
+                               queue_window as _queue_window,
+                               relay_event_to_window as _relay_event_to_window,
+                               _StateBridge)
+
+try:
+    from omnisim_bridges.route import short_circuit as _shared_short_circuit
+except ImportError:                                # pragma: no cover
+    _shared_short_circuit = None
+
+try:
+    from omnisim_bridges.route import stamp_via as _shared_stamp_via
+except ImportError:                                # pragma: no cover
+    def _shared_stamp_via(payload, default="relay"):
+        return payload
+
+# D1/D4/D6: the two clocks, the event ring and its detectors, the hold.
+# Optional exactly like the interpreter above -- a bare clone keeps every
+# flight verb and simply cannot report events, which is the honest
+# degradation: the surface is ABSENT rather than present and silent.
+try:                                               # pragma: no cover
+    from omnisim_bridges.bridge_base import (
+        attach_relay,
+        close_relay,
+        attach_telemetry,
+        events_summary,
+        profile_extras,
+        safety_gate_block,
+        serve_events,
+    )
+    from omnisim_bridges.events import BRIDGE_EVENT_TYPES
+except ImportError:                                # pragma: no cover
+    attach_relay = None
+    close_relay = None  # type: ignore[assignment]
+    attach_telemetry = None
+    profile_extras = None
+    BRIDGE_EVENT_TYPES = ()
+    safety_gate_block = None
+    serve_events = None
+
+    def events_summary(bridge):
+        return {"total": 0, "last": None, "next_since": 0, "dropped": 0}
+
+try:
+    from omnisim_bridges.route import reply_payload as _reply_payload
+except ImportError:                                # pragma: no cover
+    def _reply_payload(reply, tools, **extra):
+        """Fallback for a bare clone with no bridges package installed.
+
+        Same contract as route.reply_payload: a FAILED action must reach
+        the caller as a top-level `error`, or a refused order is
+        indistinguishable from a completed one over the wire.
+        """
+        actions = [{"tool": t[0], "result": t[1], "summary": t[2]}
+                   for t in (tools or ()) if len(t) >= 3]
+        bad = next((a for a in actions if a["result"] != "ok"), None)
+        out = {"ok": bad is None, "response": reply, "actions": actions}
+        if bad is not None:
+            out["error"] = bad["summary"]
+        out.update(extra)
+        return out
+
+
+# ── The safety gate, on the drone's paths ────────────────────────────
+#
+# ⚠️ UNTIL 2026-09-21 THIS AIRCRAFT WAS THE ONE ROBOT NOTHING VETTED.
+#
+# The gate already knew how to fly: `takeoff`, `land`, `hover` and
+# `move_body` are declared in gate.SPECS, and MAX_ALTITUDE_M (120 m, the
+# usual small-UAS ceiling) has sat in that file unreached, because no
+# drone frame could get to it. The Mavic served `POST /action` and
+# nothing else -- no `/prompt`, no `/tool` -- so it was excluded from the
+# chat-demo sweep by declaration (smoke_chat_demos.EXPECTED_UNSCRIPTED)
+# and its only actuation surface was ungated (GATE_COVERAGE.md).
+#
+# That is the worst combination of the three: the vocabulary existed, the
+# rails existed, and the wiring that would have connected them did not.
+# "get up to 200 metres and have a look" had no rail to hit.
+def _drone_tools(state):
+    """The drone's tool surface, as {name: (dispatch, physical)}.
+
+    Used by the authenticated OmniLink relay and typed tool dispatch.
+
+    `goto_waypoint` and `set_yaw` are the two verbs `route._ADAPTERS` has
+    no entry for, so they were reachable ONLY by the ungated path.
+    """
+    sb = _StateBridge(state)
+    return {
+        "takeoff":       (lambda a: sb.act_takeoff(a.get("altitude")), True),
+        "land":          (lambda a: sb.act_land(), True),
+        "hover":         (lambda a: sb.act_hover(), True),
+        "stop_robot":    (lambda a: sb.act_stop(), True),
+        "reset_to_home": (lambda a: sb.act_reset_to_home(), True),
+        "turn":          (lambda a: sb.act_turn(a.get("angle_rad")), True),
+        "move_body":     (lambda a: sb.act_move_body(
+                              forward=a.get("forward"),
+                              vertical=a.get("vertical")), True),
+        "get_robot_state": (lambda a: sb.get_state_for_query(), False),
+    }
+
+
+# ── `POST /action`: its verbs, and which of them the gate ever sees ───────
+#
+# ⚠️ ONE SOURCE, BECAUSE THE PUBLICATION IS A SAFETY CLAIM. `/capabilities
+# .safety_gate` (PROTOCOL.md §5.2.1) tells a client which of this bridge's
+# routes are vetted, and `ungated_paths` is the half it reads to decide
+# whether IT is responsible for bounding a command. Hand-maintained beside
+# the router, that claim drifts, and it drifted in BOTH directions:
+#
+#   - `UNGATED_PATHS = ["/reset", "/complete_mission"]` named action VERBS,
+#     not routes. The only POST routes here are /prompt, /tool and /action;
+#     `POST /reset` has always been a 404, so neither string told a client
+#     anything about anything.
+#   - `/reset` was published as UNVETTED while the map below sends it
+#     through `vet_toolcall` as `reset_to_home`. Wrong in the conservative
+#     direction is still wrong: it teaches a client the block cannot be
+#     trusted in EITHER direction.
+#   - the genuinely unvetted verbs were absent. `goto_waypoint` flies the
+#     aircraft to a coordinate and has no mapping onto the gate's
+#     vocabulary, so it is the most consequential unchecked verb on this
+#     bridge -- and the published block said it was checked.
+#
+# So the verb inventory and the mapping live here, the two halves are
+# DERIVED from them, and the note is generated rather than written. Adding
+# a verb to the router without adding it here is caught by
+# `packages/omnisim-bridges/tests/test_mavic_gate_publication.py`.
+ACTION_VERBS = ("takeoff", "land", "hover", "goto_waypoint",
+                "set_gimbal_pitch", "set_yaw", "stop", "reset",
+                "complete_mission")
+
+# The verb names differ from the gate's frame vocabulary, so they are mapped
+# rather than passed through. A verb with NO entry here is passed through
+# unchanged -- refusing what this bridge has always accepted is a behaviour
+# change, not a safety fix -- which is exactly the carve-out the note below
+# has to publish. Every target must be a tool `_drone_tools` serves: the
+# gate deliberately drops `unknown_tool`, so a typo'd target would not be a
+# gate at all.
+_ACTION_AS_TOOL = {
+    "takeoff": "takeoff", "land": "land", "hover": "hover",
+    "set_yaw": "turn", "stop": "stop_robot", "reset": "reset_to_home",
+}
+
+VETTED_ACTION_VERBS = tuple(v for v in ACTION_VERBS if v in _ACTION_AS_TOOL)
+UNVETTED_ACTION_VERBS = tuple(v for v in ACTION_VERBS if v not in _ACTION_AS_TOOL)
+
+# PROTOCOL.md §5.2.1. /action carries vetted AND unvetted verbs, so it is
+# published in BOTH halves: a client reading `gated_paths` alone would be
+# told to relax on `goto_waypoint`, and a client reading an EMPTY
+# `ungated_paths` -- which is what "routes only" would leave here, since
+# every other POST route on this bridge is fully gated -- would read
+# "everything here is vetted", the one reading §5.2.1 exists to prevent.
+# In both halves is the fail-safe shape: the load-bearing half names the
+# route, and the note names the verbs on each side of the line.
+GATED_PATHS = ["/prompt", "/tool", "/action"]
+UNGATED_PATHS = ["/action"]
+
+SAFETY_GATE_NOTE = (
+    "/action is PARTIALLY vetted, so it is published in both gated_paths "
+    "and ungated_paths. Vetted verbs (mapped onto the gate's vocabulary, "
+    "refused with 400 refused_by_gate): "
+    + ", ".join(VETTED_ACTION_VERBS) + ". "
+    "UNVETTED verbs (no mapping, passed through unchanged -- the caller is "
+    "responsible for bounding them): "
+    + ", ".join(UNVETTED_ACTION_VERBS) + ". "
+    "goto_waypoint flies the aircraft to a coordinate with no rail on it. "
+    "The verbs are values of the request body's `action` field, not routes: "
+    "this bridge's only POST routes are /prompt, /tool and /action."
+)
 
 
 # Mirror stdout/stderr to a tempfile so we can debug from outside Webots.
@@ -594,6 +762,46 @@ class BridgeState:
         self.sim_time = 0.0
         self.last_tick_at = time.time()
         self.tick_period_s = 0.008
+        # -- D1 / D4: the clock mirror, the ring and the detectors --
+        # This bridge integrates its own `sim_time` in the flight loop
+        # (above) rather than reading robot.getTime(), so `attach_telemetry`
+        # installs the ring and the detectors and the loop keeps ownership
+        # of the clock; `sim_step` is incremented beside it.
+        # The hold is NOT wired here: a held drone is a drone falling out of
+        # the sky the moment the rotors stop being commanded, and lockstep
+        # is declared unsupported on this surface rather than shipped as
+        # something that looks like it works. See the handoff.
+        self.sim_step = 0
+        self.events = None
+        self.hold = None
+        self.fault_detector = None
+        self.contact_detector = None
+        self.joint_detector = None
+        self.robot_id = "mavic2pro"
+        self.surface = "drone"
+        # PROTOCOL.md 5.2.1, read by BOTH `/capabilities` and the profile
+        # push (bridge_base.profile_extras), so the two cannot disagree
+        # about which of this bridge's routes are vetted. Both halves are
+        # DERIVED from ACTION_VERBS + _ACTION_AS_TOOL at the top of this
+        # file -- see the comment there for what a hand-maintained copy got
+        # wrong, in both directions, and why /action is in both halves.
+        self.GATED_PATHS = list(GATED_PATHS)
+        self.UNGATED_PATHS = list(UNGATED_PATHS)
+        self.capabilities = {"actions": ["takeoff", "land", "hover", "turn",
+                                         "move_body", "stop_robot",
+                                         "reset_to_home", "get_robot_state"]}
+        self.world = ""
+        if attach_telemetry is not None:
+            attach_telemetry(self, dt_s=self.tick_period_s,
+                             robot_id="mavic2pro", surface="drone",
+                             joints=False, contacts=False)
+            self.sim_time = 0.0
+            self.sim_step = 0
+            # Installed and then DROPPED, deliberately: the installer wires a
+            # hold for every bridge and this surface does not honour one.
+            # Leaving a live HoldLease here would publish `lockstep` support
+            # nothing implements.
+            self.hold = None
         # Camera frame buffer (latest BGRA + timestamp). Refreshed when the
         # /scan or /image handler asks for it (on-demand capture keeps the
         # main loop unblocked when nobody is watching).
@@ -649,7 +857,15 @@ class BridgeState:
                 "mode": self.mode,
                 "fault": self.fault,
                 "sim_time": self.sim_time,
-                "last_tick_at": self.last_tick_at,
+                # SIM SECONDS (PROTOCOL.md 5.3), with the wall clock in its
+                # own field. `last_tick_at` used to be time.time() on every
+                # bridge, so a client differencing it against `sim_time` got
+                # the age of the Unix epoch.
+                "last_tick_at": self.sim_time,
+                "wall_time": self.last_tick_at,
+                "step": self.sim_step,
+                "held": False,        # lockstep unsupported on this surface
+                "events": events_summary(self),
                 "target": target,
                 "mission_complete": self.mission_complete,
             }
@@ -714,11 +930,84 @@ def _json_finite(obj):
     return obj
 
 
+from omnisim_bridges.access import connection_error
+
+# THE ONE /tool implementation. Do not copy it back in here: five
+# near-identical handlers, each with its own fail-closed wrapper, is
+# how a gated bridge_base came to cover none of the bridges.
+#
+# `_emit_refusal` / `refusal_rule` are the SHARED producers of a
+# `gate.refused` event and of the `rule` that rides in a 400. /action
+# refuses before it reaches `serve_tool`, so it has to call them itself --
+# and it calls THESE rather than spelling the fallback again, because the
+# two producers must name `gate_unavailable` identically or a consumer
+# branching on `rule` cannot tell which of them wrote the event.
+from omnisim_bridges.bridge_base import (
+    _emit_refusal as emit_refusal, refusal_rule, serve_tool, tool_args,
+    vet_toolcall,
+)
+
+
+def setup_omnilink_relay(state):
+    from _omnilink_relay import OmniLinkRelay, Tool, get_omni_key, profile_sync
+    if not get_omni_key():
+        return None
+    registry = _drone_tools(state)
+    arguments = {
+        "takeoff": {"altitude": {"type": "number"}},
+        "turn": {"angle_rad": {"type": "number"}},
+        "move_body": {"forward": {"type": "number"}, "vertical": {"type": "number"}},
+    }
+    tools = [Tool(name=name, description=name.replace("_", " "),
+                  parameters={"type": "object", "properties": arguments.get(name, {}),
+                              **({"required": ["angle_rad"]} if name == "turn" else {})},
+                  dispatch=dispatch) for name, (dispatch, _) in registry.items()]
+    try:
+        agent_name = profile_sync.agent_name_for("mavic")
+        task = ("Operate the simulated Mavic in OmniSim using the supplied tools. "
+                "Read robot state before moving. Commands may continue after acceptance; "
+                "check state before claiming completion. Keep replies brief.")
+        # surface="drone": the relay hands it to gate.register_tools(), so
+        # move_body{vertical} is judged on the drone's climb rail and not on
+        # a quadruped's 1.0 m body shift.
+        relay = OmniLinkRelay(omni_key=get_omni_key(), agent_name=agent_name,
+                              main_task=task, tools=tools, surface="drone")
+        if profile_sync.is_enabled():
+            profile_sync.ensure_profile(client=relay._client, agent_name=agent_name,
+                                        main_task=task, tool_defs=relay.tool_defs,
+                                        engine=relay.engine,
+                                        tool_callback_url=f"http://127.0.0.1:{BRIDGE_PORT}/tool",
+                                        **(profile_extras(
+                                            state, http_port=BRIDGE_PORT,
+                                            surface="drone")
+                                           if profile_extras is not None else {}))
+            relay.set_presence_endpoint(f"http://127.0.0.1:{BRIDGE_PORT}/tool", robot="mavic")
+        # -- Plan D4 step 5 / D5: the relay seam ----------------------
+        # Without attach_bridge the relay has no handle to the event ring,
+        # so no wake can ever fire and presence reports a faulted aircraft
+        # as a healthy one. The sink is the window outbox, which the SIM
+        # THREAD drains -- the raiser is called from the presence thread and
+        # must never touch the Robot API itself.
+        if attach_relay is not None:
+            attach_relay(
+                relay, state,
+                event_sink=lambda k, p: _relay_event_to_window(state, k, p),
+                window_raiser=lambda: _queue_window(
+                    state, "system:the platform asked for your attention"))
+        return relay
+    except Exception:
+        print("[mavic_omnilink_bridge] OmniLink unavailable. Check your OmniKey and model connection.")
+        return None
+
+
 def make_handler(state: BridgeState):
     trusted_origins = trusted_origins_from_env()
     token = bearer_token()
     action_lock = threading.RLock()
     request_ids = RequestIdGuard()
+    # The HTTP surface's tool registry. It shares `state` with the
+    # robot-window panel, which is the thing that is actually authoritative.
+    tools = _drone_tools(state)
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, fmt, *args):
@@ -842,6 +1131,14 @@ def make_handler(state: BridgeState):
             if self.path == "/state":
                 self._json(200, state.snapshot())
                 return
+            if self.path.split("?", 1)[0].rstrip("/") == "/events":
+                # D4. Same envelope as the harness's /sim/events, so one
+                # client loop drains both: {events, next_since, dropped}.
+                if serve_events is None:
+                    self._json(501, {"error": "this bridge serves no event ring"})
+                    return
+                self._json(200, serve_events(state, self.path))
+                return
             if self.path == "/capabilities":
                 self._json(200, {
                     "robot_id": "mavic2pro",
@@ -862,6 +1159,53 @@ def make_handler(state: BridgeState):
                     "mission_brief": state.mission_brief,
                     "mission_complete": state.mission_complete,
                     "ground_truth_def_names": list(state.gt_def_names),
+                    # PROTOCOL.md 5.2.1. `ungated_paths` is the load-bearing
+                    # half: it is what a client reads to decide whether IT
+                    # is responsible for bounding a command.
+                    #
+                    # /prompt and /tool are fully gated. /action is
+                    # PARTIALLY gated -- six of its nine verbs map onto the
+                    # gate's vocabulary and three do not -- so it is
+                    # published in BOTH halves. That is not tidy and it is
+                    # the only honest shape available here: the protocol has
+                    # no per-verb field, publishing /action as gated only
+                    # would tell a client it need not bound `goto_waypoint`,
+                    # and leaving ungated_paths EMPTY (which "routes only"
+                    # would do, since every other POST route here is fully
+                    # gated) reads as "everything here is vetted" -- the one
+                    # reading §5.2.1 exists to prevent. `safety_gate_note`
+                    # carries the per-verb split, naming both sides.
+                    #
+                    # ⚠️ The old lists named ACTION VERBS, not routes:
+                    # `ungated_paths` was ["/reset", "/complete_mission"],
+                    # and `POST /reset` has always been a 404. /reset was
+                    # published as unvetted while it IS vetted (it maps to
+                    # reset_to_home), and the three verbs that genuinely are
+                    # not vetted were absent altogether.
+                    #
+                    # ONE source for all of it: ACTION_VERBS +
+                    # _ACTION_AS_TOOL at the top of this file feed the two
+                    # lists AND the note, and the same two lists are what
+                    # the profile push reads (bridge_base.profile_extras),
+                    # so `/capabilities` and the platform's profile cannot
+                    # disagree about which routes are vetted.
+                    "safety_gate": (safety_gate_block(
+                        "drone", gated_paths=list(state.GATED_PATHS),
+                        ungated_paths=list(state.UNGATED_PATHS))
+                        if safety_gate_block is not None else None),
+                    "safety_gate_note": SAFETY_GATE_NOTE,
+                    "events": {
+                        "endpoint": "GET /events?since=<cursor>&limit=&types=",
+                        "state_field": "events",
+                        "types": (list(BRIDGE_EVENT_TYPES)
+                                  if BRIDGE_EVENT_TYPES else []),
+                    },
+                    "lockstep": {
+                        "supported": False,
+                        "why": ("a held drone is a drone whose rotors stop "
+                                "being commanded; OMNISIM_BRIDGE_LOCKSTEP "
+                                "is not honoured on this surface"),
+                    },
                     "perception_hint": (
                         "Prefer /scan over /image — /scan returns structured "
                         "marker positions in world coordinates (~150x cheaper "
@@ -1002,12 +1346,120 @@ def make_handler(state: BridgeState):
         # ----- POST /action ----------------------------------------------
 
         def _route_post(self):
-            if self.path != "/action":
+            p = self.path.rstrip("/")
+
+            # ── /prompt: the operator's own sentence ──────────────────
+            # The parser already speaks drone -- interpret.py carries nine
+            # DRONE rules and mavic_chat_router routes through it with
+            # surface="drone". This endpoint is the only reason the
+            # aircraft was absent from the chat-demo sweep.
+            if p == "/prompt":
+                body = self._read_json()
+                text = nonempty_string(require_field(body, "text"), "text")
+                relay = getattr(state, "omnilink_relay", None)
+                if relay is None:
+                    return self._json(401 if connection_error()["error"] == "omnikey_required" else 503, connection_error())
+                # ── PARSER FIRST ──────────────────────────────────────
+                # Reached only WITH a relay: the access check immediately
+                # above refuses a keyless prompt, so this can never become
+                # a keyless path. A non-None result is a confident,
+                # exactly-parsed order the gate (inside route.execute) has
+                # already vetted on the "drone" rail -- the rail that
+                # carries MAX_ALTITUDE_M, which is why `move_body
+                # {vertical}` must be judged as a CLIMB here and as a body
+                # shift on a quadruped.
+                _early = (_shared_short_circuit(_StateBridge(state), text,
+                                                "drone")
+                          if _shared_short_circuit is not None else None)
+                if _early is not None:
+                    return self._json(200, _shared_stamp_via(_reply_payload(
+                        _early.get("agent", ""),
+                        _early.get("tools") or [], via="parser")))
+                # PROTOCOL.md 5.7.2 / D3: `via` is REQUIRED on a 200 from
+                # /prompt. The parser stamps itself; anything reaching here
+                # was answered by the model relay.
+                return self._json(
+                    200, _shared_stamp_via(relay.dispatch_sync(text)))
+
+            # ── /tool: the platform's callback, gated ─────────────────
+            if p == "/tool":
+                if getattr(state, "omnilink_relay", None) is None:
+                    return self._json(401 if connection_error()["error"] == "omnikey_required" else 503, connection_error())
+                body = self._read_json()
+                tool_name = nonempty_string(require_field(body, "tool"), "tool")
+                # ⚠️ THE TRANSPORT FIELDS ARE STRIPPED INSIDE serve_tool, AND
+                # THAT IS WHY IT IS SHARED. `id` is §3.3 request-idempotency
+                # metadata, not an argument. Left in the body it reached the
+                # gate as one and a perfectly good `takeoff{altitude: 3}` came
+                # back `unknown_arg: id is not a parameter of takeoff` -- a
+                # transport detail wearing a safety verdict's clothes. This
+                # bridge was the one that got it wrong, because its POST
+                # preamble is /action's; three of the other four never
+                # stripped it either. One implementation, one answer.
+                request_ids.claim(f"/tool/{tool_name}",
+                                  validate_request_id(body.get("id")))
+                entry = tools.get(tool_name)
+                # `bridge=` is D4: a gate refusal here is filed as a
+                # `gate.refused` event, which is otherwise the one thing on
+                # this path that nobody ever sees -- the caller gets a 400
+                # and the robot's own agent learns nothing at all.
+                code, payload = serve_tool(
+                    tool_name, body,
+                    (lambda args: entry[0](args)) if entry else (lambda args: None),
+                    surface="drone", bridge=state, origin="tool",
+                    registered=entry is not None)
+                return self._json(code, payload)
+
+            if p != "/action":
                 self._json(404, {"error": "not found"})
                 return
             body = self._read_json()
             action = nonempty_string(require_field(body, "action"), "action")
             request_ids.claim(f"/action/{action}", validate_request_id(body.pop("id", None)))
+
+            # ⚠️ GATE /action TOO. It is this bridge's oldest surface and
+            # the one the mission runners use, and it was listed in
+            # GATE_COVERAGE.md as ungated. Gating only the new endpoints
+            # would have repeated b977772b0 exactly -- adding a check to
+            # the path nobody was using and missing the path everybody was.
+            #
+            # The verb names differ from the gate's frame vocabulary, so
+            # they are mapped rather than passed through; an action with no
+            # mapping is left alone rather than refused, because refusing
+            # what this bridge has always accepted is a behaviour change,
+            # not a safety fix.
+            #
+            # ⚠️ THE MAP LIVES AT MODULE SCOPE NOW, and it is the single
+            # source `/capabilities.safety_gate` is derived from. A copy
+            # here would let the two disagree about which verbs are vetted,
+            # which is the defect this whole arrangement exists to close.
+            _as_tool = _ACTION_AS_TOOL.get(action)
+            if _as_tool is not None:
+                _args = {k: v for k, v in tool_args(body).items()
+                         if k != "action"}
+                if _as_tool == "turn" and "yaw" in _args:
+                    _args = {"angle_rad": _args.get("yaw")}
+                if _as_tool == "takeoff" and "altitude" not in _args:
+                    _args = {k: v for k, v in _args.items() if k == "altitude"}
+                _utt = body.get("utterance", "")
+                _grej = vet_toolcall(_as_tool, _args, _utt, surface="drone")
+                if _grej is not None:
+                    # ⚠️ THIS WAS THE ONE GATED PATH CARRYING NEITHER. It
+                    # refuses here, before `serve_tool`, so until now its
+                    # 400 had no machine-readable `rule` (PROTOCOL.md
+                    # §11.1) and no `gate.refused` ever reached the ring
+                    # (§5.9) -- the caller had to re-parse prose that may
+                    # change between releases, and the robot's own agent
+                    # never learned the refusal happened at all. Both
+                    # producers are the SHARED ones, so the rule name here
+                    # and the rule name on /tool cannot drift apart: a
+                    # consumer branching on it cannot tell which wrote it.
+                    _rule = refusal_rule(_grej)
+                    emit_refusal(state, _as_tool, _grej, origin="action",
+                                 utterance=_utt, rule=_rule)
+                    raise RequestError(400, "refused_by_gate", _grej,
+                                       {"action": action, "tool": _as_tool,
+                                        "rule": _rule})
 
             if action == "stop":
                 with state.lock:
@@ -1015,14 +1467,25 @@ def make_handler(state: BridgeState):
                     state.target_y = None
                     state.target_yaw = None
                     state.target_altitude = 0.0
-                    # Publish the requested pose immediately.  The physical
-                    # teleport is applied on the next simulation tick, but a
-                    # follow-up takeoff may arrive before that tick and must
-                    # hold this reset location, not the pre-reset state.
-                    state.x = reset_x
-                    state.y = reset_y
-                    state.z = reset_z
-                    state.yaw = reset_yaw
+                    # ⛔ DO NOT PUBLISH A POSE HERE. Until 2026-09-22 this
+                    # branch assigned `state.x/y/z/yaw = reset_x/...`, copied
+                    # from the `reset` branch BELOW it -- where those four
+                    # names are assigned. They do not exist yet at this point,
+                    # so `POST /action {"action": "stop"}` raised
+                    # UnboundLocalError and the aircraft was never halted.
+                    # Stop is the one verb PROTOCOL.md 5.5 says a caller may
+                    # rely on without preconditions, so it crashed in exactly
+                    # the situation it exists for.
+                    #
+                    # The teleport was wrong on its own terms too. `state.x/y/z`
+                    # is the PUBLISHED pose, written each tick from the real
+                    # body (see the simulation loop); `reset` may publish a
+                    # requested pose ahead of its own teleport because it has
+                    # one. A stop requests no pose: it drops the targets and
+                    # lets the aircraft come to rest where it is. Equating a
+                    # halt with homing is the error the sim-to-real guide
+                    # names explicitly -- a reset may teleport a model, a stop
+                    # must never be silently turned into one.
                     state.mode = "idle"
                     state.fault = None
                 self._ok({"halted_at": time.time()})
@@ -1188,11 +1651,11 @@ def make_handler(state: BridgeState):
                 self._ok({"target_yaw_rad": wrap_pi(yaw)})
                 return
 
+            # Same inventory the safety_gate publication is derived from, so
+            # a verb cannot be advertised here and missing from there.
             self._json(400, error_envelope(
                 "invalid_action", f"Unknown action {action!r}.",
-                {"available_actions": ["takeoff", "land", "hover", "goto_waypoint",
-                                       "set_gimbal_pitch", "set_yaw", "stop", "reset",
-                                       "complete_mission"]},
+                {"available_actions": list(ACTION_VERBS)},
             ))
 
     return Handler
@@ -1382,13 +1845,13 @@ def main():
     print(f"[mavic_omnilink_bridge] world_title={title!r}")
     print(f"[mavic_omnilink_bridge] gt_defs: {state.gt_def_names}")
 
+    state.omnilink_relay = setup_omnilink_relay(state)
+
     # Start HTTP server.
     server = ThreadingHTTPServer((BRIDGE_HOST, BRIDGE_PORT), make_handler(state))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     print(f"[mavic_omnilink_bridge] HTTP listening on http://{BRIDGE_HOST}:{BRIDGE_PORT}")
 
-    # Chat-window IntentRouter (right-click *Show Robot Window* → side panel).
-    chat_router = IntentRouter(state)
 
     # Stabiliser PID — adapted from the stock mavic2pro.py controller.
     # The flight-loop math runs unchanged from the reference controller; we
@@ -1461,6 +1924,16 @@ def main():
             state.yaw = yaw
             state.last_tick_at = now
             state.sim_time += time_step / 1000.0
+            # D1: the step counter, beside the clock this loop already
+            # integrates. Both are read by the HTTP threads and neither is
+            # ever a Robot API call from one.
+            state.sim_step += 1
+            if state.fault_detector is not None:
+                state.fault_detector.clear_stale()
+                state.fault_detector.on_tick(state.fault,
+                                             sim_time=state.sim_time,
+                                             step=state.sim_step,
+                                             robot="mavic2pro")
             target_x = state.target_x
             target_y = state.target_y
             target_altitude = state.target_altitude
@@ -1644,7 +2117,7 @@ def main():
             if msg is None or msg == "":
                 break
             try:
-                handle_wwi_message(state, chat_router, msg)
+                handle_wwi_message(state, msg)
             except Exception as exc:
                 with state.lock:
                     state.window_outbox.append(f"error:chat_router_exception: {exc!r}")
@@ -1681,6 +2154,9 @@ def main():
                 print(f"[mavic_omnilink_bridge] camera capture failed: {exc}")
                 with state.lock:
                     state.frame_served = req
+    # Clean shutdown: flush the action journal the 30 s beat has not sent.
+    if close_relay is not None:
+        close_relay(getattr(state, "omnilink_relay", None))
 
 
 if __name__ == "__main__":

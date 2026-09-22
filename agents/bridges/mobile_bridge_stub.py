@@ -91,6 +91,13 @@ class MockMobileDriver:
 
 
 class RealMobileBridge(BridgeBase):
+    # ⚠️ THE ROBOT CLASS, AND IT IS NOT DECORATION. The gate picks a
+    # magnitude rail per surface, so an integrator who copies this file
+    # and leaves it unset gets the strictest recorded rail for every
+    # shared tool and a legitimate command refused for belonging to the
+    # wrong robot class. One of the four names in interpret.py.
+    surface = "mobile"
+
     def __init__(self, driver: MockMobileDriver, robot_id: str = "real_mobile") -> None:
         self.driver = driver
         self.robot_id = robot_id
@@ -119,33 +126,9 @@ class RealMobileBridge(BridgeBase):
         return st
 
     def act_prompt(self, text: str) -> Dict[str, Any]:
-        s = text.strip().lower()
-        if re.search(r"\b(stop|halt|brake)\b", s):
-            self.act_stop()
-            return {"response": "Stopping wheels.", "actions": [{"tool": "stop_robot", "result": "ok"}]}
-        if re.search(r"\b(home|reset|dock)\b", s):
-            self.act_reset_to_home()
-            return {"response": "Teleporting home.", "actions": [{"tool": "reset_to_home", "result": "ok"}]}
-        m = re.search(r"\b(forward|back|reverse)\b[^-\d]*(-?\d+\.?\d*)", s)
-        if m:
-            val = float(m.group(2))
-            if m.group(1).startswith("back") or m.group(1) == "reverse":
-                val = -val
-            self.act_drive_forward(val)
-            return {"response": f"Driving {val:+.2f} m.", "actions": [{"tool": "drive_forward", "result": "ok"}]}
-        m = re.search(r"\bturn\s+(left|right)?\s*(-?\d+\.?\d*)\s*(deg|rad)?", s)
-        if m:
-            v = float(m.group(2))
-            if (m.group(3) or "deg").startswith("deg"):
-                v = math.radians(v)
-            if m.group(1) == "right":
-                v = -abs(v)
-            self.act_turn(v)
-            return {"response": f"Turning {math.degrees(v):+.0f} deg.", "actions": [{"tool": "turn", "result": "ok"}]}
-        return {
-            "response": "I don't recognise that. Try: 'forward 1 m', 'turn left 90', 'stop', 'home'.",
-            "actions": [],
-        }
+        """Connect an authenticated OmniLink relay to enable language control."""
+        from omnisim_bridges.access import connection_error
+        return connection_error()
 
 
 def main() -> int:

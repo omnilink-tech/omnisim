@@ -105,7 +105,14 @@ measurements-2026-06-14.md (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIV
 
 OmniSim is an agent-native robotics simulator derived from Webots, finishing a
 migration of its physics engine (ODE → **Newton**, GPU-batched, on NVIDIA Warp) and
-its renderer (WREN/OpenGL → **wgpu**, cross-platform GPU). *[Note 2026-07-09: the
+its renderer (WREN/OpenGL → **wgpu**, cross-platform GPU). *[Positioning note
+2026-09-14: this paper measures throughput, and throughput is not what OmniSim is
+for. The product statement is "**OmniSim — an open-source robotics workshop for
+agents**": more than a simulator, a place where an agent has everything it needs to work
+on any robotic system. Nothing here is retracted by that, but do not quote a steps/sec
+figure as the argument for the product — see §2 and
+[docs/developer/positioning.md](../developer/positioning.md). Updated 2026-09-17; the
+2026-09-14 statement "where robot software gets debugged" is **retired**.]* *[Note 2026-07-09: the
 physics half of that migration has since landed as the default — `physicsBackend
 "auto"` now resolves to Newton where the runtime is present, and a stock `make
 release` bundles the runtime; see the dated note in §2.]* This paper places OmniSim's
@@ -195,6 +202,60 @@ with every number carrying its hardware, its scene, and its caveat.
 ---
 
 ## 2. What OmniSim is, architecturally
+
+> ## ⭐ [Positioning note, added 2026-09-14; restated 2026-09-17; limits re-stated 2026-09-22] — what OmniSim is *for*, as distinct from what it is made of
+>
+> The paragraph and table below describe the **2026-06-14 architecture** and are kept as
+> written. They are not the product statement, and this section title has been read as one.
+>
+> **This note is not a quotation — it is a restatement, and it tracks
+> [`docs/developer/positioning.md`](../developer/positioning.md) §7 as that page stood on
+> 2026-09-22.** What changed on that date: the "no pause, no breakpoints" limit below was
+> true when this note was written on 2026-09-14 and is now **half false**. A held, leased
+> pause and break-on-event ship in v9; event types went 10 → 11 (`break.hit`). The
+> limits paragraph is rewritten accordingly rather than left standing, and the two
+> boundaries that must travel with the new capability are stated there.
+>
+> **OmniSim is an open-source robotics workshop for agents** — more than a simulator: a
+> place where an agent has everything it needs to work on any robotic system, from
+> simulating one on high-fidelity physics and twinning a real robot from its own URDF or
+> CAD, through to programming, testing and debugging the result. Its deepest bench is the
+> last of those, and that bench is what the rest of this note describes. *(The 2026-09-14
+> statement "where robot software gets debugged" is **retired** as a tagline; it survives
+> only as the pillar below.)* Robots fail in
+> ways you cannot see — a gripper that drops the box two times in five, a joint quietly
+> pinned against its limit, a contact that never happened — so the surface is built to
+> answer *what actually happened*: eleven code-verified event types (contacts, grips,
+> `joint.limit_hit`, damage, `break.hit`, and the controllers' own stdout) on one
+> cursor-paged HTTP
+> stream, plus contact / joint / device / bounds inspection that internally holds the engine
+> for the duration of its own walk, so each response is one consistent instant, plus a
+> **held pause, single-step and break-on-event** (v9) so the scene can be frozen at the
+> moment of interest. On the CPU
+> `newtonSolver "mujoco"` default the same scene runs **bitwise identically**, so a failure
+> you can reproduce is a failure you can fix. And the instruments state their own blind
+> spots rather than guessing: `/sim/contacts` returns `completeness` and
+> `empty_set_reasons[]`, `/capabilities` publishes what the simulator refuses to do with a
+> reason per gap, and `--fail-on-runaway` FAILs rather than passes on thin evidence.
+>
+> ⚠️ **Limits to carry with that claim, every time.** The pause and the breakpoint carry
+> **two limits that must never be softened**: (1) **two latency regimes, neither sub-step**
+> — held and stepping, detection is per basic step, but **free-running it is one supervisor
+> tick, and a tick is not a basic step** (measured 8 ms to about 600 ms of engine time
+> depending on load, far enough that a whole one-second drop once fell inside a single tick
+> and no contact event fired at all), so the reliable workflow is **pause, then step**; and
+> (2) **a break armed on a silenced event type is refused, not accepted** — light mode is
+> the default and silences 5 of the 11 types. **Still absent:** record, replay, run-diff and
+> watch conditions; and `POST /sim/snapshot` saves poses and joint angles only — never
+> velocity — so it is **not a checkpoint**. Separately, **GPU determinism is refuted**, not
+> merely unmeasured (0 bitwise of 24
+> `mujoco_warp` pairs, [determinism-scope.md](determinism-scope.md)). Always name the solver
+> when claiming determinism.
+>
+> Canonical wording and the full honesty gate:
+> [docs/developer/positioning.md](../developer/positioning.md). Where a surface disagrees
+> with that page, the surface is wrong — unless the disagreement is a *measurement*, in
+> which case that page is wrong and gets corrected in the same change.
 
 OmniSim is a fork of Webots (Apache-2.0 code; brand protected separately) re-engineered
 around two modern, GPU-first backends. It is **mid-migration**: both new backends are

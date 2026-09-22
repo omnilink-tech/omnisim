@@ -181,6 +181,7 @@ else
 	@+USERPROFILE="$${USERPROFILE:-$$HOME}" LOCALAPPDATA="$${LOCALAPPDATA:-$${USERPROFILE:-$$HOME}/AppData/Local}" \
 		$(PYTHON) -m pytest -m "not engine" -q \
 		tests/harness tests/python tests/packaging tests/dev \
+		packages/omnisim-bridges/tests packages/omnisim-mcp/tests \
 		$$($(PYTHON) tests/conftest.py --list-engine-free tests)
 endif
 

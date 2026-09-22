@@ -88,7 +88,12 @@ VARIANT = _parse_variant()
 _AGENT_NAMES = {"v1": "Husky Maze", "v2": "Husky Maze v2", "v3": "Husky Maze v3"}
 _PORTS = {"v1": 51517, "v2": 51518, "v3": 51519}
 AGENT_NAME = _AGENT_NAMES[VARIANT]
-ENGINE = "g1-engine"  # OmniSim-default; g2-engine requires BYOK OpenAI key.
+# OmniSim-default; g2-engine requires BYOK OpenAI key. Overridable so a run can
+# be routed at another connected provider without editing this file -- `python -m
+# omnisim key --check` lists which providers the key actually has connected, and a
+# provider whose grant has lapsed fails the chat call with
+# `400 invalid_grant: account not found` even though the key itself verifies VALID.
+ENGINE = os.environ.get("HUSKY_CHAT_ENGINE", "g1-engine").strip() or "g1-engine"
 TOOL_SERVER_URL = f"http://127.0.0.1:{_PORTS[VARIANT]}/tool"
 ACTIVITY_URL = f"http://127.0.0.1:{_PORTS[VARIANT]}/activity"
 BRIDGE_URL = os.environ.get("HUSKY_BRIDGE_URL", "http://127.0.0.1:6070").rstrip("/")

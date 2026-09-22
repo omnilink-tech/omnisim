@@ -282,11 +282,37 @@ Husky. OmniSim is also still absent from the `ros2_control` simulator registry.
 Declared through the feature flags **and** repeated in
 `GetSimulatorFeatures.custom_info`, so a caller learns them from the API:
 
-1. **No pause.** OmniSim's engine free-runs between HTTP calls and the harness
-   exposes no pause verb. `SIMULATION_STATE_PAUSE` is not advertised;
-   `GetSimulationState` answers `STATE_PLAYING` whenever a world is loaded; and
+1. **No pause through the sidecar — a semantics mismatch, not a missing verb.**
+   `SIMULATION_STATE_PAUSE` is not advertised;
+   `GetSimulationState` answers `STATE_PLAYING` whenever a world is loaded and
+   running; and
    `StepSimulation` means "advance at least N basic steps", not "advance exactly
    N from a frozen state".
+
+   ⚠️ **Corrected 2026-09-22.** This limitation used to be stated as *"the
+   harness exposes no pause verb"*, and that premise is now false: `POST
+   /sim/pause` and `POST /sim/resume` ship in v9, and a held pause plus
+   `POST /sim/step` is genuine single-stepping. The reason the sidecar still
+   refuses is different, and it is a real one. **The harness pause is _leased_**
+   — default 30 s, min 1 s, max 300 s — and it lifts itself when the lease
+   expires, deliberately, so a client that dies cannot freeze the engine for
+   every other client. `simulation_interfaces` asks for an *indefinite* state:
+   a caller sets `STATE_PAUSED` and expects the simulator to stay paused, and
+   expects `GetSimulationState` to keep answering `STATE_PAUSED`, until told
+   otherwise. A deadline-bounded lease cannot promise that.
+
+   **Open decision for the owner, not taken here.** Wiring ROS 2 pause onto the
+   lease needs answers to: who renews the lease (a keep-alive timer in the node,
+   or the caller?); what `GetSimulationState` reports in the instant between an
+   expiry and a renewal; and what happens to a `SimulateSteps` action in flight
+   when a lease lapses. Until those are decided, the refusal stands and is
+   reported with this reason. **The node's behaviour is unchanged** — only the
+   reason it gives was corrected.
+
+   One consequence of the sidecar not holding a lease: it reports
+   `STATE_PLAYING` for a loaded, running world even while *another* harness
+   client holds a pause. It does not read the `paused` flag that
+   `GET /sim/state` publishes.
 2. **`EntityState.twist` / `.acceleration` are not measured** and are returned as
    zeros — *unmeasured*, not observed-to-be-zero. The harness reports poses only.
    Real velocities are available on `/odom` (from the bridge) and in

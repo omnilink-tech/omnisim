@@ -1,0 +1,376 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="aloha_right">
+  <link name="right">
+    <inertial>
+      <mass value="0.1" />
+      <inertia ixx=".0001" iyy=".0001" izz=".0001" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_1_base.stl" />
+      </geometry>
+      <material name="black_robot">
+        <color rgba=".065 .07 .075 1" />
+      </material>
+    </visual>
+  </link>
+  <link name="right_shoulder_link">
+    <inertial>
+      <origin xyz="0.000259233 -3.3552e-06 0.0116129" rpy="1.570025565 -1.477348336 -3.140821891" />
+      <mass value="0.798614" />
+      <inertia ixx="0.00120156" iyy="0.00113744" izz="0.0009388" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.003" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_2_shoulder.stl" />
+      </geometry>
+      <material name="black_robot">
+        <color rgba=".065 .07 .075 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.003" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_2_shoulder.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_waist" type="revolute">
+    <parent link="right" />
+    <child link="right_shoulder_link" />
+    <origin xyz="0 0 0.079" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.14158" upper="3.14158" effort="80" velocity="5" />
+    <dynamics damping="0.1" />
+    <rest>0</rest>
+  </joint>
+  <link name="right_upper_arm_link">
+    <inertial>
+      <origin xyz="0.0206949 4e-10 0.226459" rpy="0 -0.1458207924 3.141592654" />
+      <mass value="0.792592" />
+      <inertia ixx="0.00911338" iyy="0.008925" izz="0.000759317" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_3_upper_arm.stl" />
+      </geometry>
+      <material name="black_robot">
+        <color rgba=".065 .07 .075 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_3_upper_arm.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_shoulder" type="revolute">
+    <parent link="right_shoulder_link" />
+    <child link="right_upper_arm_link" />
+    <origin xyz="0 0 0.04805" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-1.85005" upper="1.25664" effort="80" velocity="5" />
+    <dynamics damping="0.1" />
+    <rest>-0.96</rest>
+  </joint>
+  <link name="right_upper_forearm_link">
+    <inertial>
+      <origin xyz="0.105723 0 0" rpy="1.137466858 -1.555300818 2.019896091" />
+      <mass value="0.322228" />
+      <inertia ixx="0.00144107" iyy="0.00134228" izz="0.000152047" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/vx300s_4_upper_forearm.stl" />
+      </geometry>
+      <material name="black_robot">
+        <color rgba=".065 .07 .075 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/vx300s_4_upper_forearm.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_elbow" type="revolute">
+    <parent link="right_upper_arm_link" />
+    <child link="right_upper_forearm_link" />
+    <origin xyz="0.05955 0 0.3" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-1.76278" upper="1.6057" effort="80" velocity="5" />
+    <dynamics damping="0.1" />
+    <rest>1.16</rest>
+  </joint>
+  <link name="right_lower_forearm_link">
+    <inertial>
+      <origin xyz="0.0513477 0.00680462 0" rpy="0.2258271179 1.570796327 0" />
+      <mass value="0.414823" />
+      <inertia ixx="0.0005911" iyy="0.000546493" izz="0.000155707" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="3.141592654 0 0" />
+      <geometry>
+        <mesh filename="meshes/vx300s_5_lower_forearm.stl" />
+      </geometry>
+      <material name="black_robot">
+        <color rgba=".065 .07 .075 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="3.141592654 0 0" />
+      <geometry>
+        <mesh filename="meshes/vx300s_5_lower_forearm.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_forearm_roll" type="revolute">
+    <parent link="right_upper_forearm_link" />
+    <child link="right_lower_forearm_link" />
+    <origin xyz="0.2 0 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14158" upper="3.14158" effort="80" velocity="5" />
+    <dynamics damping="0.1" />
+    <rest>0</rest>
+  </joint>
+  <link name="right_wrist_link">
+    <inertial>
+      <origin xyz="0.046743 -7.6652e-06 0.010565" rpy="0.008277755597 -1.151791261 3.138606937" />
+      <mass value="0.115395" />
+      <inertia ixx="5.45707e-05" iyy="4.63101e-05" izz="4.32692e-05" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_6_wrist.stl" />
+      </geometry>
+      <material name="black_robot">
+        <color rgba=".065 .07 .075 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_6_wrist.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_wrist_angle" type="revolute">
+    <parent link="right_lower_forearm_link" />
+    <child link="right_wrist_link" />
+    <origin xyz="0.1 0 0" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-1.8675" upper="2.23402" effort="80" velocity="5" />
+    <dynamics damping="0.1" />
+    <rest>-0.3</rest>
+  </joint>
+  <link name="right_gripper_link">
+    <inertial>
+      <origin xyz="0.0395662 -2.56311e-07 0.00400649" rpy="1.569606202 -1.002483763 0.0009536419229" />
+      <mass value="0.251652" />
+      <inertia ixx="0.000689546" iyy="0.000650316" izz="0.000468142" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.02 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_7_gripper.stl" />
+      </geometry>
+      <material name="black_robot">
+        <color rgba=".065 .07 .075 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.02 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_7_gripper.stl" />
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz="-0.020175 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_9_gripper_bar.stl" />
+      </geometry>
+      <material name="black_robot">
+        <color rgba=".065 .07 .075 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.020175 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_9_gripper_bar.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_wrist_rotate" type="revolute">
+    <parent link="right_wrist_link" />
+    <child link="right_gripper_link" />
+    <origin xyz="0.069744 0 0" rpy="0 0 0" />
+    <axis xyz="1 0 0" />
+    <limit lower="-3.14158" upper="3.14158" effort="80" velocity="5" />
+    <dynamics damping="0.1" />
+    <rest>0</rest>
+  </joint>
+  <link name="right_gripper_prop_link">
+    <inertial>
+      <origin xyz="0.002378 2.85e-08 0" rpy="2.229034153 0 3.141592654" />
+      <mass value="0.008009" />
+      <inertia ixx="4.2979e-06" iyy="2.8868e-06" izz="1.5314e-06" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.0685 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_8_gripper_prop.stl" />
+      </geometry>
+      <material name="black_robot">
+        <color rgba=".065 .07 .075 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.0685 0 0" rpy="0 0 1.570796327" />
+      <geometry>
+        <mesh filename="meshes/vx300s_8_gripper_prop.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_gripper_prop_link_fixed" type="fixed">
+    <parent link="right_gripper_link" />
+    <child link="right_gripper_prop_link" />
+    <origin xyz="0.0485 0 0" rpy="0 0 0" />
+  </joint>
+  <link name="right_left_finger_link">
+    <inertial>
+      <origin xyz="0.017344 -0.0060692 0" rpy="1.570796327 0 -1.764289971" />
+      <mass value="0.034796" />
+      <inertia ixx="2.48003e-05" iyy="1.417e-05" izz="1.20797e-05" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0.005 -0.052 0" rpy="2.034443555 -1.569015686 1.107148464" />
+      <geometry>
+        <mesh filename="meshes/vx300s_10_custom_finger_left.stl" />
+      </geometry>
+      <material name="white_fingers">
+        <color rgba=".92 .92 .89 1" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/right_left_finger_link_collision_0.stl" />
+      </geometry>
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/right_left_finger_link_collision_1.stl" />
+      </geometry>
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/right_left_finger_link_collision_2.stl" />
+      </geometry>
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/right_left_finger_link_collision_3.stl" />
+      </geometry>
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/right_left_finger_link_collision_4.stl" />
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz=".078 -0.026 0" rpy="0 0 0" />
+      <geometry>
+        <box size=".014 .004 .012" />
+      </geometry>
+      <material name="estimated_contact_pad">
+        <color rgba=".08 .08 .08 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz=".078 -0.026 0" rpy="0 0 0" />
+      <geometry>
+        <box size=".014 .004 .012" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_left_finger" type="prismatic">
+    <parent link="right_gripper_link" />
+    <child link="right_left_finger_link" />
+    <origin xyz="0.0687 0 0" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="0.005" upper="0.065" effort="15" velocity=".2" />
+    <dynamics damping="0.05" />
+    <rest>0.02239</rest>
+  </joint>
+  <link name="right_right_finger_link">
+    <inertial>
+      <origin xyz="0.017344 0.0060692 0" rpy="-1.570796327 0 -1.764267881" />
+      <mass value="0.034796" />
+      <inertia ixx="2.48002e-05" iyy="1.417e-05" izz="1.20798e-05" ixy="0" ixz="0" iyz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0.005 0.052 0" rpy="2.034443555 -1.569015686 1.107148464" />
+      <geometry>
+        <mesh filename="meshes/vx300s_10_custom_finger_right.stl" />
+      </geometry>
+      <material name="white_fingers">
+        <color rgba=".92 .92 .89 1" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/right_right_finger_link_collision_0.stl" />
+      </geometry>
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/right_right_finger_link_collision_1.stl" />
+      </geometry>
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/right_right_finger_link_collision_2.stl" />
+      </geometry>
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/right_right_finger_link_collision_3.stl" />
+      </geometry>
+    </collision>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/right_right_finger_link_collision_4.stl" />
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz=".078 0.026 0" rpy="0 0 0" />
+      <geometry>
+        <box size=".014 .004 .012" />
+      </geometry>
+      <material name="estimated_contact_pad">
+        <color rgba=".08 .08 .08 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz=".078 0.026 0" rpy="0 0 0" />
+      <geometry>
+        <box size=".014 .004 .012" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="right_right_finger" type="prismatic">
+    <parent link="right_gripper_link" />
+    <child link="right_right_finger_link" />
+    <origin xyz="0.0687 0 0" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-0.065" upper="-0.005" effort="15" velocity=".2" />
+    <dynamics damping="0.05" />
+    <rest>-0.02239</rest>
+  </joint>
+</robot>

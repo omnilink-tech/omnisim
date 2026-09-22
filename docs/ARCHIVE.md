@@ -90,6 +90,7 @@ Class key: **campaign log** = dated measurements or a journal of work that ended
 | `docs/developer/t2-column-2026-08-04.md` | campaign log | `82001366f` | dated column result; 0 inbound |
 | `docs/developer/train-deploy-unification.md` | plan (executed) | `be41986f8` | Phase 0/1 landed, Phase 2 functional (2026-06-24) |
 | `docs/developer/v6-readiness.md` | plan (executed) | `6137aa6b7` | SUPERSEDED 2026-08-08 banner: goal (a) executed |
+| `docs/developer/v9-generalization-plan.md` | plan (superseded) | `a85fca20f` | removed 2026-09-22, not on 2026-09-02 with the rest. Pre-v9 audit + plan; its open items live in the deny-listed `docs/developer/v9-release-plan.md`. It was NOT deny-listed, so it would have shipped, carrying an account's billing-failure message, a count of unreleased private commits, and a section stating a token is embedded in the `public` remote URL. |
 | `docs/developer/verifiably-best-agentic-simulator-plan.md` | plan (never executed) | `b31553687` | active execution plan as of 2026-08-13; frontier reporter exists, campaign rows not |
 | `docs/developer/wgpu-shadow-aura.md` | campaign log | `308f3a7fb` | FIXED 2026-08-24 bug write-up |
 | `docs/developer/wren-retirement-plan.md` | plan (executed) | `74fe6542c` | audit + plan for a deletion that landed 2026-08-23 |

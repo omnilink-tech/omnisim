@@ -11,11 +11,11 @@ the [Attribution](README.md#attribution) section of the README for the
 relationship to upstream. Entries here cover OmniLink's contributions on
 top of that foundation.
 
-> ⚠️ **Only the v8.x public-beta releases are published in this repository.**
+> ⚠️ **Only the v8.x and v9.x releases are published in this repository.**
 > Sections for earlier versions are kept below as the development record — they
 > say what changed and when — but those releases are **not obtainable here**: no
 > tag, no release page, no downloadable archive. Do not read an older section as
-> a description of something you can check out. Use the newest v8.x release for
+> a description of something you can check out. Use the newest release for
 > running code.
 >
 > The one class of tag that is NOT a release, and is still present, is
@@ -25,7 +25,329 @@ top of that foundation.
 ---
 
 
-## [Unreleased]
+## [v9.0.0] — 2026-09-23
+
+### You can stop the simulation at the moment something goes wrong
+
+OmniSim could observe a running scene in detail and could not stop it. Every
+inspection read one instant while the engine free-ran between calls, so the
+question an agent actually has — *what did the scene look like when the gripper
+let go?* — could only be answered by guessing where to look.
+
+- **`POST /sim/break` arms a breakpoint.** Give it event types, optionally
+  filtered by `def`, `counterpart` or `joint`. When a matching event fires the
+  supervisor takes the pause lease, so the scene freezes at the moment of
+  interest and stays frozen while you read it. `GET /sim/breaks` lists what is
+  armed; `DELETE /sim/break/<id>` and its `POST /sim/break/delete` twin disarm.
+- **`POST /sim/step` is now continue-to-breakpoint.** A batch stops early on the
+  step a break fires and reports `steps_executed` and `stopped_on_break`.
+  `steps_executed` used to be echoed back from the request, so a run that
+  stopped early would have claimed it ran the whole batch.
+- **`break.hit` is the eleventh event type**, carrying the matched event, the
+  sim time of the hold and the measured hold latency, on the same cursor-paged
+  `/sim/events` stream as everything else.
+- **`GET /sim/state` gains** `paused`, `lease_remaining_ms`, `break_hit`,
+  `breaks_armed` and `engine_time_ms`.
+- **A break that could never fire is refused, not accepted.** Light mode is the
+  default and silences five of the eleven event types. Arming a break on one of
+  those returns `BREAK_EVENT_TYPE_UNAVAILABLE` with a diagnostic naming the
+  producer, the silenced set and the `{"light": false}` workaround. The refusal
+  is scoped: `damage.*` survives light mode and is still accepted in the same
+  session.
+
+Two limits, stated because they bound what this is good for. **There is no
+sub-step precision.** Held, and stepping, detection is per basic step: zero
+supervisor-milliseconds and at most one basic step of engine time. Free-running,
+detection is one *supervisor tick*, and a tick is not a basic step — measured
+from 8 ms to about 600 ms of engine time depending on load. On a three-body
+fixture the engine outran the controller so far that a whole one-second drop fell
+inside a single tick and no contact event was emitted at all. The reliable
+workflow is the debugger one: pause, then step. And **`sim_time_ms` and
+`engine_time_ms` are different rulers** — the first is the injected supervisor's
+counter that stamps every harness response, the second is the engine's own clock,
+which runs far ahead in fast mode and does not rewind on `/sim/reset`.
+
+Measured on `9722d23d12a3` (RTX 3060 Laptop, Ryzen 16-thread, Windows 11) with
+four live cases: a break on contact, a break on a joint limit, the light-session
+refusal, and the pause verbs themselves.
+
+### The pause that shipped in v8.5.x did not pause
+
+`POST /sim/pause` and `POST /sim/resume` landed on 2026-09-15 with no test, no
+documentation and no client. Building the breakpoint on top of them exposed
+**seven defects**, all fixed and now covered by 43 engine-free tests:
+
+- **It reported a frozen clock over a moving engine.** Pausing only *queues* the
+  request, and the main loop stopped stepping the instant the lease was taken, so
+  nothing ever delivered it. Measured: a break fired at t=168 ms and the scene
+  kept moving to about 400 ms — roughly 29 basic steps *after* the freeze.
+- **A lease expiry could hang the supervisor permanently**, turning the deadline
+  that exists as a safety property into the thing that broke it.
+- The supervisor clock advanced while held, which tripped the "someone reset the
+  world behind our back" heuristic every other iteration.
+- A held lease and armed breaks survived a `/world/load`, so a session could
+  inherit a freeze belonging to the previous world.
+- Break detection lagged by up to 17 basic steps.
+
+"The pause exists" was true from v8.5.x. "The pause worked" is true from v9.
+
+### One command surface, and the parser is actually in it
+
+- **The deterministic parser is now wired into the live `/prompt` path** on all
+  five bridges, over HTTP and in the robot window. It was not before: the
+  short-circuit entry point had no production caller in any bridge, so the model
+  answered every turn and the parser's own counters read zero on a live run. The
+  "parser first" evidence came from a benchmark that calls the parser in its own
+  process and never touches a bridge. Order on every path is access check,
+  parser, model, gate. Verified live on the Husky: a command is answered by the
+  parser in 0.01 s and the robot moves 1.997 m against 2.0 commanded; a keyless
+  prompt is refused before the parser sees the sentence.
+- ⚠️ **`POST /tool` reported `status: "err"` for every successful motion.**
+  `error` in a measured result is the *control* error — a float, achieved minus
+  commanded — and any non-zero float is truthy, so only a mathematically perfect
+  motion could have reported success. Measured live: a settled 1 m drive with
+  0.23 mm of error came back as a failure. An agent driving through `/tool` would
+  have concluded its every command failed. A real failure is a string, so the
+  test is now the type rather than the truthiness.
+- **A sixth `/tool` handler was completely ungated.** The OmniTug courier reached
+  its motors with no safety check of any kind; it was not one of the four demo
+  bridges, so the 2026-09-21 audit missed it.
+- **One vetting implementation, not six.** The fail-closed wrapper existed in six
+  copies, each re-declaring its own list of physical verbs; the relay registered
+  every bridge's tools with no surface at all, so per-surface rails only worked
+  because callers happened to pass one at check time.
+- **All five keyword ladders are deleted**, along with the shared module and the
+  `OMNISIM_BRIDGE_LEGACY_ROUTER` variable that advertised putting them back. One
+  of them carried ungated takeoff and land methods.
+- ⚠️ **The model pin was Google's, and it was sent to every engine.** The relay
+  pinned `gemini-3.5-flash` — a Google model id — and sent it whatever
+  `OMNILINK_ENGINE` named, so selecting any other provider asked that provider
+  for a model it does not serve. Measured on an account with google and xai both
+  connected: `g3-engine` returned `not-found: The model gemini-3.5-flash does not
+  exist`. Two connected credentials, zero reachable engines. The pin now follows
+  the engine; an engine with no measured tier sends no model and lets the
+  platform pick one it serves. The reasoning behind the Google pin is unchanged
+  and still applies to the Google engine.
+
+### The simulator and the platform are one loop, not a tether
+
+OmniLink could call a robot. It could not hear back from one, and the two halves
+read the same sentence differently. Everything below is the simulator's half; the
+platform's half is written and needs a deploy before an operator sees it.
+
+- **Both doors interpret the same way.** The web chat used to post to the platform
+  and then push tool calls at the robot, so a model answered every web turn while
+  the robot's own door ran the deterministic parser first. The platform now hands
+  the operator's sentence to the robot, and falls back to the old path, unchanged,
+  whenever the robot is unreachable — a refusal is not a fallback, it is a completed
+  turn. `/prompt` reports **which stage answered** on every reply, so the parser's
+  share is measurable instead of asserted, and the chat sweep records it per
+  sentence and refuses to guess: a reply that does not say is recorded as unknown,
+  two unknowns are not agreement, and an arm that did not run can never score clean.
+- **One safety vocabulary, and it had already drifted.** The platform's gate is a
+  port of `gate.py`, guarded by a fixture generated from it. **The platform's copy
+  was stale at 64 cases while the source had moved to 78**, so the guard was passing
+  against an old table — exactly the divergence it exists to catch. The fixture now
+  carries the caller's surface per case, publishes its own registration table built
+  by the same function that teaches the gate, and the generator refuses to write
+  unless every case replays from that published table and agrees under all 24
+  registration orders. 106 cases, byte-identical on both sides.
+- ⚠️ **A surface arriving over HTTP is accepted and ignored.** The rail a command is
+  judged against is the bridge's own. A caller able to declare itself a drone would
+  buy the 120 m altitude rail on a quadruped, which would make a safety property a
+  client-chosen setting.
+- **The robot has an event stream of its own.** `GET /events` is cursor-paged with
+  the harness's envelope: eight types raised by the bridge — motion timeouts and
+  unsettled motions, joint limits, two fault kinds, gate refusals, contacts — plus
+  six forwarded from the harness when one is attached. Every detector was disabled
+  in turn and its tests confirmed to fail, so none of them is an assertion that has
+  never gone red. `GET /sim/state` carries the totals.
+- **An event can wake the agent, and the wake is bounded.** A physical or safety
+  event dispatches one turn through the same cascade and the same gate as an
+  operator sentence. A burst of a hundred qualifying events produces **one** wake and
+  records ninety-nine suppressed; disabling it produces none while the ring still
+  fills, so the record survives even when nothing is spent on it. No key still means
+  no model turn, and now also no wake.
+- **Sim time on every measured result, and a stall is not a timeout.** Waits are
+  counted in simulation steps rather than against the wall clock, and results carry
+  the sim time they started and ended at. `last_tick_at` is sim seconds for the first
+  time; the wall clock moved to its own field. A frozen world can never expire a step
+  budget, so a bridge now reports `stalled` rather than `timed_out` — an agent told
+  "timed out" reissues commands into a simulation that is not running. Eighteen reads
+  of the simulator's clock were also moved off HTTP threads; that pattern once dragged
+  the simulation to a fifth of real time.
+- **Opt-in lockstep** holds the world between commands on three robot classes. The
+  drone declares it unsupported rather than shipping a hold that would stop commanding
+  its rotors.
+- **The action journal follows the agent to another machine.** Surviving a restart was
+  never the new part — the local file has done that since July. What is new is that the
+  newest 50 entries ride in the memory write, so a second instance on the same key
+  restores them before its first turn. The sync is a 30 s beat plus a flush on clean
+  shutdown, and it does **not** need a completed model turn: that dependency was a real
+  defect, found on the first live check — a session the parser answered by itself synced
+  nothing, and an account answering `402` on every turn synced nothing at all. ⚠️ It is a
+  beat, not a commit: a hard kill between beats can lose up to one beat, only the newest
+  50 entries travel, and with no OmniKey there is no relay, so the record stays local.
+  It is the surface that removed a 26% fabrication rate.
+- **A standing order can reach a simulated robot with no browser open**, through a
+  connector the bridge now starts itself.
+
+Two things this is honest about. **There is no window-raise verb** in the robot-window
+protocol, so a wake makes itself visible in the chat panel; nothing raises a window.
+And **on the parser door the gate is a second line that rarely fires**, because the
+parser already declines questions and sentences it cannot consume — the refusals you
+will actually see arrive through `/tool` and the model path.
+
+### Demos
+
+The launcher showed 15 of the 21 chat demos and one quadruped, so a release
+about four robot classes presented one of them as a single robot. All five Deep
+Robotics quadrupeds and the OmniArm talk world are now listed (58 → 64 entries).
+The count disagreed on every surface — 21, 18, 20 and 22 depending where you
+looked — and a test now pins the launcher, `DEMOS.md`, `WORLDS.md`, the chat
+index and the sweep together.
+
+### Benchmarks that had lost their target
+
+Deleting the ladders revealed that several benchmark arms were measuring a path
+the product no longer has. Two of them were **manufacturing a pass**: run the
+warehouse benches the obvious way and every prompt is refused, yet the gate
+stamps the result `verified` and the safety column comes out perfect, because a
+robot that is never commanded never moves when it should not. Those arms now
+refuse at launch and say why. `commandbench`'s ladder arm is dropped rather than
+re-pointed, because the honest statement is that the comparison is gone; its
+parser arm refuses for the same reason. Recorded result files are untouched —
+they are evidence of runs that happened.
+
+### Agent surface
+
+The first-party MCP server goes from 37 to 46 tools and, for the first time,
+reaches a robot: `robot_prompt`, `robot_tool`, `robot_state` and `robot_events`
+speak to a bridge's gated paths, never the ungated REST verbs. `sim_pause`,
+`sim_resume`, `sim_break`, `sim_breaks` and `sim_break_clear` expose the new
+capability. ⚠️ `robot_events` reads the *robot's* ring, not the harness's
+`/sim/events` — two rings, two cursors — and it dies with the bridge process.
+Carrying a cursor meant the tool allowlist had to ignore query strings, so a test
+now pins that `/stop_robot?since=1` is still refused.
+
+### Release engineering
+
+- **The licence gate was red on 22 files**, not the 4 a first pass found — the
+  same gate that forced the v8.5.1 patch a day after v8.5.0. Nineteen were
+  OmniLink's own work carrying a short SPDX header the gate has never accepted.
+  Three are vendored MIT code whose provenance record forbids modifying it, so
+  they carry sha256 content pins over git's stored bytes instead of a header,
+  which excuses the missing header and still detects any edit.
+- **Asset provenance was red on 18 files**, including the ALOHA videos the README
+  links. Those now carry a provenance record separating OmniLink's own renders
+  from the composites that embed third-party footage.
+- **A documentation gate** now fails the build on keyless, ladder or withdrawn
+  cost claims across 21 customer-facing pages, with the scanner tested in both
+  directions so it cannot rot into a rubber stamp.
+- The engine-free unit lane runs in CI for the first time, and now includes the
+  MCP package. The publisher accepts a prerelease tag so a release candidate can
+  be validated on the public account. `doctor` reports a second CI row and no
+  longer prints a token that was embedded in a remote URL.
+
+### Verified
+
+All 21 chat demos live, **84 of 84 sentences answered, zero trap actuations**,
+on the default engine (`tests/benchmarks/langsoak/chat_demos_2026-09-22.json`).
+The trap in each script is a question carrying a motion keyword — the one that
+once landed an aircraft on *"where did the package land?"* — and none of them
+moved a robot. 2,212 engine-free tests pass. The break-on-event and pause work
+carries four live harness cases on machine `9722d23d12a3`, and the parser wiring
+was checked against a running Husky.
+
+The loop work above was verified on the same machine against a running Husky:
+`/state` reporting sim seconds where it used to report a wall-clock epoch; the
+full safety-gate block served with fourteen honestly-listed ungated routes; a
+300 m drive refused by the rail with nothing moving; `/prompt` naming the stage
+that answered on every reply and setting the top-level error on a failure; and
+the event ring filling and paging, with a gate refusal landing on it.
+
+Two claims were then checked against the live platform with the rigs in
+`tests/benchmarks/trackd_loop/`. **The journal crosses machines:** one relay synced
+three entries with no model turn, and a second relay booted with an empty local
+directory and restored all three from the platform alone. **An event reaches the
+platform as one bounded wake:** a non-waking event produced nothing, one timed-out
+motion woke the relay in 0.9 s and dispatched exactly one turn, and a burst of
+twenty inside the window produced no second one.
+
+**The model half was then re-measured on this tree, on 2026-09-23.** The previous
+day every model turn was refused; the cause turned out to be the account holding 41
+agent profiles against a plan allowance of 25, and clearing twenty unused ones fixed
+it. It was found a day late because the relay reported **every** 402 as "needs a
+model-provider key", so the agent-cap refusal reached us as a key problem while the
+key worked. The relay now reports the code the platform states, and says plainly
+when the provider key is not the problem. The full sweep then ran on the committed tree (`74b8ceadf`): **21 of 21 demos
+clean, 84 of 84 sentences answered, zero trap actuations**, and every reply named the
+stage that answered it — the parser 42 times, the model 42 times, no sentence
+unreported (`tests/benchmarks/langsoak/chat_demos_2026-09-23_bridge.json`). Five arms
+stated one refusal each, an open-gripper command on an arm with no gripper, which is
+the correct answer. And the wake now closes end to end: one timed-out drive woke the
+Husky, which answered *"It looks like my attempt to drive forward timed out after
+covering 1.2 meters of the requested 5.0 meters"* — the figures the event carried.
+
+The sweep's two-door comparison is still unrun: it needs the platform deployed.
+
+⚠️ **Reproducibility came out worse than the old figure, and that is the reason for
+the hold.** Four parser-answered commands, three runs, the bitwise CPU solver: three
+different results. Positions agreed to four decimals, so the physics is
+deterministic; the coupling is not. A command returned busy in two runs and executed
+in the third, and the robot finished 0.99 m and 1.98 m from identical input. **With
+the hold on and a client that waits on it, the same three runs were identical**: every
+command executed and the world reached the same rest points at the same sim times.
+Both halves are required. With the hold and a naive client the runs still diverge,
+because under a hold the wheels read zero while the world is frozen, so the next
+command goes out early and comes back busy. This is reproducibility of a run on the
+CPU solver with parser-answered commands, not replay, and it says nothing about
+commands a model chose.
+
+⚠️ **The first lockstep measurement reset the connection, and the cause shipped.** A
+bridge holding the world makes no calls to the engine, so when its engine died it never
+noticed and kept serving on its port for up to a lease; the next run's requests landed
+on that orphan. The hold now checks the engine every half second and the bridge exits
+0.35 s after it. Two more hold defects were fixed on the way: an expired lease was
+re-taken at once, letting the world advance one step per thirty-second lease, and a
+motion waited on under a hold was reported stalled in no time at all.
+
+### Still true, and not claimed otherwise
+
+No policy trained here has run on hardware; the shipped bridges run against mock
+drivers. A digital twin here is a model built from a robot's own URDF or CAD, not
+live-synced telemetry. Windows has the only prebuilt package. `POST /sim/snapshot`
+is still not a checkpoint — it saves poses and joint angles, never velocity — and
+there is still no record, replay or run-diff. Watch conditions are not
+implemented and are declared as such. The earlier parser-only cost and accuracy
+experiments are not measurements of the connected product, and no
+zero-model-cost, universal-accuracy, market-exclusivity or hardware-performance
+claim is made here.
+
+⚠️ **The gated command surface covers the four demo bridges and the courier. It
+does not cover every bridge in the tree.** `husky_omnilink_bridge` — a seventh
+bridge, used by the Husky maze agent — imports no part of the gate. It is a
+standalone HTTP server whose `POST /action` reaches the motors with no schema,
+magnitude or deixis check, and the maze agent's `chat_drive.py` posts a model's
+tool calls straight at it. It ships in this release as it did in the last, and it
+is documented in `packages/omnisim-bridges/GATE_COVERAGE.md` rather than fixed,
+because moving it onto the shared handler changes its wire contract and that is
+not a change to make during a cut. Separately, `goto_waypoint` on the drone flies
+to an absolute coordinate and is not gated either: the distance rail bounds how
+far a single motion goes, and a waypoint is a position rather than a distance, so
+gating it is a design question and not yet a fix. Treat both as open.
+
+New with the loop work, and stated for the same reason. The platform half of the
+prompt handoff is **written and not deployed**, so until it is, the web door
+behaves exactly as it did before. Lockstep is opt-in, covers three of four robot
+classes, and its reproducibility claim is **unmeasured** — removing the model does
+not by itself buy an identical run, because the engine free-runs between HTTP
+calls, and closing that was the point of the hold. The wake rate on an idle scene
+has never been measured, so the default policy is bounded by a limiter rather than
+by evidence. Events are raised by the bridge, so the ring dies with the bridge
+process and is not a recording; contact events are top-level scope only, because
+the supervisor's contact query cannot see a URDF robot's sub-links. None of this
+adds sub-step detection: the two latency regimes are unchanged.
 
 ## [v8.5.1] — 2026-09-12
 

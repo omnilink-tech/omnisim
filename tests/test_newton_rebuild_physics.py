@@ -533,3 +533,51 @@ def test_rebuild_refused_on_cloth_world(cloth):
         "sim time %.3f -> %.3f s. A refusal must be a no-op for the running "
         "world, not a wedge."
         % (int(cloth["steps_after"]), cloth["t0"], cloth["t1"]))
+
+
+SPIN_REBUILD_WORLD = '''#OMNISIM R2025a utf8
+WorldInfo { gravity 0 basicTimeStep 8 newtonSolver "mujoco" newtonSubsteps 8 }
+Viewpoint { position 0 -4 2 }
+DEF BASE Solid {
+  translation 0 0 2 name "base"
+  boundingObject Box { size 0.2 0.2 0.2 }
+  physics Physics { density -1 mass 10 }
+  children [ HingeJoint {
+    jointParameters HingeJointParameters { axis 0 0 1 anchor 0.5 0 0 }
+    endPoint DEF ROTOR Solid {
+      translation 0.5 0 0 name "rotor"
+      boundingObject Cylinder { radius 0.1 height 0.03 }
+      physics Physics { density -1 mass 1 }
+    }
+  } ]
+}
+Robot { name "probe" supervisor TRUE controller "spinrebuildprobe" }
+'''
+
+SPIN_REBUILD_CONTROLLER = '''
+import os
+from omnisim import Supervisor
+s = Supervisor()
+dt = int(s.getBasicTimeStep())
+base, rotor = s.getFromDef('BASE'), s.getFromDef('ROTOR')
+for _ in range(100):
+    base.addTorque([0,0,-.2],False)
+    rotor.addTorque([0,0,.2],False)
+    s.step(dt)
+before = rotor.getVelocity()[5]-base.getVelocity()[5]
+s.simulationRebuildPhysics()
+s.step(dt)
+after = rotor.getVelocity()[5]-base.getVelocity()[5]
+with open(os.environ['REBUILD_PROBE_OUT'],'w') as out:
+    out.write('before %.9f\\nafter %.9f\\ndone\\n' % (before,after))
+s.simulationQuit(0)
+'''
+
+
+def test_rebuild_preserves_surviving_joint_spin(tmp_path):
+    """Restoring only free-base velocities used to zero the rotor's joint rate."""
+    result = _run(tmp_path,'spin_rebuild',SPIN_REBUILD_WORLD,'spinrebuildprobe',
+                  SPIN_REBUILD_CONTROLLER,90)
+    _need(result,'before','after')
+    assert abs(result['before']) > 10, 'the precondition must be a genuinely spinning joint'
+    assert abs(result['after']-result['before']) < .01*abs(result['before']), result

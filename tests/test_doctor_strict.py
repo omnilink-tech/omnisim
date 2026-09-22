@@ -42,6 +42,26 @@ if str(_REPO) not in sys.path:
 from omnisim import doctor  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _offline(monkeypatch):
+    """Nothing in this file measures hosted CI except the rows that stub it.
+
+    doctor's only network calls are one `gh run list` per git remote -- two
+    round-trips per `_run()` once a `public` remote exists, and this file
+    calls `_run()` around thirty times. Measured on this clone: 1.6 s per
+    round-trip, i.e. most of a minute spent waiting on github.com to assert
+    things about exit codes, and a verdict that depended on whether the
+    machine had a network. Offline by default; the CI-row tests below replace
+    these stubs with their own.
+    """
+    monkeypatch.setattr(doctor, "_git_remotes", lambda: set())
+    monkeypatch.setattr(
+        doctor, "_ci_launch",
+        lambda head_sha=None, branch=None, remote="origin": {
+            "available": False, "reason": "no-gh", "remote": remote})
+    monkeypatch.setattr(doctor, "_ci_collect", lambda info: info)
+
+
 def _ok_build() -> dict:
     return {
         "verdict": "ok",
@@ -144,6 +164,8 @@ def _coherent(monkeypatch):
     the runtime source would otherwise turn this test red."""
     monkeypatch.setattr(doctor, "_build_provenance", _ok_build)
     monkeypatch.setattr(doctor, "_env_landmines", lambda: [])
+    monkeypatch.setattr(doctor, "_omnilink_deps", lambda _: {
+        "status": "ok", "detail": "stubbed", "fix": None})
     monkeypatch.setattr(doctor, "_physics_runtime",
                         lambda _binary: {"status": "present", "source": "stub",
                                          "detail": "stubbed", "fix": None})
@@ -154,6 +176,21 @@ def _coherent(monkeypatch):
 
 def _verdict_lines(text: str) -> list[str]:
     return [ln for ln in text.splitlines() if ln.startswith("VERDICT")]
+
+
+def test_omnilink_flag_blocks_incomplete_controller_install(monkeypatch):
+    _coherent(monkeypatch)
+    monkeypatch.setattr(doctor, "_omnilink_deps", lambda _: {
+        "status": "missing", "detail": "SDK absent", "fix": "install dependencies"})
+    assert _run([])[0] == 0
+    rc, out = _run(["--omnilink"])
+    assert rc == 1
+    assert "SDK absent" in out and "VERDICT     NOT READY" in out
+
+
+def test_omnilink_flag_passes_complete_controller_install(monkeypatch):
+    _coherent(monkeypatch)
+    assert _run(["--omnilink"])[0] == 0
 
 
 @pytest.mark.parametrize("argv", [[], ["--strict"]])
@@ -204,6 +241,108 @@ def test_strict_is_an_alias_that_exits_like_plain_doctor(monkeypatch):
         assert rc_plain == rc_alias == expected_rc
         assert len(_verdict_lines(out_plain)) == 1
         assert _verdict_lines(out_plain) == _verdict_lines(out_alias)
+
+
+# --- the two CI rows (origin, and `public` when that remote exists) ---------
+#
+# Pre-release validation moved to the public account, so "is CI green?" has two
+# answers and doctor has to print both. These pin the shape of the second row,
+# the condition that makes it appear, and -- the point of the whole exercise --
+# that NEITHER row can change the exit code. The private account's Actions have
+# been failing for billing reasons since 2026-09-20; a red row there is a fact
+# about an unpaid invoice, not about this tree, and the pre-push gate runs
+# `doctor --strict`.
+
+
+def _ci_rows(text: str) -> list[str]:
+    return [ln for ln in text.splitlines() if ln.startswith("ci")]
+
+
+def _stub_ci(monkeypatch, *, remotes: str, green_for: dict):
+    """Stub the git remote list and both `gh` calls, one canned verdict per remote."""
+    monkeypatch.setattr(doctor, "_git_remotes", lambda: set(remotes.split()))
+
+    def fake_launch(head_sha, branch, remote="origin"):
+        return {"remote": remote, "head_sha": head_sha, "branch": branch,
+                "_canned": green_for[remote]}
+
+    def fake_collect(info):
+        green = info.pop("_canned")
+        runs = [{"name": "linux-build", "status": "completed",
+                 "conclusion": "success" if green else "failure",
+                 "headSha": info["head_sha"], "createdAt": "2026-09-22T10:00:00Z",
+                 "databaseId": 1, "url": "https://x/runs/1"}]
+        return doctor._ci_finish(info, runs, behind=lambda sha, head: 0)
+
+    monkeypatch.setattr(doctor, "_ci_launch", fake_launch)
+    monkeypatch.setattr(doctor, "_ci_collect", fake_collect)
+
+
+def test_ci_row_label_names_a_non_origin_remote():
+    """The label is derived from the remote, and an info with no `remote` key at
+    all -- every caller that predates the second row -- still reads plain `ci`."""
+    assert doctor._ci_row_label({}) == "ci          "
+    assert doctor._ci_row_label({"remote": "origin"}) == "ci          "
+    assert doctor._ci_row_label({"remote": "public"}) == "ci (public) "
+    # Both labels occupy the report's 12-column gutter, so the rows line up.
+    assert len(doctor._ci_row_label({"remote": "public"})) == 12
+    assert doctor._ci_row_lines({"available": False, "reason": "no-gh",
+                                 "remote": "public"}) == ["ci (public) unknown (no-gh)"]
+
+
+def test_a_credentialed_remote_url_is_never_printed_verbatim():
+    """A publish remote can carry a token in its URL, and the `not-github`
+    detail is the one place doctor prints a remote URL at all."""
+    red = doctor._redact_remote_url("https://github_pat_ABC123@github.com/o/r.git")
+    assert red == "https://***@github.com/o/r.git" and "github_pat" not in red
+    assert doctor._redact_remote_url(
+        "https://user:tok@gitlab.com/o/r.git") == "https://***@gitlab.com/o/r.git"
+    # Nothing to redact stays byte-identical.
+    for url in ("https://github.com/o/r.git", "git@github.com:o/r.git", "../mirror.git"):
+        assert doctor._redact_remote_url(url) == url
+
+
+def test_second_ci_row_appears_only_when_a_public_remote_exists(monkeypatch):
+    _coherent(monkeypatch)
+    _stub_ci(monkeypatch, remotes="origin\n", green_for={"origin": True})
+    rows = _ci_rows(_run([])[1])
+    assert len(rows) == 1 and rows[0].startswith("ci          1/1 workflows green on ")
+
+    _stub_ci(monkeypatch, remotes="origin\npublic\n",
+             green_for={"origin": True, "public": True})
+    rows = _ci_rows(_run([])[1])
+    assert len(rows) == 2
+    assert rows[0].startswith("ci          1/1 workflows green")
+    assert rows[1].startswith("ci (public) 1/1 workflows green")
+
+
+def test_a_red_ci_row_on_either_remote_never_changes_the_exit_code(monkeypatch):
+    """The billing-failure case: every workflow on the private account reports
+    failure for a reason that has nothing to do with the tree. doctor must say
+    so and still exit 0, or the pre-push gate is wedged until an invoice is paid."""
+    _coherent(monkeypatch)
+    for origin_green, public_green in ((False, True), (True, False), (False, False)):
+        _stub_ci(monkeypatch, remotes="origin\npublic\n",
+                 green_for={"origin": origin_green, "public": public_green})
+        rc, out = _run([])
+        assert rc == 0, f"red CI gated the verdict ({origin_green=}, {public_green=})"
+        assert "VERDICT     READY" in out
+    # Both red, and the spelling .githooks/pre-push actually runs.
+    rows = _ci_rows(out)
+    assert rows[0].startswith("ci          WARN:") and rows[1].startswith("ci (public) WARN:")
+    assert _run(["--strict"])[0] == 0
+
+
+def test_json_carries_both_ci_rows(monkeypatch):
+    import json
+    _coherent(monkeypatch)
+    _stub_ci(monkeypatch, remotes="origin\n", green_for={"origin": True})
+    assert json.loads(_run(["--json"])[1])["ci_public"] is None
+    _stub_ci(monkeypatch, remotes="origin\npublic\n",
+             green_for={"origin": True, "public": False})
+    payload = json.loads(_run(["--json"])[1])
+    assert payload["ci"]["remote"] == "origin" and payload["ci"]["green"] is True
+    assert payload["ci_public"]["remote"] == "public" and payload["ci_public"]["green"] is False
 
 
 # --- cp1252 safety (Windows console must never UnicodeEncodeError) ----------

@@ -69,7 +69,7 @@ Why it matters:
 
 ### 4. Performance instrumentation is incomplete
 
-The performance log still has an average FPS field, but the renderer-side hook that should feed it is disabled (a WREN-era gap that survived the wgpu migration; `OMNISIM_RENDERER_TIMINGS=1` is the current signal).
+The performance log still has an average FPS field, but the renderer-side hook that should feed it is disabled (a WREN-era gap that survived the wgpu migration). The current signal is `OMNISIM_WGPU_REPORT=1` (interval `OMNISIM_WGPU_REPORT_EVERY`, default every 100 frames) — note its `renderMs` is CPU encode+submit time, not GPU time. `OMNISIM_RENDERER_TIMINGS` was the WREN-era variable and **no longer exists**: it is absent from `src/` and from the generated [environment-variables.md](../reference/environment-variables.md), having died with the WREN deletion on 2026-08-23.
 
 Why it matters:
 

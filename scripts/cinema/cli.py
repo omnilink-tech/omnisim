@@ -31,9 +31,8 @@ Subcommands:
   agent-build-render <film.json>            Assemble the evidence-led film
   agent-build-verify <film.json>            Run the fail-closed release gate
 
-The render path expects an existing capture service on 127.0.0.1:6791.
-Start it once with `python -m omnisim capture --port 6791` and keep it
-up between storyboards.
+New cinematic videos default to recorded OmniSim motion rendered in Blender.
+The explicit native renderer uses the capture service on 127.0.0.1:6791.
 """
 
 from __future__ import annotations
@@ -55,12 +54,27 @@ from . import (
     camera,
     director,
     looks,
+    replay,
     storyboard,
     subjects,
 )
 
 
 def _cmd_render(args: argparse.Namespace) -> int:
+    path = Path(args.storyboard)
+    data = json.loads(path.read_text(encoding="utf-8-sig"))
+    renderer = args.renderer or data.get("renderer", replay.RENDERER)
+    if renderer == replay.RENDERER:
+        if args.out_root or args.no_edit or args.no_critique:
+            raise ValueError("--out-root/--no-edit/--no-critique are native-only; replay uses its manifest output and proxy review")
+        result = replay.render(path, profile=args.profile, blender=args.blender,
+                               device=args.device)
+        print(json.dumps(result, indent=2))
+        return 0
+    if renderer != "native":
+        raise ValueError(f"Unknown renderer {renderer!r}")
+    if data.get("schema") == replay.SCHEMA:
+        raise ValueError("A replay manifest cannot be rendered as native capture")
     sb = storyboard.parse(Path(args.storyboard))
     opts = director.DirectorOptions(
         svc_base_url=args.svc,
@@ -82,10 +96,24 @@ def _cmd_render(args: argparse.Namespace) -> int:
 
 
 def _cmd_new(args: argparse.Namespace) -> int:
-    tpl = storyboard.template(
+    factory = replay.template if args.renderer == replay.RENDERER else storyboard.template
+    tpl = factory(
         title=args.title, subject=args.subject, world=args.world,
     )
     print(json.dumps(tpl, indent=2))
+    return 0
+
+
+def _cmd_replay_validate(args: argparse.Namespace) -> int:
+    result = replay.validate(Path(args.manifest))
+    print(json.dumps({"valid": True, "input_key": result["input_key"],
+                      "shots": len(result["shots"]),
+                      "note": "Blender object and packed-asset checks run before frame rendering"}, indent=2))
+    return 0
+
+
+def _cmd_replay_review(args: argparse.Namespace) -> int:
+    print(json.dumps(replay.record_review(Path(args.manifest), args.notes), indent=2))
     return 0
 
 
@@ -252,6 +280,14 @@ def main(argv: list[str] | None = None) -> int:
 
     pr = sp.add_parser("render", help="Render a storyboard end-to-end")
     pr.add_argument("storyboard", help="Path to storyboard JSON")
+    pr.add_argument("--renderer", choices=[replay.RENDERER, "native"],
+                    help="Override route; omitted renderer defaults to Blender replay")
+    pr.add_argument("--profile", choices=["proxy", "final"], default="proxy",
+                    help="Replay quality; final requires a review of the current proxy")
+    pr.add_argument("--blender", help="Local Blender executable")
+    pr.add_argument("--device", default="CPU",
+                    choices=["CPU", "OPTIX", "CUDA", "HIP", "METAL", "ONEAPI"],
+                    help="Replay Cycles device; unavailable devices fail explicitly")
     pr.add_argument("--out-root", default=None,
                     help="Output root (default: social/youtube_videos/captures/)")
     pr.add_argument("--no-critique", action="store_true",
@@ -262,9 +298,20 @@ def main(argv: list[str] | None = None) -> int:
 
     pn = sp.add_parser("new", help="Print a starter storyboard JSON")
     pn.add_argument("--title", default="New Cinema Piece")
+    pn.add_argument("--renderer", choices=[replay.RENDERER, "native"],
+                    default=replay.RENDERER, help="Default: recorded motion + Blender Cycles")
     pn.add_argument("--subject", default="omniquad")
     pn.add_argument("--world", default="projects/policies/research/worlds/omniquad_rl_deploy.omniworld")
     pn.set_defaults(func=_cmd_new)
+
+    prv = sp.add_parser("replay-validate", help="Validate recordings, evidence, bindings and shot ranges")
+    prv.add_argument("manifest")
+    prv.set_defaults(func=_cmd_replay_validate)
+    prr = sp.add_parser("replay-review", help="Record your review after watching the current replay proxy")
+    prr.add_argument("manifest")
+    prr.add_argument("--notes", required=True,
+                     help="Actual observations on action, framing, contacts and claim boundaries")
+    prr.set_defaults(func=_cmd_replay_review)
 
     pp = sp.add_parser("primitives", help="List camera primitives")
     pp.set_defaults(func=_cmd_primitives)
@@ -338,7 +385,10 @@ def main(argv: list[str] | None = None) -> int:
     pave.set_defaults(func=_cmd_agent_build_verify)
 
     args = p.parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    except (ValueError, OSError) as exc:
+        p.exit(2, f"cinema: {exc}\n")
 
 
 if __name__ == "__main__":

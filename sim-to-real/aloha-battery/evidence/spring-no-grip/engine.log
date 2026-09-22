@@ -1,0 +1,880 @@
+=== OmniSim Log Started (pid=41644): 2026-09-20 03:30:44 ===
+INFO: [main] stdio: stdout inherited from the launcher (handle type 3: 1=file 2=char/null 3=pipe); stdio left as given, no console attached
+INFO: [OmNewtonBackend] warp + newton imports OK; FFI smoke OK (newton.ModelBuilder()); helper module loaded -- not a backend verdict: the backend is chosen at world finalise (default physicsBackend "auto" resolves to Newton when the runtime is present); authoritative verdict: the <log>.newton.json sidecar
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/flat-table-multiccd/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmWgpuBackend] wgpu-native init OK (instance + adapter + device + queue)
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmWgpuSurface] on-screen surface created + configured (source=windows-hwnd)
+INFO: [OmView3D] wgpu main view tonemap: HDR linear-light + AgX (exposure 0.85)
+INFO: [OmniLight] progress overlay active
+INFO: [OmniLight] probe volume live: 12x10x6 (720 probes, 720 valid), 432 tris, BVH 0 ms, trace 19 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 2 dynamic + 2 static Newton bodies (1 of the statics on the world body) (+4 this pass) (statics: table, remote)
+INFO: [OmNewtonBackend] inertia provenance: 2 declared, 0 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmNewtonBackend] step 1 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.034,0.023) b2=(0.100,0.100,0.060)
+INFO: [OmniLight] probe volume live: 12x10x6 (720 probes, 720 valid), 432 tris, BVH 0 ms, trace 29 ms
+INFO: [OmNewtonBackend] step 30 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.034,0.023) b2=(0.100,0.100,0.042)
+INFO: [OmNewtonBackend] step 60 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.034,0.023) b2=(0.100,0.100,0.011)
+INFO: [OmNewtonBackend] step 120 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.034,0.023) b2=(0.100,0.100,0.017)
+INFO: [OmNewtonBackend] step 240 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.034,0.023) b2=(0.100,0.100,0.017)
+INFO: [OmNewtonBackend] step 480 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.034,0.023) b2=(0.100,0.100,0.017)
+INFO: [OmNewtonBackend] step 960 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.034,0.023) b2=(0.100,0.100,0.017)
+INFO: [OmNewtonBackend] step 1920 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.034,0.023) b2=(0.100,0.100,0.017)
+INFO: [OmniLight] probe volume live: 12x10x5 (600 probes, 576 valid), 432 tris, BVH 0 ms, trace 17 ms
+INFO: [OmNewtonBackend] step 3840 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.034,0.023) b2=(0.100,0.100,0.017)
+INFO: [OmNewtonBackend] step 7680 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.034,0.023) b2=(0.100,0.100,0.017)
+INFO: sun_marker: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-12/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-12/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-12/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 480 tris, BVH 0 ms, trace 29 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 480 tris, BVH 0 ms, trace 62 ms
+INFO: [OmniLight] probe volume live: 12x10x6 (720 probes, 720 valid), 480 tris, BVH 0 ms, trace 20 ms
+INFO: [OmNewtonBackend] step 15360 dt=0.002s b0=(-0.057,0.041,0.009) b1=(-0.056,0.032,0.022) b2=(0.037,0.049,0.017) b3=(-0.469,0.000,0.000) b4=(-0.469,0.000,0.079) b5=(-0.469,0.000,0.127) b6=(-0.449,0.003,0.432) b7=(-0.318,0.020,0.282) b8=(-0.253,0.029,0.207) b9=(-0.214,0.032,0.149) b10=(-0.176,0.049,0.093) b11=(-0.173,0.014,0.092) b12=(0.469,0.000,0.000) b13=(0.469,0.000,0.079) b14=(0.469,0.000,0.127) b15=(0.243,0.011,0.332) b16=(0.046,0.020,0.296) b17=(-0.052,0.024,0.277) b18=(-0.050,0.021,0.208) b19=(-0.047,-0.002,0.140) b20=(-0.050,0.039,0.138)
+WARNING: 'aloha_replay' controller exited with status: 1.
+INFO: [OmNewtonBackend] step 30720 dt=0.002s b0=(-0.056,0.121,0.010) b1=(-0.065,0.121,0.023) b2=(0.061,0.204,0.016) b3=(-0.469,0.000,0.000) b4=(-0.469,0.000,0.079) b5=(-0.469,0.000,0.127) b6=(-0.682,-0.001,0.347) b7=(-0.486,-0.000,0.305) b8=(-0.388,0.000,0.284) b9=(-0.319,0.000,0.290) b10=(-0.251,0.047,0.295) b11=(-0.250,-0.045,0.295) b12=(0.469,0.000,0.000) b13=(0.469,0.000,0.079) b14=(0.469,0.000,0.127) b15=(0.197,-0.011,0.267) b16=(0.011,-0.019,0.338) b17=(-0.083,-0.023,0.374) b18=(-0.097,-0.006,0.308) b19=(-0.147,-0.019,0.243) b20=(-0.075,0.042,0.243)
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-13/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-13/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-13/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 480 tris, BVH 0 ms, trace 33 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 480 tris, BVH 0 ms, trace 48 ms
+INFO: [OmNewtonBackend] step 61440 dt=0.002s b0=(-0.058,0.043,0.010) b1=(-0.058,0.033,0.023) b2=(0.069,0.016,0.017) b3=(-0.469,0.000,0.000) b4=(-0.469,0.000,0.079) b5=(-0.469,0.000,0.127) b6=(-0.682,-0.001,0.347) b7=(-0.486,-0.000,0.305) b8=(-0.388,0.000,0.284) b9=(-0.319,0.000,0.290) b10=(-0.251,0.017,0.295) b11=(-0.250,-0.015,0.295) b12=(0.469,0.000,0.000) b13=(0.469,0.000,0.079) b14=(0.469,0.000,0.127) b15=(0.463,0.000,0.433) b16=(0.266,0.011,0.398) b17=(0.168,0.016,0.381) b18=(0.139,0.016,0.318) b19=(0.110,-0.024,0.255) b20=(0.110,0.056,0.255)
+INFO: [OmniLight] probe volume live: 12x10x6 (720 probes, 720 valid), 480 tris, BVH 0 ms, trace 19 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-14/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-14/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-14/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 480 tris, BVH 0 ms, trace 22 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 480 tris, BVH 0 ms, trace 30 ms
+INFO: [OmniLight] probe volume live: 12x10x6 (720 probes, 720 valid), 480 tris, BVH 0 ms, trace 19 ms
+WARNING: 'aloha_replay' controller exited with status: 1.
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-15/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-15/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-15/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 480 tris, BVH 0 ms, trace 28 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 480 tris, BVH 0 ms, trace 34 ms
+INFO: [OmniLight] probe volume live: 12x10x6 (720 probes, 696 valid), 480 tris, BVH 0 ms, trace 19 ms
+WARNING: 'aloha_replay' controller exited with status: 1.
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/compartment-multiccd-seated-01/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x5 (600 probes, 576 valid), 432 tris, BVH 0 ms, trace 26 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 2 dynamic + 2 static Newton bodies (1 of the statics on the world body) (+4 this pass) (statics: table, remote)
+INFO: [OmNewtonBackend] inertia provenance: 2 declared, 0 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 12x10x5 (600 probes, 576 valid), 432 tris, BVH 0 ms, trace 40 ms
+INFO: [OmniLight] probe volume live: 12x10x5 (600 probes, 576 valid), 432 tris, BVH 0 ms, trace 67 ms
+INFO: sun_marker: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-16/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-16/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-16/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 480 tris, BVH 0 ms, trace 21 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 480 tris, BVH 0 ms, trace 37 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 480 tris, BVH 0 ms, trace 29 ms
+WARNING: 'aloha_replay' controller exited with status: 1.
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/compartment-stiff-seated-01/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x5 (600 probes, 576 valid), 432 tris, BVH 0 ms, trace 21 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 2 dynamic + 2 static Newton bodies (1 of the statics on the world body) (+4 this pass) (statics: table, remote)
+INFO: [OmNewtonBackend] inertia provenance: 2 declared, 0 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 12x10x5 (600 probes, 576 valid), 432 tris, BVH 0 ms, trace 21 ms
+INFO: [OmniLight] probe volume live: 12x10x5 (600 probes, 576 valid), 432 tris, BVH 0 ms, trace 21 ms
+INFO: sun_marker: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-17/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-17/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-17/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 480 tris, BVH 0 ms, trace 62 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 480 tris, BVH 0 ms, trace 74 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 480 tris, BVH 0 ms, trace 142 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+ERROR: 'O:/omnisim/projects/robots/trossen/aloha/worlds/.harness_.aloha_4da58f0647aa411f9c4139e689a740d8.omniworld':52:51798: error: Skipped unknown 'solid' field in IndexedFaceSet node.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-18/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-18/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-18/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 24 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 33 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 33 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+ERROR: 'O:/omnisim/projects/robots/trossen/aloha/worlds/.harness_.aloha_4da58f0647aa411f9c4139e689a740d8.omniworld':52:51798: error: Skipped unknown 'solid' field in IndexedFaceSet node.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-18/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-18/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-18/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 166 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 222 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 4 ms, trace 173 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-19/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-19/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-19/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 33 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.008, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 52 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 21 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-20/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-20/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-20/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 38 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=10000 kd=200 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.01, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 40 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 30 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-21/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-21/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-21/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 26 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=40000 kd=400 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=40000 kd=400 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.01, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 38 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 2 ms, trace 40 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-22/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-22/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-22/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 28 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=40000 kd=400 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=40000 kd=400 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.01, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 44 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 28 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-23/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-23/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-23/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 22 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=40000 kd=400 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=40000 kd=400 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.01, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 35 ms
+INFO: [OmniLight] probe volume live: 12x10x6 (720 probes, 720 valid), 2400 tris, BVH 1 ms, trace 20 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-24/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-24/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-24/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 20 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=80000 kd=565.685 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=80000 kd=565.685 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.01, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 30 ms
+INFO: [OmniLight] probe volume live: 12x10x5 (600 probes, 576 valid), 2400 tris, BVH 1 ms, trace 16 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-25/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-25/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-25/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 20 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=80000 kd=565.685 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=80000 kd=565.685 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.01, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 33 ms
+INFO: [OmniLight] probe volume live: 12x10x6 (720 probes, 696 valid), 2400 tris, BVH 1 ms, trace 18 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-26/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-26/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-26/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 24 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=160000 kd=800 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=160000 kd=800 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.01, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 34 ms
+INFO: [OmniLight] probe volume live: 12x10x6 (720 probes, 696 valid), 2400 tris, BVH 1 ms, trace 16 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-27/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-task-27/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-task-27/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 28 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=160000 kd=800 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=160000 kd=800 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.01, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 72 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 19 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-capture-01/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-capture-01/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-capture-01/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 23 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=160000 kd=800 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=160000 kd=800 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.01, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 34 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 21 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: battery_compartment: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-no-grip-01/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/spring-no-grip-01/config.json
+INFO: battery_compartment: Starting controller: python.exe -u battery_compartment.py --config O:/omnisim/.tmp/aloha-battery/spring-no-grip-01/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 2400 tris, BVH 1 ms, trace 33 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=160000 kd=800 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 19 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+22 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 18 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=160000 kd=800 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(1, 0, 0) anchor=(-0.0001, -0.0095, 0.0128) effort=0 velLim=0 lim=[-0.01, 0] [free-spinning]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 9, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 9, child=body 11) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 8, child=body 9) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 7, child=body 8) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 6, child=body 7) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 5, child=body 6) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 3, child=body 4) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 18, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 18, child=body 20) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 17, child=body 18) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 16, child=body 17) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 15, child=body 16) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 14, child=body 15) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 16 (parent=body 12, child=body 13) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 2400 tris, BVH 1 ms, trace 76 ms
+INFO: [OmniLight] probe volume live: 19x19x16 (5776 probes, 5776 valid), 2400 tris, BVH 1 ms, trace 80 ms

@@ -53,6 +53,30 @@ defaults:
 
 jobs:
   build-and-smoke:
+    # VENUE GUARD -- the automatic Linux build runs on the PUBLIC mirror only.
+    #
+    # This job is evidence for Linux USERS, and they read
+    # github.com/omnilink-tech/omnisim. Running the same two-runner matrix on
+    # the private origin as well doubles the Actions minutes to produce a
+    # second green tick nobody outside this machine ever sees. Owner's call,
+    # 2026-09-15.
+    #
+    # workflow_dispatch still runs anywhere, the same escape hatch
+    # launch-race-stress.yml keeps: the Linux build has been broken twice by
+    # changes authored here (see the header), so being able to ask for it by
+    # hand from the private origin is worth keeping. Nothing is billed until
+    # someone deliberately asks.
+    #
+    # Gated at the JOB, like runtime-image.yml and train-image.yml. On the
+    # private origin the workflow still triggers and reports `skipped`, which
+    # bills no runner time and which `omnisim doctor` already counts as green
+    # (CI_GREEN_CONCLUSIONS in omnisim/doctor.py), so the ci row stays N/N.
+    # Deleting the file here instead would NOT survive publish_snapshot.sh --
+    # the snapshot REPLACES public/main, so a public-only workflow is erased
+    # on the next publish.
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || github.repository == 'omnilink-tech/omnisim'
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:

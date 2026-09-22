@@ -15,8 +15,12 @@ python -m omnisim run-agent --agent omnitug500_warehouse
 #   "where are you?"  /  "return to the charging dock"  /  "stop"
 ```
 
-No `OMNI_KEY`? The world still works standalone — open it, right-click the rover
-→ *Show Robot Window*, and the offline regex router drives the same actions.
+An OmniKey is required for the chat surface on every plan, Free included: without
+one the rover's `POST /prompt` answers `401 omnikey_required` and the side-panel
+says the OmniLink connection is required — nothing actuates. The world itself
+still runs without a key, and the bridge's direct verbs drive the same actions:
+`POST /goto_station`, `/pick_package`, `/deliver_package`, `/run_route`, `/stop`,
+`/reset` on `127.0.0.1:8765`.
 
 | File | What |
 |---|---|

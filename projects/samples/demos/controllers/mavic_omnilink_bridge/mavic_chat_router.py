@@ -17,9 +17,9 @@
 Adds a natural-language verb surface on top of mavic_omnilink_bridge's
 BridgeState so the right-click *Show Robot Window* chat panel works in
 chat/omnilink_mavic.omniworld — operator types "takeoff" / "forward 1 m" /
-"land" and the IntentRouter mutates the same BridgeState fields the
-agent-facing /action POST handler mutates. Same state, same flight loop,
-two entry points.
+"land" and the shared deterministic parser (via `_StateBridge` below)
+mutates the same BridgeState fields the agent-facing /action POST handler
+mutates. Same state, same flight loop, two entry points.
 
 This module is intentionally split out so the 1k-line bridge file stays
 focused on the agent contract (HTTP /action + survey perception) and
@@ -30,15 +30,9 @@ from __future__ import annotations
 
 import json
 import math
-import os
-import re
-import threading
-from typing import Any, Dict, List, Optional
 
 
 DEFAULT_TAKEOFF_ALTITUDE_M = 12.0  # matches mavic_omnilink_bridge.DEFAULT_TAKEOFF_ALTITUDE
-DEFAULT_MOVE_DISTANCE_M = 1.0
-DEFAULT_TURN_RAD = math.pi / 2
 
 
 def wrap_pi(angle: float) -> float:
@@ -98,19 +92,6 @@ def _act_reset(state) -> None:
         state.reset_request = {"x": 0.0, "y": -12.0, "z": 0.1, "yaw": math.pi / 2}
 
 
-def _act_goto(state, x: float, y: float, altitude: Optional[float] = None) -> None:
-    with state.lock:
-        alt = altitude if altitude is not None else (
-            state.target_altitude if state.target_altitude > 0.5
-            else DEFAULT_TAKEOFF_ALTITUDE_M
-        )
-        state.target_x = float(x)
-        state.target_y = float(y)
-        state.target_altitude = max(0.5, alt)
-        state.mode = "goto"
-        state.fault = None
-
-
 def _act_move_body(state, forward: float = 0.0, lateral: float = 0.0,
                    vertical: float = 0.0) -> None:
     """Body-frame offset: +forward = nose, +lateral = left, +vertical = up."""
@@ -137,149 +118,101 @@ def _act_turn(state, angle_rad: float) -> None:
         state.target_yaw = wrap_pi(base + angle_rad)
 
 
-# ── IntentRouter ──────────────────────────────────────────────────────
+# ── The chat surface ──────────────────────────────────────────────────
 
-class IntentRouter:
-    NUMBER = r"(-?\d+\.?\d*)"
+class _StateBridge:
+    """Adapts this module's _act_* functions to the act_* attribute API the
+    rest of the stack expects -- `omnisim_bridges.route` and the drone's
+    `/tool` registry both drive the aircraft through this one object, so the
+    drone shares one vocabulary with the tug, the arm and the quadruped
+    instead of keeping its own keyword ladder.
+
+    The ladder it replaced had the same class of defect as the others, and
+    one that is worse on a drone: `land` is an ordinary English word, so
+    "where did the package land?" used to LAND THE AIRCRAFT. The parser
+    settles question form before any rule is tried.
+    """
 
     def __init__(self, state) -> None:
         self.state = state
 
-    def _distance(self, val: float, unit: Optional[str]) -> float:
-        u = (unit or "m").lower()
-        if u.startswith("cm") or u.startswith("centi"):
-            return val / 100.0
-        return val
+    # ── Telemetry forwarded from the state object (plan D1 / D4) ──────
+    #
+    # `route.execute` and the event dispatcher read `events`, `sim_time`,
+    # `sim_step`, `robot_id` and `fault` off whatever bridge object they are
+    # handed, with `getattr(..., default)`. This adapter IS that object on
+    # the drone, so without these five properties a gate refusal on the
+    # parser path would be filed against a ring that does not exist and a
+    # `sim_time` of 0.0 -- an event stamped at the beginning of time, which
+    # is worse than no event because it looks like a real one.
 
-    def dispatch(self, text: str) -> Dict[str, Any]:
-        s = (text or "").strip().lower()
-        if not s:
-            return {"agent": "(empty prompt)", "tools": []}
+    @property
+    def events(self):
+        return getattr(self.state, "events", None)
 
-        m = re.search(r"\b(takeoff|take[- ]?off|launch|lift[- ]?off)\b(?:.*?\bto\b)?[^\d-]*" + self.NUMBER + r"?\s*(m|meter|metre|meters|metres|cm)?", s)
-        if m and re.search(r"\b(takeoff|take[- ]?off|launch|lift[- ]?off)\b", s):
-            raw = m.group(2)
-            altitude = self._distance(float(raw), m.group(3)) if raw else DEFAULT_TAKEOFF_ALTITUDE_M
-            _act_takeoff(self.state, altitude)
-            return {"agent": f"Taking off to {altitude:.1f} m.",
-                    "tools": [("takeoff", "ok", f"alt={altitude:.1f} m")]}
+    @property
+    def sim_time(self) -> float:
+        return float(getattr(self.state, "sim_time", 0.0) or 0.0)
 
-        if re.search(r"\b(land|touch\s*down|descend\s+now)\b", s):
-            _act_land(self.state)
-            return {"agent": "Landing.", "tools": [("land", "ok", "descent")]}
+    @property
+    def sim_step(self) -> int:
+        return int(getattr(self.state, "sim_step", 0) or 0)
 
-        if re.search(r"\b(hover|hold(?:\s+position)?|station[- ]?keep)\b", s):
-            _act_hover(self.state)
-            return {"agent": "Hovering in place.", "tools": [("hover", "ok", "hold")]}
+    @property
+    def robot_id(self) -> str:
+        return str(getattr(self.state, "robot_id", "mavic2pro") or "mavic2pro")
 
-        if re.search(r"\b(stop|halt|freeze|brake)\b", s):
-            _act_stop(self.state)
-            return {"agent": "Stopping (drone idles). Use 'takeoff' to resume.",
-                    "tools": [("stop", "ok", "idle")]}
+    @property
+    def fault(self):
+        return getattr(self.state, "fault", None)
 
-        if re.search(r"\b(reset|home|teleport.*start|return.*spawn)\b", s):
-            _act_reset(self.state)
-            return {"agent": "Teleporting back to spawn.",
-                    "tools": [("reset", "ok", "spawn")]}
+    @property
+    def surface(self) -> str:
+        return "drone"
 
-        if re.search(r"\b(status|state|where|pose|telemetry|altitude)\b", s):
-            with self.state.lock:
-                x, y, z, yaw, mode = (self.state.x, self.state.y, self.state.z,
-                                       self.state.yaw, self.state.mode)
-            return {"agent": (f"x={x:+.2f}, y={y:+.2f}, z={z:.2f} m, "
-                              f"yaw={math.degrees(yaw):+.0f}°, mode={mode}."),
-                    "tools": [("get_state", "ok", mode)]}
+    def act_takeoff(self, altitude=None):
+        _act_takeoff(self.state, DEFAULT_TAKEOFF_ALTITUDE_M
+                     if altitude is None else float(altitude))
+        return {"accepted": True}
 
-        if re.search(r"\b(spin|rotate)\b", s) and not re.search(r"left|right|degree|deg|rad", s):
-            _act_turn(self.state, 2.0 * math.pi)
-            return {"agent": "Spinning 360°.", "tools": [("turn", "ok", "360°")]}
+    def act_land(self):
+        _act_land(self.state)
+        return {"accepted": True}
 
-        m = re.search(r"\b(up|climb|ascend|down|descend|drop|lower)\b[^-\d]*" + self.NUMBER + r"\s*(m|meter|metre|meters|metres|cm)?", s)
-        if m:
-            verb = m.group(1)
-            d = self._distance(float(m.group(2)), m.group(3))
-            if verb in ("down", "descend", "drop", "lower"):
-                d = -d
-            _act_move_body(self.state, vertical=d)
-            return {"agent": f"Moving {'up' if d>0 else 'down'} {abs(d):.2f} m.",
-                    "tools": [("move", "ok", f"vertical={d:+.2f} m")]}
-        if re.search(r"\b(up|climb|ascend)\b", s):
-            _act_move_body(self.state, vertical=DEFAULT_MOVE_DISTANCE_M)
-            return {"agent": f"Climbing {DEFAULT_MOVE_DISTANCE_M:.1f} m.",
-                    "tools": [("move", "ok", f"vertical=+{DEFAULT_MOVE_DISTANCE_M:.1f} m")]}
-        if re.search(r"\b(down|descend|drop)\b", s) and not re.search(r"\bland\b", s):
-            _act_move_body(self.state, vertical=-DEFAULT_MOVE_DISTANCE_M)
-            return {"agent": f"Descending {DEFAULT_MOVE_DISTANCE_M:.1f} m.",
-                    "tools": [("move", "ok", f"vertical=-{DEFAULT_MOVE_DISTANCE_M:.1f} m")]}
+    def act_hover(self):
+        _act_hover(self.state)
+        return {"accepted": True}
 
-        m = re.search(r"\bturn(?:\s+(left|right))?\s+(?:by\s+)?" + self.NUMBER + r"\s*(deg|degree|degrees|rad|radian|radians)?", s)
-        if m:
-            direction = m.group(1)
-            val = float(m.group(2))
-            unit = (m.group(3) or "deg").lower()
-            angle = val if unit.startswith("rad") else math.radians(val)
-            if direction == "right":
-                angle = -abs(angle)
-            elif direction == "left":
-                angle = abs(angle)
-            _act_turn(self.state, angle)
-            return {"agent": f"Turning {math.degrees(angle):+.0f}°.",
-                    "tools": [("turn", "ok", f"angle={math.degrees(angle):+.0f}°")]}
-        m2 = re.search(r"\bturn (left|right)\b", s)
-        if m2:
-            direction = m2.group(1)
-            sign = 1 if direction == "left" else -1
-            _act_turn(self.state, sign * DEFAULT_TURN_RAD)
-            return {"agent": f"Turning {direction} 90°.",
-                    "tools": [("turn", "ok", f"angle={sign*90}°")]}
-        if re.search(r"\b(turn around|u[- ]?turn|about face)\b", s):
-            _act_turn(self.state, math.pi)
-            return {"agent": "Turning around (180°).",
-                    "tools": [("turn", "ok", "angle=180°")]}
+    def act_stop(self, source="external"):
+        _act_stop(self.state)
+        return {"accepted": True}
 
-        m = re.search(r"\bgo\s*to\s+" + self.NUMBER + r"[,\s]+" + self.NUMBER +
-                       r"(?:\s+(?:at|alt|altitude)\s+" + self.NUMBER + r"\s*(m|meters)?)?", s)
-        if m:
-            tx = float(m.group(1)); ty = float(m.group(2))
-            alt_str = m.group(3)
-            alt = float(alt_str) if alt_str else None
-            _act_goto(self.state, tx, ty, alt)
-            return {"agent": f"Flying to ({tx:+.2f}, {ty:+.2f})" + (f" at {alt:.1f} m." if alt else "."),
-                    "tools": [("goto", "ok", f"({tx:+.2f}, {ty:+.2f})")]}
+    def act_reset_to_home(self):
+        _act_reset(self.state)
+        return {"accepted": True}
 
-        m = re.search(r"\b(?:strafe\s+)?(left|right)\b[^-\d]*" + self.NUMBER + r"\s*(m|meter|metre|meters|metres|cm)?", s)
-        if m and not re.search(r"\bturn\b", s):
-            direction = m.group(1)
-            d = self._distance(float(m.group(2)), m.group(3))
-            lat = d if direction == "left" else -d
-            _act_move_body(self.state, lateral=lat)
-            return {"agent": f"Strafing {direction} {abs(lat):.2f} m.",
-                    "tools": [("move", "ok", f"lateral={lat:+.2f} m")]}
+    def act_turn(self, angle_rad):
+        _act_turn(self.state, float(angle_rad))
+        return {"accepted": True}
 
-        m = re.search(r"\b(forward|forwards|ahead|fly forward|back|backward|backwards|reverse|fly back)\b[^-\d]*" + self.NUMBER + r"\s*(m|meter|metre|meters|metres|cm)?", s)
-        if m:
-            direction = m.group(1).replace("fly ", "")
-            d = self._distance(float(m.group(2)), m.group(3))
-            if direction.startswith("back") or direction == "reverse":
-                d = -d
-            _act_move_body(self.state, forward=d)
-            return {"agent": f"Flying {direction} {abs(d):.2f} m.",
-                    "tools": [("move", "ok", f"forward={d:+.2f} m")]}
-        if re.search(r"\b(forward|forwards|ahead)\b", s):
-            _act_move_body(self.state, forward=DEFAULT_MOVE_DISTANCE_M)
-            return {"agent": f"Flying forward {DEFAULT_MOVE_DISTANCE_M:.1f} m.",
-                    "tools": [("move", "ok", f"forward=+{DEFAULT_MOVE_DISTANCE_M:.1f} m")]}
-        if re.search(r"\b(back|reverse)\b", s):
-            _act_move_body(self.state, forward=-DEFAULT_MOVE_DISTANCE_M)
-            return {"agent": f"Flying back {DEFAULT_MOVE_DISTANCE_M:.1f} m.",
-                    "tools": [("move", "ok", f"forward=-{DEFAULT_MOVE_DISTANCE_M:.1f} m")]}
+    def act_move_body(self, forward=None, vertical=None):
+        _act_move_body(self.state, forward=float(forward or 0.0),
+                       vertical=float(vertical or 0.0))
+        return {"accepted": True}
 
-        return {
-            "agent": ("I don't recognise that. Try: \"takeoff\", \"forward 1 m\", "
-                      "\"up 2 m\", \"left 1 m\", \"turn right 90 degrees\", "
-                      "\"goto 2 3\", \"hover\", \"land\", \"stop\", \"reset\"."),
-            "tools": [],
-        }
+    def get_state_for_query(self):
+        with self.state.lock:
+            return {"x": self.state.x, "y": self.state.y,
+                    "z": self.state.z, "mode": self.state.mode}
+
+    def describe_state(self):
+        """The drone's own sentence. The shared describer knows arms and
+        tugs, and would answer "how high are you?" with "in idle mode"."""
+        with self.state.lock:
+            x, y, z = self.state.x, self.state.y, self.state.z
+            yaw, mode = self.state.yaw, self.state.mode
+        return (f"x={x:+.2f}, y={y:+.2f}, altitude={z:.2f} m, "
+                f"yaw={math.degrees(yaw):+.0f} deg, mode={mode}.")
 
 
 # ── wwi plumbing ──────────────────────────────────────────────────────
@@ -289,11 +222,37 @@ def queue_window(state, line: str) -> None:
         state.window_outbox.append(line)
 
 
+def relay_event_to_window(state, kind: str, payload: dict) -> None:
+    """Render one relay turn event as robot-window protocol lines.
+
+    Module-level, because plan D4's WAKE uses the SAME sink an operator's
+    typed turn uses: a wake IS an ordinary turn -- same cascade, same gate,
+    same memory write -- and the only thing that differs is who wrote the
+    sentence. A second, wake-only renderer would be a second place for the
+    chat panel's protocol to drift.
+
+    Safe from any thread: `queue_window` appends under the state's own lock
+    and the SIM THREAD drains the outbox. It touches no Robot API.
+    """
+    if kind == "status":
+        queue_window(state, "status:" + str(payload.get("state", "idle")))
+    elif kind in ("agent", "error"):
+        queue_window(state, kind + ":" + str(payload.get("text", "")))
+    elif kind == "tool":
+        queue_window(state,
+                     f"tool:{payload.get('name', '?')}:"
+                     f"{payload.get('status', 'ok')}:"
+                     f"{payload.get('summary', '')}")
+
+
 def push_configure(state) -> None:
+    from omnisim_bridges.access import chat_config
+    relay = getattr(state, "omnilink_relay", None)
     cfg = {
         "robot": "DJI Mavic 2 Pro",
         "robot_class": "aerial drone",
-        "agent": "local intent (regex)",
+        "agent": "OmniLink" if relay is not None else "OmniLink connection required",
+        **chat_config(relay),
         "suggestions": [
             "takeoff",
             "forward 1 m",
@@ -309,7 +268,32 @@ def push_configure(state) -> None:
         state.window_configured = True
 
 
-def handle_wwi_message(state, router: IntentRouter, msg: str) -> None:
+def _parser_first_window(state, text: str, to_model, spawn=None) -> bool:
+    """Parser-first on the robot-window path. True = the turn is taken.
+
+    ⚠️ handle_wwi_message is drained on the SIM THREAD, so the shared
+    helper decides here (pure regex) and executes on a worker.
+
+    ⚠️ The caller checks `relay is None` FIRST and refuses. This is never
+    reached without an OmniKey, and must never be made reachable without
+    one -- see the 2026-09-22 access policy.
+    """
+    if getattr(state, "omnilink_relay", None) is None:
+        return False                       # belt and braces; see above
+    try:
+        from omnisim_bridges.route import parser_first_window
+    except ImportError:                                # pragma: no cover
+        return False
+    try:
+        return bool(parser_first_window(
+            _StateBridge(state), text, "drone",
+            lambda line: queue_window(state, line), to_model, spawn=spawn))
+    except Exception as exc:               # never take the demo down
+        print(f"[mavic_chat_router] parser-first skipped: {exc!r}", flush=True)
+        return False
+
+
+def handle_wwi_message(state, msg: str) -> None:
     if not msg:
         return
     if msg.startswith("configure"):
@@ -322,12 +306,30 @@ def handle_wwi_message(state, router: IntentRouter, msg: str) -> None:
         queue_window(state, "status:idle")
         return
     if msg.startswith("prompt:"):
+        from omnisim_bridges.access import connection_error
+        relay = getattr(state, "omnilink_relay", None)
+        # ⚠️ ACCESS CHECK FIRST, AND NOTHING IS INTERPRETED BEFORE IT.
+        # The parser below needs no key and no network, which is exactly
+        # why it must sit BEHIND this: a keyless /prompt is refused, full
+        # stop (2026-09-22 access policy).
+        if relay is None:
+            queue_window(state, "error:" + connection_error()["response"])
+            queue_window(state, "status:error")
+            return
         text = msg[len("prompt:"):]
-        queue_window(state, "status:thinking")
-        result = router.dispatch(text)
-        for (tool, status, summary) in result["tools"]:
-            queue_window(state, f"tool:{tool}:{status}:{summary}")
-        queue_window(state, "agent:" + result["agent"])
-        queue_window(state, "status:idle")
+
+        def on_event(kind, payload):
+            relay_event_to_window(state, kind, payload)
+
+        def _to_model():
+            relay.dispatch_async(text, on_event)
+
+        # PARSER FIRST. The window path shares the aircraft's one
+        # vocabulary with /prompt, so "climb 2 m" typed into the panel is
+        # judged on the same "drone" rail (gate.MAX_ALTITUDE_M) the HTTP
+        # route uses -- and answered without paying for a model.
+        if _parser_first_window(state, text, _to_model):
+            return
+        _to_model()
         return
     queue_window(state, "system:Unknown window message: " + msg[:200])

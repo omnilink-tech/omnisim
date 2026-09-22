@@ -221,6 +221,68 @@ def _cleanup_verified_frame_spool(
     return cleanup
 
 
+def cleanup_retired_source_spool(
+    source_spool: Path,
+    output: Path,
+    receipt: Path,
+    receipt_payload: dict,
+) -> dict:
+    """Retire the raw spool a graded spool was derived from, after a verified encode.
+
+    A grading detour copies ``frames/`` into ``graded_frames/`` and the encode
+    retires only the spool it actually read, so the raw spool survives as dead
+    weight bound to the same master -- 18.6 GB of it on ``final_budget`` alone.
+    Retire it under the same fail-closed proof used for the encoded spool: the
+    master must still hash to its receipt, must cover every frame it claims, and
+    the raw spool must hold exactly the frame count that receipt encoded.
+    """
+    source_spool = source_spool.resolve()
+    output = output.resolve()
+    if not source_spool.is_dir() or source_spool.is_symlink():
+        raise ValueError(f"source spool is not a regular directory: {source_spool}")
+    if source_spool.parent != output.parent:
+        raise ValueError("refusing source cleanup outside the encoded output directory")
+    if "frame" not in source_spool.name.lower():
+        raise ValueError(f"refusing non-frame directory cleanup: {source_spool}")
+
+    encoded = receipt_payload.get("frame_cleanup", {}).get("frame_dir")
+    if encoded and Path(encoded).resolve() == source_spool:
+        raise ValueError(f"source spool is the encoded spool, not an upstream one: {source_spool}")
+
+    if not output.is_file() or output.stat().st_size == 0:
+        raise ValueError(f"encoded output is missing or empty: {output}")
+    expected_sha = receipt_payload.get("output_sha256")
+    if not expected_sha or sha256(output) != expected_sha:
+        raise ValueError(f"encoded output hash does not match receipt: {output}")
+    frame_count = receipt_payload.get("input", {}).get("frame_count")
+    if receipt_payload.get("output_probe", {}).get("frames") != frame_count:
+        raise ValueError(f"encoded output frame count does not match receipt: {output}")
+
+    entries = list(source_spool.iterdir())
+    if not entries or any(
+            not path.is_file() or not FRAME_NAME_RE.fullmatch(path.name)
+            for path in entries):
+        raise ValueError(f"source spool contains unexpected entries: {source_spool}")
+    if len(entries) != frame_count:
+        raise ValueError(
+            f"source spool holds {len(entries)} frames but the master encoded "
+            f"{frame_count}; retaining it for inspection: {source_spool}"
+        )
+
+    removed_bytes = sum(path.stat().st_size for path in entries)
+    removed_files = len(entries)
+    shutil.rmtree(source_spool)
+    cleanup = {
+        "status": "removed_after_verified_encode_of_derived_spool",
+        "frame_dir": str(source_spool),
+        "removed_files": removed_files,
+        "removed_bytes": removed_bytes,
+    }
+    receipt_payload["source_cleanup"] = cleanup
+    receipt.write_text(json.dumps(receipt_payload, indent=2) + "\n", encoding="utf-8")
+    return cleanup
+
+
 def _probe_encoded_output(output: Path) -> dict:
     ffprobe = shutil.which("ffprobe")
     if ffprobe is None:
@@ -252,8 +314,14 @@ def encode(
     crf: int,
     *,
     keep_frames: bool = False,
+    source_spool: Path | None = None,
 ) -> bool:
-    """Encode a verified frame spool, reusing a hash-bound local result when fresh."""
+    """Encode a verified frame spool, reusing a hash-bound local result when fresh.
+
+    ``source_spool`` names the raw spool ``frame_dir`` was derived from by a
+    grading pass; it is retired alongside the encoded spool so a graded film
+    does not leave its lossless originals behind.
+    """
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None:
         raise SystemExit("ffmpeg is required on PATH")
@@ -307,6 +375,8 @@ def encode(
         receipt.write_text(json.dumps(receipt_payload, indent=2) + "\n", encoding="utf-8")
     else:
         _cleanup_verified_frame_spool(frame_dir, output, receipt, receipt_payload)
+        if source_spool is not None and source_spool.resolve() != frame_dir.resolve():
+            cleanup_retired_source_spool(source_spool, output, receipt, receipt_payload)
     return reused
 
 

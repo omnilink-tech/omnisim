@@ -390,7 +390,10 @@ def test_declared_routes_match_the_request_handler_source():
 def test_route_table_is_well_formed():
     import omnisim_harness as h
     for route in h.ROUTES:
-        assert route["method"] in ("GET", "POST")
+        # DELETE joined GET/POST with DELETE /sim/break/<id> (v9 C2); it is
+        # the only one, and it has a POST twin for clients that cannot route
+        # a bodyless DELETE.
+        assert route["method"] in ("GET", "POST", "DELETE")
         assert route["path"].startswith("/")
         assert route["summary"]
     paths = [(r["method"], r["path"]) for r in h.ROUTES]
@@ -406,9 +409,10 @@ def test_log_event_types_match_their_emitters():
 
 
 def test_supervisor_event_types_match_their_emitters():
-    """The supervisor's seven types, cross-checked against the emit() calls in
+    """The supervisor's eight types, cross-checked against the emit() calls in
     event_bus.py + harness_supervisor.py — the same check the live
-    `capabilities` RPC runs."""
+    `capabilities` RPC runs. Seven per-step producer types plus `break.hit`,
+    which BreakRegistry emits when an armed break freezes the engine (v9 C2)."""
     import event_bus
     sources = [
         (SUPERVISOR_DIR / "event_bus.py").read_text(encoding="utf-8"),
@@ -418,14 +422,17 @@ def test_supervisor_event_types_match_their_emitters():
     assert result["undeclared"] == []
     assert result["declared_not_emitted"] == []
     assert result["verified"] is True
-    assert len(result["types"]) == 7
+    assert len(result["types"]) == 8
 
 
-def test_ten_event_types_total():
-    """PROTOCOL.md §10.1 says exactly ten. This is that claim, as a test."""
+def test_eleven_event_types_total():
+    """PROTOCOL.md §10.1 says exactly eleven. This is that claim, as a test.
+
+    It said ten until v9 C2 added `break.hit`; the count is pinned here
+    precisely so the doc and the code cannot drift apart again."""
     import event_bus
     import omnisim_harness as h
-    assert len(set(event_bus.SUPERVISOR_EVENT_TYPES) | set(h.LOG_EVENT_TYPES)) == 10
+    assert len(set(event_bus.SUPERVISOR_EVENT_TYPES) | set(h.LOG_EVENT_TYPES)) == 11
 
 
 def test_every_event_type_has_a_named_producer():

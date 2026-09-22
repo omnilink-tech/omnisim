@@ -13,17 +13,48 @@
           "blurb": "The onboarding demo. Husky random-walks a 30 × 18 m warehouse with collision recovery."
         },
         {
+          "id": "so101_pickplace",
+          "name": "SO101 physical pick and place",
+          "world": "projects/robots/therobotstudio/worlds/so101_pickplace.omniworld",
+          "blurb": "An authored simulation trajectory pinches a cube, carries it and releases it into a box. Includes an open-gripper control. This is not a replay of the real LeRobot recording."
+        },
+        {
           "id": "omniarm6_real_pick_place",
           "name": "OmniArm 6 real pick and place",
           "world": "projects/samples/demos/worlds/flagship/omniarm6_real_pick_place.omniworld",
-          "blurb": "The demo README and BETA open with: a real friction grasp lifts a block and places it, with a drop control (PICK_CONTROL_DROP=1) that must fail."
+          "blurb": "The self-contained CLI and BETA starter: a friction grasp lifts and places a block, with a drop control (PICK_CONTROL_DROP=1) that must fail."
+        }
+      ]
+    },
+    {
+      "id": "debugging",
+      "label": "Debugging — find out why a robot failed",
+      "description": "A cell with a real, reproducible fault in it. Load the faulty world, watch GET /sim/events, and find the bug without a screenshot or the world source.",
+      "demos": [
+        {
+          "id": "omniarm6_drop_fault",
+          "name": "The arm drops the box two times in five",
+          "world": "projects/samples/demos/worlds/debug/omniarm6_drop_fault.omniworld",
+          "blurb": "DELIBERATELY BROKEN. One physics field is wrong and the gripper loses the part in mid-air on the two heaviest of five payloads — while a screenshot of the end state still looks fine. Diagnose it from the event stream alone: RUN: python scripts/dev/diagnose_drop.py projects/samples/demos/worlds/debug/omniarm6_drop_fault.omniworld"
+        },
+        {
+          "id": "omniarm6_drop_fault_fixed",
+          "name": "The same cell, with the fault fixed",
+          "world": "projects/samples/demos/worlds/debug/omniarm6_drop_fault_fixed.omniworld",
+          "blurb": "The verified fix: the same world with newtonGroundMu back at 6. All five payloads are carried and placed. Sweep both to see 3/5 become 5/5: RUN: python scripts/dev/drop_payload_sweep.py --both"
+        },
+        {
+          "id": "aloha_battery_recorded",
+          "name": "ALOHA recorded battery replay (diagnostic)",
+          "world": "projects/robots/trossen/aloha/worlds/aloha_battery.omniworld",
+          "blurb": "Recorded ALOHA motions in an estimated scene. The recorded actions do not reproduce the insertion. A separate authored physical task and real-video comparison are documented in projects/robots/trossen/aloha/README.md."
         }
       ]
     },
     {
       "id": "chat_arms",
       "label": "Chat · Arms",
-      "description": "Natural-language console for a robot arm: right-click the robot -> Show Robot Window -> type 'home', 'wave hello', 'joint 3 to 1.5'.",
+      "description": "OmniLink chat requires an OmniKey and a connected model. Natural-language console for a robot arm: right-click the robot -> Show Robot Window -> type 'home', 'wave hello', 'joint 3 to 1.5'.",
       "demos": [
         {
           "id": "omniarm6",
@@ -36,6 +67,12 @@
           "name": "OmniArm 6 + 140 mm two-finger gripper (real grasp)",
           "world": "projects/samples/demos/worlds/chat/omnilink_omniarm6_2f140.omniworld",
           "blurb": "Ask it to \"pick up the block\" and \"put it down\" -- and the hold is REAL friction, not the kinematic weld every other chat demo uses. Say \"open the gripper\" mid-carry and the block falls, which is the point."
+        },
+        {
+          "id": "omniarm6_talk",
+          "name": "Talk to Ari (OmniArm 6 + Robotiq 2F-85)",
+          "world": "projects/samples/demos/worlds/chat/omniarm6_talk.omniworld",
+          "blurb": "The same OmniArm 6 with a persona: right-click -> Talk to the Robot for the in-sim chat card. Ask Ari to pick up a coloured cube and the real 2F-85 fingers close on it, lift and carry -- the cubes are rigid bodies and fall when released. The one chat world whose name is not omnilink_<robot>. RUN: powershell -File projects/samples/demos/worlds/chat/run_omniarm6_talk.ps1"
         },
         {
           "id": "ur5e",
@@ -66,13 +103,13 @@
     {
       "id": "chat_mobile",
       "label": "Chat · Mobile bases",
-      "description": "Natural-language console for wheeled bases. Try \"forward 1 m\", \"turn left 90 degrees\", \"spin\", \"stop\".",
+      "description": "OmniLink chat requires an OmniKey and a connected model. Natural-language console for wheeled bases. Try \"forward 1 m\", \"turn left 90 degrees\", \"spin\", \"stop\".",
       "demos": [
         {
           "id": "husky",
-          "name": "Clearpath Husky",
+          "name": "OmniLink × Husky — featured AI demo",
           "world": "projects/samples/demos/worlds/chat/omnilink_husky.omniworld",
-          "blurb": "Skid-steer 4-wheel base."
+          "blurb": "The README film: one Husky, follow-up instructions and live state questions. Requires an OmniKey and model connection; see docs/guide/omnilink-chat-demos.md."
         },
         {
           "id": "jackal",
@@ -114,21 +151,51 @@
     },
     {
       "id": "chat_quadruped",
-      "label": "Chat · Quadruped",
-      "description": "Quadruped poses via natural language.",
+      "label": "Chat · Quadrupeds",
+      "description": "OmniLink chat requires an OmniKey and a connected model. Six quadrupeds on one bridge (omnilink_quadruped_bridge): poses — \"stand\", \"sit\", \"wave hello\" — on all of them, plus real wheeled driving on the M20 family. There is no learned gait behind any of these: \"walk\" cycles the legs in place.",
       "demos": [
         {
           "id": "omniquad",
           "name": "OmniQuad",
           "world": "projects/samples/demos/worlds/chat/omnilink_omniquad.omniworld",
           "blurb": "OmniQuad — poses only. Try \"stand\", \"sit\", \"wave hello\"."
+        },
+        {
+          "id": "lite3",
+          "name": "Deep Robotics Lite3",
+          "world": "projects/samples/demos/worlds/chat/omnilink_lite3.omniworld",
+          "blurb": "11.9 kg quadruped that settles out of its spawn pose onto its own physics and holds a 0.262 m stance — no supervisor pin. Try \"stand\", \"sit\", \"wave hello\"; \"walk\" cycles the legs in place. Package provenance: projects/robots/deep_robotics/PROVENANCE.md (BSD-3, no affiliation)."
+        },
+        {
+          "id": "x30",
+          "name": "Deep Robotics X30",
+          "world": "projects/samples/demos/worlds/chat/omnilink_x30.omniworld",
+          "blurb": "The Lite3's 55.8 kg sibling, standing at 0.395 m on the same bridge and the same sentences. Five times the mass is the difference you can watch settle."
+        },
+        {
+          "id": "m20",
+          "name": "Deep Robotics M20 (wheeled-legged)",
+          "world": "projects/samples/demos/worlds/chat/omnilink_m20.omniworld",
+          "blurb": "Wheeled-legged: \"drive forward\" turns four real continuous wheel joints and the 34.5 kg body actually rolls (0.48 m/s measured), rather than cycling legs on the spot. Poses work as on the Lite3."
+        },
+        {
+          "id": "m20s",
+          "name": "Deep Robotics M20S",
+          "world": "projects/samples/demos/worlds/chat/omnilink_m20s.omniworld",
+          "blurb": "The higher-torque M20 — identical geometry and meshes upstream, different effort and velocity limits. Same wheeled-legged surface; useful next to the M20 as an actuator-limit A/B."
+        },
+        {
+          "id": "m20_piper",
+          "name": "Deep Robotics M20 + AgileX Piper arm",
+          "world": "projects/samples/demos/worlds/chat/omnilink_m20_piper.omniworld",
+          "blurb": "The M20 carrying a 6-DoF AgileX Piper arm and gripper (39.2 kg all in). The BASE drives and poses as on the M20; the arm is loaded and holds its zero pose — the quadruped bridge does not command it, so do not ask this one to pick anything up."
         }
       ]
     },
     {
       "id": "chat_aerial",
       "label": "Chat · Aerial",
-      "description": "Natural-language console for drones. Try \"takeoff\", \"forward 1 m\", \"up 2 m\", \"turn right 90 degrees\", \"land\".",
+      "description": "OmniLink chat requires an OmniKey and a connected model. Natural-language console for drones. Try \"takeoff\", \"forward 1 m\", \"up 2 m\", \"turn right 90 degrees\", \"land\".",
       "demos": [
         {
           "id": "mavic",
@@ -253,6 +320,12 @@
       "label": "Showcase",
       "description": "Self-running visual showcases — sit back and watch, or follow a robot with F5.",
       "demos": [
+        {
+          "id": "orc_foundry",
+          "name": "ORC: Foundry",
+          "world": "projects/robot_combat/orc/worlds/orc_foundry.omniworld",
+          "blurb": "Pilot ANVIL against RAZOR in an industrial yard. ENTER starts, WASD drives, SPACE toggles the weapon, C changes camera, TAB switches autopilot. Contact-driven damage and moving debris. For GPU temperature protection use ORC's Launch Foundry.bat instead of this launcher."
+        },
         {
           "id": "metazoa_reef",
           "name": "Metazoa (robot cells that grow into robots)",

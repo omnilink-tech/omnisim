@@ -1,0 +1,115 @@
+{
+  "camera": {
+    "position": [
+      -0.233096,
+      -0.154371,
+      0.391032
+    ],
+    "orientation": [
+      -0.27588509689262253,
+      0.7536858347066573,
+      0.596527514767825,
+      1.100764343
+    ],
+    "field_of_view": 1.15,
+    "aspect": 1.703504,
+    "viewport": {
+      "width": 1896,
+      "height": 1113,
+      "source": "screenshot"
+    },
+    "half_fov_h_deg": 32.945,
+    "half_fov_v_deg": 20.828,
+    "forward": [
+      0.494555,
+      0.418081,
+      -0.761987
+    ]
+  },
+  "nodes": [
+    {
+      "def": "BATTERY",
+      "type": "Solid",
+      "center": [
+        -0.03368,
+        0.040625,
+        0.022387
+      ],
+      "radius": 0.030741,
+      "distance": 0.462265,
+      "in_frame": true,
+      "on_screen": true,
+      "behind_camera": false,
+      "centroid_ndc": [
+        0.46624,
+        0.576296
+      ],
+      "centroid_pixel": [
+        883.99,
+        641.42
+      ],
+      "screen_bbox_ndc": [
+        0.418176,
+        0.496925,
+        0.511804,
+        0.659706
+      ],
+      "screen_bbox_pixels": [
+        792.9,
+        553.1,
+        970.4,
+        734.3
+      ],
+      "yaw_deg": 2.505,
+      "pitch_deg": -3.319,
+      "angle_off_axis_deg": 4.158,
+      "hint": "in frame: 3 deg to the left, 3 deg down",
+      "bounds_exact": true
+    },
+    {
+      "def": "REMOTE",
+      "type": "Solid",
+      "center": [
+        -0.050078,
+        0.052902,
+        0.019525
+      ],
+      "radius": 0.075908,
+      "distance": 0.463115,
+      "in_frame": true,
+      "on_screen": true,
+      "behind_camera": false,
+      "centroid_ndc": [
+        0.432718,
+        0.591724
+      ],
+      "centroid_pixel": [
+        820.43,
+        658.59
+      ],
+      "screen_bbox_ndc": [
+        0.307669,
+        0.423672,
+        0.544169,
+        0.791098
+      ],
+      "screen_bbox_pixels": [
+        583.3,
+        471.5,
+        1031.7,
+        880.5
+      ],
+      "yaw_deg": 4.984,
+      "pitch_deg": -3.977,
+      "angle_off_axis_deg": 6.373,
+      "hint": "in frame: 5 deg to the left, 4 deg down",
+      "bounds_exact": true
+    }
+  ],
+  "counts": {
+    "considered": 2,
+    "on_screen": 2,
+    "returned": 2
+  },
+  "pixel_basis": "screenshot"
+}

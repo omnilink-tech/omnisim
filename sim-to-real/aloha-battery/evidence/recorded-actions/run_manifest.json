@@ -1,0 +1,13 @@
+{
+  "mode": "recorded-actions",
+  "world_sha256": "08c788d5bcc5e6e225db4bde7ddb0806b16a6abb9c1a9058a91d4bbe6aeaeda9",
+  "config_sha256": "e0a7a528fa254957c3ab390a29204afcd6571fe4123ba0bd269562efde69bfc6",
+  "model_sha256": {
+    "left": "effb0f9b406bad6cac5a889637bc17dfd575450eb0e2c4083ea115eda03549e4",
+    "right": "61a89e913b15acf2a96937362619dc251aa2b9e291807020a05571584d41b722"
+  },
+  "source_revision": "06dc3da83c4fd3d1889b00f1dfd3780da8421f64",
+  "no_grip": false,
+  "actuation": "Motor.setPosition",
+  "timed_episode_pose_writes": 0
+}

@@ -1,0 +1,33 @@
+{
+  "date": "2026-09-20",
+  "baseline": "../authored",
+  "frames": 600,
+  "pose_joint_contact_trace_identical": true,
+  "pose_records_identical": true,
+  "result_identical": true,
+  "viewpoint": {
+    "position": [
+      -0.233096,
+      -0.154371,
+      0.391032
+    ],
+    "orientation": [
+      -0.275885097,
+      0.753685835,
+      0.596527515,
+      1.100764343
+    ],
+    "fieldOfView": 1.15,
+    "exposure": 0.85
+  },
+  "claim_scope": "Grasp and gravity-assisted placement in rigid slots. No battery springs, terminals or spring-loaded seating are simulated.",
+  "video": {
+    "file": "../../videos/real-vs-authored-slot-placement.mp4",
+    "frames": 600,
+    "fps": 50,
+    "duration_s": 12,
+    "width": 1920,
+    "height": 1080,
+    "visual_review": "Pickup, lowering, release, final occupied slots and limitation captions reviewed."
+  }
+}

@@ -20,7 +20,8 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'husky_extreme_terrain
 from husky_extreme_terrain import axis_angle_to_target
 CAMERAS={'wide':([5.2,-8.4,5.2],[0,0,1.15]),'front':([.15,-7.3,3.45],[0,0,1.58]),'oblique':([4.5,-7.2,4.2],[0,0,1.5]),
          'bench':([4.5,-6.1,4.1],[0,0,.62]),'low':([1.8,-3.4,1.65],[0,0,.95]),
-         'high':([1.35,-3.8,3.65],[0,0,2.25]),'pick':([-2.2,-3.4,2.3],[-1.1,0,.55])}
+         'high':([1.35,-3.8,3.65],[0,0,2.25]),'pick':([-1.15,-2.15,1.2],[-.65,-1.1025,.57]),
+         'clearance':([.7,-1.5,1.15],[0,0,.43])}
 
 ACTIVE_SUPERVISOR=None
 
@@ -111,6 +112,11 @@ def main():
                     xy=[0,0]
                     if c['mode']=='buttress' and i<6:xy=[-.080 if i%2==0 else .080,0]
                     if c['mode']=='quad':xy=poses[i-4][:2] if i>=4 else [(-.08 if i%2==0 else .08),(-.09 if i%4<2 else .09)]
+                    if c['mode']=='quad' and c.get('bond_offset',0):
+                        # Alternate the complete layer around the tower center.
+                        # Motor targets bridge the seams; payloads remain free.
+                        offset=c['bond_offset']*(1 if level(i)%2 else -1)
+                        xy=[(-.08 if i%2==0 else .08)+offset,(-.09 if i%4<2 else .09)+offset]
                     target=[xy[0]-grip_offset[0],xy[1]-grip_offset[1],wp[2]]
                     move(rid,target,True);change('carry')
             elif phase=='carry' and math.dist(wp,target)<.008 and elapsed>.5:
@@ -120,6 +126,10 @@ def main():
                 h=(poses[placed[-1]][2]+.1 if placed else .4)
                 if c['mode']=='buttress' and i<6:h=.4 if i<2 else poses[i-2][2]+.1
                 if c['mode']=='quad':h=poses[i-4][2]+.1 if i>=4 else .4
+                if c['mode']=='quad' and c.get('bond_offset',0) and i>=4:
+                    support=[poses[j][2] for j in placed if level(j)==level(i)-1 and abs(poses[j][0]-p[0])<.155 and abs(poses[j][1]-p[1])<.155]
+                    if not support:raise RuntimeError('No overlapping support under the requested placement')
+                    h=max(support)+.1
                 target[2]=h-grip_offset[2]+.003
                 move(rid,target,True);change('place')
             elif phase=='place' and math.dist(wp,target)<.006 and elapsed>.4:
@@ -142,13 +152,13 @@ def main():
             (out/'live.json').write_text(json.dumps({k:state[k] for k in ['t','phase','block','placed','height']}));next_live=t+2
         camera=c['camera']
         if camera=='story':
-            camera='wide' if i<12 else 'low' if i<28 else 'front' if i<76 else 'high' if i<92 else 'front'
+            camera='wide' if i<12 else 'low' if i<28 else 'front' if i<50 else 'oblique' if i<64 else 'front' if i<76 else 'high' if i<92 else 'front'
             if i==99 and phase in ('carry','place','release'):camera='high'
             if phase in ('countdown','finished'):camera='oblique'
         if c['capture'] and camera!=applied:
             eye,aim=CAMERAS[camera];view.getField('position').setSFVec3f(eye);view.getField('orientation').setSFRotation(axis_angle_to_target(tuple(eye),tuple(aim)));applied=camera
         if c['capture'] and nextframe<=t<=c['end']+.032:
-            cadence=(1 if phase in ('countdown','finished') or (i==99 and phase in ('place','release','retract')) else 4 if len(placed)>=96 else c['speed']) if c.get('adaptive') else c['speed']
+            cadence=(1 if phase in ('countdown','finished') or (i==99 and phase in ('carry','place','release','retract')) else 4 if i==99 else 8 if len(placed)>=96 else c['speed']) if c.get('adaptive') else c['speed']
             time.sleep(max(0,c.get('wall_frame_interval',0)-(time.monotonic()-last_frame_wall)))
             r.exportImage(str(frames/f'frame_{frame_n:06d}.png'),90);index.append(state|{'frame':frame_n,'camera':camera,'speed':cadence});frame_n+=1;nextframe+=.032*cadence
             last_frame_wall=time.monotonic()

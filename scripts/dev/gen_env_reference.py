@@ -75,7 +75,11 @@ C_LIKE = {".cpp", ".hpp", ".c", ".h"}
 # Dev-only trees that never ship, plus frozen artefacts: scanning them would list
 # reads of copies (social/ carries whole snapshots of scripts/) rather than sources.
 EXCLUDED_PREFIXES = ("social/", "cloud/", "_scratch/", "distribution/", ".github/workflows.disabled/")
-EXCLUDED_RE = re.compile(r"^tests/benchmarks/.*/results?/")
+# Benchmark `evidence/` folders are the same kind of frozen artefact as `results/`:
+# harness_comparison snapshots whole source trees there, so a debug hatch that
+# existed only in the working copy during one run (OMNISIM_HOLD_DIAG, 2026-09-22)
+# was published on this page as if the product read it.
+EXCLUDED_RE = re.compile(r"^tests/benchmarks/.*/(results?|evidence)/")
 DOC_ROOTS = ("AGENTS.md", "README.md", "PROTOCOL.md", "CHANGELOG.md")
 
 # Order matters twice: a variable is filed under the FIRST area (top to bottom)

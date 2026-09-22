@@ -1562,7 +1562,8 @@ int OmNewtonBackend::addShapePlane(int bodyIdx, double cx, double cy, double cz)
 int OmNewtonBackend::addShapeMesh(int bodyIdx, const double *vertices, int nVertices,
                                   const int *indices, int nTriangles,
                                   double cx, double cy, double cz,
-                                  double qx, double qy, double qz, double qw) {
+                                  double qx, double qy, double qz, double qw,
+                                  double mu, double muT, double muR) {
   if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr || !mRuntime->openForBuild)
     return -1;
   if (vertices == nullptr || indices == nullptr || nVertices <= 0 || nTriangles <= 0)
@@ -1580,9 +1581,9 @@ int OmNewtonBackend::addShapeMesh(int bodyIdx, const double *vertices, int nVert
     PyList_SetItem(pyV, i, PyFloat_FromDouble(vertices[i]));  // SetItem steals the new ref
   for (Py_ssize_t i = 0; i < static_cast<Py_ssize_t>(3) * nTriangles; ++i)
     PyList_SetItem(pyI, i, PyLong_FromLong(indices[i]));
-  // 1 int + 2 objects + 1 int + 7 doubles: cx,cy,cz then qx,qy,qz,qw.
-  PyObject *r = PyObject_CallMethod(mRuntime->world, "add_shape_mesh", "(iOOiddddddd)",
-                                     bodyIdx, pyV, pyI, nVertices, cx, cy, cz, qx, qy, qz, qw);
+  // Pose (7 doubles), followed by the three per-shape friction coefficients.
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "add_shape_mesh", "(iOOidddddddddd)",
+                                     bodyIdx, pyV, pyI, nVertices, cx, cy, cz, qx, qy, qz, qw, mu, muT, muR);
   Py_DECREF(pyV);
   Py_DECREF(pyI);
   if (r == nullptr) {
@@ -3647,7 +3648,7 @@ int OmNewtonBackend::addShapeCapsule(int, double, double, double, double, double
 int OmNewtonBackend::addShapePlane(int, double, double, double) { return -1; }
 int OmNewtonBackend::addShapeMesh(int, const double *, int, const int *, int,
                                   double, double, double,
-                                  double, double, double, double) { return -1; }
+                                  double, double, double, double, double, double, double) { return -1; }
 // Cloth/particle stubs. OmCloth guards every call behind a null/isAvailable()
 // check, so these are unreachable in practice -- they exist for the same reason
 // snapshotBodyTranslations' stub does (below): the OFF build must still link.

@@ -1,0 +1,15 @@
+{
+  "name": "omniarm6_2f140_handling",
+  "display_name": "Omniarm6 2F140 Handling",
+  "world": "projects/samples/demos/worlds/chat/omnilink_omniarm6_2f140.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/omniarm6_2f140_handling/run.py",
+  "description": "omniarm6_2f140 \u2014 take a part, and ask where it goes. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "arm",
+    "handling",
+    "omniarm6_2f140",
+    "catalogue",
+    "generated"
+  ]
+}

@@ -36,6 +36,12 @@ on:
       - 'scripts/packaging/newton_runtime_pins.py'
       - 'projects/policies/research/training/requirements-train.txt'
       - '.github/workflows/g1-spec-conformance.yml'
+  # Pre-release validation runs on a release-candidate snapshot published to the
+  # public repo, and a snapshot diff need not touch any path above -- the whole
+  # tree arrives as one squashed commit whose contents are whatever changed. Hand
+  # dispatch is how the cut checklist runs this lane against an RC regardless:
+  #   gh workflow run g1-spec-conformance.yml --repo omnilink-tech/omnisim --ref main
+  workflow_dispatch:
 
 concurrency:
   group: g1-spec-conformance-${{ github.ref }}

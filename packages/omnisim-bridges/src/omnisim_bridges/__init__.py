@@ -53,11 +53,27 @@ The package is structured around four exports:
     (lift from omnilink_relay in the OmniSim demos). Lets your bridge
     host its own chat surface without round-tripping through the
     OmniLink web UI.
-  - `IntentRouter`: tiny regex-based offline router. Pre-LLM fallback
-    so /prompt does something useful when OMNI_KEY is unset.
+  - `route` + `interpret`: the deterministic interpreter. It parses an
+    operator sentence, ANSWERS what it is confident about, and abstains on
+    the rest so the relay's model handles it. There is no keyword ladder
+    underneath it: the `IntentRouter` that used to be exported here was
+    deleted on 2026-09-22 with every bridge copy of it, because an OmniKey
+    is required for every chat turn and a regex fallback for a keyless
+    /prompt is exactly what that policy forbids.
 """
 
-from .bridge_base import BridgeBase, serve_http
+from .bridge_base import (
+    BridgeBase,
+    SimClock,
+    StepBudget,
+    attach_telemetry,
+    safety_gate_block,
+    serve_events,
+    serve_http,
+    telemetry_tick,
+)
+from .events import EventRing, WAKE_POLICY, may_wake
+from .hold import HoldLease, lockstep_enabled
 from .tool import Tool
 
 try:
@@ -80,9 +96,7 @@ except Exception:
         return ""
     _HAS_RELAY = False
 
-from .intent_router import (  # noqa: F401
-    IntentRouter, describe_state, is_resume, is_status,
-)
+from .route import describe_state  # noqa: F401
 from . import profile_sync  # noqa: F401
 
 __version__ = "0.1.0"
@@ -90,6 +104,21 @@ __version__ = "0.1.0"
 __all__ = [
     "BridgeBase",
     "serve_http",
+    # D1: the two clocks, and waits counted in sim steps.
+    "SimClock",
+    "StepBudget",
+    "attach_telemetry",
+    "telemetry_tick",
+    # D4: the bridge's own event stream.
+    "EventRing",
+    "serve_events",
+    "WAKE_POLICY",
+    "may_wake",
+    # D6: the opt-in lockstep hold.
+    "HoldLease",
+    "lockstep_enabled",
+    # D2: `/capabilities.safety_gate` (PROTOCOL.md §5.2.1).
+    "safety_gate_block",
     "Tool",
     "OmniLinkRelay",
     "OllamaRelay",
@@ -97,9 +126,6 @@ __all__ = [
     "is_enabled",
     "get_omni_key",
     "profile_sync",
-    "IntentRouter",
     "describe_state",
-    "is_resume",
-    "is_status",
     "__version__",
 ]

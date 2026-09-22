@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for wanting to build on OmniSim. This project exists because robotics simulation should be accessible, agent-friendly, and shaped by the people who actually use it — and that means you.
+Thanks for wanting to build on OmniSim. This project exists to make robotics accessible to anyone with an idea: if you are learning robotics, building a robot, or have an idea but no access to the hardware, you should still be able to simulate the whole system, build the digital twin of a real robot, and have an agent help you program, test and debug it — including finding out what it actually did when it misbehaves, instead of watching it closely and guessing. Making that true takes an open, agent-friendly workshop shaped by the people who actually use it — and that means you.
 
 OmniSim is **maintained by [OmniLink](https://www.omnilink-agents.com)** and is purpose-built as the simulation environment for the OmniLink agentic AI platform, but it is open source under the Apache License 2.0 and open to everyone. We welcome contributions of every size — from typo fixes to new robots, controllers, worlds, agents, sensor models, renderer improvements, docs, and bug reports.
 
@@ -16,7 +16,7 @@ The following is a set of guidelines for helping you contribute to OmniSim.
 You don't need to be an expert in robotics or software development to become a contributor.
 Depending on your skills, your contribution may address different parts of the OmniSim software:
 
-- **Bug reporting**: [A precise description](../../issues/new?template=bug_report.md) of a reproducible bug is very helpful to us.
+- **Bug reporting**: [A precise description](../../issues/new?template=bug_report.md) of a reproducible bug is very helpful to us. An instrument that gave you a confident answer that was wrong — an empty contact set on a scene that was touching, an event that never fired, a green verdict on a broken run — is the highest-severity bug class in this project, above crashes.
 - **Technical English writing**: [documentation pages](docs/).
 - **Python programming**: [sample simulations](projects/languages/python/controllers), libraries, tools, etc.
 - **C/C++ programming**: [source code](src/), sample simulations, libraries, tools, etc.

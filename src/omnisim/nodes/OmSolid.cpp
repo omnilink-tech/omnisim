@@ -723,7 +723,26 @@ void OmSolid::setSolidMerger() {
     return;
   }
 
-  const OmSolid *const us = jointParent() ? NULL : upperSolid();
+  const OmSolid *us = jointParent() ? NULL : upperSolid();
+  // A Solid with no Physics is a pure kinematic offset -- a frame, not a body --
+  // and it must not BREAK the merge chain. It used to: `us->physics()` was read
+  // on the immediate parent only, so an intermediate frame left this Solid as
+  // its own merger leader while nothing ever registered a body for it. Anything
+  // hinged below it then FATALed under newton-enforce with "parent body ...
+  // never registered a Newton body".
+  //
+  // Reproduced 2026-09-20 from a URDF that mounts an arm on a bracket:
+  //   mid_link -fixed-> attach_link (no inertial, no collision) -fixed->
+  //   bracket_link (real inertial) -revolute-> arm_link
+  // and seen in the wild on a Galbot R1's arm_attach_L_link / left_base_link.
+  // The same chain WITHOUT the empty intermediate always worked, which is what
+  // made it look like a mesh or an inertial problem rather than a merge one.
+  //
+  // Walk up through those frames to the nearest ancestor that owns a body. Stop
+  // at a joint parent: that Solid is a separate body by construction and the
+  // chain must not cross it.
+  while (us != NULL && us->physics() == NULL && us->jointParent() == NULL && us->upperSolid() != NULL)
+    us = us->upperSolid();
   const bool inherit = us && us->physics() && name().compare("right wheel", Qt::CaseInsensitive) != 0 &&
                        name().compare("left wheel", Qt::CaseInsensitive) != 0;
   mSolidMerger = inherit ? us->solidMerger() : QPointer<OmSolidMerger>(new OmSolidMerger(this));
@@ -2761,6 +2780,12 @@ struct OmNewtonShapeXform {
   OmQuaternion q;  // identity by default (OmQuaternion's default ctor)
 };
 
+static QString attachNewtonShapeFromBoundingObject(OmNewtonBackend *newton, int idx,
+                                                   OmBaseNode *boundingObjectValue,
+                                                   double softKe, double solidMu,
+                                                   double solidMuT, double solidMuR,
+                                                   const OmNewtonShapeXform *initialX);
+
 // Compose one authored Pose onto the running frame: X_child = X_running * X_pose.
 // The Pose's own translation is expressed in the frame its ANCESTORS establish,
 // so it has to be rotated by the running quaternion before being added --
@@ -2908,6 +2933,13 @@ static QString registerNewtonShapesRec(OmNewtonBackend *newton, int idx,
     }
     return desc;
   }
+  // Meshes are collision shapes too. The primitive-only walk used to skip
+  // them whenever a sibling primitive registered successfully, silently
+  // removing the main hull from mixed mesh/primitive compound bodies.
+  // Reuse the mesh decode/error path and preserve the accumulated frame.
+  if (dynamic_cast<const OmTriangleMeshGeometry *>(bo))
+    return attachNewtonShapeFromBoundingObject(newton, idx, const_cast<OmBaseNode *>(bo),
+                                               softKe, solidMu, solidMuT, solidMuR, &x);
   return addNewtonPrimitive(newton, idx, bo, x, softKe, solidMu, solidMuT, solidMuR);
 }
 
@@ -2925,7 +2957,8 @@ static QString attachNewtonShapeFromBoundingObject(OmNewtonBackend *newton, int 
                                                    double softKe = -1.0,
                                                    double solidMu = -1.0,
                                                    double solidMuT = -1.0,
-                                                   double solidMuR = -1.0) {
+                                                   double solidMuR = -1.0,
+                                                   const OmNewtonShapeXform *initialX = nullptr) {
   // OPT-IN two ways (mirrors newtonStatics / newtonRobotColliders): register
   // every collider in a compound boundingObject (Group of offset primitives on
   // one rigid body) instead of just the first child, via the launch env var OR
@@ -2934,7 +2967,7 @@ static QString attachNewtonShapeFromBoundingObject(OmNewtonBackend *newton, int 
   // no env var. Per-call (NOT static) so a world switched in via the launcher's
   // worldReload reads ITS OWN field; the defaults keep every existing world's
   // physics byte-for-byte unchanged.
-  const bool compound = newtonCompoundCollidersOn();
+  const bool compound = initialX == nullptr && newtonCompoundCollidersOn();
   if (compound) {
     const QString d = registerNewtonShapesRec(newton, idx, boundingObjectValue,
                                               OmNewtonShapeXform(), softKe, solidMu,
@@ -2945,7 +2978,7 @@ static QString attachNewtonShapeFromBoundingObject(OmNewtonBackend *newton, int 
   }
   QString shapeDesc;
   OmBaseNode *bo = boundingObjectValue;
-  OmNewtonShapeXform shapeX;  // identity: no offset, no rotation
+  OmNewtonShapeXform shapeX = initialX ? *initialX : OmNewtonShapeXform();
   for (int unwrap = 0; unwrap < 4 && bo != nullptr; ++unwrap) {
     if (dynamic_cast<const OmSphere *>(bo) ||
         dynamic_cast<const OmBox *>(bo) ||
@@ -3104,7 +3137,7 @@ static QString attachNewtonShapeFromBoundingObject(OmNewtonBackend *newton, int 
     if (tm != nullptr && tm->numberOfVertices() > 0 && tm->numberOfTriangles() > 0) {
       newton->addShapeMesh(idx, tm->coordinatesData(), tm->numberOfVertices(), tm->indicesData(),
                            tm->numberOfTriangles(), shapeOffset.x(), shapeOffset.y(), shapeOffset.z(),
-                           sqx, sqy, sqz, sqw);
+                           sqx, sqy, sqz, sqw, solidMu, solidMuT, solidMuR);
       shapeDesc = QString("mesh verts=%1 tris=%2 off=(%3,%4,%5) q=(%6,%7,%8,%9)")
                       .arg(tm->numberOfVertices()).arg(tm->numberOfTriangles())
                       .arg(shapeOffset.x()).arg(shapeOffset.y()).arg(shapeOffset.z())
@@ -3207,7 +3240,8 @@ static int countNewtonCompoundPrimitives(const OmBaseNode *bo) {
     return n;
   }
   if (dynamic_cast<const OmSphere *>(bo) || dynamic_cast<const OmBox *>(bo) ||
-      dynamic_cast<const OmCylinder *>(bo) || dynamic_cast<const OmCapsule *>(bo))
+      dynamic_cast<const OmCylinder *>(bo) || dynamic_cast<const OmCapsule *>(bo) ||
+      dynamic_cast<const OmTriangleMeshGeometry *>(bo))
     return 1;
   return 0;
 }
@@ -3263,6 +3297,14 @@ static double resolvedNewtonGroundMu(const OmWorldInfo *wi, bool *bridgedOut = n
   return -1.0;
 }
 
+// A rebuild restores an existing, mutually consistent articulation state.
+// Keep this path separate from public setVelocity on an articulated child,
+// which remains unsupported. No extra member/layout change is necessary.
+static QSet<const OmSolid *> &newtonRebuildVelocitySources() {
+  static QSet<const OmSolid *> sources;
+  return sources;
+}
+
 void OmSolid::captureNewtonVelocitiesForRebuild() {
   // W1.7: postPhysicsStep refreshes mLinearVelocity/mAngularVelocity from
   // the solver every tick, so the FIELDS hold the live values. Stash them in
@@ -3270,10 +3312,12 @@ void OmSolid::captureNewtonVelocitiesForRebuild() {
   // Newton world (set_body_vel queues pre-finalize and drains after
   // finalize's closing eval_fk). Dynamic registered bodies only -- statics
   // do not move and kinematic bodies are driven from their fields.
+  newtonRebuildVelocitySources().clear();
   for (const OmSolid *cs : cSolids) {
     OmSolid *const s = const_cast<OmSolid *>(cs);
     if (s->mNewtonBodyIndex < 0 || s->mNewtonBodyIsStatic || s->mNewtonBodyIsKinematic)
       continue;
+    newtonRebuildVelocitySources().insert(s);
     if (s->mLinearVelocity) {
       const OmVector3 &lv = s->mLinearVelocity->value();
       s->mPendingNewtonLinVel[0] = lv.x();
@@ -4128,12 +4172,21 @@ void OmSolid::flushPendingNewtonRegistrations() {
       // setAngularVelocity). At this point the runtime world is still
       // pre-finalize, so set_body_vel queues the write and finalize()
       // drains it into body_qd / joint_qd after its closing eval_fk.
+      const bool restoreArticulation = newtonRebuildVelocitySources().remove(s) > 0;
       if (s->mPendingNewtonLinVelValid) {
-        s->setNewtonBodyVel(s->mPendingNewtonLinVel, false);
+        if (restoreArticulation)
+          newton->setBodyVel(idx, s->mPendingNewtonLinVel[0], s->mPendingNewtonLinVel[1],
+                            s->mPendingNewtonLinVel[2], 0);
+        else
+          s->setNewtonBodyVel(s->mPendingNewtonLinVel, false);
         s->mPendingNewtonLinVelValid = false;
       }
       if (s->mPendingNewtonAngVelValid) {
-        s->setNewtonBodyVel(s->mPendingNewtonAngVel, true);
+        if (restoreArticulation)
+          newton->setBodyVel(idx, s->mPendingNewtonAngVel[0], s->mPendingNewtonAngVel[1],
+                            s->mPendingNewtonAngVel[2], 1);
+        else
+          s->setNewtonBodyVel(s->mPendingNewtonAngVel, true);
         s->mPendingNewtonAngVelValid = false;
       }
       // P5 step-1 perf fix 2026-05-28: the per-body "registered solid"

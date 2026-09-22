@@ -24,7 +24,7 @@ Drives:
     and rises.
   * act_place()     -> carry to the drop zone, release; asserts RED is dropped
     near the zone and nothing stays held.
-  * router "pick up the green cube" / "put it down".
+  * the deterministic parser on "pick up the green cube" / "put it down".
 
     python test_pick_sequence.py
 """
@@ -257,15 +257,21 @@ def main() -> int:
         f"cube should land near the drop zone, got ({rx:.2f}, {ry:.2f})"
     assert red.reset_count > 0, "release should resetPhysics so the cube falls"
 
-    # ── intent router routes pick/place too ──────────────────────────
-    out = br.IntentRouter(bridge).dispatch("pick up the green cube")
-    assert out["tools"] and out["tools"][0][0] == "pick", out
+    # ── the deterministic parser routes pick/place too ───────────────
+    # This drove `br.IntentRouter(bridge).dispatch(...)` until 2026-09-22.
+    # The arm's keyword ladder is deleted; the parser is what interprets an
+    # operator sentence now, and it is what this should always have tested
+    # -- the ladder ran the parser first anyway and only saw what it
+    # declined.
+    from omnisim_bridges.route import route as _route
+    out = _route(bridge, "pick up the green cube", "arm")
+    assert out and out["tools"] and out["tools"][0][0] == "pick", out
     _run(bridge, robot, 400)
-    assert bridge.held_node is green, "router pick should grab GREEN"
-    out = br.IntentRouter(bridge).dispatch("put it down")
-    assert out["tools"] and out["tools"][0][0] == "place", out
+    assert bridge.held_node is green, "parser pick should grab GREEN"
+    out = _route(bridge, "put it down", "arm")
+    assert out and out["tools"] and out["tools"][0][0] == "place", out
     _run(bridge, robot, 400)   # finish placing GREEN
-    print("  router: 'pick up the green cube' + 'put it down' OK")
+    print("  parser: 'pick up the green cube' + 'put it down' OK")
 
     # ── a bare "open the gripper" releases the held cube so it falls ──
     bridge.act_pick("red")

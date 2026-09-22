@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-13",
+  "source_recordings": "_scratch\\foundry_realism\\20260913_024954_541150",
+  "machine_fingerprint": "[envfp] ===== OmniSim environment fingerprint =====\n[envfp] physics : newton/MuJoCo (cpu/mj_step, default) (CPU)   solver='MuJoCo (cpu/mj_step, default)'\n[envfp] machine : id=9722d23d12a3  host=hc385771a14  cpu=AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD  cores=16\n[envfp] load    : UNKNOWN   warmup_token=False\n[envfp] gpu     : NVIDIA GeForce RTX 3060 Laptop GPU (driver 596.36)\n[envfp] build   : 3cc84d6c8  os=Windows-11  py=3.12.14  numpy=2.3.5  ort=None\n[envfp] binary  : msys64/mingw64/bin/omnisim-bin.exe  sha256=6e33a9eacb47e134  mtime=1789256977  nonce=yes\n[envfp] libctrl : lib/controller/Controller.dll  sha256=0bd8db2b5018d7fe  mtime=1788455211  nonce=yes\n[envfp] stack   : (bundle+pth) newton=1.5.0  warp_lang=1.16.0  mujoco=3.11.0  mujoco_warp=3.11.0  torch=?  onnxruntime=1.26.0\n[envfp] knobs   : (defaults)\n[envfp] intent  : (none)\n[envfp] home    : O:\\omnisim  (source=OMNISIM_HOME)\n[envfp] log     : O:\\omnisim\\omnisim_log.txt\n[envfp] WARN    : libController (lib/controller/Controller.dll) is >24h OLDER than the engine binary -- possible ABI/IPC drift. If controllers hang in Robot(), rebuild the controller lib; run 'python -m omnisim doctor'.\n[envfp] verdict : OK\n[envfp] ===========================================\noneline: OmniSim  physics=newton/MuJoCo  gpu=RTX 3060  load=UNKNOWN  build=3cc84d6c8  machine=9722d23d12a3\n",
+  "probes": [
+    {
+      "case": "spin",
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "mass_constant": true,
+        "work_energy": true,
+        "weapon_spun": true,
+        "reaction_momentum": true,
+        "reaction_angular_momentum": true,
+        "coast_dissipates": true
+      },
+      "metrics": {
+        "motor_work_j": 1887.9583485811493,
+        "kinetic_j": 1887.951723140193,
+        "work_energy_relative_error": 3.509315214073774e-06,
+        "weapon_rpm": 734.3621249246477
+      }
+    },
+    {
+      "case": "drive",
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "mass_constant": true,
+        "drives": true,
+        "rolling": true,
+        "brakes": true
+      },
+      "metrics": {
+        "speed_m_s": 4.216159146418599,
+        "rim_speed_m_s": 4.216384968033923,
+        "stopping_distance_m": 1.6961413230135987
+      }
+    },
+    {
+      "case": "rebuild",
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "mass_constant": true,
+        "energy_retained": true,
+        "momentum_retained": true,
+        "angular_momentum_retained": true
+      },
+      "metrics": {
+        "energy_relative_change": 4.968844053205726e-06,
+        "momentum_change_ns": 0.0011746966228980288,
+        "angular_momentum_change_nms": 0.023544518801329368
+      }
+    },
+    {
+      "case": "detach",
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "mass_constant": true,
+        "energy_retained": true,
+        "momentum_retained": true,
+        "angular_momentum_retained": true,
+        "no_release_energy_gain": true
+      },
+      "metrics": {
+        "energy_relative_change": 1.8791921421208346e-06,
+        "momentum_change_ns": 1.9993828811312848e-05,
+        "angular_momentum_change_nms": 0.010170808310071873
+      }
+    },
+    {
+      "case": "drum",
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "mass_constant": true,
+        "drum_spins_clear_of_floor": true
+      },
+      "metrics": {
+        "weapon_rpm": -1387.9735602365613
+      }
+    }
+  ],
+  "sampled_gpu_peak_c": 60,
+  "gpu_guard_cutoff_c": 75,
+  "physical_hardware_validation": false,
+  "additional_recordings": [
+    "_scratch\\foundry_realism\\20260913_025847_017574"
+  ],
+  "rendered_encounter": {
+    "source_recordings": "_scratch\\foundry_realism\\preview_final",
+    "events": {
+      "init": 1,
+      "sample": 143,
+      "impact": 17,
+      "detach": 1,
+      "physics_rebuild_requested": 1,
+      "rebuild_audit": 1,
+      "result": 1
+    },
+    "result": {
+      "type": "result",
+      "t": 33.008,
+      "result": "TIME LIMIT / CONTRACT EXPIRED",
+      "fighters": {
+        "ANVIL": {
+          "hp": {
+            "chassis": 91.59805157904493,
+            "fl_wheel": 0,
+            "fr_wheel": 100.0,
+            "rl_wheel": 100.0,
+            "rr_wheel": 100.0,
+            "weapon": 92.58473699504614
+          },
+          "broken": [
+            "fl_wheel"
+          ],
+          "defeated": false
+        },
+        "RAZOR": {
+          "hp": {
+            "chassis": 100.0,
+            "fl_wheel": 50.878076474092914,
+            "fr_wheel": 100.0,
+            "rl_wheel": 100.0,
+            "rr_wheel": 100.0,
+            "weapon": 91.21180826666463
+          },
+          "broken": [],
+          "defeated": false
+        }
+      }
+    },
+    "sampled_gpu_peak_c": 65,
+    "controller_errors": 0
+  },
+  "regressions": {
+    "engine_tests_passed": 6,
+    "unit_run_passed": 1319,
+    "unit_run_skipped": 11,
+    "unit_run_failure": "Generated environment reference was stale after source edits. Regenerated; focused rerun passed.",
+    "follow_up_runtime_and_reference_tests_passed": 7,
+    "focused_foundry_tests_passed": 24,
+    "thermal_guard_tests_passed": 4
+  }
+}

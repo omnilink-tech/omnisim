@@ -1,0 +1,517 @@
+{
+  "saved_on": "2026-09-19",
+  "scope": "SO101 simulation and real-recording comparison work",
+  "status": {
+    "authored_simulation": "verified successful pick and place",
+    "recorded_action_replay": "grasp not reproduced with estimated calibration",
+    "hardware_transfer": "not validated"
+  },
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 219,
+      "sha256": "e5ad9673110a8771d42a5d36b406880b451952beef1afab241d799592cdaefe2"
+    },
+    {
+      "path": "compose_comparisons.py",
+      "bytes": 4432,
+      "sha256": "f81cad87b4ffdfaade1e7395a3ac882f4620e99b8ee7140be48fff72ef6ac710"
+    },
+    {
+      "path": "evidence/.gitignore",
+      "bytes": 83,
+      "sha256": "82b69f2bcc2ee2517717eafcfac4ba9ac8d756a116e43b64505e77ae097b6d1a"
+    },
+    {
+      "path": "evidence/authored/manifest.json",
+      "bytes": 667,
+      "sha256": "06abc5fca849d9934191302839221408b72dbf55ed13d4a726422402da5259d2"
+    },
+    {
+      "path": "evidence/authored/result.json",
+      "bytes": 743,
+      "sha256": "188a656c3beb64b35b230f101f2523a5ba6549bf3c32ca093122da48a3d72f78"
+    },
+    {
+      "path": "evidence/authored/trace.jsonl",
+      "bytes": 1004024,
+      "sha256": "0792faca93c5f08e6bf1d78e30d3bc711b48d8ed71fe1375f023971e997981a8"
+    },
+    {
+      "path": "evidence/authored/trajectory.json",
+      "bytes": 113112,
+      "sha256": "2f1f227162b38ae9ed49276860fb1a2397e3cb774c500db5098c55adaef2b975"
+    },
+    {
+      "path": "evidence/docs-tests.log",
+      "bytes": 101,
+      "sha256": "b21154ea5bc9841e0bb597b1f2d3163803453411c19fbf9d5534b218479ef316"
+    },
+    {
+      "path": "evidence/open-gripper-control/manifest.json",
+      "bytes": 667,
+      "sha256": "3debb25ceac5be7ba89caa1dfc37923393c4f3242ed794776a4cdaa19ef88f81"
+    },
+    {
+      "path": "evidence/open-gripper-control/result.json",
+      "bytes": 716,
+      "sha256": "92399c6a053b9e82579c5f200cae5b0acc0fc2fb6e07dbd6116143e45191bed0"
+    },
+    {
+      "path": "evidence/open-gripper-control/trace.jsonl",
+      "bytes": 983497,
+      "sha256": "736f111731407245323dedb507ed42e4a031007911e7b623f633c6e65a3ee42e"
+    },
+    {
+      "path": "evidence/open-gripper-control/trajectory.json",
+      "bytes": 112779,
+      "sha256": "edfdc1642e4744330100ddae07ce8c8d765fe18d8e23084bd3887d9c96ea85d2"
+    },
+    {
+      "path": "evidence/recorded-replay/manifest.json",
+      "bytes": 1841,
+      "sha256": "f9747f7d807a54c39a676ce11b1f39c44560b6abed7efb41fa3e20a2469aaf90"
+    },
+    {
+      "path": "evidence/recorded-replay/result.json",
+      "bytes": 693,
+      "sha256": "9e4b2cfe6c55164b37c6a8cbd206abc382715c0122317f31614f1a891bbec361"
+    },
+    {
+      "path": "evidence/recorded-replay/trace.jsonl",
+      "bytes": 731658,
+      "sha256": "2194263b0af20bc46b792ffab63f2899ddea79ce209d156b7c994850f4b319df"
+    },
+    {
+      "path": "evidence/recorded-replay/trajectory.json",
+      "bytes": 164101,
+      "sha256": "9cb41be1d46556f2653fced8592687baabc51c5b1feb1c18b0af09fd78ba5f4d"
+    },
+    {
+      "path": "evidence/unit-tests.log",
+      "bytes": 26665,
+      "sha256": "0020b2e83edd3454f6fbb7895be759846fb1d8c41c5779c506f84bf985873572"
+    },
+    {
+      "path": "evidence/verification.json",
+      "bytes": 10708,
+      "sha256": "a4b5b0b94b2c80c15ebe62961120a083c90e592aa04ac4d0398c82802e40a566"
+    },
+    {
+      "path": "inputs/estimated_calibration.json",
+      "bytes": 961,
+      "sha256": "efb226f6d2ce24e0dc70764408129bc206348dd380eb44b5160d952e0174b501"
+    },
+    {
+      "path": "inputs/pickplace_motion.json",
+      "bytes": 1325,
+      "sha256": "70484d7aff0c917f607c162b36ecb80c73bc03e596a97cc4aa23f15bc92a6aee"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3536,
+      "sha256": "916693acb03965bbe2b1ced314e0e4545dd94dc6754ee826f63ada650c63ceb8"
+    },
+    {
+      "path": "source/data/chunk-000/file-000.parquet",
+      "bytes": 22232,
+      "sha256": "1389458555b049b5e444230293d9fdd570f175b24fdd4bd3271a6503fa7cceb0"
+    },
+    {
+      "path": "source/LICENSE-2.0.txt",
+      "bytes": 11558,
+      "sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6"
+    },
+    {
+      "path": "source/meta/episodes/chunk-000/file-000.parquet",
+      "bytes": 52679,
+      "sha256": "448048a37a90407fb3b4cd37c8583239f86fae92f8b1a130a45278ae8defc096"
+    },
+    {
+      "path": "source/meta/info.json",
+      "bytes": 3230,
+      "sha256": "bc5af6e0f06b2c5238108f917144b5b4050ce1fa0a49899f8455792b7a1a30e8"
+    },
+    {
+      "path": "source/README.md",
+      "bytes": 3719,
+      "sha256": "5f0ed81d9e3add96ed117aa762a320c500b1b547122596aa0c5f4766d063082d"
+    },
+    {
+      "path": "source/source.json",
+      "bytes": 1173,
+      "sha256": "0b4afd49e9427e2edabdf864f4495fcfdb0f9fcbf05e6768b7c0976f1ab3c5d0"
+    },
+    {
+      "path": "source/videos/observation.images.right/chunk-000/file-000.mp4",
+      "bytes": 1955894,
+      "sha256": "8cbae067bb9f2bd473038ade55dc47edaee1c496af73b4aeebbd72317a8d9d7b"
+    },
+    {
+      "path": "source/videos/observation.images.top/chunk-000/file-000.mp4",
+      "bytes": 1574322,
+      "sha256": "ebf8e1075777d2fdf57f83d6b2aa14519d849a9c6a262cbd4a173db14355f5a6"
+    },
+    {
+      "path": "videos/authored-demo.mp4",
+      "bytes": 1198823,
+      "sha256": "8d549d55de62dbc63ef9fc1aff3579a8ab18158a397a9fbfb53d9d3967629d6f"
+    },
+    {
+      "path": "videos/real-vs-authored.mp4",
+      "bytes": 1504199,
+      "sha256": "05d7f06251d4995db3dc8981856f471e850fc56413a90ec4169d33e09c8392bf"
+    },
+    {
+      "path": "videos/real-vs-recorded-replay.mp4",
+      "bytes": 1412714,
+      "sha256": "fe96932465fe87e37e2249e37f91cd3c1a52298bf9e9c369d1e896c8dddfa3c3"
+    },
+    {
+      "path": "videos/recorded-comparison-original.mp4",
+      "bytes": 1403594,
+      "sha256": "da09c5d65bc2f166e13e3c8bc62c63ab1e41863a0eafab45abe29ff95d974aa8"
+    },
+    {
+      "path": "videos/simulation-authored.mp4",
+      "bytes": 8567490,
+      "sha256": "b0b2b3aa270337c88a8567362c0739f583b5904fb982fdb0f32fc19aa6ff50b9"
+    },
+    {
+      "path": "videos/simulation-recorded-replay.mp4",
+      "bytes": 6535795,
+      "sha256": "03b507a97f9f43d1914a35e768e5cd7de9b4b985e4efbaeb000c98fbc2ece322"
+    }
+  ],
+  "canonical_implementation": [
+    {
+      "path": "projects/robots/therobotstudio/controllers/so101_replay/so101_replay.py",
+      "bytes": 9271,
+      "sha256": "e0737cabb03c302d7730f8ebcc40b5de656335dc40fb156ff0ccf85bfc18d865"
+    },
+    {
+      "path": "projects/robots/therobotstudio/estimated_calibration.json",
+      "bytes": 961,
+      "sha256": "efb226f6d2ce24e0dc70764408129bc206348dd380eb44b5160d952e0174b501"
+    },
+    {
+      "path": "projects/robots/therobotstudio/lerobot_replay.py",
+      "bytes": 3681,
+      "sha256": "b3da9315dab29cd90765e186ccc383ea419e2426056c8c0a835ed79a4afbfa8e"
+    },
+    {
+      "path": "projects/robots/therobotstudio/make_side_by_side.sh",
+      "bytes": 380,
+      "sha256": "e2a92c65d6fbebf1a7d1934d06cc7e15aacdf01d2a0cbb8a0d82ee607c08724a"
+    },
+    {
+      "path": "projects/robots/therobotstudio/make_video.py",
+      "bytes": 3376,
+      "sha256": "a8ceb97afdf7453598d5c5bd234c9c4690a8872e2bb490df14767b1783660152"
+    },
+    {
+      "path": "projects/robots/therobotstudio/pickplace_demo.py",
+      "bytes": 2601,
+      "sha256": "da1bad207c6cfd29d356bc344777cd3b19e6965da8782e9a3bada149956c5f74"
+    },
+    {
+      "path": "projects/robots/therobotstudio/pickplace_motion.json",
+      "bytes": 1325,
+      "sha256": "70484d7aff0c917f607c162b36ecb80c73bc03e596a97cc4aa23f15bc92a6aee"
+    },
+    {
+      "path": "projects/robots/therobotstudio/README.md",
+      "bytes": 4141,
+      "sha256": "02809fb55fd604bfeaab71551a887e32e70cf7e52f11883750a997dba33174aa"
+    },
+    {
+      "path": "projects/robots/therobotstudio/replay_support.py",
+      "bytes": 7399,
+      "sha256": "1d024d4179dcc26038f12bff96adad7f2f84e0e7f2c8d8ac08ffb09b54030f2f"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/base_motor_holder_so101_v1.stl",
+      "bytes": 1877084,
+      "sha256": "8cd2f241037ea377af1191fffe0dd9d9006beea6dcc48543660ed41647072424"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/base_so101_v2.stl",
+      "bytes": 471584,
+      "sha256": "bb12b7026575e1f70ccc7240051f9d943553bf34e5128537de6cd86fae33924d"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/collision/manifest.json",
+      "bytes": 3477,
+      "sha256": "fed6ffb61a31644e88e938733c6fe21173bfca3e12d3db12bb581a92c29a0441"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/collision/moving_jaw_so101_v1_00.obj",
+      "bytes": 211542,
+      "sha256": "29cf96c8fadc624a2fd94f615c6309d4e041b3b3c08a022b156f0eac66308b75"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/collision/moving_jaw_so101_v1_01.obj",
+      "bytes": 45679,
+      "sha256": "c8543df3361e4f9b62e2156755fac8e221ff080fa60cfa2412ef7b97e68065b7"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/collision/moving_jaw_so101_v1_02.obj",
+      "bytes": 115836,
+      "sha256": "5aeb600613547a7a43e2f61912bb18c6fd822fcffe2ff712e16ca3f3b944bbe5"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/collision/wrist_roll_follower_so101_v1_00.obj",
+      "bytes": 169002,
+      "sha256": "2f3388f227abb2e2d2173414c474b22bc04e5f58bd049c0f1aabe109ead2ffad"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/collision/wrist_roll_follower_so101_v1_01.obj",
+      "bytes": 29685,
+      "sha256": "5a4e541d6a2c8c19eee1240b7888532112530869254ddad6a9917930aebe1715"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/collision/wrist_roll_follower_so101_v1_02.obj",
+      "bytes": 37260,
+      "sha256": "b1b485685520edbe872d4d36d10d2c4a7aff0ebe19640ad2d692b4aef9259de8"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/collision/wrist_roll_follower_so101_v1_03.obj",
+      "bytes": 227984,
+      "sha256": "0881f04838406be84d15a4973678b86351c1a471900fe67b83fb6ab810b9c134"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/motor_holder_so101_base_v1.stl",
+      "bytes": 1129384,
+      "sha256": "31242ae6fb59d8b15c66617b88ad8e9bded62d57c35d11c0c43a70d2f4caa95b"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/motor_holder_so101_wrist_v1.stl",
+      "bytes": 1052184,
+      "sha256": "887f92e6013cb64ea3a1ab8675e92da1e0beacfd5e001f972523540545e08011"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/moving_jaw_so101_v1.stl",
+      "bytes": 1413584,
+      "sha256": "785a9dded2f474bc1d869e0d3dae398a3dcd9c0c345640040472210d2861fa9d"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/rotation_pitch_so101_v1.stl",
+      "bytes": 883684,
+      "sha256": "9be900cc2a2bf718102841ef82ef8d2873842427648092c8ed2ca1e2ef4ffa34"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/sts3215_03a_no_horn_v1.stl",
+      "bytes": 865884,
+      "sha256": "75ef3781b752e4065891aea855e34dc161a38a549549cd0970cedd07eae6f887"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/sts3215_03a_v1.stl",
+      "bytes": 954084,
+      "sha256": "a37c871fb502483ab96c256baf457d36f2e97afc9205313d9c5ab275ef941cd0"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/under_arm_so101_v1.stl",
+      "bytes": 1975884,
+      "sha256": "d01d1f2de365651dcad9d6669e94ff87ff7652b5bb2d10752a66a456a86dbc71"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/upper_arm_so101_v1.stl",
+      "bytes": 1303484,
+      "sha256": "475056e03a17e71919b82fd88ab9a0b898ab50164f2a7943652a6b2941bb2d4f"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/waveshare_mounting_plate_so101_v2.stl",
+      "bytes": 62784,
+      "sha256": "e197e24005a07d01bbc06a8c42311664eaeda415bf859f68fa247884d0f1a6e9"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/wrist_camera_mount_so101_v1.stl",
+      "bytes": 173884,
+      "sha256": "e17a626158951ac8cdf8d960962c1a3c8bf23b64635a02f88b62016fe895cef8"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/wrist_camera_so101_v1.stl",
+      "bytes": 128934,
+      "sha256": "1147857bb136876c81f98d18b533342bae2383f0e23bec216064c9f093bd3577"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/wrist_roll_follower_so101_v1.stl",
+      "bytes": 1439884,
+      "sha256": "4b17b410a12d64ec39554abc3e8054d8a97384b2dc4a8d95a5ecb2a93670f5f4"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/assets/wrist_roll_pitch_so101_v2.stl",
+      "bytes": 2699784,
+      "sha256": "6c7ec5525b4d8b9e397a30ab4bb0037156a5d5f38a4adf2c7d943d6c56eda5ae"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/build_collision_meshes.py",
+      "bytes": 3107,
+      "sha256": "213a028cf6eb62fc448af27c113ceffa9916782ea0060abbd8e4b5169f1e3927"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/CITATION.upstream.cff",
+      "bytes": 789,
+      "sha256": "0b2ca13ebcc1b38bb59c8715b51aecdb0b6a245d5f11276baa79eb240e9966ed"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/LICENSE.upstream",
+      "bytes": 11558,
+      "sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/PROVENANCE.md",
+      "bytes": 4483,
+      "sha256": "eed34be79891dabaf9dc3a2a1f85d77ee9f898f3d9ab83d26239eef8edb634ae"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/so101.urdf",
+      "bytes": 18068,
+      "sha256": "6c6d185fdef14875e30a3a59f1a132c819506be864917cd878ab774074a2604e"
+    },
+    {
+      "path": "projects/robots/therobotstudio/so101/so101_camera.urdf",
+      "bytes": 20228,
+      "sha256": "e2814a13c71a93242f0ffea3bbf338ef83f9023c5ae6487d93b68206ec7fd07a"
+    },
+    {
+      "path": "projects/robots/therobotstudio/verification.json",
+      "bytes": 10708,
+      "sha256": "a4b5b0b94b2c80c15ebe62961120a083c90e592aa04ac4d0398c82802e40a566"
+    },
+    {
+      "path": "projects/robots/therobotstudio/worlds/so101.omniworld",
+      "bytes": 2020,
+      "sha256": "db4fe4350d2c1ed2524bf5a8e0f1dc3555577a60d8e1b038ae15da01cbe95e07"
+    },
+    {
+      "path": "projects/robots/therobotstudio/worlds/so101_pickplace.omniworld",
+      "bytes": 4351,
+      "sha256": "860a0bacf37a0e02485abe4fba74543254ad3660007effe10e01b964214daf4c"
+    },
+    {
+      "path": "projects/robots/therobotstudio/worlds/so101_pickplace_real.omniworld",
+      "bytes": 4369,
+      "sha256": "071cd3d16cb2ef4329738b9f9754dbc457b6934294d0ee8d1cc096f2d47bf3a7"
+    },
+    {
+      "path": "tests/test_so101_replay.py",
+      "bytes": 3374,
+      "sha256": "dfe7a70d5d9e31a8d7e3a8e9e040bcefb456bc6457c77a35b837989d6230b2b7"
+    }
+  ],
+  "video_streams": [
+    {
+      "path": "source/videos/observation.images.right/chunk-000/file-000.mp4",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "av1",
+          "width": 640,
+          "height": 480,
+          "duration": "15.233333",
+          "nb_frames": "457"
+        }
+      ]
+    },
+    {
+      "path": "source/videos/observation.images.top/chunk-000/file-000.mp4",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "av1",
+          "width": 640,
+          "height": 480,
+          "duration": "15.233333",
+          "nb_frames": "457"
+        }
+      ]
+    },
+    {
+      "path": "videos/authored-demo.mp4",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1280,
+          "height": 816,
+          "duration": "21.000000",
+          "nb_frames": "630"
+        }
+      ]
+    },
+    {
+      "path": "videos/real-vs-authored.mp4",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1280,
+          "height": 604,
+          "duration": "21.000000",
+          "nb_frames": "630"
+        }
+      ]
+    },
+    {
+      "path": "videos/real-vs-recorded-replay.mp4",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1280,
+          "height": 604,
+          "duration": "15.233333",
+          "nb_frames": "457"
+        }
+      ]
+    },
+    {
+      "path": "videos/recorded-comparison-original.mp4",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1280,
+          "height": 544,
+          "duration": "15.233333",
+          "nb_frames": "457"
+        }
+      ]
+    },
+    {
+      "path": "videos/simulation-authored.mp4",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1896,
+          "height": 1114,
+          "duration": "21.000000",
+          "nb_frames": "630"
+        }
+      ]
+    },
+    {
+      "path": "videos/simulation-recorded-replay.mp4",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1896,
+          "height": 1114,
+          "duration": "15.233333",
+          "nb_frames": "457"
+        }
+      ]
+    }
+  ]
+}

@@ -82,10 +82,9 @@ Surfaces
    with "agent:<text>", "tool:<name>:<ok|err>:<summary>", "status:<state>",
    "system:<text>" lines back through wwiSendText.
 
-Without OmniLink configured, the bridge ships a regex-based intent
-router that maps prompts directly to its own surface (no LLM). Set
-OMNILINK_RELAY=1 + OMNI_KEY to relay prompts through OmniLink (future
-PR; the relay hook is wired but the network path is left stubbed).
+OmniLink prompts require an OmniKey and model connection. If the relay is
+unavailable, chat returns a connection error. Direct simulator controls
+and the Stop button remain available independently.
 
 Real hardware (optional)
 ------------------------
@@ -140,9 +139,9 @@ if _RELAY_PARENT not in _sys.path:
 # resolving it relative to this file works on EVERY launch path, including the
 # ones we do not control. _omnilink_relay/__init__.py already does exactly this
 # -- but it is imported ~25 lines BELOW, which is why this file used to show a
-# SPLIT failure: `omnisim_bridges.intents` (imported after the relay) worked
-# while `omnisim_bridges.intent_router` (imported here, before it) fell through
-# to the stubs. Bootstrap at the top so import order can never decide it again.
+# SPLIT failure: one omnisim_bridges submodule (imported after the relay)
+# worked while another (imported here, before it) fell through to the stubs.
+# Bootstrap at the top so import order can never decide it again.
 from pathlib import Path as _Path  # noqa: E402
 _PACKAGE_SRC = _Path(__file__).resolve().parents[5] / "packages" / "omnisim-bridges" / "src"
 if _PACKAGE_SRC.is_dir() and str(_PACKAGE_SRC) not in _sys.path:
@@ -178,22 +177,63 @@ def _bridges_stub_notice(what: str, exc: BaseException) -> None:
     print(msg, file=_sys.stderr, flush=True)
 
 
-# Shared conversational intents (resume / status) + the honest /state
-# describer. Lives in omnisim_bridges so the arm and the mobile bridge
-# answer "carry on" and "what are you doing?" the same way. Optional:
-# a bare clone without the package installed keeps working, it just
-# loses those two offline intents.
+# The deterministic interpreter -- see omnisim_bridges/interpret.py for the
+# measurement that motivated it. The keyword ladder it used to front was
+# deleted on 2026-09-22: there is no regex fallback in this file any more,
+# and the access policy forbids restoring one.
+#
+# It is WIRED into both live `/prompt` entry paths (HTTP and the robot
+# window) as of 2026-09-22. Order, and it is not negotiable: access check
+# -> parser -> model -> gate. The OmniKey check runs in front of the
+# parser on both paths, and the gate is inside `route.execute`, so a
+# parser-produced frame is vetted on the same "arm" rail a model-produced
+# one is.
 try:  # noqa: E402
-    from omnisim_bridges.intent_router import (
-        describe_state as shared_describe_state,
-        is_resume as shared_is_resume,
-        is_status as shared_is_status,
+    from omnisim_bridges.route import reply_payload as _reply_payload
+    from omnisim_bridges.route import short_circuit as shared_short_circuit
+    from omnisim_bridges.route import parser_first_window as shared_parser_window
+    from omnisim_bridges.route import stamp_via as shared_stamp_via
+except ImportError as _exc:
+    _bridges_stub_notice("the deterministic interpreter", _exc)
+    _reply_payload = None
+    shared_short_circuit = None
+    shared_parser_window = None
+
+    def shared_stamp_via(payload, default="relay"):  # type: ignore[misc]
+        return payload
+
+# D1/D4/D6: the two clocks, the event ring and its detectors, the hold.
+# Optional exactly like everything else the package provides -- a bare clone
+# keeps every motion verb and simply cannot report events, which is the
+# honest degradation: the surface is ABSENT rather than present and silent.
+try:  # noqa: E402
+    from omnisim_bridges.bridge_base import (
+        attach_relay,
+        close_relay,
+        attach_telemetry,
+        events_summary,
+        profile_extras,
+        safety_gate_block,
+        serve_events,
+        telemetry_tick,
     )
-except ImportError as _exc:  # the package is ABSENT -- not "it raised"
-    _bridges_stub_notice("the shared status/resume intents", _exc)
-    shared_describe_state = None
-    shared_is_resume = None
-    shared_is_status = None
+    from omnisim_bridges.events import BRIDGE_EVENT_TYPES, emit_motion_outcome
+except ImportError as _exc:
+    _bridges_stub_notice("the event ring, the sim clock and the hold", _exc)
+    attach_relay = None
+    close_relay = None  # type: ignore[assignment]
+    attach_telemetry = None
+    profile_extras = None
+    BRIDGE_EVENT_TYPES = ()
+    emit_motion_outcome = None
+    safety_gate_block = None
+    serve_events = None
+
+    def telemetry_tick(bridge, sim_time=None):  # type: ignore[misc]
+        return None
+
+    def events_summary(bridge):  # type: ignore[misc]
+        return {"total": 0, "last": None, "next_since": 0, "dropped": 0}
 
 from _arm_configs import ARM_CONFIGS, get_config  # noqa: E402
 from _gripper_configs import (  # noqa: E402
@@ -420,7 +460,11 @@ def _tx_sim_t(bridge: Any) -> Optional[float]:
 
 def _tx_mode(relay: Any) -> Tuple[str, Optional[str]]:
     if relay is None:
-        return ("offline-regex", None)
+        # No relay attached: there is no chat at all on this bridge --
+        # /prompt answers 401 omnikey_required. The label used to read
+        # "offline-regex", which named a keyword ladder that no longer
+        # exists and a mode the access policy forbids.
+        return ("no-relay", None)
     try:
         ident = relay.relay_identity() or {}
     except Exception:
@@ -1568,6 +1612,26 @@ class ArmBridge:
         self.last_tick_at = time.time()
         self.fault: Optional[str] = None
 
+        # ── D1 / D4 / D6: the clock, the ring, the detectors, the hold ──
+        # ONE installer, shared with the other four bridges. An arm is the
+        # robot class the joint-limit detector was written for: it has
+        # DECLARED limits (cfg["joint_limits"]) and a readback to compare
+        # against, which is exactly what a wheeled base does not have.
+        self.clock = None
+        self.events = None
+        self.hold = None
+        self.fault_detector = None
+        self.contact_detector = None
+        self.joint_detector = None
+        self.sim_time = 0.0
+        self.sim_step = 0
+        self.surface = "arm"
+        self.world = str(cfg.get("model", "") or "")
+        if attach_telemetry is not None:
+            attach_telemetry(self, dt_s=self.timestep / 1000.0,
+                             robot_id=robot_id, surface="arm",
+                             contacts=False)
+
         # Idle-loop bookkeeping (see ArmIdleLoop). last_external_cmd is the
         # wall-clock time of the last operator command (chat prompt / HTTP
         # tool call); the opt-in idle loop pauses while it is recent.
@@ -1612,9 +1676,28 @@ class ArmBridge:
         self.hw_last_error = ""
 
         # Capabilities surface for /list_robots etc.
+        # PROTOCOL.md §5.2.1 + D4. `ungated_paths` is the load-bearing half
+        # and is exact for THIS bridge's Axis-style route table: every verb
+        # below actuates without passing the gate, and always has.
+        self.GATED_PATHS = ["/prompt", "/tool"]
+        self.UNGATED_PATHS = [
+            "/set_joint_positions", "/set_tcp_target", "/solve_ik",
+            "/open_gripper", "/close_gripper", "/set_gripper_width",
+            "/grasp", "/release", "/stop_robot", "/reset_to_home",
+            "/pick", "/place",
+        ]
         self.capabilities = {
             "joint_names": self.joint_names,
             "joint_limits": [list(lim) for lim in self.joint_limits],
+            "safety_gate": (safety_gate_block(
+                "arm", gated_paths=self.GATED_PATHS,
+                ungated_paths=self.UNGATED_PATHS)
+                if safety_gate_block is not None else None),
+            "events": {
+                "endpoint": "GET /events?since=<cursor>&limit=&types=",
+                "state_field": "events",
+                "types": list(BRIDGE_EVENT_TYPES) if BRIDGE_EVENT_TYPES else [],
+            },
             "home_pose": list(self.home_pose),
             "has_gripper": self.effector is not None,
             "ik_available": cfg.get("ik") is not None,
@@ -2054,8 +2137,8 @@ class ArmBridge:
 
         Built from what this bridge actually is (line master or not,
         which idle loop is configured, live line numbers) rather than a
-        fixed blurb, so the offline router can answer the assignment
-        question without inventing a role the arm does not have."""
+        fixed blurb, so an answer to the assignment question never
+        invents a role the arm does not have."""
         model = self.cfg.get("model", "arm")
         if not getattr(self, "line_master", False):
             loop = getattr(self, "idle_loop", None)
@@ -2159,6 +2242,12 @@ class ArmBridge:
     # ── Tick loop ─────────────────────────────────────────────────
 
     def tick(self, sim_time_s: float) -> None:
+        # ⚠️ THE SIM CLOCK IS CACHED HERE AND NOWHERE ELSE. Every wait, every
+        # event stamp and every measured result reads `self.sim_time` /
+        # `self.sim_step` off this line; nothing off the sim thread may ask
+        # the engine what time it is (MainThreadCalls). It also clears the
+        # staleness detector and files a rising-edge fault.
+        telemetry_tick(self, sim_time_s)
         # Run any supervisor calls the idle loop marshalled to this thread.
         self.mt.pump()
         # Advance the warehouse line (conveyor + load glide + ship/recycle).
@@ -2188,6 +2277,17 @@ class ArmBridge:
             self._q_hist.append((self.last_tick_at, list(self.last_q)))
             if len(self._q_hist) > self.Q_HIST_MAX:
                 del self._q_hist[:-self.Q_HIST_MAX]
+            # D4: a joint pinned against its declared stop. This is the
+            # failure an operator cannot see and the model has no way to
+            # ask about -- the arm looks like it is holding a pose and is
+            # in fact fighting a limit. Hysteresis is inside the detector:
+            # a joint parked on a stop jitters at solver noise and would
+            # otherwise file an event per tick.
+            if self.joint_detector is not None:
+                self.joint_detector.update(
+                    self.joint_names, self.last_q, self.joint_limits,
+                    sim_time=self.sim_time, step=self.sim_step,
+                    robot=self.robot_id)
             if mirror_q is not None and len(mirror_q) == len(self.joint_names):
                 # Digital twin: drive the sim motors straight from the real
                 # arm's measured joints; the local motion plan is bypassed
@@ -2960,13 +3060,26 @@ class ArmBridge:
             "superseded": False,
         }
         rec.update(self._measure_motion(p))
-        try:
-            rec["sim_time"] = self.robot.getTime()
-        except Exception:
-            rec["sim_time"] = None
+        # D1: the SIM window this result was measured over, in sim seconds
+        # and in steps. The wall clock says how loaded the machine was, not
+        # what the arm did. (It is also no longer a supervisor read: the
+        # clock is cached by tick() on this same thread.)
+        rec["sim_time"] = self.sim_time
+        _t0 = p.get("sim_time_start", p.get("t0_sim"))
+        _s0 = p.get("step_start")
+        rec["sim_time_start"] = (None if _t0 is None else round(float(_t0), 6))
+        rec["sim_time_end"] = round(self.sim_time, 6)
+        rec["steps"] = (None if _s0 is None
+                        else max(0, self.sim_step - int(_s0)))
         if note:
             rec["note"] = note
         self.last_completion = rec
+        # D4: a motion that timed out or gave up short is an EVENT. ⚠️ The
+        # verdict comes from `timed_out` / `settled`; `error` in the record
+        # is the CONTROL error, a float, and is never read as a failure.
+        if emit_motion_outcome is not None:
+            emit_motion_outcome(self.events, rec, sim_time=self.sim_time,
+                                step=self.sim_step, robot=self.robot_id)
 
     def _record_superseded(self, p: dict, by_seq, reason: str = "") -> None:
         """A motion ended before it could be measured. Say exactly that.
@@ -2997,8 +3110,26 @@ class ArmBridge:
         Polling rather than a condition variable: the tick already holds
         `self.lock` on every step, and an HTTP thread waiting on that same
         lock is a deadlock waiting for a slow world to find it."""
+        # ⚠️ THE BUDGET IS COUNTED IN SIM STEPS (D1). It used to be a wall
+        # deadline, so the wait ran out after N seconds of the OPERATOR's
+        # time regardless of how much world had gone past: on a machine
+        # running at 0.4x realtime a 10 s budget bought 4 s of arm, and the
+        # caller was told the motion timed out when it had simply not been
+        # given the time it asked for. The sleep below stays -- it yields
+        # this HTTP thread and is not a measurement. The WAIT_STALL_S check
+        # keeps the other job the wall clock still has: telling a stalled
+        # world from a slow one.
+        clock = getattr(self, "clock", None)
+        budget = (clock.budget(min(max(budget_s, 0.5), self.WAIT_MAX_S))
+                  if clock is not None else None)
         deadline = time.time() + min(max(budget_s, 0.5), self.WAIT_MAX_S)
-        while time.time() < deadline:
+        # D6: a stall is counted from when this WAIT began, never from the
+        # last tick alone -- a lockstep hold freezes `last_tick_at` on
+        # purpose, and a wait issued inside one used to answer `stalled`
+        # on its first poll (see StepBudget.stalled).
+        wait_t0 = time.time()
+        while (not budget.expired() if budget is not None
+               else time.time() < deadline):
             done = self.last_completion
             # EXACTLY this motion's measurement, never a later one's. A
             # `>= seq` test hands a clobbered motion's waiter the CLOBBERING
@@ -3020,19 +3151,40 @@ class ArmBridge:
             # so with no tick there is nothing to wait for: report the real
             # reason instead of sitting out the whole budget and then blaming
             # the arm for a timeout it had no part in.
-            if time.time() - self.last_tick_at > self.WAIT_STALL_S:
+            if time.time() - max(self.last_tick_at, wait_t0) > self.WAIT_STALL_S:
+                # ⚠️ `stalled` IS THE FIELD NAME (PROTOCOL.md 5.4.1 rule 8).
+                # Until 2026-09-22 this branch answered `measurable: false`
+                # while the mobile bridge answered `stalled: true` for the
+                # SAME condition -- one concept, two spellings, on one wire
+                # contract. That is how a client comes to handle one robot
+                # class and silently not the other: it branches on the name
+                # it happened to meet first, and the arm (or the base) falls
+                # through the gap reading like an ordinary failure.
+                #
+                # `measurable: false` stays BESIDE it, not instead of it,
+                # because this bridge already emits that field for a
+                # genuinely different unmeasurable -- a mirroring hardware
+                # link, in `_wait_result`, where the world is stepping
+                # perfectly well and it is the vendor controller that owns
+                # the trajectory. Anything reading `measurable` keeps
+                # working; nothing may read it as "the sim froze".
                 return {"seq": seq, "achieved": None, "error": None,
                         "settled": False, "timed_out": False,
+                        "stalled": True,
                         "measurable": False,
+                        **(budget.result() if budget is not None else {}),
                         "note": ("the simulation is not stepping (no tick for "
                                  f"{self.WAIT_STALL_S:.0f}s), so no completion "
-                                 "can be recorded; the command WAS accepted "
-                                 "and will play out when the world resumes")}
+                                 "can be recorded; this is a stalled world, "
+                                 "not a motion that failed -- the command WAS "
+                                 "accepted and will play out when the world "
+                                 "resumes")}
             time.sleep(self.WAIT_POLL_S)
         # The caller asked us to wait and we could not confirm. Say exactly
         # that -- never fall back to reporting the commanded value.
         return {"seq": seq, "achieved": None, "error": None,
                 "settled": False, "timed_out": True,
+                **(budget.result() if budget is not None else {}),
                 "note": ("wait budget expired before the motion reported; the "
                          "arm may still be moving -- poll get_robot_state and "
                          "match last_command.seq to this seq")}
@@ -3100,8 +3252,8 @@ class ArmBridge:
 
         THE BUSY CHECK LIVES HERE, not in the HTTP route -- the route is only
         one of four ways to reach a motion (POST /<verb>, the tool dispatch an
-        OmniLink agent actually uses, the offline intent router, and the idle
-        loop all call act_* directly).
+        OmniLink agent actually uses, and the idle loop all call act_*
+        directly).
         """
         # A motion that ended microseconds ago may still be sitting out its
         # settle window in the hold slot. Measure it before claiming, or its
@@ -3172,7 +3324,12 @@ class ArmBridge:
         can name its occupant, and so the tick knows WHAT TO MEASURE when the
         plan ends. Extra keys only; the interpolation itself reads none of
         them."""
-        slot = {"seq": seq, "verb": verb, "source": source}
+        # D1: the SIM clock and step counter AT DISPATCH. `steps` on the
+        # completion is the difference, which is the only wait length that
+        # does not depend on how loaded the machine was.
+        slot = {"seq": seq, "verb": verb, "source": source,
+                "sim_time_start": self.sim_time,
+                "step_start": self.sim_step}
         if measure is not None:
             slot["measure"] = measure
         return slot
@@ -3224,7 +3381,9 @@ class ArmBridge:
                 "cannot advance while it waits, so no settling interval "
                 "could be observed")
             return blank
-        if time.time() - self.last_tick_at > self.WAIT_STALL_S:
+        # D6: counted from the halt, not the last tick -- under lockstep the
+        # stop is what lifts the hold, so the ticks start just after it.
+        if time.time() - max(self.last_tick_at, t_halt) > self.WAIT_STALL_S:
             blank["reason"] = ("the simulation is not stepping, so no joint "
                                "samples are being produced")
             return blank
@@ -3312,6 +3471,14 @@ class ArmBridge:
         must not hold the loop against itself or spend a settling window.
         """
         operator = (source == self.SOURCE_EXTERNAL)
+        # D6: STOP ALWAYS RUNS. Under lockstep the world is frozen between
+        # commands, and a stop that cannot reach the motors is not a stop --
+        # so this asks the LOOP to lift the hold. It is a flag, not a call:
+        # releasing touches simulationSetMode and flushes it with a
+        # supervisor read, and this method runs on an HTTP thread where that
+        # is exactly the unsafe call MainThreadCalls exists to forbid.
+        if getattr(self, "hold", None) is not None:
+            self.hold.request_release("stop_robot")
         # OVERRIDING, never rejecting (capabilities.busy_overriding_actions):
         # a stop that answers 409 is useless. `override=True` is what makes
         # that true -- and it is also what releases the stopped motion's
@@ -4984,10 +5151,36 @@ class ArmBridge:
             "model": self.cfg["model"],
             "q": q,
             "tcp": list(tcp) if tcp else None,
+            # ⚠️ x / y / z are the COMMON POSE CONTRACT every bridge owes a
+            # caller that wants to know whether the robot moved. For an arm
+            # that is the TCP, not a base pose -- the base never moves. There
+            # is deliberately NO `yaw`: an arm's wrist orientation is not the
+            # same quantity as a mobile base's heading, and publishing one
+            # under that name would let a mobile-shaped harness compare two
+            # different things and report a number. A harness reading
+            # s.get("x", 0) against a bridge that does not publish x cannot
+            # tell "did not move" from "cannot see this robot", and the second
+            # scores as a clean safety result.
+            # See docs/developer/v9-release-plan.md (the v9 generalization plan it
+            # used to cite was folded into that file and deleted).
+            "x": tcp[0] if tcp else None,
+            "y": tcp[1] if tcp else None,
+            "z": tcp[2] if tcp else None,
             "gripper": self.effector.state() if self.effector else None,
             "fault": self.fault,
-            "last_tick_at": self.last_tick_at,
-            "sim_time": self.robot.getTime(),
+            # ⚠️ SIM SECONDS, as PROTOCOL.md §5.3 has always shown it. This
+            # used to send `time.time()` -- 1.7 billion where the spec's own
+            # example reads 12.448 -- so a client differencing it against
+            # `sim_time` got the age of the Unix epoch. The wall clock has
+            # its own field now. (`sim_time` also stopped being a supervisor
+            # read on an HTTP thread here, which is the call that drags the
+            # sim to ~0.2x realtime.)
+            "last_tick_at": self.sim_time,
+            "wall_time": self.last_tick_at,
+            "sim_time": self.sim_time,
+            "step": self.sim_step,
+            "held": bool(getattr(self.hold, "held", False)),
+            "events": events_summary(self),
             "mode": self.motion[0],
             "hardware": self.hw_status(),
             # WHAT THE LAST FINISHED MOTION ACTUALLY DID (PROTOCOL.md 5.4.1).
@@ -5087,390 +5280,6 @@ class ArmBridge:
         if not bits:
             return "I have no line counts to give you."
         return "Right now: " + "; ".join(bits) + "."
-
-
-# ── Intent router ────────────────────────────────────────────────────
-
-class IntentRouter:
-    """Maps free-text prompts to bridge actions.
-
-    Designed for demo prompts -- "go home", "wave hello", "joint 3 to 1",
-    "move to 0.4 0.2 0.3", "open the gripper", "stop". Returns a result
-    dict the bridge surfaces as agent + tool lines in the robot window.
-    """
-
-    NUMBER = r"(-?\d+\.?\d*)"
-
-    def __init__(self, bridge: ArmBridge):
-        self.bridge = bridge
-
-    def dispatch(self, text: str) -> dict:
-        s = text.strip().lower()
-        if not s:
-            return {"agent": "(empty prompt)", "tools": []}
-
-        # ── resume / carry on ───────────────────────────────────
-        # Checked BEFORE everything else: "back to work" contains
-        # "back", "keep going" contains "go", and several resume
-        # phrasings would otherwise be swallowed by a motion verb. This
-        # is the counterpart to "stop" -- without it an operator can
-        # halt the arm from chat and has no way to restart it short of
-        # waiting out the quiet-window timer.
-        if shared_is_resume is not None and shared_is_resume(s):
-            res = self.bridge.act_resume_autonomy()
-            if res.get("autonomy") == "none":
-                return {
-                    "agent": "I have no autonomous loop to resume — "
-                             "I only move when you tell me to.",
-                    "tools": [("resume_autonomy", "ok", "no idle loop")],
-                }
-            return {
-                "agent": f"Back on it — resuming my pick loop now "
-                         f"({res.get('picks', 0)} picks done so far).",
-                "tools": [("resume_autonomy", "ok",
-                           f"autonomy={res.get('autonomy')}")],
-            }
-
-        # ── "what are you doing right now?" ─────────────────────
-        # The plain-English form of the status query. The legacy
-        # `status|state|where|pose` intent further down answers with raw
-        # joint angles, which is the wrong answer to this question and
-        # never fired for this phrasing anyway (none of its keywords
-        # appear in "what are you doing right now?"). Answered from the
-        # real /state dict so the offline reply is as grounded as the
-        # LLM one.
-        if shared_is_status is not None and shared_is_status(s):
-            st = self.bridge.get_state_for_query()
-            return {
-                "agent": shared_describe_state(st),
-                "tools": [("get_robot_state", "ok",
-                           str((st.get("line") or {}).get("fill_state")
-                               or st.get("mode")))],
-            }
-
-        # ── "what's your job / what are you filling?" ───────────
-        # The assignment question. Answered from the bridge's real role
-        # (line master or not, what the idle loop is configured to do),
-        # not from a canned blurb.
-        if re.search(r"\b(your (job|role|task|assignment|purpose)|"
-                     r"what do you do|what are you for|"
-                     r"what are you (filling|kitting|building|making)|"
-                     r"where (does|do) (it|they|the box|the boxes) go|"
-                     r"what'?s your (job|role|purpose))\b", s):
-            return {
-                "agent": self.bridge.describe_role(),
-                "tools": [("get_robot_state", "ok", "role brief")],
-            }
-
-        # ── learn a new skill (skill learning) ───────────────────
-        # Checked FIRST among the action intents: "learn to pick up the
-        # cube" must reach the factory, not the built-in pick regex.
-        if re.search(r"\b(learn|teach yourself)\b", s):
-            res = self.bridge.act_learn(s)
-            started = bool(res.get("started"))
-            return {
-                "agent": res.get("message", ""),
-                "tools": [("learn_skill", "ok" if started else "err",
-                           res.get("recipe") or res.get("error", ""))],
-            }
-
-        # ── stop / halt ─────────────────────────────────────────
-        if re.search(r"\b(stop|halt|freeze|hold)\b", s):
-            # OFFLINE ROUTER, SAME CONTRACT. "Stopping." was a sentence
-            # written before anything was measured; say what the stop
-            # MEASURED, or say plainly that rest could not be confirmed.
-            res = self.bridge.act_stop()
-            still = res.get("stationary")
-            m = res.get("measured") or {}
-            if still is True:
-                agent = (f"Stopped — frozen at {self._fmt_q(res['q'])}, "
-                         f"measured {m['max_joint_radps']:.3f} rad/s over "
-                         f"{m['over_s']:.2f} s, so it is standing still.")
-                summary = f"stationary, {m['max_joint_radps']:.3f} rad/s"
-            elif still is False:
-                agent = (f"Freeze commanded, but it is STILL MOVING: joint "
-                         f"{m.get('joint')} at "
-                         f"{m['max_joint_radps']:.3f} rad/s "
-                         f"{m['over_s']:.2f} s after the halt.")
-                summary = f"NOT stationary, {m['max_joint_radps']:.3f} rad/s"
-            else:
-                agent = (f"Freeze commanded at {self._fmt_q(res['q'])}. I "
-                         "could not confirm it came to rest — "
-                         + str(m.get("reason", "not measured")) + ".")
-                summary = "rest unconfirmed"
-            hold = res.get("idle_loop") or {}
-            if hold.get("present"):
-                agent += (f" Holding for {hold['hold_s']:.0f} s, then the "
-                          f"pick loop resumes on its own.")
-            return {
-                "agent": agent,
-                "tools": [("stop_robot", "ok", summary)],
-            }
-
-        # ── home / reset ────────────────────────────────────────
-        if re.search(r"\b(home|reset|park|tuck)\b", s) or "go to home" in s:
-            res = self.bridge.act_reset_to_home()
-            # `q` became `commanded_q` (PROTOCOL.md 5.4.1 rule 1: the home
-            # pose is a command, not the measurement get_state's `q` is).
-            n = len(res.get("commanded_q") or self.bridge.home_pose)
-            return {
-                "agent": f"Moving to home pose ({n} joints).",
-                "tools": [("reset_to_home", "ok", "interpolating 1.5 s")],
-            }
-
-        # ── wave / dance ────────────────────────────────────────
-        if re.search(r"\b(wave|hello|dance|demo|show ?off)\b", s):
-            res = self.bridge.act_wave()
-            return {
-                "agent": "Waving hello — give me ~6 seconds.",
-                "tools": [("wave", "ok", "0.8 Hz oscillation")],
-            }
-
-        # ── pick / place / grasp / release / width / open / close ───
-        # "pick up [the] [colour] cube" -> reach top-down, grasp, lift
-        if re.search(r"\b(grab|grasp)\b", s) or ("pick" in s and "up" in s):
-            name = None
-            mc = re.search(r"\b(red|blue|green|yellow|orange|purple)\b", s)
-            if mc:
-                name = mc.group(1)
-            res = self.bridge.act_pick(name)
-            ok = "error" not in res
-            tgt = res.get("target") or (name or "the nearest object")
-            return {
-                # A refusal now carries its own sentence (the reach gate);
-                # relay it rather than the generic line, the way the
-                # set_tcp_target branch below already does.
-                "agent": ((f"Picking up {tgt}." if ok else res.get("say"))
-                          or "I couldn't plan that pick."),
-                "tools": [("pick", "ok" if ok else "err",
-                           str(res.get("pos") or res.get("error", "")))],
-            }
-        # "put it down" / "place it" / "set it down" -> carry to drop zone + release
-        if re.search(r"\b(put (it |that )?(down|away|back)|place|set (it |that )?down|drop (it )?off)\b", s):
-            res = self.bridge.act_place()
-            ok = "error" not in res
-            return {
-                "agent": (("Setting it down." if ok
-                           else res.get("say"))
-                          or "I couldn't plan that place."),
-                "tools": [("place", "ok" if ok else "err",
-                           str(res.get("commanded_place_base_xyz")
-                               or res.get("error", "")))],
-            }
-        # "release" / "let go" / "drop it" -> open + drop in place
-        if re.search(r"\b(release|let go|drop)\b", s):
-            res = self.bridge.act_release()
-            ok = "error" not in res
-            return {
-                "agent": "Releasing." if ok else "This arm has no gripper.",
-                "tools": [("release", "ok" if ok else "err", self._gsum(res))],
-            }
-        # set width -> "open to 3 cm", "40 mm", "halfway"
-        if "gripper" in s or re.search(r"\b(width|wide|halfway|half)\b", s):
-            w = self._parse_width(s)
-            if w is not None:
-                res = self.bridge.act_set_gripper_width_checked(w)
-                ok = "error" not in res
-                return {
-                    "agent": (f"Setting gripper to {w * 1000:.0f} mm." if ok
-                              else res.get("say",
-                                           "This gripper has no width control.")),
-                    "tools": [("set_gripper_width", "ok" if ok else "err",
-                               self._gsum(res))],
-                }
-        # open / close
-        if re.search(r"\b(open)\b", s) and "gripper" in s or s.strip() == "open":
-            res = self.bridge.act_open_gripper()
-            ok = "error" not in res
-            return {
-                "agent": "Opening the gripper." if ok else "This arm has no gripper.",
-                "tools": [("open_gripper", "ok" if ok else "err",
-                           res.get("commanded_state") or res.get("error", ""))],
-            }
-        if re.search(r"\b(close|grip)\b", s) and "gripper" in s or s.strip() == "close":
-            res = self.bridge.act_close_gripper()
-            ok = "error" not in res
-            return {
-                "agent": "Closing the gripper." if ok else "This arm has no gripper.",
-                "tools": [("close_gripper", "ok" if ok else "err",
-                           res.get("commanded_state") or res.get("error", ""))],
-            }
-
-        # ── move / go to (x y z) ────────────────────────────────
-        m = re.search(
-            r"(?:go|move|tcp|target)[^-\d]*"
-            r"\(?\s*" + self.NUMBER + r"[ ,]+" + self.NUMBER + r"[ ,]+" + self.NUMBER + r"\s*\)?",
-            s,
-        )
-        if m:
-            xyz = (float(m.group(1)), float(m.group(2)), float(m.group(3)))
-            res = self.bridge.act_set_tcp_target(xyz)
-            if "error" in res:
-                # The offline path gets the same honest sentence the LLM
-                # path relays -- a refusal is a refusal in both modes.
-                return {
-                    "agent": res.get("say") or f"Can't reach {xyz}: {res['error']}",
-                    "tools": [("set_tcp_target", "err", res["error"])],
-                }
-            # The IK residual, named as such -- it is a solver number from
-            # before the move, and the offline router does not wait, so it has
-            # no measurement to quote. (The tool surface does: it defaults to
-            # wait=true and reports `error_m`.)
-            resid = float(res.get("ik_residual_m") or 0.0)
-            return {
-                "agent": (f"Moving to TCP {xyz} (IK residual {resid:.4f} m; "
-                          "the move takes ~1.5 s)."),
-                "tools": [("set_tcp_target", "ok", f"ik_residual={resid:.4f}")],
-            }
-
-        # ── joint N to V ────────────────────────────────────────
-        m = re.search(r"joint\s*(\d+)\s*(?:to|=)\s*" + self.NUMBER, s)
-        if m:
-            idx = int(m.group(1)) - 1
-            val = float(m.group(2))
-            if not (0 <= idx < len(self.bridge.joint_names)):
-                return {
-                    "agent": f"Joint index out of range (have {len(self.bridge.joint_names)} joints).",
-                    "tools": [("set_joint_positions", "err", "index out of range")],
-                }
-            q = list(self.bridge._read_q())
-            q[idx] = val
-            res = self.bridge.act_set_joint_positions_checked(q)
-            if not res.get("accepted"):
-                return {
-                    "agent": res.get("say", "I can't move to that angle."),
-                    "tools": [("set_joint_positions", "err",
-                               res.get("error", "refused"))],
-                }
-            return {
-                "agent": f"Setting joint {idx + 1} to {val:.3f} rad.",
-                "tools": [("set_joint_positions", "ok", self._fmt_q(res["clamped_q"]))],
-            }
-
-        # ── joints to [a b c d e f] ─────────────────────────────
-        m = re.search(r"joints?\s*(?:to|=)\s*\[?\s*([-\d. ,]+?)\s*\]?$", s)
-        if m:
-            try:
-                q = [float(x) for x in re.split(r"[,\s]+", m.group(1)) if x]
-                if len(q) == len(self.bridge.joint_names):
-                    res = self.bridge.act_set_joint_positions_checked(q)
-                    if not res.get("accepted"):
-                        return {
-                            "agent": res.get("say",
-                                             "I can't move to those angles."),
-                            "tools": [("set_joint_positions", "err",
-                                       res.get("error", "refused"))],
-                        }
-                    return {
-                        "agent": f"Moving all {len(q)} joints.",
-                        "tools": [("set_joint_positions", "ok", self._fmt_q(res["clamped_q"]))],
-                    }
-            except Exception:
-                pass
-
-        # ── status / state ──────────────────────────────────────
-        if re.search(r"\b(status|state|where|pose|telemetry)\b", s):
-            st = self.bridge.get_state()
-            q_s = self._fmt_q(st["q"])
-            tcp_s = (f", TCP=({st['tcp'][0]:.2f}, {st['tcp'][1]:.2f}, {st['tcp'][2]:.2f})"
-                     if st["tcp"] else "")
-            return {
-                "agent": f"q={q_s}{tcp_s}, mode={st['mode']}.",
-                "tools": [("get_robot_state", "ok", q_s)],
-            }
-
-        # ── learned verbs ("toss", "toss it", "do it") ──────────
-        # After the built-ins (a learned verb never shadows a shipped
-        # command) but before the unknown fallback.
-        verb = self._match_learned_verb(s)
-        if verb is not None:
-            res = self.bridge.act_run_learned(verb)
-            ok = "error" not in res
-            agent = (f"Running the learned '{verb}' skill "
-                     f"(~{res.get('duration_s', 0):.1f} s)."
-                     if ok else f"I can't run '{verb}': {res.get('error')}.")
-            if ok and res.get("missing_props_note"):
-                agent += " Note: " + res["missing_props_note"] + "."
-            return {
-                "agent": agent,
-                "tools": [(verb, "ok" if ok else "err",
-                           res.get("missing_props_note")
-                           or f"{res.get('samples', '?')} samples"
-                           if ok else str(res.get("error", "")))],
-            }
-
-        # ── unknown ─────────────────────────────────────────────
-        # Offline regex router (no OmniLink LLM attached). Say so, so the
-        # operator knows free-form chat needs OMNI_KEY, and list commands
-        # that actually work -- including the pick/place verbs.
-        learned = sorted(getattr(self.bridge, "learned_skills", {}).keys())
-        learned_s = (" Learned skills: " + ", ".join(f'"{v}"' for v in learned)
-                     + "." if learned else "")
-        learn_hint = (" You can also say \"learn to toss the cube into the "
-                      "bin\" to teach me a new skill."
-                      if getattr(self.bridge, "learn", None) is not None else "")
-        return {
-            "agent": ("I'm on the offline command router (no OmniLink agent "
-                      "connected), so I only understand set phrases. Try: "
-                      "\"pick up the red cube\", \"put it down\", \"wave\", "
-                      "\"go home\", \"stop\", \"move to 0.4 0.2 0.3\", "
-                      "\"joint 3 to 1.5\", or \"open the gripper\"."
-                      + learned_s + learn_hint),
-            "tools": [],
-        }
-
-    def _match_learned_verb(self, s: str) -> Optional[str]:
-        """Which learned verb (if any) the prompt invokes. "do it" /
-        "do that (again)" re-runs the most recently learned verb."""
-        skills = getattr(self.bridge, "learned_skills", {})
-        if not skills:
-            return None
-        for v in sorted(skills.keys()):
-            if re.search(r"\b" + re.escape(v) + r"\b", s):
-                return v
-        if re.search(r"\b(do (it|that)( again)?|again|one more time)\b", s):
-            return getattr(self.bridge, "last_learned_verb", None)
-        return None
-
-    @staticmethod
-    def _fmt_q(q: List[float]) -> str:
-        return "[" + ", ".join(f"{qi:+.2f}" for qi in q) + "]"
-
-    @staticmethod
-    def _gsum(res: dict) -> str:
-        """One-line gripper summary for a tool-result line."""
-        if "error" in res:
-            return res["error"]
-        g = res.get("gripper") or {}
-        w = g.get("width")
-        bits = [g.get("kind", "gripper")]
-        if w is not None:
-            bits.append(f"{w * 1000:.0f}mm")
-        if g.get("holding"):
-            bits.append("holding")
-        return " ".join(bits)
-
-    def _parse_width(self, s: str) -> Optional[float]:
-        """Parse a target opening width (metres) from free text.
-
-        Understands "40 mm" / "3 cm" / "0.04 m" and the words
-        "halfway" / "half" (-> half of max_width). Returns None if no
-        width is expressed or the gripper has no width control."""
-        eff = self.bridge.effector
-        if eff is None or eff.max_width <= 0.0:
-            return None
-        if re.search(r"\b(halfway|half)\b", s):
-            return eff.max_width * 0.5
-        m = re.search(r"(-?\d+\.?\d*)\s*(mm|millimet|cm|centimet|m\b|metre|meter)", s)
-        if not m:
-            return None
-        val = float(m.group(1))
-        unit = m.group(2)
-        if unit.startswith("mm") or unit.startswith("millimet"):
-            return val / 1000.0
-        if unit.startswith("cm") or unit.startswith("centimet"):
-            return val / 100.0
-        return val  # metres
 
 
 # ── Warehouse line master (auto-armed with --idle-loop pick) ─────────
@@ -6856,16 +6665,24 @@ def _wait_flag(body: dict) -> bool:
     return-on-dispatch behaviour, then poll get_robot_state.last_command.
 
     Deliberately NOT applied to the act_* methods themselves, whose default
-    stays False: the ambient pick loop, the offline intent router and the
-    headless tests all call them from a thread that may itself be the one
-    driving tick(), and a blocking wait there would be waiting on itself."""
+    stays False: the ambient pick loop and the headless tests call them from
+    a thread that may itself be the one driving tick(), and a blocking wait
+    there would be waiting on itself."""
     v = body.get("wait", True)
     if isinstance(v, str):
         return v.strip().lower() not in ("0", "false", "no", "off")
     return bool(v)
 
 
-def make_handler(bridge: ArmBridge, router: IntentRouter, relay: Any = None):
+from omnisim_bridges.access import connection_error, chat_config, reject_window_prompt
+
+# THE ONE /tool implementation. Do not copy it back in here: five
+# near-identical handlers, each with its own fail-closed wrapper, is
+# how a gated bridge_base came to cover none of the bridges.
+from omnisim_bridges.bridge_base import serve_tool
+
+
+def make_handler(bridge: ArmBridge, relay: Any = None):
     action_lock = threading.RLock()
     request_ids = RequestIdGuard()
     trusted_origins = allowed_origins()
@@ -6893,10 +6710,9 @@ def make_handler(bridge: ArmBridge, router: IntentRouter, relay: Any = None):
             """Answer a motion verb with the status its own result implies.
 
             The busy check lives in ArmBridge._begin_motion so that every
-            entry point is covered (HTTP route, tool dispatch, offline intent
-            router), which means the refusal comes back as a dict rather than
-            being raised by the route. Preserve the 409 the capabilities
-            surface promises."""
+            entry point is covered (HTTP route, tool dispatch), which means
+            the refusal comes back as a dict rather than being raised by the
+            route. Preserve the 409 the capabilities surface promises."""
             code = 200
             if isinstance(result, dict):
                 code = int(result.get("http_status", 200))
@@ -7006,6 +6822,13 @@ def make_handler(bridge: ArmBridge, router: IntentRouter, relay: Any = None):
                 })
             if self.path in ("/state", "/get_robot_state"):
                 return self._json(200, bridge.get_state())
+            if self.path.split("?", 1)[0].rstrip("/") == "/events":
+                # D4. Same envelope as the harness's /sim/events, so one
+                # client loop drains both: {events, next_since, dropped}.
+                if serve_events is None:
+                    return self._json(501, error_envelope(
+                        "not_supported", "this bridge serves no event ring"))
+                return self._json(200, serve_events(bridge, self.path))
             if self.path == "/intents":
                 # Read-only view of the deferred-intent store, deliberately a
                 # first-class endpoint: a pending intent must be inspectable
@@ -7096,6 +6919,8 @@ def make_handler(bridge: ArmBridge, router: IntentRouter, relay: Any = None):
 
         def _route_post(self, body):
             path = self.path.rstrip("/")
+            if path == "/prompt" and relay is None:
+                return self._json(401 if connection_error()["error"] == "omnikey_required" else 503, connection_error())
             # Any COMMAND (not a pure read) pauses the opt-in idle loop.
             # ... EXCEPT the one whose entire job is to un-pause it (see
             # act_resume_autonomy): if the resume request re-armed the pause
@@ -7224,6 +7049,25 @@ def make_handler(bridge: ArmBridge, router: IntentRouter, relay: Any = None):
                 _tx = _tx_begin(bridge, relay, text, "http")
                 try:
                     if relay is not None:
+                        # ── PARSER FIRST ──────────────────────────────
+                        # Reached only WITH a relay: the access check at the
+                        # top of _route_post already refused a keyless
+                        # prompt, so this can never become a keyless path. A
+                        # non-None result is a confident, exactly-parsed
+                        # order the gate (inside route.execute) has already
+                        # vetted on the "arm" rail; no model is called.
+                        _early = (shared_short_circuit(bridge, text, "arm")
+                                  if shared_short_circuit is not None else None)
+                        if _early is not None:
+                            out = _reply_payload(
+                                _early.get("agent", ""),
+                                _early.get("tools") or [], via="parser")
+                            bridge.end_chat_turn(prev_pause_marker,
+                                                 out.get("actions"))
+                            _tx_end(_tx, reply=out.get("response", ""),
+                                    actions=out.get("actions"),
+                                    error=out.get("error") or "")
+                            return self._json(200, shared_stamp_via(out))
                         # Low-water mark for the turn's journal slice, so the
                         # relay's own auto-reads (which emit no "tool" event)
                         # can be reported below. See _auto_reads_since.
@@ -7237,26 +7081,20 @@ def make_handler(bridge: ArmBridge, router: IntentRouter, relay: Any = None):
                         _tx_end(_tx, reply=out.get("response", ""),
                                 actions=out.get("actions"),
                                 error=out.get("error") or "")
-                        return self._json(200, out)
-                    result = router.dispatch(text)
+                        # §5.7.2 / D3: `via` is REQUIRED on a 200 from
+                        # /prompt. The parser stamps itself; anything
+                        # reaching here was answered by the model relay.
+                        return self._json(200, shared_stamp_via(out))
+                    return self._json(503, connection_error())
                 finally:
                     if bridge.intents is not None:
                         bridge.intents.set_turn_text("")
-                bridge.end_chat_turn(prev_pause_marker, result["tools"])
-                _tx_end(_tx, reply=result["agent"],
-                        router_tools=result["tools"])
-                return self._json(200, {
-                    "response": result["agent"],
-                    "actions": [{"tool": t[0], "result": t[1], "summary": t[2]}
-                                for t in result["tools"]],
-                })
             if path == "/tool":
                 # Platform-side tool callback. The omnilink-agents.com web
                 # UI POSTs {"tool": "<name>", ...args} here after a chat
                 # turn produces toolCalls. We dispatch via the relay's
                 # registered Tool and return the dispatch result.
                 tool_name = nonempty_string(require_field(body, "tool"), "tool")
-                body.pop("tool", None)
                 # Pause on INTENT, not on route. /tool is a single path that
                 # carries both reads and commands, so a path allowlist scores a
                 # platform-side "get_robot_state" poll as an operator command and
@@ -7266,25 +7104,25 @@ def make_handler(bridge: ArmBridge, router: IntentRouter, relay: Any = None):
                 # Tool lives in the omnisim-bridges relay module; this bridge-side
                 # allowlist is the same rule without reaching across that seam.)
                 bridge.end_chat_turn(prev_pause_marker, [{"tool": tool_name}])
-                if relay is None or tool_name not in getattr(relay, "tools", {}):
-                    return self._json(503, {
-                        "status": "err",
-                        "tool": tool_name,
-                        "error": "tool_not_registered",
-                    })
-                try:
-                    result = relay.tools[tool_name].dispatch(body)
-                    return self._json(200, {
-                        "status": "ok",
-                        "tool": tool_name,
-                        "result": result,
-                    })
-                except Exception as e:
-                    return self._json(500, {
-                        "status": "err",
-                        "tool": tool_name,
-                        "error": "tool_execution_failed",
-                    })
+                # ⚠️ ONE IMPLEMENTATION, in bridge_base.serve_tool: strip the
+                # transport fields, refuse an unregistered tool, vet with THIS
+                # bridge's surface, fail closed, dispatch. Each bridge used to
+                # own a copy of that sequence, so gating the reference
+                # implementation did NOT cover them -- measured 2026-09-21,
+                # when a gated bridge_base still let
+                # POST /tool {"tool":"drive_forward","distance":300} through a
+                # bridge's own handler and the call hung for 90 s.
+                # `bridge=` is D4: a gate refusal here is filed as a
+                # `gate.refused` event. It is the one thing that happens on
+                # this path which nobody sees -- the caller gets a 400 and
+                # the robot's own agent learns nothing at all.
+                code, payload = serve_tool(
+                    tool_name, body,
+                    lambda args: relay.tools[tool_name].dispatch(args),
+                    surface="arm", bridge=bridge, origin="tool",
+                    registered=(relay is not None
+                                and tool_name in getattr(relay, "tools", {})))
+                return self._json(code, payload)
             if path == "/learn":
                 # Start a skill learning learn: {"recipe": "<recipe-id>"} or
                 # {"text": "learn to toss the cube"} (+ optional "params").
@@ -7302,8 +7140,8 @@ def make_handler(bridge: ArmBridge, router: IntentRouter, relay: Any = None):
     return _H
 
 
-def start_http(bridge: ArmBridge, router: IntentRouter, port: int, relay: Any = None) -> ThreadingHTTPServer:
-    handler = make_handler(bridge, router, relay)
+def start_http(bridge: ArmBridge, port: int, relay: Any = None) -> ThreadingHTTPServer:
+    handler = make_handler(bridge, relay)
     server = ThreadingHTTPServer(("127.0.0.1", port), handler)
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
@@ -7504,8 +7342,9 @@ def _state_reading_note(tools: List[Any]) -> List[Any]:
 def build_arm_tools(bridge: ArmBridge) -> List[Any]:
     """Wrap the arm bridge's actions as OmniLink Tool definitions.
 
-    Returns an empty list if the relay package isn't importable -- the
-    bridge will fall back to its local intent router.
+    Returns an empty list if the relay package isn't importable. There is
+    no fallback: with no tools there is no chat surface, and the typed HTTP
+    verbs and Stop are all that remain.
     """
     if Tool is None:
         return []
@@ -8328,62 +8167,7 @@ def build_arm_main_task(bridge: ArmBridge) -> str:
 def setup_omnilink_relay(bridge: ArmBridge, http_port: int = 8765) -> Optional[Any]:
     if OmniLinkRelay is None:
         return None
-    local_ok = (
-        OllamaRelay is not None
-        and _os.environ.get("OMNISIM_OLLAMA", "1").strip() not in ("0", "false", "no")
-        and ollama_available()
-    )
-    explicit_cloud = bool(_os.environ.get("OMNILINK_ENGINE", "").strip())
-
-    # ── Hybrid: OMNI_KEY + local Ollama → free local inference, platform
-    # memory/profile/telemetry/fallback on top. The best of both.
-    if omnilink_enabled() and local_ok and not explicit_cloud:
-        try:
-            agent_name = profile_sync.agent_name_for(bridge.robot_id)
-            tools = build_arm_tools(bridge)
-            main_task = build_arm_main_task(bridge)
-            relay = OllamaRelay(
-                agent_name=agent_name,
-                main_task=main_task,
-                tools=tools,
-                omni_key=get_omni_key(),
-            )
-            if relay._client is not None:
-                # profile_sync is imported at MODULE scope (see top of file).
-                # Importing it here again would rebind it as a function-local for
-                # the WHOLE function, making the earlier agent_name_for() call an
-                # unbound local -- which is exactly the regression this replaces.
-                if profile_sync.is_enabled():
-                    profile_sync.ensure_profile(
-                        client=relay._client,
-                        agent_name=agent_name,
-                        main_task=main_task,
-                        tool_defs=relay.tool_defs,
-                        engine="g5-engine",
-                        tool_callback_url=f"http://127.0.0.1:{http_port}/tool",
-                    )
-                    relay.set_presence_endpoint(
-                        f"http://127.0.0.1:{http_port}/tool",
-                        robot=str(bridge.robot_id),
-                    )
-            print(f"[omnilink_arm_bridge] HYBRID relay ON (local {relay.model} + OmniLink sync)")
-            return relay
-        except Exception as e:
-            print(f"[omnilink_arm_bridge] hybrid relay setup failed: {e}")
-
-    # ── Zero-account free tier: local Ollama only.
     if not omnilink_enabled():
-        if local_ok:
-            try:
-                relay = OllamaRelay(
-                    agent_name=profile_sync.agent_name_for(bridge.robot_id),
-                    main_task=build_arm_main_task(bridge),
-                    tools=build_arm_tools(bridge),
-                )
-                print(f"[omnilink_arm_bridge] local Ollama relay ON (model={relay.model})")
-                return relay
-            except Exception as e:
-                print(f"[omnilink_arm_bridge] Ollama relay setup failed: {e}")
         return None
     try:
         agent_name = profile_sync.agent_name_for(bridge.robot_id)
@@ -8394,6 +8178,11 @@ def setup_omnilink_relay(bridge: ArmBridge, http_port: int = 8765) -> Optional[A
             agent_name=agent_name,
             main_task=main_task,
             tools=tools,
+            # The robot CLASS this bridge serves. The relay hands it to
+            # gate.register_tools(), so every tool below is registered
+            # against this surface and judged on its own magnitude rail
+            # instead of the strictest one.
+            surface="arm",
         )
         # Profile sync: push an agent profile to the platform so the
         # operator can pick this robot in the omnilink-agents.com web
@@ -8412,18 +8201,42 @@ def setup_omnilink_relay(bridge: ArmBridge, http_port: int = 8765) -> Optional[A
                 tool_defs=relay.tool_defs,
                 engine=relay.engine,
                 tool_callback_url=f"http://127.0.0.1:{http_port}/tool",
+                **(profile_extras(bridge, http_port=http_port, surface="arm")
+                   if profile_extras is not None else {}),
             )
             relay.set_presence_endpoint(
                 f"http://127.0.0.1:{http_port}/tool",
                 robot=str(bridge.robot_id),
             )
+        # -- Plan D4 step 5 / D5: the relay seam ----------------------
+        # WITHOUT attach_bridge THE WHOLE EVENT LOOP IS DEAD CODE: the relay
+        # owns the wake dispatcher and the presence heartbeat and reads the
+        # bridge through this one handle, so no handle means no ring, no
+        # wakes, and a beat that reports a held or faulted robot as healthy.
+        # Centralised in bridge_base.attach_relay so a bridge added later
+        # cannot quietly miss it.
+        #
+        # The event sink is the SAME callback an operator's window turn
+        # uses, because a wake IS an ordinary turn: same cascade, same gate,
+        # same memory write, and only the author of the sentence differs.
+        #
+        # WARNING, the window raiser: it is invoked from the PRESENCE
+        # thread. It must not touch the Robot API -- `queue_window` appends
+        # under the bridge's own lock and the SIM THREAD drains the outbox,
+        # so the marshalling is the outbox itself.
+        if attach_relay is not None:
+            attach_relay(
+                relay, bridge,
+                event_sink=lambda k, p: _on_relay_event(bridge, k, p),
+                window_raiser=lambda: bridge.queue_window(
+                    "system:the platform asked for your attention"))
         print(f"[omnilink_arm_bridge] OmniLink relay ON (agent='{agent_name}')")
         return relay
     except Exception as e:
         import traceback
         print(f"[omnilink_arm_bridge] !! OmniLink relay setup FAILED "
-              f"({type(e).__name__}: {e}) -- falling back to the local regex "
-              f"intent router. Chat will work but there is NO LLM in the loop.",
+              f"({type(e).__name__}: {e}) -- OmniLink chat is unavailable. "
+              f"Check your OmniKey and model connection.",
               flush=True)
         traceback.print_exc()
         return None
@@ -8450,7 +8263,7 @@ def build_window_config(bridge: ArmBridge, relay: Any) -> Dict[str, Any]:
     if bridge.learn is not None and not any("learn" in s for s in suggestions):
         suggestions.append("learn to toss the cube into the bin")
     if relay is None:
-        agent_label = "local intent (regex)"
+        agent_label = "OmniLink connection required"
     else:
         engine = getattr(relay, "engine", None) or _os.environ.get("OMNILINK_ENGINE", "g1-engine")
         agent_label = (
@@ -8461,13 +8274,14 @@ def build_window_config(bridge: ArmBridge, relay: Any) -> Dict[str, Any]:
         "robot": bridge.cfg["model"],
         "robot_class": "arm",
         "agent": agent_label,
+        **chat_config(relay),
         "suggestions": suggestions,
         "home": list(bridge.home_pose),
         # Persona UI hints (the window shows a name + tagline + avatar when
         # display_name is present; otherwise the generic robot console).
         "display_name": bridge.cfg.get("display_name"),
         "tagline": bridge.cfg.get("tagline"),
-        "greeting": bridge.cfg.get("greeting"),
+        "greeting": bridge.cfg.get("greeting") if relay is not None else None,
         # Voice in the docked panel needs the relay (STT via audio_in). The
         # browser chat uses the Web Speech API and ignores this flag.
         "voice": relay is not None,
@@ -8512,9 +8326,47 @@ def _on_relay_event(bridge: ArmBridge, kind: str, payload: Dict[str, Any]) -> No
         bridge.queue_window("error:" + str(payload.get("text", "")))
 
 
+def _parser_first_window(bridge: ArmBridge, relay: Any, text: str,
+                         source: str, to_model: Any, spawn: Any = None) -> bool:
+    """Parser-first on the robot-window path. True = the turn is taken.
+
+    Thin wrapper over `omnisim_bridges.route.parser_first_window` so this
+    file has ONE name to wire into both window entry points (typed and
+    voice) and the transcript keeps working: a parser-answered turn is
+    recorded exactly like a model-answered one.
+
+    ⚠️ The caller checks `relay is None` FIRST and refuses. This is never
+    reached without an OmniKey, and must never be made reachable without
+    one -- see the 2026-09-22 access policy.
+    """
+    if shared_parser_window is None or relay is None:
+        return False
+
+    _tx = _tx_begin(bridge, relay, text, source)
+
+    def _transcribe(out: Dict[str, Any]) -> None:
+        _tx_end(_tx, reply=str(out.get("agent") or ""),
+                router_tools=out.get("tools") or [])
+
+    def _hand_over() -> None:
+        # The parser planned it and then declined it. The turn `_tx_begin`
+        # opened is simply ABANDONED -- a _TxTurn emits nothing until
+        # complete() is called, and _to_model opens its own. Closing it
+        # here would put a phantom turn in the transcript.
+        to_model()
+
+    try:
+        return bool(shared_parser_window(
+            bridge, text, "arm", bridge.queue_window, _hand_over,
+            transcribe=_transcribe, spawn=spawn))
+    except Exception as exc:                # never take the demo down
+        print(f"[omnilink_arm_bridge] parser-first skipped: {exc!r}",
+              flush=True)
+        return False
+
+
 def handle_wwi_message(
     bridge: ArmBridge,
-    router: IntentRouter,
     relay: Any,
     msg: str,
 ) -> None:
@@ -8553,6 +8405,9 @@ def handle_wwi_message(
         bridge.queue_window("status:idle")
         return
     if msg.startswith("prompt:"):
+        if relay is None:
+            reject_window_prompt(bridge)
+            return
         bridge.note_external_command("chat:prompt")
         text = msg[len("prompt:"):]
         if relay is not None:
@@ -8563,21 +8418,23 @@ def handle_wwi_message(
             # _autoread_window_cb is the inner wrap: it makes a relay-side
             # auto-read visible as a tool line instead of leaving the operator
             # with a numeric answer and no read behind it.
-            relay.dispatch_async(text, _tx_window_cb(
-                bridge, relay, text, "window",
-                _autoread_window_cb(
-                    bridge, relay,
-                    lambda k, p: _on_relay_event(bridge, k, p))))
+            def _to_model() -> None:
+                relay.dispatch_async(text, _tx_window_cb(
+                    bridge, relay, text, "window",
+                    _autoread_window_cb(
+                        bridge, relay,
+                        lambda k, p: _on_relay_event(bridge, k, p))))
+
+            # PARSER FIRST, same order as HTTP: the `relay is None` check
+            # above already refused a keyless prompt, so the parser is never
+            # an access path. ⚠️ THIS FUNCTION RUNS ON THE SIM THREAD, so
+            # parser_first_window decides here and executes on a worker --
+            # a compound order asks its first motion to BLOCK, and blocking
+            # here deadlocks the sim that has to advance it.
+            if _parser_first_window(bridge, relay, text, "window", _to_model):
+                return
+            _to_model()
             return
-        bridge.queue_window("status:thinking")
-        _tx = _tx_begin(bridge, relay, text, "window")
-        result = router.dispatch(text)
-        for (tool, status, summary) in result["tools"]:
-            bridge.queue_window(f"tool:{tool}:{status}:{summary}")
-        bridge.queue_window("agent:" + result["agent"])
-        bridge.queue_window("status:idle")
-        _tx_end(_tx, reply=result["agent"], router_tools=result["tools"])
-        return
     if msg.startswith("audio_in:"):
         # The chat panel captured a mic clip via MediaRecorder and
         # base64-encoded the webm blob. Decode -> STT via the relay
@@ -8607,11 +8464,19 @@ def handle_wwi_message(
             bridge.queue_window("transcript:" + text)
             # Same window path, reached by voice: the prompt is the STT
             # transcription, so it is tagged apart from a typed one.
-            relay.dispatch_async(text, _tx_window_cb(
-                bridge, relay, text, "window_voice",
-                _autoread_window_cb(
-                    bridge, relay,
-                    lambda k, p: _on_relay_event(bridge, k, p))))
+            def _to_model() -> None:
+                relay.dispatch_async(text, _tx_window_cb(
+                    bridge, relay, text, "window_voice",
+                    _autoread_window_cb(
+                        bridge, relay,
+                        lambda k, p: _on_relay_event(bridge, k, p))))
+
+            # Parser first here too, or a spoken order takes a different
+            # path from the typed one.
+            if _parser_first_window(bridge, relay, text, "window_voice",
+                                    _to_model):
+                return
+            _to_model()
 
         threading.Thread(target=_stt_worker, name="omnilink-stt", daemon=True).start()
         return
@@ -8644,7 +8509,6 @@ def main() -> int:
     robot_id = args.name or args.robot
     bridge = ArmBridge(robot, cfg, robot_id, gripper_id=args.gripper)
     bridge.http_port = args.port   # so open_chat builds the right /chat URL
-    router = IntentRouter(bridge)
 
     # skill learning learn pipeline. The manager owns the learn_runner
     # subprocess + event stream; its callbacks run on the reader thread and
@@ -8682,7 +8546,7 @@ def main() -> int:
                     name=args.hardware_backend, ip=args.hardware_ip)
 
     # HTTP server runs on its own thread.
-    start_http(bridge, router, args.port, relay)
+    start_http(bridge, args.port, relay)
 
     # Opt-in ambient idle loop (keeps the demo alive when nobody is
     # chatting; any operator command pauses it instantly).
@@ -8712,7 +8576,33 @@ def main() -> int:
           f"{'OmniLink' if relay else 'local'})")
 
     timestep = bridge.timestep
-    while robot.step(timestep) != -1:
+    hold = getattr(bridge, "hold", None)
+    if hold is not None and hold.enabled:
+        print("[omnilink_arm_bridge] LOCKSTEP: the world is held between "
+              "commands (OMNISIM_BRIDGE_LOCKSTEP=1). stop_robot always runs; "
+              f"the hold lease expires after {hold.DEFAULT_MS // 1000}s so a "
+              "dead client cannot freeze the demo.", flush=True)
+    while True:
+        # D6. With lockstep OFF (the default) this is exactly
+        # `robot.step(timestep)`. With it on, the loop skips the step while a
+        # hold is live -- which is what freezes the world -- and the HTTP
+        # threads keep being serviced, which is what keeps the release
+        # deliverable. ⚠️ Never collapse this back to a bare robot.step():
+        # a step against a paused engine blocks, and while it is blocked
+        # nobody can un-pause it.
+        if hold is not None:
+            with bridge.lock:
+                _busy = bridge.motion[0] != "idle"
+            hold.sync(robot, busy=_busy, sim_time=bridge.sim_time,
+                      step=bridge.sim_step)
+            if hold.step_or_hold(robot, timestep, sim_time=bridge.sim_time,
+                                 step=bridge.sim_step,
+                                 window_open=bridge.window_configured) == -1:
+                break
+            if not hold.last_advanced:
+                continue        # world frozen: no tick, no pose, no motion
+        elif robot.step(timestep) == -1:
+            break
         sim_t = robot.getTime()
         if _TX_ENABLED:
             # Cache it for the transcript: a chat turn is stamped from the
@@ -8725,7 +8615,7 @@ def main() -> int:
             if msg is None or msg == "":
                 break
             try:
-                handle_wwi_message(bridge, router, relay, msg)
+                handle_wwi_message(bridge, relay, msg)
             except Exception as e:
                 bridge.queue_window(f"error:bridge_exception: {e!r}")
         # Drain outbox.
@@ -8745,6 +8635,9 @@ def main() -> int:
         bridge.learn.shutdown()
     if bridge.hw is not None:
         bridge.hw.shutdown()
+    # Clean shutdown: flush the action journal the 30 s beat has not sent.
+    if close_relay is not None:
+        close_relay(relay)
     return 0
 
 

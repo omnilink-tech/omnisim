@@ -16,14 +16,46 @@
 
 Why this exists
 ---------------
-OmniSim already ships the thing every *other* simulator only gets through
-third-party glue: a first-party, agent-facing HTTP surface for authoring and
-debugging worlds (the World Harness, PROTOCOL.md §world_harness). But the agent
-ecosystem — Claude Desktop, Cursor, the tool marketplaces — standardized on the
-**Model Context Protocol (MCP)**, and until now OmniSim was invisible to it. The
-competitors' community servers (`omni-mcp/isaac-sim-mcp`, `kvgork/gazebo-mcp`)
-wrap a *non*-agent-native simulator in MCP; this wraps an *already* agent-native
-one, so it is a thin, honest adapter rather than a re-plumbing.
+Robotics has almost no observability. You cannot set a breakpoint on a robot,
+and when one misbehaves the state of the art is to watch it closely and guess.
+OmniSim ships the answer as a first-party, agent-facing HTTP surface — the World
+Harness, PROTOCOL.md §world_harness — where you run a controller and then ask
+the scene what actually happened: contacts, joint limits hit, grips, damage
+events and the controller's own log lines on one cursor-paged event stream, plus
+joint, device and bounds inspection that internally holds the engine for the
+duration of its own walk, so each answer is one consistent instant. This package is how an agent
+reaches that surface: the agent ecosystem — Claude Desktop, Cursor, the tool
+marketplaces — standardized on the **Model Context Protocol (MCP)**, and until
+now OmniSim was invisible to it.
+
+The instruments say when they cannot see, which is the part worth having in a
+debugger: `get_contacts` returns `completeness` and `empty_set_reasons[]` rather
+than an empty list that reads as "nothing touched", and `get_capabilities`
+publishes what the simulator refuses to do, with a reason and a workaround per
+gap. Pause is real: `sim_pause` holds the engine across calls under a lease and
+`sim_break` arms a break on an event, so single-stepping and breakpoints work —
+and they state their own blind spots too. Break detection is **never sub-step**:
+held and driven by `sim_step` it is per basic step, free-running it is one
+supervisor tick (8 ms to ~600 ms of engine time), so pause first and then step.
+A break armed on an event type this session silences is **refused**, not armed
+and left unable to fire. Record, replay, run-diff and a true checkpoint stay
+absent (`sim_snapshot` saves poses and joint angles only, never velocity), and
+`sim.watch` — a polled predicate over pose or joint state — is declared
+unsupported rather than approximated. `load_world` is **light by
+default**, silencing contact/grip/joint-limit events — pass `light: false` for a
+debugging session. The community servers wrap a simulator that was not built for
+this; here the surface already existed, so this is a thin adapter, not a rewire.
+
+Two surfaces, not one
+---------------------
+Most tools here reach the **World Harness** (`:6789`) — the authoring and
+debugging surface. Four reach a robot's **OmniLink bridge** instead
+(`robot_prompt`, `robot_tool`, `robot_state`, `robot_events`), which is how you
+TALK to the robot and hear back from it: an operator sentence, a typed tool
+call, its own state, and its own event ring. Only `/prompt` and `/tool` are
+gated (`/get_robot_state` and `/events` are pure reads); the bridge's direct REST
+verbs (`/drive_forward`, `/turn`, `/set_velocity`, `/stop_robot`) are not, and
+this server never calls them — see packages/omnisim-bridges/GATE_COVERAGE.md.
 
 This server is a **stateless proxy**: every tool call is one HTTP request to a
 running harness (default `http://127.0.0.1:6789`), over one pooled
@@ -73,7 +105,14 @@ import urllib.parse
 import urllib.request
 
 PROTOCOL_VERSION = "2024-11-05"  # widely supported; we also echo the client's
-SERVER_INFO = {"name": "omnisim-mcp", "version": "0.1.0"}
+SERVER_INFO = {"name": "omnisim-mcp", "version": "0.2.0"}
+# OMNISIM_HARNESS_URL names the World Harness this process should talk to, as a
+# base URL. It has three consumers and one meaning: this MCP server, the ROS 2
+# harness client, and (since v9) a robot bridge, which uses its PRESENCE as the
+# signal that a harness exists at all and re-emits that harness's events onto
+# its own ring tagged `source: "harness"`. Unset means "no harness": the MCP
+# server falls back to the documented default port, and a bridge simply raises
+# no forwarded events rather than polling something that is not there.
 DEFAULT_HARNESS = os.environ.get("OMNISIM_HARNESS_URL", "http://127.0.0.1:6789")
 # Default sits ABOVE the harness's own SUPERVISOR_RPC_TIMEOUT_S (120 s): if the
 # wrapper gave up first, the harness would still faithfully finish the request
@@ -84,6 +123,30 @@ HTTP_TIMEOUT_S = float(os.environ.get(
 # Set OMNISIM_MCP_KEEPALIVE=0 to force a fresh TCP connection per request (the
 # pre-pooling behaviour) for an A/B.
 KEEP_ALIVE = os.environ.get("OMNISIM_MCP_KEEPALIVE", "1") not in ("0", "false", "off")
+
+# --- the command surface (a robot's OmniLink bridge, NOT the harness) --------
+# Every bridge serves on loopback. 8765 is the convention across the chat
+# demos; the Mavic drone serves 6090 and the langsoak Husky 8775.
+BRIDGE_HOST = "127.0.0.1"
+DEFAULT_BRIDGE_PORT = 8765
+# The bridge's own auth token, when one is configured. A loopback bridge needs
+# none (check_authorization returns early on an empty token), but a bridge
+# started with OMNISIM_BRIDGE_TOKEN set answers 401 unauthorized without it, so
+# read the same variable the bridges do rather than inventing a second name.
+BRIDGE_TOKEN = os.environ.get("OMNISIM_BRIDGE_TOKEN", "").strip()
+# ⛔ THE ONLY FOUR BRIDGE PATHS THIS SERVER MAY CALL. `/prompt` and `/tool`
+# are the gate-vetted ones; `/get_robot_state` and `/events` are pure reads.
+# The direct REST actuators (`/drive_forward`, `/turn`, `/set_velocity`,
+# `/stop_robot`, `/reset_to_home`, ...) bypass the safety gate entirely
+# (packages/omnisim-bridges/GATE_COVERAGE.md) and are deliberately unreachable
+# from here: this allowlist is checked at call time so a future edit cannot add
+# one by accident.
+BRIDGE_PATHS = ("/prompt", "/tool", "/get_robot_state", "/events")
+# Transport fields that must NEVER travel as tool ARGUMENTS. A bridge's /tool
+# handler pops "tool" and dispatches the REST of the body as the arguments, so
+# an MCP request id riding along arrives at the safety gate as `unknown_arg` --
+# which is how the Mavic once refused a perfectly good takeoff.
+_TRANSPORT_KEYS = ("id", "tool", "port")
 
 
 def log(msg: str) -> None:
@@ -186,14 +249,18 @@ _POOL = _Pool()
 
 
 def _request(method: str, path: str, body: dict | None = None,
-             base: str | None = None):
+             base: str | None = None, timeout: float | None = None,
+             extra_headers: dict | None = None):
     """One HTTP call to the harness. Returns (status, headers, raw_bytes)."""
     base = (base or DEFAULT_HARNESS).rstrip("/")  # resolved at call time so tests/env can override
     data = json.dumps(body).encode() if body is not None else None
     headers = {"Accept": "application/json"}
     if data is not None:
         headers["Content-Type"] = "application/json"
-    return _POOL.request(method, base, path, data, headers, HTTP_TIMEOUT_S)
+    if extra_headers:
+        headers.update(extra_headers)
+    return _POOL.request(method, base, path, data, headers,
+                         HTTP_TIMEOUT_S if timeout is None else timeout)
 
 
 def _json_call(method: str, path: str, body: dict | None = None) -> dict:
@@ -205,6 +272,62 @@ def _json_call(method: str, path: str, body: dict | None = None) -> dict:
     except json.JSONDecodeError:
         parsed = {"raw": raw.decode("utf-8", "replace")}
     if isinstance(parsed, list):
+        parsed = {"items": parsed}
+    parsed.setdefault("http_status", status)
+    return parsed
+
+
+def _bridge_port(args: dict) -> int:
+    try:
+        return int(args.get("port") or DEFAULT_BRIDGE_PORT)
+    except (TypeError, ValueError):
+        raise ValueError(f"port must be an integer, got {args.get('port')!r}")
+
+
+def _bridge_call(path: str, port: int, body: dict | None,
+                 timeout: float | None = None, method: str = "POST") -> dict:
+    """One HTTP call to a robot's OmniLink bridge, envelope passed through.
+
+    ⚠️ THE BODY IS RETURNED VERBATIM. Whatever the bridge answered — a
+    `refused_by_gate` refusal, a `{commanded, achieved, error, settled}`
+    control result, a 401 `omnikey_required` — reaches the agent unedited.
+    The single added key is `http_status`, and only via `setdefault`, so a
+    bridge that sends its own keeps it. Interpreting the envelope here is
+    exactly the bug this guards against: `error` inside a control result is
+    the CONTROL error in metres or radians, not a failure flag, and a wrapper
+    that read it as one once reported "I could not stop: 4.3e-11" after a
+    textbook stop.
+    """
+    # The allowlist is checked on the ROUTE, with any query string cut off:
+    # `/events?since=12` is the same route as `/events`, and a check that saw
+    # the whole string would either refuse a legitimate cursor read or invite
+    # someone to "fix" it by loosening the test to a prefix match — at which
+    # point `/stop_robot?x=1` walks straight through.
+    route = path.split("?", 1)[0]
+    if route not in BRIDGE_PATHS:  # see BRIDGE_PATHS: the ungated verbs stay out
+        raise ValueError(f"refusing to call the bridge path {path!r}: this "
+                         f"server only calls {', '.join(BRIDGE_PATHS)} "
+                         f"(the other REST verbs bypass the safety gate)")
+    base = f"http://{BRIDGE_HOST}:{int(port)}"
+    headers = {"Authorization": f"Bearer {BRIDGE_TOKEN}"} if BRIDGE_TOKEN else None
+    try:
+        status, _headers, raw = _request(method, path, body, base=base,
+                                         timeout=timeout,
+                                         extra_headers=headers)
+    except HarnessError as exc:
+        raise HarnessError(
+            f"cannot reach an OmniLink bridge at {base}{path} ({exc.__cause__ or exc}). "
+            f"The robot's world must be RUNNING and its bridge controller "
+            f"listening: launch a chat world (e.g. "
+            f"projects/samples/demos/worlds/chat/omnilink_husky.omniworld) and "
+            f"retry. Ports: 8765 for most robots, 6090 for the Mavic drone, "
+            f"8775 for the langsoak Husky."
+        ) from exc
+    try:
+        parsed = json.loads(raw) if raw else {}
+    except json.JSONDecodeError:
+        parsed = {"raw": raw.decode("utf-8", "replace")}
+    if isinstance(parsed, list):        # /list_robots-shaped answers
         parsed = {"items": parsed}
     parsed.setdefault("http_status", status)
     return parsed
@@ -494,6 +617,117 @@ def t_robot_ik(args: dict) -> list:
     return _text(_json_call("POST", f"/robot/{args['def']}/ik", body))
 
 
+# --- the pause primitive and the breakpoint built on it (harness) ----------- #
+def t_sim_pause(args: dict) -> list:
+    body = {}
+    if args.get("lease_ms") is not None:
+        body["lease_ms"] = int(args["lease_ms"])
+    return _text(_json_call("POST", "/sim/pause", body))
+
+
+def t_sim_resume(_args: dict) -> list:
+    return _text(_json_call("POST", "/sim/resume", {}))
+
+
+def t_sim_break(args: dict) -> list:
+    types = args["types"]
+    if isinstance(types, str):  # forgiving: "contact.began,grip.began"
+        types = [t.strip() for t in types.split(",") if t.strip()]
+    body: dict = {"types": list(types)}
+    for k in ("filter", "lease_ms", "once"):
+        if k in args and args[k] is not None:
+            body[k] = args[k]
+    return _text(_json_call("POST", "/sim/break", body))
+
+
+def t_sim_breaks(_args: dict) -> list:
+    return _text(_json_call("GET", "/sim/breaks"))
+
+
+def t_sim_break_clear(args: dict) -> list:
+    """Disarm one break.
+
+    ⚠️ BOTH SPELLINGS SHIPPED (verified live 2026-09-22, PROTOCOL.md §7.40):
+    the harness serves ``DELETE /sim/break/<id>`` *and* its exact twin
+    ``POST /sim/break/delete {"break_id": ...}`` — same 200 body
+    (``{break_id, removed, rpc_ms, ok}``), same ``404 BREAK_NOT_FOUND``. The
+    twin exists for clients whose HTTP layer cannot route a bodyless DELETE.
+    So this is not a guess about which one is real; DELETE is preferred and the
+    POST is the compatibility path.
+
+    The fall-back is kept anyway, and it is deliberately narrow: it fires only
+    when the answer looks like a MISSING ROUTE (an error with no ``break_id``
+    in it), never when it is the route refusing a genuinely unknown id —
+    re-sending that as a POST would turn one honest 404 into two confusing
+    ones. That keeps this client working against an older harness.
+    """
+    bid = str(args["break_id"])
+    out = _json_call("DELETE", "/sim/break/" + urllib.parse.quote(bid, safe=""))
+    if int(out.get("http_status") or 0) >= 400 and "break_id" not in out:
+        alt = _json_call("POST", "/sim/break/delete", {"break_id": args["break_id"]})
+        alt.setdefault("route", "POST /sim/break/delete")
+        return _text(alt)
+    out.setdefault("route", "DELETE /sim/break/<id>")
+    return _text(out)
+
+
+# --- the command surface: a robot's OmniLink bridge, not the harness -------- #
+def t_robot_prompt(args: dict) -> list:
+    body = {"text": args["text"]}
+    timeout = None
+    if args.get("timeout_s") is not None:
+        body["timeout_s"] = float(args["timeout_s"])
+        # Never abandon a request the bridge is still faithfully serving; the
+        # socket must outlive the bridge's own budget for the turn.
+        timeout = max(HTTP_TIMEOUT_S, float(args["timeout_s"]) + 15.0)
+    return _text(_bridge_call("/prompt", _bridge_port(args), body, timeout))
+
+
+def t_robot_tool(args: dict) -> list:
+    tool = args["tool"]
+    raw_args = args.get("args") or {}
+    if not isinstance(raw_args, dict):
+        raise ValueError("args must be an object of the tool's own parameters")
+    # The bridge's /tool takes the arguments FLATTENED beside "tool", and then
+    # dispatches everything that is not "tool" as the argument map. So the
+    # transport fields are stripped HERE, on the way in, not hopefully ignored
+    # on the way out.
+    body = {"tool": tool}
+    for k, v in raw_args.items():
+        if k in _TRANSPORT_KEYS:
+            continue
+        body[k] = v
+    return _text(_bridge_call("/tool", _bridge_port(args), body))
+
+
+def t_robot_state(args: dict) -> list:
+    return _text(_bridge_call("/get_robot_state", _bridge_port(args), {}))
+
+
+def t_robot_events(args: dict) -> list:
+    """The robot's OWN event ring (`GET /events` on its bridge), cursor-paged.
+
+    ⚠️ TWO RINGS, TWO CURSORS. This is the BRIDGE's ring — what the robot's
+    own detectors saw, stamped in SIM time — and `get_events` is the HARNESS's
+    stream. A bridge with `OMNISIM_HARNESS_URL` set re-emits some harness
+    events into its own ring tagged `source: "harness"`, so an event can
+    legitimately appear on both with different cursors. Never carry a cursor
+    from one to the other.
+    """
+    q = []
+    for key in ("since", "limit", "types"):
+        val = args.get(key)
+        if val is None:
+            continue
+        if key == "types" and isinstance(val, (list, tuple)):
+            val = ",".join(str(t).strip() for t in val if str(t).strip())
+        q.append(f"{key}={urllib.request.quote(str(val))}")
+    path = "/events" + ("?" + "&".join(q) if q else "")
+    # A GET with no body: the ring is a pure read and nothing about it is
+    # gated, because reading what already happened cannot actuate anything.
+    return _text(_bridge_call(path, _bridge_port(args), None, method="GET"))
+
+
 # name -> (handler, description, inputSchema). Mirrors PROTOCOL.md §world_harness
 # and AGENTS.md §5 so the tool surface stays honest to the real endpoints.
 _VEC3 = {"type": "array", "items": {"type": "number"},
@@ -695,7 +929,20 @@ TOOLS = {
         "measures one) instead of discovering the harness's 120 s RPC timeout by "
         "hitting it. Per-step cost is dominated by tracking mode, not node count: "
         "light is the harness default since 2026-09-02 (see load_world); a "
-        "light=false or `tracking` load pays about 2.3x per single step on the fleet arena (measured 2026-09-02; the older 17-47x figure predates the 2026-09-02 engine fixes).",
+        "light=false or `tracking` load pays about 2.3x per single step on the fleet arena (measured 2026-09-02; the older 17-47x figure predates the 2026-09-02 engine fixes). "
+        "⭐ UNDER A PAUSE (sim_pause, or a break that fired) this still advances "
+        "and then RE-HOLDS -- that is single-stepping -- and the response "
+        "reports `paused` and `lease_remaining_ms`. ⚠️ IT STOPS EARLY on the "
+        "step an armed break fires, which is what makes it "
+        "CONTINUE-TO-BREAKPOINT: read `steps_executed` and `stopped_on_break`, "
+        "never `steps_requested` (measured: requested 400, executed 118). "
+        "⚠️ The advance is exact on the SUPERVISOR clock (`sim_time_ms`) and NOT "
+        "on the engine clock: 10 steps moved the supervisor clock by exactly "
+        "80 ms and the engine clock by 80-112 ms (0-4 basic steps of overshoot), "
+        "because lifting and re-taking the pause around the step is a race the "
+        "supervisor binding cannot close. That is why the response REPORTS "
+        "`engine_advanced_ms` rather than asserting it -- do not assert it "
+        "either. `sim_time_ms` and `engine_time_ms` are different rulers.",
         {"type": "object",
          "properties": {"steps": {"type": "integer", "minimum": 1,
                                   "description": "basic timesteps to advance; keep at or "
@@ -1059,6 +1306,249 @@ TOOLS = {
          },
          "required": ["def", "effector", "targets"]},
     ),
+    "sim_pause": (
+        t_sim_pause,
+        "Hold the engine PAUSED ACROSS CALLS, so the scene stops moving between "
+        "your own requests. Without it the engine free-runs between HTTP calls "
+        "(~88-112 ms of sim time per idle poll), so two reads are two different "
+        "instants. The pause is LEASED -- default 30 s, cap 300 s -- and that "
+        "deadline is a safety property, not a limitation to work around: a "
+        "client that pauses and then dies would otherwise freeze the simulation "
+        "with no way back but killing the engine. ⭐ sim_step STILL ADVANCES "
+        "while held, and re-holds after: that is SINGLE-STEPPING, and the step "
+        "response reports `paused` and `lease_remaining_ms`. Pausing again while "
+        "held EXTENDS the lease rather than erroring. Release early with "
+        "sim_resume, or simply let the lease expire. ⚠️ The step is exact on the "
+        "SUPERVISOR clock and not on the engine clock (0-4 basic steps of "
+        "overshoot) -- see sim_step. A held lease does NOT survive a load_world: "
+        "the harness releases it and clears every armed break.",
+        {"type": "object",
+         "properties": {"lease_ms": {
+             "type": "integer", "minimum": 1,
+             "description": "how long to hold before the engine resumes itself. "
+                            "Default 30000; silently clamped to [1000, 300000]. "
+                            "The response's `lease_ms` is the EFFECTIVE value"}}},
+    ),
+    "sim_resume": (
+        t_sim_resume,
+        "Release the pause lease early and let the engine free-run again. "
+        "Idempotent -- resuming a session that is not paused is not an error.",
+        {"type": "object", "properties": {}},
+    ),
+    "sim_break": (
+        t_sim_break,
+        "⭐ ARM A BREAKPOINT ON THE EVENT STREAM. When a matching event is "
+        "emitted the supervisor takes the pause lease, records "
+        "{break_id, event, paused_at_sim_ms} and emits a `break.hit` event on "
+        "get_events, so a poller learns WHY it stopped. Then read a frozen scene "
+        "(get_scene_tree, get_contacts, get_robot_joints), single-step with "
+        "sim_step, and sim_resume or let the lease expire. ⚠️ TWO HONEST LIMITS. "
+        "(1) LATENCY is not sub-step in either regime, and the two regimes are "
+        "two orders of magnitude apart. HELD (you called sim_pause first) and "
+        "driven by sim_step, detection is per BASIC STEP: hold_latency_ms 0.0, "
+        "hold_latency_steps 0, at most one basic step of engine time. "
+        "FREE-RUNNING, the hold happens on the NEXT SUPERVISOR TICK after the "
+        "event, and a tick is NOT a basic step -- measured from 8 ms to about "
+        "600 ms of engine time depending on load, and on a 3-body world a whole "
+        "ONE-SECOND drop fitted inside a single tick and no contact.began fired "
+        "at all. So PAUSE FIRST, THEN STEP; free-running, a transient can be "
+        "missed entirely. Every hit carries its own hold_latency_ms (supervisor "
+        "clock, ~0 by construction) and hold_latency_engine_ms_max (the "
+        "engine-clock width of that tick -- read THIS one). "
+        "(2) LIGHT SESSIONS: light is the harness default and it silences "
+        "contact.*, grip.* and joint.limit_hit (5 of the 11 event types), so a "
+        "break armed on one of those in a light session is REFUSED with "
+        "`400 BREAK_EVENT_TYPE_UNAVAILABLE` and the diagnostic code "
+        "`event_type_silenced_in_light_mode` rather than armed and left unable "
+        "to fire -- load the world with {\"light\": false} for a debugging "
+        "session. The refusal is SCOPED: damage.impact / damage.state_transition "
+        "survive light mode and still arm in the same session. A refused break "
+        "is NOT armed. Call sim_breaks first to read this session's "
+        "breakable_types / silenced_types. The lease cap applies here too, so a "
+        "crashed agent cannot leave the engine held. Returns "
+        "{break_id, types, filter, once, armed, hits, lease_ms, "
+        "armed_at_sim_ms, last_hit_sim_ms, armed_types, diagnostics, ok}.",
+        {"type": "object",
+         "properties": {
+             "types": {"type": "array", "items": {"type": "string"},
+                       "description": "event types to break on. The breakable "
+                                      "set is contact.began, contact.ended, "
+                                      "joint.limit_hit, grip.acquired, "
+                                      "grip.released, damage.impact, "
+                                      "damage.state_transition -- minus "
+                                      "whatever this session silences "
+                                      "(sim_breaks reports both lists)"},
+             "filter": {"type": "object",
+                        "description": "narrow the match: {\"def\": \"BOX\"} "
+                                       "(the subject), {\"counterpart\": "
+                                       "\"PLATE\"} (the other side of a "
+                                       "contact), {\"joint\": \"elbow\"}",
+                        "properties": {
+                            "def": {"type": "string"},
+                            "counterpart": {"type": "string"},
+                            "joint": {"type": "string"}}},
+             "lease_ms": {"type": "integer", "minimum": 1,
+                          "description": "pause lease taken when it fires "
+                                         "(default 30000, cap 300000)"},
+             "once": {"type": "boolean",
+                      "description": "disarm after the first hit. DEFAULT TRUE "
+                                     "-- the harness treats an absent `once` as "
+                                     "true. Pass false for a break that keeps "
+                                     "firing."},
+         },
+         "required": ["types"]},
+    ),
+    "sim_breaks": (
+        t_sim_breaks,
+        "List the breaks currently armed in this session (GET /sim/breaks): "
+        "id, types, filter, lease and whether each has fired. ⭐ CALL IT BEFORE "
+        "sim_break: it also reports `breakable_types` and `silenced_types` for "
+        "THIS session (light mode, the harness default, silences contact.*, "
+        "grip.* and joint.limit_hit), plus `break_hit` (the last break that "
+        "froze the engine -- it survives the resume) and `paused`. Reading it "
+        "first is how you avoid arming a break the harness will refuse.",
+        {"type": "object", "properties": {}},
+    ),
+    "sim_break_clear": (
+        t_sim_break_clear,
+        "Disarm one armed break by its break_id. Both spellings ship -- "
+        "DELETE /sim/break/<id> and its exact twin POST /sim/break/delete "
+        "{\"break_id\"}, same 200 body and same 404 BREAK_NOT_FOUND -- and the "
+        "response's `route` names which one this call used. An id that is not "
+        "armed is an honest 404, not a missing route.",
+        {"type": "object",
+         "properties": {"break_id": {"type": "string",
+                                     "description": "id returned by sim_break"}},
+         "required": ["break_id"]},
+    ),
+    "robot_prompt": (
+        t_robot_prompt,
+        "⭐ TALK TO THE ROBOT. Posts an operator SENTENCE to a robot's OmniLink "
+        "bridge (POST /prompt on 127.0.0.1:<port>) -- \"drive forward 1 m\", "
+        "\"go home\", \"where did the package land?\". A deterministic parser "
+        "interprets first (free); a model is called only on what the parser "
+        "declines; and the safety gate vets whatever produced the frames. This "
+        "and robot_tool are the two VETTED paths onto a robot. NOTE this is NOT "
+        "the harness: the robot's world must already be running with its bridge "
+        "controller. PORTS: 8765 by default; the Mavic drone serves 6090 and the "
+        "langsoak Husky 8775. ⚠️ THE BRIDGE'S ENVELOPE IS PASSED THROUGH "
+        "UNTOUCHED, including `refused_by_gate` and each action's {commanded, "
+        "achieved, error, settled}. `error` THERE IS THE CONTROL ERROR (a float "
+        "in metres or radians), NOT a failure indicator -- reading it as one "
+        "once printed \"I could not stop: 4.3e-11\" after a textbook stop. Judge "
+        "the result by `settled` and by `achieved` against `commanded`. ⚠️ A 401 "
+        "`omnikey_required` or a 503 `omnilink_unavailable` is NOT a crash: "
+        "OmniLink requires an OmniKey on EVERY plan including Free, and the "
+        "envelope's `response` and `setup_url` say how to connect one "
+        "(`python -m omnisim key`). Report that message to the user as it "
+        "stands.",
+        {"type": "object",
+         "properties": {
+             "text": {"type": "string",
+                      "description": "the operator sentence, verbatim"},
+             "port": {"type": "integer",
+                      "description": "bridge port (default 8765; Mavic 6090, "
+                                     "langsoak Husky 8775)"},
+             "timeout_s": {"type": "number",
+                           "description": "the bridge's budget for the turn "
+                                          "(default 90, max 600) -- raise it "
+                                          "for a long physical sequence"},
+         },
+         "required": ["text"]},
+    ),
+    "robot_tool": (
+        t_robot_tool,
+        "⭐ A TYPED TOOL CALL on a robot's OmniLink bridge (POST /tool): "
+        "{\"tool\": \"drive_forward\", \"args\": {\"distance\": 1.0}}. Reach for "
+        "this instead of the bare REST actuators: `/drive_forward`, `/turn`, "
+        "`/set_velocity` and `/stop_robot` BYPASS the safety gate "
+        "(packages/omnisim-bridges/GATE_COVERAGE.md) and this server never calls "
+        "them, while `/tool` is vetted. A tool must be REGISTERED on the bridge "
+        "to be checked at all -- an unregistered name comes back 503 "
+        "`tool_not_registered` and nothing dispatches, which is a refusal, not a "
+        "silent pass. Tool names come from the robot's own set (robot_prompt's "
+        "`actions` name them; robot_state reports the robot's capabilities). ⚠️ "
+        "TRANSPORT FIELDS NEVER TRAVEL AS ARGUMENTS: `id`, `tool` and `port` are "
+        "stripped from `args` here, because the bridge dispatches everything "
+        "beside `tool` as the argument map and a stray `id` reaches the safety "
+        "gate as `unknown_arg` -- which is how the Mavic once refused a "
+        "legitimate takeoff. PORTS: 8765 by default; the Mavic drone serves "
+        "6090 and the langsoak Husky 8775. Same envelope rules as robot_prompt: "
+        "the reply is passed through untouched (`refused_by_gate` and a 401 "
+        "`omnikey_required` included), and `error` inside the result is the "
+        "CONTROL ERROR in metres or radians, not a failure flag.",
+        {"type": "object",
+         "properties": {
+             "tool": {"type": "string",
+                      "description": "registered tool name, e.g. drive_forward, "
+                                     "turn, set_gripper_width, takeoff"},
+             "args": {"type": "object",
+                      "description": "the tool's own parameters, e.g. "
+                                     "{\"distance\": 1.0}. Magnitudes are "
+                                     "railed by the gate, which does not know "
+                                     "the arena -- a rail is 'nobody meant "
+                                     "this', not a bound on the floor."},
+             "port": {"type": "integer",
+                      "description": "bridge port (default 8765; Mavic 6090, "
+                                     "langsoak Husky 8775)"},
+         },
+         "required": ["tool"]},
+    ),
+    "robot_state": (
+        t_robot_state,
+        "Read a robot's own state from its OmniLink bridge (POST "
+        "/get_robot_state): pose, wheel/joint state, fault, last tick, autonomy "
+        "hold and whatever counters that robot keeps. A pure read -- nothing "
+        "moves and no gate is involved. Ports as robot_prompt (8765 default, "
+        "Mavic 6090, langsoak Husky 8775). This is the ROBOT's view through its "
+        "bridge; harness_status and list_robots are the SIMULATOR's view of the "
+        "same scene, and when the two disagree that disagreement is the finding.",
+        {"type": "object",
+         "properties": {"port": {
+             "type": "integer",
+             "description": "bridge port (default 8765; Mavic 6090, langsoak "
+                            "Husky 8775)"}}},
+    ),
+    "robot_events": (
+        t_robot_events,
+        "⭐ WHAT THE ROBOT NOTICED, without asking it (GET /events on its "
+        "OmniLink bridge): a cursor-paged ring of `motion.timed_out`, "
+        "`motion.unsettled`, `joint.limit_hit`, `fault.*`, `gate.refused`, "
+        "`contact.began`, and — when the bridge has a harness attached — "
+        "`break.hit` and `damage.*` re-emitted with `source: \"harness\"`. "
+        "Each event carries `seq` (the cursor unit), `type`, `sim_time`, "
+        "`step`, `robot`, `source` and `detail`. "
+        "Page it: pass the previous reply's `next_since` as `since`; the "
+        "envelope is {events, next_since, dropped, total}. ⚠️ `dropped` "
+        "NON-ZERO MEANS YOU LOST EVENTS -- the ring is bounded and in-process, "
+        "so poll more often or raise `limit`; it is not a warning you may "
+        "ignore, it is the count of what you will never see. ⚠️ THIS IS NOT "
+        "get_events: that one is the HARNESS's stream on :6789 with its own "
+        "two cursors, and a cursor from one ring is meaningless in the other. "
+        "⚠️ The ring is in the bridge's process and does NOT survive a bridge "
+        "restart or a world reload -- an empty ring after a restart means "
+        "'nothing since boot', never 'nothing happened'. ⚠️ `contact.began` "
+        "here is TOP-LEVEL SCOPE ONLY (the event says so): the supervisor's "
+        "getContactPoints() is blind to a URDF robot's sub-links, so a "
+        "gripper-finger contact is invisible to this detector. A pure read -- "
+        "nothing moves, no gate is involved. PORTS: 8765 by default; the Mavic "
+        "drone serves 6090 and the langsoak Husky 8775.",
+        {"type": "object",
+         "properties": {
+             "since": {"type": "integer",
+                       "description": "cursor: the previous reply's "
+                                      "`next_since`. Omit for the whole ring."},
+             "limit": {"type": "integer",
+                       "description": "max events in this page"},
+             "types": {"type": "string",
+                       "description": "comma-separated filter, e.g. "
+                                      "\"joint.limit_hit,motion.timed_out\" "
+                                      "(a JSON array is accepted too)"},
+             "port": {"type": "integer",
+                      "description": "bridge port (default 8765; Mavic 6090, "
+                                     "langsoak Husky 8775)"},
+         }},
+    ),
 }
 
 
@@ -1142,6 +1632,13 @@ def _cli_help() -> int:
     print()
     print("harness: %s  (override with OMNISIM_HARNESS_URL)" % DEFAULT_HARNESS)
     print("tools (%d): %s" % (len(TOOLS), ", ".join(sorted(TOOLS))))
+    print()
+    print("Four of them (robot_prompt, robot_tool, robot_state, robot_events) do NOT")
+    print("go to the harness: they reach a robot's OmniLink bridge on 127.0.0.1:%d"
+          % DEFAULT_BRIDGE_PORT)
+    print("(Mavic 6090, langsoak Husky 8775), so the robot's world must be running.")
+    print("Only /prompt and /tool are vetted by the safety gate; this server never")
+    print("calls the ungated REST verbs. An OmniKey is required on every plan.")
     print()
     print("Normally you do not run this by hand -- an MCP client spawns it and")
     print("speaks JSON-RPC over stdin/stdout. See packages/omnisim-mcp/README.md.")

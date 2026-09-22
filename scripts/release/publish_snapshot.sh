@@ -85,6 +85,10 @@
 #
 # Behavior:
 #   * Verifies <version> matches v<MAJOR>.<MINOR>.<PATCH>[-prerelease].
+#   * On a prerelease tag, the version sites and the CHANGELOG.md lookup use
+#     the BASE version (v9.0.0-rc.1 -> v9.0.0) so a candidate and its final
+#     share one set of notes and one product version. The tag, the commit
+#     title and the Release page keep the full tag.
 #   * Verifies the tag does not already exist on the public remote.
 #   * If CHANGELOG.md has no [<version>] section, auto-generates one from
 #     git history since the last published private SHA (and commits it).
@@ -162,6 +166,36 @@ done
 [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]] \
     || err "version '$VERSION' is not vMAJOR.MINOR.PATCH[-prerelease]"
 
+# ---- prerelease tags --------------------------------------------------------
+# The regex above has always accepted a prerelease suffix, but two downstream
+# steps choked on it, so no release candidate had ever been published:
+#
+#   * the version bump. scripts/release/bump_version.py accepts X.Y.Z only
+#     (its _SEMVER is three numeric fields), and this script handed it
+#     "${VERSION#v}" verbatim -- so v9.0.0-rc.1 died at "bump_version.py
+#     refused" before the snapshot worktree was ever built. An RC and the
+#     final it is a candidate for are the same tree with a different tag, and
+#     the five version sites report a PRODUCT version rather than a tag, so
+#     they are bumped to the BASE version and the RC and its final agree.
+#
+#   * the release notes. section_exists() greps "## [$VERSION]" in
+#     CHANGELOG.md, and on a miss the auto-generator prepends a fresh section
+#     for that exact string and COMMITS it to private main. For an RC that
+#     means a bogus "## [v9.0.0-rc.1]" section landing next to the
+#     hand-authored "## [v9.0.0]" one it was supposed to reuse, and a Release
+#     page carrying machine-generated notes instead of the real ones. Every
+#     CHANGELOG.md read below therefore uses NOTES_VERSION, not VERSION.
+#
+# The tag, the commit title, the Release page title and the prerelease flag on
+# that page all keep the full tag. Only the version sites and the changelog
+# lookup are rebased. For a tag with no suffix both variables equal VERSION, so
+# an ordinary release behaves exactly as it did.
+BASE_VERSION="${VERSION%%-*}"
+NOTES_VERSION="$BASE_VERSION"
+if [[ "$VERSION" != "$BASE_VERSION" ]]; then
+    log "prerelease    : $VERSION — version sites and release notes use $BASE_VERSION"
+fi
+
 [[ -n "${PUBLIC_REMOTE:-}" ]] || err "PUBLIC_REMOTE env var is required"
 PUBLISH_EMAIL="${PUBLISH_EMAIL:-omni.link.technologies@gmail.com}"
 PUBLISH_NAME="${PUBLISH_NAME:-OmniLink}"
@@ -225,14 +259,14 @@ GENERATOR="$SCRIPT_DIR/generate_changelog_section.py"
 
 section_exists() {
     [[ -f "$CHANGELOG_PRIVATE" ]] \
-        && grep -q "^## \[$VERSION\]" "$CHANGELOG_PRIVATE"
+        && grep -q "^## \[$NOTES_VERSION\]" "$CHANGELOG_PRIVATE"
 }
 
 if section_exists; then
-    log "release notes : found [$VERSION] section in CHANGELOG.md (pre-authored)"
+    log "release notes : found [$NOTES_VERSION] section in CHANGELOG.md (pre-authored)"
 else
     [[ "$FROM_REF" == "HEAD" ]] \
-        || err "no [$VERSION] section in CHANGELOG.md and --from $FROM_REF is set;
+        || err "no [$NOTES_VERSION] section in CHANGELOG.md and --from $FROM_REF is set;
        auto-generation only modifies HEAD. Either pre-author the section
        or rerun with --from HEAD."
 
@@ -257,20 +291,20 @@ else
     fi
 
     if [[ -n "$SINCE_REF" ]]; then
-        log "auto-notes    : generating [$VERSION] from $SINCE_REF..HEAD"
+        log "auto-notes    : generating [$NOTES_VERSION] from $SINCE_REF..HEAD"
     else
         log "auto-notes    : no last-published sentinel — first auto-run."
         log "                refusing to generate against the full history"
         log "                (would produce an enormous section). Author the"
-        log "                [$VERSION] section in CHANGELOG.md by hand for"
+        log "                [$NOTES_VERSION] section in CHANGELOG.md by hand for"
         log "                this release; future releases will track the"
         log "                sentinel automatically."
-        err "first-run bootstrap requires a hand-authored [$VERSION] section"
+        err "first-run bootstrap requires a hand-authored [$NOTES_VERSION] section"
     fi
 
     SECTION_FILE="$(mktemp)"
     if [[ -n "$SINCE_REF" ]]; then
-        python "$GENERATOR" --version "$VERSION" --since "$SINCE_REF" \
+        python "$GENERATOR" --version "$NOTES_VERSION" --since "$SINCE_REF" \
             --out "$SECTION_FILE" \
             || { rm -f "$SECTION_FILE"; err "changelog generator failed"; }
     fi
@@ -301,12 +335,12 @@ else
     rm -f "$SECTION_FILE"
 
     git add "$CHANGELOG_PRIVATE"
-    git commit -m "docs: release notes for $VERSION" >/dev/null \
+    git commit -m "docs: release notes for $NOTES_VERSION" >/dev/null \
         || err "failed to commit auto-generated CHANGELOG.md update
        (check pre-commit hooks and signing config; the file is staged)"
     log "  committed CHANGELOG.md update to private"
     log "  review the generated section, edit if needed, then rerun."
-    log "  the [$VERSION] section will be reused as-is on rerun."
+    log "  the [$NOTES_VERSION] section will be reused as-is on rerun."
 
     if [[ $PUSH -ne 1 ]]; then
         log "auto-notes    : stopping here so you can review the section."
@@ -327,7 +361,11 @@ fi
 # merely mentioned a version. As before, the bump only runs against HEAD:
 # bumping an unrelated ref would land the change in a tree the snapshot never
 # sees. A rerun at the same version is a no-op.
-TARGET_VERSION="${VERSION#v}"
+#
+# The bump takes the BASE version, so a candidate and its final share every
+# version site (see the prerelease block near the top). bump_version.py accepts
+# X.Y.Z only and would refuse "9.0.0-rc.1" outright.
+TARGET_VERSION="${BASE_VERSION#v}"
 BUMP_SCRIPT="$REPO_ROOT/scripts/release/bump_version.py"
 [[ -f "$BUMP_SCRIPT" ]] || err "$BUMP_SCRIPT not found"
 BUMP_PREVIEW="$(python "$BUMP_SCRIPT" "$TARGET_VERSION" --dry-run 2>&1)"     || err "bump_version.py refused: $BUMP_PREVIEW"
@@ -617,14 +655,16 @@ fi
 # release notes from. CHANGELOG.md is read from the source worktree (the
 # private repo's tree at $FROM_REF), not from the filtered snapshot index,
 # because the deny-list operates on the index but never touches working
-# files. If no section exists for $VERSION the script falls back to a
+# files. If no section exists for $NOTES_VERSION the script falls back to a
 # title-only commit and warns — releasing without notes is allowed but
-# loud.
+# loud. The section is looked up by NOTES_VERSION, so a release candidate
+# ships the notes of the release it is a candidate for; the commit title and
+# the Release page keep the full tag.
 COMMIT_TITLE="OmniSim $VERSION"
 COMMIT_BODY=""
 CHANGELOG_PATH="$WORKTREE_DIR/CHANGELOG.md"
 if [[ -f "$CHANGELOG_PATH" ]]; then
-    COMMIT_BODY="$(awk -v marker="## [$VERSION]" '
+    COMMIT_BODY="$(awk -v marker="## [$NOTES_VERSION]" '
         index($0, marker) == 1 { in_section=1; next }
         in_section && /^## / { exit }
         in_section { lines[++n] = $0 }
@@ -655,7 +695,7 @@ if [[ -n "$COMMIT_BODY" ]]; then
     log "release notes : extracted $BODY_LINES line(s) from CHANGELOG.md"
     COMMIT_MSG="$COMMIT_MSG"$'\n\n'"$COMMIT_BODY"
 else
-    log "WARNING: no '## [$VERSION] — …' section found in CHANGELOG.md"
+    log "WARNING: no '## [$NOTES_VERSION] — …' section found in CHANGELOG.md"
     log "         publishing with title-only commit message — add a section"
     log "         before --push if you want release notes on the GitHub Release"
 fi

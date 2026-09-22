@@ -44,10 +44,8 @@ if defined OMNI_PY (
 if not defined OMNI_PY (
     set "OMNI_PY=%OMNISIM_HOME%\msys64\mingw64\bin\newton-runtime\python.exe"
     if exist "%OMNISIM_HOME%\msys64\mingw64\bin\newton-runtime\python.exe" (
-        echo [OmniSim] No system Python on PATH - using the bundled interpreter.
-        echo [OmniSim] Install Python 3.12 from python.org for the full OmniLink demos.
-        echo.
-        REM Tail, never front: this is only so controllers find AN interpreter.
+        echo [OmniSim] No system Python on PATH - using the bundled interpreter. 1>&2
+        REM The command runner also selects this verified controller runtime.
         set "PATH=%PATH%;%OMNISIM_HOME%\msys64\mingw64\bin\newton-runtime"
     ) else (
         echo [OmniSim] ERROR: no Python found.

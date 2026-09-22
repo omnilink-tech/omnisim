@@ -1,0 +1,36 @@
+{
+  "repo": "hbseong/record-pick-and-place-so101",
+  "revision": "3c0578a2dd3eb843b861b9398687b3c012d3070e",
+  "files": [
+    {
+      "path": "meta/info.json",
+      "size": 3230,
+      "sha256": "bc5af6e0f06b2c5238108f917144b5b4050ce1fa0a49899f8455792b7a1a30e8"
+    },
+    {
+      "path": "README.md",
+      "size": 3719,
+      "sha256": "5f0ed81d9e3add96ed117aa762a320c500b1b547122596aa0c5f4766d063082d"
+    },
+    {
+      "path": "data/chunk-000/file-000.parquet",
+      "size": 22232,
+      "sha256": "1389458555b049b5e444230293d9fdd570f175b24fdd4bd3271a6503fa7cceb0"
+    },
+    {
+      "path": "meta/episodes/chunk-000/file-000.parquet",
+      "size": 52679,
+      "sha256": "448048a37a90407fb3b4cd37c8583239f86fae92f8b1a130a45278ae8defc096"
+    },
+    {
+      "path": "videos/observation.images.right/chunk-000/file-000.mp4",
+      "size": 1955894,
+      "sha256": "8cbae067bb9f2bd473038ade55dc47edaee1c496af73b4aeebbd72317a8d9d7b"
+    },
+    {
+      "path": "videos/observation.images.top/chunk-000/file-000.mp4",
+      "size": 1574322,
+      "sha256": "ebf8e1075777d2fdf57f83d6b2aa14519d849a9c6a262cbd4a173db14355f5a6"
+    }
+  ]
+}

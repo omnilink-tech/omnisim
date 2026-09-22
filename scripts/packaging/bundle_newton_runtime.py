@@ -112,15 +112,10 @@ from pathlib import Path
 #                         bundle without it ships demos that refuse to run
 #                         their own policies (see newton_runtime_pins.py).
 try:
-    from newton_runtime_pins import bundle_requirements
+    from newton_runtime_pins import bundle_requirements, controller_requirements
     NEWTON_PACKAGES = bundle_requirements()
-except ImportError:  # running from an odd CWD: fall back to name-only, but warn.
-    NEWTON_PACKAGES = ["warp-lang", "newton", "mujoco-warp", "usd-core",
-                       "newton-usd-schemas"]
-    print("WARNING: newton_runtime_pins.py not importable; vendoring UNPINNED "
-          "(latest-on-PyPI) Newton packages, which can desync the deploy bundle "
-          "from the trainer. Run from scripts/packaging/ or fix sys.path.",
-          file=sys.stderr)
+except ImportError as exc:
+    raise RuntimeError("Cannot load runtime dependency pins; refusing an unpinned bundle") from exc
 
 # Modules that must import for the runtime to be considered live.  The OmniSim
 # helper is deliberately a real bundled module (not a C++ string literal), so
@@ -132,7 +127,8 @@ except ImportError:  # running from an odd CWD: fall back to name-only, but warn
 # packaging gap that broke 26 shipped controllers passed every gate. Verify
 # what the bundle is USED for, not only what it was named after.
 VERIFY_IMPORTS = ["numpy", "warp", "newton", "omnisim_newton_runtime",
-                  "onnxruntime"]
+                  "onnxruntime", "omnilink.client", "omnilink.usage_meter",
+                  "requests", "truststore", "websocket", "PIL.Image"]
 
 # Importing a name is not the same as the package WORKING. `pip install
 # --upgrade --target` rmtrees a package before reinstalling it, so a run
@@ -344,7 +340,20 @@ def write_pth(target_dir, bundle_dir, tag):
         "import site",  # process .pth files inside site-packages
     ]
     pth.write_text("\n".join(lines) + "\n", encoding="ascii")
+    write_controller_site(bundle_dir)
     return pth
+
+
+def write_controller_site(bundle_dir):
+    """Expose vendored wheels to python.exe as well as the embedded engine.
+
+    The engine uses its DLL's isolated ._pth; standalone controllers use the
+    normal Lib/site-packages directory. A relative .pth works after relocation
+    and preserves the engine-provided controller PYTHONPATH.
+    """
+    site = Path(bundle_dir) / "Lib" / "site-packages"
+    site.mkdir(parents=True, exist_ok=True)
+    (site / "omnisim_runtime.pth").write_text("../../site-packages\n", encoding="ascii")
 
 
 def place_loader_dll(cpython_home, target_dir, tag):
@@ -441,7 +450,7 @@ def assert_no_engine_holds_the_bundle(allow_running):
     )
 
 
-def pip_install(python_exe, site_packages, packages, upgrade=True):
+def pip_install(python_exe, site_packages, packages, upgrade=True, no_deps=False):
     """Install into the bundle's site-packages.
 
     `upgrade` selects the DESTRUCTIVE path (rmtree-then-reinstall). Callers
@@ -451,6 +460,8 @@ def pip_install(python_exe, site_packages, packages, upgrade=True):
     """
     cmd = [str(python_exe), "-m", "pip", "install"]
     cmd += ["--upgrade"] if upgrade else ["--no-deps"]
+    if no_deps and upgrade:
+        cmd += ["--no-deps"]
     cmd += ["--target", str(site_packages), *packages]
     print("  " + " ".join(cmd), flush=True)
     subprocess.run(cmd).check_returncode()
@@ -515,7 +526,13 @@ def verify_interpreter(bundle_dir, tag):
     if r.returncode != 0:
         print(r.stderr, file=sys.stderr)
         return False
-    return verify_integrity(bundle_dir)
+    # The package is source-shipped: exercise its SDK API using this interpreter,
+    # without developer PYTHONPATH or a sibling OmniLink checkout.
+    sys.path.insert(0, str(REPO_ROOT))
+    from omnisim.omnilink_runtime import probe
+    connected = probe(str(py), REPO_ROOT)
+    print("  OmniLink:", connected["detail"])
+    return connected["status"] == "ok" and verify_integrity(bundle_dir)
 
 
 def verify_integrity(bundle_dir):
@@ -723,6 +740,8 @@ def main(argv=None):
                     help="re-vendor even though omnisim-bin is running. This "
                          "CORRUPTS the bundle if the engine holds a .pyd open; "
                          "the default is to refuse.")
+    ap.add_argument("--controller-deps-only", action="store_true",
+                    help="Repair pinned SDK, transport and capture packages in an existing bundle")
     args = ap.parse_args(argv)
 
     if os.name != "nt":
@@ -754,8 +773,26 @@ def main(argv=None):
     print(f"binary needs {dll} -> staging CPython {tag} runtime")
 
     cpython_home = find_cpython_home(tag, args.cpython_home)
+    actual_tag = subprocess.check_output(
+        [str(cpython_home / "python.exe"), "-I", "-c",
+         "import sys; print(str(sys.version_info.major) + str(sys.version_info.minor))"],
+        text=True).strip()
+    if actual_tag != tag:
+        raise RuntimeError(f"Source CPython {actual_tag} does not match engine CPython {tag}")
     print(f"source CPython: {cpython_home}")
     bundle = Path(args.target) / SITE_DIRNAME
+
+    if args.controller_deps_only:
+        if not (bundle / "python.exe").is_file():
+            raise RuntimeError("No existing bundled interpreter; run the full vendor build first")
+        write_controller_site(bundle)
+        pip_install(cpython_home / "python.exe", bundle / "site-packages",
+                    controller_requirements(), upgrade=True, no_deps=True)
+        import audit_dist_info
+        anomalies, _ = audit_dist_info.audit(bundle / "site-packages", repair=True)
+        if anomalies:
+            return 3
+        return 0 if verify_interpreter(bundle, tag) else 2
 
     stage_runtime(cpython_home, bundle, tag, args.force)
     # stage python.exe too so --verify can drive the bundled interpreter

@@ -36,15 +36,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "packages" / "omnisim-bridges" / "src"))
-for sibling in ("olink", "OmniLink", "omnilink"):
-    candidate = REPO.parent / sibling / "omnilink-lib" / "src"
-    if candidate.exists():
-        sys.path.insert(0, str(candidate))
-        break
-
-# Keep this suite offline and dependency-free. A sibling omnilink checkout may
-# exist without its third-party dependencies; in that case install a tiny API
-# double before importing the relay.
+# Keep unit tests offline; use the installed SDK or a tiny API double.
+# Never search for a sibling private checkout: public installations lack it.
 try:
     from omnilink.client import OmniLinkAPIError  # type: ignore
     from omnilink.usage_meter import UsageMeter  # type: ignore
@@ -54,7 +47,7 @@ except Exception:
             sys.modules.pop(module_name, None)
 
     pkg = types.ModuleType("omnilink")
-    pkg.__version__ = "0.6.1"
+    pkg.__version__ = "0.6.3"
     client_mod = types.ModuleType("omnilink.client")
     usage_mod = types.ModuleType("omnilink.usage_meter")
 

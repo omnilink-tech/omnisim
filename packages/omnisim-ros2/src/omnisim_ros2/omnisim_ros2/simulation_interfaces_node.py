@@ -47,11 +47,29 @@ DISCLOSED DIVERGENCES FROM THE STANDARD
 These are declared through the feature flags and repeated in ``custom_info`` so a
 caller learns them from the API, not from surprise:
 
-1. **There is no pause.** OmniSim's engine free-runs between HTTP calls; the
-   harness exposes no pause verb. ``SIMULATION_STATE_PAUSE`` is therefore *not*
-   advertised, ``GetSimulationState`` answers ``STATE_PLAYING`` whenever a world
-   is loaded, and ``StepSimulation`` means "advance at least N basic steps from
+1. **This sidecar does not pause, and the reason is a semantics mismatch, not a
+   missing verb.** ``SIMULATION_STATE_PAUSE`` is *not* advertised,
+   ``GetSimulationState`` answers ``STATE_PLAYING`` whenever a world is loaded
+   and running, and ``StepSimulation`` means "advance at least N basic steps from
    here", not "advance exactly N from a frozen state".
+
+   ⚠️ **The old reason for this — "the harness exposes no pause verb" — became
+   false on 2026-09-22 and is corrected here.** The harness does expose
+   ``POST /sim/pause`` / ``POST /sim/resume``, but that pause is *leased*: it
+   carries a deadline (default 30 s, min 1 s, max 300 s) and lifts itself when
+   the lease expires, deliberately, so that a client which dies cannot freeze the
+   engine for everybody else. ``simulation_interfaces`` asks for the opposite
+   shape: a caller sets ``STATE_PAUSED`` and expects the simulator to stay paused
+   indefinitely, and expects ``GetSimulationState`` to keep answering
+   ``STATE_PAUSED`` until told otherwise. A lease cannot promise that, so wiring
+   the two together needs a decision — who renews the lease, and what
+   ``GetSimulationState`` reports the instant one expires. **That decision is
+   open and is the owner's; nothing here is wired to the pause on its own
+   initiative.** See ``docs/developer/ros2-integration.md``.
+
+   A second consequence of not holding a lease: this node reports
+   ``STATE_PLAYING`` for a loaded, running world even while *another* harness
+   client holds a pause. It does not read the harness's ``paused`` flag.
 2. **Twist and acceleration are not measured.** The harness reports body poses
    but no body velocities, so ``EntityState.twist`` and ``.acceleration`` are
    returned as zeros. They are *unmeasured*, not observed-to-be-zero. Joint
@@ -139,9 +157,15 @@ SUPPORTED_FEATURES = [
 CUSTOM_INFO = (
     "OmniSim ROS 2 sidecar (packages/omnisim-ros2). Backed by the OmniSim World "
     "Harness HTTP surface; the engine carries no ROS dependency. "
-    "DIVERGENCES: (1) no pause -- the engine free-runs, so STATE_PAUSED is not "
-    "supported and StepSimulation advances at least N basic steps rather than "
-    "exactly N from a frozen state; (2) EntityState.twist and .acceleration are "
+    "DIVERGENCES: (1) THIS SIDECAR DOES NOT EXPOSE PAUSE -- the harness does have a "
+    "pause (POST /sim/pause, v9), but it is LEASED: it carries a deadline and "
+    "lifts itself when the lease expires, so it cannot honour the indefinite "
+    "STATE_PAUSED this standard asks for. STATE_PAUSED is therefore not "
+    "supported here, StepSimulation advances at least N basic steps rather than "
+    "exactly N from a frozen state, and GetSimulationState reports PLAYING even "
+    "while another harness client holds a pause. Wiring ROS 2 pause to the lease "
+    "is an open design decision, not an absent primitive; "
+    "(2) EntityState.twist and .acceleration are "
     "NOT measured and are returned as zeros -- the harness reports poses only "
     "(joint velocities are on /joint_states); (3) ResetSimulation re-pins every "
     "motor to a position hold, per the harness's documented reset behaviour. "
@@ -440,7 +464,12 @@ class SimulationInterfacesNode(Node):
         elif not body.get("world") or not body.get("running"):
             state.state = SimulationState.STATE_NO_WORLD
         else:
-            # OmniSim's engine free-runs; a loaded, running world is PLAYING.
+            # This sidecar never takes the harness's pause lease, so as far as it
+            # is concerned a loaded, running world is PLAYING. NOTE: the harness
+            # does report a `paused` flag on GET /sim/state (v9) and this node
+            # deliberately does not read it -- see divergence 1 in the module
+            # docstring. A world held by another harness client still reads
+            # PLAYING here.
             state.state = SimulationState.STATE_PLAYING
         resp.state = state
         resp.result = _ok()
@@ -452,8 +481,11 @@ class SimulationInterfacesNode(Node):
         if target == SimulationState.STATE_PAUSED:
             resp.result = _err(
                 Result.RESULT_FEATURE_UNSUPPORTED,
-                "OmniSim's engine free-runs and the harness exposes no pause verb; "
-                "SIMULATION_STATE_PAUSE is not advertised in GetSimulatorFeatures",
+                "SIMULATION_STATE_PAUSE is not advertised in GetSimulatorFeatures: "
+                "the harness's pause (POST /sim/pause, v9) is LEASED -- it carries a "
+                "deadline and lifts itself on expiry -- which cannot honour the "
+                "indefinite paused state this service asks for. Wiring the two is an "
+                "open design decision, not an absent primitive",
             )
             return resp
         if target == SimulationState.STATE_QUITTING:
@@ -473,7 +505,8 @@ class SimulationInterfacesNode(Node):
             if running:
                 resp.result = _err(
                     SetSimulationState.Response.ALREADY_IN_TARGET_STATE,
-                    "already playing; OmniSim's engine free-runs whenever a world is loaded",
+                    "already playing; this sidecar never takes the harness's pause "
+                    "lease, so a loaded world is playing as far as it is concerned",
                 )
             else:
                 resp.result = _err(
@@ -499,8 +532,10 @@ class SimulationInterfacesNode(Node):
                 )
                 return resp
             resp.result = _ok(
-                "reset to authored state and t=0; note OmniSim cannot hold a "
-                "stopped state -- the engine resumes free-running immediately"
+                "reset to authored state and t=0; note this sidecar does not hold a "
+                "stopped state -- the engine resumes free-running immediately. The "
+                "harness's leased pause (v9) is deliberately not wired to this "
+                "service; see divergence 1"
             )
             return resp
         resp.result = _err(

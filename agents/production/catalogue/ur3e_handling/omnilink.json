@@ -1,0 +1,15 @@
+{
+  "name": "ur3e_handling",
+  "display_name": "Ur3E Handling",
+  "world": "projects/samples/demos/worlds/chat/omnilink_ur3e.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/ur3e_handling/run.py",
+  "description": "ur3e \u2014 take a part, and ask where it goes. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "arm",
+    "handling",
+    "ur3e",
+    "catalogue",
+    "generated"
+  ]
+}

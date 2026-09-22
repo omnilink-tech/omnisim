@@ -6,13 +6,30 @@
 
 NOT the agent benchmark. This is the world-smoke lane: it launches a
 single-robot chat-demo world headlessly and checks that it loads, spawns a
-bridge and responds to a prompt. Its recorded runs were made in mode "local"
-(the bridge's regex intent router, engine null) -- no LLM in the loop.
+bridge and responds to a prompt.
+
+⚠️ ITS RECORDED RUNS ARE HISTORY, AND THE MODE THAT PRODUCED THEM IS GONE.
+Every file in results/ was written in mode "local" with engine null: the
+bridge's keyword ladder answered a keyless POST /prompt, with no model
+anywhere. The per-bridge ladders and the shared intent_router module were
+DELETED on 2026-09-22, when an OmniKey became required for every OmniLink AI
+experience, Free included. A bridge with no relay now refuses /prompt with
+401 omnikey_required before the sentence is interpreted at all, so that mode
+has no target and cannot be re-run; main() refuses rather than launch a world
+and write fresh rows under the old label. Those result files are evidence of
+runs that happened and are never edited -- read them as ladder runs. A re-run
+today needs OMNI_KEY and goes through the parser-then-model path like every
+other lane, and its rows are recorded as mode "omnilink".
+
+⚠️ What the keyed lane should select if a no-model arm is wanted again is a
+benchmark-design question for whoever owns this bench, not something this
+runner should guess at. It does not substitute one.
 
 The customer-facing agent benchmark is `matrix.py` in this directory: 16
 tasks over five categories against the husky_swarm stack, graded from
 measured pose and the recorded tool-call trace, with engine-matrix,
-cost/latency capture and an offline dry run. See README.md.
+cost/latency capture and a dry run that needs neither key nor simulator.
+See README.md.
 
 For each task in tasks.TASKS:
 
@@ -29,9 +46,8 @@ Outputs:
   - JSON record per (task, run) in results/.
   - Console table at the end.
 
-Mode: "local" by default (no OMNI_KEY -> bridge uses regex intent
-router). Set OMNI_KEY in the environment to route via the OmniLink
-relay; OMNILINK_ENGINE picks the engine.
+Mode: OMNI_KEY is REQUIRED (2026-09-22) and the run is recorded as mode
+"omnilink"; OMNILINK_ENGINE picks the engine. There is no keyless mode.
 """
 
 from __future__ import annotations
@@ -139,8 +155,15 @@ def run_task(task: Task, webots: Path, webots_port: int = 1252) -> Dict[str, Any
 
         final_state = history[-1] if history else {}
 
+        # ⚠️ mode "local" IS NO LONGER WRITTEN. It meant "the bridge's keyword
+        # ladder answered this, no model anywhere"; that ladder was deleted on
+        # 2026-09-22 and a keyless /prompt is refused 401, so labelling a new
+        # row "local" would file a refusal alongside the ladder-era rows in
+        # results/ as if they measured the same thing. main() refuses a
+        # keyless run outright; this label is the belt to that brace.
+        keyed = bool(os.environ.get("OMNI_KEY", "").strip())
         engine = os.environ.get("OMNILINK_ENGINE", "g1-engine")
-        mode = "omnilink" if os.environ.get("OMNI_KEY", "").strip() else "local"
+        mode = "omnilink" if keyed else "refused_no_omnikey"
 
         record = {
             "id": task.id,
@@ -165,7 +188,17 @@ def run_task(task: Task, webots: Path, webots_port: int = 1252) -> Dict[str, Any
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=(
+            "Legacy single-robot WORLD-SMOKE lane: launch one chat-demo\n"
+            "world headlessly, POST one prompt, grade the measured pose.\n"
+            "\n"
+            "OMNI_KEY is REQUIRED (2026-09-22). A bridge with no relay\n"
+            "answers POST /prompt with 401 omnikey_required, so the keyless\n"
+            "mode every row in results/ was recorded in -- the bridge's\n"
+            "keyword ladder, deleted that day -- no longer exists, and a\n"
+            "keyless run is refused instead of measuring the refusals."),
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--only", action="append", default=[],
                         help="Run only these task ids (can repeat).")
     parser.add_argument("--list", action="store_true",
@@ -180,6 +213,45 @@ def main() -> int:
         for t in plan:
             print(f"  {t.id:20s} {t.world:30s} {t.prompt!r}")
         return 0
+
+    # ── The keyless lane is REFUSED, loudly, before a world is launched ──
+    # This lane's only mode used to be keyless: the bridge's keyword ladder
+    # answered POST /prompt with no model and no account. That ladder was
+    # deleted on 2026-09-22 and an OmniKey is now required for every OmniLink
+    # AI experience, Free included, so a keyless run here would launch a
+    # world, collect `prompt failed: HTTP Error 401` on every task, and file
+    # the rows in results/ next to the ladder-era rows that carry the same
+    # world, the same prompt and the same predicate. Refusing is the point:
+    # measuring a refusal and publishing it as a mode is worse than not
+    # measuring at all.
+    if not os.environ.get("OMNI_KEY", "").strip():
+        print(
+            "REFUSED: OMNI_KEY is not set.\n"
+            "\n"
+            "  This lane's old keyless mode is GONE. Until 2026-09-22 a\n"
+            "  keyless POST /prompt was answered by the bridge's keyword\n"
+            "  ladder (recorded as mode \"local\", engine null, no model in\n"
+            "  the loop). The per-bridge ladders and the shared\n"
+            "  omnisim_bridges.intent_router module were deleted that day,\n"
+            "  and an OmniKey is required for every OmniLink AI experience,\n"
+            "  Free included: with no relay the bridge answers\n"
+            "  401 omnikey_required and nothing actuates.\n"
+            "\n"
+            "  So this run would measure refusals, not a robot. The existing\n"
+            "  files in results/ are ladder-era evidence; they are never\n"
+            "  edited, and no new row may be filed beside them under the\n"
+            "  same label.\n"
+            "\n"
+            "  Run it with a key:   python -m omnisim key\n"
+            "                       set OMNI_KEY=olink_...   (export on POSIX)\n"
+            "  Then the bridge interprets with the deterministic parser first\n"
+            "  and the model answers what the parser declines; the row is\n"
+            "  recorded as mode \"omnilink\".\n"
+            "\n"
+            "  A no-model arm, if this bench wants one again, is a\n"
+            "  benchmark-design decision for its owner. This runner does not\n"
+            "  substitute one.")
+        return 2
 
     webots = _webots_bin()
     if webots is None:

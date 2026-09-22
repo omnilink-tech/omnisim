@@ -50,7 +50,7 @@ OmAboutBox::OmAboutBox(QWidget *parent) : QDialog(parent) {
   versionInfo->setText(QString("<p style='font-size: large;'><b>OmniSim %1</b></p>"
                                "<p style='color: #555;'>by <a style='color: #000; font-weight: bold; text-decoration: none;' "
                                "href='https://www.omnilink-agents.com'>OmniLink</a> &middot; %2</p>"
-                               "<p>The simulator built by <a style='color: #000; font-weight: bold; text-decoration: none;' "
+                               "<p>An open-source robotics workshop for agents &mdash; built by <a style='color: #000; font-weight: bold; text-decoration: none;' "
                                "href='https://www.omnilink-agents.com'>OmniLink</a>, for OmniLink agents.<br>"
                                "Free and open-source, built on top of the <a style='color: #5DADE2;' "
                                "href='https://github.com/cyberbotics/webots'>Webots</a> %3 engine by Cyberbotics Ltd.<br>"

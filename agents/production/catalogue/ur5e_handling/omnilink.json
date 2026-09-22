@@ -1,0 +1,15 @@
+{
+  "name": "ur5e_handling",
+  "display_name": "Ur5E Handling",
+  "world": "projects/samples/demos/worlds/chat/omnilink_ur5e.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/ur5e_handling/run.py",
+  "description": "ur5e \u2014 take a part, and ask where it goes. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "arm",
+    "handling",
+    "ur5e",
+    "catalogue",
+    "generated"
+  ]
+}

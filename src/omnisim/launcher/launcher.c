@@ -88,6 +88,9 @@ int main(int argc, char *argv[]) {
   wchar_t *new_path = malloc(LENGTH * sizeof(wchar_t));
   wcscpy(new_path, dir);
   wcscat(new_path, L";");
+  // Use the verified controller interpreter shipped with OmniSim.
+  wcscat(new_path, dir);
+  wcscat(new_path, L"\\newton-runtime;");
   wcscat(new_path, dir);
   wcscat(new_path, L"\\cpp;");
   const wchar_t *tail = L"mingw64\\bin";

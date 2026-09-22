@@ -1,0 +1,155 @@
+{
+  "rows": [
+    {
+      "uid": "neg-a4",
+      "text": "stop turning left",
+      "calls": [
+        [
+          "stop_robot",
+          {}
+        ]
+      ],
+      "rejected": [
+        [
+          "stop_robot",
+          "unknown_tool",
+          "no schema declares this tool"
+        ]
+      ]
+    },
+    {
+      "uid": "quote-a1",
+      "text": "the manual says \"drive forward 2 metres\" for calibration",
+      "calls": [
+        [
+          "drive_forward",
+          {
+            "wait": true,
+            "distance": 2
+          }
+        ]
+      ],
+      "rejected": [
+        [
+          "drive_forward",
+          "unknown_arg",
+          "wait is not a parameter of drive_forward"
+        ]
+      ]
+    },
+    {
+      "uid": "quote-a2",
+      "text": "my colleague asked whether you could reverse 1 metre",
+      "calls": [
+        [
+          "drive_forward",
+          {
+            "wait": true,
+            "distance": -1
+          }
+        ]
+      ],
+      "rejected": [
+        [
+          "drive_forward",
+          "unknown_arg",
+          "wait is not a parameter of drive_forward"
+        ]
+      ]
+    },
+    {
+      "uid": "retract-a1",
+      "text": "reverse 2 metres \u2014 sorry, ignore that",
+      "calls": [
+        [
+          "stop_robot",
+          {}
+        ]
+      ],
+      "rejected": [
+        [
+          "stop_robot",
+          "unknown_tool",
+          "no schema declares this tool"
+        ]
+      ]
+    },
+    {
+      "uid": "bounds-a1",
+      "text": "drive forward 300 metres",
+      "calls": [
+        [
+          "drive_forward",
+          {
+            "wait": true,
+            "distance": 300
+          }
+        ]
+      ],
+      "rejected": [
+        [
+          "drive_forward",
+          "unknown_arg",
+          "wait is not a parameter of drive_forward"
+        ],
+        [
+          "drive_forward",
+          "implausible",
+          "distance=300 exceeds the 50 m rail"
+        ]
+      ]
+    },
+    {
+      "uid": "bounds-a2",
+      "text": "turn left 3000 degrees",
+      "calls": [
+        [
+          "turn",
+          {
+            "angle_rad": 52.35987755982989
+          }
+        ]
+      ],
+      "rejected": [
+        [
+          "turn",
+          "implausible",
+          "angle_rad=52.35987755982989 is more than four turns"
+        ]
+      ]
+    },
+    {
+      "uid": "bounds-a3",
+      "text": "drive forward negative 2 metres",
+      "calls": [
+        [
+          "drive_forward",
+          {
+            "wait": true,
+            "distance": -2
+          }
+        ]
+      ],
+      "rejected": [
+        [
+          "drive_forward",
+          "unknown_arg",
+          "wait is not a parameter of drive_forward"
+        ],
+        [
+          "drive_forward",
+          "sign_conflict",
+          "the utterance says forward and the distance is negative"
+        ]
+      ]
+    },
+    {
+      "uid": "time-a2",
+      "text": "drive forward 1 metre in ten minutes",
+      "calls": [],
+      "rejected": []
+    }
+  ],
+  "caught": 7,
+  "of": 8
+}

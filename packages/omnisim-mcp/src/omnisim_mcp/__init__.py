@@ -17,9 +17,11 @@
 See server.py for the full rationale. The short version: OmniSim already ships a
 first-party agent-facing HTTP surface (the harness, PROTOCOL.md §world_harness);
 this exposes it to the MCP-standardized agent ecosystem (Claude Desktop, Cursor)
-as a thin, dependency-free stdio proxy.
+as a thin, dependency-free stdio proxy. Three of the tools reach a robot's
+OmniLink bridge instead of the harness -- that is the command surface, the one
+you TALK to -- and only its gate-vetted paths (/prompt, /tool) are ever called.
 """
 from .server import TOOLS, main
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = ["TOOLS", "__version__", "main"]

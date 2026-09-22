@@ -141,6 +141,44 @@ OIDN_HEADERS = {
         '6610766cac81b9cc952b3d6ca049eb889750bc503d814d9c9761e20ea759bed9',
 }
 
+# Vendored third-party sources that carry no licence header of their own, sit in
+# a directory holding the upstream LICENSE, and must stay byte-for-byte upstream.
+#
+# For the ALOHA study that last clause is an explicit, written invariant:
+# projects/robots/trossen/aloha/PROVENANCE.md says "Upstream source is retained
+# under `source/act`; modified files are outside that directory." So pasting a
+# header into one of these would BREAK the provenance claim rather than satisfy
+# it -- and pasting an OmniLink copyright line onto somebody else's MIT code
+# would be wrong regardless of what any test wanted.
+#
+# Exempting the directory would check nothing, which is the mistake the note on
+# VENDORED_APACHE2_DIRECTORIES above describes. Pinning the content excuses the
+# missing header and still detects any edit, which is the trade the OIDN entries
+# make. Each value is (sha256 of the LF-normalised bytes, the LICENSE that
+# covers the file, a marker that must appear in that LICENSE).
+#
+# As with OIDN the digest is over LF-NORMALISED bytes taken from what git
+# STORES, not from the working tree. Pinning raw working-tree bytes is what made
+# the OIDN check pass on exactly one machine and go red on every fresh clone.
+VENDORED_PINNED_SOURCES = {
+    # ACT, MIT, (c) 2023 Tony Z. Zhao -- https://github.com/tonyzhaozh/act at
+    # 742c753c0d4a5d87076c8f69e5628c79a8cc5488. The ALOHA arm model is converted
+    # FROM these; see projects/robots/trossen/aloha/PROVENANCE.md.
+    'projects/robots/trossen/aloha/source/act/constants.py': (
+        '2e27d4412e2b7e1f2e4148105fdf514d8c52ec6c8f1c86ef0549c475e8b91d86',
+        'projects/robots/trossen/aloha/source/act/LICENSE',
+        'MIT License'),
+    # ALOHA hardware scripts, MIT, (c) 2023 Tony Z. Zhao.
+    'projects/robots/trossen/aloha/source/hardware/aloha_scripts/constants.py': (
+        'cef81cfcbb41bb3a2e835d909f7a29e57527563cb4a150580ee1f195b7c4da83',
+        'projects/robots/trossen/aloha/source/hardware/LICENSE',
+        'MIT License'),
+    'projects/robots/trossen/aloha/source/hardware/aloha_scripts/real_env.py': (
+        '30482952e73c0385bd8edfb238ceb4201458ce5fa5afae218cf03b75549150f4',
+        'projects/robots/trossen/aloha/source/hardware/LICENSE',
+        'MIT License'),
+}
+
 # The Apache boilerplate with its leading copyright line removed, per comment
 # style. '//' and '#' headers open with the copyright line; the C header opens
 # with '/*' first, so two lines come off there.
@@ -313,7 +351,18 @@ class TestLicense(unittest.TestCase):
                 accepted = (APACHE2_LICENSE_PYTHON, OMNILINK_LICENSE_PYTHON)
             else:
                 self.fail('Unsupported file extension "%s".' % source)
-            if relativePath in OIDN_HEADERS:
+            if relativePath in VENDORED_PINNED_SOURCES:
+                expected, licensePath, marker = VENDORED_PINNED_SOURCES[relativePath]
+                with open(source, 'rb') as pinned:
+                    raw = pinned.read().replace(b'\r\n', b'\n')
+                digest = hashlib.sha256(raw).hexdigest()
+                licenseFile = os.path.join(OMNISIM_HOME, licensePath)
+                licenseText = ''
+                if os.path.isfile(licenseFile):
+                    with open(licenseFile, encoding='utf-8') as handle:
+                        licenseText = handle.read()
+                verdicts[relativePath] = (digest == expected and marker in licenseText)
+            elif relativePath in OIDN_HEADERS:
                 with open(source, 'rb') as header:
                     raw = header.read().replace(b'\r\n', b'\n')
                 digest = hashlib.sha256(raw).hexdigest()
@@ -362,6 +411,24 @@ class TestLicense(unittest.TestCase):
             msg='%d path(s) listed in KNOWN_MISSING_LICENSE_HEADERS are no longer checked (moved, '
                 'renamed, deleted or now untracked). Delete their lines from that set:\n%s' %
                 (len(gone), '\n'.join('  ' + path for path in gone))
+        )
+
+    def test_pinned_vendored_sources_are_still_checked(self):
+        """Every VENDORED_PINNED_SOURCES entry must still name a file this suite reads.
+
+        A pin whose file was moved, renamed or deleted is dead weight that reads
+        like coverage: the path simply never comes up, the dict entry is never
+        consulted, and nothing says so. This is the guard
+        test_known_gaps_are_still_gaps gives the exemption baseline, applied to
+        the pins.
+        """
+        verdicts = self._verdicts()
+        gone = sorted(path for path in VENDORED_PINNED_SOURCES if path not in verdicts)
+        self.assertEqual(
+            gone, [],
+            msg='%d pinned vendored source(s) are no longer checked (moved, renamed, deleted or '
+                'now untracked). Delete their entries from VENDORED_PINNED_SOURCES, or restore '
+                'the files:\n%s' % (len(gone), '\n'.join('  ' + path for path in gone))
         )
 
 

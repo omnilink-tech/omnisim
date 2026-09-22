@@ -6,14 +6,14 @@ Supervisor controller for the OmniSim demo launcher world ([`projects/samples/de
 
 1. Loads [`demos.json`](demos.json) — the hand-curated catalogue of every demo in the repo.
 2. Pushes the catalogue to the launcher's Robot Window ([`resources/projects/plugins/robot_windows/omnilink_launcher/`](../../../../../resources/projects/plugins/robot_windows/omnilink_launcher/)) on the `manifest` channel.
-3. Listens for `load:<repo-relative-world-path>` messages from the side panel; resolves the path, sanity-checks it points at a real `.wbt` inside the repo, and calls `Supervisor.worldLoad()` to switch worlds.
+3. Listens for `load:<repo-relative-world-path>` messages from the side panel; resolves the path, sanity-checks it points at a real world file inside the repo, and calls `Supervisor.worldLoad()` to switch worlds.
 
 ## Wire protocol
 
 | Direction | Tag | Payload | Meaning |
 |---|---|---|---|
 | panel → controller | `ready` | — | handshake; request manifest |
-| panel → controller | `load:<rel>` | repo-relative `.wbt` path | switch to this world |
+| panel → controller | `load:<rel>` | repo-relative world path | switch to this world |
 | controller → panel | `manifest:<json>` | full catalogue JSON | catalogue (sent on boot + on `ready`) |
 | controller → panel | `loading:<abs>` | absolute path | optimistic ack |
 | controller → panel | `status:<text>` | advisory text | informational |
@@ -33,7 +33,7 @@ Supervisor controller for the OmniSim demo launcher world ([`projects/samples/de
            {
              "id": "<short-id>",
              "name": "<Human title>",
-             "world": "projects/samples/demos/worlds/<your-world>.wbt",
+             "world": "projects/samples/demos/worlds/<category>/<your-world>.omniworld",
              "blurb": "<one-line description>"
            }
          ]
@@ -42,8 +42,15 @@ Supervisor controller for the OmniSim demo launcher world ([`projects/samples/de
    }
    ```
 2. Add the matching row to [`/DEMOS.md`](../../../../../DEMOS.md).
-3. Reload the launcher world in OmniSim — the new demo appears immediately.
+3. If it is a **chat** demo, add it to the folder index
+   [`chat/OMNILINK_CHAT_DEMOS.md`](../../worlds/chat/OMNILINK_CHAT_DEMOS.md) too, and update every
+   surface that quotes the chat-demo count — `tests/test_demo_catalogue.py` asserts all three
+   catalogues agree and pins the count, and will fail until they do.
+4. Reload the launcher world in OmniSim — the new demo appears immediately.
+
+⚠️ `.omniworld` is the extension for anything new. `.wbt` is read forever and never written, so a
+card may point at an existing `.wbt` (the generated worlds do) but a new world is not authored as one.
 
 ## Why it lives here, not under `agents/`
 
-The launcher is an OmniSim **supervisor controller**, not an OmniLink agent — it speaks OmniSim's `wwiSendText` / `wwiReceiveText` to a side-panel Robot Window, not OmniLink HTTP. The closest parallel in the repo is [`omnilink_chat`](../../plugins/robot_windows/omnilink_chat/) (the chat console used by every `omnilink_<robot>.wbt` demo); the launcher follows the same pattern.
+The launcher is an OmniSim **supervisor controller**, not an OmniLink agent — it speaks OmniSim's `wwiSendText` / `wwiReceiveText` to a side-panel Robot Window, not OmniLink HTTP. The closest parallel in the repo is [`omnilink_chat`](../../plugins/robot_windows/omnilink_chat/) (the chat console used by every chat demo); the launcher follows the same pattern.

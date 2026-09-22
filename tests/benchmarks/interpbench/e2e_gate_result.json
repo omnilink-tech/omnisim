@@ -1,0 +1,226 @@
+{
+  "rows": [
+    {
+      "case": "300 m drive",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 300.0
+      },
+      "http": 400,
+      "moved": false,
+      "expected_move": false,
+      "ok": true,
+      "dist_m": 0.0,
+      "dyaw_rad": 0.0,
+      "body": {
+        "ok": false,
+        "error": "refused_by_gate",
+        "message": "implausible: distance=300.0 exceeds the 50 m rail",
+        "details": {
+          "tool": "drive_forward"
+        }
+      }
+    },
+    {
+      "case": "3000 deg turn",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 52.36
+      },
+      "http": 400,
+      "moved": false,
+      "expected_move": false,
+      "ok": true,
+      "dist_m": 0.0,
+      "dyaw_rad": 0.0,
+      "body": {
+        "ok": false,
+        "error": "refused_by_gate",
+        "message": "implausible: angle_rad=52.36 is more than four turns",
+        "details": {
+          "tool": "turn"
+        }
+      }
+    },
+    {
+      "case": "40 m/s velocity",
+      "tool": "set_velocity",
+      "args": {
+        "linear": 40.0,
+        "angular": 0.0
+      },
+      "http": 400,
+      "moved": false,
+      "expected_move": false,
+      "ok": true,
+      "dist_m": 0.0,
+      "dyaw_rad": 0.0,
+      "body": {
+        "ok": false,
+        "error": "refused_by_gate",
+        "message": "implausible: v=40.0 exceeds the 5.0 m/s rail",
+        "details": {
+          "tool": "set_velocity"
+        }
+      }
+    },
+    {
+      "case": "500 rad/s spin",
+      "tool": "set_velocity",
+      "args": {
+        "linear": 0.0,
+        "angular": 500.0
+      },
+      "http": 400,
+      "moved": false,
+      "expected_move": false,
+      "ok": true,
+      "dist_m": 0.0,
+      "dyaw_rad": 0.0,
+      "body": {
+        "ok": false,
+        "error": "refused_by_gate",
+        "message": "implausible: w=500.0 exceeds the 6.0 rad/s rail",
+        "details": {
+          "tool": "set_velocity"
+        }
+      }
+    },
+    {
+      "case": "invented argument",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1.0,
+        "turbo": true
+      },
+      "http": 400,
+      "moved": false,
+      "expected_move": false,
+      "ok": true,
+      "dist_m": 0.0,
+      "dyaw_rad": 0.0,
+      "body": {
+        "ok": false,
+        "error": "refused_by_gate",
+        "message": "unknown_arg: turbo is not a parameter of drive_forward",
+        "details": {
+          "tool": "drive_forward"
+        }
+      }
+    },
+    {
+      "case": "CONTROL 1 m drive",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1.0
+      },
+      "http": 200,
+      "moved": true,
+      "expected_move": true,
+      "ok": true,
+      "dist_m": 0.9874,
+      "dyaw_rad": 0.0,
+      "body": {
+        "status": "ok",
+        "tool": "drive_forward",
+        "result": {
+          "accepted": true,
+          "commanded": 1.0,
+          "unit": "m",
+          "bridge_instance_id": "97fc67a0-de50-4694-8d51-9279aa7b5988",
+          "seq": 1,
+          "verb": "drive_forward",
+          "achieved": 0.9874078035354634,
+          "error": -0.012592196464536576,
+          "settled": true,
+          "timed_out": false,
+          "corrections": 0,
+          "sim_time": 176.0
+        }
+      }
+    },
+    {
+      "case": "CONTROL 90 deg turn",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 1.5708
+      },
+      "http": 200,
+      "moved": true,
+      "expected_move": true,
+      "ok": true,
+      "dist_m": 0.0,
+      "dyaw_rad": 1.5717,
+      "body": {
+        "status": "ok",
+        "tool": "turn",
+        "result": {
+          "accepted": true,
+          "commanded": 1.5708,
+          "unit": "rad",
+          "bridge_instance_id": "97fc67a0-de50-4694-8d51-9279aa7b5988",
+          "seq": 2,
+          "verb": "turn",
+          "achieved": 1.57166271259983,
+          "error": 0.0008627125998299512,
+          "settled": true,
+          "timed_out": false,
+          "corrections": 2,
+          "sim_time": 210.08
+        }
+      }
+    },
+    {
+      "case": "CONTROL stop",
+      "tool": "stop_robot",
+      "args": {},
+      "http": 200,
+      "moved": false,
+      "expected_move": false,
+      "ok": true,
+      "dist_m": 0.0,
+      "dyaw_rad": 0.0,
+      "body": {
+        "status": "ok",
+        "tool": "stop_robot",
+        "result": {
+          "accepted": true,
+          "verb": "stop_robot",
+          "halted_at": 1789943953.8476038,
+          "commanded": 0.0,
+          "unit": "m/s",
+          "pose_at_halt": {
+            "x": 0.9874017834663391,
+            "y": -1.432277167623397e-05,
+            "yaw": 1.57166271259983
+          },
+          "stopped_motion": null,
+          "achieved": 1.528417301704671e-10,
+          "error": 1.528417301704671e-10,
+          "settled": true,
+          "stationary": true,
+          "measured": {
+            "speed_mps": 1.528417301704671e-10,
+            "yaw_rate_radps": 0.0,
+            "over_s": 0.14876413345336914,
+            "samples": 256,
+            "moved_since_halt_m": 4.4565240386873484e-11,
+            "turned_since_halt_rad": 0.0,
+            "basis": "supervisor pose samples taken by the simulation tick",
+            "pose_after_settle": {
+              "x": 0.9874017834663391,
+              "y": -1.4322727110993583e-05,
+              "yaw": 1.57166271259983
+            }
+          },
+          "idle_loop": {
+            "present": false,
+            "detail": "this robot has no autonomy loop to hold"
+          },
+          "note": "measured at rest: 0.000 m/s over 0.15s, 0.000 m of coast after the halt. This robot has no autonomy loop, so nothing will move it until you command it again."
+        }
+      }
+    }
+  ],
+  "failures": 0
+}

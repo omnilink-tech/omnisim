@@ -18,7 +18,13 @@
     python tests/benchmarks/warehouse/goals_suite.py --print-suite
     python tests/benchmarks/warehouse/goals_suite.py --dry-run
     python tests/benchmarks/warehouse/goals_suite.py --selftest
-    python tests/benchmarks/warehouse/goals_suite.py --mode offline --out results/goals_offline.json
+    python tests/benchmarks/warehouse/goals_suite.py --mode omnilink --out results/goals_omnilink.json
+
+--mode is REQUIRED and has no default. It used to default to `offline`, the
+condition that measured each bridge's keyword ladder; the ladders were deleted
+on 2026-09-22 and a bridge with no relay answers 401 omnikey_required, so
+`--mode offline` is refused at launch (exit 4) with the whole explanation.
+The recorded offline rows stay readable -- only STARTING one is refused.
 
 ═══════════════════════════════════════════════════════════════════════
 ⚠️  THIS SUITE HAS BEEN AMENDED TWICE SINCE ITS ONLY RECORDED RUN
@@ -41,8 +47,11 @@ should be quoted until a re-run under the current fingerprint.
 WHY THIS FILE EXISTS
 ═══════════════════════════════════════════════════════════════════════
 
-`bench_omnilink.py` scored the offline regex router 7/10 against the
-OmniLink LLM's 9/10.  **That suite was biased toward the router.**  Eight of
+`bench_omnilink.py` scored the keyword ladder 7/10 against the OmniLink LLM's
+9/10, in 2026-07, while that ladder still existed -- it was deleted on
+2026-09-22 and the `offline` condition that measured it is refused at launch
+now, so those are historical numbers.  **That suite was biased toward the
+ladder.**  Eight of
 its ten prompts were single literal commands -- "stop", "drive forward 1
 meter", "where are you?" -- which is precisely the shape a regex table is
 built for.  The only two prompts the router lost were obliquely-phrased
@@ -213,6 +222,20 @@ EXIT_IDENTITY = bo.EXIT_IDENTITY
 EXIT_ENGINE = bo.EXIT_ENGINE
 EXIT_DRYRUN = 10           # a pre-registered predicate failed its own check
 
+#: What `bo.mode_refusal()` offers instead of the retired `offline`
+#: condition. This suite has no `none` arm -- every task is a prompt.
+_MODE_ALTERNATIVES_GOALS = (
+    "  --mode omnilink   the OmniLink platform relay (controllers launched\n"
+    "                    with OMNI_KEY). The deterministic parser answers\n"
+    "                    what it can and the model answers what it declines:\n"
+    "                    the shipped path, end to end.\n"
+    "  --mode local      the local-Ollama control, which separates generic\n"
+    "                    LLM tool-calling value from OmniLink-specific value.\n"
+    "\n"
+    "  There is no promptless control here: every task in this suite IS a\n"
+    "  prompt. For the throughput reference, run bench_omnilink.py --mode\n"
+    "  none, or measure_line.py, which is GET-only by design.")
+
 
 # ══════════════════════════════════════════════════════════════════════
 # THE FABRICATION GATE.  Pre-registered here, hashed into the suite sha.
@@ -320,6 +343,15 @@ def fabrication_check(reply: str) -> Dict[str, Any]:
 #   expect_llm        input to any verdict. If a run contradicts one, the
 #                     prediction was wrong -- update it, do not touch the
 #                     score.
+#
+# ⚠️ EVERY `expect_offline` AND ITS `expect_why` BELOW DESCRIBES THE KEYWORD
+# LADDER, WHICH WAS DELETED ON 2026-09-22. `IntentRouter` and intent_router.py
+# are gone; an OmniKey is required for every OmniLink AI experience, Free
+# included, so a bridge without one REFUSES /prompt (401 omnikey_required)
+# rather than answering it another way. The offline arm therefore has no
+# target and cannot be re-run. These strings are left untouched on purpose:
+# they are the record of what that ladder was predicted to do, not claims
+# about anything runnable today.
 # ══════════════════════════════════════════════════════════════════════
 
 SUITE: List[Dict[str, Any]] = [
@@ -346,8 +378,9 @@ SUITE: List[Dict[str, Any]] = [
         "expect_offline": "pass",
         "expect_llm": "pass",
         "expect_why": (
-            "IntentRouter.dispatch matches \\b(stop|halt|freeze|brake)\\b "
-            "directly (omnilink_mobile_bridge.py, mobile IntentRouter). Any "
+            "IntentRouter.dispatch matched \\b(stop|halt|freeze|brake)\\b "
+            "directly in the mobile IntentRouter (omnilink_mobile_bridge.py), "
+            "deleted 2026-09-22. Any "
             "LLM with stop_robot in its toolbox does the same. Deliberately "
             "kept identical to bench_omnilink's t1 so the two suites are "
             "comparable at the floor."),
@@ -378,8 +411,9 @@ SUITE: List[Dict[str, Any]] = [
         "expect_why": (
             "'carry on' and 'back to work' are both literal alternatives of "
             "RESUME_RE in packages/omnisim-bridges/src/omnisim_bridges/"
-            "intent_router.py, and IntentRouter.dispatch checks is_resume() "
-            "FIRST. Measured offline previously at 0.0 s to un-pause."),
+            "intent_router.py, and IntentRouter.dispatch checked is_resume() "
+            "FIRST. Both were deleted on 2026-09-22. Measured offline "
+            "previously at 0.0 s to un-pause."),
     },
 
     # ══ 1. ARITHMETIC ON A RELATIVE QUANTITY ═══════════════════════════
@@ -449,7 +483,8 @@ SUITE: List[Dict[str, Any]] = [
             "all, so 'go to (x,y)' is unreachable for it by construction."),
         "expect_offline": "fail",
         "expect_why": (
-            "Traced against every rule in the mobile IntentRouter: no resume "
+            "Traced against every rule in the mobile IntentRouter as it "
+            "stood before its deletion on 2026-09-22: no resume "
             "word, no status word, no stop/reset/spin/circle word, no 'turn', "
             "no forward/back/reverse token, and 'velocity N N' does not "
             "match. It falls through to \"I don't recognise that\" and the "
@@ -554,7 +589,7 @@ SUITE: List[Dict[str, Any]] = [
             "that'."),
         "expect_offline": "fail",
         "expect_why": (
-            "The arm IntentRouter's \\b(grab|grasp)\\b rule fires and calls "
+            "The deleted arm IntentRouter's \\b(grab|grasp)\\b rule FIRED and called "
             "act_pick(None), which reaches for the NEAREST graspable -- the "
             "joints move, so the world changes and the task fails. ('parked' "
             "does NOT trip the \\b(home|reset|park|tuck)\\b rule: there is no "
@@ -629,7 +664,8 @@ SUITE: List[Dict[str, Any]] = [
             "`carrying`."),
         "expect_offline": "fail",
         "expect_why": (
-            "The mobile IntentRouter has no intent rule of any kind and none "
+            "The deleted mobile IntentRouter had no intent rule of any kind "
+            "and none "
             "of its patterns match this sentence, so nothing is written to "
             "pending_intents. ('come back to you' was removed from the draft "
             "phrasing: 'back' would have fired the bare reverse rule.) The "
@@ -662,7 +698,7 @@ SUITE: List[Dict[str, Any]] = [
             "-- while honouring the attached condition about the gripper."),
         "expect_offline": "fail",
         "expect_why": (
-            "The arm IntentRouter's \\b(stop|halt|freeze|hold)\\b rule fires "
+            "The deleted arm IntentRouter's \\b(stop|halt|freeze|hold)\\b rule FIRED "
             "on the literal 'Stop' and calls act_stop(), which freezes the "
             "joints at their current angles. Nothing is written to "
             "/state.constraints, and if a part WAS in the gripper it stays "
@@ -2747,12 +2783,21 @@ def build_parser() -> argparse.ArgumentParser:
                      "robot/world state. Tolerances live in the SUITE literal "
                      "and are NOT reachable from this CLI."),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    # REQUIRED since 2026-09-22 (the default was `offline`, now retired).
+    # `offline` stays a CHOICE so that asking for it gets bo.mode_refusal()'s
+    # explanation instead of argparse's bare "invalid choice".
     ap.add_argument("--mode", choices=("offline", "local", "omnilink"),
-                    default="offline",
-                    help="the condition LABEL for this run. It does NOT "
-                         "switch the bridges' chat mode -- that is chosen "
+                    default=None,
+                    help="REQUIRED: the condition LABEL for this run. It does "
+                         "NOT switch the bridges' chat mode -- that is chosen "
                          "when the controllers start -- but the engine gate "
-                         "refuses a run whose engine contradicts it.")
+                         "refuses a run whose engine contradicts it, which is "
+                         "also why it has no default. 'offline' is RETIRED "
+                         "(2026-09-22: it measured the deleted keyword ladder, "
+                         "and a bridge with no relay now answers "
+                         "401 omnikey_required) and is refused at launch with "
+                         "an explanation; the recorded offline rows stay "
+                         "readable.")
     ap.add_argument("--duration", type=float, default=900.0)
     ap.add_argument("--baseline-s", type=float, default=180.0,
                     help="quiet observation BEFORE any prompt (the within-run "
@@ -2830,6 +2875,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:      # noqa: C901
         return dry_run()
     if args.selftest:
         return selftest()
+
+    # ── The retired condition is refused HERE, at launch ──────────────
+    # After --print-suite / --dry-run / --selftest, so every read-only verb
+    # still works without a key, without bridges and without deciding on a
+    # --mode; and before anything touches a bridge. `bo.engine_gate` keeps
+    # classifying `offline` in both directions, because that is how a
+    # RECORDED run is read back -- interpreting old evidence and making new
+    # evidence are different acts and only the second is refused.
+    refusal = bo.mode_refusal("goals_suite.py", args.mode,
+                              _MODE_ALTERNATIVES_GOALS)
+    if refusal:
+        print("\n" + refusal, file=sys.stderr)
+        return EXIT_ARGS
 
     if args.post_reset_quiet_s < 1.6:
         print("error: --post-reset-quiet-s must exceed the bridges' ~1.5 s "

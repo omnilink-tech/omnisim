@@ -8,8 +8,11 @@
 # identifier kept stable for the worlds and bridges that reference it, not a
 # product claim. See projects/robots/robotiq/PROVENANCE.md.
 #
-# Right-click the arm -> Show Robot Window, then type. Offline it uses the
-# regex intent router; set OMNI_KEY and it routes through OmniLink to a model.
+# Right-click the arm -> Show Robot Window, then type. Set OMNI_KEY first:
+# OmniLink requires a key on every plan including Free. The deterministic parser
+# interprets the sentence, a model is called only for what it declines, and the
+# safety gate vets whatever produced the frames. No key means the prompt is
+# refused and nothing moves -- there is no offline chat path.
 #   "pick up the block"      -> a friction pick, proved by contact
 #   "put it down"            -> places it on the yellow table
 #   "open the gripper"       -> the block falls, because nothing else held it

@@ -128,6 +128,7 @@ the empty/idle state.
 
 from __future__ import annotations
 
+import contextlib
 import inspect
 import json
 import math
@@ -144,7 +145,8 @@ from omnisim import Supervisor
 
 from damage_tracker import DamageTracker
 import event_bus
-from event_bus import ContactTracker, EventBus, GripTracker, JointLimitTracker
+from event_bus import (BreakRegistry, ContactTracker, EventBus, GripTracker,
+                       JointLimitTracker)
 import geometry
 import observe
 
@@ -926,16 +928,219 @@ def compare_fingerprints(before: dict, after: dict) -> dict:
 
 
 def _advance(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
-             steps: int) -> float:
+             steps: int, lease: "PauseLease | None" = None) -> float:
     """Step `steps` basic steps, returning the new sim time. Used by the
     mutation verbs so a queued field write actually lands before read-back.
+
+    Lifts a held pause for the settle (see `pause_lifted`): every mutation verb
+    reaches the engine through here, so doing it once covers all of them and
+    none of the seven call sites has to remember.
     """
     t = float(sim_time_ms)
-    for _ in range(max(0, int(steps))):
-        if supervisor.step(basic_step_ms) == -1:
-            raise CommandError("simulator step returned -1 (terminating)")
-        t += basic_step_ms
+    with pause_lifted(supervisor, lease):
+        for _ in range(max(0, int(steps))):
+            if supervisor.step(basic_step_ms) == -1:
+                raise CommandError("simulator step returned -1 (terminating)")
+            t += basic_step_ms
     return t
+
+
+class PauseLease:
+    """A held pause on the engine, with a deadline.
+
+    WHY THIS IS NOT JUST `observe.paused_reads`. That guard pauses and unpauses
+    inside ONE rpc handler and never crosses a step boundary, which is the only
+    reason it is safe. The main loop is `while supervisor.step(...) != -1:`
+    followed by the client-servicing block -- so if a command pauses the engine
+    and RETURNS, control goes back to `supervisor.step()` on a paused engine,
+    that call blocks forever, the client block is never reached again, and the
+    `resume` that would free it can never be delivered. That deadlock is why
+    `sim.pause` sat in `not_supported` with "in the binding but not wired to
+    HTTP" rather than being a five-line route.
+
+    So a held pause needs two things the per-read guard does not:
+
+    1. The main loop must SKIP `supervisor.step()` while the lease is live
+       (see `step_or_hold`), so the socket keeps being serviced.
+    2. A DEADLINE. A client that pauses and then dies -- crashed agent, closed
+       laptop, dropped ssh -- would otherwise freeze the simulation forever with
+       no way back except killing the engine. The lease self-expires and the
+       loop resumes on its own.
+
+    `sim.step` while a lease is held is still legal and is the point of the
+    feature: the step handler lifts the pause, steps, and re-takes it, all
+    inside its own rpc, which is the `paused_reads` pattern inverted and is
+    safe for the same reason.
+    """
+
+    # Clamped: long enough for an agent to think between calls, short enough
+    # that a dead client costs a bounded stall.
+    DEFAULT_MS = 30_000
+    MIN_MS = 1_000
+    MAX_MS = 300_000
+
+    def __init__(self) -> None:
+        self.deadline = None   # time.monotonic() seconds, or None when running
+        self.prev_mode = None  # the mode to restore -- NOT assumed to be RUN
+        self.taken_at_ms = None
+
+    @property
+    def held(self) -> bool:
+        return self.deadline is not None
+
+    def expired(self) -> bool:
+        return self.deadline is not None and time.monotonic() >= self.deadline
+
+    def remaining_ms(self) -> int:
+        if self.deadline is None:
+            return 0
+        return max(0, int((self.deadline - time.monotonic()) * 1000.0))
+
+    def take(self, supervisor, lease_ms: int, sim_time_ms: float) -> dict:
+        """Pause the engine and start (or extend) the lease."""
+        lease_ms = max(self.MIN_MS, min(int(lease_ms), self.MAX_MS))
+        get_mode = getattr(supervisor, "simulationGetMode", None)
+        set_mode = getattr(supervisor, "simulationSetMode", None)
+        if get_mode is None or set_mode is None:
+            raise CommandError("this supervisor build exposes no simulation mode control")
+        if not self.held:
+            # Capture the caller's mode ONCE. Re-taking an already-held lease
+            # must not overwrite it with PAUSE and strand the original mode.
+            self.prev_mode = get_mode()
+            self.taken_at_ms = float(sim_time_ms)
+            if self.prev_mode != observe.SIMULATION_MODE_PAUSE:
+                set_mode(observe.SIMULATION_MODE_PAUSE)
+                self.flush(supervisor)
+        self.deadline = time.monotonic() + (lease_ms / 1000.0)
+        return self.status(extra={"lease_ms": lease_ms})
+
+    @staticmethod
+    def flush(supervisor) -> bool:
+        """Force the queued mode change out to the engine, now.
+
+        ⚠️ `simulationSetMode` only QUEUES a request; it reaches the engine on
+        the controller's next round trip. Everywhere else in this file that is
+        free -- `observe.paused_reads` pauses and then immediately reads, and
+        the read carries the request. A HELD pause has no such read: the main
+        loop stops calling `supervisor.step()` the instant the lease is taken,
+        so the queued PAUSE can sit unsent while the engine (which free-runs
+        in `--mode=fast`, independently of this controller) keeps stepping.
+        The supervisor would then report a frozen clock over a moving scene,
+        which is worse than not having a pause at all.
+
+        MEASURED on the break_drop fixture, 2026-09-22, before this flush
+        existed: a break fired at t=168 ms and the engine kept running to
+        ~400 ms -- ~29 basic steps of scene motion after the "freeze". A
+        witness body in free fall is the ruler that caught it.
+
+        `getPosition()` on the supervisor's own node is the cheapest real
+        round trip available; its value is discarded.
+        """
+        try:
+            node = supervisor.getSelf()
+            if node is None:
+                return False
+            node.getPosition()
+            return True
+        except Exception:  # noqa: BLE001 -- a stub supervisor has no node
+            return False
+
+    def release(self, supervisor, reason: str = "resume") -> dict:
+        """Restore the pre-pause mode and drop the lease. Idempotent."""
+        was_held = self.held
+        if was_held:
+            set_mode = getattr(supervisor, "simulationSetMode", None)
+            if set_mode is not None and self.prev_mode is not None:
+                try:
+                    set_mode(self.prev_mode)
+                    # Deliver it with a READ, not with the loop's next step.
+                    # A read is serviced by a paused engine (that is the whole
+                    # premise of observe.paused_reads); a STEP against a paused
+                    # engine is the thing that blocks. Leaving the un-pause for
+                    # `step_or_hold`'s own `supervisor.step()` therefore has the
+                    # engine and the controller each waiting on the other --
+                    # MEASURED 2026-09-22: a 1 s lease expired and the
+                    # supervisor never answered again, which turns the lease
+                    # deadline (the safety property that a crashed client
+                    # cannot freeze the engine) into the thing that breaks it.
+                    self.flush(supervisor)
+                except Exception:  # noqa: BLE001 -- never let a mode restore strand the loop
+                    pass
+        self.deadline = None
+        self.prev_mode = None
+        self.taken_at_ms = None
+        return {"paused": False, "was_paused": was_held, "released_by": reason}
+
+    def status(self, extra: dict | None = None) -> dict:
+        out = {
+            "paused": self.held,
+            "lease_remaining_ms": self.remaining_ms(),
+            "paused_at_sim_ms": self.taken_at_ms,
+        }
+        if extra:
+            out.update(extra)
+        return out
+
+
+@contextlib.contextmanager
+def pause_lifted(supervisor: Supervisor, lease: "PauseLease | None"):
+    """Temporarily restore the pre-pause mode so an rpc body can step.
+
+    EVERY command that calls `supervisor.step()` must run inside this, because
+    a step against a paused engine blocks until someone unpauses -- and while
+    the rpc is blocked nobody CAN. Two such commands exist: `step` and
+    `rebuild_physics`.
+
+    The lease is deliberately left held: lifting is a property of this rpc, not
+    a release, so the caller is still paused when it returns and its deadline
+    keeps running. `finally` re-takes the pause even if the body raised, so a
+    failed step cannot strand the engine running under a held lease.
+
+    Yields True when a lift actually happened.
+    """
+    set_mode = getattr(supervisor, "simulationSetMode", None)
+    lifted = (
+        lease is not None and lease.held
+        and set_mode is not None and lease.prev_mode is not None
+    )
+    if lifted:
+        set_mode(lease.prev_mode)
+    try:
+        yield lifted
+    finally:
+        if lifted:
+            try:
+                set_mode(observe.SIMULATION_MODE_PAUSE)
+                # FLUSH, for the same reason PauseLease.take does: the re-pause
+                # is only QUEUED, and after this rpc returns the main loop
+                # stops stepping (the lease is still held), so nothing would
+                # carry it to the engine until the caller's NEXT request. The
+                # engine free-runs in the meantime, which is how a `/sim/step
+                # {"steps": 1}` came back having moved the scene by two steps'
+                # worth of fall (measured on break_drop, 2026-09-22).
+                PauseLease.flush(supervisor)
+            except Exception:  # noqa: BLE001 -- never strand the loop on a mode restore
+                pass
+
+
+def step_or_hold(supervisor: Supervisor, basic_step_ms: int, lease: PauseLease) -> int:
+    """The main loop's step, with a held pause honoured.
+
+    Returns what `supervisor.step()` returns (-1 terminates the loop), or 0
+    while the lease holds -- "not terminated, and deliberately did not advance".
+
+    ⚠️ Never replace this with a plain `supervisor.step()`: see PauseLease.
+    """
+    if lease.held:
+        if lease.expired():
+            lease.release(supervisor, reason="lease_expired")
+        else:
+            # Do NOT step. Sleep briefly so a held pause does not spin a core;
+            # the client block below still runs every iteration, which is what
+            # keeps `resume` deliverable.
+            time.sleep(0.005)
+            return 0
+    return supervisor.step(basic_step_ms)
 
 
 def dispatch_commands() -> list[str]:
@@ -956,14 +1161,84 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
              bus: EventBus | None = None,
              contact_tracker: ContactTracker | None = None,
              grip_tracker: GripTracker | None = None,
-             joint_velocity_cache: dict | None = None):
+             joint_velocity_cache: dict | None = None,
+             pause_lease: "PauseLease | None" = None,
+             breaks: BreakRegistry | None = None):
     if cmd == "ping":
         return {}
-    if cmd == "sim_state":
+    if cmd == "pause":
+        if pause_lease is None:
+            raise CommandError("pause is unavailable: this session has no pause lease")
+        return pause_lease.take(
+            supervisor, args.get("lease_ms", PauseLease.DEFAULT_MS), sim_time_ms)
+    if cmd == "resume":
+        if pause_lease is None:
+            raise CommandError("resume is unavailable: this session has no pause lease")
+        return pause_lease.release(supervisor, reason="resume")
+    if cmd == "pause_status":
+        if pause_lease is None:
+            return {"paused": False, "lease_remaining_ms": 0, "paused_at_sim_ms": None}
+        return pause_lease.status()
+    if cmd == "break_arm":
+        # Arm a BREAKPOINT. Refusals come back as a value, not an exception,
+        # because each carries a diagnostics[] list the harness forwards
+        # verbatim in its 4xx body -- a break that could never fire (a
+        # contact.* break in a light session) is named, not silently accepted.
+        if breaks is None:
+            raise CommandError("breaks are unavailable: this session has no break registry")
+        return breaks.arm(
+            args.get("types"), args.get("filter"),
+            lease_ms=args.get("lease_ms"),
+            once=True if args.get("once") is None else bool(args.get("once")),
+            sim_time_ms=sim_time_ms)
+    if cmd == "break_list":
+        if breaks is None:
+            return {"breaks": [], "breakable_types": [], "break_hit": None}
         return {
+            "breaks": breaks.list_breaks(),
+            "breakable_types": breaks.breakable_types(),
+            "silenced_types": breaks.suppressed_types(),
+            "break_hit": breaks.last_hit,
+            "paused": bool(pause_lease.held) if pause_lease is not None else False,
+        }
+    if cmd == "break_delete":
+        if breaks is None:
+            raise CommandError("breaks are unavailable: this session has no break registry")
+        break_id = args.get("break_id")
+        if not isinstance(break_id, str) or not break_id:
+            raise CommandError("break_delete requires a 'break_id' string")
+        return breaks.remove(break_id)
+    if cmd == "sim_state":
+        out = {
             "sim_time_ms": sim_time_ms,
             "basic_time_step_ms": basic_step_ms,
         }
+        # ⚠ `sim_time_ms` is the SUPERVISOR's per-iteration counter, not the
+        # engine's clock, and on a small world in --mode=fast the engine runs
+        # far ahead of it (measured: ~700 engine ms inside one supervisor tick
+        # on a 3-body world). `engine_time_ms` is the engine's own time as of
+        # this controller's last step -- the number to quote when the question
+        # is "how much simulated time passed".
+        try:
+            out["engine_time_ms"] = supervisor.getTime() * 1000.0
+        except Exception:  # noqa: BLE001 -- a stub supervisor has no clock
+            out["engine_time_ms"] = None
+        # The held-pause state travels with the clock, so one read answers
+        # "is it moving, and if not, why" -- `break_hit` is the last break
+        # that froze it (null when nothing has).
+        if pause_lease is not None:
+            out["paused"] = bool(pause_lease.held)
+            out["lease_remaining_ms"] = pause_lease.remaining_ms()
+            out["paused_at_sim_ms"] = pause_lease.taken_at_ms
+        else:
+            out["paused"] = False
+            out["lease_remaining_ms"] = 0
+            out["paused_at_sim_ms"] = None
+        out["break_hit"] = breaks.last_hit if breaks is not None else None
+        out["breaks_armed"] = (
+            sum(1 for b in breaks.list_breaks() if b["armed"])
+            if breaks is not None else 0)
+        return out
     if cmd == "diag_read_bench":
         # Ground-truth the cost of one supervisor read on THIS session:
         # n getPosition round-trips, free-running vs inside paused_reads.
@@ -1076,10 +1351,12 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
         steps = int(args.get("settle_steps", 8))
         steps = max(1, min(steps, 1024))
         local_sim_ms = float(sim_time_ms)
-        for _ in range(steps):
-            if supervisor.step(basic_step_ms) == -1:
-                raise CommandError("simulator step returned -1 (terminating)")
-            local_sim_ms += basic_step_ms
+        # Steps, so it must lift a held pause for the settle -- see PauseLease.
+        with pause_lifted(supervisor, pause_lease):
+            for _ in range(steps):
+                if supervisor.step(basic_step_ms) == -1:
+                    raise CommandError("simulator step returned -1 (terminating)")
+                local_sim_ms += basic_step_ms
         return {"requested": True, "settle_steps": steps,
                 "advanced_to_ms": local_sim_ms}
     if cmd == "step":
@@ -1092,27 +1369,86 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
         # outer main-loop iterations between commands — which is roughly
         # one tick per RPC, not one per sim step.
         local_sim_ms = float(sim_time_ms)
-        for _ in range(steps):
-            if supervisor.step(basic_step_ms) == -1:
-                raise CommandError("simulator step returned -1 (terminating)")
-            local_sim_ms += basic_step_ms
-            if damage is not None:
-                damage.poll(int(local_sim_ms))
-            if contact_tracker is not None:
-                try:
-                    contact_tracker.poll(local_sim_ms)
-                except Exception:
-                    pass
-            if grip_tracker is not None and contact_tracker is not None:
-                try:
-                    grip_tracker.poll(
-                        contact_tracker.current_pairs(),
-                        observe.build_robot_subtree_index(supervisor),
-                        local_sim_ms,
-                    )
-                except Exception:
-                    pass
-        return {"sim_time_ms": local_sim_ms, "advanced_to_ms": local_sim_ms}
+        # `pause_lifted` makes this the SINGLE-STEP verb of a held pause: with a
+        # lease taken, each call advances exactly `steps` and leaves the engine
+        # paused again. Without it, this loop would block forever the moment a
+        # caller paused (see PauseLease).
+        engine_before_ms = None
+        try:
+            engine_before_ms = supervisor.getTime() * 1000.0
+        except Exception:  # noqa: BLE001
+            pass
+        steps_executed = 0
+        stopped_on_break = None
+        with pause_lifted(supervisor, pause_lease) as _lifted:
+            for _ in range(steps):
+                if supervisor.step(basic_step_ms) == -1:
+                    raise CommandError("simulator step returned -1 (terminating)")
+                local_sim_ms += basic_step_ms
+                steps_executed += 1
+                if damage is not None:
+                    damage.poll(int(local_sim_ms))
+                if contact_tracker is not None:
+                    try:
+                        contact_tracker.poll(local_sim_ms)
+                    except Exception:
+                        pass
+                if grip_tracker is not None and contact_tracker is not None:
+                    try:
+                        grip_tracker.poll(
+                            contact_tracker.current_pairs(),
+                            observe.build_robot_subtree_index(supervisor),
+                            local_sim_ms,
+                        )
+                    except Exception:
+                        pass
+                # BREAK CHECK, per STEP. The main loop's two scans are not
+                # enough here for two reasons: the producers above run inside
+                # THIS loop (so their events are not on the bus until it ends),
+                # and the client-drain block lingers 2 ms after a served frame
+                # to pick up a caller's follow-up RPC -- so a burst of
+                # `/sim/step` calls is serviced inside ONE main-loop iteration
+                # and one post-drain scan. MEASURED 2026-09-22 before this
+                # existed: 61 single steps into a drop, the contact fired at
+                # step 44 and the hold landed at step 61, a latency of 136 ms
+                # for what should be zero. Scanning here makes a stepped
+                # session detect on the exact basic step, and stops the batch
+                # early so `/sim/step {"steps": 500}` is a `continue` that
+                # halts on the breakpoint.
+                if breaks is not None:
+                    try:
+                        hits = breaks.scan(supervisor, pause_lease, local_sim_ms)
+                    except Exception:  # noqa: BLE001
+                        hits = []
+                    if hits:
+                        stopped_on_break = hits[0]["break_id"]
+                        break
+        out = {"sim_time_ms": local_sim_ms, "advanced_to_ms": local_sim_ms,
+               "steps_executed": steps_executed,
+               "steps_requested": steps,
+               "stopped_on_break": stopped_on_break}
+        # MEASURED, not echoed: `sim_time_ms` above is this controller's own
+        # counter and always moves by exactly steps * basicTimeStep. The
+        # ENGINE's clock is a different ruler, and a lifted single-step is a
+        # race -- `pause_lifted` restores the running mode, steps, then queues
+        # PAUSE again, and the engine can complete one more step before that
+        # request lands (MEASURED 2026-09-22: four consecutive `/sim/step 1`
+        # calls advanced the engine 8, 16, 8, 8 ms). So report what the engine
+        # actually did instead of asserting that it matched the request.
+        try:
+            engine_after_ms = supervisor.getTime() * 1000.0
+        except Exception:  # noqa: BLE001
+            engine_after_ms = None
+        out["engine_time_ms"] = engine_after_ms
+        if engine_after_ms is not None and engine_before_ms is not None:
+            out["engine_advanced_ms"] = engine_after_ms - engine_before_ms
+            out["requested_advance_ms"] = steps * basic_step_ms
+        if _lifted:
+            # Tell the caller the pause survived its own step, so a stepping
+            # agent never has to guess whether it is still holding the engine.
+            out["paused"] = True
+            out["lease_remaining_ms"] = pause_lease.remaining_ms()
+        return out
     if cmd == "reset":
         # simulationReset() rewinds the clock. On its own it measurably does
         # NOT restore node poses (docs/developer/agent-native-api.md G2,
@@ -1123,6 +1459,12 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
         if restore is not None and not isinstance(restore, str):
             raise CommandError("'restore' must be a snapshot name or null")
         before = pose_fingerprint(supervisor) if args.get("verify", True) else {}
+        # The clock is about to rewind, so a `break_hit` stamped at the OLD
+        # clock would sit next to a smaller `sim_time_ms` and read as a break
+        # that fired in the future. ARMED breaks deliberately survive: "arm,
+        # reset, watch it happen" is the workflow.
+        if breaks is not None:
+            breaks.last_hit = None
         supervisor.simulationReset()
         restored = None
         restore_error = None
@@ -1141,7 +1483,7 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
                     root.loadState(restore)
                     restored = restore
         settle = int(args.get("settle_steps", 1 if args.get("verify", True) else 0))
-        sim_after = _advance(supervisor, basic_step_ms, 0.0, settle)
+        sim_after = _advance(supervisor, basic_step_ms, 0.0, settle, pause_lease)
         out: dict = {
             "sim_time_ms": sim_after,
             "advanced_to_ms": sim_after,
@@ -1218,7 +1560,7 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
         before = pose_fingerprint(supervisor)
         root.loadState(name)
         settle = int(args.get("settle_steps", 1))
-        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle)
+        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle, pause_lease)
         after = pose_fingerprint(supervisor)
         target = snap.get("poses")
         return {
@@ -1388,7 +1730,7 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
         # its next step, so a clone read back with settle_steps=0 still reports
         # the source's pose.
         settle = int(args.get("settle_steps", 1 if applied else 0))
-        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle)
+        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle, pause_lease)
         summary = node_summary(node) if node is not None else {}
         verification = {
             "node_resolved": node is not None,
@@ -1442,7 +1784,7 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
             removed.append({"def": def_name, "id": summary.get("id"),
                             "type": summary.get("type")})
         settle = int(args.get("settle_steps", 0))
-        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle)
+        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle, pause_lease)
         still = [r["def"] for r in removed
                  if find_node_by_def(supervisor, r["def"]) is not None]
         return {
@@ -1494,7 +1836,7 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
             except Exception as exc:  # noqa: BLE001
                 raise CommandError(f"resetPhysics failed: {exc}")
         settle = int(args.get("settle_steps", 1))
-        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle)
+        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle, pause_lease)
         after = _pose_of(node)
         verification: dict = {"settled_steps": settle,
                               "reset_physics": reset_physics}
@@ -1612,7 +1954,7 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
                       if rollback_errors else "; prior changes rolled back")
             raise CommandError(f"scene_set_poses failed: {exc}{suffix}")
 
-        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle)
+        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle, pause_lease)
         results: list[dict] = []
         for item in prepared:
             results.append({
@@ -1667,6 +2009,28 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
             "commands": dispatch_commands(),
             "commands_source": "scanned from dispatch() in harness_supervisor.py",
             "event_types": events,
+            # What CAN be broken on in this session, and what is armed right
+            # now. Published from the registry rather than a literal so a
+            # light session's silenced types are named here too.
+            "breaks": ({
+                "armed": breaks.list_breaks(),
+                "breakable_types": breaks.breakable_types(),
+                "silenced_types": breaks.suppressed_types(),
+                "filter_keys": list(event_bus.BREAK_FILTER_KEYS),
+                "diagnostic_codes": list(event_bus.BREAK_DIAGNOSTIC_CODES),
+                "max_armed": event_bus.MAX_ARMED_BREAKS,
+                "lease_ms": {"default": PauseLease.DEFAULT_MS,
+                             "min": PauseLease.MIN_MS,
+                             "max": PauseLease.MAX_MS},
+                "hold_latency": (
+                    "NOT sub-step. Free-running, the hold lands on the supervisor tick "
+                    "that scans the bus, and one tick can be far more than one basic "
+                    "step because the engine free-runs ahead of this controller; under a "
+                    "held pause /sim/step scans every basic step, so detection is exact. "
+                    "Every break.hit carries its own measured hold_latency_ms "
+                    "(paused_at_sim_ms - event.t_sim_ms, the supervisor clock) and "
+                    "hold_latency_engine_ms_max (the engine-clock width of that tick)."),
+            } if breaks is not None else None),
             "snapshots": sorted(_SNAPSHOTS),
             "damage_robot": DAMAGE_ROBOT_NAME,
             "damage_attached": bool(damage.attached) if damage is not None
@@ -1676,6 +2040,20 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
         path = args.get("path")
         if not isinstance(path, str) or not path:
             raise CommandError("world_load requires a 'path' string")
+        # ⚠ A HELD LEASE AND AN ARMED BREAK MUST NOT CROSS A WORLD LOAD.
+        # worldLoad is documented below as terminating this controller, and
+        # when it does, this is a no-op. It does NOT always: MEASURED
+        # 2026-09-22, a second /world/load of the same world came back with
+        # this process still alive (the break ids kept counting), and the
+        # session inherited both a lease held over the NEW world -- which
+        # froze it at t=8 ms with nothing in the new session to explain why --
+        # and a `break_hit` describing a break in the OLD one, which a client
+        # polling /sim/state reads as "my break already fired".
+        if pause_lease is not None and pause_lease.held:
+            pause_lease.release(supervisor, reason="world_load")
+        if breaks is not None:
+            breaks.clear()
+            breaks.last_hit = None
         # Webots's worldLoad() resolves relative paths against the
         # controller's CWD — which for our supervisor is its own
         # controller folder, NOT the repo root. That gave us a
@@ -1990,7 +2368,7 @@ def dispatch(supervisor: Supervisor, basic_step_ms: int, sim_time_ms: float,
             except Exception as exc:  # noqa: BLE001
                 raise CommandError(
                     f"setJointPosition failed for joint {plan['name']!r}: {exc}")
-        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle)
+        sim_after = _advance(supervisor, basic_step_ms, sim_time_ms, settle, pause_lease)
         achieved_list = observe.read_joint_positions(
             supervisor, [p["entry"] for p in plans])
         results: dict[str, dict] = {}
@@ -2632,141 +3010,199 @@ def main() -> int:
         except OSError:
             _FPS_LOG_PATH = ""
 
-    while supervisor.step(basic_step_ms) != -1:
-        # Webots's simulationReset rewinds sim time to 0 without
-        # restarting controller processes. Detect that by watching
-        # supervisor.getTime() jump backwards relative to our local
-        # counter; when it does, rewind sim_time_ms and rearm the
-        # inject schedule so a reloaded demo replays the same
-        # detachments.
-        engine_time_ms = supervisor.getTime() * 1000.0
-        if engine_time_ms + 1.0 < sim_time_ms:
-            # Catches a reset triggered from OUTSIDE the RPC (an in-world
-            # controller or the GUI calling simulationReset). The `reset`
-            # COMMAND no longer reaches this branch -- it reports
-            # advanced_to_ms, so the loop has already pulled the rewound clock
-            # in and there is no backwards jump left for this test to see --
-            # and asks for the same work explicitly instead
-            # (_rearm_after_reset, handled where the RPC result is consumed).
-            was_ms = sim_time_ms
-            sim_time_ms = engine_time_ms
-            inject_idx = 0
-            # Reset accumulated damage state too — otherwise the user
-            # sees one robot starting "already destroyed" because HP
-            # values and spawned debris carry over from the prior run.
-            rearm_after_reset(
-                (damage, *extra_damages),
-                f"sim reset detected (was {was_ms:.0f}ms, now "
-                f"{engine_time_ms:.0f}ms)",
-                log=sys.stderr.write)
-        else:
-            sim_time_ms += basic_step_ms
-        damage_poll_tick += 1
-        if damage_poll_tick >= damage_poll_every:
-            damage_poll_tick = 0
-            # Defensive: a crash inside damage.poll() would kill the
-            # supervisor, leaving the harness HTTP service unable to
-            # service any command until the world is reloaded. Worth
-            # far more than the minor risk of masking a damage-tracker
-            # bug — the bug log goes to stderr where it can be
-            # inspected.
-            try:
-                damage.poll(int(sim_time_ms))
-            except Exception as exc:  # noqa: BLE001
+    # The session's held-pause state. `step_or_hold` (not a bare
+    # supervisor.step) is what keeps `resume` deliverable while it is held --
+    # see PauseLease for why a plain step here deadlocks the whole harness.
+    pause_lease = PauseLease()
+
+    # Armed break conditions. `breaks.scan(...)` is what turns an event into a
+    # held pause; it runs twice per iteration (after the producers poll, and
+    # after the client drain) so that in both cases the lease is taken BEFORE
+    # the loop's next `step_or_hold` and no further sim time passes. The lease
+    # bounds are the lease's own, passed in rather than duplicated, so the
+    # arm-time clamp and the take-time clamp cannot drift apart.
+    breaks = BreakRegistry(bus, basic_step_ms, DISABLED_PRODUCERS,
+                           lease_default_ms=PauseLease.DEFAULT_MS,
+                           lease_min_ms=PauseLease.MIN_MS,
+                           lease_max_ms=PauseLease.MAX_MS)
+
+    def _scan_breaks() -> None:
+        # Defensive like every other producer call in this loop: a bug in the
+        # break matcher must not take the supervisor (and with it the whole
+        # harness session) down.
+        try:
+            for hit in breaks.scan(supervisor, pause_lease, sim_time_ms):
                 sys.stderr.write(
-                    f"[harness_supervisor] damage.poll crashed: {exc}\n"
-                    f"{traceback.format_exc()}"
-                )
-            # Secondary trackers run in parallel for visual symmetry.
-            # One secondary crashing doesn't take down the others,
-            # doesn't take down the primary, and doesn't kill the
-            # supervisor.
-            for extra in extra_damages:
+                    f"[harness_supervisor] break {hit['break_id']} hit on "
+                    f"{hit['matched_type']} at t={hit['paused_at_sim_ms']:.0f}ms "
+                    f"(latency {hit['hold_latency_ms']}ms); engine held\n")
+                sys.stderr.flush()
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(
+                f"[harness_supervisor] break scan crashed: {exc}\n"
+                f"{traceback.format_exc()}")
+
+    while step_or_hold(supervisor, basic_step_ms, pause_lease) != -1:
+        # ⚠ HELD MEANS THE ENGINE DID NOT ADVANCE, so nothing below may act as
+        # if it had. `step_or_hold` skipped `supervisor.step()` (and already
+        # released a lease that expired, so `held` is False again in that
+        # case). Two things went wrong when this block ran anyway, both
+        # MEASURED on the break_drop fixture 2026-09-22:
+        #   * `sim_time_ms += basic_step_ms` kept the SUPERVISOR clock moving
+        #     over a frozen engine, so `GET /sim/state` reported a pause that
+        #     was not stopping the clock -- the exact claim a pause has to
+        #     make. It then oscillated, because the next iteration saw
+        #     `engine_time_ms + 1 < sim_time_ms` and took the rewind branch.
+        #   * that rewind branch is the "someone called simulationReset behind
+        #     our back" heuristic: it fired ~every other iteration while held,
+        #     re-arming the inject schedule and resetting every damage tracker.
+        # The producers, the FPS window and the inject schedule are skipped
+        # for the same reason: re-polling an unchanged scene can only cost
+        # IPC. Client servicing and the break scan still run every iteration --
+        # that is what keeps `resume` deliverable.
+        if not pause_lease.held:
+            # Webots's simulationReset rewinds sim time to 0 without
+            # restarting controller processes. Detect that by watching
+            # supervisor.getTime() jump backwards relative to our local
+            # counter; when it does, rewind sim_time_ms and rearm the
+            # inject schedule so a reloaded demo replays the same
+            # detachments.
+            engine_time_ms = supervisor.getTime() * 1000.0
+            if engine_time_ms + 1.0 < sim_time_ms:
+                # Catches a reset triggered from OUTSIDE the RPC (an in-world
+                # controller or the GUI calling simulationReset). The `reset`
+                # COMMAND no longer reaches this branch -- it reports
+                # advanced_to_ms, so the loop has already pulled the rewound clock
+                # in and there is no backwards jump left for this test to see --
+                # and asks for the same work explicitly instead
+                # (_rearm_after_reset, handled where the RPC result is consumed).
+                was_ms = sim_time_ms
+                sim_time_ms = engine_time_ms
+                inject_idx = 0
+                # Reset accumulated damage state too — otherwise the user
+                # sees one robot starting "already destroyed" because HP
+                # values and spawned debris carry over from the prior run.
+                rearm_after_reset(
+                    (damage, *extra_damages),
+                    f"sim reset detected (was {was_ms:.0f}ms, now "
+                    f"{engine_time_ms:.0f}ms)",
+                    log=sys.stderr.write)
+            else:
+                sim_time_ms += basic_step_ms
+            damage_poll_tick += 1
+            if damage_poll_tick >= damage_poll_every:
+                damage_poll_tick = 0
+                # Defensive: a crash inside damage.poll() would kill the
+                # supervisor, leaving the harness HTTP service unable to
+                # service any command until the world is reloaded. Worth
+                # far more than the minor risk of masking a damage-tracker
+                # bug — the bug log goes to stderr where it can be
+                # inspected.
                 try:
-                    extra.poll(int(sim_time_ms))
+                    damage.poll(int(sim_time_ms))
                 except Exception as exc:  # noqa: BLE001
                     sys.stderr.write(
-                        f"[harness_supervisor] extra damage.poll on "
-                        f"{extra.robot_name!r} crashed: {exc}\n"
+                        f"[harness_supervisor] damage.poll crashed: {exc}\n"
                         f"{traceback.format_exc()}"
                     )
-        # Phase 2 producers: contact deltas, joint-limit transitions,
-        # grip detection. Each is wrapped so a producer crash on one
-        # step doesn't kill the whole supervisor — stderr captures the
-        # bug for inspection. Skipped in --light mode (P6).
-        if contact_tracker is not None:
-            try:
-                contact_tracker.poll(sim_time_ms)
-            except Exception as exc:  # noqa: BLE001
-                sys.stderr.write(
-                    f"[harness_supervisor] contact_tracker.poll crashed: {exc}\n"
-                    f"{traceback.format_exc()}"
-                )
-        if joint_limit_tracker is not None:
-            try:
-                joint_limit_tracker.poll(sim_time_ms)
-            except Exception as exc:  # noqa: BLE001
-                sys.stderr.write(
-                    f"[harness_supervisor] joint_limit_tracker.poll crashed: {exc}\n"
-                    f"{traceback.format_exc()}"
-                )
-        if grip_tracker is not None and contact_tracker is not None:
-            try:
-                grip_tracker.poll(
-                    contact_tracker.current_pairs(),
-                    observe.build_robot_subtree_index(supervisor),
-                    sim_time_ms,
-                )
-            except Exception as exc:  # noqa: BLE001
-                sys.stderr.write(
-                    f"[harness_supervisor] grip_tracker.poll crashed: {exc}\n"
-                    f"{traceback.format_exc()}"
-                )
-
-        # Periodic FPS measurement (sim time / wall time over the last
-        # FPS_REPORT_S window). Only writes if OMNISIM_FPS_LOG is set.
-        if _FPS_LOG_PATH:
-            _wall_now = _stdtime.time()
-            if _wall_now - fps_last_report_wall >= FPS_REPORT_S:
-                window_wall = _wall_now - fps_last_report_wall
-                window_sim_ms = sim_time_ms - fps_t0_sim_ms
-                total_wall = _wall_now - fps_t0_wall
-                window_speed = (window_sim_ms / 1000.0) / max(window_wall, 1e-6)
-                cumulative_speed = (sim_time_ms / 1000.0) / max(total_wall, 1e-6)
-                try:
-                    with open(_FPS_LOG_PATH, "a", buffering=1) as _f:
-                        _f.write(
-                            f"sim={sim_time_ms:7.0f}ms wall={total_wall:6.2f}s "
-                            f"speed_window={window_speed:5.2f}x "
-                            f"speed_cum={cumulative_speed:5.2f}x "
-                            f"effective_hz={window_speed*1000.0/basic_step_ms:5.1f}\n"
+                # Secondary trackers run in parallel for visual symmetry.
+                # One secondary crashing doesn't take down the others,
+                # doesn't take down the primary, and doesn't kill the
+                # supervisor.
+                for extra in extra_damages:
+                    try:
+                        extra.poll(int(sim_time_ms))
+                    except Exception as exc:  # noqa: BLE001
+                        sys.stderr.write(
+                            f"[harness_supervisor] extra damage.poll on "
+                            f"{extra.robot_name!r} crashed: {exc}\n"
+                            f"{traceback.format_exc()}"
                         )
-                except OSError:
-                    pass
-                fps_last_report_wall = _wall_now
-                fps_t0_sim_ms = sim_time_ms
+            # Phase 2 producers: contact deltas, joint-limit transitions,
+            # grip detection. Each is wrapped so a producer crash on one
+            # step doesn't kill the whole supervisor — stderr captures the
+            # bug for inspection. Skipped in --light mode (P6).
+            if contact_tracker is not None:
+                try:
+                    contact_tracker.poll(sim_time_ms)
+                except Exception as exc:  # noqa: BLE001
+                    sys.stderr.write(
+                        f"[harness_supervisor] contact_tracker.poll crashed: {exc}\n"
+                        f"{traceback.format_exc()}"
+                    )
+            if joint_limit_tracker is not None:
+                try:
+                    joint_limit_tracker.poll(sim_time_ms)
+                except Exception as exc:  # noqa: BLE001
+                    sys.stderr.write(
+                        f"[harness_supervisor] joint_limit_tracker.poll crashed: {exc}\n"
+                        f"{traceback.format_exc()}"
+                    )
+            if grip_tracker is not None and contact_tracker is not None:
+                try:
+                    grip_tracker.poll(
+                        contact_tracker.current_pairs(),
+                        observe.build_robot_subtree_index(supervisor),
+                        sim_time_ms,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    sys.stderr.write(
+                        f"[harness_supervisor] grip_tracker.poll crashed: {exc}\n"
+                        f"{traceback.format_exc()}"
+                    )
 
-        # Fire any scheduled injects whose t_ms is now due. Schedule is
-        # sorted, so a single forward index suffices.
-        while inject_idx < len(inject_schedule) and \
-                sim_time_ms >= inject_schedule[inject_idx]["t_ms"]:
-            entry = inject_schedule[inject_idx]
-            inject_idx += 1
-            try:
-                damage.inject(
-                    entry["part"],
-                    hp_delta=entry.get("hp_delta"),
-                    state=entry.get("state"),
-                    sim_time_ms=int(sim_time_ms),
-                )
-                sys.stderr.write(
-                    f"[harness_supervisor] scheduled inject t={entry['t_ms']}ms "
-                    f"part={entry['part']} state={entry.get('state')}\n"
-                )
-            except Exception as exc:  # noqa: BLE001
-                sys.stderr.write(
-                    f"[harness_supervisor] scheduled inject failed: {exc}\n"
-                )
+            # BREAK CHECK, first of two. Everything the producers above emitted on
+            # THIS tick is on the bus now, and the loop's next `step_or_hold` has
+            # not run yet -- so a break that fires here freezes the engine at
+            # exactly the event's own sim time (hold_latency_ms 0). The second
+            # call, after the client drain, catches events a `/sim/step` RPC
+            # produced inside its own loop.
+            _scan_breaks()
+
+            # Periodic FPS measurement (sim time / wall time over the last
+            # FPS_REPORT_S window). Only writes if OMNISIM_FPS_LOG is set.
+            if _FPS_LOG_PATH:
+                _wall_now = _stdtime.time()
+                if _wall_now - fps_last_report_wall >= FPS_REPORT_S:
+                    window_wall = _wall_now - fps_last_report_wall
+                    window_sim_ms = sim_time_ms - fps_t0_sim_ms
+                    total_wall = _wall_now - fps_t0_wall
+                    window_speed = (window_sim_ms / 1000.0) / max(window_wall, 1e-6)
+                    cumulative_speed = (sim_time_ms / 1000.0) / max(total_wall, 1e-6)
+                    try:
+                        with open(_FPS_LOG_PATH, "a", buffering=1) as _f:
+                            _f.write(
+                                f"sim={sim_time_ms:7.0f}ms wall={total_wall:6.2f}s "
+                                f"speed_window={window_speed:5.2f}x "
+                                f"speed_cum={cumulative_speed:5.2f}x "
+                                f"effective_hz={window_speed*1000.0/basic_step_ms:5.1f}\n"
+                            )
+                    except OSError:
+                        pass
+                    fps_last_report_wall = _wall_now
+                    fps_t0_sim_ms = sim_time_ms
+
+            # Fire any scheduled injects whose t_ms is now due. Schedule is
+            # sorted, so a single forward index suffices.
+            while inject_idx < len(inject_schedule) and \
+                    sim_time_ms >= inject_schedule[inject_idx]["t_ms"]:
+                entry = inject_schedule[inject_idx]
+                inject_idx += 1
+                try:
+                    damage.inject(
+                        entry["part"],
+                        hp_delta=entry.get("hp_delta"),
+                        state=entry.get("state"),
+                        sim_time_ms=int(sim_time_ms),
+                    )
+                    sys.stderr.write(
+                        f"[harness_supervisor] scheduled inject t={entry['t_ms']}ms "
+                        f"part={entry['part']} state={entry.get('state')}\n"
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    sys.stderr.write(
+                        f"[harness_supervisor] scheduled inject failed: {exc}\n"
+                    )
 
         # Accept any pending connections (non-blocking).
         try:
@@ -2814,13 +3250,23 @@ def main() -> int:
                                       damage=damage, bus=bus,
                                       contact_tracker=contact_tracker,
                                       grip_tracker=grip_tracker,
-                                      joint_velocity_cache=joint_velocity_cache)
+                                      joint_velocity_cache=joint_velocity_cache,
+                                      pause_lease=pause_lease,
+                                      breaks=breaks)
                     # Any command that advanced sim time inside its own loop
                     # (step, and the mutation / snapshot verbs that settle a
                     # queued field write) reports `advanced_to_ms`; pull the
                     # new counter back so the outer loop stays in sync.
                     if isinstance(result, dict) and "advanced_to_ms" in result:
                         sim_time_ms = float(result["advanced_to_ms"])
+                        # BREAK CHECK, per SERVED FRAME. The drain block below
+                        # lingers after a served frame to catch the caller's
+                        # follow-up RPC, so several sim-advancing commands can
+                        # run inside one main-loop iteration; the post-drain
+                        # scan would then hold at the end of the burst instead
+                        # of at the event. Cheap when nothing is armed (the
+                        # registry early-outs on an empty table).
+                        _scan_breaks()
                     # A reset command asks for its own side effects rather than
                     # letting the backwards-clock heuristic above infer them:
                     # that heuristic CANNOT fire for this command any more (the
@@ -2847,6 +3293,12 @@ def main() -> int:
                 except Exception as exc:  # noqa: BLE001
                     sys.stderr.write(f"[harness_supervisor] {cmd} crashed: {exc}\n{traceback.format_exc()}")
                     write_frame(client, {"id": req_id, "ok": False, "error": f"internal: {exc}"})
+
+        # BREAK CHECK, second of two: a `/sim/step` RPC runs the contact / grip
+        # producers inside its own loop, so its events only reach the bus once
+        # the dispatch above returned. Scanning here still beats the next
+        # `step_or_hold`, so single-stepping into a break re-holds immediately.
+        _scan_breaks()
 
     for client in clients:
         try:

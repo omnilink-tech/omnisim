@@ -13,7 +13,9 @@ The following are trademarks of **OmniLink** ("the Marks"):
 - **Word marks**
   - "OmniSim"
   - "OmniLink"
-  - The tagline *"by OmniLink, for OmniLink agents"* (and close variants such as *"made by OmniLink, for OmniLink"*)
+  - The tagline *"by OmniLink, for OmniLink agents"* (and close variants such as *"made by OmniLink, for OmniLink"*) — an **attribution and audience** line, still in active use on the splash screen, the About box and the brand artwork
+  - The positioning tagline *"An open-source robotics workshop for agents"* (and close variants such as *"a robotics workshop for agents"*) — adopted 2026-09-17; see [docs/developer/positioning.md](docs/developer/positioning.md). It states what the product **is**, and it does not replace the attribution tagline above: both are asserted
+  - ⚠️ **Retired:** the positioning tagline *"Where robot software gets debugged"* was asserted 2026-09-14 and **retired 2026-09-17**. It is no longer used on any OmniSim surface and is no longer asserted as a mark
 
 - **Logos and design marks**
   - The **OmniSim particle-orb** mark — the Fibonacci-lattice dot sphere — in all color variants, and its small-size **glyph** variant
@@ -86,7 +88,7 @@ If you redistribute a **modified** version of OmniSim, you must:
 
 - Rename the distribution (e.g., "AcmeSim", not "OmniSim-Acme").
 - Replace the splash screen, About-box branding, and GUI icons with your own.
-- Remove the *"by OmniLink, for OmniLink agents"* tagline from user-facing surfaces.
+- Remove both taglines — *"by OmniLink, for OmniLink agents"* and *"An open-source robotics workshop for agents"* — from user-facing surfaces.
 - Keep the LICENSE and NOTICE files intact (Apache 2.0 §4 requires this) and add your own NOTICE entry for your modifications.
 - You may, and should, state in your README or NOTICE that your project is "based on OmniSim" or "a fork of OmniSim by OmniLink" — that is nominative fair use under the rules above.
 

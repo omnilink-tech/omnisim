@@ -10,13 +10,22 @@ Three drivers, one interface:
                      agent's local callback server. That indirection is not a
                      choice — OmniLink's hosted API cannot reach 127.0.0.1,
                      which is where every robot tool lives.
-``LocalRouterDriver``the no-LLM control: the prompt goes straight to a
-                     bridge's ``/prompt``, which is a regex intent router.
-                     It produces no tool calls and no delegations, and that is
-                     exactly what the control is for — it shows what the
-                     harness scores with no model in the loop.
-``StubDriver``       scripted episodes for the offline harness test. Never
-                     touches the network.
+``LocalRouterDriver``the SINGLE-BRIDGE control: the prompt goes straight to
+                     ONE bridge's ``/prompt``. It produces no tool calls and
+                     no delegations, and that is exactly what the control is
+                     for — it shows what the harness scores with the agent
+                     layer taken away but the bridge left in place.
+                     ⚠️ It is NOT a no-model arm, whatever its class name and
+                     the older recorded rows suggest. The keyword ladder it
+                     used to reach was DELETED on 2026-09-22, and an OmniKey
+                     is required for every chat turn on every plan: with no
+                     relay the bridge answers ``401 omnikey_required`` before
+                     the sentence is interpreted at all and this driver
+                     records that as an error. With a key, the deterministic
+                     parser answers what it can and the model answers what
+                     the parser declines.
+``StubDriver``       scripted episodes for the harness's own network-free
+                     test. Never touches the network.
 
 WHAT AN EPISODE RECORDS, AND WHY
 --------------------------------
@@ -338,15 +347,27 @@ def _is_byok(exc: Exception) -> bool:
     return "BYOK_REQUIRED" in str(exc)
 
 
-# ── The no-LLM control ───────────────────────────────────────────────
+# ── The single-bridge control ────────────────────────────────────────
 
 
 class LocalRouterDriver:
-    """Send the prompt to a bridge's regex intent router. No model involved.
+    """POST the prompt to ONE bridge's ``/prompt`` and read the reply.
 
-    This is the control arm. It cannot call tools, cannot delegate, and cannot
-    reason — so most tasks fail. That is the measurement: it shows how much of
-    a suite score is the harness and how much is the model.
+    This is the control arm. It reaches no coordinator, so it cannot call the
+    agent's tools, cannot delegate and cannot reason across robots — so most
+    tasks fail. That is the measurement: it shows how much of a suite score is
+    the agent layer and how much is the scaffolding underneath it.
+
+    ⚠️ WHAT THIS ARM STOPPED BEING, 2026-09-22. It used to be the *no-model*
+    control, because a keyless ``/prompt`` was answered by the bridge's own
+    keyword ladder. The ladders and the shared ``intent_router`` module were
+    deleted that day and an OmniKey became required for every OmniLink AI
+    experience, Free included. So: with no relay the bridge refuses with
+    ``401 omnikey_required`` (recorded here as ``ep.error``, not as a score),
+    and with a relay the deterministic parser answers what it can while the
+    model answers the rest. The class name is kept because result files carry
+    ``engine: "local"``; rows recorded before 2026-09-22 are ladder runs and
+    are not comparable with rows recorded after it.
     """
 
     def __init__(self, *, bridge_url: str, timeout_s: float = 60.0) -> None:
@@ -366,7 +387,11 @@ class LocalRouterDriver:
                 payload = json.loads(r.read().decode("utf-8") or "{}")
         except Exception as exc:  # noqa: BLE001
             ep.error = f"{type(exc).__name__}: {exc}"
-            ep.stop_reason = "router error"
+            # A keyless bridge lands HERE, with an HTTPError 401
+            # `omnikey_required` in `ep.error` — not a model result and not a
+            # harness bug. Labelled for the bridge, not for the deleted
+            # router, so a new row cannot be mistaken for a ladder row.
+            ep.stop_reason = "bridge error"
             ep.wall_s = time.time() - t0
             return ep
         text = ""
@@ -381,20 +406,22 @@ class LocalRouterDriver:
         ep.final_text = text
         ep.transcript = text
         ep.turns = 1
-        ep.stop_reason = "router answered"
+        ep.stop_reason = "bridge answered"
         ep.wall_s = time.time() - t0
         return ep
 
 
-# ── Offline stub ─────────────────────────────────────────────────────
+# ── Scripted stub (no network) ───────────────────────────────────────
 
 
 class StubDriver:
-    """Replays a canned Episode. For the offline harness test only.
+    """Replays a canned Episode. For the network-free harness test only.
 
     ``script`` maps prompt-substring -> Episode (or a callable returning one).
-    A ``raises`` entry makes ``run`` raise, which is how the offline test
-    exercises the 402 SKIPPED path without an account.
+    A ``raises`` entry makes ``run`` raise, which is how that test exercises
+    the 402 BYOK_REQUIRED SKIP path without spending a provider credential.
+    (Network-free is a property of THIS stub, not a product mode: the shipped
+    bridges require an OmniKey for every chat turn.)
     """
 
     def __init__(self, script: Dict[str, Any], *, engine: str = "stub",

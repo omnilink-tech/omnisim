@@ -265,42 +265,34 @@ def solve_unknown_map(caps: dict) -> int:
             math.sin(target_yaw - state["yaw"]),
             math.cos(target_yaw - state["yaw"]),
         )
-        if abs(delta) > 0.05:
-            _http("POST", "action", {"action": "turn", "angle": delta, "speed": 0.6})
-            ok, state = _wait_until(
-                lambda s: s.get("mode") == "idle" or s.get("fault"),
-                PER_CELL_TIMEOUT,
-            )
-            if state.get("fault") or not ok:
-                print(f"[solve] step {step}: turn fault/timeout {state.get('fault')}")
-                _http("POST", "action", {"action": "stop"})
-                return 23
-        _http("POST", "action", {"action": "drive_forward", "distance": 2.0, "speed": SPEED})
-        ok, state = _wait_until(
-            lambda s: s.get("mode") == "idle" or s.get("fault") or s.get("goal_reached"),
-            PER_CELL_TIMEOUT,
-        )
+        # One synchronous wheel-driven hop, replacing turn + drive_forward +
+        # snap_to_cell. b18bd7a3 removed teleport re-anchoring globally (it now
+        # answers 410 Gone) and goto_cell turns in place under wheel control
+        # before it drives. The bridge gates the hop against the REAL wall set
+        # even though this world withholds the map from the solver, so the
+        # wall-follower still has to discover the maze from lidar.
+        r = _http("POST", "action", {
+            "action": "goto_cell",
+            "col": next_cell[0], "row": next_cell[1],
+            "speed": SPEED,
+            "wait": True,
+            "timeout_s": PER_CELL_TIMEOUT,
+        }, timeout=PER_CELL_TIMEOUT + 10.0)
+        state = _http("GET", "state")
         if state.get("goal_reached"):
             print(f"[solve] goal_reached after {step} steps")
             _http("POST", "action", {"action": "stop"})
             return 0
-        if state.get("fault"):
-            print(f"[solve] step {step}: drive fault {state['fault']}")
+        hop_fault = r.get("fault") or state.get("fault")
+        if hop_fault:
+            print(f"[solve] step {step}: hop fault {hop_fault}")
             _http("POST", "action", {"action": "stop"})
             return 23
-        if not ok:
-            print(f"[solve] step {step}: drive timeout at {state}")
+        if not r.get("done"):
+            print(f"[solve] step {step}: hop incomplete, drift "
+                  f"{r.get('drift_m', float('nan')):.2f} m")
             _http("POST", "action", {"action": "stop"})
             return 24
-
-        # Snap to the grid so drift doesn't compound. The wall-follower
-        # depends on accurate cardinal-headed lidar reads each step, so
-        # re-anchoring is even more important here than for BFS.
-        _http("POST", "action", {
-            "action": "snap_to_cell",
-            "col": next_cell[0], "row": next_cell[1], "yaw": target_yaw,
-        })
-        time.sleep(0.4)
         # Update internal state from telemetry — pose is the truth.
         state = _http("GET", "state")
         here = world_to_cell(state["x"], state["y"], caps["maze"])
@@ -327,95 +319,58 @@ def _required_yaw(prev, here) -> float:
 
 
 def _drive_path(path: List[Tuple[int, int]]) -> int:
-    """Walk the BFS path one cell at a time. Each step:
-    1. Read fresh pose.
-    2. Turn to the cardinal heading toward the next cell.
-    3. Compute drive distance as the projection of (cell_centre - pose)
-       onto the cardinal heading. This *cancels accumulated drift* every
-       step — the husky always aims at the absolute world coordinate,
-       not "2 m from where I happen to be"."""
+    """Walk the BFS path one cell at a time, entirely under wheel control.
+
+    Each hop is ONE synchronous `goto_cell`: the bridge turns in place and then
+    drives, gates the hop against maze adjacency using the husky's own settled
+    pose (not a caller-supplied cell), and accepts arrival within half a cell.
+    Nothing teleports.
+
+    This function used to turn and drive by hand and re-anchor with
+    `snap_to_cell` after every pivot. Commit b18bd7a3 ("wheels-only navigation,
+    no teleport recovery anywhere", 2026-05-24) removed that action globally --
+    it now answers 410 Gone -- and this solver was never migrated with the rest
+    of the demo, so it died on its first pivot. The bridge's own 410 body names
+    `goto_cell` as the replacement, and it is what the agent arm drives too, so
+    both arms now exercise the same primitive and differ only in STRATEGY.
+    """
+    hop_timeout = PER_CELL_TIMEOUT + 10.0
+    state = None
     for i, cell in enumerate(path):
         if i == 0:
             continue
-        prev = path[i - 1]
-        target_yaw = _required_yaw(prev, cell)
-        cell_x = -10.0 + 2.0 * cell[0]
-        cell_y = -10.0 + 2.0 * cell[1]
+        r = _http("POST", "action", {
+            "action": "goto_cell",
+            "col": cell[0], "row": cell[1],
+            "speed": SPEED,
+            "wait": True,
+            "timeout_s": PER_CELL_TIMEOUT,
+        }, timeout=hop_timeout)
+
+        fp = r.get("final_pose") or {}
+        fx, fy = fp.get("x", float("nan")), fp.get("y", float("nan"))
+        fyaw, drift = fp.get("yaw", float("nan")), r.get("drift_m", float("nan"))
+        print(f"[solve] step {i:>2}/{len(path)-1}: goto ({cell[0]},{cell[1]}) "
+              f"expected pose ({r.get('x', float('nan')):+.1f},"
+              f"{r.get('y', float('nan')):+.1f})")
+        print(f"[solve]              actual ({fx:+.2f},{fy:+.2f}) yaw={fyaw:+.2f}  "
+              f"drift={drift:.2f} m")
 
         state = _http("GET", "state")
-        delta = math.atan2(
-            math.sin(target_yaw - state["yaw"]),
-            math.cos(target_yaw - state["yaw"]),
-        )
-        if abs(delta) > 0.05:
-            print(f"[solve] step {i:>2}/{len(path)-1}: turn {math.degrees(delta):+5.0f}° "
-                  f"to face ({cell[0]},{cell[1]})")
-            _http("POST", "action", {"action": "turn", "angle": delta, "speed": 0.6})
-            ok, state = _wait_until(
-                lambda s: s.get("mode") == "idle" or s.get("fault"),
-                PER_CELL_TIMEOUT,
-            )
-            if state.get("fault") or not ok:
-                print(f"[solve] turn fault/timeout: {state.get('fault')}")
-                _http("POST", "action", {"action": "stop"})
-                return 5
-            # Re-anchor after the turn — skid-steer pivots drift the body
-            # by ~0.5-1 m which can wedge the husky against walls before the
-            # following drive even starts.
-            _http("POST", "action", {
-                "action": "snap_to_cell",
-                "col": prev[0], "row": prev[1], "yaw": target_yaw,
-            })
-            time.sleep(0.4)
-            state = _http("GET", "state")
-
-        # Distance to drive = projection of (cell_centre - current_pose)
-        # onto the cardinal heading. Always positive in normal flow; can
-        # be tiny / slightly negative if the husky already drifted past.
-        hx = math.cos(target_yaw)
-        hy = math.sin(target_yaw)
-        dist_to_drive = (cell_x - state["x"]) * hx + (cell_y - state["y"]) * hy
-        print(f"[solve] step {i:>2}/{len(path)-1}: drive {dist_to_drive:+.2f} m "
-              f"to centre of ({cell[0]},{cell[1]}) -> ({cell_x:+.1f},{cell_y:+.1f})")
-        if abs(dist_to_drive) < 0.05:
-            print("[solve]              already at target; skipping drive")
-            continue
-        _http("POST", "action", {
-            "action": "drive_forward",
-            "distance": dist_to_drive,
-            "speed": SPEED,
-        })
-        ok, state = _wait_until(
-            lambda s: s.get("mode") == "idle" or s.get("fault") or s.get("goal_reached"),
-            PER_CELL_TIMEOUT,
-        )
-        ex = state["x"] - cell_x
-        ey = state["y"] - cell_y
-        print(f"[solve]              actual ({state['x']:+.2f},{state['y']:+.2f}) "
-              f"yaw={state['yaw']:+.2f}  err dx={ex:+.2f} dy={ey:+.2f}")
         if state.get("goal_reached"):
             print(f"[solve] goal_reached at step {i}")
             _http("POST", "action", {"action": "stop"})
             return 0
-        if state.get("fault"):
-            print(f"[solve] FAULT during drive: {state['fault']}")
+        fault = r.get("fault") or state.get("fault")
+        if fault:
+            print(f"[solve] FAULT at step {i}: {fault}")
             _http("POST", "action", {"action": "stop"})
             return 5
-        if not ok:
-            print(f"[solve] drive timeout at step {i}")
+        if not r.get("done"):
+            print(f"[solve] hop {i} did not complete (drift {drift:.2f} m)")
             _http("POST", "action", {"action": "stop"})
             return 6
 
-        # Snap to the cell grid so cumulative drift from skid-steer pivots
-        # doesn't compound across cells. This is a deliberate demo
-        # concession (see bridge's snap_to_cell action) — the value of the
-        # demo is in *strategy selection*, not in fighting OmniSim's wheel
-        # friction model.
-        _http("POST", "action", {
-            "action": "snap_to_cell",
-            "col": cell[0], "row": cell[1], "yaw": target_yaw,
-        })
-        time.sleep(0.4)  # let the supervisor settle
     print(f"[solve] path exhausted without goal_reached. final state: {state}")
     _http("POST", "action", {"action": "stop"})
     return 7

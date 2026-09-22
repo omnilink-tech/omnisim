@@ -68,10 +68,12 @@ const DOT_STATES = ['idle', 'connected', 'thinking', 'acting', 'error'];
 // States where the agent is "working" — drives the avatar glow + typing bubble.
 const THINKING_STATES = ['thinking', 'transcribing', 'acting'];
 
+let chatEnabled = false;
 let muted = false;          // speaker toggle for audio_out playback
 let typingEl = null;        // the live "…" typing bubble, if shown
 
 function setStatus(state, label) {
+  if (!chatEnabled) { state = 'error'; label = 'Connect OmniLink'; }
   const cls = STATE_CLASS[state] || 'connected';
   DOT_STATES.forEach((s) => els.statusDot.classList.remove('ol-dot--' + s));
   els.statusDot.classList.add('ol-dot--' + cls);
@@ -123,6 +125,7 @@ function send(text) {
 // ── Composer ─────────────────────────────────────────────────────────
 els.composer.addEventListener('submit', (ev) => {
   ev.preventDefault();
+  if (!chatEnabled) return;
   const text = els.input.value.trim();
   if (!text) return;
   append('user', text);
@@ -270,6 +273,14 @@ function parseJSON(payload) {
 
 function applyConfig(cfg) {
   if (!cfg) return;
+  chatEnabled = cfg.chat_enabled === true;
+  els.input.disabled = !chatEnabled;
+  els.send.disabled = !chatEnabled;
+  els.input.placeholder = chatEnabled ? 'Give your robot an instruction…' : 'Connect OmniLink to send an instruction';
+  const connection = document.getElementById('ol-connection');
+  connection.hidden = chatEnabled;
+  els.suggestBar.innerHTML = '';
+  els.suggestBar.hidden = !chatEnabled;
   const name = cfg.display_name || cfg.robot || 'Robot';
   els.robotName.textContent = name;
   els.robotTagline.textContent = cfg.tagline || cfg.robot_class || '';
@@ -280,7 +291,7 @@ function applyConfig(cfg) {
   }
   if (cfg.agent) els.agentName.textContent = cfg.agent;
 
-  if (Array.isArray(cfg.suggestions) && cfg.suggestions.length > 0) {
+  if (chatEnabled && Array.isArray(cfg.suggestions) && cfg.suggestions.length > 0) {
     els.suggestBar.innerHTML = '';
     cfg.suggestions.forEach((s) => {
       const chip = document.createElement('button');
@@ -297,11 +308,11 @@ function applyConfig(cfg) {
   }
 
   // Voice controls only when the bridge advertises them (relay/OMNI_KEY).
-  const voiceOn = !!cfg.voice && hasMicSupport();
+  const voiceOn = chatEnabled && !!cfg.voice && hasMicSupport();
   els.mic.hidden = !voiceOn;
   els.speaker.hidden = !voiceOn;
 
-  setStatus('connected', 'connected');
+  setStatus(chatEnabled ? 'connected' : 'error', chatEnabled ? 'OmniLink configured' : 'Connect OmniLink');
 }
 
 function renderUsage(payload) {

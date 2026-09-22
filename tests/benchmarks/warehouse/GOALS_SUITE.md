@@ -2,11 +2,33 @@
 
 # ⚠️ AMENDMENTS — read this before quoting any number from this suite
 
+> **⚠️ THE OPPONENT THIS SUITE WAS DESIGNED AGAINST NO LONGER EXISTS
+> (2026-09-22).** Every `offline` prediction, trace and column below was
+> written against each bridge's keyword ladder (`IntentRouter.dispatch`), and
+> those ladders were deleted that day: an OmniKey is required for every
+> OmniLink AI experience, Free included, so a bridge without one refuses
+> `/prompt` with `401 omnikey_required` and nothing answers in the ladder's
+> place. Two consequences. The `offline` arm cannot be re-run, so the
+> `expect_offline` fields and the source-derived traces are now a record of
+> what the ladder would have done, not predictions about anything runnable.
+> And the discrimination each task was built to measure — an obliquely phrased
+> request a substring match cannot reach — is no longer measured against that
+> opponent: the deterministic parser that replaced the ladder declines those
+> phrasings rather than acting wrongly on them, which is a different failure
+> mode and would need re-designing the suite to score. The recorded result
+> files stay exactly as they are; they are evidence.
+>
 > **The only recorded run of this suite is not a result of this suite.**
 > `results/2026-07-28_goals_offline.json` and `results/2026-07-28_goals_omnilink.json`
 > were produced under suite fingerprint **`6e7500a7264cbfb4`** (schema
-> `omnisim.warehouse.goals_suite/1`). The current fingerprint is
-> **`81ec4f8a8a8b08a3`**. The predicates have changed twice since.
+> `omnisim.warehouse.goals_suite/1`). The predicates have changed repeatedly
+> since. **Do not read a current fingerprint out of this file** — print it:
+> `python tests/benchmarks/warehouse/goals_suite.py --print-suite` puts it on
+> the first line. The payload hashes the whole bytes of `goals_suite.py` *and*
+> `bench_omnilink.py`, so a comment-only edit moves it, and a value written
+> here goes stale the next time anyone touches either file. It already had:
+> this file read **`81ec4f8a8a8b08a3`** on 2026-09-22 while the committed
+> tree computed **`95598f0fb07e2920`**.
 >
 > **Do not quote `3/10`, `6/10`, or the corrected `7/10` as results of the
 > suite as it now stands.** They are evidence about the 2026-07-28 harness,
@@ -357,8 +379,10 @@ Launch the world exactly as `BENCH_OMNILINK.md` §2.1 says — **via
 `scripts/dev/headless_runner.py` directly**, not `launch.bat` and not
 `python -m omnisim run-headless`, both of which put the Newton runtime's
 Python first on `PATH` and silently strip `omnilink` from the controllers'
-interpreter, turning a run labelled `--mode omnilink` into a measurement of
-the regex router.
+interpreter. A run labelled `--mode omnilink` then has no relay at all, so
+every `/prompt` answers `401 omnikey_required` and the run measures refusals.
+(Before the ladders were deleted on 2026-09-22 the same mistake measured the
+keyword ladder instead, which is what older copies of this file say.)
 
 ---
 
@@ -538,8 +562,10 @@ Speeds are derived from **poses, not `v_linear`** — `v_linear` is the
 turn. `trivially_satisfied` is recorded when the tug was already stationary.
 
 **Predictions: offline PASS, LLM PASS.** `\b(stop|halt|freeze|brake)\b`
-matches directly in the mobile `IntentRouter`. Kept byte-identical to
-`bench_omnilink`'s `t1` so the two suites are comparable at the floor.
+matched directly in the mobile `IntentRouter`, which was deleted on
+2026-09-22 — so this prediction is a record of that ladder, not of anything
+runnable. Kept byte-identical to `bench_omnilink`'s `t1` so the two suites are
+comparable at the floor.
 
 ---
 
@@ -564,9 +590,12 @@ wrapped in `try/except` and a failure disables the resume intent
 **Waiting out the ~56 s timer is a FAIL.** The robot came back, but nothing
 the agent did caused it.
 
-**Predictions: offline PASS, LLM PASS.** `carry on` and `back to work` are
-both literal alternatives of `RESUME_RE`, and `IntentRouter.dispatch` checks
-`is_resume()` **first**. Previously measured offline at 0.0 s to un-pause.
+**Predictions: offline PASS, LLM PASS.** `carry on` and `back to work` were
+both literal alternatives of `RESUME_RE`, and `IntentRouter.dispatch` checked
+`is_resume()` **first** — both deleted on 2026-09-22. Previously measured
+offline at 0.0 s to un-pause. The deterministic parser that replaced them
+carries the same phrases in its `resume_autonomy` rule, but that has not been
+re-measured here.
 
 ---
 
@@ -638,10 +667,10 @@ to. This is a structural gap, not a phrasing trick: the offline router has
 construction.
 
 **Predictions: offline FAIL, LLM PASS.** Traced against every rule in the
-mobile `IntentRouter`: no resume word, no status word, no
-stop/reset/spin/circle word, no `turn`, no forward/back/reverse token, and
-`velocity N N` does not match. It falls through to *"I don't recognise
-that"*.
+mobile `IntentRouter` as it stood before its deletion on 2026-09-22: no resume
+word, no status word, no stop/reset/spin/circle word, no `turn`, no
+forward/back/reverse token, and `velocity N N` did not match. It fell through
+to *"I don't recognise that"*.
 
 ---
 
@@ -899,8 +928,12 @@ Be blunt about all of this before quoting a number.
 
 ### 8.1 The strongest argument AGAINST this suite being a fair test
 
-> **The tasks were written with the regex router's source open.** Every one
-> of the eight discriminating prompts was traced line by line against
+> **The tasks were written with the keyword router's source open.** That is a
+> fact about how this suite was authored in 2026-07 and it stays true, even
+> though the router itself was deleted on 2026-09-22 — which also means the
+> discrimination these tasks were designed to measure is no longer being
+> measured against the opponent they were tuned to. Every one of the eight
+> discriminating prompts was traced line by line against
 > `IntentRouter.dispatch` *before* it was committed, and **two were
 > re-phrased when the trace came out wrong** (`bring it back` → `deliver it
 > to` in `g08`; `come back to you` → `until I tell you` in `g09`). That is
@@ -938,10 +971,12 @@ quoting `bench_omnilink` alongside it is quoting half an experiment.
 ### 8.3 Three tasks measure a gap that is closable, not impossible
 
 `g07` (partly), `g09` and `g10` score on `constraints` / `pending_intents` —
-fields **no offline rule writes today**. Somebody could add a rule to
-`IntentRouter` tomorrow and the router would pass them. That is a feature
-(it makes the gap a legitimate target), but it means those three measure
-*"the shipped router does not do this"*, not *"a router cannot do this"*.
+fields **no rule of the ladder's ever wrote**. Somebody could have added one
+to `IntentRouter`, and the ladder would then have passed them — which was the
+point: it made the gap a legitimate target rather than an in-principle limit.
+So those three measured *"the shipped router did not do this"*, not *"a router
+cannot do this"*. (`IntentRouter` was deleted on 2026-09-22, so the thought
+experiment can no longer be carried out.)
 `g03` and `g05` are the ones closest to an in-principle limit: a lookup
 table cannot compute an argument from a value it has to read first, and it
 cannot branch on state it has not queried.

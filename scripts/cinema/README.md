@@ -1,16 +1,42 @@
 # scripts/cinema/ — agent-driven cinematic pipeline
 
-The capture service in [`scripts/capture/`](../capture/README.md) is the
-*renderer* — it knows how to move a camera to a pose and dump frames.
-This package is the *director* on top: cinematic vocabulary, subject
-tracking, named looks, brand-aware assembly, multi-aspect deliverables,
-and a vision-critique reshoot loop.
+**OmniLink command demos** use the owner-approved
+[minimal native style](OMNILINK_DEMOS.md): one robot, one arena, silence,
+prompt → action. Use that guide for OmniLink demos; the general cinematic
+workflow below applies to other productions.
+
+New cinematic productions use **OmniSim simulation → recorded poses → authored
+Blender scene → Cycles proxy → review → final render → edit**. This separates
+the physics from the cinematic appearance while preserving the measured motion.
+Read the canonical [cinematic replay workflow](CINEMATIC_REPLAY.md) first.
+
+The package also retains the explicit native capture director and the Agent
+Build editing tools. Native captures are useful when the live simulator image
+itself is the evidence; they are not the default beauty-rendering route.
 
 Entry point: **`python -m omnisim cinema <subcommand>`**.
 
 ## The 60-second tour
 
-1. Start the capture service once and leave it running:
+```bash
+python -m omnisim cinema new --title "My robot's task" --world world.omniworld > film.json
+# Prepare the recorded motion, run evidence, packed scene and shot list.
+python -m omnisim cinema replay-validate film.json
+python -m omnisim cinema render film.json --device OPTIX
+# Inspect the moving proxy clips and contact sheet; record actual findings.
+python -m omnisim cinema replay-review film.json --notes "Your review findings"
+python -m omnisim cinema render film.json --profile final --device OPTIX
+```
+
+Blender and ffmpeg are local prerequisites. CPU is the portable default device.
+The generated manifest resolves paths beside itself and writes under `renders/`.
+Final rendering requires a review tied to the current source files and proxy.
+The [full guide](CINEMATIC_REPLAY.md) covers recording, binding, scene preparation,
+quality settings, evidence, output artifacts and limitations.
+
+## Explicit native capture tour
+
+1. Start the native capture service once and leave it running:
 
    ```bash
    python -m omnisim capture --port 6791 &
@@ -19,7 +45,7 @@ Entry point: **`python -m omnisim cinema <subcommand>`**.
 2. Get a starter storyboard:
 
    ```bash
-   python -m omnisim cinema new --title "OmniQuad RL hero" --subject omniquad \
+   python -m omnisim cinema new --renderer native --title "OmniQuad RL hero" --subject omniquad \
      --world projects/policies/research/worlds/omniquad_rl_deploy.omniworld > omniquad_hero.json
    ```
 
@@ -83,10 +109,16 @@ python -m omnisim cinema agent-build-capture-new --world worlds/build.omniworld 
 python -m omnisim cinema agent-build-make agent_build.json --capture-plan capture_plan.json
 ```
 
-## The storyboard DSL
+## The native storyboard DSL
+
+This is the explicit native camera director's format. New cinematic replay
+manifests use the schema documented in [CINEMATIC_REPLAY.md](CINEMATIC_REPLAY.md).
+Migrate old native storyboards by adding `"renderer": "native"` or passing
+`--renderer native` to `render`; there is no automatic native fallback.
 
 ```json
 {
+  "renderer": "native",
   "title": "OmniQuad RL hero",
   "world": "projects/policies/research/worlds/omniquad_rl_deploy.omniworld",
   "subject": "omniquad",
@@ -127,6 +159,9 @@ python -m omnisim cinema inspect projects/samples/demos/worlds/<world>.wbt
 
 | Module | Role |
 |---|---|
+| [`replay_record.py`](replay_record.py) | Read-only recording of named rigid-body world poses. |
+| [`replay.py`](replay.py) | Replay manifests, evidence validation, proxy/final jobs, review and receipts. |
+| [`blender_replay.py`](blender_replay.py) | Bind and bake measured poses, verify them, render with Cycles. |
 | [`subjects.py`](subjects.py) | Robot profiles (char dim, eye height, personality) + live pose lookup via the supervisor's `/world/subject` endpoint. |
 | [`lenses.py`](lenses.py) | Focal-length presets (16mm … 200mm) + FoV math. |
 | [`looks.py`](looks.py) | Named looks: lens preset + ffmpeg color-grade filter chain. |
@@ -158,10 +193,9 @@ Skip the loop with `--no-critique`.
 
 ## Operational notes
 
-- **Resolution is viewport-bound** (typically 1896×1184). The
-  `cam.enable()` segfault in the underlying Webots build forces us
-  through `Supervisor.exportImage` instead of a Camera device. Output
-  is letterboxed/cropped to the deliverable aspects during edit.
+- **Native resolution uses a Camera device** at the requested size. If it is
+  unavailable, the capture service discloses a viewport-bound export fallback.
+  Blender replay resolution is independent of the simulator viewport.
 - **One world load per storyboard.** The first shot's lens FoV sets
   the viewport FoV; subsequent shots inherit it. Mid-storyboard lens
   changes will reframe slightly. Group shots by lens family within a
@@ -169,10 +203,8 @@ Skip the loop with `--no-critique`.
   them together.
 - **Critique is optional.** No API key → loop skipped silently;
   storyboard still produces output.
-- **Worlds that segfault in the capture pipeline** (currently
-  `warehouse_industrial.omniworld`) will fail cleanly with a "world load
-  failed" message. Pick a different world or wait for the upstream
-  Webots fix.
+- **World-load failures belong to native capture.** Check current doctor and
+  run logs rather than assuming an old world-specific failure still applies.
 
 ## When to reach for this vs `scripts/capture/`
 

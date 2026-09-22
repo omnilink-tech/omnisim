@@ -1,0 +1,1401 @@
+{
+  "generated_from": "packages/omnisim-bridges/src/omnisim_bridges/gate.py",
+  "note": "Generated. Do not hand-edit: regenerate with generate.py.",
+  "registry_note": "THE SOURCE OF TRUTH FOR ANY PORT'S REGISTRATION TABLE. `registry` is the tool set handed to gate.register_tools(), surface by surface, in the order it was registered. Replay it before every case with registered=true and pass case.surface as check()'s surface argument. Do not hand-write a mirror of it: a hand-written copy of a generated table is the drift this fixture exists to eliminate.",
+  "registry": [
+    {
+      "surface": "drone",
+      "tools": [
+        {
+          "name": "takeoff",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "altitude": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "name": "land",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        {
+          "name": "hover",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        {
+          "name": "turn",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "angle_rad": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "name": "move_body",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "forward": {
+                "type": "number"
+              },
+              "lateral": {
+                "type": "number"
+              },
+              "vertical": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "surface": "quadruped",
+      "tools": [
+        {
+          "name": "sit",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        {
+          "name": "stand",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        {
+          "name": "walk",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "distance": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "name": "move_body",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "forward": {
+                "type": "number"
+              },
+              "lateral": {
+                "type": "number"
+              },
+              "vertical": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "surface": "arm",
+      "tools": [
+        {
+          "name": "grasp",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "name": "set_tcp_target",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "name": "place",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "xyz": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        {
+          "name": "get_reach_envelope",
+          "physical": false,
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      ]
+    },
+    {
+      "surface": "mobile",
+      "tools": [
+        {
+          "name": "drive_forward",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "distance": {
+                "type": "number"
+              },
+              "speed": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "name": "turn",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "angle_rad": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "name": "drive_to",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "name": "set_velocity",
+          "physical": true,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "number"
+              },
+              "w": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "utterance": "drive forward 2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "turn left 90 degrees",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 1.5708
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "drive to x 3, y -1",
+      "tool": "drive_to",
+      "args": {
+        "x": 3,
+        "y": -1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "stop",
+      "tool": "stop_robot",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "what is your position?",
+      "tool": "get_robot_state",
+      "args": {
+        "kind": "pose"
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "wave hello",
+      "tool": "wave",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "pick up the cube",
+      "tool": "pick",
+      "args": {
+        "object": "cube"
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "how far can you drive forward?",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "interrogative",
+        "invented_magnitude"
+      ]
+    },
+    {
+      "utterance": "how many times have you had to stop?",
+      "tool": "stop",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "interrogative"
+      ]
+    },
+    {
+      "utterance": "under no circumstances drive forward",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "invented_magnitude",
+        "prohibition"
+      ]
+    },
+    {
+      "utterance": "refrain from moving forward",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "invented_magnitude",
+        "prohibition"
+      ]
+    },
+    {
+      "utterance": "avoid turning right",
+      "tool": "turn",
+      "args": {
+        "angle_rad": -1.5708
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "invented_magnitude",
+        "prohibition"
+      ]
+    },
+    {
+      "utterance": "the manual says \"drive forward 2 metres\"",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "reported_speech"
+      ]
+    },
+    {
+      "utterance": "the handbook states that you should reverse 2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "reported_speech"
+      ]
+    },
+    {
+      "utterance": "dispatch radioed that we need to turn left here",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 1.5708
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "reported_speech",
+        "invented_magnitude"
+      ]
+    },
+    {
+      "utterance": "once the shift ends, drive forward 2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "deferred"
+      ]
+    },
+    {
+      "utterance": "drive forward 1 metre in ten minutes",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "deferred"
+      ]
+    },
+    {
+      "utterance": "reverse 2 metres - sorry, ignore that",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "retracted"
+      ]
+    },
+    {
+      "utterance": "drive forward and also stay exactly where you are",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "invented_magnitude",
+        "contradiction"
+      ]
+    },
+    {
+      "utterance": "turn left and right at the same time",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 1.5708
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "invented_magnitude",
+        "contradiction"
+      ]
+    },
+    {
+      "utterance": "drive forward 1 metre without moving",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "self_negating"
+      ]
+    },
+    {
+      "utterance": "suppose you drove forward 3 metres, where would you be?",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 3
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "interrogative"
+      ]
+    },
+    {
+      "utterance": "drive forward 300 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 300
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "turn left 3000 degrees",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 52.36
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "set velocity 40 forward",
+      "tool": "set_velocity",
+      "args": {
+        "v": 40,
+        "w": 0
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "spin at 500",
+      "tool": "set_velocity",
+      "args": {
+        "v": 0,
+        "w": 500
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "go fast",
+      "tool": "set_velocity",
+      "args": {
+        "linear": 40,
+        "angular": 0
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "take off to 200 metres",
+      "tool": "takeoff",
+      "args": {
+        "altitude": 200
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "take off to 100 metres",
+      "tool": "takeoff",
+      "args": {
+        "altitude": 100
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "shift the body forward 2 metres",
+      "tool": "move_body",
+      "args": {
+        "forward": 2,
+        "lateral": 0,
+        "vertical": 0
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "drive forward negative 2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "sign_conflict"
+      ]
+    },
+    {
+      "utterance": "drive forward 1 metre at 99",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1,
+        "speed": 99
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "engage the warp drive",
+      "tool": "warp",
+      "args": {
+        "factor": 9
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "unknown_tool"
+      ]
+    },
+    {
+      "utterance": "drive forward 1 metre",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1,
+        "turbo": true
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "unknown_arg"
+      ]
+    },
+    {
+      "utterance": "drive to the bay",
+      "tool": "drive_to",
+      "args": {
+        "x": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "missing_arg"
+      ]
+    },
+    {
+      "utterance": "drive forward",
+      "tool": "drive_forward",
+      "args": {
+        "distance": "fast"
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "bad_type"
+      ]
+    },
+    {
+      "utterance": "put it over there",
+      "tool": "place",
+      "args": {
+        "object": "it",
+        "target": "there"
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "unresolved_referent",
+        "unresolved_referent"
+      ]
+    },
+    {
+      "utterance": "forward",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "invented_magnitude"
+      ]
+    },
+    {
+      "utterance": "drive forward a metre",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "turn around",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 3.1416
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 1.5708
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "",
+      "tool": "set_velocity",
+      "args": {
+        "v": 40,
+        "w": 0
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "",
+      "tool": "stop_robot",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "stop moving",
+      "tool": "stop_robot",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "stop driving",
+      "tool": "stop_robot",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "do not move",
+      "tool": "stop_robot",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "stand down",
+      "tool": "stop_robot",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "never mind, stop",
+      "tool": "stop_robot",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "collect the reports from bay 3",
+      "tool": "pick",
+      "args": {
+        "object": "reports"
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "grab the delivery notes off the counter",
+      "tool": "pick",
+      "args": {
+        "object": "notes"
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "drive forward 5 metres, scratch that, make it 2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "reverse 3 metres. never mind, go forward 1 metre",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "we'll find out later. square her up - 90 degrees right.",
+      "tool": "turn",
+      "args": {
+        "angle_rad": -1.5708
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "turn left 90 degrees and then drive forward 1 metre",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "set your speed to 0.4 and drive forward 2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2,
+        "speed": 0.4
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "do a lap of the aisle, 3 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 3
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "have the robot drive forward 3 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 3
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "say the word and drive forward 2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "tell me your position and then drive forward 1 metre",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "back up 1 metre, give him room",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "drive forward 2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2,
+        "wait": true
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "stop",
+      "tool": "stop_robot",
+      "args": {
+        "wait": true
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "hold here",
+      "tool": "hold_until_told",
+      "args": {
+        "words": "until I say"
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "get up to 200 metres and have a look",
+      "tool": "takeoff",
+      "args": {
+        "altitude": 200.0
+      },
+      "surface": "drone",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "take off to 3 metres",
+      "tool": "takeoff",
+      "args": {
+        "altitude": 3.0
+      },
+      "surface": "drone",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "where did the package land?",
+      "tool": "land",
+      "args": {},
+      "surface": "drone",
+      "registered": true,
+      "rules": [
+        "interrogative"
+      ]
+    },
+    {
+      "utterance": "land",
+      "tool": "land",
+      "args": {},
+      "surface": "drone",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "climb 40 metres",
+      "tool": "move_body",
+      "args": {
+        "vertical": 40.0
+      },
+      "surface": "drone",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "climb 300 metres",
+      "tool": "move_body",
+      "args": {
+        "vertical": 300.0
+      },
+      "surface": "drone",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "fly forward 900 metres",
+      "tool": "move_body",
+      "args": {
+        "forward": 900.0
+      },
+      "surface": "drone",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "shift the body down 40 metres",
+      "tool": "move_body",
+      "args": {
+        "vertical": 40.0
+      },
+      "surface": "quadruped",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "settle down a bit",
+      "tool": "move_body",
+      "args": {
+        "vertical": -0.3
+      },
+      "surface": "quadruped",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "slide left 2 metres",
+      "tool": "move_body",
+      "args": {
+        "lateral": 2.0
+      },
+      "surface": "quadruped",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "walk forward 2 metres",
+      "tool": "walk",
+      "args": {
+        "distance": 2.0
+      },
+      "surface": "quadruped",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "walk forward 300 metres",
+      "tool": "walk",
+      "args": {
+        "distance": 300.0
+      },
+      "surface": "quadruped",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "shift the body up 40 metres",
+      "tool": "move_body",
+      "args": {
+        "vertical": 40.0
+      },
+      "surface": null,
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "shift the body up 0.5 metres",
+      "tool": "move_body",
+      "args": {
+        "vertical": 0.5
+      },
+      "surface": null,
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "nudge forward 2 metres",
+      "tool": "move_body",
+      "args": {
+        "forward": 2.0
+      },
+      "surface": null,
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "fly forward 40 metres",
+      "tool": "move_body",
+      "args": {
+        "forward": 40.0
+      },
+      "surface": "drone",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "slide left 2 metres",
+      "tool": "move_body",
+      "args": {
+        "lateral": 2.0
+      },
+      "surface": "drone",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "hover here",
+      "tool": "hover",
+      "args": {},
+      "surface": "drone",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "hover here",
+      "tool": "hover",
+      "args": {},
+      "surface": null,
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "land",
+      "tool": "land",
+      "args": {},
+      "surface": null,
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "take off to 3 metres",
+      "tool": "takeoff",
+      "args": {
+        "altitude": 3.0
+      },
+      "surface": null,
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "take off to 200 metres",
+      "tool": "takeoff",
+      "args": {
+        "altitude": 200.0
+      },
+      "surface": null,
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "take off to 200 metres",
+      "tool": "takeoff",
+      "args": {
+        "altitude": 200.0
+      },
+      "surface": "quadruped",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "are we clear to land?",
+      "tool": "land",
+      "args": {},
+      "surface": "drone",
+      "registered": true,
+      "rules": [
+        "interrogative"
+      ]
+    },
+    {
+      "utterance": "how high can you get?",
+      "tool": "takeoff",
+      "args": {
+        "altitude": 100.0
+      },
+      "surface": "drone",
+      "registered": true,
+      "rules": [
+        "interrogative",
+        "invented_magnitude"
+      ]
+    },
+    {
+      "utterance": "how much reach have you got left?",
+      "tool": "grasp",
+      "args": {
+        "width": 0.05
+      },
+      "surface": "arm",
+      "registered": true,
+      "rules": [
+        "interrogative"
+      ]
+    },
+    {
+      "utterance": "close on the block",
+      "tool": "grasp",
+      "args": {
+        "width": 0.05
+      },
+      "surface": "arm",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "close on the block",
+      "tool": "grasp",
+      "args": {
+        "turbo": true
+      },
+      "surface": "arm",
+      "registered": true,
+      "rules": [
+        "unknown_arg"
+      ]
+    },
+    {
+      "utterance": "put it on the pallet",
+      "tool": "place",
+      "args": {
+        "xyz": [
+          0.3,
+          0.2,
+          0.1
+        ]
+      },
+      "surface": "arm",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "how much reach have you got left?",
+      "tool": "get_reach_envelope",
+      "args": {},
+      "surface": "arm",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "move the tool to the tray",
+      "tool": "set_tcp_target",
+      "args": {
+        "x": 0.3,
+        "y": 0.2,
+        "z": 0.1
+      },
+      "surface": "arm",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "move the tool to the tray",
+      "tool": "set_tcp_target",
+      "args": {
+        "turbo": true
+      },
+      "surface": "arm",
+      "registered": true,
+      "rules": [
+        "unknown_arg"
+      ]
+    },
+    {
+      "utterance": "drive forward 2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": "mobile",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "drive forward 300 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 300
+      },
+      "surface": "mobile",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "drive forward 300 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 300
+      },
+      "surface": "drone",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "drive forward 300 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 300
+      },
+      "surface": "arm",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "drive forward 300 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 300
+      },
+      "surface": "quadruped",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "set velocity 40 forward",
+      "tool": "set_velocity",
+      "args": {
+        "v": 40,
+        "w": 0
+      },
+      "surface": "mobile",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "set velocity 40 forward",
+      "tool": "set_velocity",
+      "args": {
+        "v": 40,
+        "w": 0
+      },
+      "surface": "arm",
+      "registered": true,
+      "rules": [
+        "implausible"
+      ]
+    },
+    {
+      "utterance": "stop",
+      "tool": "stop_robot",
+      "args": {},
+      "surface": "mobile",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "turn left 90 degrees",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 1.5708
+      },
+      "surface": "mobile",
+      "registered": true,
+      "rules": []
+    },
+    {
+      "utterance": "turn left 90 degrees",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 1.5708
+      },
+      "surface": "drone",
+      "registered": true,
+      "rules": []
+    }
+  ]
+}

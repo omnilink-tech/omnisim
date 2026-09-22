@@ -8,7 +8,8 @@
     python tests/benchmarks/omnilink_tasks/matrix.py \\
         --engines g1-engine,g3-engine,local --repeat 3
 
-    # prove the harness works with no sim, no account, no network
+    # prove the HARNESS works with no simulator, no credential, no network
+    # (a property of --dry-run, not a way to run the product)
     python tests/benchmarks/omnilink_tasks/matrix.py --dry-run
 
     # what would run
@@ -16,10 +17,24 @@
 
 WHY ``local`` IS IN THE DEFAULT ENGINE LIST
 -------------------------------------------
-``local`` is the no-LLM control: the prompt goes straight to a bridge's regex
-intent router. It scores whatever the harness scores with no model in the
-loop. Without it a suite cannot tell you how much of a result is the model —
-a task that the control also passes is measuring the scaffolding.
+``local`` is the SINGLE-BRIDGE control: the prompt goes straight to one
+bridge's ``/prompt``, with no coordinator agent, no delegation and no
+cross-robot tools. It scores whatever the harness scores when the agent layer
+is taken away but the bridge is left in place. Without it a suite cannot tell
+you how much of a result is the agent — a task that the control also passes
+is measuring the scaffolding, and reporting a suite score without the control
+is how a benchmark flatters itself.
+
+WARNING: ``local`` IS NOT A NO-MODEL ARM. It was one until 2026-09-22, when the
+bridges' keyword ladders were deleted and an OmniKey became required for
+every OmniLink AI experience, Free included. This arm therefore needs
+``OMNI_KEY`` like every other lane — without one the bridge answers
+``401 omnikey_required`` and the arm records an error — and behind
+``/prompt`` the deterministic parser answers what it can while the model
+answers what it declines. Rows recorded under ``engine: "local"`` before
+2026-09-22 were produced by the deleted ladder; they are evidence of the runs
+that happened, are never edited, and are not comparable with rows recorded
+after that date.
 
 MISSING CREDENTIALS ARE A FIRST-CLASS OUTCOME
 ---------------------------------------------
@@ -75,7 +90,14 @@ def build_driver(engine: str, args: argparse.Namespace, stack: Stack) -> Any:
 
 def build_cost_sampler(engine: str, args: argparse.Namespace) -> Any:
     if engine == "local":
-        return NullCostSampler("local control: no model, no provider cost")
+        # ⚠️ The LABEL, not a measurement. This arm's turns go to a bridge
+        # that may call the model on whatever its deterministic parser
+        # declines, so they are not free; they are simply not attributable
+        # here, because this sampler reads the COORDINATOR agent's cost
+        # rollup and the control never reaches the coordinator. Do not read a
+        # null here as "the control costs nothing".
+        return NullCostSampler(
+            "single-bridge control: cost not attributable to the agent")
     key = os.environ.get("OMNI_KEY", "").strip()
     if not key:
         return NullCostSampler("OMNI_KEY not set — cost not measurable")
@@ -160,11 +182,20 @@ class StackLock:
 
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(
+        # ⚠️ KEEP THE MODULE DOCSTRING ASCII-ONLY except for the em dashes
+        # already in it: it IS this description, and argparse writes it to
+        # stdout, so a character outside cp1252 (an emoji, a ⚠) makes
+        # `--help` die with UnicodeEncodeError on a default Windows console.
+        # Measured 2026-09-22: a `⚠️` added to the docstring took --help down.
+        # Write "WARNING:" instead.
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--engines", default="g1-engine,g3-engine,local",
-                    help="comma-separated. 'local' is the no-LLM control "
-                         "(regex intent router). Default: %(default)s")
+                    help="comma-separated. 'local' is the single-bridge "
+                         "control: one bridge's /prompt, no coordinator and "
+                         "no delegation. It needs OMNI_KEY like every other "
+                         "lane (the no-model ladder it used to reach was "
+                         "deleted on 2026-09-22). Default: %(default)s")
     ap.add_argument("--suite", choices=("core", "hard"), default="core",
                     help="benchmark contract to run. 'core' is "
                          "omnilink-tasks/v1; 'hard' is omnilink-hard/v1.")
@@ -196,8 +227,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--dry-run", action="store_true",
                     help="run the whole matrix against the in-memory fake "
-                         "arena and scripted agents. No sim, no account, no "
-                         "network. Proves the harness, measures nothing.")
+                         "arena and scripted agents: no simulator, no "
+                         "credential, no network. A property of the fakes, "
+                         "not of the product. Proves the harness, measures "
+                         "nothing.")
     ap.add_argument("--dry-run-script", default="good",
                     choices=["good", "bad", "mixed"],
                     help="which scripted agent the dry run replays")
@@ -228,7 +261,9 @@ def main(argv: Optional[List[str]] = None) -> int:
               f"{args.repeat} repeat(s) = "
               f"{len(tasks) * len(engines) * args.repeat} runs")
         for e in engines:
-            print(f"  engine: {e}" + ("   [no-LLM control]" if e == "local" else ""))
+            print(f"  engine: {e}"
+                  + ("   [single-bridge control; needs OMNI_KEY too]"
+                     if e == "local" else ""))
         return 0
 
     out_dir = Path(args.out_dir) if args.out_dir else \
@@ -243,10 +278,19 @@ def main(argv: Optional[List[str]] = None) -> int:
         return _dry_run(args, tasks, engines, out_dir, rows_path)
 
     # ── live ─────────────────────────────────────────────────────────
-    if any(e != "local" for e in engines) and not os.environ.get("OMNI_KEY"):
-        print("ERROR: OMNI_KEY is not set, so no OmniLink engine can be run.\n"
-              "       Get one: python -m omnisim key\n"
-              "       Or run the control only:  --engines local")
+    # EVERY engine needs the key, `local` included. Until 2026-09-22 `local`
+    # was the exception — it reached the bridge's keyword ladder, which
+    # answered a keyless /prompt. That ladder was deleted and an OmniKey is
+    # now required for every OmniLink AI experience, Free included, so a
+    # keyless `--engines local` run would collect 401 omnikey_required on
+    # every task and report them as failures of the control. Refuse instead.
+    if engines and not os.environ.get("OMNI_KEY"):
+        print("ERROR: OMNI_KEY is not set, so no engine here can be run —\n"
+              "       including the `local` control, whose bridge answers\n"
+              "       401 omnikey_required without it (the keyless ladder it\n"
+              "       used to reach was deleted on 2026-09-22).\n"
+              "       Get a key: python -m omnisim key\n"
+              "       Harness-only check, no key and no sim:  --dry-run")
         return 2
 
     # EXCLUSIVE CLAIM ON THE STACK. Taken before preflight: two runs can
@@ -301,7 +345,8 @@ def _run_live(args: argparse.Namespace, tasks: List[Any], engines: List[str],
     engine_cost: Dict[str, Dict[str, Any]] = {}
     for engine in engines:
         print(f"\n\n########## {engine} "
-              f"{'(no-LLM control)' if engine == 'local' else ''} ##########")
+              f"{'(single-bridge control)' if engine == 'local' else ''} "
+              f"##########")
         driver = build_driver(engine, args, stack)
         sampler = build_cost_sampler(engine, args)
         res = run_engine(tasks=tasks, driver=driver, stack=stack,
@@ -317,7 +362,12 @@ def _run_live(args: argparse.Namespace, tasks: List[Any], engines: List[str],
 
 def _dry_run(args: argparse.Namespace, tasks: List[Any], engines: List[str],
              out_dir: Path, rows_path: Path) -> int:
-    """Exercise the entire pipeline offline."""
+    """Exercise the entire pipeline with no simulator, credential or network.
+
+    A property of THIS dry run, which substitutes fakes for every external
+    dependency — never a way to run the product, whose every chat turn needs
+    an OmniKey.
+    """
     from ol_driver import CredentialMissing
     from ol_fakes import (BAD, GOOD, FakeCostSampler, FakeStack, FakeWorld,
                           ScriptedDriver)

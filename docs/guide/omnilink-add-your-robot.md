@@ -24,7 +24,24 @@ Bridge classes are not interchangeable. A mobile config cannot make an arm or
 aerial robot work: each class has different state, units, safety checks, and
 motion verbs. If your class is not represented, implement a bridge against
 [`BridgeBase`](../../packages/omnisim-bridges/) and add conformance tests before
-building the chat world.
+building the chat world — and read [the gate section](#the-safety-gate-and-what-your-robot-has-to-do-about-it)
+first, because a new bridge class is the one case where you have to wire the
+veto yourself.
+
+The class name is not only a routing label: it is the **surface** the parser
+and the gate are told about (`mobile`, `arm`, `quadruped`, `drone`). A rule
+only fires on a surface that can do it, so `sit` never reaches a wheeled tug
+and `drive forward` never reaches an arm, and the magnitude rail for a tool
+two classes share is picked from it. ⚠️ Pass it in the exact spelling above.
+`interpret()` used to accept anything, and an unrecognised string matched no
+rule, so every utterance fell through to conversation with no frames —
+indistinguishable from a parser that could not understand the sentence. It
+cost a published result: `interpbench` was run with `surface="MOBILE"`,
+uppercase, and reported the deterministic parser at 68.3% with 19 missed
+commands against the model's 91.7%, concluding the model was the better
+interpreter by 23 points. With the case corrected the parser scores 90.0% with
+**one** missed command and the gap is 1.7 points. It now raises
+`interpret.UnknownSurface` instead.
 
 This guide uses a **wheeled mobile base** as the example — the class with the fully generic, config-driven bridge, and the one a new URDF robot most often lands in.
 
@@ -54,7 +71,7 @@ MOBILE_CONFIGS = {
 }
 ```
 
-That's it. The bridge's generic differential / skid-steer driver + intent router picks it up automatically. The configurable fields:
+That's it. The bridge's generic differential / skid-steer driver picks it up automatically, and so do the structural parser and the safety gate — you inherit the whole `mobile` surface without writing a rule or a tool. The configurable fields:
 
 - **`layout`** — which wheel-motor naming convention the URDF importer produced. The existing 3 are at the bottom of `_mobile_configs.py` (`WHEEL_MOTORS`): `4wheel_full` (Husky / Jackal naming), `4wheel_fl` (Rosbot family), `2wheel` (TurtleBot3 family). Add a new one if your URDF uses an unfamiliar naming pattern.
 - **`wheel_radius_m`** and **`half_track_m`** — the geometry the bridge inverts to turn a `(linear, angular)` command into per-wheel speeds. Half-track is the wheel separation divided by two.
@@ -132,9 +149,185 @@ curl -X POST http://127.0.0.1:8765/get_robot_state
 # → {"id": "my_rover", "x": ..., "y": ..., "yaw": ..., "mode": "idle", ...}
 ```
 
+The chat panel needs an OmniKey — on every plan, including Free. Set it
+before you launch:
+
+```bash
+export OMNI_KEY=olink_...            # PowerShell: $env:OMNI_KEY = 'olink_...'
+```
+
+With no key, `POST /prompt` answers `401 omnikey_required`, nothing
+actuates, and the panel shows a setup link instead of a transcript. There
+is no keyless or local-command mode to fall into, and a connection that
+fails later is an error rather than a downgrade. The direct REST controls
+below (`/drive_forward`, `/stop_robot`) are ordinary simulator controls
+and do not need a key — they are also ungated, which is the trade.
+
 Then right-click the robot in the 3D view → **Show Robot Window** → type `forward 1 m` / `turn left 90 degrees` / `spin` / `stop`. Tool-call lines appear in the transcript; the robot moves.
 
-Set `OMNI_KEY=olink_...` to upgrade from the regex router to the live OmniLink agent — no other code change.
+Try the trap sentence too — `how many times have you had to stop on this run?`
+should be **answered**, not obeyed. That is the one behaviour worth
+re-checking on every new robot, because it is the failure the structural
+parser exists to remove, and `scripts/dev/smoke_chat_demos.py` checks exactly
+it across the gallery.
+
+Behind that panel the deterministic parser interprets the sentence first
+and a model is called only for what the parser declines. Both need the
+key: the access check runs before the parser sees the sentence. Neither
+path skips a safety check — the gate vets whichever one produced the
+frames (see below).
+
+---
+
+## The safety gate, and what your robot has to do about it
+
+Between a typed tool call and a motor sits
+[`gate.check(utterance, frames, surface=...)`](../../packages/omnisim-bridges/src/omnisim_bridges/gate.py):
+a deterministic veto that does not look at who produced the frame. It refuses
+an interrogative that produced motion, a prohibition that produced the thing
+it prohibits, a self-negating order, a magnitude outside a sanity rail, a
+direction word that disagrees with its sign, args that do not match the
+tool's declared schema, an unresolved referent (`it`, `there`), and a
+confirm-required tool with no authorization token.
+
+### If you piggy-backed on an existing bridge
+
+Nothing. Your robot is gated the moment it boots, on every path the bridge
+you copied is gated on: the parser, the relay's model dispatch, and
+`POST /tool` in `bridge_base` and in the bridge's own handler. (Each bridge
+used to keep a keyword ladder underneath the parser as a no-key fall-through.
+Those are **retired and deleted** — there is no command path that answers
+without an OmniKey, and none is coming back.) Go read
+[`GATE_COVERAGE.md`](../../packages/omnisim-bridges/GATE_COVERAGE.md) so you
+know what the gate does *not* cover, and then get on with your robot.
+
+### If you wrote a new bridge class
+
+Two things, both one line.
+
+**1. Your tools are registered with the gate automatically, from their own
+schema — if you construct them as `Tool`s and hand them to a relay.**
+`OmniLinkRelay` calls `gate.register_tools(tools, surface=...)` at start-up
+and builds `SPECS` from each `Tool.parameters` JSON schema.
+
+```python
+from omnisim_bridges.tool import Tool
+
+Tool(
+    name="set_gripper_width",
+    description="Open or close the gripper to a width in metres.",
+    parameters={
+        "type": "object",
+        "properties": {"width": {"type": "number"}},
+        "required": ["width"],
+    },
+    dispatch=self.act_set_gripper_width,
+    physical=True,          # <- declare it. See below.
+    surface="arm",
+)
+```
+
+⚠️ **Declare `physical=`.** Whether a tool can move a robot used to be decided
+by substring-matching its *name* against a tuple that was copy-pasted into
+five files, and that heuristic is wrong in both directions: `get_drive_status`
+contains `drive` and is read-only, `activate_sprayer` contains nothing and is
+not. The heuristic survives as the fallback for a tool nobody declared, so
+adding the field changed no behaviour the day it landed — but it is the only
+thing that will get *your* verb right. A tool that declares `physical=False`
+stays read-only even if its name contains `stop`; the reverse is not
+symmetric, since nothing registered may downgrade a tool the hand-written
+table calls physical.
+
+⚠️ **A registered physical tool is `GUARDED`, never `SAFE`.** `SAFE` is the
+de-escalation carve-out — it exempts a tool from the intent rules so that
+*"stop moving"* and *"do not move"* still halt the robot — and it is only ever
+granted by hand, in `gate.py`, to tools that *reduce* what the robot is doing.
+Inheriting it from a registry would let a bridge name a tool `stop_and_fling`
+into the exemption.
+
+**2. Call the canonical rejector from your own `/tool` handler.**
+
+```python
+from omnisim_bridges import gate
+
+rej = gate.reject_toolcall(tool_name, args, utterance, surface="arm")
+if rej is not None:
+    return self._json(400, error_envelope("refused_by_gate", rej,
+                                          {"tool": tool_name}))
+```
+
+Pass one of the four surface names the parser knows (`mobile`, `arm`,
+`quadruped`, `drone`). A name of your own is *accepted* but has no rails
+declared for it, so every vertical magnitude is judged on the ground /
+body-shift rail (1.0 m) — it does **not** fall back to the tool's recorded
+surface, because the caller's surface always wins once it is non-empty.
+
+Omitting the argument is the different case, and it is not "the strictest
+rail" either: with no caller surface the gate uses the surface recorded on
+the tool's spec **when exactly one robot class registered that tool**, and
+only discards it for the ground rail when two or more did. Declare your
+surface — the fallback is a guess, the argument is a fact.
+
+`reject_toolcall()` is the one implementation. It used to be copy-pasted into
+five files — `bridge_base`, `relay`, and the mobile / arm / quadruped
+controllers — which is how a commit came to add a gate to `bridge_base` and
+miss all four bridges: a gated base still let `distance: 300` through a
+bridge's own handler and hung the HTTP call for 90 s while the robot drove
+it. **A safety check that has to be applied in five places is a safety check
+that will be applied in four.**
+
+Wrap it so it **fails closed on physical tools**: if `gate` cannot be imported
+or raises, refuse motion and let read-only tools answer anyway. Refusing to
+report a position because a *motion* check is unavailable is a self-inflicted
+outage.
+
+Note that `reject_toolcall()` drops `unknown_tool`. The gate does not police
+tool *existence* — your registry already did, and overruling it would refuse
+verbs named at runtime, like the arm's learned skills. That is exactly why
+registration matters: **a tool the gate has never heard of is not merely
+unknown, it is unchecked.** Until 2026-09-21 that included ten of the arm
+bridge's nineteen tools, among them `grasp`, `set_tcp_target` and
+`set_gripper_width`.
+
+### Rails are per quantity, and per surface
+
+The magnitude limits live in `gate.py`, hand-declared, and they are rails
+("nobody meant this"), not bounds:
+
+| quantity | rail | constant |
+|---|---|---|
+| distance | 50 m | `MAX_DISTANCE_M` |
+| angle | 4 full turns | `MAX_ANGLE_RAD` |
+| speed | 5 m/s | `MAX_SPEED_MPS` |
+| yaw rate | 6 rad/s | `MAX_YAW_RATE_RPS` |
+| altitude | 120 m | `MAX_ALTITUDE_M` |
+| quadruped body shift | 1 m | `MAX_BODY_SHIFT_M` |
+
+They are keyed on the **quantity**, not the argument name: railing only the
+literal argument `speed` had let `set_velocity {v: 40}` — the actual velocity
+channel — through unrailed. And where two classes share a tool the rail is
+chosen by the caller's `surface=`: `move_body{vertical}` is a climb on a drone
+and a body shift on a quadruped, and 40 m is routine for one and absurd for
+the other. Before the split, one global rail refused **every real drone climb
+above 1 m**.
+
+⚠️ **Do not move a rail into your bridge.** OmniLink ships a TypeScript port
+of `gate.py`, and the only thing binding the two implementations is the
+generated fixture
+[`tests/benchmarks/gate_parity/cases.json`](../../tests/benchmarks/gate_parity/cases.json).
+A safety constant that moves into a bridge is a safety constant the fixture
+stops freezing. Schemas come from the registry; limits do not.
+
+### What the gate will not do for your robot
+
+It is a sanity rail, not a world model. It does not know your arena, and
+**nothing in the stack limits a robot to the floor it is standing on** —
+`act_drive_forward` takes a distance and drives it. A world-aware clamp is
+still your bridge's job. And the direct REST routes your bridge exposes
+(`/drive_forward`, `/set_velocity`, the gripper and joint routes, any verb
+promoted to an endpoint at runtime) reach an actuator with nothing in between;
+[`GATE_COVERAGE.md`](../../packages/omnisim-bridges/GATE_COVERAGE.md) is the
+authoritative list of what is and is not vetted.
 
 ---
 
@@ -155,6 +348,8 @@ By piggy-backing on `omnilink_mobile_bridge`, your new robot inherits:
 - The **OmniLink chat panel** (right-click → Show Robot Window).
 - The **right-side dock Chat tab** (talks to the same bridge HTTP).
 - The **HTTP surface on port 8765** that matches the Axis bridge contract — so OmniLink's Axis agent (the first-party `axis` agent in the OmniLink repo) drives your robot with zero new code on the agent side.
-- Both **offline mode** (regex intent router) and **OmniLink mode** (set `OMNI_KEY`, real LLM picks tools).
+- The **structural parser** on the `mobile` surface: question form, clause structure and consumption settled before any keyword rule fires, so *"how much charge is left in your battery?"* is answered rather than spun.
+- The **safety gate** on every path the mobile bridge is gated on — the parser, the relay's model dispatch, and `POST /tool` in both handlers. Your robot's direct REST routes are still ungated, as they are on every bridge.
+- The **connected OmniLink chat surface**, on the same terms as every other robot here: an OmniKey on every plan including Free, the parser answering what it can and a model answering the rest, and the gate vetting whichever one produced the frames. With no key the chat surface returns an error and nothing moves — it does not degrade into a local command handler.
 
 When you're ready, the same tool surface points at a real robot — see [the sim-to-real walkthrough](omnilink-sim-to-real.md).

@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "omnisim-mcp"
-version = "0.1.0"
-description = "Model Context Protocol server over the OmniSim World Harness — drive world authoring/inspection from Claude Desktop, Cursor, and other MCP clients. Zero runtime dependencies (pure stdlib)."
+version = "0.2.0"
+description = "Model Context Protocol server over the OmniSim World Harness — give an agent a robotics workshop from Claude Desktop, Cursor, and other MCP clients: load a world, run it, pause and break on an event, inspect the scene, talk to the robot over its gate-vetted command surface, and ask what actually happened. Zero runtime dependencies (pure stdlib)."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "OmniLink", email = "info@omnilink-agents.com" }]
 requires-python = ">=3.9"
-keywords = ["omnisim", "mcp", "model-context-protocol", "robotics", "agents", "harness"]
+keywords = ["omnisim", "mcp", "model-context-protocol", "robotics", "agents", "harness", "debugging", "simulation"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

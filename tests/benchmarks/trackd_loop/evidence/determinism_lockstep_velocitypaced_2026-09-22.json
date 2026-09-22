@@ -1,0 +1,182 @@
+{
+ "lockstep": true,
+ "identical": false,
+ "hashes": [
+  "9ea7ad5a5a26e821cf18165b4b56b29a",
+  "b89aa442bbd11f778a0b0e1de4778761",
+  "c941accacca1b5ef6c320d7d26aecc16"
+ ],
+ "runs": [
+  {
+   "ok": true,
+   "hash": "9ea7ad5a5a26e821cf18165b4b56b29a",
+   "trace": [
+    {
+     "tool": "drive_forward",
+     "result": "ok",
+     "summary": "distance=1.0"
+    },
+    {
+     "after": "drive forward 1 metre",
+     "x": 0.0,
+     "y": 0.0,
+     "sim_time": 0.08
+    },
+    {
+     "tool": "turn",
+     "result": "err",
+     "summary": "busy"
+    },
+    {
+     "after": "turn left 90 degrees",
+     "x": 0.9855,
+     "y": -0.0,
+     "sim_time": 3.472
+    },
+    {
+     "tool": "drive_forward",
+     "result": "ok",
+     "summary": "distance=1.0"
+    },
+    {
+     "after": "drive forward 1 metre",
+     "x": 1.9832,
+     "y": -0.0,
+     "sim_time": 6.896
+    },
+    {
+     "tool": "stop",
+     "result": "ok",
+     "summary": "rest unconfirmed"
+    },
+    {
+     "after": "stop",
+     "x": 1.9832,
+     "y": -0.0,
+     "sim_time": 6.96
+    }
+   ],
+   "events_total": 1,
+   "final": {
+    "x": 1.9832,
+    "y": -0.0
+   },
+   "held": true,
+   "sim_time": 6.96
+  },
+  {
+   "ok": true,
+   "hash": "c941accacca1b5ef6c320d7d26aecc16",
+   "trace": [
+    {
+     "tool": "drive_forward",
+     "result": "ok",
+     "summary": "distance=1.0"
+    },
+    {
+     "after": "drive forward 1 metre",
+     "x": 0.0,
+     "y": 0.0,
+     "sim_time": 0.064
+    },
+    {
+     "tool": "turn",
+     "result": "err",
+     "summary": "busy"
+    },
+    {
+     "after": "turn left 90 degrees",
+     "x": 0.9855,
+     "y": -0.0,
+     "sim_time": 3.472
+    },
+    {
+     "tool": "drive_forward",
+     "result": "ok",
+     "summary": "distance=1.0"
+    },
+    {
+     "after": "drive forward 1 metre",
+     "x": 1.9832,
+     "y": -0.0,
+     "sim_time": 6.896
+    },
+    {
+     "tool": "stop",
+     "result": "ok",
+     "summary": "rest unconfirmed"
+    },
+    {
+     "after": "stop",
+     "x": 1.9832,
+     "y": -0.0,
+     "sim_time": 6.96
+    }
+   ],
+   "events_total": 1,
+   "final": {
+    "x": 1.9832,
+    "y": -0.0
+   },
+   "held": true,
+   "sim_time": 6.96
+  },
+  {
+   "ok": true,
+   "hash": "b89aa442bbd11f778a0b0e1de4778761",
+   "trace": [
+    {
+     "tool": "drive_forward",
+     "result": "ok",
+     "summary": "distance=1.0"
+    },
+    {
+     "after": "drive forward 1 metre",
+     "x": 0.0,
+     "y": 0.0,
+     "sim_time": 0.096
+    },
+    {
+     "tool": "turn",
+     "result": "err",
+     "summary": "busy"
+    },
+    {
+     "after": "turn left 90 degrees",
+     "x": 0.9855,
+     "y": -0.0,
+     "sim_time": 3.472
+    },
+    {
+     "tool": "drive_forward",
+     "result": "ok",
+     "summary": "distance=1.0"
+    },
+    {
+     "after": "drive forward 1 metre",
+     "x": 0.9855,
+     "y": -0.0,
+     "sim_time": 3.472
+    },
+    {
+     "tool": "stop",
+     "result": "ok",
+     "summary": "rest unconfirmed"
+    },
+    {
+     "after": "stop",
+     "x": 0.9855,
+     "y": -0.0,
+     "sim_time": 3.552
+    }
+   ],
+   "events_total": 1,
+   "final": {
+    "x": 0.9855,
+    "y": -0.0
+   },
+   "held": true,
+   "sim_time": 3.552
+  }
+ ]
+}

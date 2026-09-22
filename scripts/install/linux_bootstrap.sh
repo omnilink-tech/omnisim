@@ -466,6 +466,15 @@ PY_EOF
     $SUDO_H "$CPY" -m pip install $CPIPFLAGS numpy scipy "mujoco==3.11.0" onnxruntime
   fi
 
+  # OmniLink must run in the controller interpreter too, not just the engine.
+  # Require the canonical public pins; no sibling private checkout is needed.
+  [ -f "$PINS_PY" ] || die "missing runtime pins: fetch the repository before installing controller dependencies"
+  CHAT_SPECS=$("$CPY" "$PINS_PY" --controllers | tr '\n' ' ')
+  CPIPFLAGS=$(pip_flags_for "$CPY")
+  $SUDO_H "$CPY" -m pip install $CPIPFLAGS $CHAT_SPECS
+  "$CPY" -I -c "import sys; sys.path.insert(0, sys.argv[1]); from pathlib import Path; from omnisim.omnilink_runtime import probe; r=probe(sys.executable, Path(sys.argv[1])); print(r['detail']); sys.exit(0 if r['status']=='ok' else 1)" "$OMNISIM_HOME" \
+    || die "OmniLink dependencies failed in the controller interpreter"
+
   # HARD GATE. Without onnxruntime in the controller interpreter, every ONNX
   # deploy controller runs with ZERO residual and still exits 0 -- so we assert
   # rather than trust, and fail the install instead of shipping a silent lie.

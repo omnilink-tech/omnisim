@@ -90,6 +90,8 @@ def _doctor(args: argparse.Namespace) -> int:
         extra.append("--fingerprint")
     if getattr(args, "strict", False):
         extra.append("--strict")
+    if getattr(args, "omnilink", False):
+        extra.append("--omnilink")
     return doctor.run(extra)
 
 
@@ -299,7 +301,10 @@ def _harness(args: argparse.Namespace) -> int:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="omnisim",
-        description="OmniSim - agent-native robot simulation. Start with: doctor, demo.",
+        description="OmniSim - an open-source robotics workshop for agents. Simulate a "
+                    "complete robot on high-fidelity physics, build the digital twin of "
+                    "one you own, and let an agent program, test and debug it. "
+                    "Start with: doctor, demo.",
     )
     parser.add_argument("-V", "--version", action="version", version=f"omnisim {__version__}")
     # required=False: `python -m omnisim` with no arguments is the most natural
@@ -322,6 +327,8 @@ def _build_parser() -> argparse.ArgumentParser:
         "incoherent (engine/libController ABI mismatch, missing binary). Preflight "
         "for hooks / CI / launchers; plain doctor is unchanged and always exits 0.",
     )
+    p.add_argument("--omnilink", action="store_true",
+                   help="Require the controller's OmniLink SDK and demo dependencies.")
     p.set_defaults(func=_doctor)
 
     from omnisim import validate_urdf as _validate_urdf
@@ -484,7 +491,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("damage", help="Run a damage-system scenario headless (--scenario / --list / --world).")
     sub.add_parser("damage-regression", help="Run the damage-system numerical regression suite.")
     sub.add_parser("capture", help="Cinematic capture service (HTTP, port 6791): stills and mp4 sequences.")
-    sub.add_parser("cinema", help="Agent-driven cinematic capture pipeline (storyboards, looks, multi-aspect).")
+    sub.add_parser("cinema", help="Cinematic replay: OmniSim motion + Blender rendering; native capture is explicit.")
     sub.add_parser("run-agent", help="Launch an OmniSim world + its OmniLink agent runner together.")
     sub.add_parser("proto", help="PROTO tooling: schemas, validation, authoring, hot-reload, tests.")
     sub.add_parser("policy", help="Policy brain: skills, BATON graphs, benchmarks, and promotion.")
@@ -535,11 +542,13 @@ def main() -> int:
 def _orientation() -> int:
     """What `python -m omnisim` prints with no arguments.
 
-    Three facts and three commands. It deliberately reports the two things a
-    newcomer cannot otherwise discover -- whether there is an engine, and
-    whether there is a physics backend -- because Newton is the only backend
-    and its absence produces an install where nothing ever moves while every
-    command still exits 0.
+    One line of what this is for, three facts, and four commands. The blurb
+    line is the only product statement a first-time user meets here, so it says
+    the job (debugging robot software) rather than the category. It deliberately
+    reports the two things a newcomer cannot otherwise discover -- whether there
+    is an engine, and whether there is a physics backend -- because Newton is
+    the only backend and its absence produces an install where nothing ever
+    moves while every command still exits 0.
     """
     from .doctor import _physics_runtime, invocation
     from .paths import resolve_omnisim_binary
@@ -548,6 +557,7 @@ def _orientation() -> int:
     engine = "OK" if binary else "NOT BUILT"
     phys = {"present": "OK", "absent": "MISSING", "unknown": "?"}[physics["status"]]
     print("OmniSim %s   %s" % (__version__, REPO_ROOT))
+    print("an open-source robotics workshop for agents - simulate it, twin it, debug it")
     print("engine: %s   physics: %s" % (engine, phys))
     print("")
     cli = invocation()

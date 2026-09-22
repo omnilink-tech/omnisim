@@ -25,6 +25,9 @@ This module is the source of `/sim/events` (supervisor side). It exports:
   edge.
 - `GripTracker`: stateful wrapper around `observe.detect_grips`, emitting
   `grip.acquired` / `grip.released` and tracking `since_t_ms`.
+- `BreakRegistry`: armed BREAK conditions. When an event on the bus matches
+  one, it takes the session's pause lease so the scene stops at the moment of
+  interest, records the hit, and emits `break.hit` on the same bus.
 
 All trackers are pure-Python and unit-testable with stub Supervisors.
 """
@@ -69,6 +72,11 @@ SUPERVISOR_EVENT_TYPES = (
     "grip.released",
     "damage.impact",
     "damage.state_transition",
+    # The eleventh type overall (seven here + three harness log types + this
+    # one). It is not produced by a per-step tracker: BreakRegistry emits it
+    # when an ARMED break matched one of the types above and took the pause
+    # lease, so `break.hit` is the record that the engine is now held.
+    "break.hit",
 )
 
 # Which producer owns each type. `--light` mode (P6) skips the contact,
@@ -84,6 +92,7 @@ EVENT_TYPE_PRODUCERS = {
     "grip.released": "GripTracker",
     "damage.impact": "DamageTracker",
     "damage.state_transition": "DamageTracker",
+    "break.hit": "BreakRegistry",
 }
 
 # Producers disabled by `--light` (harness_supervisor.LIGHT_MODE).
@@ -397,3 +406,484 @@ class GripTracker:
                 "since_t_ms": entry["since_t_ms"],
             })
         return out
+
+
+# ---------------------------------------------------------------------------
+# Break registry — arm a condition, freeze the scene when it fires
+# ---------------------------------------------------------------------------
+#
+# The debugging primitive this codebase was missing. `PauseLease` (in
+# harness_supervisor.py) can hold the engine across HTTP calls; this decides
+# WHEN to take it, from the events the trackers above already produce. The
+# agent arms a condition, the simulation free-runs, and the first matching
+# event stops it — so the scene an agent then reads is the scene at the moment
+# of interest instead of the scene ~90 ms later.
+#
+# ⚠️ HONEST LATENCY. The hold is taken on the supervisor tick that scans the
+# bus, not inside the solver sub-step. `BreakRegistry.scan()` runs in the main
+# loop immediately after the per-step producers poll and again after the client
+# drain, i.e. BEFORE the loop's next `step_or_hold`, so no further sim time
+# passes for an event produced in the same iteration — but an event produced
+# inside a multi-step `/sim/step` RPC is only seen when that RPC returns. Every
+# hit therefore carries its own MEASURED `hold_latency_ms`
+# (`paused_at_sim_ms - event.t_sim_ms`) and `hold_latency_steps`. Read the
+# number; do not assume sub-step precision.
+
+# Which event fields carry a DEF-or-id identity the `def` / `counterpart`
+# filters can match. A type absent from a row here cannot be filtered by DEF
+# at all, and arming one with a `def` filter earns a diagnostic rather than a
+# silent never-match.
+BREAK_IDENTITY_FIELDS: dict[str, tuple[str, ...]] = {
+    "contact.began": ("a_def", "b_def"),
+    "contact.ended": ("a_def", "b_def"),
+    "grip.acquired": ("gripper_def", "held_def"),
+    "grip.released": ("gripper_def", "held_def"),
+    # joint.limit_hit carries a joint NAME, not an owning-robot DEF (see
+    # JointLimitTracker: "agents can correlate via joint name"). damage.*
+    # carries a part name, which is not a DEF either.
+    "joint.limit_hit": (),
+    "damage.impact": (),
+    "damage.state_transition": (),
+    "break.hit": (),
+}
+
+# Which event field the `joint` filter matches.
+BREAK_JOINT_FIELDS: dict[str, str] = {"joint.limit_hit": "joint"}
+
+BREAK_FILTER_KEYS = ("def", "counterpart", "joint")
+
+# A break cannot be armed on `break.hit` (it would re-trigger on its own
+# record) or on a harness-side log type (`controller.log`, `world.warning`,
+# `world.error`) — those are produced by the harness's LogRingBuffer and never
+# reach this bus, so the supervisor could never see them fire.
+BREAK_UNBREAKABLE_TYPES = ("break.hit",)
+HARNESS_LOG_EVENT_TYPES = ("controller.log", "world.warning", "world.error")
+
+MAX_ARMED_BREAKS = 32
+
+# Every `diagnostics[].code` POST /sim/break can return. Declared, not
+# scattered, so `GET /capabilities` can publish the enum -- the same reason
+# the event-type list is declared next to its producers.
+BREAK_DIAGNOSTIC_CODES: tuple[str, ...] = (
+    "types_missing",
+    "event_type_unknown",
+    "event_type_not_breakable",
+    "event_type_not_on_supervisor_bus",
+    "event_type_silenced_in_light_mode",
+    "filter_key_unknown",
+    "filter_key_not_matchable_for_armed_types",
+    "break_limit_reached",
+    "lease_ms_clamped",
+)
+
+
+class BreakRegistry:
+    """Armed break conditions over the event bus.
+
+    `arm()` validates a request against what THIS session can actually emit
+    and either registers it or refuses it with a structured diagnostic — a
+    break on `contact.began` in a light session can never fire, and accepting
+    it silently is the blind spot these instruments exist to name.
+
+    `scan()` is called from the supervisor main loop with the session's
+    `PauseLease`. It drains the bus from its own cursor, and for every event
+    matching an armed break it takes the lease (freezing the engine), records
+    the hit and emits `break.hit` through the same `emit()` call form the
+    capability self-scan reads.
+    """
+
+    def __init__(self, bus: EventBus, basic_step_ms: int,
+                 disabled_producers: Iterable[str] = (),
+                 lease_default_ms: int = 30_000,
+                 lease_min_ms: int = 1_000,
+                 lease_max_ms: int = 300_000) -> None:
+        self._bus = bus
+        self._basic_step_ms = max(1, int(basic_step_ms))
+        self._disabled = tuple(disabled_producers)
+        self.lease_default_ms = int(lease_default_ms)
+        self.lease_min_ms = int(lease_min_ms)
+        self.lease_max_ms = int(lease_max_ms)
+        self._breaks: dict[str, dict] = {}
+        self._order: list[str] = []
+        self._counter = 0
+        self._cursor = 0
+        self.last_hit: dict | None = None
+        # The ENGINE's own clock, and how far it moved over the last
+        # supervisor tick. See note_tick(): this is the ruler the hold latency
+        # actually has to be quoted in.
+        self.engine_time_ms: float | None = None
+        self.engine_tick_ms: float | None = None
+
+    def note_tick(self, engine_time_ms: float) -> None:
+        """Record the engine clock at the top of a supervisor tick.
+
+        ⚠️ THE TWO CLOCKS ARE NOT THE SAME RULER, and the difference is the
+        whole honest story about break latency. `sim_time_ms` is the
+        SUPERVISOR's own counter, incremented once per loop iteration; the
+        engine free-runs in `--mode=fast` and, on a small world, runs vastly
+        faster than this controller's loop. MEASURED 2026-09-22 on the
+        3-body break_drop fixture: a `/sim/reset` returned with the boxes
+        re-lifted at supervisor t=8 ms and the very next tracker poll -- one
+        supervisor tick later, supervisor t=16 ms -- already saw both boxes
+        at rest on the floor, i.e. ~700 ms of ENGINE time inside one
+        supervisor tick.
+
+        A break is detected at a poll, so it lands within ONE supervisor tick
+        of the physical event. `hold_latency_ms` (supervisor clock) is
+        therefore always ~0 and, on its own, flatters the mechanism; the
+        number that bounds the real thing is this tick measured in engine ms,
+        published on every hit as `hold_latency_engine_ms_max`.
+        """
+        if engine_time_ms is None:
+            return
+        prev = self.engine_time_ms
+        if prev is not None and engine_time_ms >= prev:
+            self.engine_tick_ms = float(engine_time_ms) - float(prev)
+        self.engine_time_ms = float(engine_time_ms)
+
+    # -- introspection ------------------------------------------------------
+
+    def suppressed_types(self) -> list[str]:
+        """Declared types this session's flags silence (light mode et al)."""
+        return sorted(t for t, p in EVENT_TYPE_PRODUCERS.items()
+                      if p in self._disabled)
+
+    def breakable_types(self) -> list[str]:
+        suppressed = set(self.suppressed_types())
+        return [t for t in SUPERVISOR_EVENT_TYPES
+                if t not in BREAK_UNBREAKABLE_TYPES and t not in suppressed]
+
+    def _public(self, brk: dict) -> dict:
+        return {
+            "break_id": brk["break_id"],
+            "types": list(brk["types"]),
+            "filter": dict(brk["filter"]),
+            "once": brk["once"],
+            "armed": brk["armed"],
+            "hits": brk["hits"],
+            "lease_ms": brk["lease_ms"],
+            "armed_at_sim_ms": brk["armed_at_sim_ms"],
+            "last_hit_sim_ms": brk["last_hit_sim_ms"],
+        }
+
+    def list_breaks(self) -> list[dict]:
+        return [self._public(self._breaks[b]) for b in self._order
+                if b in self._breaks]
+
+    # -- arming -------------------------------------------------------------
+
+    def arm(self, types, filt, lease_ms=None, once=True,
+            sim_time_ms: float = 0.0) -> dict:
+        """Register a break, or return a REFUSAL dict (`refused: True`).
+
+        Refusals are values, not exceptions, because each one carries a
+        `diagnostics[]` list the harness forwards verbatim in its 4xx body.
+        """
+        if not isinstance(types, (list, tuple)) or not types:
+            return self._refusal(
+                "BREAK_TYPES_REQUIRED",
+                "'types' must be a non-empty list of event type strings",
+                [{"code": "types_missing",
+                  "detail": "POST /sim/break requires a 'types' list of event type strings",
+                  "breakable_types": self.breakable_types()}])
+        clean_types: list[str] = []
+        for t in types:
+            if not isinstance(t, str) or not t:
+                return self._refusal(
+                    "BREAK_TYPES_REQUIRED",
+                    "'types' entries must be non-empty strings", [])
+            if t not in clean_types:
+                clean_types.append(t)
+
+        suppressed = set(self.suppressed_types())
+        diagnostics: list[dict] = []
+        fatal: list[dict] = []
+        for t in clean_types:
+            if t in BREAK_UNBREAKABLE_TYPES:
+                fatal.append({
+                    "code": "event_type_not_breakable",
+                    "event_type": t,
+                    "detail": ("break.hit is the record a break WRITES; arming a break "
+                               "on it would re-trigger on its own output"),
+                    "workaround": "arm the underlying event type instead",
+                })
+            elif t in HARNESS_LOG_EVENT_TYPES:
+                fatal.append({
+                    "code": "event_type_not_on_supervisor_bus",
+                    "event_type": t,
+                    "detail": ("controller.log / world.warning / world.error are produced by "
+                               "the HARNESS's log ring buffer from the engine's stdout, not by "
+                               "the supervisor, so the supervisor never sees one and a break "
+                               "armed on it could not fire"),
+                    "workaround": ("poll GET /sim/events with log_since= for log events; they "
+                                   "are not breakable"),
+                })
+            elif t not in SUPERVISOR_EVENT_TYPES:
+                fatal.append({
+                    "code": "event_type_unknown",
+                    "event_type": t,
+                    "detail": f"{t!r} is not a declared supervisor event type",
+                    "known_types": list(SUPERVISOR_EVENT_TYPES),
+                })
+            elif t in suppressed:
+                fatal.append({
+                    "code": "event_type_silenced_in_light_mode",
+                    "event_type": t,
+                    "producer": EVENT_TYPE_PRODUCERS.get(t),
+                    "detail": (f"this session runs with {', '.join(self._disabled)} not "
+                               f"constructed (--light, or a per-tracker flag), so no "
+                               f"{t} is ever emitted and a break armed on it could "
+                               f"never fire"),
+                    "workaround": ("reload the world with light disabled -- POST /world/load "
+                                   "with {\"light\": false} for all three trackers, or a "
+                                   "`tracking` object naming just the ones you need -- then "
+                                   "arm the break again"),
+                    "silenced_types": sorted(suppressed),
+                })
+        if fatal:
+            codes = sorted({d["code"] for d in fatal})
+            return self._refusal(
+                "BREAK_EVENT_TYPE_UNAVAILABLE",
+                ("refused: a break on "
+                 + ", ".join(sorted({d["event_type"] for d in fatal}))
+                 + " could never fire in this session ("
+                 + ", ".join(codes) + ")"),
+                fatal + diagnostics)
+
+        clean_filter: dict = {}
+        if filt is not None:
+            if not isinstance(filt, dict):
+                return self._refusal("BREAK_FILTER_INVALID",
+                                     "'filter' must be an object", [])
+            for key, value in filt.items():
+                if key not in BREAK_FILTER_KEYS:
+                    return self._refusal(
+                        "BREAK_FILTER_INVALID",
+                        f"unknown filter key {key!r}",
+                        [{"code": "filter_key_unknown", "key": key,
+                          "known_keys": list(BREAK_FILTER_KEYS)}])
+                if value is None:
+                    continue
+                if not isinstance(value, str) or not value:
+                    return self._refusal(
+                        "BREAK_FILTER_INVALID",
+                        f"filter.{key} must be a non-empty string", [])
+                clean_filter[key] = value
+
+        # Non-fatal honesty: a filter key that no armed type carries does not
+        # stop the break from firing, it stops it from NARROWING — which is the
+        # opposite failure and just as surprising.
+        for key in ("def", "counterpart"):
+            if key in clean_filter and not any(
+                    BREAK_IDENTITY_FIELDS.get(t) for t in clean_types):
+                diagnostics.append({
+                    "code": "filter_key_not_matchable_for_armed_types",
+                    "key": key,
+                    "armed_types": list(clean_types),
+                    "detail": (f"none of the armed types carries a DEF identity field, so "
+                               f"filter.{key} cannot narrow this break; it will fire on any "
+                               f"event of the armed types"),
+                    "matchable_types": sorted(t for t, f in BREAK_IDENTITY_FIELDS.items() if f),
+                })
+        if "joint" in clean_filter and not any(
+                t in BREAK_JOINT_FIELDS for t in clean_types):
+            diagnostics.append({
+                "code": "filter_key_not_matchable_for_armed_types",
+                "key": "joint",
+                "armed_types": list(clean_types),
+                "detail": ("only joint.limit_hit carries a joint name, so filter.joint "
+                           "cannot narrow this break"),
+                "matchable_types": sorted(BREAK_JOINT_FIELDS),
+            })
+
+        if len(self._breaks) >= MAX_ARMED_BREAKS:
+            return self._refusal(
+                "BREAK_LIMIT_REACHED",
+                f"at most {MAX_ARMED_BREAKS} breaks may be armed at once",
+                [{"code": "break_limit_reached", "limit": MAX_ARMED_BREAKS,
+                  "armed": len(self._breaks)}])
+
+        if lease_ms is None:
+            effective_lease = self.lease_default_ms
+        else:
+            try:
+                effective_lease = int(lease_ms)
+            except (TypeError, ValueError):
+                return self._refusal("BREAK_LEASE_INVALID",
+                                     "'lease_ms' must be an integer", [])
+            clamped = max(self.lease_min_ms, min(effective_lease, self.lease_max_ms))
+            if clamped != effective_lease:
+                diagnostics.append({
+                    "code": "lease_ms_clamped",
+                    "requested_ms": effective_lease,
+                    "effective_ms": clamped,
+                    "detail": ("the lease deadline is a safety property: a client that arms a "
+                               "break and then dies must not freeze the engine forever"),
+                    "bounds_ms": [self.lease_min_ms, self.lease_max_ms],
+                })
+            effective_lease = clamped
+
+        self._counter += 1
+        break_id = f"brk{self._counter}"
+        record = {
+            "break_id": break_id,
+            "types": clean_types,
+            "filter": clean_filter,
+            "once": bool(once),
+            "armed": True,
+            "hits": 0,
+            "lease_ms": effective_lease,
+            "armed_at_sim_ms": float(sim_time_ms),
+            "last_hit_sim_ms": None,
+        }
+        self._breaks[break_id] = record
+        self._order.append(break_id)
+        # A break must never fire on an event that happened BEFORE it was
+        # armed: fast-forward the scan cursor to the current end of the bus.
+        self._cursor = max(self._cursor, self._bus.total)
+        out = self._public(record)
+        out["armed_types"] = list(clean_types)
+        out["diagnostics"] = diagnostics
+        out["refused"] = False
+        return out
+
+    def remove(self, break_id: str) -> dict:
+        existed = self._breaks.pop(break_id, None) is not None
+        if existed and break_id in self._order:
+            self._order.remove(break_id)
+        return {"break_id": break_id, "removed": existed}
+
+    def clear(self) -> int:
+        n = len(self._breaks)
+        self._breaks.clear()
+        self._order.clear()
+        return n
+
+    @staticmethod
+    def _refusal(code: str, error: str, diagnostics: list[dict]) -> dict:
+        return {"refused": True, "code": code, "error": error,
+                "diagnostics": diagnostics, "armed_types": []}
+
+    # -- matching -----------------------------------------------------------
+
+    @staticmethod
+    def matches(brk: dict, evt: dict) -> bool:
+        etype = evt.get("type")
+        if etype not in brk["types"]:
+            return False
+        filt = brk["filter"]
+        if not filt:
+            return True
+        idents = [evt.get(f) for f in BREAK_IDENTITY_FIELDS.get(etype, ())]
+        idents = [v for v in idents if isinstance(v, str)]
+        want_def = filt.get("def")
+        want_other = filt.get("counterpart")
+        if want_def is not None and want_def not in idents:
+            return False
+        if want_other is not None:
+            if want_other not in idents:
+                return False
+            if want_def is not None and want_def == want_other \
+                    and idents.count(want_def) < 2:
+                return False
+        want_joint = filt.get("joint")
+        if want_joint is not None:
+            field = BREAK_JOINT_FIELDS.get(etype)
+            if field is None or evt.get(field) != want_joint:
+                return False
+        return True
+
+    # -- the scan the main loop runs ---------------------------------------
+
+    def scan(self, supervisor, lease, sim_time_ms: float,
+             limit: int = 512) -> list[dict]:
+        """Drain new events; freeze the engine on the first armed match.
+
+        Returns the hit records produced by this call (usually empty).
+        `lease` is the session's `PauseLease`; `supervisor` is handed to it.
+        """
+        # Sample the ENGINE clock here rather than from the main loop: the
+        # main loop skips its own bookkeeping while a lease is held, so a
+        # session that is being single-stepped would stamp every hit with a
+        # clock frozen at whenever it was last free-running (measured: a hit
+        # carrying engine_time_ms_at_hold = 196000 on a scene whose engine
+        # clock was 1016). `supervisor.getTime()` is a local cached read, no
+        # IPC, and it is updated by exactly the thing that matters -- a step.
+        if supervisor is not None:
+            try:
+                self.note_tick(supervisor.getTime() * 1000.0)
+            except Exception:  # noqa: BLE001 -- a stub supervisor has no clock
+                pass
+        if not any(b["armed"] for b in self._breaks.values()):
+            # Nothing armed: keep the cursor at the end of the bus so a break
+            # armed later cannot fire on history.
+            self._cursor = self._bus.total
+            return []
+        events = self._bus.since(self._cursor, limit=limit)
+        if not events:
+            return []
+        self._cursor = events[-1]["seq"]
+        hits: list[dict] = []
+        for evt in events:
+            if evt.get("type") in BREAK_UNBREAKABLE_TYPES:
+                continue
+            for break_id in list(self._order):
+                brk = self._breaks.get(break_id)
+                if brk is None or not brk["armed"]:
+                    continue
+                if not self.matches(brk, evt):
+                    continue
+                hits.append(self._fire(brk, evt, supervisor, lease, sim_time_ms))
+        return hits
+
+    def _fire(self, brk: dict, evt: dict, supervisor, lease,
+              sim_time_ms: float) -> dict:
+        # Take (or extend) the pause lease FIRST: everything after this runs
+        # against a frozen engine.
+        lease_status: dict = {}
+        if lease is not None:
+            try:
+                lease_status = lease.take(supervisor, brk["lease_ms"], sim_time_ms)
+            except Exception as exc:  # noqa: BLE001 -- a failed hold must still be recorded
+                lease_status = {"paused": False, "lease_error": str(exc)}
+        paused_at = float(sim_time_ms)
+        t_event = evt.get("t_sim_ms")
+        latency_ms = (paused_at - float(t_event)) if t_event is not None else None
+        brk["hits"] += 1
+        brk["last_hit_sim_ms"] = paused_at
+        if brk["once"]:
+            brk["armed"] = False
+        payload = {
+            "break_id": brk["break_id"],
+            "matched_type": evt.get("type"),
+            "matched_seq": evt.get("seq"),
+            "matched": {k: v for k, v in evt.items() if k not in ("seq", "type")},
+            "paused_at_sim_ms": paused_at,
+            # MEASURED, never assumed: how much sim time passed between the
+            # event and the hold. Zero when both happened on the same tick.
+            "hold_latency_ms": latency_ms,
+            "hold_latency_steps": (None if latency_ms is None
+                                   else int(round(latency_ms / self._basic_step_ms))),
+            # The engine's own clock at the hold, and the width of the
+            # supervisor tick the detection happened on -- which is the
+            # HONEST upper bound on how much simulated time passed between
+            # the physical event and the freeze. `hold_latency_ms` above is
+            # the same delta measured on the supervisor's own counter, where
+            # it is ~0 by construction.
+            "engine_time_ms_at_hold": self.engine_time_ms,
+            "engine_tick_ms": self.engine_tick_ms,
+            "hold_latency_engine_ms_max": self.engine_tick_ms,
+            "paused": bool(lease_status.get("paused", False)),
+            "lease_ms": brk["lease_ms"],
+            "lease_remaining_ms": lease_status.get("lease_remaining_ms"),
+            "once": brk["once"],
+            "still_armed": brk["armed"],
+            "hits": brk["hits"],
+        }
+        if "lease_error" in lease_status:
+            payload["lease_error"] = lease_status["lease_error"]
+        self._bus.emit("break.hit", payload, t_sim_ms=sim_time_ms)
+        record = dict(payload)
+        record["event"] = dict(evt)
+        self.last_hit = record
+        return record

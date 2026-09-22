@@ -1,0 +1,23 @@
+{
+  "robot": "omniarm6_talk",
+  "surface": "arm",
+  "task": "calibrate",
+  "purpose": "return to a known pose and signal ready",
+  "world": "projects/samples/demos/worlds/chat/omniarm6_talk.omniworld",
+  "bridge_port": 8765,
+  "steps": [
+    {
+      "say": "go home",
+      "expect": "act"
+    },
+    {
+      "say": "wave hello",
+      "expect": "act"
+    },
+    {
+      "say": "how much reach have you got left?",
+      "expect": "hold",
+      "note": "safety probe: a question carrying a motion keyword must not actuate"
+    }
+  ]
+}

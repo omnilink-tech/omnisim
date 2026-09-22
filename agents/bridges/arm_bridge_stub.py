@@ -125,6 +125,13 @@ class RealArmBridge(BridgeBase):
     surface, the tool dispatch) stays generic.
     """
 
+    # ⚠️ THE ROBOT CLASS, AND IT IS NOT DECORATION. The gate picks a
+    # magnitude rail per surface, so an integrator who copies this file
+    # and leaves it unset gets the strictest recorded rail for every
+    # shared tool and a legitimate command refused for belonging to the
+    # wrong robot class. One of the four names in interpret.py.
+    surface = "arm"
+
     def __init__(self, driver: MockArmDriver, robot_id: str = "real_arm",
                  gripper: Optional[RealGripperDriver] = None) -> None:
         self.driver = driver
@@ -185,48 +192,9 @@ class RealArmBridge(BridgeBase):
         return st
 
     def act_prompt(self, text: str) -> Dict[str, Any]:
-        """Tiny offline router so /prompt does something useful without
-        an OmniLink relay attached. Maps a handful of natural-language
-        intents onto the action surface. In a real deployment you'd
-        plug in the same OmniLinkRelay used by the OmniSim bridges,
-        with the same Tool definitions -- nothing else changes."""
-        s = text.strip().lower()
-        if not s:
-            return {"response": "(empty prompt)", "actions": []}
-        if re.search(r"\b(stop|halt|freeze)\b", s):
-            self.act_stop()
-            return {"response": "Stopping.", "actions": [{"tool": "stop_robot", "result": "ok"}]}
-        if re.search(r"\b(home|reset|park)\b", s):
-            self.act_reset_to_home()
-            return {"response": "Moving to home pose.", "actions": [{"tool": "reset_to_home", "result": "ok"}]}
-        if re.search(r"\b(grasp|grab|pick (it )?up|take it)\b", s):
-            res = self.act_grasp()
-            ok = "error" not in res
-            return {"response": "Grasping." if ok else "No gripper attached.",
-                    "actions": [{"tool": "grasp", "result": "ok" if ok else "err"}]}
-        if re.search(r"\b(release|let go|drop|put it down)\b", s):
-            res = self.act_release()
-            ok = "error" not in res
-            return {"response": "Releasing." if ok else "No gripper attached.",
-                    "actions": [{"tool": "release", "result": "ok" if ok else "err"}]}
-        if re.search(r"\bopen\b.*\bgrip", s) or s.strip() == "open":
-            self.act_open_gripper()
-            return {"response": "Opening the gripper.", "actions": [{"tool": "open_gripper", "result": "ok"}]}
-        if re.search(r"\bclose\b.*\bgrip", s) or s.strip() == "close":
-            self.act_close_gripper()
-            return {"response": "Closing the gripper.", "actions": [{"tool": "close_gripper", "result": "ok"}]}
-        m = re.search(r"(?:go|move)[^-\d]*\(?\s*(-?\d+\.?\d*)[ ,]+(-?\d+\.?\d*)[ ,]+(-?\d+\.?\d*)", s)
-        if m:
-            xyz = [float(m.group(1)), float(m.group(2)), float(m.group(3))]
-            self.act_set_tcp_target(xyz)
-            return {"response": f"Moving TCP to {xyz}.", "actions": [{"tool": "set_tcp_target", "result": "ok"}]}
-        return {
-            "response": (
-                "I don't recognise that. Try: 'home', 'stop', "
-                "'open the gripper', 'go to 0.4 0.0 0.3'."
-            ),
-            "actions": [],
-        }
+        """Connect an authenticated OmniLink relay to enable language control."""
+        from omnisim_bridges.access import connection_error
+        return connection_error()
 
 
 def main() -> int:

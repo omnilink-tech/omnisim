@@ -10,9 +10,24 @@ Every `.wbt` in the repo classified by purpose. Use this when you have a world f
 
 ## Categories at a glance
 
+SO101 robot package: [`so101.omniworld`](projects/robots/therobotstudio/worlds/so101.omniworld)
+is the stationary import baseline;
+[`so101_pickplace.omniworld`](projects/robots/therobotstudio/worlds/so101_pickplace.omniworld)
+runs the authored physical pick/place demo;
+[`so101_pickplace_real.omniworld`](projects/robots/therobotstudio/worlds/so101_pickplace_real.omniworld)
+is the estimated LeRobot replay scene. See the [run and verification instructions](projects/robots/therobotstudio/README.md).
+
+ALOHA battery study: [`aloha_battery.omniworld`](projects/robots/trossen/aloha/worlds/aloha_battery.omniworld)
+is the raw recorded-action diagnostic. The [replay CLI](projects/robots/trossen/aloha/README.md)
+also runs the archived grasp-and-placement prototype and open-gripper controls.
+[`aloha_battery_spring.omniworld`](projects/robots/trossen/aloha/worlds/aloha_battery_spring.omniworld)
+adds an estimated spring-loaded compartment, terminal contacts and fingertip seating;
+use the CLI for coordinated contact evidence and verification.
+Recorded-action transfer has not been established; see the [saved comparison](sim-to-real/aloha-battery/README.md).
+
 | Category | Root | Worlds | Purpose |
 |---|---|---|---|
-| [Demo worlds](#1-demo-worlds) | `projects/samples/demos/worlds/{chat,flagship,physics,showcase,environments,rendering,dev,misc,starter,portability}/` + the flat `omnilink_launcher.omniworld` | **122** (121 `.omniworld` + the 1 dual-read-proof `.wbt`) | User-facing showcases, chat demos, plus renderer-smoke & dev worlds. All ship publicly (`publish_deny.txt` holds no entry under this tree) |
+| [Demo worlds](#1-demo-worlds) | `projects/samples/demos/worlds/{chat,debug,flagship,physics,showcase,environments,rendering,dev,misc,starter,portability}/` + the flat `omnilink_launcher.omniworld` | **129** (128 `.omniworld` + the 1 dual-read-proof `.wbt`; recounted 2026-09-22) | User-facing showcases, the debugging demo ([1j](#1j-debug--worldsdebug-2)), chat demos, plus renderer-smoke & dev worlds. All ship publicly (`publish_deny.txt` holds no entry under this tree) |
 | [Generated worlds](#2-generated-worlds) | `distribution/generated_worlds/` | 9 | Procedural scaffolds from the omniworld library (the `mars_small/big/max.wbt` scale variants are gitignored — regenerate them) |
 | [Device sample worlds](#3-device-sample-worlds) | `projects/samples/devices/worlds/` | 45 | One world per sensor/actuator — pedagogical tour |
 | [Rendering sample worlds](#4-rendering-sample-worlds) | `projects/samples/rendering/worlds/` | 2 | PBR reference + Sponza scene |
@@ -34,19 +49,27 @@ Every `.wbt` in the repo classified by purpose. Use this when you have a world f
 User-facing showcases. Cross-referenced in [DEMOS.md](DEMOS.md).
 
 ### 1a. Chat demos *(one robot, talk to it)*
-`projects/samples/demos/worlds/chat/` — one `omnilink_<robot>.omniworld` per URDF robot, incl. the 3-arm `omnilink_multi_arm.omniworld`. *(Count check: `git ls-files projects/samples/demos/worlds/chat/ | grep -c '\.omniworld$'` → **21**. Of the 21, **20** are `omnilink_<robot>.omniworld` (five of them the Deep Robotics quadrupeds added 2026-09-08); the twenty-first is `omniarm6_talk.omniworld`. All 21 ship publicly — [`scripts/release/publish_deny.txt`](scripts/release/publish_deny.txt) holds no entry under this directory.)* See the [chat demos section in DEMOS.md](DEMOS.md#1-chat-demos--single-robot-natural-language-console) and the in-folder guide [`chat/OMNILINK_CHAT_DEMOS.md`](projects/samples/demos/worlds/chat/OMNILINK_CHAT_DEMOS.md).
+`projects/samples/demos/worlds/chat/` — one `omnilink_<robot>.omniworld` per URDF robot, incl. the 3-arm `omnilink_multi_arm.omniworld`.
 
-### 1b. Flagship — `worlds/flagship/` (**26** worlds, all public)
+**The one true count: 21 chat demos = 20 `omnilink_<robot>.omniworld` + `omniarm6_talk.omniworld`.** Five of the 20 are the Deep Robotics quadrupeds added 2026-09-08; `omniarm6_talk` predates the naming convention. The same 21 appear in [DEMOS.md §1](DEMOS.md#1-chat-demos--single-robot-natural-language-console), in the launcher catalogue [`demos.json`](projects/samples/demos/controllers/omnilink_launcher/demos.json) and in the in-folder index [`chat/OMNILINK_CHAT_DEMOS.md`](projects/samples/demos/worlds/chat/OMNILINK_CHAT_DEMOS.md); [`tests/test_demo_catalogue.py`](tests/test_demo_catalogue.py) fails if any of them drifts.
 
-*(Count check: `git ls-files projects/samples/demos/worlds/flagship/ | grep -c '\.omniworld$'` → **25**. [`scripts/release/publish_deny.txt`](scripts/release/publish_deny.txt) holds no entry under this directory, so all 25 ship publicly — the old "18 dev / 8 public" split predates the OmniArm replacement of the held robot packages and is gone. The table below lists the highlights; the rest are the `omniarm6_*` manipulation set, `husky_unseen_maze`, `husky_extreme_terrain`, and `warehouse_omnilink`.)*
+*(Count check: `git ls-files projects/samples/demos/worlds/chat/ | grep -c '\.omniworld$'` → **22**, which is the 21 demos plus the fixture below. The 40 `.ddbot_*` / `.eval_*` / `.harness_*` dot-worlds in the working copy are untracked scratch and are not worlds of this repo (a bare `pathlib` glob of the folder finds 62 files, because it matches dotfiles). All 22 tracked files ship publicly — the publish deny-list (`scripts/release/publish_deny.txt`, which is itself held back) holds no entry under this directory.)*
+
+⚠️ **`omnilink_husky_langsoak.omniworld` is the 22nd tracked file and is NOT a demo.** It is the fixture the [langsoak](tests/benchmarks/langsoak/) language-robustness benchmark drives, pinned to port **8775** so it cannot collide with a chat demo on 8765, and it is excluded by name from the launcher catalogue, from DEMOS.md, from the chat index and from the `scripts/dev/smoke_chat_demos.py` sweep. That exclusion is deliberate and is asserted in `tests/test_demo_catalogue.py`.
+
+⚠️ **20 of the 21 demos pin their bridge to port 8765**, so two chat demos cannot run at once. The Mavic serves 6090; `omnilink_multi_arm` numbers its three consoles 8765/8766/8767.
+
+### 1b. Flagship — `worlds/flagship/` (**28** worlds, all public)
+
+*(Count check: `git ls-files projects/samples/demos/worlds/flagship/ | grep -c '\.omniworld$'` → **28**, recounted 2026-09-22. the publish deny-list (`scripts/release/publish_deny.txt`, which is itself held back) holds no entry under this directory, so all 28 ship publicly — the old "18 dev / 8 public" split predates the OmniArm replacement of the held robot packages and is gone. The table below lists the highlights; the rest are the `omniarm6_*` manipulation set, `husky_unseen_maze`, `husky_extreme_terrain`, and `warehouse_omnilink`.)*
 
 | World | Demo |
 |---|---|
 | `warehouse_industrial.omniworld` | Industrial warehouse scene |
 | `husky_extreme_terrain.omniworld` | Husky fixed-throttle control versus pose-feedback navigation through a three-gate boulder course |
-| `husky_one_passage.omniworld` | Four Husky robots share one narrow passage; collision, mutual yielding, and passage-reservation experiments for a long-form build film |
-| `two_robots_tower.omniworld` | Two Cartesian robot builders place twenty free blocks with physical finger grips; narrow and wider-base tower experiments for a build film |
-| `two_robots_100_boxes.omniworld` | Part Two of the tower build: two Cartesian builders, one hundred free boxes, wider-stack and gripper-clearance experiments with a capped production workflow |
+| `husky_one_passage.omniworld` | Four Husky robots share one narrow passage; collision, mutual yielding, and passage-reservation experiments for a long-form build film. Catalogue row: [DEMOS.md → Other flagship worlds](DEMOS.md#other-flagship-worlds) |
+| `two_robots_tower.omniworld` | Two Cartesian robot builders place twenty free blocks with physical finger grips; narrow and wider-base tower experiments for a build film. Catalogue row: [DEMOS.md → Other flagship worlds](DEMOS.md#other-flagship-worlds) |
+| `two_robots_100_boxes.omniworld` | Part Two of the tower build: two Cartesian builders, one hundred free boxes, wider-stack and gripper-clearance experiments with a capped production workflow. Catalogue row: [DEMOS.md → Other flagship worlds](DEMOS.md#other-flagship-worlds) |
 | `husky_maze.omniworld`, `husky_maze_unknown.omniworld`, `husky_maze_corners.omniworld`, `husky_maze_visual.omniworld`, `husky_maze_blind.omniworld` | Husky Maze (5 difficulty tiers) |
 | `omnilink_husky_swarm.omniworld` | Husky swarm coordination |
 | `omnilink_smart_house.omniworld` | Smart house — an OmniLink agent runs a physics-backed home (hub bridge on :8766; see DEMOS.md §3) |
@@ -76,11 +99,13 @@ Combat-oriented Newton worlds (`newton_husky_head_on*.wbt`, `newton_husky_combat
 
 Combat showcase worlds (head-on, damage arena, brawl, duel) live under [`projects/robot_combat/worlds/`](projects/robot_combat/worlds/). For the BattleBox combat-sport scene — `battlebox_husky_proving.omniworld`, `battlebox_duel.omniworld`, `battlebox_royal_rumble.omniworld` — see the [Robot Combat README](projects/robot_combat/README.md#battlebots-league--battlebots).
 
+[`orc_foundry.omniworld`](projects/robot_combat/orc/worlds/orc_foundry.omniworld) is the original ORC playable encounter: a 32 m industrial yard, ANVIL horizontal spinner, RAZOR vertical drum, manual/autopilot controls, chase camera, HUD and contact-driven removable parts. See the [Foundry guide](projects/robot_combat/orc/README.md#foundry-playable-encounter) and its GPU-guarded launcher.
+
 ### 1e. Environments — `worlds/environments/` (5)
 
 | World | Purpose |
 |---|---|
-| `city.omniworld` | Urban environment backdrop |
+| `city.omniworld` | Hand-built mixed urban street block (avenue + side street, mixed buildings, traffic-light fixtures on one passive controller-less `Robot`, pocket park; clear midday). **Robot-free by design** — compose a ground robot on top. Not the generator-driven `showcase/city_traffic.omniworld`. Catalogue row: [DEMOS.md §7](DEMOS.md#7-misc--showcase) |
 | `desert_ruins.omniworld` | Outdoor rough terrain |
 | `forest.omniworld` | Forest environment backdrop |
 | `northgate_depot.omniworld` | Northgate Depot — a bare 25.8 × 16.8 m distribution-centre interior: concrete slab, 4 m rendered walls, three double rows of pallet racking, three dock-door panels. **Robot-free and prop-free by design** — drop a ground robot in and drive it. Hand-maintained (no generator) |
@@ -108,6 +133,17 @@ The rendering collection also includes [`beauty_bench_realism.omniworld`](projec
 ### 1i. Dev — `worlds/dev/` (3)
 
 Developer scratch/preview worlds (`*_preview.wbt`, `construction_site_dev.omniworld`) for in-progress scene iteration. Not user demos.
+
+### 1j. Debug — `worlds/debug/` (2)
+
+⭐ *The flagship debugging demo.* Worlds that exist **to be broken**. Each one carries a genuine, reproducible fault so that the debugging surface has something real to find. Full write-up: [`projects/samples/demos/worlds/debug/README.md`](projects/samples/demos/worlds/debug/README.md); catalogue row: [DEMOS.md → Debugging](DEMOS.md#debugging--find-out-why-a-robot-failed).
+
+| World | Purpose |
+|---|---|
+| `omniarm6_drop_fault.omniworld` | **DELIBERATELY FAULTY.** The flagship friction-grasp cell with `WorldInfo.newtonGroundMu` at 1.5 instead of 6 and a 0.30 kg payload. The gripper loses the part in mid-air; across the 0.15–0.35 kg payload set **two of five drop**. Diagnosable from `GET /sim/events` alone (`python scripts/dev/diagnose_drop.py <world>`) |
+| `omniarm6_drop_fault_fixed.omniworld` | The same cell with `newtonGroundMu` back at 6 — the verified fix, 5/5 carried. ⚠ Not "nominal": it ships a stated open defect (28.3 mm of carry drift at HEAD, against this cell's own last recorded 20.55 mm / `ok=FALSE` of 2026-08-22 — localised to `17f003e7f`, which is a correctness fix and must not be reverted). See the README |
+
+These two are the only worlds in the tree whose *point* is that they misbehave. Do not "fix" the faulty one, and do not fold them into `flagship/` — the category boundary is what tells a reader the fault is intentional.
 
 ---
 

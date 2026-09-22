@@ -24,7 +24,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Robotics",
 ]
 dependencies = [
-    "omnilink>=0.6.1",
+    "omnilink>=0.6.3",
     "truststore>=0.9; platform_system=='Windows'",
 ]
 

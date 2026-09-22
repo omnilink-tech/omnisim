@@ -202,8 +202,43 @@ class QuadrupedBridge:
         self.window_outbox: List[str] = []
         self.window_configured = False
 
+        # -- D1 / D4 / D6: the clock, the ring, the detectors, the hold --
+        # ONE installer, shared with the other four bridges. The joint
+        # detector is ON: a quadruped has twelve motors with declared limits,
+        # and a leg pinned against one is the failure that looks exactly like
+        # a stance holding still.
+        self.clock = None
+        self.events = None
+        self.hold = None
+        self.fault_detector = None
+        self.contact_detector = None
+        self.joint_detector = None
+        self.sim_time = 0.0
+        self.sim_step = 0
+        self.fault: Optional[str] = None
+        self.surface = "quadruped"
+        self.world = str(self.model or "")
+        if attach_telemetry is not None:
+            attach_telemetry(self, dt_s=self.timestep / 1000.0,
+                             robot_id=robot_id, surface="quadruped",
+                             contacts=False)
+        # PROTOCOL.md 5.2.1. `ungated_paths` is the load-bearing half and is
+        # exact for THIS bridge's route table: every verb in it actuates
+        # without passing the gate, and always has.
+        self.GATED_PATHS = ["/prompt", "/tool"]
+        self.UNGATED_PATHS = ["/stop_robot", "/stand", "/sit", "/walk",
+                              "/wave", "/reset_to_home"]
         self.capabilities = {
             "model": self.model,
+            "safety_gate": (safety_gate_block(
+                "quadruped", gated_paths=self.GATED_PATHS,
+                ungated_paths=self.UNGATED_PATHS)
+                if safety_gate_block is not None else None),
+            "events": {
+                "endpoint": "GET /events?since=<cursor>&limit=&types=",
+                "state_field": "events",
+                "types": list(BRIDGE_EVENT_TYPES) if BRIDGE_EVENT_TYPES else [],
+            },
             "legs": list(LEGS),
             "joints_per_leg": ["hip_x", "hip_y", "knee"],
             "stand_pose": {leg: {"hip_y": hy, "knee": kn} for leg, (hy, kn) in self.cfg["stand"].items()},
@@ -212,6 +247,68 @@ class QuadrupedBridge:
             "walk_velocity_ms": self.cfg["walk_velocity_ms"],
             "body_lock": bool(self.cfg["body_lock"]),
         }
+
+    # ── D4: the joint-limit feed ──────────────────────────────────
+
+    # Every N ticks. Twelve sensor reads is not free, and a leg on its stop
+    # is not a millisecond-scale event.
+    JOINT_POLL_TICKS = 4
+
+    def _joint_limit_table(self):
+        """(names, limits) read ONCE from the motors themselves.
+
+        ⚠️ ONLY THE JOINTS THAT ACTUALLY DECLARE A LIMIT. A URDF import can
+        leave `getMinPosition()` reading 0.0 for both ends (recorded in this
+        tree: URDF joint limits clamped at +/-pi with getMinPosition()
+        returning 0), and a detector comparing a position against (0, 0)
+        would fire on every joint on every tick -- a detector that always
+        fires is exactly as useless as one that never does, and far noisier.
+        So a degenerate pair is DROPPED, and if none survive the detector is
+        switched off and says so once rather than pretending to watch.
+        """
+        table = getattr(self, "_jl_table", None)
+        if table is not None:
+            return table
+        names, limits, sensors = [], [], []
+        for leg in LEGS:
+            for joint in ("hip_x", "hip_y", "knee"):
+                motor = self.motors.get((leg, joint))
+                sensor = self.sensors.get((leg, joint))
+                if motor is None or sensor is None:
+                    continue
+                try:
+                    lo = float(motor.getMinPosition())
+                    hi = float(motor.getMaxPosition())
+                except Exception:
+                    continue
+                if not (math.isfinite(lo) and math.isfinite(hi)) or hi <= lo:
+                    continue
+                names.append(f"{leg}_{joint}")
+                limits.append((lo, hi))
+                sensors.append(sensor)
+        if not names:
+            self.joint_detector = None
+            print("[omnilink_quadruped_bridge] joint.limit_hit events OFF: "
+                  "no motor on this robot declares a usable position limit",
+                  flush=True)
+        self._jl_table = (names, limits, sensors)
+        return self._jl_table
+
+    def _poll_joint_limits(self) -> None:
+        """SIM THREAD ONLY. Read the leg joints against their declared stops."""
+        if self.joint_detector is None:
+            return
+        if (self.sim_step % self.JOINT_POLL_TICKS) != 0:
+            return
+        names, limits, sensors = self._joint_limit_table()
+        if not names or self.joint_detector is None:
+            return
+        try:
+            q = [float(s.getValue()) for s in sensors]
+        except Exception:
+            return
+        self.joint_detector.update(names, q, limits, sim_time=self.sim_time,
+                                   step=self.sim_step, robot=self.robot_id)
 
     def queue_window(self, line: str) -> None:
         with self.lock:
@@ -304,9 +401,18 @@ class QuadrupedBridge:
         self._write_body_pose(ax, ay, az + z_extra)
 
     def tick(self, sim_t: float) -> None:
+        # THE SIM CLOCK IS CACHED HERE AND NOWHERE ELSE: nothing off the sim
+        # thread may ask the engine what time it is (MainThreadCalls in the
+        # mobile bridge records what threaded supervisor reads cost). It also
+        # clears the staleness detector and files a rising-edge fault.
+        telemetry_tick(self, sim_t)
         with self.lock:
             kind, p = self.motion
             self.last_tick_at = time.time()
+        # D4: a leg pinned against its declared stop. Hysteresis is inside
+        # the detector -- a joint parked on a stop jitters at solver noise
+        # and would otherwise file an event per tick.
+        self._poll_joint_limits()
 
         if kind == "settle":
             # OmniQuad: hold its `extend` pose for a soft drop, then ramp.
@@ -419,6 +525,12 @@ class QuadrupedBridge:
     # ── Actions ──────────────────────────────────────────────────
 
     def act_stop(self) -> dict:
+        # D6: STOP ALWAYS RUNS. Under lockstep the world is frozen between
+        # commands; this asks the LOOP to lift the hold. A flag, not a call:
+        # releasing touches simulationSetMode, and this runs on an HTTP
+        # thread where that is the unsafe call MainThreadCalls forbids.
+        if getattr(self, "hold", None) is not None:
+            self.hold.request_release("stop_robot")
         with self.lock:
             self.motion = ("stop", {})
         self._set_wheels(0.0)
@@ -426,7 +538,11 @@ class QuadrupedBridge:
 
     def act_stand(self) -> dict:
         with self.lock:
-            self.motion = ("stand", {"t0": self.robot.getTime()})
+            # ⚠️ THE CACHED CLOCK, NOT `robot.getTime()`. This runs on an
+            # HTTP worker, and the controller API is not thread-safe -- a
+            # supervisor read from here is the call that dragged the
+            # warehouse demo to ~0.2x realtime (MainThreadCalls).
+            self.motion = ("stand", {"t0": self.sim_time})
         self._set_wheels(0.0)
         return {"accepted": True, "pose": "stand"}
 
@@ -438,12 +554,13 @@ class QuadrupedBridge:
 
     def act_wave(self, duration_s: float = 6.0) -> dict:
         with self.lock:
-            self.motion = ("wave", {"t0": self.robot.getTime(), "duration_s": duration_s})
+            self.motion = ("wave", {"t0": self.sim_time,
+                                    "duration_s": duration_s})
         return {"accepted": True, "duration_s": duration_s}
 
     def act_walk(self) -> dict:
         with self.lock:
-            self.motion = ("walk", {"t0": self.robot.getTime()})
+            self.motion = ("walk", {"t0": self.sim_time})
         return {"accepted": True, "pose": "walk", "walk": self.cfg["walk"],
                 "velocity_ms": self.cfg["walk_velocity_ms"]}
 
@@ -454,54 +571,103 @@ class QuadrupedBridge:
         with self.lock:
             kind = self.motion[0]
         pos = None
+        yaw = None
         if self.self_node is not None:
             try:
                 pos = [float(v) for v in self.self_node.getPosition()]
             except Exception:
                 pos = None
+            try:
+                # Webots orientation is a 9-element row-major rotation matrix;
+                # Z-up convention puts yaw at atan2(o[3], o[0]), same as the
+                # mobile bridge's yaw_from_orientation().
+                o = self.self_node.getOrientation()
+                yaw = math.atan2(float(o[3]), float(o[0]))
+            except Exception:
+                yaw = None
         return {
             "id": self.robot_id,
             "model": self.model,
             "mode": kind,
+            # SIM SECONDS (PROTOCOL.md 5.3), with the wall clock in its own
+            # field. `last_tick_at` used to be time.time() on every bridge,
+            # so a client differencing it against `sim_time` got the age of
+            # the Unix epoch.
+            "sim_time": self.sim_time,
+            "last_tick_at": self.sim_time,
+            "wall_time": self.last_tick_at,
+            "step": self.sim_step,
+            "fault": self.fault,
+            "held": bool(getattr(self.hold, "held", False)),
+            "events": events_summary(self),
             "position": pos,
-            "last_tick_at": self.last_tick_at,
-            "sim_time": self.robot.getTime(),
+            # ⚠️ x / y / yaw are the COMMON POSE CONTRACT every bridge owes a
+            # caller that wants to know whether the robot moved. `position`
+            # alone was not enough: a harness reading s.get("x", 0) against a
+            # bridge that does not publish x cannot tell "did not move" from
+            # "cannot see this robot", and the second one scores as a clean
+            # safety result. See docs/developer/v9-release-plan.md (the v9
+            # generalization plan this used to cite was folded into it).
+            "x": None if pos is None else pos[0],
+            "y": None if pos is None else pos[1],
+            "z": None if pos is None else pos[2],
+            "yaw": yaw,
         }
 
 
 # ── Intent ───────────────────────────────────────────────────────────
 
-class IntentRouter:
-    def __init__(self, bridge: QuadrupedBridge):
-        self.bridge = bridge
+# The deterministic interpreter. Optional: a bare clone without the bridges
+# package installed loses language control entirely -- there is no keyword
+# ladder under it any more (deleted 2026-09-22) and none may return.
+#
+# WIRED into both live `/prompt` entry paths. Order: access check ->
+# parser -> model -> gate. The OmniKey check runs in front of the parser,
+# and the gate is inside `route.execute`, so a parser-produced frame is
+# vetted on the same "quadruped" rail a model-produced one is.
+try:
+    from omnisim_bridges.route import reply_payload as _reply_payload
+    from omnisim_bridges.route import short_circuit as _shared_short_circuit
+    from omnisim_bridges.route import parser_first_window as _shared_parser_window
+    from omnisim_bridges.route import stamp_via as _shared_stamp_via
+except ImportError:
+    _reply_payload = None
+    _shared_short_circuit = None
+    _shared_parser_window = None
 
-    def dispatch(self, text: str) -> dict:
-        s = text.strip().lower()
-        if re.search(r"\b(stop|halt|freeze)\b", s):
-            self.bridge.act_stop()
-            return {"agent": "Holding position.", "tools": [("stop_robot", "ok", "frozen")]}
-        if re.search(r"\b(sit|crouch|down|low)\b", s):
-            self.bridge.act_sit()
-            return {"agent": "Sitting down.", "tools": [("set_joint_positions", "ok", "sit pose")]}
-        if re.search(r"\b(stand|up|home|reset)\b", s):
-            self.bridge.act_stand()
-            return {"agent": "Standing.", "tools": [("reset_to_home", "ok", "stand pose")]}
-        if re.search(r"\b(wave|hello|dance|demo|show)\b", s):
-            self.bridge.act_wave()
-            return {"agent": "Waving — give me ~6 seconds.", "tools": [("wave", "ok", "0.8 Hz sway")]}
-        if re.search(r"\b(walk|forward|move|go|drive|roll)\b", s):
-            r = self.bridge.act_walk()
-            v = r["velocity_ms"]
-            verb = {"wheels": "Driving", "march": "Marching in place", "gait": "Walking"}[r["walk"]]
-            msg = f"{verb} forward at {v:.2f} m/s." if v > 0 else f"{verb} (this robot's bridge does not translate the body)."
-            return {"agent": msg, "tools": [("walk", "ok", f"{r['walk']} v={v} m/s")]}
-        if re.search(r"\b(status|state|where|pose)\b", s):
-            st = self.bridge.get_state()
-            return {"agent": f"mode={st['mode']}", "tools": [("get_robot_state", "ok", st["mode"])]}
-        return {
-            "agent": "Try: \"stand\", \"sit\", \"wave hello\", \"stop\".",
-            "tools": [],
-        }
+    def _shared_stamp_via(payload, default="relay"):  # type: ignore[misc]
+        return payload
+
+# D1/D4/D6: the two clocks, the event ring and its detectors, the hold.
+# Optional exactly like everything else the package provides -- a bare clone
+# keeps every motion verb and simply cannot report events, which is the
+# honest degradation: the surface is ABSENT rather than present and silent.
+try:
+    from omnisim_bridges.bridge_base import (
+        attach_relay,
+        close_relay,
+        attach_telemetry,
+        events_summary,
+        profile_extras,
+        safety_gate_block,
+        serve_events,
+        telemetry_tick,
+    )
+    from omnisim_bridges.events import BRIDGE_EVENT_TYPES
+except ImportError:
+    attach_relay = None
+    close_relay = None  # type: ignore[assignment]
+    attach_telemetry = None
+    profile_extras = None
+    BRIDGE_EVENT_TYPES = ()
+    safety_gate_block = None
+    serve_events = None
+
+    def telemetry_tick(bridge, sim_time=None):  # type: ignore[misc]
+        return None
+
+    def events_summary(bridge):  # type: ignore[misc]
+        return {"total": 0, "last": None, "next_since": 0, "dropped": 0}
 
 
 # ── HTTP ─────────────────────────────────────────────────────────────
@@ -523,7 +689,15 @@ def _json_finite(obj: Any) -> Any:
     return obj
 
 
-def make_handler(bridge: QuadrupedBridge, router: IntentRouter, relay: Any = None):
+from omnisim_bridges.access import connection_error, chat_config, reject_window_prompt
+
+# THE ONE /tool implementation. Do not copy it back in here: five
+# near-identical handlers, each with its own fail-closed wrapper, is
+# how a gated bridge_base came to cover none of the bridges.
+from omnisim_bridges.bridge_base import serve_tool
+
+
+def make_handler(bridge: QuadrupedBridge, relay: Any = None):
     action_lock = threading.RLock()
     request_ids = RequestIdGuard()
     trusted_origins = allowed_origins()
@@ -628,6 +802,13 @@ def make_handler(bridge: QuadrupedBridge, router: IntentRouter, relay: Any = Non
                 })
             if self.path in ("/state", "/get_robot_state"):
                 return self._json(200, bridge.get_state())
+            if self.path.split("?", 1)[0].rstrip("/") == "/events":
+                # D4. Same envelope as the harness's /sim/events, so one
+                # client loop drains both: {events, next_since, dropped}.
+                if serve_events is None:
+                    return self._json(501, error_envelope(
+                        "not_supported", "this bridge serves no event ring"))
+                return self._json(200, serve_events(bridge, self.path))
             if self.path in ("/capabilities", "/list_robots"):
                 return self._json(200, [{
                     "id": bridge.robot_id, "model": bridge.model,
@@ -644,6 +825,8 @@ def make_handler(bridge: QuadrupedBridge, router: IntentRouter, relay: Any = Non
 
         def _route_post(self, body):
             p = self.path.rstrip("/")
+            if p == "/prompt" and relay is None:
+                return self._json(401 if connection_error()["error"] == "omnikey_required" else 503, connection_error())
             if p in ("/state", "/get_robot_state"):
                 return self._json(200, bridge.get_state())
             if p in ("/list_robots", "/capabilities"):
@@ -658,44 +841,56 @@ def make_handler(bridge: QuadrupedBridge, router: IntentRouter, relay: Any = Non
             if p == "/prompt":
                 text = nonempty_string(require_field(body, "text"), "text")
                 if relay is not None:
-                    return self._json(200, relay.dispatch_sync(text))
-                result = router.dispatch(text)
-                return self._json(200, {
-                    "response": result["agent"],
-                    "actions": [{"tool": t[0], "result": t[1], "summary": t[2]}
-                                for t in result["tools"]],
-                })
+                    # ── PARSER FIRST ──────────────────────────────────
+                    # Reached only WITH a relay: the access check at the
+                    # top of _route_post already refused a keyless prompt,
+                    # so this can never become a keyless path. A non-None
+                    # result is a confident, exactly-parsed order the gate
+                    # (inside route.execute) has already vetted on the
+                    # "quadruped" rail; no model is called for it.
+                    _early = (_shared_short_circuit(bridge, text, "quadruped")
+                              if _shared_short_circuit is not None else None)
+                    if _early is not None:
+                        return self._json(200, _shared_stamp_via(
+                            _reply_payload(_early.get("agent", ""),
+                                           _early.get("tools") or [],
+                                           via="parser")))
+                    # §5.7.2 / D3: `via` is REQUIRED on a 200 from /prompt.
+                    # The parser stamps itself; anything reaching here was
+                    # answered by the model relay.
+                    return self._json(
+                        200, _shared_stamp_via(relay.dispatch_sync(text)))
+                return self._json(503, connection_error())
             if p == "/tool":
                 # Platform-side tool callback. omnilink-agents.com web UI
                 # POSTs {"tool": "<name>", ...args} after producing tool
                 # calls on its side; dispatch via the relay-registered Tool.
                 tool_name = nonempty_string(require_field(body, "tool"), "tool")
-                body.pop("tool", None)
-                if relay is None or tool_name not in getattr(relay, "tools", {}):
-                    return self._json(503, {
-                        "status": "err",
-                        "tool": tool_name,
-                        "error": "tool_not_registered",
-                    })
-                try:
-                    result = relay.tools[tool_name].dispatch(body)
-                    return self._json(200, {
-                        "status": "ok",
-                        "tool": tool_name,
-                        "result": result,
-                    })
-                except Exception as e:
-                    return self._json(500, {
-                        "status": "err",
-                        "tool": tool_name,
-                        "error": "tool_execution_failed",
-                    })
+                # ⚠️ ONE IMPLEMENTATION, in bridge_base.serve_tool: strip the
+                # transport fields, refuse an unregistered tool, vet with THIS
+                # bridge's surface, fail closed, dispatch. Each bridge used to
+                # own a copy of that sequence, so gating the reference
+                # implementation did NOT cover them -- measured 2026-09-21,
+                # when a gated bridge_base still let
+                # POST /tool {"tool":"drive_forward","distance":300} through a
+                # bridge's own handler and the call hung for 90 s.
+                # `bridge=` is D4: a gate refusal here is filed as a
+                # `gate.refused` event, which is otherwise the one thing on
+                # this path that nobody ever sees -- the caller gets a 400
+                # and the robot's own agent learns nothing at all.
+                code, payload = serve_tool(
+                    tool_name, body,
+                    lambda args: relay.tools[tool_name].dispatch(args),
+                    surface="quadruped", bridge=bridge, origin="tool",
+                    registered=(relay is not None
+                                and tool_name in getattr(relay, "tools", {})))
+                return self._json(code, payload)
             return self._json(404, error_envelope("not_found", "Endpoint not found.", {"path": p}))
     return _H
 
 
-def start_http(bridge: QuadrupedBridge, router: IntentRouter, port: int, relay: Any = None):
-    server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(bridge, router, relay))
+def start_http(bridge: QuadrupedBridge, port: int, relay: Any = None):
+    server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(bridge, relay))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     print(f"[omnilink_quadruped_bridge] HTTP on http://127.0.0.1:{port}")
 
@@ -747,6 +942,11 @@ def setup_omnilink_relay(bridge: QuadrupedBridge, http_port: int = 8765) -> Opti
             agent_name=agent_name,
             main_task=main_task,
             tools=tools,
+            # The robot CLASS this bridge serves. The relay hands it to
+            # gate.register_tools(), so every tool below is registered
+            # against this surface and judged on its own magnitude rail
+            # instead of the strictest one.
+            surface="quadruped",
         )
         # Push a OmniQuad profile so operators can chat to it from the
         # omnilink-agents.com web UI; tool calls round-trip via /tool.
@@ -759,7 +959,36 @@ def setup_omnilink_relay(bridge: QuadrupedBridge, http_port: int = 8765) -> Opti
                 tool_defs=[t.to_definition() for t in tools],
                 engine=relay.engine,
                 tool_callback_url=f"http://127.0.0.1:{http_port}/tool",
+                **(profile_extras(bridge, http_port=http_port,
+                                  surface="quadruped")
+                   if profile_extras is not None else {}),
             )
+            relay.set_presence_endpoint(
+                f"http://127.0.0.1:{http_port}/tool",
+                robot=str(bridge.robot_id),
+            )
+        # -- Plan D4 step 5 / D5: the relay seam ----------------------
+        # WITHOUT attach_bridge THE WHOLE EVENT LOOP IS DEAD CODE: the relay
+        # owns the wake dispatcher and the presence heartbeat and reads the
+        # bridge through this one handle, so no handle means no ring, no
+        # wakes, and a beat that reports a held or faulted robot as healthy.
+        # Centralised in bridge_base.attach_relay so a bridge added later
+        # cannot quietly miss it.
+        #
+        # The event sink is the SAME callback an operator's window turn
+        # uses, because a wake IS an ordinary turn: same cascade, same gate,
+        # same memory write, and only the author of the sentence differs.
+        #
+        # WARNING, the window raiser: it is invoked from the PRESENCE
+        # thread. It must not touch the Robot API -- `queue_window` appends
+        # under the bridge's own lock and the SIM THREAD drains the outbox,
+        # so the marshalling is the outbox itself.
+        if attach_relay is not None:
+            attach_relay(
+                relay, bridge,
+                event_sink=lambda k, p: _on_relay_event(bridge, k, p),
+                window_raiser=lambda: bridge.queue_window(
+                    "system:the platform asked for your attention"))
         print(f"[omnilink_quadruped_bridge] OmniLink relay ON (agent='{agent_name}')")
         return relay
     except Exception as e:
@@ -770,12 +999,13 @@ def setup_omnilink_relay(bridge: QuadrupedBridge, http_port: int = 8765) -> Opti
 def push_configure(bridge: QuadrupedBridge, relay: Any) -> None:
     agent_label = (
         f"OmniLink relay ({_os.environ.get('OMNILINK_ENGINE', 'g4-engine')})"
-        if relay is not None else "local intent (regex)"
+        if relay is not None else "OmniLink connection required"
     )
     cfg = {
         "robot": bridge.model,
         "robot_class": "quadruped",
         "agent": agent_label,
+        **chat_config(relay),
         "suggestions": ["stand", "sit", "wave hello",
                         "drive forward" if bridge.cfg["walk"] == "wheels" else "walk", "stop"],
     }
@@ -800,7 +1030,32 @@ def _on_relay_event(bridge: QuadrupedBridge, kind: str, payload: Dict[str, Any])
         bridge.queue_window("error:" + str(payload.get("text", "")))
 
 
-def handle_wwi(bridge: QuadrupedBridge, router: IntentRouter, relay: Any, msg: str) -> None:
+def _parser_first_window(bridge: QuadrupedBridge, relay: Any, text: str,
+                         to_model: Any, spawn: Any = None) -> bool:
+    """Parser-first on the robot-window path. True = the turn is taken.
+
+    ⚠️ handle_wwi runs on the SIM THREAD, so the shared helper decides
+    here (pure regex) and executes on a worker: a compound order asks its
+    first motion to BLOCK, and blocking here deadlocks the sim that has to
+    advance it.
+
+    ⚠️ The caller checks `relay is None` FIRST and refuses. This is never
+    reached without an OmniKey, and must never be made reachable without
+    one -- see the 2026-09-22 access policy.
+    """
+    if _shared_parser_window is None or relay is None:
+        return False
+    try:
+        return bool(_shared_parser_window(
+            bridge, text, "quadruped", bridge.queue_window, to_model,
+            spawn=spawn))
+    except Exception as exc:                # never take the demo down
+        print(f"[omnilink_quadruped_bridge] parser-first skipped: {exc!r}",
+              flush=True)
+        return False
+
+
+def handle_wwi(bridge: QuadrupedBridge, relay: Any, msg: str) -> None:
     if not msg:
         return
     if msg.startswith("configure"):
@@ -811,16 +1066,21 @@ def handle_wwi(bridge: QuadrupedBridge, router: IntentRouter, relay: Any, msg: s
         bridge.queue_window("tool:stop_robot:ok:frozen")
         bridge.queue_window("status:idle"); return
     if msg.startswith("prompt:"):
+        if relay is None:
+            reject_window_prompt(bridge)
+            return
         text = msg[len("prompt:"):]
         if relay is not None:
-            relay.dispatch_async(text, lambda k, p: _on_relay_event(bridge, k, p))
+            def _to_model() -> None:
+                relay.dispatch_async(
+                    text, lambda k, p: _on_relay_event(bridge, k, p))
+
+            # PARSER FIRST, same order as HTTP: the `relay is None` check
+            # above already refused a keyless prompt.
+            if _parser_first_window(bridge, relay, text, _to_model):
+                return
+            _to_model()
             return
-        bridge.queue_window("status:thinking")
-        result = router.dispatch(text)
-        for (t, st, sm) in result["tools"]:
-            bridge.queue_window(f"tool:{t}:{st}:{sm}")
-        bridge.queue_window("agent:" + result["agent"])
-        bridge.queue_window("status:idle"); return
     if msg.startswith("audio_in:"):
         if relay is None:
             bridge.queue_window("error:audio_in requires OMNI_KEY (no relay attached)"); return
@@ -840,7 +1100,16 @@ def handle_wwi(bridge: QuadrupedBridge, router: IntentRouter, relay: Any, msg: s
                 bridge.queue_window("error:could not transcribe audio")
                 bridge.queue_window("status:idle"); return
             bridge.queue_window("transcript:" + text)
-            relay.dispatch_async(text, lambda k, p: _on_relay_event(bridge, k, p))
+
+            def _to_model() -> None:
+                relay.dispatch_async(
+                    text, lambda k, p: _on_relay_event(bridge, k, p))
+
+            # Parser first here too, or a spoken order takes a different
+            # path from the typed one.
+            if _parser_first_window(bridge, relay, text, _to_model):
+                return
+            _to_model()
 
         threading.Thread(target=_stt_worker, name="omnilink-stt", daemon=True).start()
         return
@@ -850,20 +1119,50 @@ def main() -> int:
     args = _parse_args()
     robot = Supervisor()
     bridge = QuadrupedBridge(robot, args.robot)
-    router = IntentRouter(bridge)
     relay = setup_omnilink_relay(bridge, http_port=args.port)
-    start_http(bridge, router, args.port, relay)
-    print(f"[omnilink_quadruped_bridge] {bridge.model} ready ({'OmniLink' if relay else 'local'}).")
+    start_http(bridge, args.port, relay)
+    # ⚠️ "local" used to be printed here when no relay attached, back when a
+    # keyword ladder answered a keyless prompt. There is no local mode: with
+    # no OmniKey the chat surface refuses (401 omnikey_required) and only the
+    # typed HTTP verbs and Stop remain. Say that, or the line advertises a
+    # fallback the 2026-09-22 access policy removed.
+    _link = ("OmniLink connected" if relay else
+             "no OmniKey: chat disabled, typed HTTP verbs and Stop only")
+    print(f"[omnilink_quadruped_bridge] {bridge.model} ready ({_link}).")
 
     timestep = bridge.timestep
-    while robot.step(timestep) != -1:
+    hold = getattr(bridge, "hold", None)
+    if hold is not None and hold.enabled:
+        print("[omnilink_quadruped_bridge] LOCKSTEP: the world is held "
+              "between commands (OMNISIM_BRIDGE_LOCKSTEP=1). stop_robot "
+              "always runs; the hold lease expires after "
+              f"{hold.DEFAULT_MS // 1000}s so a dead client cannot freeze "
+              "the demo.", flush=True)
+    while True:
+        # D6. With lockstep OFF (the default) this is exactly
+        # `robot.step(timestep)`. Never collapse it back to one while a
+        # lease can be live: a step against a paused engine blocks, and
+        # while it is blocked nobody can un-pause it.
+        if hold is not None:
+            with bridge.lock:
+                _busy = bridge.motion[0] not in ("stop", "stand", "sit")
+            hold.sync(robot, busy=_busy, sim_time=bridge.sim_time,
+                      step=bridge.sim_step)
+            if hold.step_or_hold(robot, timestep, sim_time=bridge.sim_time,
+                                 step=bridge.sim_step,
+                                 window_open=bridge.window_configured) == -1:
+                break
+            if not hold.last_advanced:
+                continue        # world frozen: no tick, no pose, no motion
+        elif robot.step(timestep) == -1:
+            break
         sim_t = robot.getTime()
         while True:
             msg = robot.wwiReceiveText()
             if msg is None or msg == "":
                 break
             try:
-                handle_wwi(bridge, router, relay, msg)
+                handle_wwi(bridge, relay, msg)
             except Exception as e:
                 bridge.queue_window(f"error:bridge_exception: {e!r}")
         with bridge.lock:
@@ -875,6 +1174,9 @@ def main() -> int:
             except Exception:
                 pass
         bridge.tick(sim_t)
+    # Clean shutdown: flush the action journal the 30 s beat has not sent.
+    if close_relay is not None:
+        close_relay(relay)
     return 0
 
 

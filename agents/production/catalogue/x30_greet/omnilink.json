@@ -1,0 +1,15 @@
+{
+  "name": "x30_greet",
+  "display_name": "X30 Greet",
+  "world": "projects/samples/demos/worlds/chat/omnilink_x30.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/x30_greet/run.py",
+  "description": "x30 \u2014 stand and acknowledge. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "quadruped",
+    "greet",
+    "x30",
+    "catalogue",
+    "generated"
+  ]
+}

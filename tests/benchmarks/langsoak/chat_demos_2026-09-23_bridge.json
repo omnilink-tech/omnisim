@@ -1,0 +1,3049 @@
+{
+  "schema": "chat_demos/2",
+  "generated_at": "2026-09-22T21:20:51+00:00",
+  "machine": {
+    "node": "LAPTOP-H61DJILS",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.9",
+    "commit": "74b8ceadf"
+  },
+  "doors": [
+    "bridge"
+  ],
+  "door_specs": {
+    "bridge": {
+      "door": "bridge",
+      "transport": "POST /prompt on 127.0.0.1:<port>",
+      "preflight_ok": true,
+      "reason": null
+    }
+  },
+  "primary_door": "bridge",
+  "clean": 21,
+  "total": 21,
+  "unscripted": [],
+  "rows": [
+    {
+      "demo": "omniarm6_talk",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "omniarm6",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "open the gripper",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "open_gripper"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how much reach have you got left?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "put it over there",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_husky",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "husky",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "where are you right now?",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "drive forward 1 metre",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "drive_forward"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many times have you had to stop on this run?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "stop",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stop"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_jackal",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "jackal",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "where are you right now?",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "drive forward 1 metre",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "drive_forward"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many times have you had to stop on this run?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "stop",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stop"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_lite3",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "lite3",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "stand up",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stand"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many legs are left on the ground?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "sit down",
+          "kind": "act",
+          "via": "relay",
+          "answered": true,
+          "actions": [
+            "sit"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_m20",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "m20",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "stand up",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stand"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many legs are left on the ground?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "sit down",
+          "kind": "act",
+          "via": "relay",
+          "answered": true,
+          "actions": [
+            "sit"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_m20_piper",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "m20_piper",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "stand up",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stand"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many legs are left on the ground?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "sit down",
+          "kind": "act",
+          "via": "relay",
+          "answered": true,
+          "actions": [
+            "sit"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_m20s",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "m20s",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "stand up",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stand"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many legs are left on the ground?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "sit down",
+          "kind": "act",
+          "via": "relay",
+          "answered": true,
+          "actions": [
+            "sit"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_mavic",
+      "door": "bridge",
+      "port": 6090,
+      "robot": "",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "how high are you?",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "take off to 3 metres",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "takeoff"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "where did the package land?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "land",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "land"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_multi_arm",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "ur5e",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [
+        {
+          "index": 1,
+          "text": "open the gripper",
+          "answered": true,
+          "http_status": 200,
+          "error": "open_gripper: effector_unavailable"
+        }
+      ],
+      "sentences": [
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "open the gripper",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "open_gripper"
+          ],
+          "refused_tools": [
+            "open_gripper"
+          ],
+          "bridge_error": "open_gripper: effector_unavailable",
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how much reach have you got left?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "put it over there",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_omniarm6",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "omniarm6",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [
+        {
+          "index": 1,
+          "text": "open the gripper",
+          "answered": true,
+          "http_status": 200,
+          "error": "open_gripper: effector_unavailable"
+        }
+      ],
+      "sentences": [
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "open the gripper",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "open_gripper"
+          ],
+          "refused_tools": [
+            "open_gripper"
+          ],
+          "bridge_error": "open_gripper: effector_unavailable",
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how much reach have you got left?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "put it over there",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_omniarm6_2f140",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "omniarm6",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "open the gripper",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "open_gripper"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how much reach have you got left?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "put it over there",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_omniquad",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "omniquad",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "stand up",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stand"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many legs are left on the ground?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "sit down",
+          "kind": "act",
+          "via": "relay",
+          "answered": true,
+          "actions": [
+            "sit"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_rosbot",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "rosbot",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "where are you right now?",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "drive forward 1 metre",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "drive_forward"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many times have you had to stop on this run?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "stop",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stop"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_rosbot_xl",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "rosbot_xl",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "where are you right now?",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "drive forward 1 metre",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "drive_forward"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many times have you had to stop on this run?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "stop",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stop"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_tb3_burger",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "tb3_burger",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "where are you right now?",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "drive forward 1 metre",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "drive_forward"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many times have you had to stop on this run?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "stop",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stop"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_tb3_waffle",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "tb3_waffle",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "where are you right now?",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "drive forward 1 metre",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "drive_forward"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many times have you had to stop on this run?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "stop",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stop"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_tb3_waffle_pi",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "tb3_waffle_pi",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "where are you right now?",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "drive forward 1 metre",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "drive_forward"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many times have you had to stop on this run?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "stop",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stop"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_ur10e",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "ur10e",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [
+        {
+          "index": 1,
+          "text": "open the gripper",
+          "answered": true,
+          "http_status": 200,
+          "error": "open_gripper: effector_unavailable"
+        }
+      ],
+      "sentences": [
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "open the gripper",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "open_gripper"
+          ],
+          "refused_tools": [
+            "open_gripper"
+          ],
+          "bridge_error": "open_gripper: effector_unavailable",
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how much reach have you got left?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "put it over there",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_ur3e",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "ur3e",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [
+        {
+          "index": 1,
+          "text": "open the gripper",
+          "answered": true,
+          "http_status": 200,
+          "error": "open_gripper: effector_unavailable"
+        }
+      ],
+      "sentences": [
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "open the gripper",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "open_gripper"
+          ],
+          "refused_tools": [
+            "open_gripper"
+          ],
+          "bridge_error": "open_gripper: effector_unavailable",
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how much reach have you got left?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "put it over there",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_ur5e",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "ur5e",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [
+        {
+          "index": 1,
+          "text": "open the gripper",
+          "answered": true,
+          "http_status": 200,
+          "error": "open_gripper: effector_unavailable"
+        }
+      ],
+      "sentences": [
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "open the gripper",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "open_gripper"
+          ],
+          "refused_tools": [
+            "open_gripper"
+          ],
+          "bridge_error": "open_gripper: effector_unavailable",
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how much reach have you got left?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "put it over there",
+          "kind": "ask",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    },
+    {
+      "demo": "omnilink_x30",
+      "door": "bridge",
+      "port": 8765,
+      "robot": "x30",
+      "ran": true,
+      "status": "ran",
+      "skip_reason": null,
+      "up": true,
+      "answered": 4,
+      "asked": 4,
+      "trap_actuated": [],
+      "errors": [],
+      "clean": true,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": [],
+      "sentences": [
+        {
+          "text": "stand up",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "stand"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "wave hello",
+          "kind": "act",
+          "via": "parser",
+          "answered": true,
+          "actions": [
+            "wave"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "how many legs are left on the ground?",
+          "kind": "trap",
+          "via": "relay",
+          "answered": true,
+          "actions": [],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        },
+        {
+          "text": "sit down",
+          "kind": "act",
+          "via": "relay",
+          "answered": true,
+          "actions": [
+            "sit"
+          ],
+          "refused_tools": [],
+          "bridge_error": null,
+          "http_status": 200,
+          "error": null
+        }
+      ]
+    }
+  ],
+  "by_door": {
+    "bridge": [
+      {
+        "demo": "omniarm6_talk",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "omniarm6",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "open the gripper",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "open_gripper"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how much reach have you got left?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "put it over there",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_husky",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "husky",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "where are you right now?",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "drive forward 1 metre",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "drive_forward"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many times have you had to stop on this run?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "stop",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stop"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_jackal",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "jackal",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "where are you right now?",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "drive forward 1 metre",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "drive_forward"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many times have you had to stop on this run?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "stop",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stop"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_lite3",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "lite3",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "stand up",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stand"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many legs are left on the ground?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "sit down",
+            "kind": "act",
+            "via": "relay",
+            "answered": true,
+            "actions": [
+              "sit"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_m20",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "m20",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "stand up",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stand"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many legs are left on the ground?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "sit down",
+            "kind": "act",
+            "via": "relay",
+            "answered": true,
+            "actions": [
+              "sit"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_m20_piper",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "m20_piper",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "stand up",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stand"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many legs are left on the ground?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "sit down",
+            "kind": "act",
+            "via": "relay",
+            "answered": true,
+            "actions": [
+              "sit"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_m20s",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "m20s",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "stand up",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stand"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many legs are left on the ground?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "sit down",
+            "kind": "act",
+            "via": "relay",
+            "answered": true,
+            "actions": [
+              "sit"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_mavic",
+        "door": "bridge",
+        "port": 6090,
+        "robot": "",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "how high are you?",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "take off to 3 metres",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "takeoff"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "where did the package land?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "land",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "land"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_multi_arm",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "ur5e",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [
+          {
+            "index": 1,
+            "text": "open the gripper",
+            "answered": true,
+            "http_status": 200,
+            "error": "open_gripper: effector_unavailable"
+          }
+        ],
+        "sentences": [
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "open the gripper",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "open_gripper"
+            ],
+            "refused_tools": [
+              "open_gripper"
+            ],
+            "bridge_error": "open_gripper: effector_unavailable",
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how much reach have you got left?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "put it over there",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_omniarm6",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "omniarm6",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [
+          {
+            "index": 1,
+            "text": "open the gripper",
+            "answered": true,
+            "http_status": 200,
+            "error": "open_gripper: effector_unavailable"
+          }
+        ],
+        "sentences": [
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "open the gripper",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "open_gripper"
+            ],
+            "refused_tools": [
+              "open_gripper"
+            ],
+            "bridge_error": "open_gripper: effector_unavailable",
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how much reach have you got left?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "put it over there",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_omniarm6_2f140",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "omniarm6",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "open the gripper",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "open_gripper"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how much reach have you got left?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "put it over there",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_omniquad",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "omniquad",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "stand up",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stand"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many legs are left on the ground?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "sit down",
+            "kind": "act",
+            "via": "relay",
+            "answered": true,
+            "actions": [
+              "sit"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_rosbot",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "rosbot",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "where are you right now?",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "drive forward 1 metre",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "drive_forward"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many times have you had to stop on this run?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "stop",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stop"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_rosbot_xl",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "rosbot_xl",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "where are you right now?",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "drive forward 1 metre",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "drive_forward"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many times have you had to stop on this run?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "stop",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stop"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_tb3_burger",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "tb3_burger",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "where are you right now?",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "drive forward 1 metre",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "drive_forward"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many times have you had to stop on this run?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "stop",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stop"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_tb3_waffle",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "tb3_waffle",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "where are you right now?",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "drive forward 1 metre",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "drive_forward"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many times have you had to stop on this run?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "stop",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stop"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_tb3_waffle_pi",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "tb3_waffle_pi",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "where are you right now?",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "drive forward 1 metre",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "drive_forward"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many times have you had to stop on this run?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "stop",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stop"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_ur10e",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "ur10e",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [
+          {
+            "index": 1,
+            "text": "open the gripper",
+            "answered": true,
+            "http_status": 200,
+            "error": "open_gripper: effector_unavailable"
+          }
+        ],
+        "sentences": [
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "open the gripper",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "open_gripper"
+            ],
+            "refused_tools": [
+              "open_gripper"
+            ],
+            "bridge_error": "open_gripper: effector_unavailable",
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how much reach have you got left?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "put it over there",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_ur3e",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "ur3e",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [
+          {
+            "index": 1,
+            "text": "open the gripper",
+            "answered": true,
+            "http_status": 200,
+            "error": "open_gripper: effector_unavailable"
+          }
+        ],
+        "sentences": [
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "open the gripper",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "open_gripper"
+            ],
+            "refused_tools": [
+              "open_gripper"
+            ],
+            "bridge_error": "open_gripper: effector_unavailable",
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how much reach have you got left?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "put it over there",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_ur5e",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "ur5e",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [
+          {
+            "index": 1,
+            "text": "open the gripper",
+            "answered": true,
+            "http_status": 200,
+            "error": "open_gripper: effector_unavailable"
+          }
+        ],
+        "sentences": [
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "open the gripper",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "open_gripper"
+            ],
+            "refused_tools": [
+              "open_gripper"
+            ],
+            "bridge_error": "open_gripper: effector_unavailable",
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how much reach have you got left?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "put it over there",
+            "kind": "ask",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      },
+      {
+        "demo": "omnilink_x30",
+        "door": "bridge",
+        "port": 8765,
+        "robot": "x30",
+        "ran": true,
+        "status": "ran",
+        "skip_reason": null,
+        "up": true,
+        "answered": 4,
+        "asked": 4,
+        "trap_actuated": [],
+        "errors": [],
+        "clean": true,
+        "failed_with_reason": 0,
+        "failed_without_reason": 0,
+        "bridge_errors": [],
+        "sentences": [
+          {
+            "text": "stand up",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "stand"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "wave hello",
+            "kind": "act",
+            "via": "parser",
+            "answered": true,
+            "actions": [
+              "wave"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "how many legs are left on the ground?",
+            "kind": "trap",
+            "via": "relay",
+            "answered": true,
+            "actions": [],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          },
+          {
+            "text": "sit down",
+            "kind": "act",
+            "via": "relay",
+            "answered": true,
+            "actions": [
+              "sit"
+            ],
+            "refused_tools": [],
+            "bridge_error": null,
+            "http_status": 200,
+            "error": null
+          }
+        ]
+      }
+    ]
+  },
+  "summary": {
+    "bridge": {
+      "requested": 21,
+      "ran": 21,
+      "skipped": 0,
+      "clean": 21,
+      "asked": 84,
+      "answered": 84,
+      "trap_actuations": 0,
+      "failed_with_reason": 0,
+      "failed_without_reason": 0,
+      "bridge_errors": 5,
+      "reasons_seen": {
+        "open_gripper: effector_unavailable": 5
+      },
+      "via_counts": {
+        "parser": 42,
+        "relay": 42
+      },
+      "via_unreported": 0,
+      "skip_reasons": {}
+    }
+  },
+  "comparison": {
+    "doors": [
+      "bridge"
+    ],
+    "sentences": [],
+    "agree": 0,
+    "disagree": 0,
+    "undetermined": 0,
+    "comparable": false,
+    "reason": "only one door was requested (['bridge'])"
+  },
+  "verdict": {
+    "pass": true,
+    "reasons": []
+  }
+}

@@ -1,0 +1,196 @@
+{
+    "codebase_version": "v3.0",
+    "robot_type": "unknown",
+    "total_episodes": 49,
+    "total_frames": 29400,
+    "total_tasks": 1,
+    "chunks_size": 1000,
+    "fps": 50,
+    "splits": {
+        "train": "0:49"
+    },
+    "data_path": "data/chunk-{chunk_index:03d}/file-{file_index:03d}.parquet",
+    "video_path": "videos/{video_key}/chunk-{chunk_index:03d}/file-{file_index:03d}.mp4",
+    "features": {
+        "observation.images.cam_high": {
+            "dtype": "video",
+            "shape": [
+                480,
+                640,
+                3
+            ],
+            "names": [
+                "height",
+                "width",
+                "channels"
+            ],
+            "video_info": {
+                "video.codec": "av1",
+                "video.pix_fmt": "yuv420p",
+                "video.is_depth_map": false,
+                "video.fps": 50,
+                "has_audio": false
+            }
+        },
+        "observation.images.cam_left_wrist": {
+            "dtype": "video",
+            "shape": [
+                480,
+                640,
+                3
+            ],
+            "names": [
+                "height",
+                "width",
+                "channels"
+            ],
+            "video_info": {
+                "video.codec": "av1",
+                "video.pix_fmt": "yuv420p",
+                "video.is_depth_map": false,
+                "video.fps": 50,
+                "has_audio": false
+            }
+        },
+        "observation.images.cam_low": {
+            "dtype": "video",
+            "shape": [
+                480,
+                640,
+                3
+            ],
+            "names": [
+                "height",
+                "width",
+                "channels"
+            ],
+            "video_info": {
+                "video.codec": "av1",
+                "video.pix_fmt": "yuv420p",
+                "video.is_depth_map": false,
+                "video.fps": 50,
+                "has_audio": false
+            }
+        },
+        "observation.images.cam_right_wrist": {
+            "dtype": "video",
+            "shape": [
+                480,
+                640,
+                3
+            ],
+            "names": [
+                "height",
+                "width",
+                "channels"
+            ],
+            "video_info": {
+                "video.codec": "av1",
+                "video.pix_fmt": "yuv420p",
+                "video.is_depth_map": false,
+                "video.fps": 50,
+                "has_audio": false
+            }
+        },
+        "observation.state": {
+            "dtype": "float32",
+            "shape": [
+                14
+            ],
+            "names": {
+                "motors": [
+                    "motor_0",
+                    "motor_1",
+                    "motor_2",
+                    "motor_3",
+                    "motor_4",
+                    "motor_5",
+                    "motor_6",
+                    "motor_7",
+                    "motor_8",
+                    "motor_9",
+                    "motor_10",
+                    "motor_11",
+                    "motor_12",
+                    "motor_13"
+                ]
+            },
+            "fps": 50
+        },
+        "action": {
+            "dtype": "float32",
+            "shape": [
+                14
+            ],
+            "names": {
+                "motors": [
+                    "motor_0",
+                    "motor_1",
+                    "motor_2",
+                    "motor_3",
+                    "motor_4",
+                    "motor_5",
+                    "motor_6",
+                    "motor_7",
+                    "motor_8",
+                    "motor_9",
+                    "motor_10",
+                    "motor_11",
+                    "motor_12",
+                    "motor_13"
+                ]
+            },
+            "fps": 50
+        },
+        "episode_index": {
+            "dtype": "int64",
+            "shape": [
+                1
+            ],
+            "names": null,
+            "fps": 50
+        },
+        "frame_index": {
+            "dtype": "int64",
+            "shape": [
+                1
+            ],
+            "names": null,
+            "fps": 50
+        },
+        "timestamp": {
+            "dtype": "float32",
+            "shape": [
+                1
+            ],
+            "names": null,
+            "fps": 50
+        },
+        "next.done": {
+            "dtype": "bool",
+            "shape": [
+                1
+            ],
+            "names": null,
+            "fps": 50
+        },
+        "index": {
+            "dtype": "int64",
+            "shape": [
+                1
+            ],
+            "names": null,
+            "fps": 50
+        },
+        "task_index": {
+            "dtype": "int64",
+            "shape": [
+                1
+            ],
+            "names": null,
+            "fps": 50
+        }
+    },
+    "data_files_size_in_mb": 100,
+    "video_files_size_in_mb": 200
+}

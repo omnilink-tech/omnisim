@@ -53,14 +53,17 @@ omnisim/
 │           ├── protos/           Shared PROTOs (OmniLinkStage, …)
 │           └── worlds/           Every demo, grouped by category
 │               ├── omnilink_launcher.omniworld         default entry point (stays flat)
-│               ├── chat/         15 single-robot natural-language demos  (public count lower: held robots)
-│               ├── flagship/     17 multi-robot agent-driven showcases  (public count lower: held robots)
+│               ├── chat/         21 single-robot natural-language demos  (all ship; no chat entry on the deny-list)
+│               ├── flagship/     28 agent-driven showcases  (all ship; no flagship entry on the deny-list)
 │               ├── showcase/     6 Husky variants / outdoor / fall tests
 │               ├── physics/      6 Newton / CUDA / granular stress
 │               ├── rendering/    19 camera / wgpu / PBR render-smoke worlds
 │               ├── environments/ 3 outdoor scenes (city, desert, forest)
 │               ├── dev/          3 in-progress scene previews
 │               └── misc/         2 transform / stack tests
+│
+├── sim-to-real/                  Real-recording comparisons, videos and measured evidence
+│   └── so101/                    Pick/place study (authored success; recorded replay unresolved)
 │
 ├── distribution/
 │   └── generated_worlds/         Procedurally generated worlds (omniworld + seeds)

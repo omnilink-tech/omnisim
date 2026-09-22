@@ -102,20 +102,33 @@ laptop with all three loops running; the GPU `mujoco_warp` build measured
 0.3–0.4× here because the loops teleport bodies every tick and each teleport
 costs a GPU re-sync. Don't "upgrade" this world to warp.
 
-## Pick a chat mode
+## Connect the chat
 
-The bridges decide at controller start, in this order:
+An OmniKey is required for the AI experience on every plan, Free included,
+and the access check runs *before* the sentence is interpreted. Set it in the
+shell that launches the world, because each bridge builds its relay once, at
+controller start:
 
-| Mode | How you get it | What it unlocks |
+```bat
+set OMNI_KEY=olink_...
+```
+
+| | With `OMNI_KEY` set | With it unset |
 |---|---|---|
-| **Offline (regex)** | the default — nothing set, no Ollama running | Literal single commands only, matched by regex: `stop`, `carry on`, `home`, `forward 1 m`, `turn left 90 degrees`, `wave hello`, `open the gripper`, `where are you`, plus status ("what are you doing?"). No tool *choice*, no reasoning, no memory — a phrasing off the list is simply not understood. Zero setup, zero cost. |
-| **Local Ollama** | leave `OMNI_KEY` unset and have an Ollama server answering on `http://127.0.0.1:11434` | Real native tool calling: the model picks the tool, does arithmetic on relative moves, reads state before answering, and can call `resume_autonomy`. Zero account, zero cost, runs on your GPU. Setup + model picks: [`chat/LOCAL_OLLAMA.md`](../chat/LOCAL_OLLAMA.md). |
-| **OmniLink platform** | `set OMNI_KEY=olink_...` | Everything local mode does, plus cross-session memory, the robot appearing as an agent at omnilink-agents.com with its tool surface, usage telemetry, voice — **and the Warehouse-Foreman**, which is platform-side delegation and exists only in this mode. |
+| Chat panel / `POST /prompt` | The bridge's OmniLink relay answers: a deterministic parser interprets first, the model is called only on what the parser declines, and the safety gate vets whatever produced the frames. | `401 omnikey_required` (503 if the connection itself failed), and the panel says the OmniLink connection is required. Nothing actuates. |
+| Platform features | Cross-session memory, the robot appearing as an agent at omnilink-agents.com with its tool surface, usage telemetry, voice — **and the Warehouse-Foreman**, which is platform-side delegation. | Not available. |
+| The world, the three idle loops, Stop, and the direct bridge verbs (`/drive_forward`, `/stop_robot`, `/resume_autonomy`, …) | Available. | Available — these are ungated simulator controls. The OmniKey gates the AI turn, not the robot. |
 
-`OMNI_KEY` **and** a live Ollama gives you *hybrid*: inference stays local
-and free, OmniLink adds memory/profile/telemetry/fallback around it. The
-bridge logs which one it chose (`HYBRID relay ON`, `local Ollama relay ON`,
-`OmniLink relay ON`) and the chat panel labels it.
+There is no keyless chat, no automatic local-model selection and no
+basic-command fallback after a connection error: a failed connection is an
+error to fix, not a switch to a different answerer. A **local** model is
+supported only as an explicit OmniLink configuration — an OmniKey *and* an
+`OMNILINK_ENGINE` naming the local engine you connected during onboarding.
+Nothing is selected automatically just because a server happens to be
+listening. Setup: [`chat/LOCAL_OLLAMA.md`](../chat/LOCAL_OLLAMA.md).
+
+The bridge logs `OmniLink relay ON (agent='…')` once it is up, and the chat
+panel labels the engine it is talking to.
 
 ## Talking to the robots
 
@@ -144,7 +157,7 @@ the tugs — about boxes and fill counts.
 | "move the end effector to 0.4, 0.2, 0.5" | `set_tcp_target` |
 | "move joint 3 to -0.9" | `set_joint_positions` |
 | "let go of that" | `release` |
-| "carry on" / "back to work" *(all modes, incl. offline)* | `resume_autonomy` |
+| "carry on" / "back to work" *(or `POST /resume_autonomy` directly)* | `resume_autonomy` |
 
 Also registered: `open_gripper`, `close_gripper`, `grasp`, `pick`, `place`,
 `learn_skill`, `run_learned_skill`.
@@ -162,9 +175,9 @@ registered only because the world opted in with `--pallets`.
 | "spin" / "drive in a circle" | `set_velocity` |
 | "stop" | `stop_robot` |
 | "go back to where you started" | `reset_to_home` |
-| "dock to TROLLEY_C" *(LLM modes)* | `attach_trolley` — only succeeds with the tug's **rear** inside the dock radius of the hitch bar |
-| "drop the cart here" *(LLM modes)* | `detach_trolley` |
-| "back to work" / "carry on" *(all modes, incl. offline)* | `resume_autonomy` |
+| "dock to TROLLEY_C" | `attach_trolley` — only succeeds with the tug's **rear** inside the dock radius of the hitch bar |
+| "drop the cart here" | `detach_trolley` |
+| "back to work" / "carry on" *(or `POST /resume_autonomy` directly)* | `resume_autonomy` |
 
 Ask `tug_a` about the park row and `tug_b` about the cart lane and fill
 conveyor — the roles are partitioned **by place**, and each tug is briefed
@@ -207,13 +220,15 @@ the demo feel alive rather than scripted:
   nominal) in two runs. The same ~7% shortfall on a 12 s window is ~11 s.
   That ratio has **not** been re-measured at 12 s — treat "about ten
   seconds" as the honest expectation until it has been.
-- To resume **immediately**, something has to call `resume_autonomy`. In the
-  LLM modes that is the model's tool call — say "carry on" / "back to work".
-  Replying "resuming now" *without* the tool call leaves the robot parked,
-  because the turn itself is what holds the pause. Offline, a phrase on the
-  router's resume list does it directly (see
-  [Known gaps](#known-gaps-read-this-before-you-judge-the-demo)); a phrase
-  off that list does not, and you wait out the window.
+- To resume **immediately**, something has to call `resume_autonomy`. Say
+  "carry on" / "back to work": the deterministic parser recognises those
+  itself and calls the tool without paying for a model turn. A phrasing the
+  parser declines goes to the model instead, and a model that replies
+  "resuming now" *without* the tool call leaves the robot parked, because the
+  turn itself is what holds the pause (see
+  [Known gaps](#known-gaps-read-this-before-you-judge-the-demo)). Then you
+  wait out the window — or `POST /resume_autonomy`, which un-pauses directly
+  and goes through no interpretation at all.
 - On resume the loop **re-reads the world** instead of trusting saved
   state: if it is still towing something it finishes that job, otherwise it
   picks up from wherever things actually are. You can move a tug across the
@@ -276,10 +291,9 @@ configuration: move one and the choreography moves with it.
 
 | Var | Default | Meaning |
 |---|---|---|
-| `OMNI_KEY` | unset | OmniLink platform key. Set → platform routing + Foreman. |
-| `OMNISIM_OLLAMA` | `1` | Set `0` to force the offline regex router even with Ollama up. |
-| `OLLAMA_MODEL` / `OLLAMA_BASE_URL` | `qwen2.5:3b` / `http://127.0.0.1:11434` | Local-LLM selection — see [`chat/LOCAL_OLLAMA.md`](../chat/LOCAL_OLLAMA.md). |
-| `OMNILINK_ENGINE` | unset | Explicitly choose a cloud engine; overrides hybrid mode. |
+| `OMNI_KEY` | unset | Your OmniKey. **Required** for chat and `POST /prompt` on every plan, Free included; unset means `401 omnikey_required` and nothing actuates. Also what unlocks the Foreman. |
+| `OMNILINK_ENGINE` | unset | Names the engine to answer with — a hosted one, or the local engine you connected during onboarding. Nothing is selected automatically. |
+| `OLLAMA_MODEL` / `OLLAMA_BASE_URL` | `qwen2.5:3b` / `http://127.0.0.1:11434` | Where a local engine lives, read only once `OMNI_KEY` is set **and** `OMNILINK_ENGINE` names that engine — see [`chat/LOCAL_OLLAMA.md`](../chat/LOCAL_OLLAMA.md). |
 | `OMNILINK_IDLE_LOG` | unset | Path to append every `[line]` and `[idle-*]` loop event to. **The way to see loop events from the GUI binary.** |
 | `OMNILINK_LINE_HEARTBEAT` | unset | Set to make the line master log a heartbeat every 10 s. |
 | `OMNISIM_BRIDGE_TOKEN` | unset | Bearer token; required for a non-loopback bridge bind. |
@@ -328,17 +342,22 @@ measures.
   **no capturable stdout**, so `[line]` / `[idle-dispatch]` / `[idle-trolley_return]`
   events never reach your console. Set `OMNILINK_IDLE_LOG=<path>` before
   launching and tail that file instead.
-- **The chat panel says `local intent (regex)` and I wanted the LLM.** The
-  Ollama probe runs once at controller start. Check
-  `curl http://127.0.0.1:11434/api/version`, then reload the world.
-- **A robot won't go back to work.** Offline mode *does* have a resume
-  intent, but it is a fixed phrase list — try "carry on", "back to work",
-  "keep going", "unpause". A phrasing off that list is not recognised and
-  the robot waits out the quiet window instead (measured ~56 s), so either
-  rephrase or
-  `curl -X POST http://127.0.0.1:<port>/resume_autonomy -d '{}'`. If *no*
-  phrase works, the `omnisim_bridges` package is probably not importable by
-  the controller's Python, which disables the intent silently.
+- **The chat panel says the OmniLink connection is required.** The bridge had
+  no usable OmniKey when the controller started, so no relay was built — and
+  it is built once, at controller start. Set `OMNI_KEY` in the shell that
+  launches the world (`python -m omnisim key` prints the exact line), then
+  reload. `GET /usage` reporting `enabled: false` is the same fact seen from
+  HTTP; the bridge also logs `OmniLink relay setup FAILED` with a traceback
+  when the key was present but the connection failed.
+- **A robot won't go back to work.** Something has to call
+  `resume_autonomy`. Try "carry on", "back to work", "keep going", "unpause"
+  — the deterministic parser recognises those and calls it directly. A
+  phrasing it declines goes to the model, which may answer without calling
+  the tool; then the robot waits out the quiet window instead (measured
+  ~56 s at the 60 s default). Either rephrase or
+  `curl -X POST http://127.0.0.1:<port>/resume_autonomy -d '{}'` — an
+  ordinary bridge verb, not an AI turn, so it does not go through chat or
+  the access check at all.
 - **`attach_trolley` keeps failing.** The magnet only closes when the tug's
   **rear** is inside the dock radius of the hitch bar. Drive close, then
   turn so the tail faces the hitch, then attach.
@@ -400,29 +419,24 @@ if you watch it for a few minutes.
   two) now running at ~3× the old duty cycle. The untested mitigation is
   raising the fill conveyor speed 0.26 → 0.40 m/s, not done because it
   changes how the demo looks.
-- **Offline mode resumes on set phrases, but not on novel ones.** (Earlier
-  revisions of this file said the regex router had no resume intent at all.
-  That was wrong.) Both bridges check `shared_is_resume()` **first** in
-  `IntentRouter.dispatch` — `omnilink_mobile_bridge.py:2207`,
-  `omnilink_arm_bridge.py:2670` — before any motion rule, because "back to
-  work" contains "back", which the mobile router would otherwise read as
-  reverse 1 m. It is backed by `RESUME_RE` in
-  [`packages/omnisim-bridges/src/omnisim_bridges/intent_router.py`](../../../../../packages/omnisim-bridges/src/omnisim_bridges/intent_router.py):
-  `resume`, `carry on`, `keep going` / `keep working` / `keep at it`,
-  `continue`, `as you were`, `proceed`, `back to work` / `back to it`,
-  `get back to work`, `go back to work`, `restart your work/loop/autonomy`,
-  `unpause`. Measured offline: "carry on, back to work" un-paused the tug at
-  **0.0 s**. Two real limits remain. It is **conditional on the
-  `omnisim_bridges` package being importable** — the import is wrapped in
-  `try/except` and falls back to `shared_is_resume = None`, which disables
-  the intent entirely, silently. And a resume phrased around that list is
-  simply not understood: it falls through to the quiet timer, measured at
-  **56.0 s and 55.9 s** — those figures are against the bridge's `60.0 s`
-  default; this world now runs the window at **12 s** (see
-  [Pause and resume](#pause-and-resume)), so the fall-through wait is
-  roughly a sixth of that, but it has not been re-measured. So offline
-  resume is a phrase list, not comprehension — which is exactly the thing
-  an LLM mode adds.
+- **Resume is a tool call, and a phrasing nothing calls it on still waits out
+  the timer.** ⚠️ The keyword ladder that used to own resume — `RESUME_RE`
+  and the `shared_is_resume()` check at the head of `IntentRouter.dispatch` —
+  was **deleted on 2026-09-22**, so the measurements below are historical and
+  were taken against it. What resumes a robot now is a `resume_autonomy` tool
+  call, produced either by the deterministic parser in
+  [`packages/omnisim-bridges/src/omnisim_bridges/interpret.py`](../../../../../packages/omnisim-bridges/src/omnisim_bridges/interpret.py)
+  — which recognises `resume`, `carry on`, `keep going` / `keep working` /
+  `keep at it`, `continue`, `as you were`, `proceed`, `back to work` / `back
+  to it`, `restart your work/loop/autonomy`, `unpause` — or by the model on a
+  phrasing the parser declines. Two limits survive the rewrite. A model turn
+  can answer "resuming now" without calling the tool, and the robot then
+  stays parked. And when nothing calls it, the fall-through is the quiet
+  timer, measured at **56.0 s and 55.9 s** against the bridge's `60.0 s`
+  default; this world runs the window at **12 s** (see
+  [Pause and resume](#pause-and-resume)), so the wait is roughly a sixth of
+  that, but it has not been re-measured. `POST /resume_autonomy` bypasses
+  interpretation entirely and always works.
 - **The OmniTug 500 is kinematic.** Its URDF is a single static link with no
   `<collision>` and no `<inertial>`, so the importer emits no physics and no
   bounding object: the tug is a visual prop the supervisor drives. It will

@@ -1,0 +1,36 @@
+{
+  "all_expected_outcomes": true,
+  "machine_id": "9722d23d12a3",
+  "cases": {
+    "spring-law": {
+      "complete": true,
+      "passed": true,
+      "expected_pass": true
+    },
+    "spring-disabled": {
+      "complete": true,
+      "passed": false,
+      "expected_pass": false
+    },
+    "retention": {
+      "complete": true,
+      "passed": true,
+      "expected_pass": true
+    },
+    "gravity-drop": {
+      "complete": true,
+      "passed": false,
+      "expected_pass": false
+    },
+    "retention-disabled": {
+      "complete": true,
+      "passed": false,
+      "expected_pass": false
+    },
+    "table": {
+      "complete": true,
+      "passed": true,
+      "expected_pass": true
+    }
+  }
+}

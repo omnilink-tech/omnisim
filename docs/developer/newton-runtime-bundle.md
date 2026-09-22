@@ -205,49 +205,43 @@ Anything added to this bundle should be checked against what a *controller*
 needs, not only what physics needs — and checked against whether it should be
 in the bundle at all, or source-shipped like this one.
 
-### Which interpreter does a controller get? (open, deliberately unchanged)
+### One controller interpreter on Windows (resolved 2026-09-22)
 
-A controller gets a **different interpreter depending on how you launched**:
+`run-world`, `test-world`, `run-headless`, `run-agent`, `launch.bat` and the
+native desktop launchers now prefer `newton-runtime/python.exe`. The bundled
+public SDK and transport dependencies are pinned in
+[`requirements-omnilink.txt`](../../scripts/packaging/requirements-omnilink.txt).
+Linux bootstrap installs the same pins into the Python selected for controllers.
+The source-shipped `omnisim_bridges` package remains tree-relative.
 
-| Launch path | Controller interpreter | Ordering |
-|---|---|---|
-| `run-headless` | bundled newton-runtime | PREPEND (`549734211`, 2026-08-26) |
-| `run-agent` | bundled newton-runtime | PREPEND |
-| `omnisim/dev/runner.py` (`run-world`, `test-world`) | system python | TAIL (deliberate, 2026-07-28) |
-| `launch.bat` / installer shortcut | system python | never added (`launcher.c`) |
+The engine reads `python3XX._pth` beside its DLL. Standalone controllers instead
+read `Lib/site-packages/omnisim_runtime.pth`, whose relative path exposes the
+same vendored wheels. This works after moving the installation and does not
+require a developer's `PYTHONPATH` or a private OmniLink checkout.
 
-The 2026-07 TAIL decision was made **for this exact defect** — the comment in
-`runner.py` says prepending "silently degraded every OmniLink demo" because the
-bundle has no `omnisim_bridges`. That rationale is now **obsolete on its own
-terms**, and was always weaker than it read:
+Check the actual controller interpreter with `omnisim.bat doctor --omnilink`.
+It fails when SDK, transport or capture imports are missing or incompatible.
+It does not authenticate an account or call a model. The public SDK transport
+can also be checked without an account:
 
-- it only ever worked because the *developer's* system python carried an
-  editable install. On a clean clone the system python has no
-  `omnisim_bridges` either, so the tail order fixed nothing there;
-- the bridges now resolve the package from the tree regardless of interpreter,
-  which is what actually makes a clean clone work.
+```powershell
+.\msys64\mingw64\bin\newton-runtime\python.exe -I scripts/dev/verify_omnilink_sdk.py
+```
 
-What each ordering still costs, measured or read from the code:
+This uses scripted loopback HTTP responses and the real installed SDK. It is
+an integration check, not a model-performance test.
 
-- **PREPEND** gives a guaranteed-complete interpreter (numpy, warp, newton,
-  onnxruntime) and is what makes the RL-deploy demos run. It costs the system
-  python's site-packages: a controller importing anything the bundle lacks and
-  the developer installed (`scipy`, `torch`, `opencv`) fails.
-- **TAIL** gives whatever the user installed, and its one real service is that
-  a box with **no** system Python still resolves an interpreter instead of
-  every controller dying `"python.exe" was not found`. It costs the bundle's
-  packages: under `run-world`, a controller needing `onnxruntime` gets it only
-  if the user installed it themselves.
+To repair an existing Windows bundle without replacing physics dependencies,
+close running OmniSim instances, then use a full CPython installation matching
+the engine ABI (the tool checks the version):
 
-**Recommendation, not applied:** converge on PREPEND everywhere, because the
-bundle is the only interpreter whose contents the project controls and can
-verify (`VERIFY_IMPORTS`, `doctor`). That would make `run-world` and
-`test-world` behave like `run-headless`, which is also what the demo catalogue
-assumes. It is **not** done here because the blast radius is every
-`run-world` / `test-world` controller on every developer machine that relies on
-a system package the bundle lacks, and that set is unknown — it needs an audit
-of controller imports against the bundle's contents, plus a decision about
-whether the bundle should grow to cover them. Flagged for the owner.
+```powershell
+python scripts/packaging/bundle_newton_runtime.py --controller-deps-only --cpython-home C:/path/to/Python312 --verify
+```
+
+A full vendor build includes these dependencies automatically. Adding packages
+to a developer's system Python alone does not install them for controllers.
+A rebuilt installer still needs installation testing before release.
 
 wgpu is already handled: the Makefile copies `wgpu_native.dll` next to the binary
 when built with `WGPU_NATIVE_HOME`, and it ships in the same recursive `msys64/`

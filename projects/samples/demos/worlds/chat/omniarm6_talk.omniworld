@@ -20,7 +20,11 @@
 # Pick/place waypoints are solved top-down at execution time (cmove) so the
 # fingers straddle the cube squarely. Runs on the NEWTON backend with the MuJoCo
 # solver (WorldInfo.newtonSolver "mujoco"). Voice + persona route prompts
-# through OmniLink (needs OMNI_KEY); offline it's the terse command console.
+# through OmniLink, which requires an OMNI_KEY on every plan including Free:
+# the deterministic parser interprets first, a model is called only for what it
+# declines, and the safety gate vets whatever produced the frames. Without a key
+# a prompt is refused and nothing actuates; the typed controls and Stop in the
+# robot window keep working, because they are ordinary simulator controls.
 # Easiest launch: run_omniarm6_talk.ps1.
 
 EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"

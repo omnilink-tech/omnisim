@@ -1,0 +1,7 @@
+# Only for rebuilding data, meshes, authored motion, and independent model QA.
+# Running the saved simulation uses the standard library and OmniSim's controller API.
+numpy==2.3.5
+scipy==1.18.1
+trimesh==5.1.0
+pyarrow==25.0.1
+# verify_model.py additionally uses MuJoCo from the OmniSim runtime.

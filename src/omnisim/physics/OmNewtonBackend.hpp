@@ -271,7 +271,8 @@ public:
   int addShapeMesh(int bodyIdx, const double *vertices, int nVertices,
                    const int *indices, int nTriangles,
                    double cx = 0.0, double cy = 0.0, double cz = 0.0,
-                   double qx = 0.0, double qy = 0.0, double qz = 0.0, double qw = 1.0);
+                   double qx = 0.0, double qy = 0.0, double qz = 0.0, double qw = 1.0,
+                   double mu = -1.0, double muT = -1.0, double muR = -1.0);
   // Native heightfield collision for an ElevationGrid boundingObject (terrain). heights = a flat
   // xDimension*yDimension array in the node's own row-major order (index = y*xDimension + x);
   // xSpacing/ySpacing are CELL sizes, so the field spans spacing*(dimension-1); (cx,cy,cz) is the

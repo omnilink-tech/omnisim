@@ -42,8 +42,8 @@ from bench_omnilink import (  # noqa: E402
     PREDICATES, ROLES, Redactor, SUITE, actions_of, check_number_in_text,
     classify_engine, classify_liveness, classify_resume, compare_identity,
     engine_gate, extract_numbers, frame_delta, identity_of, is_busy,
-    joints_of, liveness_remedy, mode_warnings, parse_netstat_listeners,
-    scan_sim_monotonicity,
+    joints_of, liveness_remedy, mode_refusal, mode_warnings,
+    parse_netstat_listeners, scan_sim_monotonicity,
     paused_of, pose_of, pred_at_rest, pred_joints_at_rest, pred_not_parked,
     pred_net_translation, pred_resumed, pred_translate_then_rotate,
     reply_of, resolve_truth, resolve_verify_s, score_probes,
@@ -325,9 +325,12 @@ def test_compose_passes_when_both_subgoals_are_met():
 
 
 def test_compose_fails_the_offline_router_shape_rotation_only():
-    # This is EXACTLY what the offline regex router does with "back up half a
-    # metre, then turn left 45 degrees": its turn-regex fires and returns, so
-    # the reverse never happens. Partial credit is recorded, verdict is fail.
+    # This is EXACTLY what the keyword ladder DID with "back up half a metre,
+    # then turn left 45 degrees" (deleted 2026-09-22): its turn-regex fired
+    # and returned, so the reverse never happened. The predicate is kept
+    # because the SHAPE -- one half of a composed order carried out, the other
+    # dropped -- is a general failure any surface can produce, and it is what
+    # the recorded offline rows show. Partial credit recorded, verdict fail.
     r = pred_translate_then_rotate(
         _COMPOSE, {"before": mk_pose(0.0, 0.0, 0.0),
                    "after": mk_pose(0.0, 0.0, math.radians(45))})
@@ -1188,7 +1191,9 @@ def test_engine_explicit_identity_does_not_hide_cloud_fallback_turn():
 
 def test_engine_gate_refuses_omnilink_when_a_bridge_has_no_relay():
     # The live launch.bat trap: an interpreter without `omnilink` on PATH ->
-    # relay setup fails -> the offline regex router answers, enabled=false.
+    # relay setup fails -> enabled=false. Until 2026-09-22 the bridge's
+    # keyword ladder then answered /prompt; it was deleted, so the bridge now
+    # refuses with 401 omnikey_required and the run measured nothing.
     off = classify_engine({"enabled": False})
     cloud = classify_engine(_CLOUD_USAGE)
     gate = engine_gate("omnilink", {"omniarm6": off, "tug_a": cloud,
@@ -1214,15 +1219,23 @@ def test_engine_gate_verifies_a_clean_local_ollama_run():
     assert gate["fatal"] == []
 
 
-def test_engine_gate_refuses_local_when_the_regex_router_answered():
+def test_engine_gate_refuses_local_when_a_bridge_had_no_relay():
+    # `enabled: false` means the bridge has NO relay. Until 2026-09-22 that
+    # meant its keyword ladder answered /prompt; the ladders were deleted and
+    # an OmniKey is required for every chat turn, so it now means /prompt was
+    # REFUSED 401 omnikey_required and nothing ran. Either way the run is
+    # mislabelled -- and the refusal has to SAY which bridge and why, or the
+    # operator cannot act on it. That explanation is what is pinned here.
     local = classify_engine(_OLLAMA_USAGE)
     off = classify_engine({"enabled": False})
     gate = engine_gate("local", {"omniarm6": local, "tug_a": off,
                                  "tug_b": local},
                        stage="after_first_prompt")
     assert gate["verdict"] == "contradicted", gate
-    assert "tug_a" in " | ".join(gate["fatal"])
-    assert "OFFLINE REGEX ROUTER" in " | ".join(gate["fatal"])
+    joined = " | ".join(gate["fatal"])
+    assert "tug_a" in joined
+    assert "NO relay" in joined
+    assert "401 omnikey_required" in joined
 
 
 def test_engine_gate_refuses_local_when_the_cloud_answered():
@@ -1258,6 +1271,34 @@ def test_engine_gate_with_no_bridges_is_unverified():
     gate = engine_gate("omnilink", {}, stage="preflight")
     assert gate["verdict"] == ENGINE_UNVERIFIED
     assert gate["fatal"] == []
+
+
+# ── The retired `offline` condition: refused at LAUNCH, read forever ──
+#
+# These two pin BOTH directions, because a launch gate can fail either way and
+# the second way is silent. The refusal must fire on the retired condition and
+# on the absent one, and it must NOT fire on anything live -- the first draft
+# of mode_refusal() fell through and refused every mode, which would have
+# taken the whole harness off the air while looking like policy compliance.
+
+def test_mode_refusal_refuses_the_retired_offline_condition():
+    msg = mode_refusal("bench_omnilink.py", "offline", "  --mode omnilink")
+    assert msg, "the retired condition must not start a run"
+    # It has to say WHAT was deleted, WHEN, why the run would otherwise be
+    # believed, and what the recorded rows mean -- a bare "refused" teaches
+    # the reader nothing and invites --allow-mode-mismatch cargo-culting.
+    assert "RETIRED" in msg
+    assert "2026-09-22" in msg
+    assert "401 omnikey_required" in msg
+    assert "verified" in msg          # the certified-empty-run explanation
+    assert "--mode omnilink" in msg   # the alternatives block is included
+
+
+def test_mode_refusal_lets_every_live_condition_through():
+    for mode in ("none", "local", "omnilink"):
+        assert mode_refusal("bench_omnilink.py", mode, "  --mode omnilink") == ""
+    # ...and an absent --mode is refused, because it used to select `offline`.
+    assert mode_refusal("bench_omnilink.py", None, "  --mode omnilink")
 
 
 def test_mode_warnings_still_reports_both_halves():

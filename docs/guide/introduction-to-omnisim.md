@@ -2,7 +2,21 @@
 
 ### What is OmniSim?
 
-OmniSim is a robotics simulator built to be driven by AI coding agents — you talk to it; you don't configure it. Claude Code (or another coding agent) builds and iterates on the simulator and its worlds; OmniLink (or another runtime client) drives them.
+If you are learning robotics, building a robot, or have an idea but don't have access to the hardware, OmniSim is built for you.
+
+OmniSim is more than a simulator. It is **an open-source robotics workshop designed for agentic development** — a place where an agent has everything it needs to work on any robotic system. You can simulate complete robotic systems with high-fidelity physics, build digital twins, connect simulation to real robots, and give AI agents a workshop to program, test, and debug your system. You can do much of that simply by talking to it.
+
+- **No robot?** Simulate one.
+- **Already have a robot?** Build its digital twin — from its own URDF or CAD.
+- **Don't know how to program it?** Let an agent help build and debug it.
+
+The goal is simple: make robotics accessible to anyone with an idea. OmniSim is completely free and open source.
+
+The deepest bench in the workshop is the one for finding out what went wrong. Robots fail in ways you cannot see — a gripper that drops the box two times in five, a joint quietly pinned against its limit, a contact that never happened. So you run your controller and then ask the scene: every contact, every joint limit hit, every grip, every damage event, and every line your controller printed, on one cursor-paged HTTP stream. On the CPU solver (`newtonSolver "mujoco"`, the default) the same scene runs bitwise identically, so a failure you can reproduce is a failure you can fix — and where the instruments cannot see, they say so instead of guessing.
+
+> **Two boundaries worth knowing up front.** "Connect to real robots" means the *control surface*: the same agent tools and bridge protocol address the simulated robot and the physical one, but the shipped bridges run against mock drivers and no policy trained here has been validated on hardware — see the [sim-to-real guide](omnilink-sim-to-real.md). And a *digital twin* here is a model built from your robot's own description, not live-synced telemetry from the machine.
+
+It is built to be driven by AI coding agents: Claude Code (or another coding agent) builds and iterates on the simulator and its worlds; OmniLink (or another runtime client) drives them.
 
 Under the hood, OmniSim is a 3D simulation environment that lets you create virtual worlds with full physics — mass, joints, friction, contacts. You can populate them with passive objects and active mobile robots (wheeled, legged, aerial). Robots can be equipped with the usual battery of sensors and actuators (distance sensors, cameras, motors, touch sensors, emitters, receivers, and more) and programmed individually with the controller of your choice.
 
@@ -19,7 +33,11 @@ OmniSim is well suited for research, educational, and agent-driven robotics work
 - Teaching robotics (robotics lectures, C/C++ / Python programming lectures, etc.)
 - Robot contests and benchmarks
 
-What OmniSim adds on top of that base is a workflow optimised for coding agents: scenario authoring, build, validation, and runtime control are all designed to be driven by natural-language interaction with an agent rather than manual GUI configuration.
+What OmniSim adds on top of that base is a debugging surface, and a workflow optimised for coding agents to drive it: scenario authoring, build, validation and runtime control are all reachable over plain HTTP and JSON — no ROS, no DDS, no in-process Python, no editor plugin — so an agent can load a world, run it, inspect the scene and read back a structured account of what happened without touching the GUI.
+
+**You can stop time, and that is the part worth learning first.** `POST /sim/pause` freezes the scene and *keeps* it frozen across calls, and `POST /sim/step` then walks it forward one basic step at a time — so you can read the scene at an instant instead of chasing a moving target. `POST /sim/break` arms a **breakpoint**: you name an event you care about — a contact beginning, a joint hitting its limit, a grip being lost — the simulation runs on its own, and the moment that event happens it freezes itself right there. That is what a breakpoint buys you here: the scene is still standing at the moment it went wrong, instead of half a second past it. The reliable way to use it is the way you would use a debugger in any other language: **pause first, then step.** If you leave the simulation free-running, a break can only be noticed at the end of the controller's current turn, and the engine can travel a long way inside one of those — far enough that a fast event can slip past unnoticed altogether.
+
+Two things it still cannot do. It cannot **rewind**: there is no recording, no replay, and `POST /sim/snapshot` is not a true checkpoint — it saves positions and joint angles but never velocities, so a restored scene does not carry on the way the original did. You catch the moment live; you do not re-run it. And worlds load in *light* mode by default, which silences the contact, grip and joint-limit event types — load with `{"light": false}` when you are debugging rather than authoring. A breakpoint on one of those silenced types is **refused with an explanation** rather than quietly armed, so you find out immediately instead of waiting for a break that could never fire.
 
 ### What do I need to know to use OmniSim?
 
