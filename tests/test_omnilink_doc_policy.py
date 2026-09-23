@@ -128,7 +128,13 @@ CUSTOMER_FACING: tuple[str, ...] = (
     "agents/production/husky_swarm/README.md",
     "docs/developer/agents-reference-sections.md",
     "docs/developer/simulator-comparison.md",
-    "docs/why-omnilink.md",
+    # docs/why-omnilink.md was listed here and is NOT customer-facing: it is on
+    # scripts/release/publish_deny.txt, so it never reaches the public tree. On
+    # the public CI run of v9.0.0-rc.2 the file was absent and this module failed
+    # twice -- `test_every_scoped_page_exists` and the per-page policy check.
+    # It is still read internally and was still corrected; it just is not in
+    # scope for a gate about what customers read. See
+    # test_no_scoped_page_is_held_back_from_the_public_tree below.
     "tests/benchmarks/omnilink_tasks/README.md",
     "tests/benchmarks/warehouse/BENCH_OMNILINK.md",
     "tests/benchmarks/warehouse/GOALS_SUITE.md",
@@ -373,3 +379,43 @@ def test_fenced_code_is_not_scanned() -> None:
 def test_failure_message_names_file_line_and_sentence() -> None:
     hits = scan("intro line\n\nChat is keyless on the Free plan.\n")
     assert hits == [(3, "keyless access", "Chat is keyless on the Free plan.")]
+
+
+def _publish_denied(rel: str) -> str | None:
+    """The publish deny-list rule that holds `rel` back, or None if it ships.
+
+    Mirrors how scripts/release/publish_snapshot.sh applies the list: an exact
+    path, a directory prefix ending in `/`, or a `*` glob.
+    """
+    deny = REPO_ROOT / "scripts" / "release" / "publish_deny.txt"
+    if not deny.is_file():  # the deny-list is itself deny-listed; absent on public
+        return None
+    for raw in deny.read_text(encoding="utf-8").splitlines():
+        rule = raw.strip()
+        if not rule or rule.startswith("#"):
+            continue
+        if rel == rule or (rule.endswith("/") and rel.startswith(rule)):
+            return rule
+        if "*" in rule and re.fullmatch(re.escape(rule).replace(r"\*", ".*"), rel):
+            return rule
+    return None
+
+
+def test_no_scoped_page_is_held_back_from_the_public_tree() -> None:
+    """A deny-listed page is never customer-facing, and scoping one breaks CI.
+
+    `docs/why-omnilink.md` sat in CUSTOMER_FACING while publish_deny.txt held it
+    back, so on the public tree -- where it does not exist -- this module failed
+    `test_every_scoped_page_exists` and the per-page check. That was the public
+    CI run of v9.0.0-rc.2. This pins the rule so the next page added to the
+    scope cannot reopen it. It checks on the private tree, where the deny-list
+    exists; on the public tree the deny-list is absent and there is nothing to
+    compare against, which is also where the scoped pages all genuinely exist.
+    """
+    held = [(page, _publish_denied(page)) for page in CUSTOMER_FACING]
+    held = [(page, rule) for page, rule in held if rule]
+    assert not held, (
+        "CUSTOMER_FACING lists pages the publish deny-list holds back, so they "
+        "never reach a customer and are absent from the public tree: "
+        + ", ".join(f"{page} (rule {rule!r})" for page, rule in held)
+    )

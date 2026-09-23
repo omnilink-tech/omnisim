@@ -56,6 +56,21 @@ import os
 import sys
 import unittest
 
+import pytest
+
+# This test loads the REAL physics runtime and relies on newton's structure --
+# it swaps its recording builder in for `newton.ModelBuilder` -- so it needs the
+# GPU physics stack actually installed, not stubbed. Tried 2026-09-23: stubbing
+# warp/newton lets the module load, then every case fails on
+# `module 'newton' has no attribute 'ModelBuilder'`. So it skips cleanly where
+# the stack is absent, which is exactly the engine-free CI lane: unit-tests.yml
+# deliberately installs no warp/newton ("gigabytes of GPU wheels for checks that
+# cannot run on a CPU runner"). Before this it ERRORED there at setUp on
+# `No module named 'warp'` -- first seen on v9.0.0-rc.2's Linux run. The Newton
+# install-and-construct path on Linux is covered by physics-runtime-check.yml.
+pytest.importorskip("warp", reason="needs the GPU physics stack (warp)")
+pytest.importorskip("newton", reason="needs the GPU physics stack (newton)")
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _RUNTIME = os.path.join(_HERE, os.pardir, "src", "omnisim", "physics",
                         "omnisim_newton_runtime.py")

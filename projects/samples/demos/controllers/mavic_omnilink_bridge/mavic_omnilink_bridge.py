@@ -157,7 +157,7 @@ from _omnilink_relay.http_security import (  # noqa: E402
     WIRE_VERSION,
 )
 
-from mavic_dynamics import RotorDynamics
+from mavic_dynamics import RotorDynamics, airframe_from_custom_data
 from mavic_chat_router import (handle_wwi_message, push_configure,
                                queue_window as _queue_window,
                                relay_event_to_window as _relay_event_to_window,
@@ -243,20 +243,152 @@ def _drone_tools(state):
 
     `goto_waypoint` and `set_yaw` are the two verbs `route._ADAPTERS` has
     no entry for, so they were reachable ONLY by the ungated path.
+
+    `takeoff`, `move_body`, `turn` and `land` WAIT until the aircraft has
+    settled and report where it actually is -- see _flight_report below.
+    The deterministic parser drives `_StateBridge` directly and keeps its
+    immediate semantics; /action keeps its own opt-in `wait`.
     """
     sb = _StateBridge(state)
+
+    def takeoff(a):
+        alt = _MODEL_TAKEOFF_DEFAULT_M if a.get("altitude") is None else float(a["altitude"])
+        sb.act_takeoff(alt)
+        alt = max(0.5, alt)
+        s, ok, why = _await_flight(state, lambda s: (
+            abs(s["z"] - alt) < _REACH_Z_M and _still(s)), 15.0 + 6.0 * alt)
+        return _flight_report({"altitude_m": alt}, s, ok, why,
+                              target={"altitude_m": alt})
+
+    def move_body(a):
+        fwd, vert = float(a.get("forward") or 0.0), float(a.get("vertical") or 0.0)
+        sb.act_move_body(forward=fwd, vertical=vert)
+        with state.lock:
+            tx, ty, talt = state.target_x, state.target_y, state.target_altitude
+        s, ok, why = _await_flight(state, lambda s: (
+            math.hypot(s["x"] - tx, s["y"] - ty) < _REACH_XY_M
+            and abs(s["z"] - talt) < _REACH_Z_M and _still(s)),
+            15.0 + 6.0 * (abs(fwd) + abs(vert)))
+        return _flight_report({"forward_m": fwd, "vertical_m": vert}, s, ok, why,
+                              target={"x": tx, "y": ty, "altitude_m": talt})
+
+    def turn(a):
+        sb.act_turn(a.get("angle_rad"))
+        with state.lock:
+            tyaw = state.target_yaw
+        s, ok, why = _await_flight(state, lambda s: (
+            tyaw is None or abs(math.atan2(math.sin(s["yaw"] - tyaw),
+                                           math.cos(s["yaw"] - tyaw))) < 0.05)
+            and _still(s), 15.0)
+        return _flight_report({"angle_rad": float(a.get("angle_rad"))}, s, ok, why)
+
+    def land(a):
+        sb.act_land()
+        # `landed` is set the moment the motors cut (below 0.4 m); wait for
+        # the airframe to come to rest so the reported altitude is the real
+        # one, not the cut-off height.
+        s, ok, why = _await_flight(state, lambda s: s["mode"] == "landed"
+                                   and _still(s), 30.0)
+        return _flight_report({}, s, ok, why)
+
+    def get_state(a):
+        s = _flight_snapshot(state)
+        return {"x": round(s["x"], 3), "y": round(s["y"], 3),
+                "altitude_m": round(s["z"], 3),
+                "heading_deg": round(math.degrees(s["yaw"]), 1),
+                "mode": s["mode"], "fault": s["fault"]}
+
     return {
-        "takeoff":       (lambda a: sb.act_takeoff(a.get("altitude")), True),
-        "land":          (lambda a: sb.act_land(), True),
+        "takeoff":       (takeoff, True),
+        "land":          (land, True),
         "hover":         (lambda a: sb.act_hover(), True),
         "stop_robot":    (lambda a: sb.act_stop(), True),
         "reset_to_home": (lambda a: sb.act_reset_to_home(), True),
-        "turn":          (lambda a: sb.act_turn(a.get("angle_rad")), True),
-        "move_body":     (lambda a: sb.act_move_body(
-                              forward=a.get("forward"),
-                              vertical=a.get("vertical")), True),
-        "get_robot_state": (lambda a: sb.get_state_for_query(), False),
+        "turn":          (turn, True),
+        "move_body":     (move_body, True),
+        "get_robot_state": (get_state, False),
     }
+
+
+# ── Model-facing flight verbs WAIT, and say what the aircraft DID ────────
+#
+# Until 2026-09-23 every verb above returned {"accepted": true} the instant
+# it set a target. Measured on the Mavic arena draft (.local-runs/
+# omnilink-mavic-draft): asked to "land on the blue pad", Gemini sent
+# move_body and land in ONE turn; `land` pins the touchdown point to the
+# CURRENT position, so the aircraft came straight down where it hovered,
+# 2.55 m short, while the reply said it was "moving to the blue pad and
+# landing now" -- and the next answer put it 0.55 m from the pad. The
+# Husky's drive_to blocks and returns achieved_xy / error_m; these now do
+# the same ({commanded, achieved, error, settled} --
+# docs/developer/tool-design-for-agents.md).
+#
+# Budgets are SIM seconds, with a WALL cap: under 1080p capture this world
+# measured 0.06x real time, and a wall budget truncated motions exactly as
+# it once did on the mobile bridge. The wall cap is what ends a wait on a
+# held world, where sim time never advances.
+# A takeoff the operator gave no height for climbs to THIS, not to the 12 m
+# DEFAULT_TAKEOFF_ALTITUDE the parser and /action keep. Measured on the x500
+# take: "hop over to the orange pad" -- the gate refused takeoff{altitude} twice
+# (invented_magnitude: the operator never said a height), the model then sent
+# takeoff{} and the 12 m default put the aircraft far higher than either
+# refused request. Omitting a number must never buy a BIGGER climb than
+# inventing one; a low hover is what an unstated "hop" means.
+_MODEL_TAKEOFF_DEFAULT_M = 1.5
+_REACH_XY_M = 0.10
+_REACH_Z_M = 0.15
+_STILL_V_XY = 0.05
+_STILL_V_Z = 0.05
+_FLIGHT_WALL_CAP_S = 300.0
+
+
+def _flight_snapshot(state) -> dict:
+    with state.lock:
+        return {"x": state.x, "y": state.y, "z": state.z, "yaw": state.yaw,
+                "v_xy": state.v_xy, "v_z": state.v_z, "mode": state.mode,
+                "fault": state.fault, "sim_time": state.sim_time}
+
+
+def _still(s: dict) -> bool:
+    return s["v_xy"] < _STILL_V_XY and abs(s["v_z"]) < _STILL_V_Z
+
+
+def _await_flight(state, done, budget_sim_s: float):
+    """Poll until `done(snapshot)`, a hard fault, or a budget runs out.
+
+    Returns (snapshot, settled, reason). `no_progress` is advisory and
+    never ends the wait (issue #14), exactly as in _wait_until_arrived.
+    """
+    t0_sim = _flight_snapshot(state)["sim_time"]
+    t0_wall = time.time()
+    while True:
+        s = _flight_snapshot(state)
+        if s["fault"] and s["fault"] != "no_progress":
+            return s, False, s["fault"]
+        if s["sim_time"] - t0_sim > 0.2 and done(s):
+            return s, True, None
+        if s["sim_time"] - t0_sim > budget_sim_s:
+            return s, False, "timeout"
+        if time.time() - t0_wall > _FLIGHT_WALL_CAP_S:
+            return s, False, "wall_timeout"
+        time.sleep(0.05)
+
+
+def _flight_report(commanded: dict, s: dict, settled: bool, reason,
+                   target: dict = None) -> dict:
+    out = {"commanded": commanded,
+           "achieved": {"x": round(s["x"], 3), "y": round(s["y"], 3),
+                        "altitude_m": round(s["z"], 3),
+                        "heading_deg": round(math.degrees(s["yaw"]), 1)},
+           "settled": settled, "mode": s["mode"]}
+    if target:
+        out["target"] = {k: round(v, 3) for k, v in target.items()}
+        if "x" in target:
+            out["error_m"] = round(math.hypot(s["x"] - target["x"],
+                                              s["y"] - target["y"]), 3)
+    if not settled:
+        out["reason"] = reason
+    return out
 
 
 # ── `POST /action`: its verbs, and which of them the gate ever sees ───────
@@ -953,20 +1085,55 @@ def setup_omnilink_relay(state):
     if not get_omni_key():
         return None
     registry = _drone_tools(state)
+    # Argument NAMES and types are what the gate registers from; only the
+    # descriptions below were added (2026-09-23). A bare name ("move body")
+    # was the whole description before, and nothing told the model that a
+    # verb returned before the aircraft moved.
     arguments = {
-        "takeoff": {"altitude": {"type": "number"}},
-        "turn": {"angle_rad": {"type": "number"}},
-        "move_body": {"forward": {"type": "number"}, "vertical": {"type": "number"}},
+        "takeoff": {"altitude": {"type": "number", "description": (
+            "Hover altitude in metres -- ONLY when the operator stated one. "
+            "Otherwise omit it: the aircraft climbs to a low "
+            f"{_MODEL_TAKEOFF_DEFAULT_M:g} m hover. Never invent a height; "
+            "the safety gate refuses one the operator did not give.")}},
+        "turn": {"angle_rad": {"type": "number", "description": (
+            "Yaw change in radians, relative to the current heading; "
+            "positive turns left (counter-clockwise seen from above).")}},
+        "move_body": {
+            "forward": {"type": "number", "description": (
+                "Metres along the current heading; negative flies backwards.")},
+            "vertical": {"type": "number", "description": (
+                "Metres of climb; negative descends.")}},
     }
-    tools = [Tool(name=name, description=name.replace("_", " "),
+    _waits = (" WAITS until the aircraft has settled, then returns 'achieved' "
+              "(x, y, altitude_m, heading_deg), 'settled' and, where there is "
+              "a target, 'error_m'. Report those numbers, not the ones you asked for.")
+    descriptions = {
+        "takeoff": "Spool up and climb to a hover at `altitude` metres above the ground." + _waits,
+        "land": ("Descend and land at the CURRENT x, y. To land somewhere else, "
+                 "fly there first (move_body) -- it waits until you arrive." + _waits),
+        "hover": "Hold the current position and altitude. Returns at once.",
+        "stop_robot": "Halt all motion immediately and hold position. Returns at once.",
+        "reset_to_home": ("SIMULATOR RESET: TELEPORTS the aircraft back to the pose "
+                          "the world spawned it at and idles the motors. It is "
+                          "not a flight -- to FLY somewhere (home included), use "
+                          "move_body, then land. Returns at once."),
+        "turn": "Yaw in place by `angle_rad`." + _waits,
+        "move_body": ("Fly relative to the current heading: `forward` metres along "
+                      "it and `vertical` metres up. Heading 0 deg is world +x; "
+                      "read x, y and heading_deg with get_robot_state first." + _waits),
+        "get_robot_state": ("World position x, y (metres), altitude_m, heading_deg "
+                            "(0 = +x, 90 = +y), mode and fault."),
+    }
+    tools = [Tool(name=name, description=descriptions.get(name, name.replace("_", " ")),
                   parameters={"type": "object", "properties": arguments.get(name, {}),
                               **({"required": ["angle_rad"]} if name == "turn" else {})},
                   dispatch=dispatch) for name, (dispatch, _) in registry.items()]
     try:
         agent_name = profile_sync.agent_name_for("mavic")
-        task = ("Operate the simulated Mavic in OmniSim using the supplied tools. "
-                "Read robot state before moving. Commands may continue after acceptance; "
-                "check state before claiming completion. Keep replies brief.")
+        task = ("Operate the simulated drone in OmniSim using the supplied tools. "
+                "Read robot state before moving. Flight commands wait until the "
+                "aircraft settles and return where it actually is: base every "
+                "claim about position on those numbers. Keep replies brief.")
         # surface="drone": the relay hands it to gate.register_tools(), so
         # move_body{vertical} is judged on the drone's climb rail and not on
         # a quadruped's 1.0 m body shift.
@@ -1378,8 +1545,18 @@ def make_handler(state: BridgeState):
                 # PROTOCOL.md 5.7.2 / D3: `via` is REQUIRED on a 200 from
                 # /prompt. The parser stamps itself; anything reaching here
                 # was answered by the model relay.
+                # Same bounded budget as the mobile bridge's /prompt: flight
+                # verbs now wait for the aircraft, and a whole "fly there and
+                # land" turn can outlast the 90 s default below real time.
+                # Parsed HERE, where it is used: a keyless or parser-answered
+                # prompt is settled above without reading it.
+                prompt_timeout_s = finite_number(body.get("timeout_s", 90.0), "timeout_s")
+                if not 0 < prompt_timeout_s <= 600:
+                    raise RequestError(400, "bad_request",
+                                       "timeout_s must be greater than zero and at most 600")
                 return self._json(
-                    200, _shared_stamp_via(relay.dispatch_sync(text)))
+                    200, _shared_stamp_via(relay.dispatch_sync(
+                        text, timeout_s=prompt_timeout_s)))
 
             # ── /tool: the platform's callback, gated ─────────────────
             if p == "/tool":
@@ -1800,7 +1977,13 @@ def main():
     # URDF prop joints don't generate lift on their own. Drive the body
     # forces from supervisor add_force_with_offset each tick, using the
     # same motor target velocities the PID below computes.
-    dynamics = RotorDynamics(self_node)
+    # A world may fly another URDF quadcopter by declaring its airframe in
+    # the robot's customData (mavic_dynamics.airframe_from_custom_data);
+    # none declared -> the Mavic constants, exactly as before.
+    airframe = airframe_from_custom_data(supervisor.getCustomData())
+    if airframe:
+        print(f"[mavic_omnilink_bridge] airframe from customData: {airframe}")
+    dynamics = RotorDynamics(self_node, airframe)
 
     # Gimbal pitch motor — drives the camera angle. Default to straight
     # down so /scan's world projection works out of the box.

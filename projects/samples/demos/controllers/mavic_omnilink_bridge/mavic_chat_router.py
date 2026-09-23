@@ -89,7 +89,16 @@ def _act_reset(state) -> None:
         state.fault = None
         state.mission_complete = False
         state.mission_log = []
-        state.reset_request = {"x": 0.0, "y": -12.0, "z": 0.1, "yaw": math.pi / 2}
+        # The pose the WORLD authored, exactly as `POST /action reset` uses
+        # (public issue #14). Until 2026-09-23 this path still hard-coded the
+        # omnilink_mavic spawn (0, -12, yaw 90 deg): on the arena draft the
+        # model's reset_to_home put the aircraft 12 m off the floor plan.
+        home = dict(getattr(state, "authored_pose", None)
+                    or {"x": 0.0, "y": -12.0, "z": 0.1, "yaw": math.pi / 2})
+        state.reset_request = home
+        state.reset_anchor = dict(home)
+        state.xy_i_fwd = 0.0
+        state.xy_i_right = 0.0
 
 
 def _act_move_body(state, forward: float = 0.0, lateral: float = 0.0,

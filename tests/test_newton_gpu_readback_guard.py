@@ -67,6 +67,19 @@ def _runtime():
     """
     for name in ("warp", "newton"):
         sys.modules.setdefault(name, types.ModuleType(name))
+    # mujoco too, but only when it is genuinely absent. The CPU-solver paths
+    # this guard covers (`get_contacts`, `raycast_batch`) do `import mujoco`
+    # lazily, and the stub list above omitted it, so on a machine without
+    # mujoco those cases failed on `No module named 'mujoco'` rather than
+    # exercising the guard -- first seen on v9.0.0-rc.2's Linux CI run, where
+    # the engine-free lane installs no GPU stack. A bare stub is enough: these
+    # tests stop at the guard and never reach a real mujoco call. Prefer the
+    # real module when it IS installed, so this never swaps a working mujoco out
+    # of sys.modules for every test that runs after it.
+    try:
+        import mujoco  # noqa: F401,PLC0415
+    except ImportError:
+        sys.modules.setdefault("mujoco", types.ModuleType("mujoco"))
     if str(PHYSICS) not in sys.path:
         sys.path.insert(0, str(PHYSICS))
     import omnisim_newton_runtime  # noqa: PLC0415  (deliberately late)

@@ -189,8 +189,15 @@ platform's half is written and needs a deploy before an operator sees it.
   beat, not a commit: a hard kill between beats can lose up to one beat, only the newest
   50 entries travel, and with no OmniKey there is no relay, so the record stays local.
   It is the surface that removed a 26% fabrication rate.
-- **A standing order can reach a simulated robot with no browser open**, through a
-  connector the bridge now starts itself.
+- **The bridge can start a connector that lets a standing order reach a simulated
+  robot with no browser open** — ⚠️ **but not yet for anyone installing this
+  release.** The connector lives in `omnilink.edge_connector`, which is in OmniLink
+  SDK 0.6.4 and later. The newest SDK on PyPI is **0.6.3**, which does not contain it,
+  so on a normal install the bridge reports the connector `unavailable` and a standing
+  order cannot reach the robot this way. It also needs the platform half of the
+  handoff, which is written and not deployed (see below). The OmniSim side is done
+  and tested against a faked SDK; the feature becomes real when SDK 0.6.4 is
+  published and the platform half is live.
 
 Two things this is honest about. **There is no window-raise verb** in the robot-window
 protocol, so a wake makes itself visible in the chat panel; nothing raises a window.

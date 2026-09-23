@@ -86,6 +86,18 @@ def fake_connector(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules,
                         "omnilink.edge_connector", module)
     monkeypatch.setattr(omnilink, "edge_connector", module, raising=False)
+    # ⚠️ Fake `websocket` too. relay.start_edge_connector() does
+    # `import websocket` BEFORE it imports the connector, and returns
+    # "unavailable" if that fails -- so a fixture that fakes only the connector
+    # still depends on websocket-client being installed. It is not a declared
+    # dependency of omnisim-bridges, so on a clean install it is absent: the
+    # first Linux CI run of these tests (v9.0.0-rc.2, 2026-09-23) failed all four
+    # that use this fixture with `'unavailable' == 'running'`. They passed on the
+    # author's machine only because websocket-client happened to be installed
+    # there. This fixture is testing OmniSim's start logic against a faked SDK,
+    # so the SDK's transport belongs in the fake as well.
+    monkeypatch.setitem(__import__("sys").modules,
+                        "websocket", types.ModuleType("websocket"))
     return module, started
 
 
@@ -267,6 +279,10 @@ def test_a_connector_that_explodes_is_reported_not_raised(
     monkeypatch.setitem(__import__("sys").modules,
                         "omnilink.edge_connector", module)
     monkeypatch.setattr(omnilink, "edge_connector", module, raising=False)
+    # This test builds its own fake instead of using `fake_connector`, so it
+    # needs its own `websocket` stand-in too -- see the note in that fixture.
+    monkeypatch.setitem(__import__("sys").modules,
+                        "websocket", types.ModuleType("websocket"))
     monkeypatch.delenv("OMNILINK_EDGE", raising=False)
     monkeypatch.setenv("OMNI_KEY", "olink_live")
 

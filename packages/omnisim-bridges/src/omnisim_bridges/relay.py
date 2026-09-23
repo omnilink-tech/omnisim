@@ -1184,7 +1184,14 @@ class OmniLinkRelay:
                     "Store the fact in their words, self-contained, so it still makes "
                     "sense with no surrounding context: 'TROLLEY_E is damaged and must "
                     "not be towed', not 'the one they mentioned'. Do not store your own "
-                    "actions or conclusions -- only what you were TOLD."
+                    "actions or conclusions -- only what you were TOLD.\n"
+                    "\n"
+                    "A place given RELATIVE to you ('2 m ahead of you', 'behind you', "
+                    "'to your left') is NOT self-contained: it means where you were "
+                    "WHEN it was said. Read your state first and store the absolute "
+                    "world coordinates it names -- 'the blue pad's centre is at x=2.0, "
+                    "y=0.0' -- never the relative phrase, which re-anchors to wherever "
+                    "you are when you later read it back."
                 ),
                 parameters={
                     "type": "object",

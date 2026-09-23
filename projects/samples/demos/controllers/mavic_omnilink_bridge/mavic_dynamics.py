@@ -38,7 +38,8 @@ what it did against the PROTO.
 
 from __future__ import annotations
 
-from typing import Tuple
+import json
+from typing import Optional, Tuple
 
 
 # FORCE anchor offsets in the base_link frame. The x values are the URDF joint
@@ -84,8 +85,31 @@ class RotorDynamics:
     # motor.setVelocity layer; we read the same signs back here).
     k_torque: float = 0.0000052
 
-    def __init__(self, robot_node) -> None:
+    def __init__(self, robot_node, airframe: Optional[dict] = None) -> None:
+        """`airframe` (optional) overrides the Mavic constants for another
+        URDF quadcopter: {"k_thrust", "k_torque", "props": {"fl", "fr",
+        "rl", "rr": [x, y, z]}} -- force anchors in the base_link frame,
+        calibrated the same way as above (k_thrust = m g / (4
+        K_VERTICAL_THRUST^2), m = the WHOLE robot's mass). Omitted keys
+        keep the Mavic values, so a robot that declares nothing flies
+        exactly as before. See airframe_from_custom_data().
+
+        ⚠️ Centre the anchors on the WHOLE robot's CoM (every link's mass,
+        gimbal included), not on the link origin -- the same correction the
+        Mavic constants carry. Measured on a PX4 x500 (2026-09-23): a 2.6 mm
+        gap (a 54 g gimbal chain forward of a 2.1 kg frame) made it creep
+        0.35 m forward on every landing, because the attitude trim that
+        balances the gap works through rotor-speed DIFFERENCES whose
+        authority scales with rotor speed, and a descent cuts rotor speed.
+        Anchors shifted onto the CoM: 0.013 m."""
         self.robot = robot_node
+        self.props = (_PROP_FL, _PROP_FR, _PROP_RL, _PROP_RR)
+        if airframe:
+            self.k_thrust = float(airframe.get("k_thrust", self.k_thrust))
+            self.k_torque = float(airframe.get("k_torque", self.k_torque))
+            p = airframe.get("props") or {}
+            self.props = tuple(tuple(float(c) for c in p.get(k, d))
+                               for k, d in zip(("fl", "fr", "rl", "rr"), self.props))
 
     def step(self, fl: float, fr: float, rl: float, rr: float) -> None:
         """Apply rotor forces + yaw torque for one control tick.
@@ -108,10 +132,11 @@ class RotorDynamics:
 
         # Per-propeller lift. addForceWithOffset(force, offset, relative=True)
         # applies the force in body coordinates at the body-relative offset.
-        self.robot.addForceWithOffset([0.0, 0.0, self.k_thrust * fl2], list(_PROP_FL), True)
-        self.robot.addForceWithOffset([0.0, 0.0, self.k_thrust * fr2], list(_PROP_FR), True)
-        self.robot.addForceWithOffset([0.0, 0.0, self.k_thrust * rl2], list(_PROP_RL), True)
-        self.robot.addForceWithOffset([0.0, 0.0, self.k_thrust * rr2], list(_PROP_RR), True)
+        p_fl, p_fr, p_rl, p_rr = self.props
+        self.robot.addForceWithOffset([0.0, 0.0, self.k_thrust * fl2], list(p_fl), True)
+        self.robot.addForceWithOffset([0.0, 0.0, self.k_thrust * fr2], list(p_fr), True)
+        self.robot.addForceWithOffset([0.0, 0.0, self.k_thrust * rl2], list(p_rl), True)
+        self.robot.addForceWithOffset([0.0, 0.0, self.k_thrust * rr2], list(p_rr), True)
 
         # Yaw torque from diagonal-pair asymmetry. The bridge already
         # encoded the yaw command into pair magnitudes (FR + RL bigger
@@ -120,3 +145,21 @@ class RotorDynamics:
         # tracking spin direction separately.
         yaw_tau = self.k_torque * ((fr2 + rl2) - (fl2 + rr2))
         self.robot.addTorque([0.0, 0.0, yaw_tau], True)
+
+
+def airframe_from_custom_data(custom_data: str) -> Optional[dict]:
+    """The `rotor_dynamics` object from a robot's customData JSON, or None.
+
+    A world flies a different URDF quadcopter through this bridge by
+    declaring its airframe on the robot, e.g.
+      customData "{\"rotor_dynamics\": {\"k_thrust\": 0.00111, ...}}"
+    (URDFRobot passes customData through to the expanded Robot). Anything
+    that is not a JSON object carrying that key -- including the empty
+    string every existing world has -- returns None: the Mavic constants.
+    """
+    try:
+        data = json.loads(custom_data or "")
+    except ValueError:
+        return None
+    rd = data.get("rotor_dynamics") if isinstance(data, dict) else None
+    return rd if isinstance(rd, dict) else None
