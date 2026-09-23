@@ -342,6 +342,17 @@ def bridge_error_of(envelope: dict):
     err = envelope.get("error")
     if isinstance(err, str) and err.strip():
         return err.strip()
+    # The PLATFORM's refusal is an object, {"error": {"code", "message"}}, not
+    # a string. Reading only strings recorded every platform-door refusal as
+    # "no response and NO STATED REASON" on 2026-09-23, while the platform had
+    # said precisely: PROMPT_UNSUPPORTED, then "Unknown control route." -- the
+    # two defects that run was there to find.
+    if isinstance(err, dict):
+        code = err.get("code") if isinstance(err.get("code"), str) else ""
+        msg = err.get("message") if isinstance(err.get("message"), str) else ""
+        text = ": ".join(x for x in (code.strip(), msg.strip()) if x)
+        if text:
+            return text
     return None
 
 

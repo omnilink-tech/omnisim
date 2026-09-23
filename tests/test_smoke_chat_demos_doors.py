@@ -756,3 +756,25 @@ def test_the_agent_name_matches_the_platform_convention(monkeypatch):
     # A scratch run must not take over the live profile and its memory.
     monkeypatch.setenv("OMNILINK_AGENT_TAG", "sweep test!")
     assert sweep.agent_name_for("husky") == "OmniSim-husky-sweep-test"
+
+
+def test_a_platform_refusal_object_is_a_stated_reason():
+    """The platform answers {"error": {"code", "message"}}, not a string.
+
+    Measured 2026-09-23: every platform-door refusal was recorded as "NO STATED
+    REASON" while the platform had named the defect in the body.
+    """
+    from importlib import util
+    import pathlib
+    spec = util.spec_from_file_location(
+        "smoke_chat_demos_reason",
+        pathlib.Path(__file__).resolve().parents[1] / "scripts" / "dev" / "smoke_chat_demos.py")
+    mod = util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    body = {"error": {"code": "PROMPT_UNSUPPORTED",
+                      "message": "The connected machine cannot take a prompt frame."}}
+    got = mod.bridge_error_of(body)
+    assert got and "PROMPT_UNSUPPORTED" in got and "prompt frame" in got
+    # the control-error float must still never read as a reason
+    assert mod.bridge_error_of({"error": 4.3e-11}) is None
+    assert mod.bridge_error_of({"error": {}}) is None

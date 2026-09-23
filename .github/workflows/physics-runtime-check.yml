@@ -134,7 +134,22 @@ jobs:
           if python3 -m pip install --help 2>/dev/null | grep -q break-system-packages; then
             FLAGS="--break-system-packages"
           fi
-          PINS="$(python3 scripts/packaging/newton_runtime_pins.py | tr '\n' ' ')"
+          # PHYSICS PINS ONLY. This step asks one question -- does NEWTON still
+          # refuse the system 3.10? -- so it installs what newton needs to import
+          # and nothing else. The bundle's pin list also carries the OmniLink
+          # client stack (`--controllers`) and onnxruntime, which deploys trained
+          # policies; newton imports neither. Installing the whole list stopped
+          # working on 2026-09-23 (v9.0.0-rc.1, the first CI run of these pins):
+          # onnxruntime 1.26.0 ships no 3.10 wheel, so pip failed before this step
+          # ever reached newton and it reported "3.10 failed for a DIFFERENT
+          # reason" -- true, and useless, because it could no longer see the one
+          # thing it exists to watch. The Newton install/import steps above
+          # passed on both 22.04 and 24.04 in that same run.
+          # `tr -d '\r'` keeps the whole-line match honest if the pin script is
+          # ever run from a CRLF checkout.
+          CONTROLLERS="$(python3 scripts/packaging/newton_runtime_pins.py --controllers | tr -d '\r')"
+          PINS="$(python3 scripts/packaging/newton_runtime_pins.py | tr -d '\r' | grep -vxF "$CONTROLLERS" | grep -v '^onnxruntime==' | tr '\n' ' ')"
+          echo "physics pins under test: $PINS"
           python3 -m pip install $FLAGS $PINS "mujoco==3.11.0" numpy
           set +e
           OUT=$(python3 -c "import newton; newton.ModelBuilder()" 2>&1)

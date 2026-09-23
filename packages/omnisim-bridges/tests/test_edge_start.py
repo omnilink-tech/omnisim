@@ -345,3 +345,46 @@ def test_the_relay_records_its_edge_status(monkeypatch, isolated_lock) -> None:
         assert relay.edge_status["state"] == "off"
     finally:
         relay.close()
+
+
+# ── Prompt frames: declared when the connector can run them ─────────────
+#
+# Until 2026-09-23 the relay pinned the connector to ["tool"], which silently
+# stripped the prompt capability the connector had just gained. Measured live:
+# the deployed platform's /api/prompt reached this machine and answered 501
+# PROMPT_UNSUPPORTED, "Update the OmniLink connector", with an up-to-date
+# connector running. The test above could not see it, because its fake
+# connector has no prompt support; the last test here uses the REAL one.
+
+class _PromptCapable:
+    EDGE_CAPABILITIES = ["chat", "tool", "prompt"]
+
+    @staticmethod
+    def run_prompt_frame(msg):              # pragma: no cover - never called
+        return {}
+
+
+class _ToolsOnly:
+    EDGE_CAPABILITIES = ["chat", "tool"]
+
+
+def test_a_prompt_capable_connector_declares_prompt_and_never_chat() -> None:
+    caps = relay_mod.edge_capabilities_for(_PromptCapable)
+    assert caps == ["tool", "prompt"]
+    assert "chat" not in caps, (
+        'the connector must not advertise "chat": an OmniKey is required for '
+        "every AI turn and a local-inference offer would route around it")
+
+
+def test_an_older_connector_is_not_claimed_to_take_prompts() -> None:
+    assert relay_mod.edge_capabilities_for(_ToolsOnly) == ["tool"], (
+        "declaring a frame the connector cannot run turns every platform "
+        "prompt into a silent failure instead of the browser's fallback")
+
+
+def test_the_real_connector_is_declared_prompt_capable() -> None:
+    edge = pytest.importorskip("omnilink.edge_connector")
+    if not callable(getattr(edge, "run_prompt_frame", None)):
+        pytest.skip("installed omnilink predates prompt frames")
+    caps = relay_mod.edge_capabilities_for(edge)
+    assert "prompt" in caps and "tool" in caps and "chat" not in caps, caps

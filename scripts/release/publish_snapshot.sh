@@ -197,6 +197,25 @@ if [[ "$VERSION" != "$BASE_VERSION" ]]; then
 fi
 
 [[ -n "${PUBLIC_REMOTE:-}" ]] || err "PUBLIC_REMOTE env var is required"
+
+# ---- never leak the push credential ---------------------------------------
+# PUBLIC_REMOTE is usually https://omnilink-tech:<TOKEN>@github.com/..., so it
+# carries a live credential. Until 2026-09-23 this script leaked it two ways:
+# it LOGGED the raw URL, and it ran `git remote add public "$PUBLIC_REMOTE"`
+# inside a worktree -- which shares the MAIN repository's config -- so the token
+# was written into .git/config in plaintext and never removed, because the EXIT
+# traps cleaned up the worktree and not the remote. Every run re-embedded it,
+# dry runs included, and it looked like some other process kept adding it back.
+# Found when the v9.0.0-rc.1 push left an admin-scoped classic token there.
+#
+# So: everything logged uses PUBLIC_REMOTE_SAFE (userinfo stripped), and every
+# EXIT trap below calls _scrub_public_remote first. Each trap in this file
+# REPLACES the previous one, so the scrub has to be in all of them, not just the
+# first -- a cleanup added to one trap alone is silently dropped by the next.
+PUBLIC_REMOTE_SAFE="$(printf '%s' "$PUBLIC_REMOTE" | sed -E 's#(https?://)[^/@]*@#\1#')"
+_scrub_public_remote() {
+    git -C "$REPO_ROOT" remote set-url public "$PUBLIC_REMOTE_SAFE" 2>/dev/null || true
+}
 PUBLISH_EMAIL="${PUBLISH_EMAIL:-omni.link.technologies@gmail.com}"
 PUBLISH_NAME="${PUBLISH_NAME:-OmniLink}"
 
@@ -391,7 +410,7 @@ REDACTIONS_FILE="$SCRIPT_DIR/public_redactions.txt"
 log "version       : $VERSION"
 log "source ref    : $FROM_REF ($SOURCE_SHA)"
 log "source tree   : $SOURCE_TREE"
-log "public remote : $PUBLIC_REMOTE"
+log "public remote : $PUBLIC_REMOTE_SAFE"
 log "author        : $PUBLISH_NAME <$PUBLISH_EMAIL>"
 log "deny-list     : $([[ -f "$DENY_LIST" ]] && echo "$DENY_LIST" || echo "(none)")"
 log "mode          : $([[ $PUSH -eq 1 ]] && echo PUSH || echo dry-run)"
@@ -409,7 +428,7 @@ fi
 # GIT_WORKTREE carries `-c core.longpaths=true` when the preflight above
 # measured that this prefix cannot hold the longest tracked path on Windows.
 "${GIT_WORKTREE[@]}" worktree add --detach "$WORKTREE_DIR" "$SOURCE_SHA" >/dev/null
-trap 'git worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' EXIT
+trap '_scrub_public_remote; git worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' EXIT
 
 cd "$WORKTREE_DIR"
 
@@ -433,9 +452,9 @@ fi
 # a published tag is how a release stops being reproducible.
 if git ls-remote --tags --exit-code public "refs/tags/$VERSION" >/dev/null 2>&1; then
     if [[ $FORCE_ORPHAN -eq 1 ]]; then
-        log "WARNING: tag $VERSION already exists on $PUBLIC_REMOTE — --force-orphan will REPLACE it"
+        log "WARNING: tag $VERSION already exists on $PUBLIC_REMOTE_SAFE — --force-orphan will REPLACE it"
     else
-        err "tag $VERSION already exists on $PUBLIC_REMOTE — pick a new version"
+        err "tag $VERSION already exists on $PUBLIC_REMOTE_SAFE — pick a new version"
     fi
 fi
 
@@ -495,7 +514,7 @@ if [[ -f "$DENY_LIST" ]]; then
     # Every file the deny-list removes, recorded so we can afterwards check
     # whether anything that DOES ship still points at one of them.
     DENIED_MANIFEST="$(mktemp)"
-    trap 'rm -f "$DENIED_MANIFEST"' EXIT
+    trap '_scrub_public_remote; rm -f "$DENIED_MANIFEST"' EXIT
     while IFS= read -r entry || [[ -n "$entry" ]]; do
         # Strip whitespace.
         entry="${entry#"${entry%%[![:space:]]*}"}"
@@ -750,7 +769,7 @@ git tag -f "$VERSION" "$SNAPSHOT_SHA" >/dev/null
 # the full list once into a temp file and slice it from there.
 log "files in this snapshot:"
 DIFF_LIST="$(mktemp)"
-trap 'rm -f "$DIFF_LIST"; git worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' EXIT
+trap '_scrub_public_remote; rm -f "$DIFF_LIST"; git worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' EXIT
 git diff-tree --no-commit-id --name-status --root -r "$SNAPSHOT_SHA" > "$DIFF_LIST"
 head -50 "$DIFF_LIST"
 TOTAL_FILES="$(wc -l < "$DIFF_LIST")"
@@ -831,7 +850,7 @@ fi
 
 log "pushing tag $VERSION…"
 OMNISIM_SKIP_PUSH_CHECK=1 git push public "refs/tags/$VERSION"
-log "pushing $SNAPSHOT_SHA to $PUBLIC_REMOTE main…"
+log "pushing $SNAPSHOT_SHA to $PUBLIC_REMOTE_SAFE main…"
 if [[ $FORCE_ORPHAN -eq 1 ]]; then
     # An orphan has no ancestor in common with public/main, so this is a
     # non-fast-forward by construction and --force is not optional.
@@ -899,7 +918,13 @@ fi
 # run reads this to know where to start the diff. The file is in the
 # publish deny-list so it never lands on public.
 cd "$REPO_ROOT"
-PUBLISHED_PRIVATE_SHA="$(git rev-parse --verify HEAD)"
+# SOURCE_SHA, not HEAD. With --from, HEAD is wherever private main has
+# moved to since, which is NOT what shipped. v9.0.0-rc.1 was published
+# --from f18c66633 while HEAD was 5b9ecc8b8, and this line recorded HEAD --
+# so the NEXT release would have treated two unpublished commits (one of them
+# an unswept change to the model path) as already out, and skipped them in
+# its dangling-reference audit. Record what actually went out.
+PUBLISHED_PRIVATE_SHA="$SOURCE_SHA"
 {
     [[ -f "$SENTINEL" ]] && cat "$SENTINEL"
     printf '%s\t%s\n' "$VERSION" "$PUBLISHED_PRIVATE_SHA"
@@ -909,7 +934,9 @@ log "recorded sentinel: $VERSION $PUBLISHED_PRIVATE_SHA"
 
 git add "$SENTINEL"
 if ! git diff --cached --quiet -- "$SENTINEL"; then
-    git commit -m "release: record $VERSION published private SHA" >/dev/null \
+    # Pathspec-limited: the index is shared with any other session working in
+    # this clone, and a bare `git commit` would sweep in whatever they staged.
+    git commit -m "release: record $VERSION published private SHA" -- "$SENTINEL" >/dev/null \
         || log "WARNING: sentinel update did not commit cleanly — commit by hand"
 fi
 

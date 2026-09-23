@@ -65,10 +65,21 @@ jobs:
       # with it. torch / warp / newton are imported by a handful of modules
       # that self-skip without them; they are deliberately NOT installed here
       # (gigabytes of GPU wheels for checks that cannot run on a CPU runner).
+      #
+      # `distro` is here because of a PLATFORM-GUARDED import that no Windows
+      # machine can reveal: scripts/packaging/generate_projects_files.py does
+      # `if sys.platform == 'linux': import distro`, and the packaging tests
+      # import it. This lane's dependency list was derived by scanning imports on
+      # Windows, where that branch never runs, so the first Linux run
+      # (v9.0.0-rc.1, 2026-09-23) died at collection with
+      # `No module named 'distro'`. The same list, installed into a clean venv,
+      # collects all 2,291 tests on Windows -- the gap is Linux-only. Checked
+      # the other guard spellings too (os.name == 'posix', platform.system(),
+      # sys.platform != 'win32'): no other live code has one.
       - name: Install the lane's dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest pillow numpy
+          python -m pip install pytest pillow numpy distro
           python -m pip install -e packages/omnisim-bridges
 
       # Fail here, with a legible message, rather than inside the Makefile's

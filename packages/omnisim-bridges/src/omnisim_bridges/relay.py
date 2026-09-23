@@ -389,6 +389,29 @@ _TRACE_LOCK = threading.Lock()
 
 
 
+
+def edge_capabilities_for(edge_module: Any) -> List[str]:
+    """What the in-process edge connector may declare to the platform.
+
+    ``tool`` always: the server default-DENIES a connector that does not
+    declare it, and unattended runs die without it.
+
+    ``prompt`` when the loaded connector can actually run a prompt frame. Until
+    2026-09-23 this was pinned to ``["tool"]`` alone, which silently stripped
+    the prompt capability a later change had given the connector -- measured
+    live: the platform's /api/prompt reached this machine and answered 501
+    PROMPT_UNSUPPORTED, "Update the OmniLink connector", with an up-to-date
+    connector sitting right there. Declaring it is safe under the access
+    policy: a prompt frame is delivered to the bridge's own /prompt, which
+    refuses without an OmniKey before any stage sees the sentence.
+
+    ``chat`` NEVER: it would offer local inference in place of the OmniKey.
+    """
+    caps = ["tool"]
+    if callable(getattr(edge_module, "run_prompt_frame", None)):
+        caps.append("prompt")
+    return caps
+
 def _platform_message(err: Any) -> str:
     """The platform's own human message from an API error, or ''.
 
@@ -750,8 +773,9 @@ def start_edge_connector(agent_name: str, omni_key: str) -> Dict[str, Any]:
       ``running``          the connector thread is up
       ``error``            it refused to start; the reason is in ``detail``
 
-    ⚠️ TOOLS-ONLY. `EDGE_CAPABILITIES` is pinned to ``["tool"]`` before the
-    loop starts, so this process never advertises local inference: an
+    ⚠️ NEVER ``chat``. `EDGE_CAPABILITIES` is pinned before the loop starts
+    (see `edge_capabilities_for`), so this process never advertises local
+    inference: an
     OmniKey is required for every OmniLink AI turn (access policy,
     2026-09-22) and a connector declaring ``chat`` would be offering a way
     around that. The declaration is load-bearing in the other direction
@@ -790,7 +814,7 @@ def start_edge_connector(agent_name: str, omni_key: str) -> Dict[str, Any]:
                 "detail": f"pid {held.get('pid')} ({held.get('agent')}) "
                           f"already runs the edge connector on this machine"}
     try:
-        _edge.EDGE_CAPABILITIES = ["tool"]
+        _edge.EDGE_CAPABILITIES = edge_capabilities_for(_edge)
 
         def _worker() -> None:
             try:
