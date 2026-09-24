@@ -440,8 +440,10 @@ def test_a_nonzero_control_error_is_not_a_failure():
                                surface="mobile", registered=True)
     assert code == 200 and payload["status"] == "err"
 
-    # ...including the one spelling that carries its own status code.
-    code, payload = serve_tool("drive_forward", {"tool": "drive_forward"},
+    # ...including the one spelling that carries its own status code. (It
+    # carries a distance: the gate requires one since 2026-09-23, and a
+    # distance-less drive would be refused 400 before the handler ran.)
+    code, payload = serve_tool("drive_forward", {"tool": "drive_forward", "distance": 1.0},
                                lambda args: {"error": "unknown tool 'drive_forward'"},
                                surface="mobile", registered=True)
     assert code == 404 and payload["status"] == "err"

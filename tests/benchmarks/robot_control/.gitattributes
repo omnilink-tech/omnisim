@@ -1,0 +1,3 @@
+# Preserve the exact bytes used by evidence hashes and frozen manifests.
+evidence/** -text
+locks/** -text

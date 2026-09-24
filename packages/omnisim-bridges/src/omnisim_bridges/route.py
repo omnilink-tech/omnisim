@@ -42,6 +42,7 @@ THREE HONESTY RULES, ENFORCED HERE RATHER THAN TRUSTED TO PROMPTS
 from __future__ import annotations
 
 import inspect
+import math
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -50,7 +51,8 @@ from . import interpret as _i
 
 __all__ = ["route", "execute", "describe_state", "short_circuit",
            "parser_first_plan", "parser_first_run", "parser_first_window",
-           "window_lines", "parser_stats", "reply_payload", "stamp_via"]
+           "window_lines", "parser_stats", "reply_payload", "stamp_via",
+           "resolve_conditional"]
 
 # tool -> (bridge method, kwargs builder). Names match the act_* API the
 # bridges already expose; anything missing degrades to a spoken refusal.
@@ -58,7 +60,10 @@ _ADAPTERS: Dict[str, Tuple[str, Any]] = {
     "stop":            ("act_stop", lambda a: {}),
     "resume_autonomy": ("act_resume_autonomy", lambda a: {}),
     "reset_to_home":   ("act_reset_to_home", lambda a: {}),
-    "drive_forward":   ("act_drive_forward", lambda a: {"distance": a.get("distance", 1.0)}),
+    # ⚠️ No default distance. This used to be `a.get("distance", 1.0)`, so a
+    # drive nobody sized travelled a metre. The gate now requires `distance`
+    # and the parser asks "how far?" instead (owner decision 2026-09-23).
+    "drive_forward":   ("act_drive_forward", lambda a: {"distance": a["distance"]}),
     "turn":            ("act_turn", lambda a: {"angle_rad": a["angle_rad"]}),
     "drive_to":        ("act_drive_to", lambda a: {"tx": a["x"], "ty": a["y"]}),
     "set_velocity":    ("act_set_velocity", lambda a: {"linear": a["v"], "angular": a["w"]}),
@@ -309,10 +314,74 @@ def _intent_reply(tool: str, res: Dict[str, Any], ok_text: str
             "tools": [(tool, "ok", str(res.get("id", "")))]}
 
 
+def resolve_conditional(r: "_i.Interpretation", pose: Any
+                        ) -> Optional["_i.Interpretation"]:
+    """The COMMAND a CONDITIONAL comes to at `pose` (x, y, yaw), or None.
+
+    Pure: no bridge, so the benchmark and the router share it. The chosen
+    frames may be empty ("otherwise stay put"). None when there is no usable
+    pose -- never a guess at which branch applies.
+    """
+    if not isinstance(getattr(r, "condition", None), dict):
+        return None
+    try:
+        x, y, yaw = (float(v) for v in pose)
+    except (TypeError, ValueError):
+        return None
+    if not all(math.isfinite(v) for v in (x, y, yaw)):
+        return None
+    holds = _i.evaluate_condition(r.condition, (x, y, yaw))
+    chosen = r.then_frames if holds else r.else_frames
+    out = _i.Interpretation(
+        _i.COMMAND, frames=[_i.Frame(f.tool, dict(f.args), f.span, f.source, f.rule)
+                            for f in chosen],
+        confidence=r.confidence, text=r.text,
+        reason=f"condition {'held' if holds else 'did not hold'} at "
+               f"x={x:.2f} y={y:.2f} yaw={math.degrees(yaw):.1f} deg")
+    return out
+
+
+def _bridge_pose(bridge: Any) -> Optional[Tuple[float, float, float]]:
+    """The bridge's MEASURED pose (x, y, yaw), or None if it cannot say."""
+    for name in ("read_pose", "_read_pose"):
+        fn = getattr(bridge, name, None)
+        if callable(fn):
+            try:
+                x, y, yaw = fn()
+                return float(x), float(y), float(yaw)
+            except Exception:
+                return None
+    state = getattr(bridge, "get_state_for_query", None)
+    if callable(state):
+        try:
+            st = state() or {}
+            p = st.get("pose", st)
+            return float(p["x"]), float(p["y"]), float(p["yaw"])
+        except Exception:
+            return None
+    return None
+
+
 def execute(bridge: Any, r: "_i.Interpretation",
             surface: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Run an interpretation. None = not ours; give it to the model."""
     intents = getattr(bridge, "intents", None)
+
+    if r.intent == getattr(_i, "CONDITIONAL", "conditional"):
+        pose = _bridge_pose(bridge)
+        chosen = resolve_conditional(r, pose) if pose is not None else None
+        if chosen is None:
+            return None                  # no measured pose: the model's turn
+        said = f"Checked: {chosen.reason}."
+        if not chosen.frames:
+            return {"agent": said + " Nothing to do.",
+                    "tools": [("evaluate_condition", "ok", chosen.reason[:80])]}
+        out = execute(bridge, chosen, surface)
+        if out is None:
+            return None
+        return {"agent": said + " " + str(out.get("agent", "")),
+                "tools": [("evaluate_condition", "ok", chosen.reason[:80])]
+                + list(out.get("tools") or [])}
 
     if r.intent == _i.QUERY:
         kind = (r.frames[0].args.get("kind") if r.frames else "state")
@@ -350,6 +419,8 @@ def execute(bridge: Any, r: "_i.Interpretation",
 
     if r.intent == _i.AMBIGUOUS:
         # A question, not a guess, and nothing moves.
+        if getattr(r, "ask", ""):
+            return {"agent": r.ask, "tools": [("clarify", "ask", r.residue[:80])]}
         return {"agent": f"I need one more thing before I move: {r.reason}. "
                          f"Which one do you mean?",
                 "tools": [("clarify", "ask", r.residue[:80])]}
@@ -624,10 +695,21 @@ def parser_first_plan(text: str, surface: str = _i.MOBILE
     # Eligibility is judged against the DEFAULT set in shadow mode, so the
     # recorded number answers "what would turning this on have saved?"
     judged = acting or _SHORT_CIRCUIT_DEFAULT
-    if confident and r.intent in judged:
+    # ⚠️ OWNER DECISION 2026-09-23: an order with no distance is answered
+    # with the parser's own question ("How far should I drive?") whenever
+    # parser-first is on, whatever intents it acts on. It is not a model's
+    # call to make: a model asked to "drive forward" can only guess a
+    # number, which the gate would refuse as invented anyway.
+    asks = r.intent == _i.AMBIGUOUS and bool(getattr(r, "ask", ""))
+    # A condition on the robot's own measured pose, read exactly, is
+    # resolved here too (2026-09-24): `execute` measures the pose, picks the
+    # branch and runs it through the gate. The model would only be asked to
+    # read the same number back.
+    conditional = r.intent == getattr(_i, "CONDITIONAL", "conditional") and confident
+    if (confident and r.intent in judged) or asks or conditional:
         _STATS["eligible"] += 1
 
-    if not acting or not confident or r.intent not in acting:
+    if not acting or not ((confident and r.intent in acting) or asks or conditional):
         _STATS["relay_calls"] += 1
         return None
     return r

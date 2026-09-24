@@ -700,3 +700,289 @@ def test_a_plausible_distance_still_runs():
     b = _Bridge()
     route(b, "drive forward 5 metres", MOBILE)
     assert b.calls == [("drive", 5.0)]
+
+
+# ── Direction on either side of the quantity (2026-09-23). ──────────
+# Three of these DROVE THE WRONG WAY at confidence 0.95 before the fix:
+# a direction after the number was not read, and it was too short to
+# fail the consumption gate.
+def _acts(text):
+    """Would parser-first act on this without asking the model?"""
+    r = interpret(text, MOBILE)
+    return r.executable and r.confidence >= 0.8
+
+
+def _motion(text):
+    r = interpret(text, MOBILE)
+    assert r.intent == COMMAND, f"{text!r} -> {r.intent}: {r.reason}"
+    return [(f.tool, round(f.args.get("distance", 0.0), 4),
+             round(math.degrees(f.args.get("angle_rad", 0.0)), 2))
+            for f in r.frames]
+
+
+@pytest.mark.parametrize("text,want", [
+    ("rotate 45 degrees right", [("turn", 0.0, -45.0)]),
+    ("drive 1 metre backwards", [("drive_forward", -1.0, 0.0)]),
+    ("move 50 cm back", [("drive_forward", -0.5, 0.0)]),
+    ("go 2 metres in reverse", [("drive_forward", -2.0, 0.0)]),
+    ("turn 120 degrees to the left", [("turn", 0.0, 120.0)]),
+    ("spin clockwise by forty-five degrees", [("turn", 0.0, -45.0)]),
+    ("turn left 35 degrees", [("turn", 0.0, 35.0)]),
+])
+def test_a_trailing_direction_is_read(text, want):
+    assert _motion(text) == want
+
+
+@pytest.mark.parametrize("text", [
+    "advance 1 m backwards",           # the two directions disagree
+    "turn left 30 degrees right",
+    "travel 1 metre to the left",      # a tug cannot strafe
+    "drive 2 metres back to the dock", # "back" is not the clause's end
+    "turn left 2 metres",              # used to turn 2 DEGREES
+])
+def test_an_unread_or_conflicting_direction_declines(text):
+    assert not _acts(text)
+
+
+# ── Spoken numbers and units. ───────────────────────────────────────
+@pytest.mark.parametrize("text,metres", [
+
+    ("advance seven tenths of a metre straight ahead", 0.7),
+    ("travel one metre and thirty centimetres forwards", 1.3),
+    ("go forward one and a half metres", 1.5),
+    ("drive forward a metre and a half", 1.5),
+    ("move forward zero point four five metres", 0.45),
+    ("creep forward twenty-five centimetres", 0.25),
+    ("roll forward 450 mm", 0.45),
+    ("drive forward two feet", 0.6096),
+    ("back up by forty centimetres", -0.4),
+])
+def test_spoken_quantities(text, metres):
+    if metres is None:
+        return
+    assert _motion(text) == [("drive_forward", metres, 0.0)]
+
+
+def test_compound_number_words_are_one_number():
+    # "sixty-five" used to normalise to "60-5", which no rule reads.
+    assert _motion("rotate clockwise through sixty-five degrees") == \
+        [("turn", 0.0, -65.0)]
+    assert _motion("turn counter clockwise one hundred and ten degrees") == \
+        [("turn", 0.0, 110.0)]
+
+
+def test_point_is_a_decimal_only_before_a_unit():
+    assert "0.2" not in interpret(
+        "at this point two robots are blocking the aisle", MOBILE).residue
+
+
+# ── Repetition: only counts whose total is unambiguous. ─────────────
+def test_twice_on_one_step():
+    # Used to turn ONCE: "twice" was left over and ignored.
+    assert _motion("turn left 90 degrees twice") == [("turn", 0.0, 90.0)] * 2
+
+
+def test_a_count_over_a_whole_sequence():
+    assert _motion("twice: drive forward 0.3 metres, then drive back 0.3 metres") == \
+        [("drive_forward", 0.3, 0.0), ("drive_forward", -0.3, 0.0)] * 2
+    assert _motion("perform two repetitions of the following: drive forward "
+                   "0.5 m, turn left 90 degrees") == \
+        [("drive_forward", 0.5, 0.0), ("turn", 0.0, 90.0)] * 2
+
+
+@pytest.mark.parametrize("text", [
+    # does the count cover the sequence or the last step?
+    "drive forward 0.5 metres then turn right 90 degrees three times",
+    # English splits on whether that is two runs or three
+    "turn left 90 degrees, then repeat that twice",
+    "drive forward 1 metre three hundred times",
+])
+def test_an_ambiguous_or_excessive_count_declines(text):
+    assert not _acts(text)
+
+
+# ── A clause the parser could not read keeps it from acting. ────────
+def test_one_unexplained_clause_is_clearly_below_the_acting_floor():
+    # This was 0.95 - 0.15 = 0.7999999999999999 against a 0.8 floor: the
+    # forward leg ALONE was declined only by floating-point rounding.
+    # ("to return to your start" is a goal restatement since round 2, so the
+    # unexplained clause is now a purpose the parser cannot check.)
+    r = interpret("drive forward 0.7 metres, then reverse 0.7 metres to "
+                  "impress the visitors", MOBILE)
+    assert r.confidence <= 0.7
+
+
+def test_a_corrections_own_direction_wins():
+    assert _motion("turn right 90 degrees, no, make it left 90 degrees") == \
+        [("turn", 0.0, 90.0)]
+
+
+def test_a_modal_without_you_is_a_question_not_a_polite_order():
+    assert not _acts("would a clockwise rotation of 50 degrees help?")
+
+
+# ── Found by the held-out harness comparison, after its freeze. ─────
+@pytest.mark.parametrize("text", [
+    "drive forward 1 m point five",   # the ".5" after the unit is unread
+    "please drive forward ___ m",     # a drive with no distance -> 1 m default
+    "drive forward 1 metre at 0.5 m/s",
+])
+def test_an_unread_number_or_unit_declines(text):
+    assert not _acts(text)
+
+
+# ── A drive with no distance asks how far (owner decision 2026-09-23). ──
+# It used to reach the router with no distance and travel the adapter's
+# 1 m default: a number nobody said.
+@pytest.mark.parametrize("text,verb", [
+    ("drive forward", "drive"),
+    ("go ahead", "drive"),
+    ("can you move forward?", "drive"),
+    ("back up", "back up"),
+    ("reverse", "back up"),
+])
+def test_a_drive_with_no_distance_asks_how_far(text, verb):
+    r = interpret(text, MOBILE)
+    assert r.intent == AMBIGUOUS and r.frames == []
+    assert r.ask.startswith(f"How far should I {verb}?")
+    b = _Bridge()
+    out = route(b, text, MOBILE)
+    assert b.calls == [], "nothing may move"
+    assert out["agent"] == r.ask
+
+
+def test_parser_first_answers_the_question_itself():
+    from omnisim_bridges.route import parser_first_plan
+    assert parser_first_plan("drive forward", MOBILE) is not None
+
+
+@pytest.mark.parametrize("text", [
+    "go ahead and stop",               # a stop is never replaced by a question
+    "turn left, then drive forward",   # other motion: the model's to sort out
+    "drive forward, 2 metres",         # the distance IS there
+    "when you are ready, drive forward",
+])
+def test_the_question_is_only_asked_when_it_is_the_whole_utterance(text):
+    assert interpret(text, MOBILE).ask == ""
+
+
+def test_a_correction_that_adds_steps_is_not_half_applied():
+    # held-out v3 compound_v07: the drive was re-filled and the final turn
+    # DROPPED, so the robot finished 60 degrees off its intended heading.
+    assert not _acts("Turn right 60 degrees, then drive forward 0.9 metres - "
+                     "actually change that drive to 0.5 metres, then turn left "
+                     "60 degrees to face your original heading.")
+    assert _motion("drive forward 2 metres - no wait, make it 1 metre") == \
+        [("drive_forward", 1.0, 0.0)]
+
+
+# ── Coverage round 2 (2026-09-24): construct classes, the developer's own
+# sentences, never a benchmark prompt. ─────────────────────────────────
+@pytest.mark.parametrize("text,want", [
+    ("drive forward just 40 cm", [("drive_forward", 0.4, 0.0)]),
+    ("go back exactly 1.3 m", [("drive_forward", -1.3, 0.0)]),
+    ("spin the base anticlockwise 65 degrees", [("turn", 0.0, 65.0)]),
+    ("turn yourself right by 20 degrees", [("turn", 0.0, -20.0)]),
+    ("rotate in place 140 degrees to the left", [("turn", 0.0, 140.0)]),
+    ("ease back 25 centimetres", [("drive_forward", -0.25, 0.0)]),
+    ("edge ahead 300 mm", [("drive_forward", 0.3, 0.0)]),
+    ("cover 0.9 metres, heading forward", [("drive_forward", 0.9, 0.0)]),
+    ("drive forward one metre twenty", [("drive_forward", 1.2, 0.0)]),
+    ("roll ahead one metre forty", [("drive_forward", 1.4, 0.0)]),
+    ("reverse one and a quarter metres", [("drive_forward", -1.25, 0.0)]),
+    ("80 degrees, turn left", [("turn", 0.0, 80.0)]),
+    ("Right turn: 60 degrees.", [("turn", 0.0, -60.0)]),
+    ("back up 60 cm, still facing the same way", [("drive_forward", -0.6, 0.0)]),
+    ("drive forward 0.4 metres then drive back 0.4 metres, three times over",
+     [("drive_forward", 0.4, 0.0), ("drive_forward", -0.4, 0.0)] * 3),
+    ("cycle through the following twice: drive forward 0.3 m, then turn left 90 degrees",
+     [("drive_forward", 0.3, 0.0), ("turn", 0.0, 90.0)] * 2),
+])
+def test_round_two_constructs(text, want):
+    assert _motion(text) == want
+
+
+@pytest.mark.parametrize("text", [
+    "the robot should spin the base 65 degrees at noon",
+    "it went forward 70 cm earlier",
+    "80 degrees is the limit, turn left",
+    "drive forward only if the door is open",
+    "drive forward 0.8 m, but only if you feel like it",
+    "loop this forever: turn left 20 degrees",
+    "the gap is about 40 cm forward of the rack",
+    "cover the pallet, moving forward carefully",
+])
+def test_round_two_look_alikes_do_not_act(text):
+    assert not _acts(text)
+    assert interpret(text, MOBILE).intent != "conditional"
+
+
+# ── A condition on the robot's OWN measured pose is resolved from the
+# measurement, never guessed. ──────────────────────────────────────────
+from omnisim_bridges.interpret import CONDITIONAL, evaluate_condition  # noqa: E402
+from omnisim_bridges.route import parser_first_plan, resolve_conditional  # noqa: E402
+
+
+@pytest.mark.parametrize("text,pose,want", [
+    ("If your y is currently less than 0.8 m, turn right 35 degrees; if not, stay put",
+     (0, 0, 0), [("turn", 0.0, -35.0)]),
+    ("If your y is currently less than 0.8 m, turn right 35 degrees; if not, stay put",
+     (0, 1.0, 0), []),
+    ("If your heading is more than 20 degrees off zero, turn left 20 degrees; "
+     "otherwise reverse 0.3 m", (0, 0, math.radians(-30)), [("turn", 0.0, 20.0)]),
+    ("If your heading is more than 20 degrees off zero, turn left 20 degrees; "
+     "otherwise reverse 0.3 m", (0, 0, math.radians(10)), [("drive_forward", -0.3, 0.0)]),
+    ("If your heading is already more than 45 degrees to the right, turn left "
+     "45 degrees; otherwise drive forward 0.3 m", (0, 0, math.radians(-60)),
+     [("turn", 0.0, 45.0)]),
+    ("If your heading is already more than 45 degrees to the right, turn left "
+     "45 degrees; otherwise drive forward 0.3 m", (0, 0, math.radians(60)),
+     [("drive_forward", 0.3, 0.0)]),
+    ("Drive forward 0.8 m, but only if your x is below 0.5 m", (0, 0, 0),
+     [("drive_forward", 0.8, 0.0)]),
+    ("Drive forward 0.8 m, but only if your x is below 0.5 m", (0.6, 0, 0), []),
+    ("If your x is somewhere between -1 and 1 m, turn right 70 degrees", (2, 0, 0), []),
+    ("If your x is more than 0.5 m, drive forward 0.5 m; if that's false, "
+     "turn left 15 degrees", (0, 0, 0), [("turn", 0.0, 15.0)]),
+])
+def test_a_condition_on_the_measured_pose(text, pose, want):
+    r = parser_first_plan(text, MOBILE)
+    assert r is not None and r.intent == CONDITIONAL
+    out = resolve_conditional(r, pose)
+    assert [(f.tool, round(f.args.get("distance", 0.0), 4),
+             round(math.degrees(f.args.get("angle_rad", 0.0)), 2))
+            for f in out.frames] == want
+
+
+def test_a_condition_without_a_usable_pose_is_never_guessed():
+    r = interpret("If your x is below 1 m, drive forward 0.5 m", MOBILE)
+    assert r.intent == CONDITIONAL
+    assert resolve_conditional(r, None) is None
+    assert resolve_conditional(r, (float("nan"), 0, 0)) is None
+    b = _Bridge()                        # its state carries no pose
+    route(b, "If your x is below 1 m, drive forward 0.5 m", MOBILE)
+    assert b.calls == []
+
+
+def test_the_router_measures_then_runs_one_branch():
+    class Posed(_Bridge):
+        def read_pose(self):
+            return (0.2, 0.0, 0.0)
+    b = Posed()
+    out = route(b, "If your x is below 1 m, drive forward 0.5 m; otherwise "
+                   "turn left 90 degrees", MOBILE)
+    assert b.calls == [("drive", 0.5)]
+    assert out["tools"][0][0] == "evaluate_condition"
+
+
+def test_evaluate_condition_reads_signed_and_sized_values():
+    assert evaluate_condition({"var": "yaw", "op": "gt", "a": 0.5, "abs": True},
+                              (0, 0, -0.6))
+    assert not evaluate_condition({"var": "yaw", "op": "gt", "a": 0.5,
+                                   "negate": True}, (0, 0, 0.6))
+    assert evaluate_condition({"var": "x", "op": "within", "a": 0.1, "b": 1.0},
+                              (1.05, 0, 0))
+
+
+def test_only_a_conditional_is_resolved():
+    assert resolve_conditional(interpret("drive forward 1 m", MOBILE), (0, 0, 0)) is None

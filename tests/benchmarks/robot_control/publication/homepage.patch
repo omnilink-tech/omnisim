@@ -1,0 +1,36 @@
+diff --git a/index.html b/index.html
+index 12a4cab8..ccf687a5 100644
+--- a/index.html
++++ b/index.html
+@@ -55,6 +55,19 @@
+       </div></details>
+     </section>
+ 
++    <section class="robotics-benchmark wrap section" id="robotics-benchmark" aria-labelledby="benchmark-title">
++      <div class="cost-intro"><p class="eyebrow">Robotics control · Measured in OmniSim</p><h2 id="benchmark-title">Robot control.<br /><span>Results you can inspect.</span></h2><p>OmniLink’s tested integration completed 32 of 33 trials on our 33-task robotics control development suite.</p></div>
++      <div class="cost-results" aria-label="Robotics control development benchmark results">
++        <article class="cost-card cost-card-omnilink"><p class="cost-label">Completed trials</p><p class="cost-amount">32 / 33</p><p class="cost-kind">Three simulated robots · 1 repeat(s)</p><p class="cost-card-note">Developer-authored tasks used during development</p></article>
++        <article class="cost-card"><p class="cost-label">Estimated model USD per success</p><p class="cost-amount">$0.01244</p><p class="cost-kind">All attempts’ model cost ÷ completed trials</p><p class="cost-card-note">Excludes subscriptions, hosting and local compute</p></article>
++      </div>
++      <p class="micro"><strong>OmniLink unwanted-motion count: 1.</strong> Measured under this suite’s sampled instruction-compliance rules. All failed trials are disclosed in the full results; this is not a hardware safety certification.</p>
++      <p>In this run, OmniLink’s estimated model cost per successful task was 40.6% lower than the tested plain model loop ($0.02094). Completion: OmniLink 32/33; plain loop 32/33. The full table also includes both frameworks with the same OmniLink parser; use those controls when interpreting attribution.</p>
++      <div class="cost-context"><p>198 trials across six implementations using the same model and robot tools. Every result, including failures and parser-enabled comparison controls, is in the full table. This measures the named integrations on this task set; it does not establish a market-wide winner.</p><a class="text-link" href="/benchmarks/robotics-control/index.html">Compare results &amp; inspect the evidence ↗</a></div>
++      <p class="micro">Simulation only · Assisted arm grasping · Model: gemini-3.5-flash · Windows 11, Newton/MuJoCo CPU physics. Offline score verification is available; new live runs require the matching OmniSim 9.0.0 build, an OmniKey and model access.</p>
++      <p class="micro">All model requests in this campaign returned usage. No overload-error cost assumption was needed.</p>
++    </section>
++
+     <section class="outcomes wrap section" aria-labelledby="outcome-title">
+       <div class="section-heading"><p class="eyebrow">From a sentence to a result</p><h2 id="outcome-title">A conversation that<br />goes somewhere.</h2></div>
+       <div class="outcome-grid">
+diff --git a/public/landing.css b/public/landing.css
+index f982e00d..b73454be 100644
+--- a/public/landing.css
++++ b/public/landing.css
+@@ -20,3 +20,7 @@
+ @media(max-width:380px){.nav{flex-wrap:wrap;padding-block:18px;gap:14px}.nav nav{width:100%;margin:0;justify-content:space-between}}
+ 
+ .plan-capacity{font-size:19px;font-weight:500;letter-spacing:-.4px;margin:8px 0 24px}.plan-perk{font-size:11px;color:var(--muted);margin:-12px 0 20px}.price-card .button{margin-top:auto}.plans-shared{padding-top:28px;line-height:1.65}.plans-shared h3{font-size:16px;font-weight:500;margin-bottom:8px}.plans-shared p{font-size:12px;color:var(--muted)}@media(max-width:700px){.plan-capacity{font-size:15px}.plans-shared p{font-size:11px}}
++/* Robotics benchmark: keep evidence notes readable and long prices usable on phones. */
++.robotics-benchmark>.micro{margin-top:14px;font-size:12px;line-height:1.7}
++.robotics-benchmark>.micro+p:not(.micro){margin-top:14px;max-width:1060px}
++@media(max-width:700px){.robotics-benchmark .cost-results{grid-template-columns:1fr}.robotics-benchmark .cost-label{min-height:0}.robotics-benchmark .cost-amount{font-size:52px}.robotics-benchmark .cost-context>p{font-size:12px}}

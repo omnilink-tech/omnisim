@@ -25,7 +25,7 @@ top of that foundation.
 ---
 
 
-## [v9.0.0] — 2026-09-23
+## [v9.0.0] — 2026-09-25
 
 ### You can stop the simulation at the moment something goes wrong
 
@@ -128,6 +128,29 @@ documentation and no client. Building the breakpoint on top of them exposed
   the engine; an engine with no measured tier sends no model and lets the
   platform pick one it serves. The reasoning behind the Google pin is unchanged
   and still applies to the Google engine.
+- **A drive with no distance now asks how far instead of driving a metre.**
+  "drive forward", "go ahead", "back up" and "reverse" used to reach the robot with
+  no distance, and the drive adapter filled in 1 m — a magnitude nobody said, and
+  one the gate could not see because the default was applied after it looked. A
+  distance-less drive that is the whole instruction now gets the answer "How far
+  should I drive?" from the parser, with no model call and no motion. The adapter
+  has no default any more, and the gate requires a distance. "go ahead and stop"
+  still stops.
+- **The parser understands more of what people actually type.** Adverbs, "in
+  place", more drive verbs, "one metre forty", quarter turns and pi radians,
+  quantity-first and verbless orders, sequence words, and more ways of asking for a
+  repeat. It also handles a condition on the robot's own measured position or
+  heading — "if your y is above 0.4 m, drive back 0.5 m, otherwise turn left" —
+  choosing the branch from the **measured** pose, and handing the turn to the model
+  rather than guessing when no pose is available.
+- **Three kinds of legitimate order are no longer refused by the gate:** a
+  first-person correction ("I said reverse 1.2 m — ignore that, 0.6 m"), a polite
+  request phrased as a question ("mind giving it a quarter turn?"), and a condition
+  followed by an order. Re-checked on 332 corpus and benchmark sentences: only those
+  three changed verdict, and no sentence that must not move the robot changed.
+- `python -m omnisim key --check` now reports a key the platform has **disabled**
+  after repeated billing or authentication failures, with the reason and the fix,
+  instead of saying no model provider is connected.
 
 ### The simulator and the platform are one loop, not a tether
 
@@ -225,6 +248,16 @@ refuse at launch and say why. `commandbench`'s ladder arm is dropped rather than
 re-pointed, because the honest statement is that the comparison is gone; its
 parser arm refuses for the same reason. Recorded result files are untouched —
 they are evidence of runs that happened.
+
+A **robotics-control benchmark** now ships (`omnisim/control_bench`, with tasks,
+tests and methodology under `tests/benchmarks/robot_control/`). It runs specific
+control implementations against the Husky, TurtleBot3 Burger and OmniArm 6 and
+grades them mechanically on task completion, instruction compliance, state
+grounding, multi-turn execution and recovery. It is a comparison of specific
+implementations under stated conditions — not a ranking of hosted products and not
+a hardware validation — and none of its bundled task sets is an untouched holdout.
+Its raw working evidence is not in the source tree; it is distributed as a separate
+archive with its own reproduction instructions.
 
 ### Agent surface
 

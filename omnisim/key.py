@@ -209,10 +209,23 @@ def _check(key: str) -> int:
         print("    python -m omnisim byok --add google   # free tier, no card")
         print("    python -m omnisim byok --providers    # the other options")
     else:
-        if isinstance(quota, list):
-            names = ", ".join(sorted({str(q.get("provider") or "?") for q in quota}))
+        # A key the platform DISABLED (after repeated billing or auth
+        # failures) is listed with status "invalid". It is connected, but
+        # every chat gets 402 until it is re-enabled -- reporting it as
+        # "connected" or as "none" both sent the owner the wrong way
+        # (2026-09-23).
+        usable = [q for q in quota if q.get("status") != "invalid"] if isinstance(quota, list) else []
+        disabled = [q for q in quota if q.get("status") == "invalid"] if isinstance(quota, list) else []
+        if usable:
+            names = ", ".join(sorted({str(q.get("provider") or "?") for q in usable}))
             print(f"  Model providers connected: {names}")
-        else:
+        for q in disabled:
+            reason = q.get("lastFailureReason")
+            print(f"  DISABLED -- your {q.get('provider') or '?'} key was switched off by OmniLink "
+                  f"after repeated failures{f' (last: {reason})' if reason else ''}.")
+            print("    Fix it with the provider (billing or the key), then click Enable")
+            print("    on the API & Keys page. Chats get 402 until then.")
+        if not isinstance(quota, list):
             print("  Model providers: could not be read (not a verdict on your key).")
             print("  If a chat returns 402 BYOK_REQUIRED, run: python -m omnisim byok")
         print()

@@ -1,0 +1,3 @@
+# Engine logs are reproduction evidence, not disposable application logs.
+!evidence/**/engine.log
+!evidence/**/stdout.log

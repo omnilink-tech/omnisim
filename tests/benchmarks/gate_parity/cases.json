@@ -477,6 +477,14 @@
       ]
     },
     {
+      "utterance": "report your x and y coordinates without moving",
+      "tool": "stop",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
       "utterance": "suppose you drove forward 3 metres, where would you be?",
       "tool": "drive_forward",
       "args": {
@@ -908,6 +916,252 @@
       "surface": null,
       "registered": false,
       "rules": []
+    },
+    {
+      "utterance": "drive forward -2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "sign_conflict"
+      ]
+    },
+    {
+      "utterance": "drive forward 0.7 metres, then reverse 0.7 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -0.7
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "drive forward 0.4 metres, then drive backward 0.4 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -0.4
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "drive forward 1 metre and come back",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -1
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "drive forward 2 metres to the back wall",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "sign_conflict"
+      ]
+    },
+    {
+      "utterance": "turn seventy degrees left",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 1.2217
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "back up fifteen centimetres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -0.15
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "drive forward a millimetre",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 0.001
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "roll ahead 1.4 metres, would you?",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 1.4
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "you drove forward 2 metres, right?",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "interrogative"
+      ]
+    },
+    {
+      "utterance": "reverse 0.35 m and after that swivel 135 degrees clockwise",
+      "tool": "turn",
+      "args": {
+        "angle_rad": -2.356
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "after that meeting ends, drive forward 2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "deferred"
+      ]
+    },
+    {
+      "utterance": "turn right 45 degrees, retrying once if the tool is unavailable",
+      "tool": "turn",
+      "args": {
+        "angle_rad": -0.785
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "rotate 55 degrees clockwise. if the motion tool says it's temporarily unavailable, have one more go",
+      "tool": "turn",
+      "args": {
+        "angle_rad": -0.96
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "if the manual says drive forward 2 metres, do it",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "reported_speech"
+      ]
+    },
+    {
+      "utterance": "drive forward",
+      "tool": "drive_forward",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "missing_arg"
+      ]
+    },
+    {
+      "utterance": "go ahead",
+      "tool": "drive_forward",
+      "args": {},
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "missing_arg"
+      ]
+    },
+    {
+      "utterance": "I said reverse 1.2 metres a moment ago - ignore that, the real number is 0.6 metres reversed",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -0.6
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "he said reverse 1.2 metres",
+      "tool": "drive_forward",
+      "args": {
+        "distance": -1.2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "reported_speech"
+      ]
+    },
+    {
+      "utterance": "Mind giving the robot a quarter turn to the left?",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 1.5708
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "do you mind if I drive forward 2 metres?",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "interrogative"
+      ]
+    },
+    {
+      "utterance": "Should your y coordinate be above 0.4 metres, drive backward 0.5 metres; otherwise turn left 110 degrees.",
+      "tool": "turn",
+      "args": {
+        "angle_rad": 1.9199
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "should I drive forward 2 metres?",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "interrogative"
+      ]
     },
     {
       "utterance": "drive forward 2 metres",

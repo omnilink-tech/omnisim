@@ -1,0 +1,4 @@
+/* Robotics benchmark: keep evidence notes readable and long prices usable on phones. */
+.robotics-benchmark>.micro{margin-top:14px;font-size:12px;line-height:1.7}
+.robotics-benchmark>.micro+p:not(.micro){margin-top:14px;max-width:1060px}
+@media(max-width:700px){.robotics-benchmark .cost-results{grid-template-columns:1fr}.robotics-benchmark .cost-label{min-height:0}.robotics-benchmark .cost-amount{font-size:52px}.robotics-benchmark .cost-context>p{font-size:12px}}

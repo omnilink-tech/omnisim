@@ -1,0 +1,12 @@
+    <section class="robotics-benchmark wrap section" id="robotics-benchmark" aria-labelledby="benchmark-title">
+      <div class="cost-intro"><p class="eyebrow">Robotics control · Measured in OmniSim</p><h2 id="benchmark-title">Robot control.<br /><span>Results you can inspect.</span></h2><p>OmniLink’s tested integration completed {{PASS}} of {{ATTEMPTS}} trials on our {{TASKS}}-task robotics control development suite.</p></div>
+      <div class="cost-results" aria-label="Robotics control development benchmark results">
+        <article class="cost-card cost-card-omnilink"><p class="cost-label">Completed trials</p><p class="cost-amount">{{PASS}} / {{ATTEMPTS}}</p><p class="cost-kind">Three simulated robots · {{REPEATS}} repeat(s)</p><p class="cost-card-note">Developer-authored tasks used during development</p></article>
+        <article class="cost-card"><p class="cost-label">Estimated model USD per success</p><p class="cost-amount">${{COST}}</p><p class="cost-kind">All attempts’ model cost ÷ completed trials</p><p class="cost-card-note">Excludes subscriptions, hosting and local compute</p></article>
+      </div>
+      <p class="micro"><strong>OmniLink unwanted-motion count: {{MOTION}}.</strong> Measured under this suite’s sampled instruction-compliance rules. All failed trials are disclosed in the full results; this is not a hardware safety certification.</p>
+      <p>{{COMPARATIVE_NOTE}}</p>
+      <div class="cost-context"><p>{{TOTAL}} trials across six implementations using the same model and robot tools. Every result, including failures and parser-enabled comparison controls, is in the full table. This measures the named integrations on this task set; it does not establish a market-wide winner.</p><a class="text-link" href="/benchmarks/robotics-control/index.html">Compare results &amp; inspect the evidence ↗</a></div>
+      <p class="micro">Simulation only · Assisted arm grasping · Model: {{MODEL}} · Windows 11, Newton/MuJoCo CPU physics. Offline score verification is available; new live runs require the matching OmniSim 9.0.0 build, an OmniKey and model access.</p>
+      <p class="micro">{{ERROR_COST_NOTE}}</p>
+    </section>

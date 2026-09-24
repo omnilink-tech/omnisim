@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Robotics control benchmark · OmniLink</title>
+  <meta name="description" content="Measured robot-control results in OmniSim, with every implementation, trial, failure and reproduction protocol disclosed.">
+  <style>
+    :root{color-scheme:dark;--bg:#0c1219;--panel:#141e29;--line:#304154;--ink:#f1f5f9;--muted:#a7bacd;--accent:#87e1cf}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+    main{max-width:1120px;margin:auto;padding:36px 28px 80px}nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:80px}
+    a{color:var(--accent);text-underline-offset:4px}nav strong{font-size:24px;letter-spacing:-1px}nav span,.eyebrow{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent)}
+    h1{font-size:clamp(40px,6.4vw,72px);line-height:1.06;letter-spacing:-.045em;max-width:850px;margin:22px 0}h2{font-size:29px;letter-spacing:-.025em;margin:0 0 12px}h3{font-size:19px;margin:26px 0 8px}
+    p{max-width:880px}.lede{font-size:20px;max-width:780px;color:var(--muted)}.note{color:var(--muted);font-size:14px}.badge{display:inline-block;padding:5px 10px;border:1px solid var(--line);border-radius:5px;color:var(--muted);font-size:13px}
+    .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:30px 0 20px}.metric{padding:23px;border:1px solid var(--line);background:var(--panel);border-radius:10px}.metric strong{display:block;font-size:39px;line-height:1.25;letter-spacing:-.035em}.metric span{display:block;font-size:14px;color:var(--muted);margin-top:8px}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}.button{display:inline-block;border:1px solid var(--accent);border-radius:6px;padding:11px 18px;text-decoration:none;font-weight:600}.button.primary{background:var(--accent);color:#0c1219}
+    section{margin-top:60px;scroll-margin-top:25px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:8px;margin:22px 0}table{width:100%;border-collapse:collapse;font-size:14px;white-space:nowrap}th,td{text-align:right;padding:15px 14px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}th:first-child{text-align:left}thead{background:#192635;color:var(--muted)}tbody tr:last-child>*{border-bottom:none}tbody tr:first-child{background:#162a2a}tbody th{font-weight:500}.failure-table tbody tr:first-child{background:transparent}.failure-table td:last-child{white-space:normal;min-width:230px;text-align:left}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}.card{background:var(--panel);border:1px solid var(--line);padding:24px;border-radius:8px}.card h3{margin-top:0}.card p:last-child{margin-bottom:0}
+    code{font-size:13px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px;background:#080e14;border:1px solid var(--line);border-radius:6px;line-height:1.7}details{border-top:1px solid var(--line);margin-top:24px;padding-top:18px}summary{cursor:pointer;color:var(--accent);font-weight:600}.hash{word-break:break-all;font:12px/1.8 ui-monospace,monospace;color:var(--muted)}footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}.release{border-left:3px solid #e5c57c;padding-left:18px;margin-top:24px;color:#d5c6a5}
+    @media(max-width:700px){main{padding:24px 18px 50px}nav{margin-bottom:52px}nav span{font-size:10px}.metrics,.grid{grid-template-columns:1fr}.metric{padding:18px}.metric strong{font-size:32px}.lede{font-size:18px}section{margin-top:44px}h2{font-size:25px}}
+  </style>
+</head>
+<body><main>
+  <nav aria-label="Benchmark"><strong>OmniLink<span aria-hidden="true"> / </span>Robotics</strong><span>Evidence you can inspect</span></nav>
+  <!-- HOMEPAGE START -->
+  <header id="robotics-benchmark">
+    <div class="eyebrow">Robotics control · Measured in OmniSim</div>
+    <h1>Robot control,<br>measured.</h1>
+    <p class="lede">OmniLink’s parser integration completed <strong>{{PASS}} of {{ATTEMPTS}} trials</strong> on our {{TASKS}}-task robotics control development suite.</p>
+    <span class="badge">Developer-authored suite · Three simulated robots · {{REPEATS}} repeat(s)</span>
+    <div class="metrics">
+      <div class="metric"><strong>{{PASS}} / {{ATTEMPTS}}</strong><span>Completed trials · {{PERCENT}}% on this task set</span></div>
+      <div class="metric"><strong>${{COST}}</strong><span>Estimated model cost per success, including failed attempts</span></div>
+      <div class="metric"><strong>{{TOTAL}} trials</strong><span>Across all six implementations; every result retained</span></div>
+    </div>
+    <p class="note">Simulation results on tasks used during development. Arm grasping is assisted. Costs use fixed token rates and exclude subscriptions, hosting and local compute. These results do not establish a market-wide winner.</p>
+    <p class="note"><strong>OmniLink unwanted-motion count: {{MOTION}}.</strong> This is the suite’s sampled instruction-compliance check. Every failed trial is disclosed below; it is not a hardware safety certification.</p>
+    <p class="note">{{COMPARATIVE_NOTE}}</p>
+    <div class="actions"><a class="button primary" href="#results">Compare all six implementations</a><a class="button" href="evidence.zip" download>Download evidence</a></div>
+  </header>
+  <!-- HOMEPAGE END -->
+  <section id="results">
+    <h2>Every implementation. The same jobs.</h2>
+    <p>Husky, TurtleBot3 Burger and OmniArm 6 perform instructed motion and arm operations, including cases where the robot should remain still or recover from an unavailable tool. All implementations share the model, robot tools and instruction gate.</p>
+    <p class="note">The two parser-enabled framework controls receive the same OmniLink parser. This compares these specific integrations; it is not a test of complete hosted platforms or every configuration of a framework.</p>
+    <div class="table-wrap"><table><caption class="note">{{TASKS}} tasks × {{REPEATS}} repeat(s) per implementation; all failures and errors included</caption><thead><tr><th scope="col">Implementation</th><th scope="col">Completed</th><th scope="col">Unwanted<br>motion</th><th scope="col">Errors</th><th scope="col">Model<br>requests</th><th scope="col">Provider<br>overloads</th><th scope="col">Model USD<br>/ success</th><th scope="col">Seconds<br>/ success</th></tr></thead><tbody>{{TABLE}}</tbody></table></div>
+    <p class="note">Time is wall time for accelerated simulation workflows, including failed attempts and model waiting. Simulator startup is recorded separately and excluded. Unwanted motion is the benchmark’s observed instruction-compliance criterion, not a safety certification or a continuous physics measurement.</p>
+    <p class="note">{{OVERLOADS}} recognized provider-overload rejections are retained in the request count. Where present, the cost estimate assumes no token charge for those errors under Google’s published failed-request policy; usage remains unreported. Retry waiting time is included. The sensitivity table below shows an alternative charge assumption.</p>
+  </section>
+  <section id="method">
+    <h2>What these numbers measure</h2>
+    <div class="grid">
+      <div class="card"><h3>Measured outcomes</h3><p>Success requires all operator turns to pass measured pose, path, object-state and response checks. A tool accepting a command is not enough. Each episode starts in a fresh simulator session.</p></div>
+      <div class="card"><h3>A declared scope</h3><p>{{TASKS}} authored tasks, {{FAMILIES}} task families, one model and one Windows machine. These tasks informed development. There has been no independent replication, blind holdout claim or validation on real hardware.</p></div>
+      <div class="card"><h3>Complete accounting</h3><p>Total model cost and elapsed task time across successes, failures and errors are divided by completed episodes. A failed job still consumes time and money.</p></div>
+      <div class="card"><h3>A frozen run</h3><p>The suite, {{REPEATS}} repeat(s), six implementations, random order, source hashes and budget were frozen before this run. Earlier development attempts are disclosed separately.</p></div>
+    </div>
+    <details><summary>Uncertainty and paired comparisons</summary>
+      <p class="note">OmniLink relative to each named integration. Brackets are 95% intervals from 2,000 paired task-family bootstrap draws. Difference is in percentage points; cost/time are ratios, with 1 meaning equal. These are unadjusted descriptive intervals on this authored task distribution, not proof of general superiority.</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Baseline</th><th scope="col">Success difference (pp)</th><th scope="col">Cost / success ratio</th><th scope="col">Time / success ratio</th></tr></thead><tbody>{{INTERVALS}}</tbody></table></div>
+      <p class="note">The development-suite leadership gate remains blocked. Repeated trials do not create new independent task families.</p>
+    </details>
+    <details><summary>All failed and errored episodes</summary><div class="table-wrap failure-table"><table><thead><tr><th scope="col">Implementation</th><th scope="col">Task</th><th scope="col">Repeat</th><th scope="col">Outcome</th><th scope="col">Recorded reasons</th></tr></thead><tbody>{{FAILURES}}</tbody></table></div></details>
+    <details><summary>Model, machine and cost assumptions</summary>
+      <p>Model: <code>{{MODEL}}</code>, shared OmniLink API transport; LangGraph 1.2.12; Lobster SDK commit <code>71bd8145055498116de35623dbea0d7dda9b4cd5</code>. All receive the same planning and tool budgets.</p>
+      <p>OmniSim 9.0.0 development build, Windows 11, Python 3.12.14, 16 logical CPU cores. Newton 1.5.0 with MuJoCo 3.11.0 runs on CPU. The machine has an RTX 3060 Laptop GPU, which is not the physics solver used here. Exact hashes and machine fingerprint are in the lock.</p>
+      <p>USD per million tokens: ${{RATE_INPUT}} input, ${{RATE_CACHED}} cached input, ${{RATE_OUTPUT}} output including thoughts. Reference: <a href="https://ai.google.dev/gemini-api/docs/pricing">Google’s standard API pricing</a>, checked 24 September 2026. These estimates are not invoices; they exclude subscription, hosting, local compute and cache-storage costs.</p>
+      <p class="note">The service exposes a model ID, not an immutable backend deployment. Requested temperature and output limits are not certified upstream controls. Model answers and timings may vary on a new run.</p>
+      <p class="note">Campaign 04 permits one retry for the exact recognized high-demand 503 response, with at least 60 seconds of waiting. Its $0 token-charge estimate applies <a href="https://ai.google.dev/gemini-api/docs/billing#am-i-charged-for-failed-requests">Google’s failed-request billing policy</a> to that error class; it is an assumption, not a checked invoice or measured zero tokens. Unrecognized missing usage still stops the run. Earlier campaigns retain their original rules.</p>
+      <div class="table-wrap"><table><caption class="note">Cost sensitivity: a hypothetical $0.01 charge per rejected request, with the same results</caption><thead><tr><th scope="col">Implementation</th><th scope="col">Overloads</th><th scope="col">Estimated USD / success</th><th scope="col">With $0.01 / overload</th></tr></thead><tbody>{{SENSITIVITY}}</tbody></table></div>
+    </details>
+  </section>
+  <section id="reproduce">
+    <h2>Inspect the evidence. Reproduce the protocol.</h2>
+    <p>Download and extract the evidence archive, then recompute the scores offline with Python. No API key or running simulator is needed for this step.</p>
+    <pre><code>python verify_archive.py</code></pre>
+    <div class="actions"><a class="button primary" href="evidence.zip" download>Evidence + verifier</a><a class="button" href="REPRODUCE.md">Live rerun instructions</a><a class="button" href="SPEC.md">Scoring protocol</a><a class="button" href="results.json">Machine-readable results</a></div>
+    <p class="note">The archive contains all trial records, model request metadata and usage, robot observations, physics sidecars, source snapshots and dependency pins. Hashes establish internal consistency; they do not independently attest who collected the data.</p>
+    <p class="release"><strong>Live reproduction requires the matching OmniSim 9.0.0 release.</strong> Publish this page with that source/runtime release. Windows has the prebuilt package; other platforms require a build. Live runs require an OmniKey and an entitled profile. The earlier public 8.2.0 build is not interchangeable with the measured build.</p>
+    <details><summary>Archive hashes and development history</summary>
+      <p><a href="development-history.zip" download>Download all earlier development attempts</a> · <a href="SHA256SUMS.txt">Download checksums</a></p>
+      <p class="note">Incomplete attempts and failed calibrations remain available; they are not pooled with this campaign. Historical files may have private account/OS identities redacted, with original and exported hashes listed in their manifest. The main evidence archive preserves its records byte-for-byte. Review the reports and campaign protocols for product fixes and protocol changes.</p>
+      <p class="hash">Campaign: {{CAMPAIGN}}<br>Evidence ZIP SHA256: {{ZIPHASH}}<br>Lock SHA256: {{LOCKHASH}}<br>Rows SHA256: {{ROWHASH}}</p>
+    </details>
+  </section>
+  <footer>OmniLink robotics control benchmark · Developer measurement in OmniSim · September 2026</footer>
+</main></body></html>

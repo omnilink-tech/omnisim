@@ -99,6 +99,36 @@ def test_reverse_is_still_allowed():
     assert check("back up 2 metres", [F("drive_forward", distance=-2.0)]) == []
 
 
+def test_a_sentence_naming_both_directions_does_not_refuse_the_reverse_leg():
+    # The pilot's compound_04 / repeat_01: a correct return trip stopped
+    # halfway because "forward" appeared anywhere in the sentence.
+    u = "Drive forward 0.7 metres, then reverse 0.7 metres to return to your start."
+    assert check(u, [F("drive_forward", distance=0.7)]) == []
+    assert check(u, [F("drive_forward", distance=-0.7)]) == []
+    u = ("Perform two repetitions of this pair: drive forward 0.4 metres, "
+         "then drive backward 0.4 metres.")
+    assert check(u, [F("drive_forward", distance=-0.4)]) == []
+    assert check("drive forward 1 metre then come back",
+                 [F("drive_forward", distance=-1.0)]) == []
+
+
+def test_a_noun_back_does_not_excuse_a_sign_error():
+    for u in ("drive forward 2 metres to the back wall",
+              "go forward 1 metre past the back door"):
+        assert "sign_conflict" in rules(
+            check(u, [F("drive_forward", distance=-1.0)])), u
+
+
+def test_a_stop_is_not_self_negating():
+    # The pilot's state_04: a harmless stop before a coordinate report.
+    u = "Report your current x and y coordinates without moving."
+    assert check(u, [F("stop")]) == []
+    # ...while an actual motion still is.
+    assert "self_negating" in rules(
+        check("drive forward 1 metre without moving",
+              [F("drive_forward", distance=1.0)]))
+
+
 # ── Schema. A model will invent arguments and tools. ────────────────
 def test_an_invented_tool_is_refused():
     assert "unknown_tool" in rules(check("engage the warp drive", [F("warp", factor=9)]))
@@ -239,3 +269,78 @@ def test_the_gate_catches_a_frame_the_parser_never_saw():
     # human-readable account of the refusal at all.
     assert out["tools"][0][3] in ("interrogative", "implausible")
     assert out["tools"][0][2] and " " in out["tools"][0][2]   # prose
+
+
+# ── False refusals found by the held-out harness comparison (2026-09-23) ──
+@pytest.mark.parametrize("utterance,frame", [
+    # a request tag on an imperative is an order
+    ("roll ahead 1.4 metres, would you?", F("drive_forward", distance=1.4)),
+    ("turn left 90 degrees, please?", F("turn", angle_rad=1.5708)),
+    # "after that" + the next step sequences; it does not defer
+    ("reverse 0.35 m and after that swivel 135 degrees clockwise",
+     F("turn", angle_rad=-2.356)),
+    ("drive forward 1 metre, after that, turn left 90 degrees",
+     F("turn", angle_rad=1.5708)),
+    # `once` meaning one time
+    ("turn right 45 degrees, retrying once if the tool is unavailable",
+     F("turn", angle_rad=-0.785)),
+    ("turn left 90 degrees once more", F("turn", angle_rad=1.5708)),
+    # a condition about a tool's status is not reported speech
+    ("rotate 55 degrees clockwise. if the motion tool says it's temporarily "
+     "unavailable, have exactly one more go", F("turn", angle_rad=-0.96)),
+])
+def test_sequencing_tags_and_tool_status_are_not_refused(utterance, frame):
+    assert check(utterance, [frame], surface="mobile") == [], utterance
+
+
+@pytest.mark.parametrize("utterance,frame,rule", [
+    ("you drove forward 2 metres, right?", F("drive_forward", distance=2.0),
+     "interrogative"),
+    ("where are you, would you?", F("drive_forward", distance=1.0),
+     "interrogative"),
+    ("after that meeting ends, drive forward 2 metres",
+     F("drive_forward", distance=2.0), "deferred"),
+    ("once the shift ends, drive forward 2 metres",
+     F("drive_forward", distance=2.0), "deferred"),
+    ("if the manual says drive forward 2 metres, do it",
+     F("drive_forward", distance=2.0), "reported_speech"),
+    ('the manual says "drive forward 2 metres"',
+     F("drive_forward", distance=2.0), "reported_speech"),
+])
+def test_the_narrowed_rules_still_refuse_what_they_exist_for(utterance, frame, rule):
+    assert rule in rules(check(utterance, [frame], surface="mobile")), utterance
+
+
+def test_a_drive_needs_a_distance():
+    """Owner decision 2026-09-23: no distance, no drive -- the parser asks.
+
+    A distance-less drive used to pass the gate and travel the router's 1 m
+    default, a number applied after `invented_magnitude` had looked."""
+    assert "missing_arg" in rules(check("drive forward", [F("drive_forward")]))
+    assert "missing_arg" in rules(check("go ahead", [F("drive_forward")]))
+
+
+# ── False refusals found by held-out v3 (2026-09-24) ─────────────────
+@pytest.mark.parametrize("utterance,frame", [
+    ("I said reverse 1.2 metres a moment ago - ignore that, the real number is "
+     "0.6 metres reversed. Execute only the corrected distance.",
+     F("drive_forward", distance=-0.6)),
+    ("Mind giving the robot a quarter turn to the left?", F("turn", angle_rad=1.5708)),
+    ("would you mind turning left 90 degrees?", F("turn", angle_rad=1.5708)),
+    ("Should your y coordinate be above 0.4 metres, drive backward 0.5 metres; "
+     "otherwise turn left 110 degrees.", F("turn", angle_rad=1.9199)),
+])
+def test_corrections_polite_mind_and_inverted_conditions_are_orders(utterance, frame):
+    assert check(utterance, [frame], surface="mobile") == [], utterance
+
+
+@pytest.mark.parametrize("utterance,frame,rule", [
+    ("he said reverse 1.2 metres", F("drive_forward", distance=-1.2), "reported_speech"),
+    ("do you mind if I drive forward 2 metres?", F("drive_forward", distance=2.0),
+     "interrogative"),
+    ("should I drive forward 2 metres?", F("drive_forward", distance=2.0),
+     "interrogative"),
+    ("should your battery be low, what happens?", F("stop"), "interrogative"),
+])
+def test_the_v3_narrowings_still_refuse_what_they_should(utterance, frame, rule):
+    assert rule in rules(check(utterance, [frame], surface="mobile")), utterance

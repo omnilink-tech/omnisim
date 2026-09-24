@@ -1,0 +1,108 @@
+{
+  "verified": true,
+  "files_hashed": 358,
+  "evidence": {
+    "complete": true,
+    "rows": 36,
+    "planned": 36,
+    "rows_digest_matches": true,
+    "lock_digest_matches": true,
+    "source_snapshots_match": true,
+    "regrade_available": true,
+    "regrade_mismatches": [],
+    "integrity": {
+      "unchanged": true,
+      "changed": [],
+      "dependencies_unchanged": true
+    },
+    "mode": "live",
+    "suite_split": "development"
+  },
+  "additional_accounting_mismatches": [],
+  "recomputed_results": {
+    "omnilink_parser": {
+      "episodes": 6,
+      "pass": 6,
+      "fail": 0,
+      "error": 0,
+      "success_rate": 1.0,
+      "unsafe": 0,
+      "unknown_safety": 0,
+      "derived_usd": 0.00603725,
+      "usd_per_success": 0.0010062083333333333,
+      "elapsed_s": 21.04699999999866,
+      "seconds_per_success": 3.50783333333311,
+      "model_calls": 8
+    },
+    "plain": {
+      "episodes": 6,
+      "pass": 6,
+      "fail": 0,
+      "error": 0,
+      "success_rate": 1.0,
+      "unsafe": 0,
+      "unknown_safety": 0,
+      "derived_usd": 0.01247425,
+      "usd_per_success": 0.0020790416666666665,
+      "elapsed_s": 30.79699999999866,
+      "seconds_per_success": 5.13283333333311,
+      "model_calls": 14
+    },
+    "langgraph": {
+      "episodes": 6,
+      "pass": 6,
+      "fail": 0,
+      "error": 0,
+      "success_rate": 1.0,
+      "unsafe": 0,
+      "unknown_safety": 0,
+      "derived_usd": 0.010543725,
+      "usd_per_success": 0.0017572875000000001,
+      "elapsed_s": 34.171000000002095,
+      "seconds_per_success": 5.695166666667016,
+      "model_calls": 13
+    },
+    "lobster": {
+      "episodes": 6,
+      "pass": 6,
+      "fail": 0,
+      "error": 0,
+      "success_rate": 1.0,
+      "unsafe": 0,
+      "unknown_safety": 0,
+      "derived_usd": 0.00722975,
+      "usd_per_success": 0.0012049583333333333,
+      "elapsed_s": 25.156999999999243,
+      "seconds_per_success": 4.1928333333332075,
+      "model_calls": 10
+    },
+    "langgraph_parser": {
+      "episodes": 6,
+      "pass": 5,
+      "fail": 1,
+      "error": 0,
+      "success_rate": 0.8333333333333334,
+      "unsafe": 0,
+      "unknown_safety": 0,
+      "derived_usd": 0.0158375,
+      "usd_per_success": 0.0031675,
+      "elapsed_s": 48.220000000001164,
+      "seconds_per_success": 9.644000000000233,
+      "model_calls": 14
+    },
+    "lobster_parser": {
+      "episodes": 6,
+      "pass": 6,
+      "fail": 0,
+      "error": 0,
+      "success_rate": 1.0,
+      "unsafe": 0,
+      "unknown_safety": 0,
+      "derived_usd": 0.011359275,
+      "usd_per_success": 0.0018932125,
+      "elapsed_s": 27.17299999998795,
+      "seconds_per_success": 4.528833333331325,
+      "model_calls": 12
+    }
+  }
+}

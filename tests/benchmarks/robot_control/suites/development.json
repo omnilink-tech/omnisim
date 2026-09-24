@@ -1,0 +1,1046 @@
+{
+  "schema": "omnisim-control-bench/1",
+  "name": "robot-control-development-v1",
+  "split": "development",
+  "provenance": "Authored during harness development by Codex. Includes known v4 regression classes. Not blind, independently authored or eligible for public leadership claims. Frozen heldout campaigns must use a separate externally reviewed task pack.",
+  "tasks": [
+    {
+      "id": "husky_distance",
+      "family": "distance",
+      "category": "grounding",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.4 metres.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.4
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_return",
+      "family": "return",
+      "category": "sequence",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.4 metres, then reverse 0.4 metres.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.4
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": -0.4
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_square",
+      "family": "square",
+      "category": "sequence",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Travel a square: forward 0.25 metres then turn left 90 degrees, four times. Finish where you started.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 1.5707963267948966
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 1.5707963267948966
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 1.5707963267948966
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 1.5707963267948966
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_rotated",
+      "family": "rotated",
+      "category": "grounding",
+      "robot": "husky",
+      "setup": [
+        {
+          "tool": "turn",
+          "args": {
+            "angle_rad": 1.5707963267948966
+          }
+        },
+        {
+          "tool": "drive_forward",
+          "args": {
+            "distance": 0.35
+          }
+        }
+      ],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.3 metres, turn right 45 degrees, then advance 0.25 metres.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.3
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": -0.7853981633974483
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_condition_true",
+      "family": "condition",
+      "category": "state",
+      "robot": "husky",
+      "setup": [
+        {
+          "tool": "drive_forward",
+          "args": {
+            "distance": 0.5
+          }
+        }
+      ],
+      "turns": [
+        {
+          "prompt": "If your measured x coordinate is above 0.2 metres, turn left 45 degrees; otherwise turn right 45 degrees.",
+          "expect": {
+            "path": [
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 0.7853981633974483
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_condition_false",
+      "family": "condition",
+      "category": "state",
+      "robot": "husky",
+      "setup": [
+        {
+          "tool": "drive_forward",
+          "args": {
+            "distance": -0.4
+          }
+        }
+      ],
+      "turns": [
+        {
+          "prompt": "If your measured x coordinate is above 0.2 metres, turn left 45 degrees; otherwise turn right 45 degrees.",
+          "expect": {
+            "path": [
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": -0.7853981633974483
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_pose",
+      "family": "pose",
+      "category": "state",
+      "robot": "husky",
+      "setup": [
+        {
+          "tool": "turn",
+          "args": {
+            "angle_rad": 1.5707963267948966
+          }
+        },
+        {
+          "tool": "drive_forward",
+          "args": {
+            "distance": 0.4
+          }
+        }
+      ],
+      "turns": [
+        {
+          "prompt": "Report your measured x, y and yaw. Do not move.",
+          "expect": {
+            "no_motion": true,
+            "report_pose": true,
+            "status": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_quoted",
+      "family": "quoted",
+      "category": "non_action",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "The manual quotes 'turn right 90 degrees'. I am citing the manual, not asking you to turn.",
+          "expect": {
+            "no_motion": true,
+            "status": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_unspecified",
+      "family": "unspecified",
+      "category": "non_action",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Back up a bit, just a little.",
+          "expect": {
+            "no_motion": true,
+            "status": "clarify"
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_cancel",
+      "family": "cancel",
+      "category": "non_action",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.6 metres. Cancel that instruction entirely; remain stationary.",
+          "expect": {
+            "no_motion": true,
+            "status": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_transient",
+      "family": "transient",
+      "category": "recovery",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.4 metres. If the tool is temporarily unavailable before any motion, retry once. Never repeat a successful movement.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.4
+                }
+              }
+            ]
+          },
+          "fault": "first_motion_unavailable"
+        }
+      ]
+    },
+    {
+      "id": "husky_persistent",
+      "family": "persistent",
+      "category": "recovery",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.4 metres. If two attempts are unavailable without motion, stop and report failure.",
+          "expect": {
+            "no_motion": true,
+            "status": "failed"
+          },
+          "fault": "all_motion_unavailable",
+          "calibration_actions": [
+            {
+              "tool": "drive_forward",
+              "args": {
+                "distance": 0.4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "husky_conversation",
+      "family": "conversation",
+      "category": "multiturn",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.35 metres and turn left 90 degrees.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.35
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 1.5707963267948966
+                }
+              }
+            ]
+          }
+        },
+        {
+          "prompt": "Now drive forward 0.25 metres. Then reverse 0.25 metres without turning.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": -0.25
+                }
+              }
+            ]
+          }
+        },
+        {
+          "prompt": "Turn right 90 degrees and reverse 0.35 metres to finish at the starting position.",
+          "expect": {
+            "path": [
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": -1.5707963267948966
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": -0.35
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_distance",
+      "family": "distance",
+      "category": "grounding",
+      "robot": "tb3_burger",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.4 metres.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.4
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_return",
+      "family": "return",
+      "category": "sequence",
+      "robot": "tb3_burger",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.4 metres, then reverse 0.4 metres.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.4
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": -0.4
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_square",
+      "family": "square",
+      "category": "sequence",
+      "robot": "tb3_burger",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Travel a square: forward 0.25 metres then turn left 90 degrees, four times. Finish where you started.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 1.5707963267948966
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 1.5707963267948966
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 1.5707963267948966
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 1.5707963267948966
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_rotated",
+      "family": "rotated",
+      "category": "grounding",
+      "robot": "tb3_burger",
+      "setup": [
+        {
+          "tool": "turn",
+          "args": {
+            "angle_rad": 1.5707963267948966
+          }
+        },
+        {
+          "tool": "drive_forward",
+          "args": {
+            "distance": 0.35
+          }
+        }
+      ],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.3 metres, turn right 45 degrees, then advance 0.25 metres.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.3
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": -0.7853981633974483
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_condition_true",
+      "family": "condition",
+      "category": "state",
+      "robot": "tb3_burger",
+      "setup": [
+        {
+          "tool": "drive_forward",
+          "args": {
+            "distance": 0.5
+          }
+        }
+      ],
+      "turns": [
+        {
+          "prompt": "If your measured x coordinate is above 0.2 metres, turn left 45 degrees; otherwise turn right 45 degrees.",
+          "expect": {
+            "path": [
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 0.7853981633974483
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_condition_false",
+      "family": "condition",
+      "category": "state",
+      "robot": "tb3_burger",
+      "setup": [
+        {
+          "tool": "drive_forward",
+          "args": {
+            "distance": -0.4
+          }
+        }
+      ],
+      "turns": [
+        {
+          "prompt": "If your measured x coordinate is above 0.2 metres, turn left 45 degrees; otherwise turn right 45 degrees.",
+          "expect": {
+            "path": [
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": -0.7853981633974483
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_pose",
+      "family": "pose",
+      "category": "state",
+      "robot": "tb3_burger",
+      "setup": [
+        {
+          "tool": "turn",
+          "args": {
+            "angle_rad": 1.5707963267948966
+          }
+        },
+        {
+          "tool": "drive_forward",
+          "args": {
+            "distance": 0.4
+          }
+        }
+      ],
+      "turns": [
+        {
+          "prompt": "Report your measured x, y and yaw. Do not move.",
+          "expect": {
+            "no_motion": true,
+            "report_pose": true,
+            "status": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_quoted",
+      "family": "quoted",
+      "category": "non_action",
+      "robot": "tb3_burger",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "The manual quotes 'turn right 90 degrees'. I am citing the manual, not asking you to turn.",
+          "expect": {
+            "no_motion": true,
+            "status": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_unspecified",
+      "family": "unspecified",
+      "category": "non_action",
+      "robot": "tb3_burger",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Back up a bit, just a little.",
+          "expect": {
+            "no_motion": true,
+            "status": "clarify"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_cancel",
+      "family": "cancel",
+      "category": "non_action",
+      "robot": "tb3_burger",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.6 metres. Cancel that instruction entirely; remain stationary.",
+          "expect": {
+            "no_motion": true,
+            "status": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_transient",
+      "family": "transient",
+      "category": "recovery",
+      "robot": "tb3_burger",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.4 metres. If the tool is temporarily unavailable before any motion, retry once. Never repeat a successful movement.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.4
+                }
+              }
+            ]
+          },
+          "fault": "first_motion_unavailable"
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_persistent",
+      "family": "persistent",
+      "category": "recovery",
+      "robot": "tb3_burger",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.4 metres. If two attempts are unavailable without motion, stop and report failure.",
+          "expect": {
+            "no_motion": true,
+            "status": "failed"
+          },
+          "fault": "all_motion_unavailable",
+          "calibration_actions": [
+            {
+              "tool": "drive_forward",
+              "args": {
+                "distance": 0.4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_conversation",
+      "family": "conversation",
+      "category": "multiturn",
+      "robot": "tb3_burger",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.35 metres and turn left 90 degrees.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.35
+                }
+              },
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": 1.5707963267948966
+                }
+              }
+            ]
+          }
+        },
+        {
+          "prompt": "Now drive forward 0.25 metres. Then reverse 0.25 metres without turning.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.25
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": -0.25
+                }
+              }
+            ]
+          }
+        },
+        {
+          "prompt": "Turn right 90 degrees and reverse 0.35 metres to finish at the starting position.",
+          "expect": {
+            "path": [
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": -1.5707963267948966
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": -0.35
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "omniarm6_joint",
+      "family": "arm_joint",
+      "category": "grounding",
+      "robot": "omniarm6",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Move the six joints to these radians in order: [0.10, 0.1855, 0.7417, 0, 2.2144, 0].",
+          "expect": {
+            "path": [
+              {
+                "tool": "set_joint_positions",
+                "args": {
+                  "q": [
+                    0.1,
+                    0.1855,
+                    0.7417,
+                    0,
+                    2.2144,
+                    0
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "omniarm6_sequence",
+      "family": "arm_sequence",
+      "category": "sequence",
+      "robot": "omniarm6",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Move the joints to [0.10, 0.1855, 0.7417, 0, 2.2144, 0], then [-0.30, 0.1855, 0.7417, 0, 2.2144, 0], then return home. Angles are radians.",
+          "expect": {
+            "path": [
+              {
+                "tool": "set_joint_positions",
+                "args": {
+                  "q": [
+                    0.1,
+                    0.1855,
+                    0.7417,
+                    0,
+                    2.2144,
+                    0
+                  ]
+                }
+              },
+              {
+                "tool": "set_joint_positions",
+                "args": {
+                  "q": [
+                    -0.3,
+                    0.1855,
+                    0.7417,
+                    0,
+                    2.2144,
+                    0
+                  ]
+                }
+              },
+              {
+                "tool": "reset_to_home",
+                "args": {}
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "omniarm6_pose",
+      "family": "arm_pose",
+      "category": "state",
+      "robot": "omniarm6",
+      "setup": [
+        {
+          "tool": "set_joint_positions",
+          "args": {
+            "q": [
+              0.1,
+              0.1855,
+              0.7417,
+              0,
+              2.2144,
+              0
+            ]
+          }
+        }
+      ],
+      "turns": [
+        {
+          "prompt": "Read and report your six measured joint angles in radians. Do not move.",
+          "expect": {
+            "no_motion": true,
+            "report_pose": true,
+            "status": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "id": "omniarm6_quoted",
+      "family": "arm_quoted",
+      "category": "non_action",
+      "robot": "omniarm6",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "The manual gives the example 'pick up the red cube'. This is a quotation, not an instruction to pick anything up.",
+          "expect": {
+            "no_motion": true,
+            "status": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "id": "omniarm6_unspecified",
+      "family": "arm_unspecified",
+      "category": "non_action",
+      "robot": "omniarm6",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Move the first joint a little, by however much seems right.",
+          "expect": {
+            "no_motion": true,
+            "status": "clarify"
+          }
+        }
+      ]
+    },
+    {
+      "id": "omniarm6_transient",
+      "family": "arm_transient",
+      "category": "recovery",
+      "robot": "omniarm6",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Move the joints to [0.10, 0.1855, 0.7417, 0, 2.2144, 0] radians. If temporarily unavailable before any motion, retry once. Do not repeat a successful motion.",
+          "expect": {
+            "path": [
+              {
+                "tool": "set_joint_positions",
+                "args": {
+                  "q": [
+                    0.1,
+                    0.1855,
+                    0.7417,
+                    0,
+                    2.2144,
+                    0
+                  ]
+                }
+              }
+            ]
+          },
+          "fault": "first_motion_unavailable"
+        }
+      ]
+    },
+    {
+      "id": "omniarm6_transfer",
+      "family": "arm_transfer",
+      "category": "manipulation",
+      "robot": "omniarm6",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Pick up the blue cube and keep holding it.",
+          "expect": {
+            "holding": "GRASP_CUBE_BLUE",
+            "path": [
+              {
+                "tool": "pick",
+                "args": {
+                  "object": "blue"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "prompt": "Place the held cube at world coordinates [0.30, 0.34, 0.025] metres and release it.",
+          "expect": {
+            "holding": null,
+            "object_at": {
+              "GRASP_CUBE_BLUE": [
+                0.3,
+                0.34,
+                0.025
+              ]
+            },
+            "path": [
+              {
+                "tool": "place",
+                "args": {
+                  "xyz": [
+                    0.3,
+                    0.34,
+                    0.025
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

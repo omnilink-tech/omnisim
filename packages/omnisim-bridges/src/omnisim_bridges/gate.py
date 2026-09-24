@@ -90,8 +90,12 @@ class Rejection:
 # shape OmniLink's agents already use (typed params + a safety tier), so a
 # frame can be validated BEFORE anything executes rather than trusted.
 SPECS: Dict[str, Dict[str, Any]] = {
+    # ⚠️ `distance` is REQUIRED (owner decision 2026-09-23). A drive with no
+    # distance used to pass here and travel the router's 1 m default -- a
+    # number nobody said, applied after `_invents_magnitude` had looked.
     "drive_forward":   {"physical": True, "tier": GUARDED,
-                        "args": {"distance": float}},
+                        "args": {"distance": float},
+                        "required": ("distance",)},
     "drive_to":        {"physical": True, "tier": GUARDED,
                         "args": {"x": float, "y": float},
                         "required": ("x", "y")},
@@ -189,6 +193,21 @@ _DEIXIS = {"it", "that", "this", "them", "those", "these", "there", "here",
            "over there", "the other side", "the other one"}
 
 _FORWARD_WORD = re.compile(r"\b(?:forward|forwards|ahead)\b", re.IGNORECASE)
+# ⚠️ A sentence that names BOTH directions cannot convict a negative
+# distance of a sign error. "drive forward 0.7 metres, then reverse 0.7
+# metres" is two correct frames, and checking "forward" against the whole
+# sentence refused the second -- the robot stopped 0.7 m from where it was
+# told to return to. The gate sees one frame at a time and cannot tell which
+# clause produced it, so when both directions are named it abstains and the
+# magnitude rules still apply. Found by the harness-comparison pilot,
+# 2026-09-22 (compound_04, repeat_01).
+# Bare "back" is only a direction as a verb particle: "the back wall" and
+# "the back door" must not switch the check off.
+_BACKWARD_WORD = re.compile(
+    r"\b(?:backward|backwards|reverse|reversing|retreat|rearward|"
+    r"rearwards)\b|\bback\s+(?:up|off|out|away)\b|"
+    r"\b(?:go|come|move|drive|head|roll|step|get)\s+back\b",
+    re.IGNORECASE)
 
 # ── Reported speech. A sentence ABOUT an order is not an order. ──────
 #
@@ -306,19 +325,36 @@ _CONTRADICTION = re.compile(
 # a silent guess. Refusing an underspecified order is safe; inventing a
 # number for it is not, and the invented number is indistinguishable
 # downstream from one the operator actually said.
+# ⚠️ A LIST OF NUMBER WORDS WITH HOLES REFUSES REAL NUMBERS. "seventy",
+# "eighty", "zero" and thirteen to nineteen were missing, so "turn
+# seventy degrees left" and "back up fifteen centimetres" were refused as
+# invented magnitudes -- whoever produced the frame. Found 2026-09-23.
 _HAS_NUMBER = re.compile(
-    r"\d|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|"
-    r"twelve|twenty|thirty|forty|fifty|sixty|ninety|hundred|half|quarter|"
-    r"third|couple|few)\b|"
+    r"\d|\b(?:zero|nought|one|two|three|four|five|six|seven|eight|nine|ten|"
+    r"eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|"
+    r"nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
+    r"hundred|dozen|half|quarter|third|tenth|tenths|couple)\b|"
     # "a metre", "an inch" -- the article IS the magnitude.
-    r"\b(?:a|an)\s+(?:metre|meter|m|centimetre|centimeter|cm|foot|feet|"
-    r"inch|degree|radian|turn|bit|touch|nudge|tad)\b",
+    r"\b(?:a|an)\s+(?:metre|meter|m|centimetre|centimeter|cm|millimetre|"
+    r"millimeter|mm|foot|feet|inch|degree|radian|turn)\b",
     re.IGNORECASE)
 # Words that carry their own magnitude without stating one.
 _IMPLIED_MAGNITUDE = re.compile(
     r"\b(?:around|about-face|180|home|origin|start|back to|all the way|"
     r"fully|completely|right round)\b", re.IGNORECASE)
 _MAGNITUDE_ARGS = ("distance", "angle_rad", "altitude")
+_VAGUE_AMOUNT = re.compile(r"\b(?:a\s+(?:little|bit|touch|tad|nudge)|few|slightly)\b", re.I)
+_QUANTIFIED_MOTION = re.compile(
+    r"\b(?:drive|driving|move|moving|go|going|reverse|reversing|back|"
+    r"turn|turning|rotate|rotating|walk|walking|nudge|roll|advance|retreat|"
+    r"climb|descend|ascend|fly|takeoff|take off)\b", re.I)
+_MEASURED_AMOUNT = re.compile(
+    r"(?:(?:" + _HAS_NUMBER.pattern + r")\s*|\b(?:a|an)\s+)"
+    r"(?:metres?|meters?|centimetres?|centimeters?|millimetres?|millimeters?|"
+    r"m|cm|mm|feet|foot|inches?|degrees?|deg|radians?|rad|turns?)\b", re.I)
+_MOTION_CLAUSES = re.compile(
+    r"(?<!\d)[.!?;]|[.!?;](?!\d)|\bthen\b|"
+    r"\band\s+(?=(?:drive|move|go|reverse|back|turn|rotate|walk)\b)", re.I)
 
 
 def _invents_magnitude(utterance: str, tool: str, args: Dict[str, Any]) -> bool:
@@ -344,11 +380,59 @@ def _invents_magnitude(utterance: str, tool: str, args: Dict[str, Any]) -> bool:
                for v in vals):
         return False
     u = utterance
+    # A robot ID, repetition count or another leg's distance cannot give
+    # meaning to 'a bit'. An explicit local quantity may clarify it.
+    for clause in _MOTION_CLAUSES.split(u):
+        if (_QUANTIFIED_MOTION.search(clause) and _VAGUE_AMOUNT.search(clause)
+                and not _MEASURED_AMOUNT.search(clause)):
+            return True
     return not (_HAS_NUMBER.search(u) or _IMPLIED_MAGNITUDE.search(u))
 
 
+# A restriction on repeating a completed operation does not prohibit its
+# first attempt. Only a complete, explicitly success-qualified clause is
+# recognized; other prohibitions remain in the text for the normal checks.
+_SUCCESS_REPEAT_LIMIT = re.compile(
+    r"\b(?:do not|don't|never)\s+(?:repeat|retry)\s+"
+    r"(?:a|an|the|any)\s+(?:already\s+)?(?:successful|completed)\s+"
+    r"(?:movement|motion|action|operation|command)\s*(?=[.!?;]|$)", re.I)
+_STRAIGHT_ONLY = re.compile(r"\bwithout\s+(?:turning|rotating)\s*(?=[.!?;,]|$)", re.I)
+_EXPLICIT_MOTION_REQUEST = re.compile(
+    r"(?:^|[.!?;])\s*(?:(?:please|now|then)\s+)*"
+    r"(?:drive|move|go|reverse|back|turn|rotate|walk|pick|place|set)\b", re.I)
+
+
+def _intent_guard_text(utterance: str, tool: str) -> str:
+    """Scope two bounded modifiers without deleting other prohibitions."""
+    def restriction(match):
+        # A standalone ban on repetition is not itself an action request.
+        return " " if _EXPLICIT_MOTION_REQUEST.search(utterance[:match.start()]) else match.group()
+    text = _SUCCESS_REPEAT_LIMIT.sub(restriction, utterance)
+    if tool == 'drive_forward':
+        text = _STRAIGHT_ONLY.sub(' ', text)
+    return text
+
+
+# ⚠️ SEQUENCING IS NOT DEFERRAL. "reverse 0.35 m and after that swivel
+# 135 degrees" is one order with two steps, and "retry once if the tool is
+# unavailable" uses `once` to mean one time. Both were refused as deferred
+# (harness-comparison held-out set, 2026-09-23). "after that meeting" and
+# "once the shift ends" still defer: only "after that/this" followed by the
+# next step, and `once` followed by more/again/if/and/then or the end of a
+# clause, are rewritten before the check.
+_SEQUENCE_WORDS = (r"turn|drive|go|move|reverse|back|rotate|spin|swivel|pivot|"
+                   r"stop|head|advance|travel|come|roll|creep|return|wait|pause|"
+                   r"pick|place|put|open|close|lift|walk|fly|land|climb|take|do|"
+                   r"make|swing|face")
+_NOT_A_TRIGGER = re.compile(
+    r"\bafter\s+(?:that|this)\b(?=\s*[,:-]|\s+(?:please\s+)?(?:"
+    + _SEQUENCE_WORDS + r")\b)|"
+    r"\bonce(?=\s*(?:more|again|if|and|or|then)\b|\s*[,.;!?]|\s*$)",
+    re.IGNORECASE)
+
+
 def _is_deferred(utterance: str) -> bool:
-    return bool(_DEFERRED.search(utterance or ""))
+    return bool(_DEFERRED.search(_NOT_A_TRIGGER.sub(" then ", utterance or "")))
 
 
 def _is_contradictory(utterance: str) -> bool:
@@ -380,8 +464,40 @@ def _is_reported(utterance: str) -> bool:
         # have one, and only the first is speech.
         if verb in _NOUNY and not _COMPLEMENTISER.match(u[m.end():]):
             continue
+        # The operator correcting THEIR OWN earlier order is a correction, not
+        # a report: "I said reverse 1.2 m a moment ago - ignore that, the real
+        # number is 0.6 m" was refused in every arm (held-out v3, 2026-09-24).
+        # Only a first-person subject, and only with a correction after it:
+        # "I said drive forward 2 metres" alone is still left to this rule.
+        if head[0].lower() in ("i", "we") and (
+                _CANCEL.search(u[m.end():]) or _CORRECTION.search(u[m.end():])):
+            continue
+        # An attribution inside a CONDITION that reports no order is a
+        # condition, not reported speech: "if the motion tool says it's
+        # temporarily unavailable, retry once" was refused (held-out set,
+        # 2026-09-23). "If the manual says drive forward, ..." still counts:
+        # its complement carries an order.
+        if _in_condition(u, m.start()) and \
+                not _ORDER_WORD.search(_CLAUSE_END.split(u[m.end():], 1)[0]):
+            continue
         return True
     return False
+
+
+_CONDITION_HEAD = re.compile(
+    r"\b(?:if|when|whenever|should|unless|in case)\b", re.IGNORECASE)
+_ORDER_WORD = re.compile(
+    r"\d|\b(?:drive|turn|reverse|back|forward|ahead|rotate|spin|swivel|pivot|"
+    r"go|move|stop|halt|left|right|advance|travel|climb|descend|land|takeoff|"
+    r"take off|pick|place|lift|walk|fly|reset|return|metres?|meters?|"
+    r"degrees?)\b", re.IGNORECASE)
+_CLAUSE_END = re.compile(r"[,.;!?]")
+
+
+def _in_condition(u: str, at: int) -> bool:
+    """True when position `at` sits inside a conditional clause of its sentence."""
+    start = max(u.rfind(c, 0, at) for c in ".!?;") + 1
+    return bool(_CONDITION_HEAD.search(u[start:at]))
 
 
 def _is_bare_retraction(utterance: str) -> bool:
@@ -400,9 +516,39 @@ def _is_question(utterance: str) -> bool:
         return False
     if _HYPOTHETICAL.search(u):
         return True
-    if _POLITE_IMPERATIVE.match(u):
+    if _POLITE_IMPERATIVE.match(u) or _POLITE_MIND.match(u):
         return False
+    # "Should your y coordinate be above 0.4 m, drive back 0.5 m; otherwise
+    # turn left" is an inverted CONDITION followed by an order, not a question
+    # -- it was refused in every arm (held-out v3, 2026-09-24). Only without a
+    # question mark, and only when an order follows the condition's comma.
+    if _INVERTED_CONDITION.match(u) and not u.endswith("?"):
+        return False
+    # "roll ahead one metre forty, would you?" is an order with a request
+    # tag, and was refused as a question (held-out set, 2026-09-23). Only
+    # request tags count: "you drove forward, right?" stays a question.
+    tag = _REQUEST_TAG.search(u)
+    if tag:
+        head = u[:tag.start()].strip()
+        return not head or bool(_INTERROGATIVE.match(head))
     return bool(u.endswith("?") or _INTERROGATIVE.match(u))
+
+
+# "Mind giving the robot a quarter turn to the left?" / "would you mind
+# turning left?" ask for an action. "do you mind if I ..." asks permission.
+_POLITE_MIND = re.compile(
+    r"^\s*(?:(?:would|do)\s+you\s+)?mind\s+(?!if\b)\w+ing\b", re.IGNORECASE)
+_INVERTED_CONDITION = re.compile(
+    r"^\s*(?:should|were|had)\s+(?:your|the|my|its|it|you)\b[^?]*?[,;]\s*"
+    r"(?:then\s+)?(?:please\s+)?(?:" + _SEQUENCE_WORDS + r")\b", re.IGNORECASE)
+_CORRECTION = re.compile(
+    r"\b(?:correction|actually|instead|i meant|make (?:it|that)|"
+    r"the (?:real|right|correct|actual) (?:number|distance|angle|value|one))\b",
+    re.IGNORECASE)
+
+_REQUEST_TAG = re.compile(
+    r"[,;]\s*(?:(?:would|could|will|can)\s+you(?:\s+please)?|please)\s*\?\s*$",
+    re.IGNORECASE)
 
 
 # ── The bridge's HTTP tool surface, in the gate's own vocabulary ─────
@@ -689,13 +835,12 @@ def check(utterance: str, frames: Sequence[Any],
     out: List[Rejection] = []
     u = utterance or ""
     question = _is_question(u)
-    prohibited = bool(_PROHIBITION.search(u))
-    negating = bool(_SELF_NEGATING.search(u))
     reported = _is_reported(u)
     retracted = _is_bare_retraction(u)
     deferred = _is_deferred(u)
     contradictory = _is_contradictory(u)
     ok_tier = set(authorized)
+    seen_motion = []
 
     for frame in frames:
         tool, args = _frame_parts(frame)
@@ -705,6 +850,14 @@ def check(utterance: str, frames: Sequence[Any],
                                  "no schema declares this tool"))
             continue
         physical = bool(spec.get("physical"))
+        guard_text = _intent_guard_text(u, tool)
+        prohibited = bool(_PROHIBITION.search(guard_text))
+        negating = bool(_SELF_NEGATING.search(guard_text))
+        if physical and spec.get('tier') != SAFE and _SUCCESS_REPEAT_LIMIT.search(u):
+            if seen_motion and (tool, args) == seen_motion[-1]:
+                out.append(Rejection(tool, 'duplicate_motion',
+                                     'a retry contingent on failure cannot be an unconditional duplicate action'))
+            seen_motion.append((tool, args))
 
         # 1-3. What the utterance was, versus what the frame wants to do.
         if physical and question:
@@ -755,7 +908,11 @@ def check(utterance: str, frames: Sequence[Any],
             out.append(Rejection(tool, "prohibition",
                                  "the utterance forbids an action rather "
                                  "than ordering one"))
-        if physical and negating:
+        # A stop is what "without moving" asks for, so it cannot negate it.
+        # Refusing one failed "report your x and y without moving" whenever
+        # the plan led with a harmless stop (harness-comparison pilot,
+        # 2026-09-22, state_04).
+        if physical and negating and not de_escalating:
             out.append(Rejection(tool, "self_negating",
                                  "the utterance asks to act and not act "
                                  "at once"))
@@ -803,7 +960,8 @@ def check(utterance: str, frames: Sequence[Any],
                     out.append(Rejection(tool, "implausible",
                                          f"{name}={v} exceeds the "
                                          f"{MAX_DISTANCE_M:.0f} m rail"))
-                if name == "distance" and v < 0 and _FORWARD_WORD.search(u):
+                if (name == "distance" and v < 0 and _FORWARD_WORD.search(u)
+                        and not _BACKWARD_WORD.search(u)):
                     out.append(Rejection(tool, "sign_conflict",
                                          "the utterance says forward and the "
                                          "distance is negative"))

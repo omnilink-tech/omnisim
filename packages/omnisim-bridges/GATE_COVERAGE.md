@@ -11,6 +11,28 @@ the per-surface rails and the collapse of the six gate wrappers into one.
 require an OmniKey. The direct REST verbs are not vetted — that is the
 "NOT gated" table below, and it is the whole point of this page.
 
+### Control-language regressions fixed 2026-09-24
+
+The common gate no longer treats “a bit,” “a touch,” “a tad,” or “few” as
+numeric quantities. Vague motion clauses need a concrete local quantity;
+a robot ID, repetition count or another leg's distance does not provide it.
+The mobile parser asks for a distance on recognized standalone vague drive
+commands. Explicit typed tool calls without a language utterance retain
+their existing schema and magnitude checks.
+
+“Without turning” permits `drive_forward` while still refusing a `turn`.
+A complete success-qualified restriction such as “never repeat a successful
+movement,” after an explicit action request, no longer blocks the first
+attempt. Other prohibitions and contradictory no-motion clauses remain
+active. Adjacent identical motion frames in such a batch are refused;
+equal drives separated by a turn remain distinct legs.
+
+These are bounded language rules, not a complete semantic interpretation.
+The gate is stateless across requests: it cannot establish whether an earlier
+call succeeded. The executor must base retries on actual failure feedback.
+The control benchmark measures that behavior separately. Regression coverage:
+`tests/test_control_regressions.py`.
+
 ## ⚠️ Scope: which bridges this page audits, and one it does not
 
 This page audits the **five OmniLink bridges** — `bridge_base` and the

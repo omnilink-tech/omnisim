@@ -1,0 +1,196 @@
+{
+  "checked_utc": "2026-09-24T20:30:54.467484+00:00",
+  "origin": "https://www.omnilink-agents.com",
+  "build_id": "b949f5ad-1f9a-46c1-ada2-c516590aa1ce",
+  "revision": "omnilink-00234-7ff",
+  "all_public_hashes_match": true,
+  "files": [
+    {
+      "path": "index.html",
+      "http": 200,
+      "bytes": 13306,
+      "sha256": "7f76f4e59b8ffd79741c9c74642a860639e6e442467a03c087d3010dc46f1ca1"
+    },
+    {
+      "path": "sitemap.xml",
+      "http": 200,
+      "bytes": 646,
+      "sha256": "16ddcb8a2e8a198648c646b520d89ae9b17fe4bc2ae778b2acb5413c4ca117da"
+    },
+    {
+      "path": "benchmarks/robotics-control/ANTHROPIC_AUDIT.json",
+      "http": 200,
+      "bytes": 9417,
+      "sha256": "a05dcb433d3c9e8d5de06bb847e37e542f3d5ecec429f0da7817dfde25909455"
+    },
+    {
+      "path": "benchmarks/robotics-control/benchmark.css",
+      "http": 200,
+      "bytes": 7428,
+      "sha256": "5dced022cec46d41b8960a36fab1cabd3bb612b4378acbbe0d8809dfecd3cb85"
+    },
+    {
+      "path": "benchmarks/robotics-control/development-history.zip",
+      "http": 200,
+      "bytes": 20054741,
+      "sha256": "ff10970dea72461ca899c14c5026a365b8e66403fc643231a7b80af2869bfa1f"
+    },
+    {
+      "path": "benchmarks/robotics-control/evidence.zip",
+      "http": 200,
+      "bytes": 14387627,
+      "sha256": "812da3acf5bee326cd85e44a9af9ea2a765099db1c930e8e9819b51e2ac3d1e5"
+    },
+    {
+      "path": "benchmarks/robotics-control/index.html",
+      "http": 200,
+      "bytes": 17267,
+      "sha256": "74faf4438adc1564ccbbae9e65d7ec0a93838569c06ab456f6a73629d08e2e51"
+    },
+    {
+      "path": "benchmarks/robotics-control/MATCHED_COMPARISON.md",
+      "http": 200,
+      "bytes": 3761,
+      "sha256": "f6d73d6bc2334c2cb84e959d40f87e4041f9c6cc2a23ee8768e2899514a46a0f"
+    },
+    {
+      "path": "benchmarks/robotics-control/OFFLINE_VERIFICATION.json",
+      "http": 200,
+      "bytes": 2873,
+      "sha256": "a2bcc5e009408e52b90a6074bc495c3ce9e00108025327e7e4769ce24387b51e"
+    },
+    {
+      "path": "benchmarks/robotics-control/REPRODUCE.md",
+      "http": 200,
+      "bytes": 1956,
+      "sha256": "cef928559311a48f3cf15c3913a26c669ab8b12808bf994c83e36aa934e22223"
+    },
+    {
+      "path": "benchmarks/robotics-control/results.json",
+      "http": 200,
+      "bytes": 10022,
+      "sha256": "ccac863e9b940626ed45113371344da99622642b031df3f713934d2916653b3e"
+    },
+    {
+      "path": "benchmarks/robotics-control/SHA256SUMS.txt",
+      "http": 200,
+      "bytes": 171,
+      "sha256": "d56f274c828bd0d50a220fae908cb4dbef044167e59a5a1e68bdf3b961b17853"
+    },
+    {
+      "path": "benchmarks/robotics-control/SPEC.md",
+      "http": 200,
+      "bytes": 8059,
+      "sha256": "a9809c579d2966da4d8693367b6a2d77308404da7396747a3fabd5a20d3f5ec9"
+    }
+  ],
+  "downloaded_archive_verification": {
+    "verified": true,
+    "files_hashed": 1143,
+    "evidence": {
+      "complete": true,
+      "rows": 198,
+      "planned": 198,
+      "rows_digest_matches": true,
+      "lock_digest_matches": true,
+      "source_snapshots_match": true,
+      "regrade_available": true,
+      "regrade_mismatches": [],
+      "accounting_mismatches": [],
+      "integrity": {
+        "unchanged": true,
+        "changed": [],
+        "dependencies_unchanged": true
+      },
+      "mode": "live",
+      "suite_split": "development"
+    },
+    "additional_accounting_mismatches": [],
+    "recomputed_results": {
+      "omnilink_parser": {
+        "episodes": 33,
+        "pass": 33,
+        "fail": 0,
+        "error": 0,
+        "success_rate": 1.0,
+        "unsafe": 0,
+        "unknown_safety": 0,
+        "derived_usd": 0.4984182,
+        "usd_per_success": 0.015103581818181817,
+        "elapsed_s": 204.25000000000728,
+        "seconds_per_success": 6.18939393939416,
+        "model_calls": 40
+      },
+      "plain": {
+        "episodes": 33,
+        "pass": 32,
+        "fail": 1,
+        "error": 0,
+        "success_rate": 0.9696969696969697,
+        "unsafe": 0,
+        "unknown_safety": 0,
+        "derived_usd": 0.879256,
+        "usd_per_success": 0.02747675,
+        "elapsed_s": 340.720000000023,
+        "seconds_per_success": 10.647500000000719,
+        "model_calls": 71
+      },
+      "langgraph": {
+        "episodes": 33,
+        "pass": 33,
+        "fail": 0,
+        "error": 0,
+        "success_rate": 1.0,
+        "unsafe": 0,
+        "unknown_safety": 0,
+        "derived_usd": 0.8846844,
+        "usd_per_success": 0.02680861818181818,
+        "elapsed_s": 365.5310000000027,
+        "seconds_per_success": 11.076696969697052,
+        "model_calls": 72
+      },
+      "lobster": {
+        "episodes": 33,
+        "pass": 33,
+        "fail": 0,
+        "error": 0,
+        "success_rate": 1.0,
+        "unsafe": 0,
+        "unknown_safety": 0,
+        "derived_usd": 0.9013002,
+        "usd_per_success": 0.027312127272727273,
+        "elapsed_s": 348.34399999998277,
+        "seconds_per_success": 10.555878787878266,
+        "model_calls": 72
+      },
+      "langgraph_parser": {
+        "episodes": 33,
+        "pass": 33,
+        "fail": 0,
+        "error": 0,
+        "success_rate": 1.0,
+        "unsafe": 0,
+        "unknown_safety": 0,
+        "derived_usd": 0.4927162,
+        "usd_per_success": 0.014930793939393939,
+        "elapsed_s": 205.34099999999307,
+        "seconds_per_success": 6.222454545454336,
+        "model_calls": 41
+      },
+      "lobster_parser": {
+        "episodes": 33,
+        "pass": 33,
+        "fail": 0,
+        "error": 0,
+        "success_rate": 1.0,
+        "unsafe": 0,
+        "unknown_safety": 0,
+        "derived_usd": 0.48845099999999997,
+        "usd_per_success": 0.014801545454545454,
+        "elapsed_s": 230.9269999999815,
+        "seconds_per_success": 6.997787878787318,
+        "model_calls": 40
+      }
+    }
+  }
+}

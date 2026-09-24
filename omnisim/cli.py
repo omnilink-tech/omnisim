@@ -498,6 +498,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("agent", help="Create and manage OmniLink agent projects.")
     sub.add_parser("key", help="Get, set and check your OmniLink Omni Key.")
     sub.add_parser("byok", help="Connect the model provider that pays for the tokens.")
+    sub.add_parser("control-bench", help="Reproducible robotics-control evaluations: freeze, run, verify, report.")
 
     return parser
 
@@ -533,6 +534,9 @@ def main() -> int:
         return _key(argv[1:])
     if argv and argv[0] == "byok":
         return _byok(argv[1:])
+    if argv and argv[0] == "control-bench":
+        from .control_bench.cli import main as control_bench_main
+        return control_bench_main(argv[1:])
     args = _build_parser().parse_args(argv)
     if getattr(args, "command", None) is None:
         return _orientation()
