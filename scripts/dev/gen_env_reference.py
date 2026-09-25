@@ -78,8 +78,10 @@ EXCLUDED_PREFIXES = ("social/", "cloud/", "_scratch/", "distribution/", ".github
 # Benchmark `evidence/` folders are the same kind of frozen artefact as `results/`:
 # harness_comparison snapshots whole source trees there, so a debug hatch that
 # existed only in the working copy during one run (OMNISIM_HOLD_DIAG, 2026-09-22)
-# was published on this page as if the product read it.
-EXCLUDED_RE = re.compile(r"^tests/benchmarks/.*/(results?|evidence)/")
+# was published on this page as if the product read it. `frozen/` holds the same
+# kind of copy (harness_comparison/heldout_v3/frozen/route.py, 2026-09-25): it is
+# publish-denied, so citing it made the public tree's drift check fail on v9.0.0.
+EXCLUDED_RE = re.compile(r"^tests/benchmarks/.*/(results?|evidence|frozen)/")
 DOC_ROOTS = ("AGENTS.md", "README.md", "PROTOCOL.md", "CHANGELOG.md")
 
 # Order matters twice: a variable is filed under the FIRST area (top to bottom)

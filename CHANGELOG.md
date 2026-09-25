@@ -25,6 +25,20 @@ top of that foundation.
 ---
 
 
+## [v9.0.1] — 2026-09-25
+
+### Fixed
+
+- **The Linux unit lane was red on the v9.0.0 tag, on one check:** the
+  generated environment-variable reference
+  (`docs/reference/environment-variables.md`) cited a frozen copy of the
+  bridges' `route.py` kept by a benchmark that is not part of the public tree,
+  so the page's drift check could not match the published sources. Every
+  other test passed (2408). The generator now skips benchmark `frozen/` copies
+  as it already skipped `results/` and `evidence/`, and the page cites only
+  files that ship. No product code changed; the v9.0.0 installer and runtime
+  are unaffected.
+
 ## [v9.0.0] — 2026-09-25
 
 ### You can stop the simulation at the moment something goes wrong
