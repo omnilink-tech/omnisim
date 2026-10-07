@@ -69,8 +69,12 @@ class BridgeClient(HarnessClient):
         The field names are ``linear``/``angular`` -- *not* ``v``/``w``, which
         appear in some older prose. Both are required by the bridge and must be
         finite; it rejects the call otherwise rather than substituting a default.
+        ``wait=False`` keeps the ROS command stream from blocking on the
+        bridge's achieved-rate measurement window.
         """
-        return self.post("/set_velocity", {"linear": float(linear), "angular": float(angular)})
+        return self.post("/set_velocity", {
+            "linear": float(linear), "angular": float(angular), "wait": False,
+        })
 
     def stop_robot(self) -> HarnessResponse:
         """Escape hatch: cancels any running motion (never rejected as busy)."""

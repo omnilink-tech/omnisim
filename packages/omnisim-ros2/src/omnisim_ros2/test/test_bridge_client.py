@@ -93,14 +93,14 @@ def test_set_velocity_field_names(bridge):
     bridge.set_velocity(0.6, -0.3)
     path, raw, ctype = RECORDED[-1]
     assert path == "/set_velocity"
-    assert json.loads(raw) == {"linear": 0.6, "angular": -0.3}
+    assert json.loads(raw) == {"linear": 0.6, "angular": -0.3, "wait": False}
     # The bridge answers 415 without this header.
     assert ctype == "application/json"
 
 
 def test_set_velocity_coerces_to_float(bridge):
     bridge.set_velocity(1, 0)
-    assert json.loads(RECORDED[-1][1]) == {"linear": 1.0, "angular": 0.0}
+    assert json.loads(RECORDED[-1][1]) == {"linear": 1.0, "angular": 0.0, "wait": False}
 
 
 def test_set_joint_positions(bridge):
