@@ -1,0 +1,30 @@
+{
+  "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "b37b94793163416521bc93820919ee60cffce3b1dd3b26f7eff72416170b795a",
+  "kind": "movie",
+  "no_rendering": false,
+  "error": null,
+  "cleanup_errors": [],
+  "samples": 826,
+  "restores_during_capture": 0,
+  "foreground_samples": 0,
+  "nonminimized_samples": 0,
+  "frame_count": 0,
+  "frame_dimensions": [],
+  "min_frame_change_mean": 0,
+  "done": {
+    "movie_ready": true,
+    "movie_failed": false
+  },
+  "movie_validation": {
+    "width": 640,
+    "height": 360,
+    "decoded_frames": 62,
+    "audio_streams": 0,
+    "max_frame_change_mean": 18.684166666666666,
+    "decode_stderr": "",
+    "passed": true
+  },
+  "newton": null,
+  "passed": true
+}

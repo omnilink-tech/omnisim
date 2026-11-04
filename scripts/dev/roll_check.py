@@ -348,10 +348,15 @@ def engine_binary(explicit=None) -> Path:
     env = os.environ.get("OMNISIM_ROLL_BINARY")
     if env:
         return Path(env)
-    # omnisim-bin-fixed.exe first: on this tree it carries an engine fix the
-    # stock binary lacks, and another lane runs the stock one concurrently --
-    # so never touch, launch or kill `omnisim-bin.exe` from here.
-    for name in ("omnisim-bin-fixed.exe", "omnisim-bin.exe", "omnisim-bin"):
+    env = os.environ.get("OMNISIM_BINARY")      # the variable the harness and run-headless honour
+    if env:
+        return Path(env)
+    # The live engine. Until 2026-11-04 this preferred omnisim-bin-fixed.exe, an August
+    # scratch build that once carried a fix the stock binary lacked; it predates
+    # .omniworld, so every probe of a current world died with "The world file
+    # extension must be '.wbt'" and was reported as "controller never ran?".
+    # Launching the live engine is safe: engines coexist (this never kills one).
+    for name in ("omnisim-bin.exe", "omnisim-bin"):
         candidate = REPO_ROOT / "msys64" / "mingw64" / "bin" / name
         if candidate.exists():
             return candidate

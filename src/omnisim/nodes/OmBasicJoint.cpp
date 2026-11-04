@@ -915,7 +915,24 @@ void OmBasicJoint::flushPendingNewtonRegistrations() {
         //
         // This registration path runs once per joint per world load, so the
         // warning is naturally once per joint -- no latch needed.
-        if (effortLimit <= 0.0 && motor != nullptr) {
+        //
+        // ⚠ Since 2026-10-10 the warning below is FALSE for a declared zero:
+        // maxTorque 0 is an OFF motor, which commands nothing, and its zero
+        // effort limit reaches the solver on the first tick (the available-
+        // torque push further down), so the ke/kd here act through a zero
+        // force range and the joint is passive. The importer has already
+        // said so ("imports as a motor with no torque ... passive"), and the
+        // old line followed it with "OmniSim drives it" -- two messages about
+        // one joint that contradicted each other (Ti5 lane, 2026-10-19). Say
+        // what happens instead, at info level; the warning stays for the one
+        // case where it is still true, OMNISIM_NEWTON_AVAILABLE_TORQUE=0.
+        if (effortLimit <= 0.0 && motor != nullptr && newtonAvailableTorqueEnabled()) {
+          OmLog::info(QObject::tr(
+              "Motor '%1': maxTorque/maxForce 0, so the joint is passive: its zero effort limit is applied "
+              "on the first step, and the placeholder position gain it registers with (ke=%2 kd=%3) "
+              "delivers no torque.")
+              .arg(motor->deviceName()).arg(targetKe).arg(targetKd));
+        } else if (effortLimit <= 0.0 && motor != nullptr) {
           OmLog::warning(QObject::tr(
               "Motor '%1': no positive effort limit declared, so a SYNTHETIC position gain "
               "ke=%2 kd=%3 is being used. If the source URDF declared effort=\"0\" rather "

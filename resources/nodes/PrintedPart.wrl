@@ -1,0 +1,29 @@
+# PrintedPart — plastic laid down by an FDM nozzle, for 3D-printer digital twins.
+# Geometry only: where the nozzle went while plastic left it, a bead is laid. No
+# cooling, warping, layer adhesion, stringing or ooze.
+#
+# Every physics step the bead runs along the nozzle's REAL path (the tip of the Solid
+# named `nozzleSolid`), so a lagging axis prints where the nozzle actually was. The
+# printer's controller writes `extrudedVolume`, the plastic that has left the nozzle in
+# total; the step's increase is spread along the step's path. A bead's height is the
+# gap between the nozzle tip and what is under it (the bed, or earlier beads), its width
+# whatever that volume needs; with nothing close underneath it is a round strand hanging
+# from the nozzle (a bridge). Plastic that leaves a nozzle standing still is a blob.
+#
+# Rendering streams fixed-size chunks of beads through the renderer's dynamic-draw path:
+# only the chunk being printed into is re-uploaded.
+PrintedPart {
+  field SFVec3f    translation    0 0 0              # world position of the bed's origin corner, at the bed surface
+  field SFVec3f    size           0.35 0.35 0.35     # build volume along world X / Y / Z (m)
+  field SFFloat    resolution     0.0002             # cell size of the map of what is under the nozzle (m); 0 => 0.0002
+  field SFString   nozzleSolid    ""                 # name of the Solid that carries the nozzle
+  field SFVec3f    nozzleTip      0 0 0              # nozzle tip in that Solid's own frame (m)
+  field SFFloat    nozzleDiameter 0.0004             # (m)
+  field SFFloat    extrudedVolume 0                  # m^3 that has left the nozzle since the start; controller-written
+  field SFColor    color          0.93 0.45 0.12
+  field SFFloat    roughness      0.45
+  field SFBool     castShadows    TRUE
+  hiddenField SFFloat depositedVolume 0              # m^3 laid down; engine-written
+  hiddenField SFFloat beadCount       0              # beads after merging straight runs; engine-written
+  hiddenField SFFloat nozzleCrashes   0              # steps the tip was below plastic already laid; engine-written
+}

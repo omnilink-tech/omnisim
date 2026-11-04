@@ -1,0 +1,31 @@
+# OmniSim Manufacturing: the Python packages the product and process scripts import.
+#
+# Install with `python -m omnisim manufacturing setup` (it shows this list and asks first),
+# or `python -m pip install -r projects/manufacturing/requirements.txt`. Check with
+# `python -m omnisim manufacturing doctor`.
+#
+# These go into the Python you run `python -m omnisim` with, not into the engine's bundled
+# controller interpreter: the twins' controllers (fdm_twin, grbl_twin, spark_rover_drive)
+# need only numpy, which the bundle already has.
+#
+# Pinned to the versions the SparkRover Mini and desk robot results were made with
+# (CPython 3.12.9, Windows 11, 2026-11-04). Each line names the stages that import it;
+# the per-stage table is projects/manufacturing/deps.py. CuraEngine is not a Python
+# package: `manufacturing setup` reports it and says where to get it.
+
+numpy==2.4.4              # every stage: arrays, meshes, the twins' result files
+shapely==2.1.2            # check, wire, make, print, print-ideal, assemble, drive, release: 2D outlines, sections, toolpaths
+trimesh==4.12.2           # check, wire, make, print, print-ideal, assemble, drive, release: meshes, STL, sections
+python-fcl==0.7.0.11      # check, assemble, release: trimesh's CollisionManager (FCL interference and insertion sweeps)
+rtree==1.4.1              # check and every stage that loads the shell: trimesh's ray tests (shell.wall_thickness fails without it)
+networkx==3.3             # print, print-ideal, printing inspect: trimesh's Path2D.polygons_full (the layer sections)
+scipy==1.16.2             # wire, make, assemble, release; cnc inspect/toolpath3d, laser inspect: KD-trees, convex hulls, sparse graphs
+cadquery-ocp==7.9.3.1.1   # check, wire, make, print, print-ideal, assemble, drive, release (SparkRover): the shell's and electronics' B-rep solids
+matplotlib==3.10.7        # release: the drawings and plots; desk robot check (design.py)
+Pillow==12.3.0            # assemble: the step images; desk robot render_steps
+psutil==7.0.0             # print: counts the engines on the machine before starting a plate
+open3d==0.19.0            # assemble (SparkRover): voxelises each unit for the insertion sweeps (no wheel for Python 3.13)
+svgelements==1.9.6        # desk robot check and make: the OmniSim wordmark engraved on the deck
+cascadio==0.1.1           # cad-pack and the desk robot's vendor CAD fetch: STEP to meshes
+numba==0.67.0             # optional, wire and print-ideal: JIT for the wire router and ideal_print; without it they run as plain Python, slower
+PyYAML==6.0.2             # optional, cnc: FluidNC YAML machine configs (cnc/machine.py has a fallback parser)

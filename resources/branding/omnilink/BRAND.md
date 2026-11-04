@@ -8,15 +8,15 @@ This directory is the single source of truth for the **OmniLink** visual identit
 >
 > Use *this* directory for two things only:
 > 1. **The OmniLink parent brand** — the connector monogram, the OmniLink wordmark and lockups.
-> 2. **The legacy GUI/packaging icon pipeline** — `render_omnilink_orb.py` + `build_omnilink_icons.py` still generate the app icon, taskbar icon, About-box logo, splash and packaging icons that the C++ GUI consumes.
+> 2. **The legacy OmniLink orb** — `render_omnilink_orb.py` still renders it into `orb/` here, for OmniLink surfaces.
 >
-> **Known gap:** because of (2), the *shipped* OmniSim app icon is today the **OmniLink** orb (220-dot procedural lattice, `#F6E932`), not the **OmniSim** orb (340-dot hand-curated SVG, `#F6E905`) defined in [`../omnisim/`](../omnisim/). The two are similar but not the same asset, and the product's primary surface therefore carries the parent brand rather than the product brand. Closing this means repointing `build_omnisim_icons` at `../omnisim/svg/orb.svg` + `glyph.svg` and regenerating `resources/icons/core/` — a deliberate visual change to the shipped binary, so it is **not** done implicitly. Until it is, this file documents what actually ships.
+> **The shipped app icon is the OmniSim mark (2026-11-03).** `build_omnilink_icons.py` (it keeps its name) now renders the OmniSim lattice on its rounded tile from [`../omnisim/svg/`](../omnisim/svg/) into every GUI and packaging icon path; see [`../omnisim/BRAND.md`](../omnisim/BRAND.md). Before that date it rendered the OmniLink orb from this directory, bare on a transparent background.
 
 OmniSim is the simulator built **by OmniLink, for OmniLink agents**. The visuals reflect that: the OmniSim and OmniLink brands are both first-party and lock up together; the upstream Webots engine is acknowledged in attribution lines and license files only, and Cyberbotics' marks are never used to brand either.
 
 ## Identity at a glance
 
-- **Primary visual — the orb.** A spherical Fibonacci lattice of matte Mimosa-yellow dots, matching the static reference on the OmniLink home page. This is the **OmniLink** orb, and it is the mark the GUI/packaging icon pipeline currently rasterizes (see the scope note above). For the **OmniSim** orb — the product's own mark — see [`../omnisim/svg/orb.svg`](../omnisim/svg/orb.svg). Source: [`orb/orb.png`](orb/orb.png) (1024×1024 RGBA, transparent background).
+- **Primary visual — the orb.** A spherical Fibonacci lattice of matte Mimosa-yellow dots, matching the static reference on the OmniLink home page. This is the **OmniLink** orb; since 2026-11-03 the app icons no longer use it (see the scope note above). For the **OmniSim** orb — the product's own mark — see [`../omnisim/svg/orb.svg`](../omnisim/svg/orb.svg). Source: [`orb/orb.png`](orb/orb.png) (1024×1024 RGBA, transparent background).
 - **Connector monogram (secondary).** The dot-and-bar hexagonal mark from the OmniLink wordmark. Use [`svg/mark.svg`](svg/mark.svg) (mono black) or [`svg/mark_yellow.svg`](svg/mark_yellow.svg) (Mimosa) for non-icon contexts where a flat geometric mark is needed: favicons for the docs site, embedded badges, marketing lockups.
 - **Wordmark lockup.** `omni / link` stacked beside the connector mark. Use [`svg/lockup_horizontal.svg`](svg/lockup_horizontal.svg) on light backgrounds, [`svg/lockup_horizontal_yellow.svg`](svg/lockup_horizontal_yellow.svg) on darker ones.
 
@@ -87,13 +87,12 @@ branding/omnilink/
 
 ## Regenerating GUI icons
 
-The C++ GUI loads icons from `images:omnisim.png`, `icons/core/omnisim.png`, `icons/core/omnisim64x64.png`, `src/omnisim/gui/omnisim.ico`, etc. Those files are **derived** from `orb/orb.png` here.
+The C++ GUI loads icons from `images:omnisim.png`, `icons/core/omnisim.png`, `icons/core/omnisim64x64.png`, `src/omnisim/gui/omnisim.ico`, etc. Since 2026-11-03 those files are derived from the **OmniSim** mark, not from `orb/orb.png` here — see [`../omnisim/BRAND.md`](../omnisim/BRAND.md#app-icons).
 
-To refresh after editing the orb renderer:
+To refresh the OmniLink orb itself:
 
 ```bash
 python scripts/branding/render_omnilink_orb.py     # → orb/orb.png + orb/orb_512.png
-python scripts/branding/build_omnilink_icons.py    # → every GUI icon path
 python scripts/branding/preview_orb.py             # → preview/orb_preview.png (for PRs)
 ```
 

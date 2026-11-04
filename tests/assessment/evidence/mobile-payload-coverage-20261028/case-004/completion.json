@@ -1,0 +1,13 @@
+{
+  "complete": true,
+  "samples": 359,
+  "last_t_s": 5.744,
+  "request_t_s": 3.232,
+  "applied_t_s": 3.232,
+  "motion_mode": "physical_wheel_velocity",
+  "capture_files": [],
+  "terminal": "observation_complete",
+  "wheel_count": 2,
+  "wheel_radius_m": 0.033,
+  "controller": "projects\\assessments\\controllers\\husky_braking\\husky_braking.py"
+}

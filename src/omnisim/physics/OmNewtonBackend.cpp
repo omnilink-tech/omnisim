@@ -121,6 +121,24 @@ struct OmNewtonRuntimeState {
   // copies of the same line. Reported once per world; reset in beginWorld().
   bool finalizeFailureReported = false;
 
+  // Physics steps that RAISED, and so did not happen (2026-11-04). world.step()
+  // raising used to be one WARNING per tick and nothing else: the engine clock
+  // and every controller still advanced, so /sim/step answered
+  // `steps_executed: 250` for a scene in which nothing had moved (MuJoCo's
+  // arena overflowing in mj_narrowphase on every step). These counters feed the
+  // verdict sidecar, which the harness reads into /sim/step and /sim/state.
+  // `stepCount` above counts only the steps that SUCCEEDED. Reset in beginWorld().
+  long long stepErrors = 0;          // world.step() calls that raised
+  long long stepErrorStreak = 0;     // ... of which consecutive, up to now
+  long long firstStepErrorAt = 0;    // 1-based step attempt (this world) of the first one
+  long long lastStepErrorAt = 0;
+  long long stepCountAtFinalise = 0; // stepCount is process-lived; attempts are per world
+  std::string firstStepError, lastStepError;
+  // What finalizeWorld() wrote into the sidecar, kept so a step failure can
+  // rewrite it with the counters without re-asking Python.
+  std::string sidecarSolver, sidecarRuntimeJson;
+  bool sidecarWritten = false;
+
   // Tier 1a step-readback snapshot (physics-step-cost-optimization-plan.md):
   // filled by the first getBodyXform / getBodyVelocity / getJointAngle after
   // a step() via ONE readback_packed() crossing; every later per-body /
@@ -860,6 +878,11 @@ int OmNewtonBackend::beginWorld() {
   mRuntime->constraintOverflowLogged = false;
   mRuntime->autoConstraintCapWarned = false;
   mRuntime->finalizeFailureReported = false;
+  mRuntime->stepErrors = mRuntime->stepErrorStreak = 0;
+  mRuntime->firstStepErrorAt = mRuntime->lastStepErrorAt = 0;
+  mRuntime->firstStepError.clear();
+  mRuntime->lastStepError.clear();
+  mRuntime->sidecarWritten = false;
   mRuntime->snapValid = false;  // Tier 1a: never serve a prior world's snapshot
   clearJointTargetCache();      // item 5: a new world re-pushes every target
   return 0;
@@ -1057,7 +1080,8 @@ int OmNewtonBackend::addBody(double mass, double x, double y, double z,
   // caller (OmSolid.cpp) sets hasCom either when the Solid declares an explicit
   // inertiaMatrix -- that tensor is BY DEFINITION about the centerOfMass, so
   // the two travel together (OMNISIM_NEWTON_INERTIA_COM=0 reverts) -- or when
-  // OMNISIM_NEWTON_USE_LINK_COM opts the geometry-derived case in too.
+  // a geometry-derived body's COM is off its origin: its tensor is shifted to
+  // that COM first (OMNISIM_NEWTON_GEOM_INERTIA_COM=0 reverts, 2026-11-03).
   PyObject *r = hasCom
       ? PyObject_CallMethod(mRuntime->world, "add_body",
                             "(ddddddddddddddddd)",
@@ -2721,8 +2745,14 @@ static std::string jsonEscape(const std::string &in) {
   return out;
 }
 
+// `rt` carries the physics-step failure counters (step_* keys). finalizeWorld()
+// writes the sidecar with them at zero; OmNewtonBackend::step() REWRITES it on
+// every step that raises, and once more on the first step that succeeds after
+// a run of failures, so a reader always sees the current count without the
+// engine touching the disk on a healthy tick.
 static void writeNewtonVerdictSidecar(const std::string &solver,
-                                      const std::string &runtimeJson) {
+                                      const std::string &runtimeJson,
+                                      const OmNewtonRuntimeState &rt) {
   const std::string logPath = OmLog::logFilePath().toStdString();
   if (logPath.empty())
     return;  // no file log this run -> nowhere to co-locate; the log scrape still works
@@ -2741,7 +2771,18 @@ static void writeNewtonVerdictSidecar(const std::string &solver,
   const bool rtOk = runtimeJson.size() >= 2 && runtimeJson.front() == '{' && runtimeJson.back() == '}';
   f << "{\"backend\":\"newton\",\"degraded\":" << (degraded ? "true" : "false")
     << ",\"finalised\":true,\"runtime\":" << (rtOk ? runtimeJson : std::string("{}")) << ",\"solver\":\""
-    << jsonEscape(solver) << "\"}";
+    << jsonEscape(solver) << "\"";
+  // The physics-step failure record. `step_errors` is always present (0 on a
+  // healthy world), so a reader can tell "no failures" from "an older engine
+  // that never reported them" (key absent). The detail strings only appear
+  // once a step has raised, capped so a traceback cannot bloat the file.
+  f << ",\"step_errors\":" << rt.stepErrors << ",\"step_errors_streak\":" << rt.stepErrorStreak;
+  if (rt.stepErrors > 0) {
+    f << ",\"step_first_error\":\"" << jsonEscape(rt.firstStepError.substr(0, 600))
+      << "\",\"step_first_error_at\":" << rt.firstStepErrorAt << ",\"step_last_error\":\""
+      << jsonEscape(rt.lastStepError.substr(0, 600)) << "\",\"step_last_error_at\":" << rt.lastStepErrorAt;
+  }
+  f << "}";
 }
 
 int OmNewtonBackend::finalizeWorld() {
@@ -2816,6 +2857,14 @@ int OmNewtonBackend::finalizeWorld() {
       PyErr_Clear();
     else
       Py_DECREF(bp);
+  }
+  // Same re-assert for the sticky per-world MuJoCo arena (WorldInfo newtonArenaMB).
+  if (mArenaMBPref > 0) {
+    PyObject *ap = PyObject_CallMethod(mRuntime->world, "set_arena_mb", "(d)", (double)mArenaMBPref);
+    if (ap == nullptr)
+      PyErr_Clear();
+    else
+      Py_DECREF(ap);
   }
   // Same re-assert for the sticky per-world contact/solver params (WorldInfo
   // newtonGroundMu / newtonContactKe / newtonContactKd / newtonIterations /
@@ -2935,7 +2984,11 @@ int OmNewtonBackend::finalizeWorld() {
       PyErr_Clear();
     PyGILState_Release(g2);
   }
-  writeNewtonVerdictSidecar(solverKind, runtimeJson);
+  mRuntime->sidecarSolver = solverKind;
+  mRuntime->sidecarRuntimeJson = runtimeJson;
+  mRuntime->stepCountAtFinalise = mRuntime->stepCount;
+  mRuntime->sidecarWritten = true;
+  writeNewtonVerdictSidecar(solverKind, runtimeJson, *mRuntime);
   if (solverKind.find("FAILED") != std::string::npos || solverKind.find("XPBD fallback") != std::string::npos) {
     const QString msg = QString::fromStdString(
       "[OmNewtonBackend] *** MuJoCo solver was REQUESTED but FAILED to build -- "
@@ -3186,6 +3239,23 @@ int OmNewtonBackend::setConstraintBuffers(int njmax, int nconmax) {
   return rc;
 }
 
+int OmNewtonBackend::setArenaMB(int mb) {
+  // WorldInfo.newtonArenaMB -> the runtime's MuJoCo arena request, before
+  // finalize() compiles the model. Cached regardless of build state and
+  // re-asserted by finalizeWorld(), like setConstraintBuffers().
+  mArenaMBPref = mb > 0 ? mb : 0;
+  if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr || !mRuntime->openForBuild)
+    return -1;
+  if (mArenaMBPref == 0)
+    return 0;  // default; nothing to push
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  PyObject *r = PyObject_CallMethod(mRuntime->world, "set_arena_mb", "(d)", (double)mArenaMBPref);
+  const int rc = (r == nullptr) ? reportPyError("set_arena_mb") : 0;
+  Py_XDECREF(r);
+  PyGILState_Release(gstate);
+  return rc;
+}
+
 int OmNewtonBackend::setNewtonSubsteps(int n) {
   // Plumb the WorldInfo.newtonSubsteps choice to the runtime BEFORE the first
   // step so a contact-heavy world (e.g. a head-on at full drive speed) gets
@@ -3223,6 +3293,58 @@ int OmNewtonBackend::setWorldGravity(double gx, double gy, double gz) {
   return rc;
 }
 
+// world.step() raised: the solver step did NOT happen. Called with the GIL held
+// and the Python error still set; consumes it.
+//
+// ⚠ WHY THE FIRST ONE IS AN ERROR. A raised step is not one feature
+// declining (reportPyError's class): the whole world stood still for that
+// tick. The engine clock and every controller still advance, so without this
+// the run looks healthy from outside -- measured 2026-11-04 on a SparkRover
+// assembly scene (a ~2,700-box moving unit among ~6,000 static shapes):
+// MuJoCo raised "mj_stackAlloc: out of memory, stack overflow at
+// mj_narrowphase" on EVERY step, the unit never moved and had no contacts, and
+// /sim/step answered `steps_executed: 250`. Logged once per world at ERROR (so
+// run-headless FAILs), then at WARNING on the 2nd, 4th, 8th ... failure instead
+// of once per tick, and counted into the verdict sidecar, which the harness
+// reports as `physics_steps` in /sim/step and /sim/state.
+static void reportStepFailure(OmNewtonRuntimeState &rt) {
+  std::string detail;
+  if (!takePyError(detail))
+    detail = "world.step() failed with no Python error set";
+  const long long attempt = (rt.stepCount - rt.stepCountAtFinalise) + rt.stepErrors + 1;
+  ++rt.stepErrors;
+  ++rt.stepErrorStreak;
+  rt.lastStepErrorAt = attempt;
+  rt.lastStepError = detail;
+  if (rt.stepErrors == 1) {
+    rt.firstStepErrorAt = attempt;
+    rt.firstStepError = detail;
+    const bool arena = detail.find("mj_stackAlloc") != std::string::npos ||
+                       detail.find("stack overflow") != std::string::npos;
+    const std::string cause = arena
+      ? "The diagnosed cause: MuJoCo's arena (the per-step scratch memory every contact and collision "
+        "pair is allocated from, fixed when the model is compiled) overflowed. Raising njmax/nconmax does "
+        "NOT help on the CPU solver -- those size mujoco_warp's buffers only. Raise the arena with "
+        "WorldInfo.newtonArenaMB or OMNISIM_NEWTON_ARENA_MB (the load log prints the size in use), or "
+        "collide the moving unit as fewer, larger shapes. "
+      : "";
+    newtonError(QString::fromStdString(
+      "[OmNewtonBackend] physics step " + std::to_string(attempt) +
+      " RAISED and was SKIPPED: nothing in this world moved, collided or reported a contact "
+      "for that step, although the engine clock and every controller still advanced. Every further "
+      "skipped step is counted: /sim/step and /sim/state report it as physics_steps.step_errors, the "
+      ".newton.json sidecar as step_errors. " + cause + "The Python exception was: " + detail));
+  } else if ((rt.stepErrors & (rt.stepErrors - 1)) == 0) {
+    const std::string firstLine = detail.substr(0, detail.find('\n'));
+    newtonWarning(QString::fromStdString(
+      "[OmNewtonBackend] step raised again: " + std::to_string(rt.stepErrors) + " of " +
+      std::to_string(attempt) + " physics steps in this world SKIPPED (" + std::to_string(rt.stepErrorStreak) +
+      " in a row); latest: " + firstLine));
+  }
+  if (rt.sidecarWritten)
+    writeNewtonVerdictSidecar(rt.sidecarSolver, rt.sidecarRuntimeJson, rt);
+}
+
 int OmNewtonBackend::step(double dt) {
   if (!mAvailable || mRuntime == nullptr || mRuntime->world == nullptr || !mRuntime->running)
     return -1;
@@ -3237,11 +3359,22 @@ int OmNewtonBackend::step(double dt) {
   PyGILState_STATE gstate = PyGILState_Ensure();
   PyObject *r = PyObject_CallMethod(mRuntime->world, "step", "(d)", dt);
   if (r == nullptr) {
-    const int err = reportPyError("step");
+    reportStepFailure(*mRuntime);
     PyGILState_Release(gstate);
-    return err;
+    return -1;
   }
   Py_DECREF(r);
+  if (mRuntime->stepErrorStreak > 0) {
+    // First good step after a run of failures: record the recovery so the
+    // sidecar's streak reads 0 and the total is exact.
+    newtonInfo(QString("[OmNewtonBackend] physics step succeeded again after %1 consecutive skipped "
+                       "step(s); %2 skipped in this world so far")
+                 .arg(mRuntime->stepErrorStreak)
+                 .arg(mRuntime->stepErrors));
+    mRuntime->stepErrorStreak = 0;
+    if (mRuntime->sidecarWritten)
+      writeNewtonVerdictSidecar(mRuntime->sidecarSolver, mRuntime->sidecarRuntimeJson, *mRuntime);
+  }
   // Tier 1a: the python step() just invalidated its per-step readback caches;
   // drop the C++-side packed snapshot with them so the first getter of the
   // new tick refetches post-step state.
@@ -3852,6 +3985,7 @@ int OmNewtonBackend::setContactCondim(int) { return -1; }
 int OmNewtonBackend::setNoslipIterations(int) { return -1; }
 int OmNewtonBackend::setClothSelfContact(int) { return -1; }
 int OmNewtonBackend::setConstraintBuffers(int, int) { return -1; }
+int OmNewtonBackend::setArenaMB(int) { return -1; }
 int OmNewtonBackend::setContactSolverParams(double, double, double, int, int) { return -1; }
 int OmNewtonBackend::setWorldGravity(double, double, double) { return -1; }
 int OmNewtonBackend::step(double) { return -1; }

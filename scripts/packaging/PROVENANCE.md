@@ -40,11 +40,13 @@ Copyright 2026 OmniLink.
 * `omnisim.png` — application icon
 * `omnisim_doc.png` — document icon
 
-Both are the **OmniLink dot-sphere orb**. They were added at import as
+Both are the **OmniSim app icon**, the OmniSim orb on its rounded tile
+(`resources/branding/omnisim/BRAND.md`). They were added at import as
 `webots.png` (7,662 bytes) and `webots_doc.png` (9,991 bytes), replaced with the
-orb by `a0859d4d7` *"branding: OmniLink dot-sphere orb as canonical OmniSim
-identity"* (26,533 bytes each), and renamed by `88f98e169`. Their bytes are
-identical to `resources/images/omnisim.png`,
+OmniLink orb by `a0859d4d7` *"branding: OmniLink dot-sphere orb as canonical
+OmniSim identity"* (26,533 bytes each), renamed by `88f98e169`, and regenerated
+from the OmniSim mark on 2026-11-03 by `scripts/branding/build_omnilink_icons.py`
+(42,723 bytes each). Their bytes are identical to `resources/images/omnisim.png`,
 `resources/icons/core/omnisim_doc.png` and
 `resources/web/streaming_viewer/omnisim_icon.png`.
 

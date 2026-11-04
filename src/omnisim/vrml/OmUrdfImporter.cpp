@@ -1688,6 +1688,17 @@ QString emitLinkPhysics(const UrdfLink &link, const QString &indent, bool allowS
 // (OmBasicJoint::flushPendingNewtonRegistrations, 2026-09-08). Before that the
 // endPoint was written at the URDF zero pose, so the scene, the joint's own
 // zero-pose bookkeeping and the first physics step all disagreed.
+//
+// A <rest> is the author's explicit start angle, so it wins on EVERY revolute
+// or continuous joint, whatever its range. Until 2026-10-23 it was read only
+// after the range checks below, so a joint whose limits cover a full turn
+// (+/-3.14 or wider: the `full revolution` early return), a continuous joint,
+// a revolute with incomplete limits, or a range wholly past +/-pi started at
+// 0 with nothing logged (Ti5 T170 shoulders at +/-3.14 with <rest>: q_start
+// 0.0, while +/-3.13 started at the rest angle). Nothing stops it being
+// applied: the endPoint is posed by emitSolidEndPoint, the `position` line
+// needs no stops, and the Newton bridge starts the joint there. Prismatic
+// joints keep their own rule and do not read <rest>.
 bool initialJointPosition(const UrdfJoint &joint, double &q0) {
   q0 = 0.0;
   if (joint.type == "prismatic") {
@@ -1698,19 +1709,21 @@ bool initialJointPosition(const UrdfJoint &joint, double &q0) {
     }
     return false;
   }
-  if (joint.type != "revolute" || !joint.hasLower || !joint.hasUpper)
-    return false;
-  const double kPiLimit = M_PI - 0.01;
-  if (joint.lower <= -kPiLimit && joint.upper >= kPiLimit)
-    return false;  // full revolution: no stops, no seeded position
-  const double lo = std::max(-kPiLimit, std::min(kPiLimit, joint.lower));
-  const double hi = std::max(-kPiLimit, std::min(kPiLimit, joint.upper));
-  if (hi <= lo)
+  if (joint.type != "revolute" && joint.type != "continuous")
     return false;
   if (joint.hasRest) {
     q0 = joint.rest;
     return true;
   }
+  if (joint.type != "revolute" || !joint.hasLower || !joint.hasUpper)
+    return false;
+  const double kPiLimit = M_PI - 0.01;
+  if (joint.lower <= -kPiLimit && joint.upper >= kPiLimit)
+    return false;  // full revolution: no stops, no seeded midpoint
+  const double lo = std::max(-kPiLimit, std::min(kPiLimit, joint.lower));
+  const double hi = std::max(-kPiLimit, std::min(kPiLimit, joint.upper));
+  if (hi <= lo)
+    return false;
   if (lo > 0.0 || hi < 0.0) {
     q0 = 0.5 * (lo + hi);
     return true;
@@ -1841,9 +1854,25 @@ void appendJointPhysicsParameters(QString &out, const UrdfJoint &joint, const QS
     // inside the stops branch: a <rest> on a joint reaching past +/-pi (UFACTORY
     // xArm joint3 -3.927..0.192) spawned the link at the rest angle while the
     // joint read 0 there, so every setPosition() landed `rest` radians off and
-    // the xArm was driven 20 deg past its own stop.
+    // the xArm was driven 20 deg past its own stop. The full-range case is no
+    // exception since 2026-10-23: initialJointPosition returns a <rest> there
+    // too, and the endPoint is posed at it -- so the line moved out of this
+    // branch, below, where a continuous joint reaches it as well.
+    if (joint.hasRest && (joint.rest < joint.lower || joint.rest > joint.upper))
+      OmLog::warning(QObject::tr("URDF joint '%1': <rest>%2</rest> lies outside its own limits [%3, %4], so "
+                                 "the joint starts outside its range. Move the rest angle inside it.")
+                       .arg(joint.name)
+                       .arg(joint.rest)
+                       .arg(joint.lower)
+                       .arg(joint.upper));
+  }
+  // The `position` line, for every revolute or continuous joint the importer
+  // gives a start angle. A continuous joint has no stops, but a <rest> on it
+  // poses its endPoint all the same, so it needs the line as much as a limited
+  // joint does.
+  if (joint.type == "revolute" || joint.type == "continuous") {
     double q0 = 0.0;
-    if (!fullRange && initialJointPosition(joint, q0))
+    if (initialJointPosition(joint, q0))
       out += indent + QString("position %1\n").arg(q0);
   }
   if (joint.hasDamping)

@@ -31,7 +31,7 @@
 
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
-#include <assimp/matrix4x4.h>
+#include <assimp/types.h>  // aiMatrix3x3, aiVector3D and their inline operators
 
 struct aiNode;
 
@@ -57,5 +57,52 @@ public:
 // up to 0.96 m out of place. OMNISIM_MESH_NODE_TRANSFORM_FIX=0 (value-parsed)
 // restores the leaf-first product.
 aiMatrix4x4 omAssimpNodeWorldTransform(const aiNode *node);
+
+// The matrix that maps a mesh's NORMALS into the frame its vertices `transform`
+// maps them to: the inverse-transpose of the upper-left 3x3, with no translation.
+// Computed as the cofactor matrix (det * inverse-transpose) times sign(det), so it
+// needs no division -- a degenerate transform (a zero scale) yields no NaN -- and a
+// mirroring transform still maps an outward normal outward. Its length is not
+// preserved: pass each normal through omAssimpTransformNormal(), which renormalises.
+//
+// Both node walks used to map normals with the full 4x4 (translation included, and
+// no inverse-transpose), so a mesh on a translated node -- every Collada geometry
+// instanced more than once keeps its node, see above -- shaded with normals bent
+// toward the node's offset, and a non-uniform node scale tilted them off the
+// surface. Visual only: colliders never read normals. Noted 2026-10-15 with the
+// placement fix, fixed 2026-10-23. OMNISIM_MESH_NORMAL_MATRIX_FIX=0 (value-parsed)
+// restores the full-4x4 product (omAssimpNormalMatrixFixEnabled()).
+inline aiMatrix3x3 omAssimpNormalMatrix(const aiMatrix4x4 &transform) {
+  const aiMatrix3x3 m(transform);
+  aiMatrix3x3 c;  // cofactor matrix of m
+  c.a1 = m.b2 * m.c3 - m.b3 * m.c2;
+  c.a2 = m.b3 * m.c1 - m.b1 * m.c3;
+  c.a3 = m.b1 * m.c2 - m.b2 * m.c1;
+  c.b1 = m.a3 * m.c2 - m.a2 * m.c3;
+  c.b2 = m.a1 * m.c3 - m.a3 * m.c1;
+  c.b3 = m.a2 * m.c1 - m.a1 * m.c2;
+  c.c1 = m.a2 * m.b3 - m.a3 * m.b2;
+  c.c2 = m.a3 * m.b1 - m.a1 * m.b3;
+  c.c3 = m.a1 * m.b2 - m.a2 * m.b1;
+  if (m.a1 * c.a1 + m.a2 * c.a2 + m.a3 * c.a3 < 0) {  // det(m) < 0: a mirror
+    for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int j = 0; j < 3; ++j)
+        c[i][j] = -c[i][j];
+  }
+  return c;
+}
+
+// normalMatrix * normal, renormalised (returned as is when it collapses to zero).
+inline aiVector3D omAssimpTransformNormal(const aiMatrix3x3 &normalMatrix, const aiVector3D &normal) {
+  aiVector3D n = normalMatrix * normal;
+  const ai_real length = n.Length();
+  if (length > 0)
+    n /= length;
+  return n;
+}
+
+// OMNISIM_MESH_NORMAL_MATRIX_FIX: true (default) maps normals with
+// omAssimpNormalMatrix(); =0 restores the full-4x4 product. Value-parsed.
+bool omAssimpNormalMatrixFixEnabled();
 
 #endif

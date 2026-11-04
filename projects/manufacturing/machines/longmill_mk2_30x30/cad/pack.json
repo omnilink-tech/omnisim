@@ -1,0 +1,988 @@
+{
+ "name": "longmill_mk2_30x30",
+ "source": {
+  "url": "https://cad.onshape.com/documents/59335d21bb649cd2b941a693/w/290c65d1d584435649b87e46/e/99a028de0f32d790196bbe8a",
+  "licence": "CC BY-SA (Sienci Labs open-source hardware; version to be confirmed)",
+  "attribution": "LongMill MK2 30x30 by Sienci Labs",
+  "exported": "Onshape assembly 'LongMill MK2 30x30', STEP AP242, 2026-10-31"
+ },
+ "groups": {
+  "frame": {
+   "meshes": [
+    {
+     "file": "meshes/frame_0.stl",
+     "rgba": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ],
+     "faces": 904
+    },
+    {
+     "file": "meshes/frame_1.stl",
+     "rgba": [
+      0.004,
+      0.039,
+      0.137,
+      1.0
+     ],
+     "faces": 770
+    },
+    {
+     "file": "meshes/frame_2.stl",
+     "rgba": [
+      0.008,
+      0.161,
+      0.09,
+      1.0
+     ],
+     "faces": 922
+    },
+    {
+     "file": "meshes/frame_3.stl",
+     "rgba": [
+      0.024,
+      0.024,
+      0.024,
+      1.0
+     ],
+     "faces": 19978
+    },
+    {
+     "file": "meshes/frame_4.stl",
+     "rgba": [
+      0.024,
+      0.024,
+      0.024,
+      1.0
+     ],
+     "faces": 4316
+    },
+    {
+     "file": "meshes/frame_5.stl",
+     "rgba": [
+      0.031,
+      0.035,
+      0.035,
+      1.0
+     ],
+     "faces": 5240
+    },
+    {
+     "file": "meshes/frame_6.stl",
+     "rgba": [
+      0.035,
+      0.035,
+      0.035,
+      1.0
+     ],
+     "faces": 760
+    },
+    {
+     "file": "meshes/frame_7.stl",
+     "rgba": [
+      0.063,
+      0.059,
+      0.059,
+      1.0
+     ],
+     "faces": 2520
+    },
+    {
+     "file": "meshes/frame_8.stl",
+     "rgba": [
+      0.075,
+      0.075,
+      0.075,
+      1.0
+     ],
+     "faces": 2944
+    },
+    {
+     "file": "meshes/frame_9.stl",
+     "rgba": [
+      0.216,
+      1.0,
+      0.216,
+      1.0
+     ],
+     "faces": 1196
+    },
+    {
+     "file": "meshes/frame_10.stl",
+     "rgba": [
+      0.322,
+      0.376,
+      0.427,
+      1.0
+     ],
+     "faces": 20869
+    },
+    {
+     "file": "meshes/frame_11.stl",
+     "rgba": [
+      0.322,
+      0.376,
+      0.427,
+      1.0
+     ],
+     "faces": 20451
+    },
+    {
+     "file": "meshes/frame_12.stl",
+     "rgba": [
+      0.322,
+      0.376,
+      0.427,
+      1.0
+     ],
+     "faces": 8804
+    },
+    {
+     "file": "meshes/frame_13.stl",
+     "rgba": [
+      0.376,
+      0.376,
+      0.376,
+      1.0
+     ],
+     "faces": 936
+    },
+    {
+     "file": "meshes/frame_14.stl",
+     "rgba": [
+      0.388,
+      0.02,
+      0.0,
+      1.0
+     ],
+     "faces": 772
+    },
+    {
+     "file": "meshes/frame_15.stl",
+     "rgba": [
+      0.451,
+      0.451,
+      0.451,
+      1.0
+     ],
+     "faces": 1664
+    },
+    {
+     "file": "meshes/frame_16.stl",
+     "rgba": [
+      0.565,
+      0.529,
+      0.502,
+      1.0
+     ],
+     "faces": 128
+    },
+    {
+     "file": "meshes/frame_17.stl",
+     "rgba": [
+      0.573,
+      0.541,
+      0.51,
+      1.0
+     ],
+     "faces": 256
+    },
+    {
+     "file": "meshes/frame_18.stl",
+     "rgba": [
+      0.604,
+      0.604,
+      0.604,
+      1.0
+     ],
+     "faces": 6364
+    },
+    {
+     "file": "meshes/frame_19.stl",
+     "rgba": [
+      0.792,
+      0.792,
+      0.792,
+      1.0
+     ],
+     "faces": 3796
+    },
+    {
+     "file": "meshes/frame_20.stl",
+     "rgba": [
+      0.824,
+      0.824,
+      0.824,
+      1.0
+     ],
+     "faces": 5238
+    },
+    {
+     "file": "meshes/frame_21.stl",
+     "rgba": [
+      0.839,
+      0.016,
+      0.016,
+      1.0
+     ],
+     "faces": 398
+    },
+    {
+     "file": "meshes/frame_22.stl",
+     "rgba": [
+      0.914,
+      0.667,
+      0.188,
+      1.0
+     ],
+     "faces": 2192
+    },
+    {
+     "file": "meshes/frame_23.stl",
+     "rgba": [
+      0.98,
+      0.467,
+      0.012,
+      1.0
+     ],
+     "faces": 1004
+    },
+    {
+     "file": "meshes/frame_24.stl",
+     "rgba": [
+      0.98,
+      0.573,
+      0.298,
+      1.0
+     ],
+     "faces": 28
+    },
+    {
+     "file": "meshes/frame_25.stl",
+     "rgba": [
+      1.0,
+      0.533,
+      0.004,
+      1.0
+     ],
+     "faces": 772
+    }
+   ],
+   "parts": 206,
+   "bbox": [
+    [
+     -0.6604,
+     -0.6096,
+     0.0
+    ],
+    [
+     0.6604,
+     0.6096,
+     0.15878
+    ]
+   ]
+  },
+  "gantry": {
+   "meshes": [
+    {
+     "file": "meshes/gantry_0.stl",
+     "rgba": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ],
+     "faces": 53
+    },
+    {
+     "file": "meshes/gantry_1.stl",
+     "rgba": [
+      0.004,
+      0.039,
+      0.137,
+      1.0
+     ],
+     "faces": 385
+    },
+    {
+     "file": "meshes/gantry_2.stl",
+     "rgba": [
+      0.008,
+      0.161,
+      0.09,
+      1.0
+     ],
+     "faces": 461
+    },
+    {
+     "file": "meshes/gantry_3.stl",
+     "rgba": [
+      0.02,
+      0.016,
+      0.016,
+      1.0
+     ],
+     "faces": 7488
+    },
+    {
+     "file": "meshes/gantry_4.stl",
+     "rgba": [
+      0.024,
+      0.024,
+      0.024,
+      1.0
+     ],
+     "faces": 5296
+    },
+    {
+     "file": "meshes/gantry_5.stl",
+     "rgba": [
+      0.031,
+      0.035,
+      0.035,
+      1.0
+     ],
+     "faces": 2620
+    },
+    {
+     "file": "meshes/gantry_6.stl",
+     "rgba": [
+      0.035,
+      0.035,
+      0.035,
+      1.0
+     ],
+     "faces": 2000
+    },
+    {
+     "file": "meshes/gantry_7.stl",
+     "rgba": [
+      0.051,
+      0.051,
+      0.051,
+      1.0
+     ],
+     "faces": 3216
+    },
+    {
+     "file": "meshes/gantry_8.stl",
+     "rgba": [
+      0.063,
+      0.059,
+      0.059,
+      1.0
+     ],
+     "faces": 1703
+    },
+    {
+     "file": "meshes/gantry_9.stl",
+     "rgba": [
+      0.067,
+      0.373,
+      0.839,
+      1.0
+     ],
+     "faces": 512
+    },
+    {
+     "file": "meshes/gantry_10.stl",
+     "rgba": [
+      0.243,
+      0.263,
+      0.263,
+      1.0
+     ],
+     "faces": 8320
+    },
+    {
+     "file": "meshes/gantry_11.stl",
+     "rgba": [
+      0.322,
+      0.376,
+      0.427,
+      1.0
+     ],
+     "faces": 20682
+    },
+    {
+     "file": "meshes/gantry_12.stl",
+     "rgba": [
+      0.322,
+      0.376,
+      0.427,
+      1.0
+     ],
+     "faces": 20513
+    },
+    {
+     "file": "meshes/gantry_13.stl",
+     "rgba": [
+      0.322,
+      0.376,
+      0.427,
+      1.0
+     ],
+     "faces": 5372
+    },
+    {
+     "file": "meshes/gantry_14.stl",
+     "rgba": [
+      0.376,
+      0.376,
+      0.376,
+      1.0
+     ],
+     "faces": 1412
+    },
+    {
+     "file": "meshes/gantry_15.stl",
+     "rgba": [
+      0.388,
+      0.02,
+      0.0,
+      1.0
+     ],
+     "faces": 386
+    },
+    {
+     "file": "meshes/gantry_16.stl",
+     "rgba": [
+      0.451,
+      0.451,
+      0.451,
+      1.0
+     ],
+     "faces": 832
+    },
+    {
+     "file": "meshes/gantry_17.stl",
+     "rgba": [
+      0.565,
+      0.529,
+      0.502,
+      1.0
+     ],
+     "faces": 64
+    },
+    {
+     "file": "meshes/gantry_18.stl",
+     "rgba": [
+      0.573,
+      0.541,
+      0.51,
+      1.0
+     ],
+     "faces": 128
+    },
+    {
+     "file": "meshes/gantry_19.stl",
+     "rgba": [
+      0.604,
+      0.604,
+      0.604,
+      1.0
+     ],
+     "faces": 4176
+    },
+    {
+     "file": "meshes/gantry_20.stl",
+     "rgba": [
+      0.792,
+      0.792,
+      0.792,
+      1.0
+     ],
+     "faces": 2732
+    },
+    {
+     "file": "meshes/gantry_21.stl",
+     "rgba": [
+      0.824,
+      0.824,
+      0.824,
+      1.0
+     ],
+     "faces": 2858
+    },
+    {
+     "file": "meshes/gantry_22.stl",
+     "rgba": [
+      0.914,
+      0.667,
+      0.188,
+      1.0
+     ],
+     "faces": 1096
+    },
+    {
+     "file": "meshes/gantry_23.stl",
+     "rgba": [
+      1.0,
+      0.533,
+      0.004,
+      1.0
+     ],
+     "faces": 386
+    }
+   ],
+   "parts": 187,
+   "bbox": [
+    [
+     -0.4953,
+     -0.50927,
+     0.03173
+    ],
+    [
+     0.6161,
+     0.10642,
+     0.2809
+    ]
+   ]
+  },
+  "carriage": {
+   "meshes": [
+    {
+     "file": "meshes/carriage_0.stl",
+     "rgba": [
+      0.004,
+      0.039,
+      0.137,
+      1.0
+     ],
+     "faces": 385
+    },
+    {
+     "file": "meshes/carriage_1.stl",
+     "rgba": [
+      0.008,
+      0.161,
+      0.09,
+      1.0
+     ],
+     "faces": 461
+    },
+    {
+     "file": "meshes/carriage_2.stl",
+     "rgba": [
+      0.02,
+      0.016,
+      0.016,
+      1.0
+     ],
+     "faces": 3744
+    },
+    {
+     "file": "meshes/carriage_3.stl",
+     "rgba": [
+      0.024,
+      0.024,
+      0.024,
+      1.0
+     ],
+     "faces": 5636
+    },
+    {
+     "file": "meshes/carriage_4.stl",
+     "rgba": [
+      0.031,
+      0.035,
+      0.035,
+      1.0
+     ],
+     "faces": 2620
+    },
+    {
+     "file": "meshes/carriage_5.stl",
+     "rgba": [
+      0.035,
+      0.035,
+      0.035,
+      1.0
+     ],
+     "faces": 760
+    },
+    {
+     "file": "meshes/carriage_6.stl",
+     "rgba": [
+      0.051,
+      0.051,
+      0.051,
+      1.0
+     ],
+     "faces": 1608
+    },
+    {
+     "file": "meshes/carriage_7.stl",
+     "rgba": [
+      0.063,
+      0.059,
+      0.059,
+      1.0
+     ],
+     "faces": 1260
+    },
+    {
+     "file": "meshes/carriage_8.stl",
+     "rgba": [
+      0.067,
+      0.373,
+      0.839,
+      1.0
+     ],
+     "faces": 256
+    },
+    {
+     "file": "meshes/carriage_9.stl",
+     "rgba": [
+      0.243,
+      0.263,
+      0.263,
+      1.0
+     ],
+     "faces": 4160
+    },
+    {
+     "file": "meshes/carriage_10.stl",
+     "rgba": [
+      0.322,
+      0.376,
+      0.427,
+      1.0
+     ],
+     "faces": 20966
+    },
+    {
+     "file": "meshes/carriage_11.stl",
+     "rgba": [
+      0.322,
+      0.376,
+      0.427,
+      1.0
+     ],
+     "faces": 16493
+    },
+    {
+     "file": "meshes/carriage_12.stl",
+     "rgba": [
+      0.376,
+      0.376,
+      0.376,
+      1.0
+     ],
+     "faces": 472
+    },
+    {
+     "file": "meshes/carriage_13.stl",
+     "rgba": [
+      0.388,
+      0.02,
+      0.0,
+      1.0
+     ],
+     "faces": 386
+    },
+    {
+     "file": "meshes/carriage_14.stl",
+     "rgba": [
+      0.451,
+      0.451,
+      0.451,
+      1.0
+     ],
+     "faces": 832
+    },
+    {
+     "file": "meshes/carriage_15.stl",
+     "rgba": [
+      0.565,
+      0.529,
+      0.502,
+      1.0
+     ],
+     "faces": 64
+    },
+    {
+     "file": "meshes/carriage_16.stl",
+     "rgba": [
+      0.573,
+      0.541,
+      0.51,
+      1.0
+     ],
+     "faces": 128
+    },
+    {
+     "file": "meshes/carriage_17.stl",
+     "rgba": [
+      0.792,
+      0.792,
+      0.792,
+      1.0
+     ],
+     "faces": 1836
+    },
+    {
+     "file": "meshes/carriage_18.stl",
+     "rgba": [
+      0.824,
+      0.824,
+      0.824,
+      1.0
+     ],
+     "faces": 4442
+    },
+    {
+     "file": "meshes/carriage_19.stl",
+     "rgba": [
+      0.914,
+      0.667,
+      0.188,
+      1.0
+     ],
+     "faces": 1096
+    },
+    {
+     "file": "meshes/carriage_20.stl",
+     "rgba": [
+      1.0,
+      0.533,
+      0.004,
+      1.0
+     ],
+     "faces": 386
+    }
+   ],
+   "parts": 134,
+   "bbox": [
+    [
+     -0.00077,
+     -0.02452,
+     0.13307
+    ],
+    [
+     0.16923,
+     0.07238,
+     0.44357
+    ]
+   ]
+  },
+  "z": {
+   "meshes": [
+    {
+     "file": "meshes/z_0.stl",
+     "rgba": [
+      0.0,
+      0.216,
+      0.0,
+      1.0
+     ],
+     "faces": 376
+    },
+    {
+     "file": "meshes/z_1.stl",
+     "rgba": [
+      0.024,
+      0.024,
+      0.024,
+      1.0
+     ],
+     "faces": 7552
+    },
+    {
+     "file": "meshes/z_2.stl",
+     "rgba": [
+      0.051,
+      0.051,
+      0.051,
+      1.0
+     ],
+     "faces": 776
+    },
+    {
+     "file": "meshes/z_3.stl",
+     "rgba": [
+      0.051,
+      0.216,
+      0.216,
+      1.0
+     ],
+     "faces": 1559
+    },
+    {
+     "file": "meshes/z_4.stl",
+     "rgba": [
+      0.055,
+      0.067,
+      0.075,
+      1.0
+     ],
+     "faces": 154
+    },
+    {
+     "file": "meshes/z_5.stl",
+     "rgba": [
+      0.114,
+      0.114,
+      0.114,
+      1.0
+     ],
+     "faces": 2004
+    },
+    {
+     "file": "meshes/z_6.stl",
+     "rgba": [
+      0.322,
+      0.376,
+      0.427,
+      1.0
+     ],
+     "faces": 20772
+    },
+    {
+     "file": "meshes/z_7.stl",
+     "rgba": [
+      0.322,
+      0.376,
+      0.427,
+      1.0
+     ],
+     "faces": 1499
+    },
+    {
+     "file": "meshes/z_8.stl",
+     "rgba": [
+      0.451,
+      0.451,
+      0.451,
+      1.0
+     ],
+     "faces": 4
+    },
+    {
+     "file": "meshes/z_9.stl",
+     "rgba": [
+      0.816,
+      0.024,
+      0.024,
+      1.0
+     ],
+     "faces": 102
+    },
+    {
+     "file": "meshes/z_10.stl",
+     "rgba": [
+      0.824,
+      0.824,
+      0.824,
+      1.0
+     ],
+     "faces": 1520
+    },
+    {
+     "file": "meshes/z_11.stl",
+     "rgba": [
+      0.855,
+      0.839,
+      0.839,
+      1.0
+     ],
+     "faces": 7234
+    },
+    {
+     "file": "meshes/z_12.stl",
+     "rgba": [
+      1.0,
+      0.0,
+      0.0,
+      1.0
+     ],
+     "faces": 2328
+    }
+   ],
+   "parts": 70,
+   "bbox": [
+    [
+     0.00929,
+     -0.11201,
+     0.07647
+    ],
+    [
+     0.15223,
+     0.01548,
+     0.27297
+    ]
+   ]
+  }
+ },
+ "bodies": [
+  {
+   "group": "gantry",
+   "axis": "y",
+   "parent": "frame"
+  },
+  {
+   "group": "carriage",
+   "axis": "x",
+   "parent": "gantry"
+  },
+  {
+   "group": "z",
+   "axis": "z",
+   "parent": "carriage"
+  }
+ ],
+ "axis_dirs": {
+  "x": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "y": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "z": [
+   0.0,
+   0.0,
+   1.0
+  ]
+ },
+ "cad_pose_s": [
+  394.0,
+  441.0,
+  24.0
+ ],
+ "tool_tip": [
+  0.084227,
+  -0.061818,
+  0.030274
+ ],
+ "collet": {
+  "nose_z_m": 0.076474,
+  "nose_radius_m": 0.003163,
+  "body_z_m": 0.088924,
+  "radius_m": 0.00825,
+  "top_z_m": 0.103924,
+  "rgba": [
+   0.216,
+   0.216,
+   0.216,
+   1.0
+  ]
+ },
+ "bed_top_m": 0.0195,
+ "masses_kg": {
+  "gantry": 8.0,
+  "carriage": 2.0,
+  "z": 2.5
+ },
+ "extent_m": [
+  1.3208,
+  1.2192,
+  0.44357
+ ],
+ "faces": 319784
+}

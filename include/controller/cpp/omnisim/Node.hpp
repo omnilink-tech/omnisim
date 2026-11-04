@@ -132,7 +132,9 @@ namespace omnisim {
       // include/controller/c/omnisim/nodes.h, value for value.
       CLOTH,
       SOFT_BODY,
-      GRANULAR_BED
+      GRANULAR_BED,
+      MILLING_STOCK,
+      PRINTED_PART
     } Type;
 
     virtual void remove();

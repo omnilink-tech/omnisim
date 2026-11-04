@@ -171,6 +171,17 @@ namespace {
   }
 }  // namespace
 
+// OMNISIM_MESH_NORMAL_MATRIX_FIX: map mesh normals with the inverse-transpose 3x3
+// of the node transform (the fix, default) or with the full 4x4, translation
+// included (=0, the pre-2026-10-23 product). Value-parsed.
+bool omAssimpNormalMatrixFixEnabled() {
+  static const bool on = [] {
+    const std::string v = envValueLower("OMNISIM_MESH_NORMAL_MATRIX_FIX");
+    return v.empty() || (v != "0" && v != "false" && v != "off" && v != "no");
+  }();
+  return on;
+}
+
 aiMatrix4x4 omAssimpNodeWorldTransform(const aiNode *node) {
   aiMatrix4x4 transform;
   const bool rootFirst = meshNodeTransformFixEnabled();

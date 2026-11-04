@@ -1,0 +1,19 @@
+#OMNISIM R2025a utf8
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+WorldInfo { basicTimeStep 16 title "OmniLink - OmniArm 6 command assurance" newtonSolver "mujoco" newtonGroundMu 1 newtonSubsteps 8 }
+Viewpoint { position 2.86177747 -3.04640828 3.27714667 orientation -.278945293 .120681249 .952693844 2.359689255 fieldOfView .7 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DEF FLOOR Solid { name "floor" translation 0 0 -.06 children [ Shape { appearance PBRAppearance { baseColor .20 .25 .28 roughness .9 metalness 0 } geometry Box { size 6 6 .12 } } ] boundingObject Box { size 6 6 .12 } }
+# Visual-only markers: these are not an obstacle or a collision detector.
+Solid { name "blue-marker" translation .42 -.25 .012 children [ Shape { appearance PBRAppearance { baseColor .12 .6 .82 roughness 1 metalness 0 } geometry Box { size .25 .25 .004 } } ] }
+Solid { name "gold-marker" translation .42 .25 .012 children [ Shape { appearance PBRAppearance { baseColor .85 .68 .18 roughness 1 metalness 0 } geometry Box { size .25 .25 .004 } } ] }
+DEF ARM URDFRobot {
+ url "../../../../robots/omnisim/omniarm6/omniarm6.urdf"
+ translation 0 0 0 name "arm-assurance" supervisor TRUE staticBase TRUE
+ controller "arm_assurance_bridge" controllerArgs [ "--robot" "omniarm6" "--name" "arm-assurance" "--port" "8765" ]
+ window "omnilink_chat"
+}

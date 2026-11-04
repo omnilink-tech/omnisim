@@ -14,12 +14,12 @@ The Windows application icon, referenced from `omnisim.rc` and compiled into
 `omnisim-bin.exe`.
 
 **It is a byte-identical copy of a file that already carries a licence record.**
-Verified 2026-08-24 with `md5sum`:
+Verified 2026-11-03 with `md5sum`, after the icons were regenerated from the OmniSim mark:
 
 | md5 | path |
 |---|---|
-| `fff029dc38c575156fc3091f224b68e6` | `src/omnisim/gui/omnisim.ico` |
-| `fff029dc38c575156fc3091f224b68e6` | `resources/icons/core/omnisim_doc.ico` |
+| `ac181700e9eddfd76e29af2c5319769a` | `src/omnisim/gui/omnisim.ico` |
+| `ac181700e9eddfd76e29af2c5319769a` | `resources/icons/core/omnisim_doc.ico` |
 
 So its terms are whatever
 [`resources/icons/core/license.txt`](../../../resources/icons/core/license.txt)
@@ -34,8 +34,9 @@ branding if you ship a modified fork."*
 in the squashed Webots import (`0db6a18a7`, 2026-04-11). **The path is inherited;
 the content is not.** The icon's bytes were replaced with the OmniLink
 dot-sphere orb in `a0859d4d7` (2026-04-30, *"branding: OmniLink dot-sphere orb
-as canonical OmniSim identity"*), and the file was renamed in `88f98e169`. No
-Cyberbotics artwork remains in it.
+as canonical OmniSim identity"*), the file was renamed in `88f98e169`, and on
+2026-11-03 it was regenerated from the OmniSim mark (the dot lattice on a rounded
+tile, `scripts/branding/build_omnilink_icons.py`). No Cyberbotics artwork remains in it.
 
 This is the general trap with `--follow` in this repository: it reports the
 squashed import as the origin of anything whose *path* reaches back there, even

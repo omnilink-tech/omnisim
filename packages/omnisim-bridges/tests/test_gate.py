@@ -415,3 +415,18 @@ _RUN6 = ("The order 42 cart is loaded and I'm clear of it: red at world (-1.80, 
 ])
 def test_a_wait_defers_the_action_in_its_own_sentence(utterance, tool, deferred):
     assert gate_module._deferred_for(utterance, tool) is deferred, utterance
+
+
+# ── A question or a report in one sentence does not veto an order in another ──
+@pytest.mark.parametrize("utterance,tool,rule,refused", [
+    ("Tug: CART is unhitched on the shipping pad, and red, blue and green are still reported aboard. "
+     "If they didn't shift, they are at about (1.80, 0.00); please unload it now.", "pick", "reported", False),
+    ("the manual says drive forward 2 metres", "drive_forward", "reported", True),
+    ("Dana said to drive to the dock.", "go_to_place", "reported", True),
+    ("Is the cart loaded? Please drive to the dock.", "go_to_place", "question", False),
+    ("Is the cart loaded?", "go_to_place", "question", True),
+    ("you drove forward 2 metres, right?", "drive_forward", "question", True),
+])
+def test_sentence_rules_are_scoped_to_the_sentence_that_names_the_action(utterance, tool, rule, refused):
+    flag = gate_module._is_reported if rule == "reported" else gate_module._is_question
+    assert (flag(utterance) and gate_module._scoped(utterance, tool, flag)) is refused, utterance

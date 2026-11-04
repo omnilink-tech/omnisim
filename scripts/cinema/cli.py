@@ -206,6 +206,9 @@ def _cmd_agent_build_voice(args: argparse.Namespace) -> int:
     wav, timings = agent_build_voice.generate(
         spec, Path(args.runtime) if args.runtime else None,
     )
+    if wav is None:
+        print(f"NARRATION: none (voice.mode 'none': {spec.voice.reason}); nothing to generate")
+        return 0
     print(f"NARRATION: {wav}")
     print(f"TIMINGS:   {timings}")
     return 0

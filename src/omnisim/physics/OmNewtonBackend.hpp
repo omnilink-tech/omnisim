@@ -1006,6 +1006,11 @@ public:
   // finalizeWorld() (same multi-build race as the solver preference). 0/-1.
   int setConstraintBuffers(int njmax, int nconmax);
 
+  // Plumbs WorldInfo.newtonArenaMB (MuJoCo's arena, MiB) into the runtime
+  // BEFORE finalizeWorld(). 0 = unset (MuJoCo's own estimate). The env var
+  // OMNISIM_NEWTON_ARENA_MB still wins. Cached + re-asserted by finalizeWorld().
+  int setArenaMB(int mb);
+
   // Plumbs WorldInfo.gravity into the runtime BEFORE finalizeWorld().
   // Without this every Newton world ran at the ModelBuilder default -9.81
   // regardless of the world file (gravity-0 scenes fell onto the implicit
@@ -1136,6 +1141,7 @@ private:
   // mSolverPref. 0 / 0 = unset (the runtime's built-in 256).
   int mNjmaxPref = 0;
   int mNconmaxPref = 0;
+  int mArenaMBPref = 0;  // WorldInfo newtonArenaMB, same caching; 0 = unset
   // Sticky per-world contact friction / compliance / iteration counts
   // (WorldInfo newtonGroundMu / newtonContactKe / newtonContactKd /
   // newtonIterations / newtonLsIterations), cached by

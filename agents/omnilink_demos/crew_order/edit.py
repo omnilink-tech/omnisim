@@ -57,7 +57,8 @@ IDLE_SPEED = 20.0                   # sim s per output s while nothing moves and
 MOTION_DIFF = 0.04                  # mean grey-level change between frames that counts as motion
 WORDS_PER_S = 4.0                   # reading pace for a new line
 TITLE = "One order. Three robots. They work out the rest between themselves."
-FOOTNOTE = ("Simulated in OmniSim · each robot runs its own OmniLink agent (Claude Opus 5.5) · "
+MODEL_NAMES = {"claude-opus-5-5": "Claude Opus 5.5", "claude-sonnet-5-5": "Claude Sonnet 5.5"}
+FOOTNOTE = ("Simulated in OmniSim · each robot runs its own OmniLink agent ({model}) · "
             "after Sam's one order, every message is robot to robot, verbatim")
 
 
@@ -83,11 +84,18 @@ def chat_lines(take):
         abridge = json.loads((take / "abridge.json").read_text(encoding="utf-8"))
     out = []
     for line in (take / "crew.jsonl").read_text(encoding="utf-8").splitlines():
-        r = json.loads(line)
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
         if r["kind"] == "operator" and r["text"].startswith("Sam: Order"):
             text = r["text"].split(": ", 1)[1]
         elif r["kind"] == "message":
-            text = r["text"]
+            # A crew message is its REQUEST (what the crewmate's gate judged) and
+            # its DETAILS (facts beside it); the card shows both, request first.
+            request, details = r["text"], r.get("details") or ""
+            text = details if request.strip().lower() in ("", "none") else (
+                f"{request} {details}".strip())
         else:
             continue
         short = abridge.get(text, text)
@@ -231,6 +239,8 @@ def main():
     a = ap.parse_args()
     take = Path(a.take)
     lines = chat_lines(take)
+    meta = json.loads((take / "meta.json").read_text(encoding="utf-8")) if (take / "meta.json").exists() else {}
+    model_name = MODEL_NAMES.get(meta.get("model", "claude-opus-5-5"), meta.get("model", "Claude"))
     for i, m in enumerate(lines):
         m["i"] = i
     track = tug_track(take)
@@ -285,7 +295,7 @@ def main():
         if n < FPS * 5:
             caption(canvas, TITLE, 30, 110)
         if t > lines[-1]["t"] + 1.0:          # after the last line only
-            caption(canvas, FOOTNOTE, 18, 100)
+            caption(canvas, FOOTNOTE.format(model=model_name), 18, 100)
         canvas.save(tmp / f"{n:06d}.png")
         n += 1
         if step_motion:

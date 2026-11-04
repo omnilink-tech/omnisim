@@ -62,6 +62,8 @@
 // relying on a caller-side makeWrenCurrent()/doneWren() bracket.
 #include "OmDeformableFrameListener.hpp"  // the Cloth/SoftBody subscription registry
 #include "OmGranularBed.hpp"              // the MPM bed registry (liveBeds / anyGranularBeds)
+#include "OmMillingStock.hpp"             // the milling-stock registry (liveStocks / anyMillingStocks)
+#include "OmPrintedPart.hpp"              // the printed-part registry (liveParts / anyPrintedParts)
 #include "OmSimulationState.hpp"  // sim clock — the "has the surface moved?" test
 
 // wr_transform_get_matrix — CadShape submesh world matrices, hatch-off fallback only since W1b
@@ -69,6 +71,7 @@
 
 #include <QtCore/QFileInfo>  // P2: the Muscle texture path -> one stable cache key
 #include <QtCore/QList>      // hiddenNodes->isEmpty()/contains(): the header only forward-declares QList
+#include <QtCore/QPointer>   // the Display-fed texture registry outlives no ImageTexture
 #include <QtCore/QSet>
 #include <QtCore/QVariant>
 #include <QtGui/QImage>
@@ -543,6 +546,51 @@ static void fillWrenAmbient(OmPbrAppearance *pbr, OmAppearance *app, OmWgpuSolid
     draw.penView = th.view;
   }
 
+  // A Display-fed ImageTexture: the Display device's buffer, rewritten in place. image() is NULL
+  // for it (no file), so until 2026-11-04 no upload site below saw it and a Display drew nothing
+  // onto its Shape: the Shape showed its flat baseColor. Same path as the Pen layer above: a
+  // miss acquires at ONE mip level. The draw keeps that texture's view, and the main view and
+  // every camera reuse a cached draw list, so the CONTENT is refreshed per frame apart from the
+  // collect: OmWgpuSceneRenderer::refreshDisplayTextures(), one updateRgba8 per registered
+  // texture, a no-op unless the Display redrew (OmDisplay::postPhysicsStep bumps the revision).
+  uint64_t displayTextureId(const OmImageTexture *map) {
+    return (static_cast<uint64_t>(0xd15au) << 48) ^ reinterpret_cast<uint64_t>(map);
+  }
+  struct DisplayTextureUse {
+    OmWgpuTextureCache *cache;      // compared, never dereferenced: a dead cache simply never matches
+    QPointer<OmImageTexture> map;
+  };
+  std::vector<DisplayTextureUse> &displayTextureUses() {
+    static std::vector<DisplayTextureUse> sUses;
+    return sUses;
+  }
+  uint64_t gDisplayTextureUploads = 0;
+
+  bool acquireDisplayTexture(OmImageTexture *map, OmWgpuTextureCache *texCache, OmWgpuTextureHandle &out) {
+    if (!map || !texCache || !map->isExternalTexture())
+      return false;
+    const uint32_t w = static_cast<uint32_t>(map->width());
+    const uint32_t h = static_cast<uint32_t>(map->height());
+    if (w == 0 || h == 0)
+      return false;
+    const std::vector<unsigned char> &px = map->externalRgba8();
+    if (px.size() < static_cast<size_t>(w) * h * 4u)
+      return false;
+    const uint64_t id = displayTextureId(map);
+    if (!texCache->tryGet(id, out)) {
+      out = texCache->acquire(id, w, h, px.data(), px.size(), /*mipLevels=*/1);
+      ++gDisplayTextureUploads;
+      std::vector<DisplayTextureUse> &uses = displayTextureUses();
+      bool known = false;
+      for (const DisplayTextureUse &u : uses)
+        known = known || (u.cache == texCache && u.map == map);
+      if (!known)
+        uses.push_back({texCache, QPointer<OmImageTexture>(map)});
+    } else if (texCache->updateRgba8(id, w, h, px.data(), px.size(), map->externalRevision()))
+      ++gDisplayTextureUploads;
+    return out.view != nullptr;
+  }
+
   // OMNISIM_WGPU_NODE_VISIBILITY — the exact-revert hatch for wb_supervisor_node_set_visibility
   // on the wgpu path. VALUE-PARSED like the one above: unset or any non-zero value is ON, only
   // "0" turns it off, so `=0` can never accidentally mean ON. OFF restores the pre-change
@@ -896,7 +944,13 @@ static void fillWrenAmbient(OmPbrAppearance *pbr, OmAppearance *app, OmWgpuSolid
         if (texCache && cpbr) {
           if (OmImageTexture *map = cpbr->baseColorMap()) {
             const QImage *img = map->image();
-            if (img) {
+            OmWgpuTextureHandle dth;
+            if (acquireDisplayTexture(map, texCache, dth)) {
+              draw.textureView = dth.view;
+              draw.texMeanLin[0] = dth.meanLin[0];
+              draw.texMeanLin[1] = dth.meanLin[1];
+              draw.texMeanLin[2] = dth.meanLin[2];
+            } else if (img) {
               const uint64_t texId = stableTexId(map);
               OmWgpuTextureHandle th = OmWgpuImageAdapter::acquireFromQImage(*texCache, texId, *img);
               draw.textureView = th.view;
@@ -1065,7 +1119,13 @@ static void fillWrenAmbient(OmPbrAppearance *pbr, OmAppearance *app, OmWgpuSolid
           if (texCache && pbr) {
             if (OmImageTexture *map = pbr->baseColorMap()) {
               const QImage *img = map->image();
-              if (img) {
+              OmWgpuTextureHandle dth;
+              if (acquireDisplayTexture(map, texCache, dth)) {
+                draw.textureView = dth.view;
+                draw.texMeanLin[0] = dth.meanLin[0];
+                draw.texMeanLin[1] = dth.meanLin[1];
+                draw.texMeanLin[2] = dth.meanLin[2];
+              } else if (img) {
                 const uint64_t texId = stableTexId(map);
                 OmWgpuTextureHandle th =
                   OmWgpuImageAdapter::acquireFromQImage(*texCache, texId, *img);
@@ -1302,6 +1362,30 @@ static void fillWrenAmbient(OmPbrAppearance *pbr, OmAppearance *app, OmWgpuSolid
            (reinterpret_cast<uint64_t>(node) & ((static_cast<uint64_t>(1) << 48) - 1u));
   }
 
+  // Mesh-cache key for one MillingStock tile. The deformable family again (bits 62 and 60),
+  // separated by bit 58, which neither a deformable nor a Muscle key can set (their payload
+  // is a 48-bit pointer). Payload: the node pointer's low 44 bits above 16-byte alignment,
+  // then a 10-bit slot -- tiles 0..1022, 1023 for the walls (OmMillingStock caps tiles).
+  constexpr uint64_t kMillingKeyTag = (static_cast<uint64_t>(1) << 62) |
+                                      (static_cast<uint64_t>(1) << 60) |
+                                      (static_cast<uint64_t>(1) << 58);
+  constexpr uint64_t kMillingSidesSlot = 1023;
+  uint64_t millingMeshKey(const void *node, uint64_t slot) {
+    const uint64_t p = (reinterpret_cast<uint64_t>(node) >> 4) & ((static_cast<uint64_t>(1) << 44) - 1u);
+    return kMillingKeyTag | (p << 10) | (slot & 1023u);
+  }
+
+  // Mesh-cache key for one PrintedPart chunk: the deformable family once more, separated
+  // by bit 57, which no deformable, Muscle or MillingStock key sets (their payloads reach
+  // bit 53 at most). Same payload layout as millingMeshKey: chunks 0..1022.
+  constexpr uint64_t kPrintedKeyTag = (static_cast<uint64_t>(1) << 62) |
+                                      (static_cast<uint64_t>(1) << 60) |
+                                      (static_cast<uint64_t>(1) << 57);
+  uint64_t printedMeshKey(const void *node, uint64_t chunk) {
+    const uint64_t p = (reinterpret_cast<uint64_t>(node) >> 4) & ((static_cast<uint64_t>(1) << 44) - 1u);
+    return kPrintedKeyTag | (p << 10) | (chunk & 1023u);
+  }
+
   // ---- THE PER-FRAME VERTEX RE-UPLOAD, for every node type that streams one ----------
   //
   // Extracted from appendDeformableDraw so a Cloth, a SoftBody and a Muscle share ONE
@@ -1516,6 +1600,28 @@ static void fillWrenAmbient(OmPbrAppearance *pbr, OmAppearance *app, OmWgpuSolid
 
 namespace OmWgpuSceneRenderer {
 
+  void refreshDisplayTextures(OmWgpuTextureCache *texCache) {
+    std::vector<DisplayTextureUse> &uses = displayTextureUses();
+    if (!texCache || uses.empty())
+      return;
+    for (size_t i = 0; i < uses.size();) {
+      OmImageTexture *map = uses[i].map.data();
+      if (!map) {                                   // the ImageTexture is gone
+        uses.erase(uses.begin() + static_cast<std::ptrdiff_t>(i));
+        continue;
+      }
+      if (uses[i].cache == texCache && map->isExternalTexture()) {
+        OmWgpuTextureHandle th;
+        acquireDisplayTexture(map, texCache, th);    // updateRgba8 on a hit: a no-op unless redrawn
+      }
+      ++i;
+    }
+  }
+
+  uint64_t displayTextureUploads() {
+    return gDisplayTextureUploads;
+  }
+
   bool ensureTarget(OmRenderBackend *back, int w, int h,
                     OmWgpuRenderTarget *&target, OmWgpuMeshCache *&cache,
                     int &targetW, int &targetH) {
@@ -1575,18 +1681,21 @@ namespace OmWgpuSceneRenderer {
     // every Shape sits under a bare Pose/Transform root node) have no top solids at all, so this
     // function collected ZERO draws and the world rendered empty under wgpu. Walk the remaining
     // root-level children too — Solids were already collected above, and light/viewpoint/background
-    // nodes fall through collectShapeDraws untouched. Restricted to the outNodes == nullptr callers
-    // (the main view + the sensor path): the pick/overlay consumers require a 1:1 draw→Solid
-    // mapping, which a bare Pose cannot provide.
-    if (!outNodes) {
-      if (OmGroup *rootG = dynamic_cast<OmGroup *>(world->root())) {
-        const int n = rootG->childCount();
-        for (int i = 0; i < n; ++i) {
-          OmBaseNode *child = rootG->child(i);
-          if (!child || dynamic_cast<OmSolid *>(child))
-            continue;  // solids (incl. robots) were collected via topSolids above
-          collectShapeDraws(child, cache, out, modelStorage, texCache, outRefresh, outSkipped, hidden);
-        }
+    // nodes fall through collectShapeDraws untouched. A bare Pose has no Solid, so callers that map
+    // draws to Solids get nullptr for these draws ("no owner"); every such consumer already skips a
+    // null owner. This walk used to run only for callers WITHOUT a map, and the main view passes
+    // one (selection tint, pick, synth dump): from 2026-08-21 every Shape under a bare root Pose was
+    // missing from the GUI window while Camera devices, which pass no map, still drew it.
+    if (OmGroup *rootG = dynamic_cast<OmGroup *>(world->root())) {
+      const int n = rootG->childCount();
+      for (int i = 0; i < n; ++i) {
+        OmBaseNode *child = rootG->child(i);
+        if (!child || dynamic_cast<OmSolid *>(child))
+          continue;  // solids (incl. robots) were collected via topSolids above
+        const size_t before = out.size();
+        collectShapeDraws(child, cache, out, modelStorage, texCache, outRefresh, outSkipped, hidden);
+        if (outNodes)
+          outNodes->resize(outNodes->size() + (out.size() - before), nullptr);
       }
     }
     // ROOT-CAUSE FIX (use-after-realloc): collectShapeDraws sets each `draw.modelMatrix16` to alias a
@@ -2037,6 +2146,157 @@ namespace OmWgpuSceneRenderer {
     return appended;
   }
 
+  // MillingStock: one streamed mesh per tile plus one for the walls, WORLD-space vertices
+  // (identity model). The epoch handed to acquireStreamedMesh is the TILE'S REVISION, not
+  // the simulation clock: a tile is re-uploaded only when the cutter changed it, so an
+  // idle block costs one map lookup per tile per frame and zero GPU traffic, and a cutting
+  // step re-uploads the one to four tiles under the cutter. Colour comes from a 2x1
+  // texture (skin, core) selected by uv.x, since the shared 32-byte vertex has no colour.
+  size_t collectMillingDraws(OmWgpuMeshCache &cache, std::vector<OmWgpuSolidDraw> &out,
+                             std::vector<std::array<float, 16>> &modelStorage,
+                             OmWgpuTextureCache *texCache,
+                             const QList<const OmBaseNode *> *hiddenNodes) {
+    if (!OmMillingStock::anyMillingStocks())
+      return 0;
+    static std::vector<unsigned char> scratch;
+    const std::array<float, 16> identity = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                                            0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+    size_t appended = 0;
+    for (OmMillingStock *stock : OmMillingStock::liveStocks()) {
+      if (!stock || !stock->isReady() || (hiddenNodes && hiddenNodes->contains(stock)))
+        continue;
+      void *texView = nullptr;
+      float texMean[3] = {0.5f, 0.5f, 0.5f};
+      if (texCache) {
+        // 2x1 (skin, core) for a cutter, a skin-to-char ramp for a laser.
+        static std::vector<unsigned char> rgba;
+        stock->wgpuColorTexels(rgba, texMean);
+        const uint64_t texId = (static_cast<uint64_t>(0xF) << 60) |
+                               (((reinterpret_cast<uint64_t>(stock) >> 4) & ((static_cast<uint64_t>(1) << 44) - 1u)) << 12) |
+                               (stock->colorRevision() & 0xFFFu);
+        OmWgpuTextureHandle th;
+        if (!texCache->tryGet(texId, th))
+          th = texCache->acquire(texId, stock->colorTexelCount(), 1, rgba.data(), rgba.size(), /*mipLevels=*/1);
+        texView = th.view;
+      }
+      const int tiles = stock->tileCount();
+      for (int slot = 0; slot <= tiles; ++slot) {
+        const bool sides = (slot == tiles);
+        OmWgpuMeshHandle h;
+        const uint64_t key = millingMeshKey(stock, sides ? kMillingSidesSlot : static_cast<uint64_t>(slot));
+        const bool ok =
+          sides ? acquireStreamedMesh(key, stock->sidesIndices(), stock->sidesRevision(), false, cache, scratch,
+                                      [stock](std::vector<unsigned char> &s) { return stock->sidesVertexStream(s); }, h) :
+                  acquireStreamedMesh(key, stock->tileIndices(slot), stock->tileRevision(slot), false, cache, scratch,
+                                      [stock, slot](std::vector<unsigned char> &s) {
+                                        return stock->tileVertexStream(slot, s);
+                                      },
+                                      h);
+        if (!ok)
+          continue;
+        modelStorage.push_back(identity);
+        OmWgpuSolidDraw draw;
+        draw.modelMatrix16 = modelStorage.back().data();  // re-pointed by the caller after the loop
+        draw.motionId = motionId(stock);
+        draw.motionPart = static_cast<uint32_t>(slot);
+        const float fallback[3] = {0.8f, 0.64f, 0.44f};
+        fillAppearanceMaterial(nullptr, nullptr, fallback, texCache, draw);
+        if (texView) {
+          draw.baseColorR = draw.baseColorG = draw.baseColorB = 1.0f;  // the texture carries the colour
+          draw.textureView = texView;
+          draw.texMeanLin[0] = texMean[0];
+          draw.texMeanLin[1] = texMean[1];
+          draw.texMeanLin[2] = texMean[2];
+        }
+        draw.specularStrength = 1.0f - stock->roughness();
+        if (wgpuWrenAmbientEnabled())
+          draw.iblScale = static_cast<float>(sAmbientEnv.luminosity);
+        draw.vertexBuffer = h.vertexBuffer;
+        draw.indexBuffer = h.indexBuffer;
+        draw.indexCount = h.indexCount;
+        draw.geometryRevision = h.geometryRevision;
+        draw.localCenter[0] = h.localCenter[0];
+        draw.localCenter[1] = h.localCenter[1];
+        draw.localCenter[2] = h.localCenter[2];
+        draw.localRadius = h.localRadius;
+        draw.cpuPositions = h.cpuPositions;
+        draw.cpuAttributes = h.cpuAttributes;
+        draw.cpuIndices = h.cpuIndices;
+        draw.castShadows = stock->castShadows();
+        out.push_back(draw);
+        ++appended;
+      }
+    }
+    // Same use-after-realloc re-point the other collects end with -- the WHOLE list, not just this
+    // tail. A push_back above that reallocated modelStorage dangles every EARLIER draw too, and a
+    // cached list (the main view, every sensor's collectWgpuDrawsCached) never re-collects that
+    // prefix: it refreshed matrices into the new block while its draws kept reading the freed one,
+    // so a Camera on a world with a MillingStock froze every moving body for up to 600 frames.
+    if (appended > 0 && out.size() == modelStorage.size())
+      for (size_t k = 0; k < out.size(); ++k)
+        out[k].modelMatrix16 = modelStorage[k].data();
+    return appended;
+  }
+
+  // PrintedPart: one streamed mesh per chunk of beads, WORLD-space vertices (identity
+  // model). As with MillingStock the epoch is the chunk's revision, so a full chunk is
+  // never re-uploaded and the chunk being printed into is re-uploaded once per frame at
+  // most. Every chunk has the same fixed index buffer, so that upload is always the
+  // in-place vertex rewrite, never a buffer rebuild.
+  size_t collectPrintedDraws(OmWgpuMeshCache &cache, std::vector<OmWgpuSolidDraw> &out,
+                             std::vector<std::array<float, 16>> &modelStorage,
+                             OmWgpuTextureCache *texCache,
+                             const QList<const OmBaseNode *> *hiddenNodes) {
+    if (!OmPrintedPart::anyPrintedParts())
+      return 0;
+    static std::vector<unsigned char> scratch;
+    const std::array<float, 16> identity = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                                            0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+    size_t appended = 0;
+    for (OmPrintedPart *part : OmPrintedPart::liveParts()) {
+      if (!part || part->beadCount() == 0 || (hiddenNodes && hiddenNodes->contains(part)))
+        continue;
+      float rgb[3];
+      part->color(rgb);
+      for (int chunk = 0; chunk < part->chunkCount(); ++chunk) {
+        OmWgpuMeshHandle h;
+        if (!acquireStreamedMesh(printedMeshKey(part, static_cast<uint64_t>(chunk)), part->chunkIndices(),
+                                 part->chunkRevision(chunk), false, cache, scratch,
+                                 [part, chunk](std::vector<unsigned char> &s) { return part->chunkVertexStream(chunk, s); },
+                                 h))
+          continue;
+        modelStorage.push_back(identity);
+        OmWgpuSolidDraw draw;
+        draw.modelMatrix16 = modelStorage.back().data();  // re-pointed by the caller after the loop
+        draw.motionId = motionId(part);
+        draw.motionPart = static_cast<uint32_t>(chunk);
+        fillAppearanceMaterial(nullptr, nullptr, rgb, texCache, draw);
+        draw.specularStrength = 1.0f - part->roughness();
+        if (wgpuWrenAmbientEnabled())
+          draw.iblScale = static_cast<float>(sAmbientEnv.luminosity);
+        draw.vertexBuffer = h.vertexBuffer;
+        draw.indexBuffer = h.indexBuffer;
+        draw.indexCount = h.indexCount;
+        draw.geometryRevision = h.geometryRevision;
+        draw.localCenter[0] = h.localCenter[0];
+        draw.localCenter[1] = h.localCenter[1];
+        draw.localCenter[2] = h.localCenter[2];
+        draw.localRadius = h.localRadius;
+        draw.cpuPositions = h.cpuPositions;
+        draw.cpuAttributes = h.cpuAttributes;
+        draw.cpuIndices = h.cpuIndices;
+        draw.castShadows = part->castShadows();
+        out.push_back(draw);
+        ++appended;
+      }
+    }
+    // The use-after-realloc re-point every collect ends with (see collectMillingDraws).
+    if (appended > 0 && out.size() == modelStorage.size())
+      for (size_t k = 0; k < out.size(); ++k)
+        out[k].modelMatrix16 = modelStorage[k].data();
+    return appended;
+  }
+
   size_t collectDynamicDraws(OmWgpuMeshCache &cache, std::vector<OmWgpuSolidDraw> &out,
                              std::vector<std::array<float, 16>> &modelStorage,
                              OmWgpuTextureCache *texCache,
@@ -2046,13 +2306,15 @@ namespace OmWgpuSceneRenderer {
     const size_t nGranular = collectGranularDraws(cache, out, modelStorage, hiddenNodes);
     const size_t nTrack = collectTrackDraws(cache, out, modelStorage, texCache, hiddenNodes);
     const size_t nMuscle = collectMuscleDraws(cache, out, modelStorage, texCache, hiddenNodes);
+    const size_t nMilling = collectMillingDraws(cache, out, modelStorage, texCache, hiddenNodes);
+    const size_t nPrinted = collectPrintedDraws(cache, out, modelStorage, texCache, hiddenNodes);
     if (outCounts) {
       outCounts->deformable = nDeform;
       outCounts->granular = nGranular;
       outCounts->track = nTrack;
       outCounts->muscle = nMuscle;
     }
-    return nDeform + nGranular + nTrack + nMuscle;
+    return nDeform + nGranular + nTrack + nMuscle + nMilling + nPrinted;
   }
 
   unsigned long long glArmCount() {
@@ -2101,11 +2363,18 @@ namespace OmWgpuSceneRenderer {
         const double previousOpacity=opacity(shape);
         auto *previousPbr=shape->pbrAppearance();
         auto *previousAppearance=shape->appearance();
+        // A Display attaches its buffer to its Shape's baseColorMap AFTER the first collect (at its
+        // first redraw), so the cached draw had no texture view; rebuild once when that flips.
+        const auto displayFed=[](OmShape *s) {
+          auto *p=s->pbrAppearance();
+          return p && p->baseColorMap() && p->baseColorMap()->isExternalTexture();
+        };
+        const bool previousDisplayFed=displayFed(shape);
         const auto materialChanged=[=]() {
             // Texture scrolling emits this too. Do not turn a conveyor animation
             // into a full scene walk every frame; only shadow-relevant edits rebuild.
             if (shape->pbrAppearance()!=previousPbr || shape->appearance()!=previousAppearance ||
-                opacity(shape)!=previousOpacity) invalidate();
+                opacity(shape)!=previousOpacity || displayFed(shape)!=previousDisplayFed) invalidate();
           };
         connections.push_back(QObject::connect(shape,&OmShape::wrenMaterialChanged,context,materialChanged));
         // Native-only shapes may never establish the legacy material propagation

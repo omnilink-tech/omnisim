@@ -36,6 +36,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 #include <functional>
 
@@ -405,6 +406,14 @@ namespace OmWgpuSceneRenderer {
   // and a matrix-only refresh froze it on the main view while every sensor (which rebuilds its
   // list per frame) saw it move. Null, or a world with no such Track, does exactly what it did
   // before.
+  // Display-fed textures (a Display device drawing onto its Shape): re-upload, into `texCache`,
+  // every one that cache holds and whose Display redrew since its last upload. Call once a frame
+  // per cache, cached draw list or not (the cached list keeps the texture's view, not its pixels).
+  void refreshDisplayTextures(OmWgpuTextureCache *texCache);
+  // How many Display-fed uploads have happened in this process: the main view's render-on-change
+  // signature mixes it in, so a redrawn screen is never held as an unchanged frame.
+  uint64_t displayTextureUploads();
+
   bool refreshWorldDraws(std::vector<std::array<float, 16>> &modelStorage,
                          const std::vector<OmWgpuDrawRefresh> &refresh,
                          std::vector<OmWgpuSolidDraw> *outDraws = nullptr);

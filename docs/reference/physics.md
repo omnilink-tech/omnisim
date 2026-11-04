@@ -90,9 +90,19 @@ If this field is empty, OmniSim will compute the inertia matrix automatically ac
     I_com as I_origin: it understated the body's inertia about every joint by
     m·d² and zeroed the gravity torque on any pendulum-shaped link (a 0.2 m rod
     on a hinge did not fall at all). `OMNISIM_NEWTON_INERTIA_COM=0` reverts.
-    `OMNISIM_NEWTON_USE_LINK_COM` is unchanged and still governs only the
-    geometry-derived case, whose tensor is composed about the Solid ORIGIN and
-    must therefore keep its COM there.
+
+    ⚠️ **With `inertiaMatrix` empty, the centre of mass is honoured too (since
+    2026-11-03).** The tensor composed from the `boundingObject` is about the
+    Solid ORIGIN; until then it was passed with the COM pinned AT the origin, so
+    the `centerOfMass` field, and the bounding object's own centroid, never
+    reached the solver. A part whose origin is off its material rested with its
+    weight acting at the origin: a 40×40×20 mm, 0.1 kg box with its shape 30 mm
+    from its origin rolled 86° off a flat floor in 1 s. The tensor is now shifted
+    to the COM (parallel axis) and passed with it, so a Solid's origin can sit
+    anywhere relative to its material. The load log reports
+    `[OmNewtonBackend] geometry COM: N body(ies) ... (largest D mm, '<name>')`;
+    `OMNISIM_NEWTON_GEOM_INERTIA_COM=0` restores the COM at the origin.
+    `OMNISIM_NEWTON_USE_LINK_COM` now matters only under that revert.
 
 - ⚠️ The `damping` field has **no effect**. It names a Damping (archived 2026-09-02, see [docs/ARCHIVE.md](../ARCHIVE.md)) node describing velocity damping for the [Solid](solid.md), but damping was implemented only on the ODE path and is not plumbed to Newton — `OmSolidMerger::setOdeDamping()` is now an empty function. The field still parses so legacy worlds load. See Damping.
 

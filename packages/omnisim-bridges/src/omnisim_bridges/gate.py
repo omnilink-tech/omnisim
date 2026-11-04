@@ -581,6 +581,54 @@ _ANY_ACTION = re.compile(r"^\s*(?:(?:now|then|so|and|ok|okay)[\s,]+)?(?:%s)\b|\b
     re.IGNORECASE)
 
 
+# THE SAME SCOPE FOR THE OTHER SENTENCE RULES. "...red, blue and green are
+# still reported aboard. ... please unload it now." refused Packer's pick as
+# reported speech (campaign 5 run 7, 2026-10-21): the passive "are reported"
+# describes the cart, and the order is the last sentence. A sentence flagged
+# as a question or as reported speech counts against a tool only when it
+# names that tool; when no sentence names it, the flag stands unless a
+# sentence WITHOUT the flag states an order. If no single sentence carries the
+# flag (it came from the utterance as a whole), the whole-utterance verdict
+# stands. Sentences split after . ! ? ; followed by a space, so decimals and the
+# question mark survive.
+_SENTENCE_KEEP = re.compile(r"(?<=[.!?;])\s+")
+
+
+def _scoped(utterance: str, tool: str, flagged_fn) -> bool:
+    sentences = [x for x in _SENTENCE_KEEP.split(_SPEAKER_PREFIX.sub("", utterance or "", count=1)) if x.strip()]
+    flagged = [x for x in sentences if flagged_fn(x)]
+    if not flagged:
+        return True
+    verbs = _TOOL_VERBS.get(tool)
+    if verbs is None:
+        return True
+    names = _tool_names(verbs)
+    if any(_names_action(names, x) for x in flagged):
+        return True
+    if any(_names_action(names, x) for x in sentences):
+        return False
+    return not any(not flagged_fn(x) and _ANY_ACTION.search(x.strip()) for x in sentences)
+
+
+# A verb used in a PLACE NAME names a place, not the action: "CART is unhitched
+# on the pick pad ... when I let it go; ... please load it now" held `when I let
+# it go` against a pick because "pick pad" named a pick (campaign 6 run 32,
+# 2026-10-21). Such compounds read as "place" before verbs are matched.
+_PLACE_NOUNS = re.compile(
+    r"\b(?:pick|picking|pickup|pick-up|load|loading|drop|drop-off|dropoff|park|parking|turn|turning|"
+    r"return|returns|charging|dock|docking|unload|unloading)\s+"
+    r"(?:pad|cell|station|point|area|zone|bay|spot|stop|lane|row|list|shelf|table|position|dock)\b",
+    re.IGNORECASE)
+
+
+def _tool_names(verbs: str):
+    return re.compile(r"\b(?:%s|%s)(?:s|es|ed|d|ing)?\b" % (verbs, _GENERIC_VERBS), re.IGNORECASE)
+
+
+def _names_action(names, text: str) -> bool:
+    return bool(names.search(_PLACE_NOUNS.sub(" place ", text)))
+
+
 def _deferred_for(utterance: str, tool: str) -> bool:
     """The verb must stand OUTSIDE the waiting clause: in "I'll load them once
     you confirm it's unhitched" the unhitch is the CONDITION, not an order
@@ -591,10 +639,10 @@ def _deferred_for(utterance: str, tool: str) -> bool:
     verbs = _TOOL_VERBS.get(tool)
     if verbs is None:
         return True
-    names = re.compile(r"\b(?:%s|%s)(?:s|es|ed|d|ing)?\b" % (verbs, _GENERIC_VERBS), re.IGNORECASE)
-    if any(deferred and names.search(outside) for outside, deferred in parts):
+    names = _tool_names(verbs)
+    if any(deferred and _names_action(names, outside) for outside, deferred in parts):
         return True
-    if any(names.search(outside) for outside, _ in parts):
+    if any(_names_action(names, outside) for outside, _ in parts):
         return False
     # This tool is never named. The wait may govern it implicitly -- unless the
     # order is plainly stated in a sentence with NO wait: "...After release I
@@ -1049,6 +1097,12 @@ def check(utterance: str, frames: Sequence[Any],
             continue
         physical = bool(spec.get("physical"))
         guard_text = _intent_guard_text(u, tool)
+        # NOT sentence-scoped, unlike the question / reported / deferred rules:
+        # a prohibition in one sentence must still veto an order in the next
+        # ("You may no longer drive into the bay. Drive forward 1 metre." -- the
+        # drive could enter the bay). Tried and reverted 2026-10-21: scoping it
+        # would have fixed one crew-demo refusal ("they're no longer at x -1.75")
+        # at the price of exactly that.
         prohibited = bool(_PROHIBITION.search(guard_text))
         negating = bool(_SELF_NEGATING.search(guard_text))
         if physical and spec.get('tier') != SAFE and _SUCCESS_REPEAT_LIMIT.search(u):
@@ -1058,7 +1112,7 @@ def check(utterance: str, frames: Sequence[Any],
             seen_motion.append((tool, args))
 
         # 1-3. What the utterance was, versus what the frame wants to do.
-        if physical and question:
+        if physical and question and _scoped(u, tool, _is_question):
             out.append(Rejection(tool, "interrogative",
                                  "the utterance asks a question; a question "
                                  "may not move a robot"))
@@ -1082,7 +1136,7 @@ def check(utterance: str, frames: Sequence[Any],
         # tools. Only the three INTENT rules are lifted, and only for the
         # direction of travel that makes a robot safer.
         de_escalating = spec.get("tier") == SAFE
-        if physical and reported and not de_escalating:
+        if physical and reported and not de_escalating and _scoped(u, tool, _is_reported):
             out.append(Rejection(tool, "reported_speech",
                                  "the utterance reports an order rather "
                                  "than giving one"))

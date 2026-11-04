@@ -288,6 +288,7 @@ The web-viewer directory carries its own copies of the same licence texts.
 | Font | Licence |
 |---|---|
 | Space Grotesk (variable, weights 300-700) | SIL Open Font License 1.1. © 2020 The Space Grotesk Project Authors ([floriankarsten/space-grotesk](https://github.com/floriankarsten/space-grotesk)); designed by Florian Karsten; the OFL header declares no Reserved Font Name. Text: `resources/branding/omnisim/fonts/OFL-SpaceGrotesk.txt` |
+| Sora (variable, weights 100-800) | SIL Open Font License 1.1. © 2019 The Sora Project Authors ([sora-xor/sora-font](https://github.com/sora-xor/sora-font)); the OFL header declares no Reserved Font Name; it sets the OmniSim wordmark. Text: `resources/branding/omnisim/fonts/OFL-Sora.txt` |
 
 #### Brand fonts (`resources/branding/omnilink/fonts/`)
 

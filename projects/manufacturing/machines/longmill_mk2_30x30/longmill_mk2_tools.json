@@ -1,0 +1,44 @@
+{
+  "tools": [
+    {
+      "number": 1,
+      "name": "1/4 in 2-flute flat end mill",
+      "shape": "flat",
+      "diameter_mm": 6.35,
+      "flutes": 2,
+      "stickout_mm": 0.0,
+      "flute_mm": 24.0,
+      "shank_mm": 6.35
+    },
+    {
+      "number": 2,
+      "name": "1/8 in 2-flute ball nose",
+      "shape": "ball",
+      "diameter_mm": 3.175,
+      "flutes": 2,
+      "stickout_mm": 4.0,
+      "flute_mm": 12.7,
+      "shank_mm": 6.35
+    },
+    {
+      "number": 3,
+      "name": "1/4 in 60 degree V-bit",
+      "shape": "vbit",
+      "diameter_mm": 6.35,
+      "angle_deg": 60,
+      "flutes": 2,
+      "stickout_mm": -2.5,
+      "flute_mm": 6.0,
+      "shank_mm": 6.35
+    }
+  ],
+  "spindle": {
+    "name": "Makita RT0701C trim router",
+    "power_w": 700,
+    "rpm": [
+      10000,
+      30000
+    ],
+    "source": "Sienci Labs product page: https://sienci.com/product/makita-rt0701c-1-25-hp-110v-compact-router/"
+  }
+}

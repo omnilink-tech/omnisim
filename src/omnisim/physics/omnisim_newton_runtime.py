@@ -756,6 +756,96 @@ class World:
         except (TypeError, ValueError):
             self._nconmax_world = 0
 
+    def set_arena_mb(self, mb):
+        # Per-world MuJoCo arena size in MiB (WorldInfo.newtonArenaMB), plumbed
+        # from C++ before finalize(). 0 = unset -> MuJoCo sizes it itself.
+        # OMNISIM_NEWTON_ARENA_MB wins (resolved in _mj_arena_bytes()).
+        try:
+            self._arena_mb_world = float(mb)
+        except (TypeError, ValueError):
+            self._arena_mb_world = 0.0
+
+    def _mj_arena_bytes(self):
+        """The MuJoCo arena size this world asked for, in bytes; 0 = MuJoCo's own.
+
+        THE ARENA is the scratch memory MuJoCo-C allocates every per-step array
+        from -- contacts, constraint rows, the collision pair lists -- and its
+        size is FIXED when the model compiles (mjModel.narena; read-only after
+        that). The CPU solver cannot grow it: a step that needs more raises
+        "mj_stackAlloc: out of memory" and is skipped. MuJoCo's own estimate
+        was 13 MiB on the 2026-11-04 SparkRover scene (a ~2,700-box moving unit
+        among ~6,000 static shapes), which overflowed in mj_narrowphase on
+        every step. newton exposes no option for it and njmax / nconmax do not
+        touch it on the CPU path (they size mujoco_warp's buffers only), so it
+        is set on the MjSpec newton compiles (_mj_arena_scope).
+
+        Precedence: OMNISIM_NEWTON_ARENA_MB (value-parsed MiB; 0 restores
+        MuJoCo's estimate), else WorldInfo.newtonArenaMB, else MuJoCo's own.
+        The value REPLACES MuJoCo's estimate, so one below it shrinks the arena.
+        """
+        env = _os.environ.get("OMNISIM_NEWTON_ARENA_MB")
+        mb = 0.0
+        if env is not None and env.strip():
+            try:
+                mb = float(env)
+            except ValueError:
+                self._newton_log("OMNISIM_NEWTON_ARENA_MB=%r is not a number; "
+                                 "MuJoCo's own arena estimate is used" % (env,))
+                mb = 0.0
+            self._arena_source = "OMNISIM_NEWTON_ARENA_MB"
+        else:
+            mb = float(getattr(self, "_arena_mb_world", 0.0) or 0.0)
+            self._arena_source = "WorldInfo.newtonArenaMB"
+        if mb <= 0.0:
+            self._arena_source = "MuJoCo's own estimate"
+            return 0
+        return int(mb * (1 << 20))
+
+    def _arena_mib(self):
+        """The arena the compiled MuJoCo model actually holds, in MiB, or None."""
+        try:
+            return round(self._mjc_solver().mj_model.narena / float(1 << 20), 1)
+        except Exception:                            # noqa: BLE001
+            return None
+
+    def _log_arena(self):
+        # One INFO line per world with the arena in use, so a later
+        # "mj_stackAlloc: out of memory" step failure can be read against it.
+        mib = self._arena_mib()
+        if mib is not None:
+            self._set_engine_note(
+                "mj_arena", "MuJoCo arena: %.1f MiB (%s; WorldInfo.newtonArenaMB / "
+                "OMNISIM_NEWTON_ARENA_MB set it)" % (mib, getattr(self, "_arena_source",
+                                                                  "MuJoCo's own estimate")))
+
+    def _mj_arena_scope(self):
+        """Context manager: every MjSpec compiled inside it gets the requested arena.
+
+        newton builds and compiles its MjSpec inside SolverMuJoCo.__init__ with
+        no hook, so MjSpec.compile is wrapped for the duration of the
+        construction and restored afterwards (a no-op when nothing was asked).
+        """
+        import contextlib
+        want = self._mj_arena_bytes()
+
+        @contextlib.contextmanager
+        def _scope():
+            if want <= 0:
+                yield
+                return
+            import mujoco
+            orig = mujoco.MjSpec.compile
+
+            def _compile(spec, *a, **k):
+                spec.memory = want
+                return orig(spec, *a, **k)
+            mujoco.MjSpec.compile = _compile
+            try:
+                yield
+            finally:
+                mujoco.MjSpec.compile = orig
+        return _scope()
+
     def _newton_log(self, msg):
         # Append one line to the newton runtime log (OMNISIM_NEWTON_LOG, else
         # .build_tmp/newton_solver.log). Embedded-Python stdout does not reach
@@ -886,6 +976,32 @@ class World:
                 % (int(getattr(self, "_cs_tick", 0)),
                    self._cs_peak_nefc, cap_j or "auto",
                    self._cs_peak_ncon, cap_c or "auto"))
+
+    def _sample_arena_full(self):
+        # CPU MuJoCo only: read mjWARN_CONTACTFULL / mjWARN_CNSTRFULL (see the
+        # arena-full watch in step()). A READ of solver telemetry, no physics.
+        solver = self._mjc_solver()
+        if solver is None or not getattr(solver, "use_mujoco_cpu", False):
+            return
+        d = getattr(solver, "mj_data", None)
+        if d is None:
+            return
+        import mujoco
+        contacts = int(d.warning[int(mujoco.mjtWarning.mjWARN_CONTACTFULL)].number)
+        rows = int(d.warning[int(mujoco.mjtWarning.mjWARN_CNSTRFULL)].number)
+        if not (contacts or rows):
+            return
+        self._constraint_overflow_msg = (
+            "MUJOCO ARENA FULL by tick %d: MuJoCo-C DROPPED %s because its arena "
+            "(%s MiB, fixed at compile) could not hold them -- mjWARN_CONTACTFULL x%d, "
+            "mjWARN_CNSTRFULL x%d. Those steps did not raise and are not counted as "
+            "skipped, but bodies pass through what they should rest on. Fix: raise "
+            "WorldInfo.newtonArenaMB (or OMNISIM_NEWTON_ARENA_MB) with headroom; "
+            "newtonNjmax / newtonNconmax do not size it on the CPU solver."
+            % (int(getattr(self, "_af_tick", 0)),
+               "contacts AND constraint rows" if (contacts and rows)
+               else ("contacts" if contacts else "constraint rows"),
+               self._arena_mib(), contacts, rows))
 
     def add_ground_plane(self):
         """REQUEST the implicit ground plane. Does not add it -- see finalize().
@@ -4443,8 +4559,9 @@ class World:
             import os as _rro
             if _rro.environ.get("OMNISIM_NEWTON_FORCE_MUJOCO"):
                 try:
-                    self.solver = newton.solvers.SolverMuJoCo(
-                        self.model, use_mujoco_cpu=True)
+                    with self._mj_arena_scope():
+                        self.solver = newton.solvers.SolverMuJoCo(
+                            self.model, use_mujoco_cpu=True)
                     # New solver = stale step graph.
                     self._step_graph = None
                     # ...and a new mj_model, which means every post-construction
@@ -4696,6 +4813,9 @@ class World:
             _fkd = _gain_override("OMNISIM_NEWTON_FINGER_KD")
             if _fke is not None:
                 TARGET_KE = _fke
+            elif _ke_override is None:
+                TARGET_KE, TARGET_KD = self._slider_gain_floor(j, TARGET_KE, TARGET_KD,
+                                                               kd_explicit=_kd_override is not None)
             if _fkd is not None:
                 TARGET_KD = _fkd
         # Arm-hinge stiffness scope (companion to FINGER_KE above). The global
@@ -4787,6 +4907,61 @@ class World:
             jid = self.builder.add_joint_revolute(**joint_kwargs)
         self._seed_initial_q(jid, j)
         return jid
+
+    def _slider_gain_floor(self, j, ke, kd, kd_explicit=False):
+        """A slider servo can deliver its declared force inside its own travel
+        (2026-10-22). Returns the (ke, kd) to build the prismatic joint with.
+
+        ⚠ WHY. OmBasicJoint builds every position servo ``ke = effort*10``,
+        ``kd = effort*0.5``. On a hinge that saturates the motor at a 0.1 rad
+        error; on a slider the same number is N/m, so it saturates at a 100 mm
+        error -- and a slider whose whole travel is shorter than that can never
+        apply its declared force at all. MEASURED on Preferred Robotics'
+        Kachaka docking pin (0.2 kg, travel 0..12 mm, weight 1.96 N): with
+        effort 10 N the servo pushed at most 100 N/m * 12 mm = 1.2 N, so the
+        pin sat on its lower stop at exactly 0.0 m in OmniSim v9.2.7, where
+        plain MuJoCo 3.11 lifts the same file 11.0 mm. With the declared 1 N
+        both engines correctly leave it down (1 N < its weight); OmniSim could
+        not tell the two apart.
+
+        THE RULE: a motorised prismatic joint with a finite travel gets at
+        least ``ke = effort / travel`` -- full force at an error of one travel,
+        the weakest servo that can still exert what the file declares -- and
+        kd scaled by the same factor, so the PD keeps the ke/kd = 20 1/s time
+        constant every servo is built with (and stays overdamped). A slider
+        whose travel is >= 0.1 m (a Robotiq 2F-140) is unchanged; one with no
+        limits, or an explicit OMNISIM_NEWTON_TARGET_KE / _FINGER_KE, is never
+        touched, and an explicit _TARGET_KD / _FINGER_KD keeps its kd.
+
+        Hatch (value-parsed): OMNISIM_NEWTON_SLIDER_GAIN_FLOOR=0 restores
+        ke = effort*10 on every slider. Pin: tests/test_newton_slider_gain_floor.py.
+        """
+        if ke <= 0.0 or kd <= 0.0:
+            return ke, kd
+        # Raises a slider servo's gain to effort/travel so it can deliver its declared force
+        # inside its own range (default 1 = on; 0/false/off/no restores ke = effort*10).
+        if _os.environ.get("OMNISIM_NEWTON_SLIDER_GAIN_FLOOR",
+                           "1").strip().lower() in ("0", "false", "off", "no"):
+            return ke, kd
+        effort = float(j.get("effort_limit", 0.0) or 0.0)
+        lo, hi = float(j.get("limit_lower", 0.0)), float(j.get("limit_upper", 0.0))
+        travel = hi - lo
+        if effort <= 0.0 or travel <= 0.0 or max(abs(lo), abs(hi)) >= self._UNBOUNDED_LIMIT:
+            return ke, kd
+        floor = effort / travel
+        if ke >= floor:
+            return ke, kd
+        scale = floor / ke
+        raised = self.__dict__.setdefault("_slider_gain_raised", [])
+        raised.append((travel, ke, floor))
+        self._set_engine_note(
+            "slider_gain_floor",
+            "%d slider servo(s) stiffened so the declared force is reachable inside the "
+            "joint's own travel (ke = effort/travel; e.g. travel %.1f mm: ke %.4g -> %.4g N/m). "
+            "Before 2026-10-22 ke = effort*10 saturated only at a 100 mm error. "
+            "OMNISIM_NEWTON_SLIDER_GAIN_FLOOR=0 reverts."
+            % (len(raised), raised[0][0] * 1000.0, raised[0][1], raised[0][2]))
+        return floor, (kd if kd_explicit else kd * scale)
 
     # A revolute/prismatic range at or beyond this many rad (m) at BOTH ends is
     # the ROS/Gazebo spelling of "no limit" (`lower="-1e+16" upper="1e+16"`,
@@ -5062,6 +5237,37 @@ class World:
             return None
         return None
 
+    def _joint_rolls(self, j, up):
+        """True when joint record ``j`` can roll the robot along the ground: a
+        limit-less revolute (or a Hinge2's spin axis) whose axis, at the spawn
+        pose, is more than ~25 deg off the up axis. A vertical limit-less joint
+        (a spinning lidar, a caster's swivel) does not roll; a finger, a knee or
+        an arm joint with a travel range does not either."""
+        kind = j.get("kind")
+        if kind == "hinge2":
+            axis = j.get("axis2")
+        elif kind == "revolute":
+            lo, hi = float(j.get("limit_lower", 0.0)), float(j.get("limit_upper", 0.0))
+            if lo != hi and max(abs(lo), abs(hi)) < self._UNBOUNDED_LIMIT:
+                return False
+            axis = j.get("axis")
+        else:
+            return False
+        if axis is None:
+            return False
+        q = (0.0, 0.0, 0.0, 1.0)
+        try:
+            p = int(j["parent"])
+            if 0 <= p < len(self.builder.body_q):
+                q = [float(c) for c in self.builder.body_q[p]][3:7]
+        except Exception:                                   # noqa: BLE001
+            pass
+        a = self._quat_rotate(q, axis)
+        n = sum(c * c for c in a) ** 0.5
+        if n <= 0.0:
+            return False
+        return abs(sum(x * u for x, u in zip(a, up))) / n < 0.9
+
     @staticmethod
     def _support_level(lows, band=0.005):
         """The height a robot stands on, from the lowest point of each BRANCH
@@ -5108,6 +5314,16 @@ class World:
         be bounded (plane, heightfield) the shapes are kept and the note says
         so. Returns nothing; records an engine note either way.
 
+        WHEELS ONLY (2026-10-22). The reference is taken from the branches that
+        ROLL (_joint_rolls: a limit-less joint off the up axis). A robot with
+        none -- a gripper standing on its base, an arm, a legged robot -- keeps
+        its root collider at any height: nothing it stands on can be held off
+        the floor by its own root, and a quieted root is what it would fall
+        through. MEASURED on the Xense TacCap follower (base foot box 31.5 mm
+        below its two mirror fingers): v9.2.7 counted the fingers as feet,
+        quieted the base and the gripper fell through the weighing plate;
+        plain MuJoCo and WorldInfo.newtonRobotColliders TRUE both weighed it.
+
         Hatch (engine side, value-parsed): OMNISIM_NEWTON_ROBOT_ROOT_COLLIDER=0
         restores the 1 mm placeholder for every wrapper.
         """
@@ -5124,10 +5340,11 @@ class World:
             from newton.geometry import ShapeFlags as _SF
             collide = int(_SF.COLLIDE_SHAPES)
         up = tuple(float(c) for c in getattr(bld, "up_vector", (0.0, 0.0, 1.0)))
-        children = {}
+        children, rolls = {}, {}
         for j in getattr(self, "pending_revolutes", ()) or ():
             try:
                 children.setdefault(int(j["parent"]), []).append(int(j["child"]))
+                rolls[int(j["child"])] = self._joint_rolls(j, up)
             except (KeyError, TypeError, ValueError):
                 continue
         flags = bld.shape_flags
@@ -5139,13 +5356,21 @@ class World:
                 continue
             # Lowest colliding point per BRANCH (each child link of the root and
             # everything below it): a wheel, a leg, a caster -- or a whole arm.
-            desc, seen = {}, {body}
+            # Only a branch that ROLLS (a limit-less joint turning about an axis
+            # off the up axis somewhere along it: a wheel, a caster, a car's
+            # Hinge2) is a ground contact (2026-10-22): two mirror gripper
+            # fingers sit at one height exactly as two wheels do, and counting
+            # them quieted the Xense TacCap follower's base -- the thing it
+            # stands on -- and it fell through the weighing plate.
+            desc, seen, rolling = {}, {body}, set()
             stack = [(c, c) for c in children.get(body, ())]
             while stack:
                 b, branch = stack.pop()
                 if b in seen:
                     continue
                 seen.add(b)
+                if rolls.get(b):
+                    rolling.add(branch)
                 lows = [self._shape_up_min(int(s), up) for s in body_shapes.get(b, ()) or ()
                         if int(flags[int(s)]) & collide]
                 lows = [v for v in lows if v is not None]
@@ -5153,6 +5378,12 @@ class World:
                     desc[branch] = min(min(lows), desc.get(branch, float("inf")))
                 stack.extend((c, branch) for c in children.get(b, ()))
             own_min = [self._shape_up_min(s, up) for s in own]
+            if desc and not any(v is None for v in own_min) and not rolling.intersection(desc):
+                kept.append(body)
+                census.append((body, min(own_min), None, "kept (no wheels: fingers, legs and arms are "
+                                                         "not ground contacts)"))
+                continue
+            desc = {br: v for br, v in desc.items() if br in rolling}
             if not desc or any(v is None for v in own_min):
                 kept.append(body)
                 census.append((body, None, None, "kept (not judged)"))
@@ -5176,10 +5407,13 @@ class World:
         if kept:
             gaps = ["%+.1f mm" % ((o - d) * 1000.0) for (_b, o, d, v) in census
                     if v == "kept" and o is not None]
+            wheelless = sum(1 for (_b, _o, _d, v) in census if v.startswith("kept (no wheels"))
+            if wheelless:
+                gaps.append("%d with no wheels, kept whatever their height" % wheelless)
             self._set_engine_note(
                 "robot_root_collider",
                 "%d Robot root collider(s) registered from the robot's own boundingObject "
-                "(lowest point vs its wheels/feet: %s). Before 2026-10-17 they were left out "
+                "(lowest point vs its wheels: %s). Before 2026-10-17 they were left out "
                 "unless WorldInfo.newtonRobotColliders TRUE. "
                 "OMNISIM_NEWTON_ROBOT_ROOT_COLLIDER=0 restores the old placeholder."
                 % (len(kept), ", ".join(gaps[:8]) or "not judged"))
@@ -5187,7 +5421,7 @@ class World:
             self._set_engine_note(
                 "robot_root_collider_quiet",
                 "%d Robot root collider(s) kept on the body but made NON-colliding: each "
-                "reaches below its own wheels/feet (%s) and would hold them off the floor. "
+                "reaches below its own wheels (%s) and would hold them off the floor. "
                 "WorldInfo.newtonRobotColliders TRUE registers it anyway."
                 % (len(quieted), ", ".join("%.1f mm below" % ((d - o) * 1000.0)
                                           for (_b, o, d) in quieted[:8])))
@@ -5257,6 +5491,9 @@ class World:
             out["device"] = str(self.model.device)
         except Exception:
             out["device"] = None
+        # The MuJoCo arena (MiB) the CPU solver steps in: fixed at compile, and
+        # what a "mj_stackAlloc: out of memory" step failure ran out of.
+        out["mj_arena_mib"] = self._arena_mib()
         return _rj.dumps(out, sort_keys=True, separators=(",", ":"))
 
     def _ctl_target_pos(self):
@@ -7582,15 +7819,17 @@ class World:
             if _save_mjcf:
                 _kw["save_to_mjcf"] = _save_mjcf
             try:
-                if self.has_particles():
-                    # PARTICLE PATH: the same SolverMuJoCo, built with the same
-                    # **_kw, wrapped in a SolverCoupledProxy alongside a
-                    # SolverVBD that owns the particles. See
-                    # _build_cloth_coupled_solver for the full rationale.
-                    self._build_cloth_coupled_solver(_kw)
-                else:
-                    self.solver = newton.solvers.SolverMuJoCo(self.model, **_kw)
+                with self._mj_arena_scope():
+                    if self.has_particles():
+                        # PARTICLE PATH: the same SolverMuJoCo, built with the same
+                        # **_kw, wrapped in a SolverCoupledProxy alongside a
+                        # SolverVBD that owns the particles. See
+                        # _build_cloth_coupled_solver for the full rationale.
+                        self._build_cloth_coupled_solver(_kw)
+                    else:
+                        self.solver = newton.solvers.SolverMuJoCo(self.model, **_kw)
                 self._fin_mark("SolverMuJoCo")
+                self._log_arena()
                 self._apply_cpu_bvh_workaround()
                 # Provenance for the sidecar/log: name the ACTUAL reason the
                 # solver was chosen. "default" is the honest label for an
@@ -7821,8 +8060,10 @@ class World:
                   and not getattr(self.solver, "use_mujoco_cpu", False)):
                 # mujoco_warp (GPU) only: newton builds mjw_data even in
                 # use_mujoco_cpu mode, but that path steps mj_data through
-                # MuJoCo-C, whose efc arrays grow dynamically -- there is no
-                # njmax cap there and so nothing to truncate.
+                # MuJoCo-C, which has no njmax cap. It DOES have a fixed arena
+                # and drops contacts / rows when that fills (measured
+                # 2026-11-04); step() watches that separately
+                # (_sample_arena_full), whatever this watch is set to.
                 # Coarse on purpose: reading a warp array forces a device sync.
                 self._cs_every = 30
         except Exception:
@@ -10926,8 +11167,9 @@ class World:
                             _seed_kw["njmax"] = _snj
                         if _snc > 0:
                             _seed_kw["nconmax"] = _snc
-                        self.solver = newton.solvers.SolverMuJoCo(
-                            self.model, **_seed_kw)
+                        with self._mj_arena_scope():
+                            self.solver = newton.solvers.SolverMuJoCo(
+                                self.model, **_seed_kw)
                         # New solver = new internal mjw buffers -> any
                         # captured step graph is stale.
                         self._step_graph = None
@@ -11219,8 +11461,34 @@ class World:
         if _ext and self.model is not None:
             import numpy as _npw
             _ext_bf = _npw.zeros((self.model.body_count, 6), dtype=_npw.float32)
+            # The engine sends torque about the body ORIGIN (OmSolid::applyExternalForceNewton), but
+            # newton's body_f is a wrench about the body's CENTRE OF MASS (newton State.body_f docs).
+            # Re-reference it: tau_com = tau_origin - c x F, c = the origin-to-COM offset in world.
+            # Until 2026-11-01 it was passed through, so a force at an offset on a body whose COM is
+            # not at its origin acted as if moved by that offset: a clothes rack (COM 1.02 m above its
+            # origin) pushed at its bar tipped at 62 % of the statics answer. Hatch, value-parsed:
+            # OMNISIM_NEWTON_EXT_WRENCH_AT_COM=0 restores the pass-through.
+            if not hasattr(self, "_ext_wrench_at_com"):
+                import os as _osw
+                self._ext_wrench_at_com = _osw.environ.get("OMNISIM_NEWTON_EXT_WRENCH_AT_COM", "1") != "0"
+            _bq = _com = None
+            if self._ext_wrench_at_com:
+                _bq = self.state_a.body_q.numpy()
+                _com = self.model.body_com.numpy()
             for _bi, _w in _ext.items():
                 if 0 <= _bi < self.model.body_count:
+                    _w = list(_w)
+                    if _com is not None and (_w[0] or _w[1] or _w[2]):
+                        qx, qy, qz, qw = (float(v) for v in _bq[_bi][3:7])
+                        cx, cy, cz = (float(v) for v in _com[_bi])
+                        # c rotated into world: v + 2 w (u x v) + 2 u x (u x v), u = (qx, qy, qz)
+                        tx, ty, tz = 2 * (qy * cz - qz * cy), 2 * (qz * cx - qx * cz), 2 * (qx * cy - qy * cx)
+                        c = (cx + qw * tx + qy * tz - qz * ty, cy + qw * ty + qz * tx - qx * tz,
+                             cz + qw * tz + qx * ty - qy * tx)
+                        f = _w[0:3]
+                        _w[3] -= c[1] * f[2] - c[2] * f[1]
+                        _w[4] -= c[2] * f[0] - c[0] * f[2]
+                        _w[5] -= c[0] * f[1] - c[1] * f[0]
                     _ext_bf[_bi] = _w
         # PERF (realtime deploy): two per-substep costs that are pure waste
         # in MuJoCo-contacts mode:
@@ -11563,6 +11831,23 @@ class World:
                 if self._cs_tick % _cs_every == 0:
                     self._sample_constraint_peaks(
                         bool(getattr(self, "_cs_verbose", False)))
+            except Exception:
+                pass
+
+        # MuJoCo-C ARENA-FULL watch (CPU path, 2026-11-04). The CPU solver has
+        # no njmax cap, but it has a FIXED arena (mjModel.narena), and when the
+        # contacts or constraint rows of a step do not fit, MuJoCo does not
+        # raise: it drops them and bumps a warning counter. MEASURED on a 900-box
+        # slab landing on a floor with WorldInfo.newtonArenaMB 1: every step
+        # "succeeded" and the slab fell straight through the floor to z = -4.9 m
+        # (13 MiB, MuJoCo's own size: it rests at 0.005 m). The counters are
+        # cumulative, so a coarse poll misses nothing; latched once per world
+        # into the same message C++ already raises as one engine-log WARNING.
+        if not getattr(self, "_constraint_overflow_msg", ""):
+            try:
+                self._af_tick = int(getattr(self, "_af_tick", 0)) + 1
+                if self._af_tick % 30 == 0:
+                    self._sample_arena_full()
             except Exception:
                 pass
 

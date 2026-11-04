@@ -29,6 +29,8 @@ __pycache__/
 *.bz2
 *.dmg
 *.gz
+# a product's release ships its print plates gzipped (its release/BOM.md links them)
+!projects/manufacturing/products/*/release/cam/print/*.gcode.gz
 *.iso
 *.jar
 *.rar
@@ -712,3 +714,11 @@ social/launch/pilots/replies_2026_09_25/malo_pusht/bundle/
 /social/launch/company_outreach_*/**/*.stdout
 /social/launch/recheck_*/**/*.stderr
 /social/launch/recheck_*/**/*.stdout
+
+# Built customer assessment deliveries (each embeds a full Windows runtime).
+# The .zip files are already ignored above; the extracted folders are too large for git.
+distribution/robot-assessments/
+distribution/husky-assessments/
+
+# Built robot-agent deliveries (each embeds a full Windows runtime and a zip).
+distribution/robot-agents/

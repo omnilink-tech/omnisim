@@ -274,6 +274,12 @@ namespace {
         // GranularGroup above -- that node has no translation field at all.
         if (nodeName == "GranularBed")
           return true;
+        // MillingStock: a top-level height-map block, placed by its own translation.
+        if (nodeName == "MillingStock")
+          return true;
+        // PrintedPart: the plastic on a printer's bed, placed by its own translation.
+        if (nodeName == "PrintedPart")
+          return true;
 
         errorMessage = QObject::tr("%1 node cannot be inserted at the top level of the node hierarchy.").arg(nodeName);
         return false;

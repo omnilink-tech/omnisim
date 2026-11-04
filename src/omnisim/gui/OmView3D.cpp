@@ -1757,6 +1757,8 @@ bool OmView3D::renderMainFrameViaWgpu(bool culling, bool offScreen) {
   // 30-frame cadence that was a visible motion HITCH every ~2 s (measured maxGapMs 96–130 vs the
   // ~58 ms norm: "the cars stutter"). Signal-driven rebuilds keep correctness without the rhythm.
   int wgpuCollectSkipped = 0;
+  // A Display's screen: its pixels, not its draw, change between collects.
+  OmWgpuSceneRenderer::refreshDisplayTextures(mWgpuTextureCache);
   if (mWgpuDrawListDirty || mWgpuRefreshList.empty() || mWgpuDrawListAge >= 600 ||
       !OmWgpuSceneRenderer::refreshWorldDraws(modelStorage, mWgpuRefreshList, &draws)) {
     invalidateWgpuDrawList();
@@ -2514,10 +2516,19 @@ bool OmView3D::renderMainFrameViaWgpu(bool culling, bool offScreen) {
         mix(static_cast<int64_t>(std::lround(towardSun[k] * 40.0)));
       for (int k = 0; k < 3; ++k)
         mix(static_cast<int64_t>(std::lround(sunEnergy3[k] * 32.0)));
-      mix(static_cast<int64_t>(draws.size()));
+      // The dynamic tail (MillingStock, cloth, soft bodies, granular, tracks, muscles) changes its
+      // draw and index counts as it deforms, so keying on it rebaked GI back to back for as long
+      // as anything deformed: a CNC twin cutting aluminium rebaked 96 times in 90 s (57 s of
+      // BVH + trace on all cores but one, 17 % fewer G-code lines, and a visible lighting swap
+      // about once a second). Like a moving robot it is static-scene GI's business only when
+      // something else triggers a bake, and then it is baked as it stands. Value-parsed hatch:
+      // OMNISIM_OMNILIGHT_KEY_DYNAMIC=1 keys on the whole list again.
+      static const bool sKeyDynamic = qEnvironmentVariableIntValue("OMNISIM_OMNILIGHT_KEY_DYNAMIC") != 0;
+      const size_t keyed = sKeyDynamic ? draws.size() : draws.size() - std::min(mWgpuDynamicDraws, draws.size());
+      mix(static_cast<int64_t>(keyed));
       uint64_t idxSum = 0;
-      for (const auto &d : draws)
-        idxSum += d.indexCount;
+      for (size_t i = 0; i < keyed; ++i)
+        idxSum += draws[i].indexCount;
       mix(static_cast<int64_t>(idxSum));
       mix(skyMars ? 7 : 3);
       {
@@ -2708,6 +2719,99 @@ bool OmView3D::renderMainFrameViaWgpu(bool culling, bool offScreen) {
           });
         }
       }
+    }
+    // ===== RENDER ON CHANGE: do not re-render a frame that is already on screen. =====
+    // The main view is paced at WorldInfo.fps (60 by default) for as long as the simulation runs,
+    // and every one of those frames paid the full stack -- cascaded shadows, GTAO, SSR, bloom,
+    // tone map -- whether or not anything had moved. MEASURED 2026-11-01, RTX 3060 Laptop, the
+    // LongMill CNC twin standing IDLE in the window: ~49 % GPU, ~61 W, 86-87 C and thermally
+    // throttled (nvidia-smi reason 0x20), for a picture that did not change; closing the window
+    // took it to 18 W. An identical frame is now HELD: the image on screen already is that frame.
+    //
+    // What "identical" means: a hash of everything this function feeds the GPU -- the viewport,
+    // the view-projection, camera, light, sky uniforms, extra lights, and per draw its model
+    // matrix, mesh buffers, index count, geometry revision (bumped on every in-place vertex
+    // update: cloth, MillingStock tiles), material scalars, texture views and UV transform.
+    // A frame is held only after kSettleFrames identical ones in a row (temporal AA / AO / SSR
+    // accumulate over frames and must converge first), only on an ENGINE-paced frame (any GUI
+    // repaint -- camera drag, selection, resize, expose -- still renders), never for a grab,
+    // dump, recording, photo or OmniLight bake, and never for longer than kMaxHoldMs (a real
+    // frame at least twice a second, so anything this hash cannot see -- a supervisor label,
+    // say -- is at most half a second late).
+    //
+    // Hatch (value-parsed, default ON): OMNISIM_WGPU_RENDER_ON_CHANGE=0 renders every paced frame.
+    static const bool sRenderOnChange = !qEnvironmentVariableIsSet("OMNISIM_WGPU_RENDER_ON_CHANGE") ||
+                                        qEnvironmentVariableIntValue("OMNISIM_WGPU_RENDER_ON_CHANGE") != 0;
+    if (sRenderOnChange) {
+      const int kSettleFrames = 12;
+      const qint64 kMaxHoldMs = 500;
+      uint64_t sig = 1469598103934665603ULL;
+      const auto mix = [&sig](const void *data, size_t n) {
+        const unsigned char *p = static_cast<const unsigned char *>(data);
+        for (size_t i = 0; i < n; ++i)
+          sig = (sig ^ p[i]) * 1099511628211ULL;
+      };
+      const int wh[2] = {W, H};
+      mix(wh, sizeof(wh));
+      mix(vpm, sizeof(vpm));
+      mix(lightVP, sizeof(lightVP));
+      mix(lit4, sizeof(lit4));
+      mix(camPos, sizeof(camPos));
+      mix(worldUp3, sizeof(worldUp3));
+      const double skyRgb[3] = {sky.r, sky.g, sky.b};
+      mix(skyRgb, sizeof(skyRgb));
+      mix(skyU, sizeof(skyU));
+      mix(&dayF, sizeof(dayF));
+      mix(&bloomStrength, sizeof(bloomStrength));
+      const uint64_t displayUploads = OmWgpuSceneRenderer::displayTextureUploads();   // a redrawn Display screen
+      mix(&displayUploads, sizeof(displayUploads));
+      if (!omniExtras.empty())
+        mix(omniExtras.data(), omniExtras.size() * sizeof(float));
+      // Model matrices are hashed at 1e-6 (a micrometre, a micro-radian), not bit for bit: a body a
+      // servo holds away from its zero moves by float noise every physics step. Measured on the
+      // LongMill twin parked where the connector job ends: 15-58 matrices changed by up to 4e-9 m
+      // per frame, the signature changed ~20 times a second, nothing was ever held, and the idle
+      // window drew an unchanging picture at 23-33 % of an RTX 3060 Laptop's 3D engine.
+      // Value-parsed hatch: OMNISIM_WGPU_RENDER_ON_CHANGE_EXACT=1 hashes the raw bits again.
+      static const bool sExactMatrices = qEnvironmentVariableIntValue("OMNISIM_WGPU_RENDER_ON_CHANGE_EXACT") != 0;
+      for (const OmWgpuSolidDraw &d : draws) {
+        if (d.modelMatrix16 && sExactMatrices)
+          mix(d.modelMatrix16, 16 * sizeof(float));
+        else if (d.modelMatrix16) {
+          int64_t q[16];
+          for (int k = 0; k < 16; ++k)
+            q[k] = std::llround(static_cast<double>(d.modelMatrix16[k]) * 1e6);
+          mix(q, sizeof(q));
+        }
+        mix(&d.baseColorR, 8 * sizeof(float));  // baseColor RGBA, emissive RGB, specularStrength
+        const void *const buffers[8] = {d.vertexBuffer, d.indexBuffer, d.textureView, d.roughnessView,
+                                        d.metalnessView, d.normalView, d.penView, nullptr};
+        mix(buffers, sizeof(buffers));
+        mix(&d.indexCount, sizeof(d.indexCount));
+        mix(&d.geometryRevision, sizeof(d.geometryRevision));
+        mix(d.uvA, sizeof(d.uvA));
+        mix(d.uvB, sizeof(d.uvB));
+        const bool flags[3] = {d.castShadows, d.translucent, d.deforming};
+        mix(flags, sizeof(flags));
+      }
+      if (sig == mWgpuFrameSignature)
+        ++mWgpuSameSignatureFrames;
+      else {
+        mWgpuFrameSignature = sig;
+        mWgpuSameSignatureFrames = 0;
+      }
+      const bool holdable = mPhysicsRefresh && !offScreen && !headlessFrame && !mWgpuGrabRequested && !wantDump &&
+                            !synthThisFrame && !mPhotoSnapshotRequested && !mScreenshotRequested &&
+                            !mOmniBakeRunning && !OmVideoRecorder::instance()->isRecording() &&
+                            mWgpuPresentedLastFrame && mWgpuLastRealFrame.isValid() &&
+                            mWgpuLastRealFrame.elapsed() < kMaxHoldMs;
+      if (holdable && mWgpuSameSignatureFrames > kSettleFrames) {
+        if (mWgpuHeldFrames++ == 0)
+          OmLog::info("[OmWgpu] render-on-change: holding unchanged frames (OMNISIM_WGPU_RENDER_ON_CHANGE=0 "
+                      "renders every paced frame)");
+        return true;  // the frame on screen is this frame
+      }
+      mWgpuLastRealFrame.restart();
     }
     cdOk = mWgpuRenderTarget->clearAndDrawSceneTexturedShadowed(
       sky, vpm, lightVP, lit4, draws.data(), static_cast<uint32_t>(draws.size()),

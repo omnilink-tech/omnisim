@@ -1,0 +1,83 @@
+{
+ "name": "longmill_mk2_30x30",
+ "source": {
+  "url": "https://cad.onshape.com/documents/59335d21bb649cd2b941a693/w/290c65d1d584435649b87e46/e/99a028de0f32d790196bbe8a",
+  "licence": "CC BY-SA (Sienci Labs open-source hardware; version to be confirmed)",
+  "attribution": "LongMill MK2 30x30 by Sienci Labs",
+  "exported": "Onshape assembly 'LongMill MK2 30x30', STEP AP242, 2026-10-31"
+ },
+ "units": "mm",
+ "up": "z",
+ "tolerance_mm": 1.0,
+ "parts": "longmill_mk2_30x30.step",
+ "exclude": [
+  "(?i)wood screw",
+  "Control Box 1\\.4 <1> / .*(Arduino|TB6600|Terminal Block|Driver|Power Supply|COMPOUND)"
+ ],
+ "rod": [
+  "(?i)lead screw"
+ ],
+ "groups": {
+  "z": [
+   "XZ Assembly <1> / (Z-gantry|65mm Router Mount Assembly|ACME Anti-Backlash Nut Block <1>|SEMS M3-12)",
+   "XZ Assembly <1> / MGN12 200mm Linear Guide Assembly <[12]> / MGN12HZFCM"
+  ],
+  "carriage": [
+   "XZ Assembly <1>",
+   "Inductive Sensor \\(35mm\\) <2>"
+  ],
+  "gantry": [
+   "X-rail Assembly \\(30\"\\) <1>",
+   "Inductive Sensor \\(35mm\\) <1>"
+  ]
+ },
+ "bodies": [
+  {
+   "group": "gantry",
+   "axis": "y",
+   "parent": "frame"
+  },
+  {
+   "group": "carriage",
+   "axis": "x",
+   "parent": "gantry"
+  },
+  {
+   "group": "z",
+   "axis": "z",
+   "parent": "carriage"
+  }
+ ],
+ "axis_dirs": {
+  "x": [
+   1,
+   0,
+   0
+  ],
+  "y": [
+   0,
+   1,
+   0
+  ],
+  "z": [
+   0,
+   0,
+   1
+  ]
+ },
+ "cad_pose_s": [
+  394,
+  441,
+  24
+ ],
+ "cad_pose_note": "Estimated: each carriage's offset from its rail centre in the CAD, added to half its travel ($130-$132). X 84.2 vs rail 95.6 -> 405-11.4; Y gantry 20.6 vs rails 7.2 -> 427.5+13.5; Z plate 201.3 vs guide 237.1 -> 60-35.8.",
+ "masses_kg": {
+  "gantry": 8.0,
+  "carriage": 2.0,
+  "z": 2.5
+ },
+ "tool_tip": "lowest",
+ "tool_part": "Makita RT0701",
+ "bed_top_mm": 19.5,
+ "bed_top_note": "Top of Sienci's 'MDF Example Base (30x30)' in the pack frame (the base's bottom is z = 0)."
+}

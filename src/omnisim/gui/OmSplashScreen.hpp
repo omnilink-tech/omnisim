@@ -57,6 +57,7 @@ public:
 private:
   QString mMessage;
   QImage mLogo;
+  QImage mWordmark;
 
   QColor mBackgroundColor;
   QColor mCompanyColor;

@@ -160,8 +160,10 @@ TABLE_TOP = 0.20
 # implements, so use it honestly: kp = 500 N/m on these fingers (measured in the
 # compiled model), so 3 mm of interference is 1.5 N per pad. At mu 6 that yields
 # ~9 N of friction per pad against a 1.47 N block -- a 12x margin without ever
-# driving through the part.
-GRIP_KP = 500.0                 # measured: compiled model kp for the fingers
+# driving through the part. Since 2026-10-22 a slider is at least effort/travel
+# stiff (50 N over the finger's 72.5 mm, so ~690 N/m and ~2.1 N per pad at 3 mm;
+# OMNISIM_NEWTON_SLIDER_GAIN_FLOOR=0 restores the 500).
+GRIP_KP = 50.0 / 0.0725         # the engine's slider gain for these fingers (effort / travel)
 
 robot = Supervisor()
 dt = int(robot.getBasicTimeStep())

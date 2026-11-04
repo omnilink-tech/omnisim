@@ -297,7 +297,7 @@ except ImportError:
     _HAS_PIL = False
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from diagnostic_codes import classify_text  # noqa: E402
+from diagnostic_codes import classify_text, hint_for  # noqa: E402
 import spatial  # noqa: E402  (camera framing math; loads omniworld.viewpoint)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -1481,6 +1481,80 @@ def read_newton_verdict(log_path: Path) -> dict:
             "nothing about the backend."
         ),
     })
+    return out
+
+
+STEP_FAILED_CODE = "NEWTON_STEP_FAILED"
+
+
+def read_physics_steps(log_path: Path) -> dict:
+    """The engine's physics-step failure record for the CURRENT world.
+
+    A Newton step that RAISES is skipped -- nothing moves or collides for that
+    tick -- while the engine clock and every controller still advance, so the
+    supervisor's own step count cannot see it. Measured 2026-11-04: MuJoCo's
+    arena overflowed in mj_narrowphase on every step of a SparkRover assembly
+    scene, the moving unit never moved, and /sim/step answered
+    `steps_executed: 250`. The engine now counts those steps into the verdict
+    sidecar (`step_errors`, rewritten on every failing step and on the first
+    good step after a run of them), and this reads it back.
+
+    `step_errors` is None (never 0) when there is nothing to read: no sidecar
+    yet, or an engine older than the counter (key absent). The engine rewrites
+    the file in place, so a torn read is retried rather than reported.
+    """
+    sidecar = Path(str(log_path) + ".newton.json")
+    out: dict = {"step_errors": None, "step_errors_streak": None,
+                 "first_error": None, "first_error_at": None,
+                 "last_error": None, "last_error_at": None}
+    data = None
+    for attempt in range(5):
+        try:
+            text = sidecar.read_text(encoding="utf-8", errors="replace")
+        except FileNotFoundError:
+            out["source"] = "sidecar_absent"
+            return out
+        except OSError:
+            text = ""
+        try:
+            data = json.loads(text)
+            break
+        except ValueError:
+            time.sleep(0.004)
+    if not isinstance(data, dict):
+        out["source"] = "sidecar_unreadable"
+        return out
+    if "step_errors" not in data:
+        out["source"] = "not_reported_by_this_engine"
+        return out
+    out.update({
+        "step_errors": int(data.get("step_errors") or 0),
+        "step_errors_streak": int(data.get("step_errors_streak") or 0),
+        "first_error": data.get("step_first_error"),
+        "first_error_at": data.get("step_first_error_at"),
+        "last_error": data.get("step_last_error"),
+        "last_error_at": data.get("step_last_error_at"),
+        "source": "sidecar",
+    })
+    return out
+
+
+def physics_steps_delta(before: dict, after: dict) -> dict:
+    """`after` plus `step_errors_during`: the failures between the two reads.
+
+    A total that went DOWN means the world was reloaded in between (the engine
+    resets the counters per world), so everything after counts. None when
+    either read had nothing to report.
+    """
+    out = dict(after)
+    out["step_errors_total"] = out.pop("step_errors")
+    b, a = before.get("step_errors"), after.get("step_errors")
+    if a is None:
+        out["step_errors_during"] = None
+    elif b is None or a < b:
+        out["step_errors_during"] = a
+    else:
+        out["step_errors_during"] = a - b
     return out
 
 
@@ -4122,6 +4196,12 @@ class HarnessState:
                 # resume, so it is also the record of why it WAS frozen.
                 "break_hit": break_hit,
                 "breaks_armed": breaks_armed,
+                # Physics steps the engine SKIPPED because world.step() raised,
+                # in the current world (null when nothing could be read). The
+                # clocks above advance through a skipped step, so a moving
+                # clock alone never proves the physics ran.
+                "physics_steps": read_physics_steps(self.log_path)
+                if getattr(self, "log_path", None) is not None else None,
                 "binary": str(self.binary),
                 "webots_home": str(self.omnisim_home),
             }
@@ -5760,6 +5840,7 @@ def make_handler(state: HarnessState):
                     self._json(400, {"ok": False, "code": "BAD_REQUEST", "error": "steps must be >= 1"})
                     return
                 t0 = time.time()
+                phys_before = read_physics_steps(state.log_path)
                 result = self._supervisor_call("step", {"steps": steps})
                 if result is not None:
                     wall = time.time() - t0
@@ -5776,6 +5857,32 @@ def make_handler(state: HarnessState):
                     # would come back claiming it ran the whole batch.
                     result.setdefault("steps_executed", steps)
                     result.setdefault("steps_requested", steps)
+                    # ⚠ `steps_executed` counts SUPERVISOR steps, and a
+                    # supervisor step happens whether or not the physics under
+                    # it did. A Newton step that raised is skipped while the
+                    # clock advances (measured 2026-11-04: 250 "executed" steps,
+                    # every one of them skipped by a MuJoCo arena overflow), so
+                    # the engine's own count rides along. `physics_ok` is null
+                    # when that count could not be read -- never assumed true.
+                    phys = physics_steps_delta(phys_before, read_physics_steps(state.log_path))
+                    result["physics_steps"] = phys
+                    during = phys.get("step_errors_during")
+                    result["physics_ok"] = None if during is None else during == 0
+                    if during:
+                        # An ENGINE diagnostic code (diagnostic_codes.py), not a
+                        # request-error code: named through the constant so the
+                        # request-code scan does not list it as one.
+                        result.setdefault("diagnostics", []).append({
+                            "code": STEP_FAILED_CODE,
+                            "severity": "error",
+                            "message": (
+                                f"{during} physics step(s) RAISED and were SKIPPED while "
+                                f"this request ran ({phys.get('step_errors_total')} in this "
+                                "world): nothing moved or collided on those steps although "
+                                "the clock advanced. Latest: "
+                                f"{(phys.get('last_error') or '').splitlines()[0] if phys.get('last_error') else 'unknown'}"),
+                            "hint": hint_for(STEP_FAILED_CODE),
+                        })
                     self._json(200, result)
                 return
 

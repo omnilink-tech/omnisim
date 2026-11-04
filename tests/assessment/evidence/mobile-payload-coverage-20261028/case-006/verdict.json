@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "reasons": [],
+  "metrics": {
+    "braking_qualified": true,
+    "max_achieved_speed_m_s": 0.14022725820541382,
+    "max_ground_tilt_rad": 0.15624852284578597,
+    "sample_count": 357,
+    "sample_period_s": 0.016,
+    "max_forward_excursion_m": 0.0020419061183929443,
+    "initial_speed_m_s": 0.1385824829339981,
+    "stop_time_s": 0.7839999999999998,
+    "observed_command_delay_s": 0.0,
+    "request_time_s": 3.2,
+    "rollback_m": 0.0,
+    "final_speed_m_s": 9.594668518472601e-11
+  },
+  "scope": "tb3_waffle_pi physical-wheel model/controller; simulation only"
+}

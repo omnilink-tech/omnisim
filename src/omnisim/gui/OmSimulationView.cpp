@@ -183,7 +183,6 @@ OmSimulationView::OmSimulationView(QWidget *parent, const QString &toolBarAlign)
   OmMainWindow *mainWindow = dynamic_cast<OmMainWindow *>(parent);
   assert(mainWindow);
   OmVideoRecorder::setMainWindow(mainWindow);
-  mWasMinimized = false;
 }
 
 OmSimulationView::~OmSimulationView() {
@@ -590,22 +589,14 @@ void OmSimulationView::startVideoCapture(const QString &fileName, int codec, int
     toggleMovieAction(true);
     mTakeScreenshotAction->setEnabled(false);
     showRenderingIfNecessary();
-    OmMainWindow *mainWindow = dynamic_cast<OmMainWindow *>(parentWidget());
-    if (mainWindow->isMinimized()) {
-      mWasMinimized = true;
-      mainWindow->showMaximized();
-    }
+    // wgpu records offscreen when the view is not exposed. Recording must
+    // preserve the operator's window state and foreground application.
   }
 }
 
 void OmSimulationView::stopVideoCapture(bool canceled) {
   OmVideoRecorder::instance()->stopRecording(canceled);
   restoreNoRenderingIfNecessary();
-  if (mWasMinimized) {
-    OmMainWindow *mainWindow = dynamic_cast<OmMainWindow *>(parentWidget());
-    mainWindow->showMinimized();
-    mWasMinimized = false;
-  }
   // re-enable take screenshot action
   mTakeScreenshotAction->setEnabled(true);
   mRecordingTimer->stop();
@@ -691,23 +682,17 @@ void OmSimulationView::writeScreenshot() {
   }
   restoreNoRenderingIfNecessary();
 
-  if (mWasMinimized) {
-    OmMainWindow *mainWindow = dynamic_cast<OmMainWindow *>(parentWidget());
-    mainWindow->showMinimized();
-    mWasMinimized = false;
-  }
-
   emit screenshotWritten();
 }
 
 void OmSimulationView::takeScreenshotAndSaveAs(const QString &fileName, int quality) {
   mScreenshotQualityList.append(quality);
   mScreenshotFileNameList.append(fileName);
-  OmMainWindow *mainWindow = dynamic_cast<OmMainWindow *>(parentWidget());
-  if (mainWindow->isMinimized()) {
-    mWasMinimized = true;
-    mainWindow->showMaximized();
-  }
+  // Supervisor.exportImage is also the per-frame path used by agent films.
+  // Restoring a minimized window here stole focus once per exported frame.
+  // grabWindowBufferNow already reads wgpu's offscreen target; no window
+  // visibility or activation change is needed to obtain fresh pixels.
+  showRenderingIfNecessary();
   // In fullscreen mode we don't have a handy dialog to delay things for us so
   // we must ensure the OpenGL context is correct, delaying the screenshot like
   // we do for movies. We can only ask for a screenshot if the view3D is definitely
@@ -717,7 +702,6 @@ void OmSimulationView::takeScreenshotAndSaveAs(const QString &fileName, int qual
     return;
   }
   connect(mView3D, &OmView3D::screenshotReady, this, &OmSimulationView::writeScreenshot);
-  showRenderingIfNecessary();
   mView3D->requestScreenshot();
   mView3D->refresh();
 

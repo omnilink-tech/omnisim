@@ -267,6 +267,8 @@ void OmMesh::updateTriangleMesh(bool issueWarnings) {
   const bool scaled = meshScale.x() != 1.0 || meshScale.y() != 1.0 || meshScale.z() != 1.0;
   const bool mirrored = meshScale.x() * meshScale.y() * meshScale.z() < 0.0;
 
+  const bool normalMatrixFix = omAssimpNormalMatrixFixEnabled();
+
   // create the arrays
   int currentCoordIndex = 0;
   double *const coordData = new double[3 * totalVertices];
@@ -289,6 +291,9 @@ void OmMesh::updateTriangleMesh(bool issueWarnings) {
     // absolute transform of this node: root * ... * parent * node (it was
     // composed leaf-first until 2026-10-15, see omAssimpNodeWorldTransform)
     const aiMatrix4x4 transform = omAssimpNodeWorldTransform(node);
+    // normals take its inverse-transpose 3x3, no translation (the full 4x4 until
+    // 2026-10-23, see omAssimpNormalMatrix)
+    const aiMatrix3x3 normalMatrix = omAssimpNormalMatrix(transform);
 
     // merge all the meshes of this node
     for (unsigned int i = 0; i < node->mNumMeshes; ++i) {
@@ -327,7 +332,8 @@ void OmMesh::updateTriangleMesh(bool issueWarnings) {
         coordData[currentCoordIndex++] = vertice[1] * meshScale.y();
         coordData[currentCoordIndex++] = vertice[2] * meshScale.z();
         // extract the normal
-        const aiVector3D normal = transform * mesh->mNormals[j];
+        const aiVector3D normal = normalMatrixFix ? omAssimpTransformNormal(normalMatrix, mesh->mNormals[j]) :
+                                                    transform * mesh->mNormals[j];
         if (scaled) {
           double nx = normal[0] / meshScale.x(), ny = normal[1] / meshScale.y(), nz = normal[2] / meshScale.z();
           const double len = std::sqrt(nx * nx + ny * ny + nz * nz);

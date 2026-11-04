@@ -1667,12 +1667,24 @@ class MobileBridge:
     # ── Pose / velocity readout ───────────────────────────────────
 
     def _read_pose(self) -> Tuple[float, float, float]:
+        # Supervisor functions use the controller's native request/response
+        # channel. Concurrent HTTP reads can corrupt that channel (observed
+        # subnormal coordinates in the mission trace). Only the controller's
+        # main thread reads it; all other threads copy one immutable snapshot,
+        # which tick() refreshes every step.
+        if threading.current_thread() is not threading.main_thread():
+            snapshot = getattr(self, "_pose_snapshot", None)
+            if snapshot is None:
+                raise RuntimeError("robot pose has not been sampled on the simulation thread")
+            return snapshot
         p = self.self_node.getPosition()
         yaw = yaw_from_orientation(self.self_node.getOrientation())
         # Heading = direction of travel. For bodies whose mesh forward axis
         # is not local +X (the AMR tug: forward is +Y, yaw_offset -pi/2), the
         # node yaw and the heading differ by the fixed offset.
-        return p[0], p[1], wrap_pi(yaw - self.yaw_offset)
+        snapshot = (p[0], p[1], wrap_pi(yaw - self.yaw_offset))
+        self._pose_snapshot = snapshot
+        return snapshot
 
     # ── Wheel commanding ──────────────────────────────────────────
 
@@ -2271,7 +2283,14 @@ class MobileBridge:
     # pulse_end_sim.
     TURN_PULSE_MAX_RAD = 0.9 * math.pi
     TURN_PULSE_MAX_S = 15.0      # longest single open-loop pulse
-    TURN_SLOW_RAD = 0.25         # below this residual, pulse at TURN_SLOW_W
+    # Size the rate continuously with the remaining angle. The former 0.25-rad
+    # switch jumped from 0.08 to 0.6 rad/s on Husky: a 0.26-rad pulse coasted
+    # past its target and needed a reverse correction. Repeating that during
+    # recovery earned the final pose but spent excess angular travel.
+    # A two-second nominal pulse horizon reduces the short-turn transient;
+    # larger turns still reach the configured spin rate. Duration, settled
+    # measurements, wrap bound, tolerances and retry limits remain unchanged.
+    TURN_RATE_HORIZON_S = 2.0
     # rad/s for the fine pulses. 0.25 until 2026-09-10, when it was chosen
     # against a base that delivered ~13% of it: the wheels were asked for
     # 0.25 and the body turned at 0.033, so a pulse that overran by one
@@ -3030,8 +3049,7 @@ class MobileBridge:
                     print(f"[omnilink_mobile_bridge] {self.robot_id}: {msg}",
                           flush=True)
                 else:
-                    w_mag = (self.spin_speed if abs(err) > self.TURN_SLOW_RAD
-                             else self.TURN_SLOW_W)
+                    w_mag = self._turn_pulse_rate(err)
                     dur = min(abs(err) / max(w_mag * self._turn_gain, 1e-3),
                               self.TURN_PULSE_MAX_S,
                               # Never command a pulse that could rotate past
@@ -4465,6 +4483,11 @@ class MobileBridge:
     # command that runs for minutes and then reports a timeout.
     TURN_MAX_SPIN_S = 45.0
 
+    def _turn_pulse_rate(self, remaining: float) -> float:
+        """Bound short-turn momentum without a discontinuous speed switch."""
+        return min(self.spin_speed, max(self.TURN_SLOW_W,
+                   abs(remaining) / self.TURN_RATE_HORIZON_S))
+
     def _turn_tol(self, commanded: float) -> float:
         """Settled-error tolerance for a turn of this size."""
         return max(self.TURN_TOL_MIN_RAD,
@@ -5353,7 +5376,14 @@ class MobileBridge:
         return result
 
     def get_state(self) -> dict:
-        x, y, yaw = self._read_pose()
+        try:
+            x, y, yaw = self._read_pose()
+        except RuntimeError:
+            # /state is served off the sim thread and the HTTP server is up
+            # before the first tick: no pose has been sampled yet. Report it
+            # as unknown (null in JSON, as the pre-step NaN always was), not
+            # as a 500.
+            x = y = yaw = float("nan")
         with self.lock:
             kind = self.motion[0]
         out = {
@@ -9366,6 +9396,12 @@ def make_handler(bridge: MobileBridge, relay: Any = None):
                         # the cart to my pick cell" and answer the sender, but
                         # that answer never reaches it, and only the model can
                         # message back. The gate still vets what the model does.
+                        if body.get("crew"):  # a crewmate's DETAILS go to the model's liveContext, not the turn
+                            try:
+                                from omnisim_bridges.crew import note_incoming
+                                note_incoming(bridge, body)
+                            except Exception:
+                                pass
                         _early = (shared_short_circuit(bridge, text, "mobile")
                                   if shared_short_circuit is not None
                                   and not body.get("crew") else None)
@@ -10422,6 +10458,11 @@ def setup_omnilink_relay(bridge: MobileBridge, http_port: int = 8765) -> Optiona
                 window_raiser=lambda: bridge.queue_window(
                     "system:the platform asked for your attention"))
         print(f"[omnilink_mobile_bridge] OmniLink relay ON (agent='{agent_name}')")
+        try:  # a crew's details reach the model as liveContext (omnisim_bridges.crew)
+            from omnisim_bridges.crew import attach_relay as crew_attach
+            crew_attach(relay, bridge)
+        except Exception:
+            pass
         return relay
     except Exception as e:
         # LOUD, with a traceback. A silent downgrade here is how both tugs

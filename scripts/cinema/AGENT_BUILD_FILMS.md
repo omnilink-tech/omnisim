@@ -310,6 +310,39 @@ The generator uses calm first-person delivery, authored clause/sentence pauses,
 and a natural speed near 0.96–1.00. If copy exceeds its window, generation fails
 and the copy must be shortened; the workflow does not force an unnatural pace.
 
+Once a narration exists, preflight checks it by its own measured block lengths instead of the
+estimate. These are the `segments[].duration_s` of the timing receipt beside the WAV
+(`<wav>.segments.json`), and every block must fit its window. This is how a voice made outside
+`agent-build-voice` is accepted (for example Omnivoice), provided it is delivered in the same
+form: one mono integer-PCM WAV the length of the master, silent through the locked intro, with
+each block at its window's start, plus the receipt.
+
+#### Films without narration
+
+The owner decided on 2026-11-04 that videos carry no narration or voice-over. Such a film
+declares it in the manifest and tells its story with on-screen captions and plates over the
+score:
+
+```json
+"voice": {"mode": "none", "reason": "Owner decision 2026-11-04: no narration in any video."}
+```
+
+Each clip segment may carry a `"caption"`: a calm, factual lower third of at most two lines at
+1080p, drawn inside the safe area above any claim-boundary band. It is burned into the picture,
+so the master still carries no subtitle stream. With `mode: "none"`:
+
+- `voice.reason` is required, `voice.blocks` must be empty, and at least one segment must have
+  a caption.
+- Preflight replaces the narration-window estimates with a reading check: each caption must be
+  readable in its segment, at 3 words a second plus 0.8 s to find it after a cut.
+- `agent-build-voice` generates nothing and downloads nothing. The make pipeline records its
+  voice stage as `skipped`.
+- The score is the whole soundtrack. It plays at the story gain with no ducking, normalised to
+  -18 LUFS, and the locked intro keeps its softer gain.
+- `verify` skips the narration-only checks and lists them under `voice.skipped_checks` in every
+  report. It measures instead that the delivered intro sits at least 3 dB below the story's
+  first 30 s.
+
 ### 5. Proxy, critique, assemble, and verify
 
 ```powershell

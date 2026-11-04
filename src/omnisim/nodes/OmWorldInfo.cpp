@@ -59,6 +59,7 @@ void OmWorldInfo::init(const OmVersion *version) {
   mNewtonLsIterations = findSFInt("newtonLsIterations");
   mNewtonNjmax = findSFInt("newtonNjmax");
   mNewtonNconmax = findSFInt("newtonNconmax");
+  mNewtonArenaMB = findSFInt("newtonArenaMB");
   mNewtonStatics = findSFBool("newtonStatics");
   mNewtonRobotColliders = findSFBool("newtonRobotColliders");
   mNewtonCompoundColliders = findSFBool("newtonCompoundColliders");

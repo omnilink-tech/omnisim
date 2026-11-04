@@ -104,12 +104,14 @@ def make(spec: AgentBuildSpec, *, out_dir: Path | None = None,
     def _write(complete: bool, error: str | None = None) -> dict[str, Any]:
         elapsed = time.perf_counter() - started
         cache_summary: dict[str, Any] = {}
-        for label, path in (
+        reports = [
             ("proxy", base_out / "proxy" / "render_report.json"),
             ("final", base_out / "render_report.json"),
-            ("voice", (spec.source_path.parent / spec.voice.wav).resolve()
-             .with_suffix(".segments.json")),
-        ):
+        ]
+        if spec.voice.narrated:
+            reports.append(("voice", (spec.source_path.parent / spec.voice.wav).resolve()
+                            .with_suffix(".segments.json")))
+        for label, path in reports:
             try:
                 cached = json.loads(path.read_text(encoding="utf-8")).get("cache")
             except (FileNotFoundError, json.JSONDecodeError, OSError):
@@ -147,7 +149,11 @@ def make(spec: AgentBuildSpec, *, out_dir: Path | None = None,
             receipt_path=base_out / "capture_session_receipt.json",
         ))
     stage("media_preflight", lambda: preflight(spec, require_captures=True))
-    stage("voice", lambda: agent_build_voice.generate(spec, preflight_checked=True))
+    if spec.voice.narrated:
+        stage("voice", lambda: agent_build_voice.generate(spec, preflight_checked=True))
+    else:
+        stages.append({"name": "voice", "status": "skipped", "elapsed_s": 0.0,
+                       "reason": f"voice.mode 'none': {spec.voice.reason}"})
     stage("proxy_render", lambda: render(
         spec, base_out, profile=PROXY_PROFILE, preflight_checked=True,
     ))

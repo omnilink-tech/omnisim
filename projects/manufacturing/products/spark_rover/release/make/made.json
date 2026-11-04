@@ -1,0 +1,2278 @@
+{
+ "jobs": {
+  "spine_foot": {
+   "process": "cnc",
+   "subsystem": "chassis",
+   "material": "aluminium_alloy",
+   "sheet_mm": [
+    40.0,
+    120.0,
+    4.0
+   ],
+   "resolution_mm": 0.06048,
+   "program": ".tmp/spark_rover_make/parts/spine_foot.nc",
+   "preflight_estimate_s": 1598.5,
+   "state": "done",
+   "alarms": [],
+   "stalls": [],
+   "job": {
+    "state": "done",
+    "lines_total": 11870,
+    "lines_acked": 11870,
+    "error": null,
+    "failed_line": null,
+    "tool_changes": 2,
+    "elapsed_s": 610.7
+   },
+   "wall_s": 621.8,
+   "connected_after_s": 7.9,
+   "machine_s": 1600.8,
+   "machine_s_source": "the twin's trace",
+   "peak_cutting_power_w": 78.1,
+   "parts": {
+    "spine_foot": {
+     "cut_free": true,
+     "size_mm": [
+      30.0,
+      110.02
+     ],
+     "drawn_mm": [
+      30.0,
+      110.0
+     ],
+     "outline_area_mm2": 3289.7,
+     "drawn_outline_area_mm2": 3289.24,
+     "outline_offset_mm": 0.0017,
+     "thickness_mm": 4.0,
+     "thickness_min_mm": 4.0,
+     "drawn_thickness_mm": 4.0,
+     "holes": [
+      {
+       "at": [
+        -8.0,
+        -52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.396,
+       "edge_offset_mm": 0.0006
+      },
+      {
+       "at": [
+        8.0,
+        -52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.396,
+       "edge_offset_mm": 0.0006
+      },
+      {
+       "at": [
+        -8.0,
+        52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.396,
+       "edge_offset_mm": 0.0006
+      },
+      {
+       "at": [
+        8.0,
+        52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.396,
+       "edge_offset_mm": 0.0006
+      }
+     ],
+     "holes_cut": "4/4",
+     "hole_d_error_mm": {
+      "min": -0.001,
+      "max": -0.001
+     }
+    }
+   },
+   "loose_other": 0,
+   "loose_other_max_mm2": 0.0
+  },
+  "shoulder_brackets": {
+   "process": "cnc",
+   "subsystem": "arms",
+   "material": "aluminium_alloy",
+   "sheet_mm": [
+    110.0,
+    52.0,
+    8.0
+   ],
+   "resolution_mm": 0.05544,
+   "program": ".tmp/spark_rover_make/parts/shoulder_brackets.nc",
+   "preflight_estimate_s": 3229.5,
+   "state": "done",
+   "alarms": [],
+   "stalls": [],
+   "job": {
+    "state": "done",
+    "lines_total": 35585,
+    "lines_acked": 35585,
+    "error": null,
+    "failed_line": null,
+    "tool_changes": 2,
+    "elapsed_s": 1183.0
+   },
+   "wall_s": 1193.9,
+   "connected_after_s": 7.9,
+   "machine_s": 3239.5,
+   "machine_s_source": "the twin's trace",
+   "peak_cutting_power_w": 79.3,
+   "parts": {
+    "shoulder_bracket_1": {
+     "cut_free": true,
+     "size_mm": [
+      31.991,
+      34.985
+     ],
+     "drawn_mm": [
+      32.0,
+      35.0
+     ],
+     "outline_area_mm2": 997.09,
+     "drawn_outline_area_mm2": 997.04,
+     "outline_offset_mm": 0.0004,
+     "thickness_mm": 8.0,
+     "thickness_min_mm": 3.2,
+     "drawn_thickness_mm": 8.0,
+     "holes": [
+      {
+       "at": [
+        -26.5,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 15.967,
+       "cut_d_mm": 15.962,
+       "edge_offset_mm": 0.0023
+      }
+     ],
+     "holes_cut": "1/1",
+     "hole_d_error_mm": {
+      "min": -0.005,
+      "max": -0.005
+     },
+     "blind": [
+      {
+       "at": [
+        -36.5,
+        -12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.488,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      },
+      {
+       "at": [
+        -16.5,
+        -12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.486,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      },
+      {
+       "at": [
+        -36.5,
+        12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.492,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      },
+      {
+       "at": [
+        -16.5,
+        12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.49,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      },
+      {
+       "at": [
+        -40.3,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.496,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      },
+      {
+       "at": [
+        -26.5,
+        14.3
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.495,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      }
+     ],
+     "blind_cut": "6/6",
+     "blind_d_mm": [
+      2.486,
+      2.496
+     ],
+     "blind_depth_mm": [
+      4.8,
+      4.8
+     ]
+    },
+    "shoulder_bracket_2": {
+     "cut_free": true,
+     "size_mm": [
+      31.991,
+      34.985
+     ],
+     "drawn_mm": [
+      32.0,
+      35.0
+     ],
+     "outline_area_mm2": 997.18,
+     "drawn_outline_area_mm2": 997.04,
+     "outline_offset_mm": 0.0012,
+     "thickness_mm": 8.0,
+     "thickness_min_mm": 3.2,
+     "drawn_thickness_mm": 8.0,
+     "holes": [
+      {
+       "at": [
+        26.5,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 15.967,
+       "cut_d_mm": 15.962,
+       "edge_offset_mm": 0.0024
+      }
+     ],
+     "holes_cut": "1/1",
+     "hole_d_error_mm": {
+      "min": -0.005,
+      "max": -0.005
+     },
+     "blind": [
+      {
+       "at": [
+        16.5,
+        -12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.486,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      },
+      {
+       "at": [
+        36.5,
+        -12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.488,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      },
+      {
+       "at": [
+        16.5,
+        12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.49,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      },
+      {
+       "at": [
+        36.5,
+        12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.492,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      },
+      {
+       "at": [
+        12.7,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.494,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      },
+      {
+       "at": [
+        26.5,
+        14.3
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.5,
+       "cut_d_mm": 2.495,
+       "drawn_depth_mm": 4.8,
+       "depth_mm": 4.8,
+       "depth_max_mm": 4.8,
+       "through": false
+      }
+     ],
+     "blind_cut": "6/6",
+     "blind_d_mm": [
+      2.486,
+      2.495
+     ],
+     "blind_depth_mm": [
+      4.8,
+      4.8
+     ]
+    }
+   },
+   "loose_other": 0,
+   "loose_other_max_mm2": 0.0
+  },
+  "spine_rungs": {
+   "process": "laser",
+   "subsystem": "chassis",
+   "material": "plywood",
+   "sheet_mm": [
+    78.0,
+    118.0,
+    6.0
+   ],
+   "resolution_mm": 0.05,
+   "program": ".tmp/spark_rover_make/parts/spine_rungs.gcode",
+   "preflight_estimate_s": 1796.0,
+   "state": "done",
+   "alarms": [],
+   "stalls": [],
+   "windows": [
+    {
+     "window": [
+      -39.0,
+      -59.0,
+      39.0,
+      0.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 2043,
+      "lines_acked": 2043,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 254.2
+     },
+     "wall_s": 261.9,
+     "connected_after_s": 4.6,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 1503.0,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      -39.0,
+      0.0,
+      39.0,
+      59.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 2043,
+      "lines_acked": 2043,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 252.8
+     },
+     "wall_s": 260.4,
+     "connected_after_s": 4.6,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 1498.7,
+     "peak_cutting_power_w": null
+    }
+   ],
+   "machine_s": 1796.0,
+   "machine_s_source": "preflight estimate of the whole program (the twin ran it as 2 windows)",
+   "wall_s": 522.3,
+   "wall_s_note": "engine wall time summed over the windows",
+   "parts": {
+    "mid_rung": {
+     "cut_free": true,
+     "size_mm": [
+      30.15,
+      110.15
+     ],
+     "drawn_mm": [
+      30.0,
+      110.0
+     ],
+     "outline_area_mm2": 3152.97,
+     "drawn_outline_area_mm2": 3132.0,
+     "outline_offset_mm": 0.0749,
+     "thickness_mm": 6.0,
+     "thickness_min_mm": 4.907,
+     "drawn_thickness_mm": 6.0,
+     "holes": [
+      {
+       "at": [
+        -18.0,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 16.662,
+       "cut_d_mm": 16.512,
+       "edge_offset_mm": 0.0655
+      }
+     ],
+     "holes_cut": "1/1",
+     "hole_d_error_mm": {
+      "min": -0.15,
+      "max": -0.15
+     }
+    },
+    "top_rung": {
+     "cut_free": true,
+     "size_mm": [
+      30.15,
+      110.15
+     ],
+     "drawn_mm": [
+      30.0,
+      110.0
+     ],
+     "outline_area_mm2": 3200.98,
+     "drawn_outline_area_mm2": 3180.0,
+     "outline_offset_mm": 0.0749,
+     "thickness_mm": 6.0,
+     "thickness_min_mm": 5.784,
+     "drawn_thickness_mm": 6.0,
+     "holes": [
+      {
+       "at": [
+        20.0,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 9.992,
+       "cut_d_mm": 9.876,
+       "edge_offset_mm": 0.0578
+      }
+     ],
+     "holes_cut": "1/1",
+     "hole_d_error_mm": {
+      "min": -0.116,
+      "max": -0.116
+     }
+    }
+   },
+   "loose_other": 2,
+   "loose_other_max_mm2": 210.77
+  },
+  "spacers": {
+   "process": "laser",
+   "subsystem": "chassis",
+   "material": "plywood",
+   "sheet_mm": [
+    99.0,
+    60.0,
+    3.0
+   ],
+   "resolution_mm": 0.05,
+   "program": ".tmp/spark_rover_make/parts/spacers.gcode",
+   "preflight_estimate_s": 931.5,
+   "state": "done",
+   "alarms": [],
+   "stalls": [],
+   "job": {
+    "state": "done",
+    "lines_total": 6363,
+    "lines_acked": 6363,
+    "error": null,
+    "failed_line": null,
+    "tool_changes": 0,
+    "elapsed_s": 163.3
+   },
+   "wall_s": 170.9,
+   "connected_after_s": 4.6,
+   "machine_s": 933.1,
+   "machine_s_source": "the twin's trace",
+   "peak_cutting_power_w": null,
+   "parts": {
+    "spacer_1": {
+     "cut_free": true,
+     "size_mm": [
+      21.85,
+      52.15
+     ],
+     "drawn_mm": [
+      21.7,
+      52.0
+     ],
+     "outline_area_mm2": 1099.45,
+     "drawn_outline_area_mm2": 1087.15,
+     "outline_offset_mm": 0.0729,
+     "thickness_mm": 3.0,
+     "thickness_min_mm": 2.187,
+     "drawn_thickness_mm": 3.0,
+     "holes": [],
+     "holes_cut": "0/0"
+    },
+    "spacer_2": {
+     "cut_free": true,
+     "size_mm": [
+      21.85,
+      52.15
+     ],
+     "drawn_mm": [
+      21.7,
+      52.0
+     ],
+     "outline_area_mm2": 1099.45,
+     "drawn_outline_area_mm2": 1087.15,
+     "outline_offset_mm": 0.0729,
+     "thickness_mm": 3.0,
+     "thickness_min_mm": 2.187,
+     "drawn_thickness_mm": 3.0,
+     "holes": [],
+     "holes_cut": "0/0"
+    },
+    "spacer_3": {
+     "cut_free": true,
+     "size_mm": [
+      21.85,
+      52.15
+     ],
+     "drawn_mm": [
+      21.7,
+      52.0
+     ],
+     "outline_area_mm2": 1099.46,
+     "drawn_outline_area_mm2": 1087.15,
+     "outline_offset_mm": 0.0729,
+     "thickness_mm": 3.0,
+     "thickness_min_mm": 2.187,
+     "drawn_thickness_mm": 3.0,
+     "holes": [],
+     "holes_cut": "0/0"
+    },
+    "spacer_4": {
+     "cut_free": true,
+     "size_mm": [
+      21.85,
+      52.15
+     ],
+     "drawn_mm": [
+      21.7,
+      52.0
+     ],
+     "outline_area_mm2": 1099.45,
+     "drawn_outline_area_mm2": 1087.15,
+     "outline_offset_mm": 0.0729,
+     "thickness_mm": 3.0,
+     "thickness_min_mm": 2.187,
+     "drawn_thickness_mm": 3.0,
+     "holes": [],
+     "holes_cut": "0/0"
+    }
+   },
+   "loose_other": 0,
+   "loose_other_max_mm2": 0.0
+  },
+  "spine_front": {
+   "process": "laser",
+   "subsystem": "chassis",
+   "material": "plywood",
+   "sheet_mm": [
+    118.0,
+    84.0,
+    6.0
+   ],
+   "resolution_mm": 0.05,
+   "program": ".tmp/spark_rover_make/parts/spine_front.gcode",
+   "preflight_estimate_s": 1720.1,
+   "state": "done",
+   "alarms": [],
+   "stalls": [],
+   "windows": [
+    {
+     "window": [
+      -59.0,
+      -42.0,
+      0.0,
+      42.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 5931,
+      "lines_acked": 5931,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 207.1
+     },
+     "wall_s": 214.9,
+     "connected_after_s": 5.1,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 1206.5,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      0.0,
+      -42.0,
+      59.0,
+      42.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 5931,
+      "lines_acked": 5931,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 212.5
+     },
+     "wall_s": 220.4,
+     "connected_after_s": 5.1,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 1197.4,
+     "peak_cutting_power_w": null
+    }
+   ],
+   "machine_s": 1720.1,
+   "machine_s_source": "preflight estimate of the whole program (the twin ran it as 2 windows)",
+   "wall_s": 435.3,
+   "wall_s_note": "engine wall time summed over the windows",
+   "parts": {
+    "spine_front": {
+     "cut_free": true,
+     "size_mm": [
+      110.15,
+      76.15
+     ],
+     "drawn_mm": [
+      110.0,
+      76.0
+     ],
+     "outline_area_mm2": 7957.65,
+     "drawn_outline_area_mm2": 7928.0,
+     "outline_offset_mm": 0.0749,
+     "thickness_mm": 6.0,
+     "thickness_min_mm": 5.865,
+     "drawn_thickness_mm": 6.0,
+     "holes": [
+      {
+       "at": [
+        -40.0,
+        -28.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        -20.0,
+        -28.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        0.0,
+        -28.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        -40.0,
+        -8.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        -20.0,
+        -8.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        0.0,
+        -8.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        -40.0,
+        12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        -20.0,
+        12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        -40.0,
+        32.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        -20.0,
+        32.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        20.0,
+        -28.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        40.0,
+        -28.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        20.0,
+        -8.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        40.0,
+        -8.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        0.0,
+        12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        20.0,
+        12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        40.0,
+        12.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        0.0,
+        32.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        20.0,
+        32.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        40.0,
+        32.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      }
+     ],
+     "holes_cut": "20/20",
+     "hole_d_error_mm": {
+      "min": -0.116,
+      "max": -0.116
+     }
+    }
+   },
+   "loose_other": 20,
+   "loose_other_max_mm2": 7.81
+  },
+  "spine_rear": {
+   "process": "laser",
+   "subsystem": "chassis",
+   "material": "plywood",
+   "sheet_mm": [
+    118.0,
+    78.0,
+    6.0
+   ],
+   "resolution_mm": 0.05,
+   "program": ".tmp/spark_rover_make/parts/spine_rear.gcode",
+   "preflight_estimate_s": 1320.6,
+   "state": "done",
+   "alarms": [],
+   "stalls": [],
+   "windows": [
+    {
+     "window": [
+      -59.0,
+      -39.0,
+      0.0,
+      39.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 3201,
+      "lines_acked": 3201,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 192.3
+     },
+     "wall_s": 211.3,
+     "connected_after_s": 15.8,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 956.7,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      0.0,
+      -39.0,
+      59.0,
+      39.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 3201,
+      "lines_acked": 3201,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 193.0
+     },
+     "wall_s": 200.5,
+     "connected_after_s": 4.6,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 951.6,
+     "peak_cutting_power_w": null
+    }
+   ],
+   "machine_s": 1320.6,
+   "machine_s_source": "preflight estimate of the whole program (the twin ran it as 2 windows)",
+   "wall_s": 411.8,
+   "wall_s_note": "engine wall time summed over the windows",
+   "parts": {
+    "spine_rear": {
+     "cut_free": true,
+     "size_mm": [
+      110.15,
+      70.15
+     ],
+     "drawn_mm": [
+      110.0,
+      70.0
+     ],
+     "outline_area_mm2": 7368.74,
+     "drawn_outline_area_mm2": 7340.0,
+     "outline_offset_mm": 0.0749,
+     "thickness_mm": 6.0,
+     "thickness_min_mm": 5.985,
+     "drawn_thickness_mm": 6.0,
+     "holes": [
+      {
+       "at": [
+        -40.0,
+        -31.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        -20.0,
+        -31.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        0.0,
+        -31.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0571
+      },
+      {
+       "at": [
+        20.0,
+        -31.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        40.0,
+        -31.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        -29.0,
+        -21.5
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.898,
+       "cut_d_mm": 2.779,
+       "edge_offset_mm": 0.0579
+      },
+      {
+       "at": [
+        29.0,
+        -21.5
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.898,
+       "cut_d_mm": 2.779,
+       "edge_offset_mm": 0.0579
+      },
+      {
+       "at": [
+        -29.0,
+        27.5
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.898,
+       "cut_d_mm": 2.779,
+       "edge_offset_mm": 0.0579
+      },
+      {
+       "at": [
+        29.0,
+        27.5
+       ],
+       "cut": true,
+       "drawn_d_mm": 2.898,
+       "cut_d_mm": 2.779,
+       "edge_offset_mm": 0.0579
+      }
+     ],
+     "holes_cut": "9/9",
+     "hole_d_error_mm": {
+      "min": -0.119,
+      "max": -0.116
+     }
+    }
+   },
+   "loose_other": 9,
+   "loose_other_max_mm2": 7.81
+  },
+  "spine_side_l": {
+   "process": "laser",
+   "subsystem": "chassis",
+   "material": "plywood",
+   "sheet_mm": [
+    38.0,
+    210.0,
+    6.0
+   ],
+   "resolution_mm": 0.05,
+   "program": ".tmp/spark_rover_make/parts/spine_side_l.gcode",
+   "preflight_estimate_s": 1873.5,
+   "state": "done",
+   "alarms": [],
+   "stalls": [],
+   "windows": [
+    {
+     "window": [
+      -19.0,
+      -105.0,
+      19.0,
+      -35.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 4089,
+      "lines_acked": 4089,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 204.3
+     },
+     "wall_s": 212.4,
+     "connected_after_s": 5.1,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 1204.1,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      -19.0,
+      -35.0,
+      19.0,
+      35.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 1839,
+      "lines_acked": 1839,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 190.4
+     },
+     "wall_s": 197.9,
+     "connected_after_s": 4.6,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 1074.5,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      -19.0,
+      35.0,
+      19.0,
+      105.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 1845,
+      "lines_acked": 1845,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 150.8
+     },
+     "wall_s": 161.8,
+     "connected_after_s": 7.9,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 817.5,
+     "peak_cutting_power_w": null
+    }
+   ],
+   "machine_s": 1873.5,
+   "machine_s_source": "preflight estimate of the whole program (the twin ran it as 3 windows)",
+   "wall_s": 572.1,
+   "wall_s_note": "engine wall time summed over the windows",
+   "parts": {
+    "spine_side_l": {
+     "cut_free": true,
+     "size_mm": [
+      30.15,
+      202.15
+     ],
+     "drawn_mm": [
+      30.0,
+      202.0
+     ],
+     "outline_area_mm2": 5426.78,
+     "drawn_outline_area_mm2": 5384.7,
+     "outline_offset_mm": 0.0747,
+     "thickness_mm": 6.0,
+     "thickness_min_mm": 4.906,
+     "drawn_thickness_mm": 6.0,
+     "holes": [
+      {
+       "at": [
+        0.0,
+        -28.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 11.309,
+       "cut_d_mm": 11.119,
+       "edge_offset_mm": 0.0745
+      },
+      {
+       "at": [
+        -10.0,
+        -13.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        -10.0,
+        11.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        0.0,
+        -51.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        10.0,
+        -13.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        10.0,
+        11.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      },
+      {
+       "at": [
+        0.0,
+        79.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.281,
+       "edge_offset_mm": 0.0573
+      }
+     ],
+     "holes_cut": "7/7",
+     "hole_d_error_mm": {
+      "min": -0.19,
+      "max": -0.116
+     }
+    }
+   },
+   "loose_other": 7,
+   "loose_other_max_mm2": 94.9
+  },
+  "deck_upper": {
+   "process": "laser",
+   "subsystem": "chassis",
+   "material": "plywood",
+   "sheet_mm": [
+    178.0,
+    148.0,
+    3.0
+   ],
+   "resolution_mm": 0.05,
+   "program": ".tmp/spark_rover_make/parts/deck_upper.gcode",
+   "preflight_estimate_s": 1786.4,
+   "state": "done",
+   "alarms": [],
+   "stalls": [],
+   "windows": [
+    {
+     "window": [
+      -89.0,
+      -74.0,
+      0.0,
+      0.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 936,
+      "lines_acked": 936,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 149.4
+     },
+     "wall_s": 156.9,
+     "connected_after_s": 4.6,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 716.7,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      0.0,
+      -74.0,
+      89.0,
+      0.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 738,
+      "lines_acked": 738,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 105.5
+     },
+     "wall_s": 112.8,
+     "connected_after_s": 4.6,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 672.7,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      -89.0,
+      0.0,
+      0.0,
+      74.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 735,
+      "lines_acked": 735,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 107.9
+     },
+     "wall_s": 115.3,
+     "connected_after_s": 4.6,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 682.0,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      0.0,
+      0.0,
+      89.0,
+      74.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 735,
+      "lines_acked": 735,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 116.8
+     },
+     "wall_s": 124.9,
+     "connected_after_s": 5.1,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 683.3,
+     "peak_cutting_power_w": null
+    }
+   ],
+   "machine_s": 1786.4,
+   "machine_s_source": "preflight estimate of the whole program (the twin ran it as 4 windows)",
+   "wall_s": 509.9,
+   "wall_s_note": "engine wall time summed over the windows",
+   "parts": {
+    "deck_upper": {
+     "cut_free": true,
+     "size_mm": [
+      170.15,
+      140.15
+     ],
+     "drawn_mm": [
+      170.0,
+      140.0
+     ],
+     "outline_area_mm2": 23756.46,
+     "drawn_outline_area_mm2": 23712.14,
+     "outline_offset_mm": 0.0735,
+     "thickness_mm": 3.0,
+     "thickness_min_mm": 2.988,
+     "drawn_thickness_mm": 3.0,
+     "holes": [
+      {
+       "at": [
+        -75.0,
+        -60.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        -8.0,
+        -52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        -28.0,
+        -42.5
+       ],
+       "cut": true,
+       "drawn_d_mm": 9.992,
+       "cut_d_mm": 9.87,
+       "edge_offset_mm": 0.0605
+      },
+      {
+       "at": [
+        -64.15,
+        -40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        -45.85,
+        -40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        -64.15,
+        -27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0647
+      },
+      {
+       "at": [
+        -45.85,
+        -27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        -55.0,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 17.409,
+       "cut_d_mm": 17.253,
+       "edge_offset_mm": 0.0672
+      },
+      {
+       "at": [
+        -40.25,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 8.822,
+       "cut_d_mm": 8.539,
+       "edge_offset_mm": 0.073
+      },
+      {
+       "at": [
+        -64.15,
+        27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.742,
+       "edge_offset_mm": 0.065
+      },
+      {
+       "at": [
+        -45.85,
+        27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        -64.15,
+        40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        -45.85,
+        40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0647
+      },
+      {
+       "at": [
+        -8.0,
+        52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        -75.0,
+        60.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        75.0,
+        -60.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        8.0,
+        -52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        45.85,
+        -40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        64.15,
+        -40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0647
+      },
+      {
+       "at": [
+        45.85,
+        -27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        64.15,
+        -27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0647
+      },
+      {
+       "at": [
+        40.25,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 8.822,
+       "cut_d_mm": 8.539,
+       "edge_offset_mm": 0.073
+      },
+      {
+       "at": [
+        55.0,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 17.409,
+       "cut_d_mm": 17.253,
+       "edge_offset_mm": 0.0672
+      },
+      {
+       "at": [
+        45.85,
+        27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        64.15,
+        27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        45.85,
+        40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        64.15,
+        40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 5.88,
+       "cut_d_mm": 5.743,
+       "edge_offset_mm": 0.0649
+      },
+      {
+       "at": [
+        8.0,
+        52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        75.0,
+        60.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      }
+     ],
+     "holes_cut": "29/29",
+     "hole_d_error_mm": {
+      "min": -0.283,
+      "max": -0.121
+     }
+    }
+   },
+   "loose_other": 29,
+   "loose_other_max_mm2": 230.32
+  },
+  "deck_lower": {
+   "process": "laser",
+   "subsystem": "chassis",
+   "material": "plywood",
+   "sheet_mm": [
+    178.0,
+    148.0,
+    3.0
+   ],
+   "resolution_mm": 0.05,
+   "program": ".tmp/spark_rover_make/parts/deck_lower.gcode",
+   "preflight_estimate_s": 1617.3,
+   "state": "done",
+   "alarms": [],
+   "stalls": [],
+   "windows": [
+    {
+     "window": [
+      -89.0,
+      -74.0,
+      0.0,
+      0.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 1632,
+      "lines_acked": 1632,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 107.3
+     },
+     "wall_s": 114.8,
+     "connected_after_s": 4.6,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 668.9,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      0.0,
+      -74.0,
+      89.0,
+      0.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 1434,
+      "lines_acked": 1434,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 119.8
+     },
+     "wall_s": 127.8,
+     "connected_after_s": 5.1,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 627.1,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      -89.0,
+      0.0,
+      0.0,
+      74.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 1431,
+      "lines_acked": 1431,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 120.9
+     },
+     "wall_s": 128.4,
+     "connected_after_s": 4.6,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 634.6,
+     "peak_cutting_power_w": null
+    },
+    {
+     "window": [
+      0.0,
+      0.0,
+      89.0,
+      74.0
+     ],
+     "job": {
+      "state": "done",
+      "lines_total": 1431,
+      "lines_acked": 1431,
+      "error": null,
+      "failed_line": null,
+      "tool_changes": 0,
+      "elapsed_s": 102.4
+     },
+     "wall_s": 109.9,
+     "connected_after_s": 4.6,
+     "alarms": [],
+     "stalls": [],
+     "machine_s": 636.0,
+     "peak_cutting_power_w": null
+    }
+   ],
+   "machine_s": 1617.3,
+   "machine_s_source": "preflight estimate of the whole program (the twin ran it as 4 windows)",
+   "wall_s": 480.9,
+   "wall_s_note": "engine wall time summed over the windows",
+   "parts": {
+    "deck_lower": {
+     "cut_free": true,
+     "size_mm": [
+      170.15,
+      140.15
+     ],
+     "drawn_mm": [
+      170.0,
+      140.0
+     ],
+     "outline_area_mm2": 23756.45,
+     "drawn_outline_area_mm2": 23712.14,
+     "outline_offset_mm": 0.0735,
+     "thickness_mm": 3.0,
+     "thickness_min_mm": 2.999,
+     "drawn_thickness_mm": 3.0,
+     "holes": [
+      {
+       "at": [
+        -75.0,
+        -60.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        -8.0,
+        -52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        -28.0,
+        -42.5
+       ],
+       "cut": true,
+       "drawn_d_mm": 9.992,
+       "cut_d_mm": 9.87,
+       "edge_offset_mm": 0.0605
+      },
+      {
+       "at": [
+        -64.15,
+        -40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.275,
+       "edge_offset_mm": 0.0599
+      },
+      {
+       "at": [
+        -45.85,
+        -40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        -64.15,
+        -27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.275,
+       "edge_offset_mm": 0.0599
+      },
+      {
+       "at": [
+        -45.85,
+        -27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        -55.0,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 17.409,
+       "cut_d_mm": 17.253,
+       "edge_offset_mm": 0.0672
+      },
+      {
+       "at": [
+        -40.25,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 8.822,
+       "cut_d_mm": 8.539,
+       "edge_offset_mm": 0.073
+      },
+      {
+       "at": [
+        -64.15,
+        27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        -45.85,
+        27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.277,
+       "edge_offset_mm": 0.0592
+      },
+      {
+       "at": [
+        -64.15,
+        40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        -45.85,
+        40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        -8.0,
+        52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.277,
+       "edge_offset_mm": 0.0592
+      },
+      {
+       "at": [
+        -75.0,
+        60.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        75.0,
+        -60.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        8.0,
+        -52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.275,
+       "edge_offset_mm": 0.0599
+      },
+      {
+       "at": [
+        45.85,
+        -40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        64.15,
+        -40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        45.85,
+        -27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        64.15,
+        -27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.277,
+       "edge_offset_mm": 0.0592
+      },
+      {
+       "at": [
+        40.25,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 8.822,
+       "cut_d_mm": 8.539,
+       "edge_offset_mm": 0.073
+      },
+      {
+       "at": [
+        55.0,
+        0.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 17.409,
+       "cut_d_mm": 17.253,
+       "edge_offset_mm": 0.0672
+      },
+      {
+       "at": [
+        45.85,
+        27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      },
+      {
+       "at": [
+        64.15,
+        27.75
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.275,
+       "edge_offset_mm": 0.0599
+      },
+      {
+       "at": [
+        45.85,
+        40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        64.15,
+        40.45
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        8.0,
+        52.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0594
+      },
+      {
+       "at": [
+        75.0,
+        60.0
+       ],
+       "cut": true,
+       "drawn_d_mm": 3.397,
+       "cut_d_mm": 3.276,
+       "edge_offset_mm": 0.0597
+      }
+     ],
+     "holes_cut": "29/29",
+     "hole_d_error_mm": {
+      "min": -0.283,
+      "max": -0.12
+     }
+    }
+   },
+   "loose_other": 29,
+   "loose_other_max_mm2": 230.32
+  },
+  "face_cover": {
+   "process": "cnc",
+   "subsystem": "shell",
+   "material": "acrylic",
+   "sheet_mm": [
+    152.0,
+    122.0,
+    1.5
+   ],
+   "resolution_mm": 0.07661,
+   "program": ".tmp/spark_rover_make/parts/face_cover.nc",
+   "preflight_estimate_s": 102.0,
+   "note": "acrylic: cutting.py has the material but no cutting energy, so no cutting load is modelled; the tool is make.py's COVER_TOOLS (no LongMill table holds a 1/8 in O-flute)",
+   "state": "done",
+   "alarms": [],
+   "stalls": [],
+   "job": {
+    "state": "done",
+    "lines_total": 1250,
+    "lines_acked": 1250,
+    "error": null,
+    "failed_line": null,
+    "tool_changes": 1,
+    "elapsed_s": 21.7
+   },
+   "wall_s": 29.8,
+   "connected_after_s": 5.1,
+   "machine_s": 102.4,
+   "machine_s_source": "the twin's trace",
+   "peak_cutting_power_w": null,
+   "parts": {
+    "face_cover": {
+     "cut_free": true,
+     "size_mm": [
+      135.988,
+      105.036
+     ],
+     "drawn_mm": [
+      136.0,
+      105.0
+     ],
+     "outline_area_mm2": 12984.07,
+     "drawn_outline_area_mm2": 12979.66,
+     "outline_offset_mm": 0.0098,
+     "thickness_mm": 1.5,
+     "thickness_min_mm": 1.5,
+     "drawn_thickness_mm": 1.5,
+     "holes": [],
+     "holes_cut": "0/0"
+    }
+   },
+   "loose_other": 0,
+   "loose_other_max_mm2": 0.0
+  },
+  "spine_side_r": {
+   "same_as": "spine_side_l",
+   "program": "move-for-move identical to spine_side_l's"
+  }
+ },
+ "sessions": [
+  {
+   "started": "2026-11-03 21:51",
+   "jobs": [
+    "shoulder_brackets",
+    "spine_foot",
+    "deck_upper (superseded: coarsened sheet)",
+    "deck_lower (stopped)",
+    "spine_side_l (stopped)"
+   ],
+   "parallel": 2,
+   "wall_s": 1196.0,
+   "note": "stopped after the brackets finished at 22:11:38; the upper deck was rerun windowed"
+  },
+  {
+   "started": "2026-11-03 22:17",
+   "jobs": [
+    "deck_lower",
+    "deck_upper",
+    "spacers",
+    "spine_side_l",
+    "spine_rear",
+    "spine_front",
+    "spine_rungs",
+    "face_cover"
+   ],
+   "parallel": 2,
+   "wall_s": 1472.7
+  },
+  {
+   "started": "2026-11-03 22:52",
+   "jobs": [
+    "spine_side_l",
+    "spine_rear",
+    "spine_front",
+    "spine_rungs"
+   ],
+   "parallel": 2,
+   "wall_s": 1064.5
+  }
+ ],
+ "wall_s_total": 3733.2,
+ "parallel": 2,
+ "generated": "2026-11-03 23:10",
+ "machine_s_total": 15989.7,
+ "notes": [
+  "OmniSim's MillingStock holds at most 1984 cells a side (OmMillingStock.cpp kMaxCellsPerAxis) and coarsens a longer sheet: the 178 mm deck went to 0.090 mm and the 210 mm side plate to 0.106 mm, where the laser's ~0.05 mm kerf bottom never reads through (the first upper-deck run kept a 0.11 mm skin and did not come free). Laser sheets over 99 mm are therefore cut as 0.05 mm windows and stitched (make.py windows/crop_program/stitch); the decks then cut free with 29/29 holes.",
+  "6 mm plywood at Sienci's 5 passes (Z 1.2 mm a pass) reached the bottom only in spots along the kerf's centre line: every 6 mm part stayed joined by a web of 0.16-0.20 mm on its outline, and 0-8 of each plate's slugs by up to 0.29 mm. chassis.LASER[6.0] is now 6 passes (2026-11-04), about 3.7 min more machine time a plate; every 6 mm part above was re-cut at 6 and cut free with all its holes.",
+  "Laser holes come out 0.12-0.28 mm small at the bottom face (the kerf is a V), as on the desk robot; outlines +0.07 mm a side at the bottom.",
+  "The face cover: shell.cover_program calls T1 as a 1/8 in O-flute that no LongMill tool table holds (their T1 is 1/4 in, which would cut it 1.6 mm a side small); make.py supplies that tool (cam/face_cover_tools.json). Its stock is cutting.py's 'acrylic', which has no published cutting energy: the twin removes the swept volume and models no cutting load, melt or cracking.",
+  "spine_side_r is spine_side_l's program move for move (only the title differs): it was cut once. The set's machine time leaves out its 26 min.",
+  "CNC tap pilots in the brackets are 4.8 mm deep by design (T3's 5 mm flute); drilling 2.5 mm through and tapping M3 is by hand."
+ ]
+}

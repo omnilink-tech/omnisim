@@ -1,0 +1,280 @@
+{
+  "name": "Sovol SV08 (PETG)",
+  "source": {
+    "klipper": "https://github.com/Sovol3d/SV08/blob/f87f75a187ca89676c2b240d904236e5f3d0187d/home/sovol/printer_data/config/printer.cfg",
+    "macros": "https://github.com/Sovol3d/SV08/blob/f87f75a187ca89676c2b240d904236e5f3d0187d/home/sovol/printer_data/config/Macro.cfg",
+    "slicer": "https://github.com/SoftFever/OrcaSlicer/tree/7a2daaa351b99d26b227c266d6909aa3a9e5566d/resources/profiles/Sovol (Sovol SV08 0.4 nozzle, 0.20mm Standard @Sovol SV08 0.4 nozzle, Generic PLA @Sovol SV08)",
+    "cad": "https://github.com/Sovol3d/SV08/tree/main/STEP",
+    "licence": "Sovol publishes the SV08 config and CAD under GPL-3.0. This profile keeps only the numbers the twin uses and our own transcription of what the macros do; no Sovol file is copied here.",
+    "extracted": "2026-11-02"
+  },
+  "klipper": {
+    "printer": {
+      "kinematics": "corexy",
+      "max_velocity": "700",
+      "max_accel": "40000",
+      "max_accel_to_decel": "10000",
+      "square_corner_velocity": "5.0",
+      "max_z_velocity": "20",
+      "max_z_accel": "500"
+    },
+    "stepper_x": {
+      "rotation_distance": "40",
+      "microsteps": "16",
+      "full_steps_per_rotation": "200",
+      "position_min": "0",
+      "position_max": "355",
+      "position_endstop": "355",
+      "homing_speed": "30",
+      "homing_positive_dir": "True"
+    },
+    "extruder": {
+      "rotation_distance": "6.5",
+      "microsteps": "16",
+      "full_steps_per_rotation": "200",
+      "nozzle_diameter": "0.400",
+      "filament_diameter": "1.75",
+      "max_extrude_only_distance": "150",
+      "pressure_advance": "0.025",
+      "pressure_advance_smooth_time": "0.035",
+      "min_extrude_temp": "150",
+      "max_temp": "305"
+    },
+    "heater_bed": {
+      "max_temp": "105"
+    },
+    "input_shaper": {
+      "shaper_type_x": "mzv",
+      "shaper_type_y": "mzv",
+      "shaper_freq_x": "35",
+      "shaper_freq_y": "35",
+      "damping_ratio_x": "0.001",
+      "damping_ratio_y": "0.001"
+    },
+    "probe": {
+      "x_offset": "-17",
+      "y_offset": "10"
+    },
+    "stepper_y": {
+      "rotation_distance": "40",
+      "microsteps": "16",
+      "full_steps_per_rotation": "200",
+      "position_min": "0",
+      "position_max": "364",
+      "position_endstop": "364",
+      "homing_speed": "30",
+      "homing_positive_dir": "true"
+    },
+    "stepper_z": {
+      "rotation_distance": "40",
+      "microsteps": "16",
+      "gear_ratio": "80:12",
+      "position_min": "-5",
+      "position_max": "347",
+      "homing_speed": "15.0"
+    }
+  },
+  "homing": {
+    "note": "G28 with no axis runs the printer's [homing_override]: Z lifted 5 mm from an assumed 0, Y then X homed toward their maximum endstops and backed off, then Z homed with the probe at the bed centre. The twin assumes a calibrated probe: Z homes to the nozzle touching the bed.",
+    "set_position_z": 0,
+    "all": [
+      "G90",
+      "G0 Z5 F300",
+      "G28 Y",
+      "G0 Y360 F1200",
+      "G4 P2000",
+      "G28 X",
+      "G0 X348 F1200",
+      "G90",
+      "G0 X191 Y165 F3600",
+      "G28 Z",
+      "G0 Z10 F600"
+    ],
+    "x": [
+      "G28 X",
+      "G0 X348 F1200"
+    ],
+    "y": [
+      "G28 Y",
+      "G0 Y360 F1200"
+    ],
+    "z": [
+      "G90",
+      "G0 X191 Y165 F3600",
+      "G28 Z",
+      "G0 Z10 F600"
+    ],
+    "z_probe_speed": 5.0
+  },
+  "macros": {
+    "START_PRINT": {
+      "gcode": [
+        "G28 IF_NOT_HOMED",
+        "QUAD_GANTRY_LEVEL",
+        "BED_MESH_CALIBRATE ADAPTIVE=1"
+      ],
+      "note": "Heats to the targets already set, levels the gantry and probes a mesh. Probing is not modelled: it takes no time in the twin and the bed is assumed flat and level."
+    },
+    "END_PRINT": {
+      "gcode": [
+        "M400",
+        "G91",
+        "G1 E-2 F2700",
+        "G1 E-2 Z0.2 F2400",
+        "G1 Z10 F3000",
+        "G90",
+        "G1 X0 Y360 F9000",
+        "M107",
+        "M104 S0",
+        "M140 S0",
+        "M84"
+      ],
+      "note": "Retract, lift 10 mm (less near the top), park at the back left, fans and heaters off."
+    },
+    "QUAD_GANTRY_LEVEL": {
+      "gcode": [],
+      "note": "not modelled"
+    },
+    "BED_MESH_CALIBRATE": {
+      "gcode": [],
+      "note": "not modelled"
+    },
+    "CLEAR_PAUSE": {
+      "gcode": []
+    },
+    "TIMELAPSE_TAKE_FRAME": {
+      "gcode": []
+    },
+    "EXCLUDE_OBJECT_DEFINE": {
+      "gcode": []
+    },
+    "EXCLUDE_OBJECT_START": {
+      "gcode": []
+    },
+    "EXCLUDE_OBJECT_END": {
+      "gcode": []
+    }
+  },
+  "hotend": {
+    "max_volumetric_mm3_s": 17.0,
+    "max_volumetric_source": "https://github.com/SoftFever/OrcaSlicer/blob/26a39377713c774d52ca7d7ff7242188df4de63e/resources/profiles/Sovol/filament/Generic%20PETG%20%40Sovol%20SV08.json (filament_max_volumetric_speed 17, nozzle 235 / first layer 255, hot plate 75, fan 30-70 %, slow_down_layer_time 5, slow_down_min_speed 10, filament_flow_ratio 0.98, retraction 0.5)",
+    "pressure_lag_s": 0.025,
+    "pressure_lag_source": "The factory pressure_advance. Klipper's pressure advance assumes nozzle flow lags the extruder by this time constant, so the twin's hotend lags by the value the vendor tuned it to cancel."
+  },
+  "bed": {
+    "size_mm": [
+      350,
+      350
+    ],
+    "origin_mm": [
+      0,
+      0
+    ],
+    "source": "OrcaSlicer printable_area 0x0..350x350, printable_height 345"
+  },
+  "slicer": {
+    "note": "Cura keys for cura_slice.py, set from the vendor's OrcaSlicer profile. Speeds above the hotend's volumetric limit are capped at it, as OrcaSlicer does. Orca's 'crosshatch' sparse infill has no Cura equivalent; grid is used. Flow is the PLA profile's filament_flow_ratio 0.98. PETG: https://github.com/SoftFever/OrcaSlicer/blob/26a39377713c774d52ca7d7ff7242188df4de63e/resources/profiles/Sovol/filament/Generic%20PETG%20%40Sovol%20SV08.json (filament_max_volumetric_speed 17, nozzle 235 / first layer 255, hot plate 75, fan 30-70 %, slow_down_layer_time 5, slow_down_min_speed 10, filament_flow_ratio 0.98, retraction 0.5). Written by spark_rover/make_print.py.",
+    "cura": {
+      "machine_name": "Sovol SV08",
+      "machine_width": 350,
+      "machine_depth": 350,
+      "machine_height": 345,
+      "machine_heated_bed": true,
+      "machine_center_is_zero": false,
+      "machine_gcode_flavor": "RepRap (Marlin/Sprinter)",
+      "machine_nozzle_size": 0.4,
+      "material_diameter": 1.75,
+      "layer_height": 0.2,
+      "layer_height_0": 0.25,
+      "line_width": 0.42,
+      "wall_line_width_0": 0.4,
+      "wall_line_width_x": 0.42,
+      "skin_line_width": 0.42,
+      "infill_line_width": 0.45,
+      "initial_layer_line_width_factor": 119,
+      "wall_line_count": 2,
+      "top_layers": 4,
+      "bottom_layers": 3,
+      "infill_sparse_density": 10,
+      "infill_pattern": "grid",
+      "speed_print": 300,
+      "speed_wall_0": 200,
+      "speed_wall_x": 300,
+      "speed_infill": 300,
+      "speed_topbottom": 200,
+      "speed_travel": 600,
+      "speed_print_layer_0": 30,
+      "speed_travel_layer_0": 150,
+      "skirt_brim_speed": 30,
+      "acceleration_enabled": true,
+      "acceleration_print": 20000,
+      "acceleration_wall_0": 8000,
+      "acceleration_wall_x": 12000,
+      "acceleration_infill": 20000,
+      "acceleration_topbottom": 12000,
+      "acceleration_travel": 20000,
+      "acceleration_print_layer_0": 3000,
+      "acceleration_travel_layer_0": 3000,
+      "retraction_amount": 0.5,
+      "retraction_speed": 30,
+      "retraction_hop_enabled": true,
+      "retraction_hop": 0.4,
+      "material_print_temperature": 235,
+      "material_print_temperature_layer_0": 255,
+      "material_bed_temperature": 75,
+      "material_bed_temperature_layer_0": 75,
+      "material_flow": 98,
+      "cool_fan_speed_min": 30,
+      "cool_fan_speed_max": 70,
+      "cool_fan_full_layer": 3,
+      "adhesion_type": "brim",
+      "brim_width": 5,
+      "brim_outside_only": true,
+      "brim_gap": 0,
+      "cool_min_layer_time": 5,
+      "cool_min_speed": 10
+    },
+    "start_gcode": [
+      "G28",
+      "G90",
+      "G1 X0 F9000",
+      "G1 Y20",
+      "G1 Z0.6 F600",
+      "G1 Y0 F9000",
+      "START_PRINT",
+      "G90",
+      "G1 X0 F9000",
+      "G1 Y20",
+      "G1 Z0.6 F600",
+      "G1 Y0 F9000",
+      "M400",
+      "G91",
+      "M83",
+      "M140 S{material_bed_temperature_layer_0}",
+      "M104 S{material_print_temperature_layer_0}",
+      "M190 S{material_bed_temperature_layer_0}",
+      "M109 S{material_print_temperature_layer_0}",
+      "G1 E25 F300",
+      "G4 P1000",
+      "G1 E-0.2 Z5 F600",
+      "G1 X88 F9000",
+      "G1 Z-5 F600",
+      "G1 X87 E20.88 F1800",
+      "G1 X87 E13.92 F1800",
+      "G1 Y1 E0.16 F1800",
+      "G1 X-87 E13.92 F1800",
+      "G1 X-87 E20.88 F1800",
+      "G1 Y1 E0.24 F1800",
+      "G1 X87 E20.88 F1800",
+      "G1 X87 E13.92 F1800",
+      "G1 E-0.2 Z1 F600",
+      "M400",
+      "G90",
+      "M82",
+      "G92 E0"
+    ],
+    "end_gcode": [
+      "END_PRINT"
+    ]
+  }
+}

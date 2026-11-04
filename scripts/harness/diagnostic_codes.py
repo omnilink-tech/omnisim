@@ -258,6 +258,17 @@ _RULES: tuple[_Rule, ...] = (
     _r(ERROR, r"^\[(?:Wb|Om)NewtonBackend\] \w+ FAILED -- THIS WORLD HAS NO PHYSICS\."
               r"(?:.*?The Python exception was: (?P<detail>.+))?$",
        "NEWTON_WORLD_NOT_BUILT", detail="detail"),
+    # world.step() raised -> that tick's physics was SKIPPED while the clock
+    # and the controllers advanced (2026-11-04: a MuJoCo arena overflow in
+    # mj_narrowphase on every step, reported by /sim/step as 250 executed
+    # steps). ERROR once per world, then a WARNING on the 2nd, 4th, 8th ...
+    # Must precede the generic "raised:" rule below, which used to file the old
+    # per-tick "step raised:" warning as NEWTON_RUNTIME_BROKEN.
+    _r(ERROR, r"^\[(?:Wb|Om)NewtonBackend\] physics step \d+ RAISED and was SKIPPED"
+              r"(?:.*?The Python exception was: (?P<detail>.+))?$",
+       "NEWTON_STEP_FAILED", detail="detail"),
+    _r(WARNING, r"^\[(?:Wb|Om)NewtonBackend\] (?P<detail>step raised again: .+)$",
+       "NEWTON_STEP_FAILED", detail="detail"),
     _r(WARNING, r"^\[(?:Wb|Om)NewtonBackend\] (?P<detail>.+? (?:raised:|failed \(no Python error\)).*)$",
        "NEWTON_RUNTIME_BROKEN", detail="detail"),
     _r(WARNING, r"^\[(?:Wb|Om)NewtonBackend\] OMNISIM_NEWTON_SIMULATE_BROKEN is set",
@@ -491,6 +502,14 @@ HINTS: dict[str, str] = {
         "articulation solver -- cannot represent; model the mechanism as a tree and "
         "drive the dependent joint from a controller. Fix the world and reload; do NOT "
         "read any pose, height or contact from this load."),
+    "NEWTON_STEP_FAILED": (
+        "the world BUILT, but physics steps are RAISING and being skipped: for each one "
+        "nothing moved or collided while the clock still advanced. Read `physics_steps` on "
+        "/sim/step or /sim/state (step_errors, last_error) and do not read a pose or "
+        "contact from the skipped stretch. An \"mj_stackAlloc: out of memory\" detail is "
+        "MuJoCo's arena: raise WorldInfo.newtonArenaMB (or OMNISIM_NEWTON_ARENA_MB) and "
+        "reload, or collide big moving units as fewer shapes. newtonNjmax/newtonNconmax "
+        "do not size it on the CPU solver."),
     "NEWTON_ZERO_DYNAMIC_BODIES": (
         "read the other diagnostics on this load before anything else: this single "
         "number is downstream of every no-physics cause (NO_PHYSICS_BACKEND, "

@@ -174,11 +174,21 @@ tests-smoke:
 # USERPROFILE: MSYS make scrubs USERPROFILE/HOMEDRIVE/HOMEPATH from the recipe's
 # environment, and a Windows python then raises at Path.home() -- one test
 # module computes it at import and that aborted the whole collection.
+# APPDATA too: Python finds the per-user site-packages under it on Windows, and
+# without it shapely / trimesh / numba vanished and 16 manufacturing test modules
+# failed to collect (2026-11-04). $HOME is NOT a fallback for any of the three: under
+# MSYS make it is the MSYS home (C:/msys64/home/<user>), so Python looked for a
+# site-packages that does not exist. On Windows they come from the shell's own
+# folder lookup (cygpath -F: 40 profile, 28 local app data, 26 roaming app data);
+# elsewhere cygpath is absent and $HOME is right.
+WIN_FOLDER = $(shell command -v cygpath >/dev/null 2>&1 && cygpath -m -F $(1) 2>/dev/null)
 tests-unit:
 ifeq ($(PYTHON),)
 	@echo "tests-unit: no python with pytest+Pillow on PATH. Set PYTHON=<interpreter>." && false
 else
-	@+USERPROFILE="$${USERPROFILE:-$$HOME}" LOCALAPPDATA="$${LOCALAPPDATA:-$${USERPROFILE:-$$HOME}/AppData/Local}" \
+	@+USERPROFILE="$${USERPROFILE:-$(or $(call WIN_FOLDER,40),$$HOME)}" \
+		LOCALAPPDATA="$${LOCALAPPDATA:-$(or $(call WIN_FOLDER,28),$$HOME/AppData/Local)}" \
+		APPDATA="$${APPDATA:-$(or $(call WIN_FOLDER,26),$$HOME/AppData/Roaming)}" \
 		$(PYTHON) -m pytest -m "not engine" -q \
 		tests/harness tests/python tests/packaging tests/dev \
 		packages/omnisim-bridges/tests packages/omnisim-mcp/tests \

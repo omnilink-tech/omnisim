@@ -425,6 +425,8 @@ void OmCadShape::createWrenObjects() {
     scene->mRootNode->mTransformation =
       aiMatrix4x4(1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1) * scene->mRootNode->mTransformation;
 
+  const bool normalMatrixFix = omAssimpNormalMatrixFixEnabled();
+
   std::list<aiNode *> queue;
   queue.push_back(scene->mRootNode);
 
@@ -448,6 +450,9 @@ void OmCadShape::createWrenObjects() {
 
       // root * ... * parent * node (leaf-first until 2026-10-15, see omAssimpNodeWorldTransform)
       const aiMatrix4x4 transform = omAssimpNodeWorldTransform(node);
+      // normals take its inverse-transpose 3x3, no translation (the full 4x4 until
+      // 2026-10-23, see omAssimpNormalMatrix)
+      const aiMatrix3x3 normalMatrix = omAssimpNormalMatrix(transform);
 
       // create the arrays
       // std::vector, not new[]: the `currentIndexIndex == 0` early-continue below skipped the
@@ -469,7 +474,8 @@ void OmCadShape::createWrenObjects() {
         coordData[currentCoordIndex++] = vertice[1];
         coordData[currentCoordIndex++] = vertice[2];
         // extract the normal
-        const aiVector3D normal = transform * mesh->mNormals[j];
+        const aiVector3D normal = normalMatrixFix ? omAssimpTransformNormal(normalMatrix, mesh->mNormals[j]) :
+                                                    transform * mesh->mNormals[j];
         normalData[currentNormalIndex++] = normal[0];
         normalData[currentNormalIndex++] = normal[1];
         normalData[currentNormalIndex++] = normal[2];
@@ -544,6 +550,12 @@ void OmCadShape::createWrenObjects() {
 
       mPbrAppearances.push_back(pbrAppearance);
     }
+
+    // walk the whole node graph. Until 2026-10-23 the children were never queued, so only the
+    // root node's meshes were read: a file aiProcess_OptimizeGraph cannot collapse onto its root
+    // -- any geometry instanced by two nodes, translated or not -- rendered NOTHING.
+    for (unsigned int i = 0; i < node->mNumChildren; ++i)
+      queue.push_back(node->mChildren[i]);
   }
 }
 

@@ -1,0 +1,8 @@
+#OMNISIM R2025a utf8
+WorldInfo { basicTimeStep 16 newtonSolver "mujoco" }
+Viewpoint { position 0 0 1 orientation 0 1 0 .3 fieldOfView .8 }
+Background { skyColor [ .05 .08 .12 ] }
+DirectionalLight { direction 1 -.2 -1 intensity 2 }
+Robot { supervisor TRUE controller "capture_window_probe" controllerArgs [ "O:/omnisim/.tmp/capture-window-fix/before-images-03" "images" "6" ] }
+DEF MARKER Solid { translation 2 -.35 .2 children [ Shape { appearance PBRAppearance { baseColor .15 .65 .9 roughness .8 metalness 0 } geometry Box { size .4 .4 .4 } } ] }
+Solid { translation 2.5 0 -.1 children [ Shape { appearance PBRAppearance { baseColor .9 .65 .1 roughness .8 metalness 0 } geometry Box { size .5 1.5 .1 } } ] }

@@ -1,0 +1,1745 @@
+[
+ {
+  "id": "W1",
+  "from": [
+   "BT1",
+   "+"
+  ],
+  "to": [
+   "F1",
+   "1"
+  ],
+  "net": "VBAT_RAW",
+  "colour": "red",
+  "awg": 26,
+  "connector_from": "holder's own lead",
+  "connector_to": "soldered to the fuse leg, heat-shrink",
+  "carries": "battery",
+  "straight_mm": 16.0,
+  "length_mm": 40.0,
+  "length_source": "estimate",
+  "ohm": 0.0053544000000000005,
+  "dia_mm": 1.25,
+  "points_mm": [
+   [
+    2.0,
+    29.0,
+    50.66005303744682
+   ],
+   [
+    2.0,
+    29.0,
+    52.66005303744682
+   ],
+   [
+    -2.0,
+    33.0,
+    38.0
+   ],
+   [
+    -2.0,
+    33.0,
+    37.66005303744682
+   ],
+   [
+    -2.0,
+    33.0,
+    35.66005303744682
+   ]
+  ],
+  "routed_mm": 20.1,
+  "cut_mm": 40,
+  "clear_of_parts_mm": 0.38,
+  "clear_of_wires_mm": 0.49
+ },
+ {
+  "id": "W2",
+  "from": [
+   "BT1",
+   "-"
+  ],
+  "to": [
+   "J1",
+   "2"
+  ],
+  "net": "GND",
+  "colour": "black",
+  "awg": 26,
+  "connector_from": "holder's own lead",
+  "connector_to": "JST SMP-02V-BC (socket crimp SHF-001T-0.8BS)",
+  "carries": "battery",
+  "straight_mm": 27.4,
+  "length_mm": 55.0,
+  "length_source": "estimate",
+  "ohm": 0.007362300000000001,
+  "dia_mm": 1.25,
+  "points_mm": [
+   [
+    -2.0,
+    29.0,
+    50.66005303744682
+   ],
+   [
+    -2.0,
+    29.0,
+    52.66005303744682
+   ],
+   [
+    -2.0,
+    31.5,
+    43.5
+   ],
+   [
+    -2.0,
+    32.0,
+    43.0
+   ],
+   [
+    -2.0,
+    32.0,
+    39.0
+   ],
+   [
+    -3.5,
+    30.5,
+    36.0
+   ],
+   [
+    -3.5,
+    30.5,
+    32.0
+   ],
+   [
+    -3.5,
+    30.5,
+    28.0
+   ],
+   [
+    -5.5,
+    29.0,
+    25.0
+   ],
+   [
+    -6.75,
+    28.0,
+    23.660053037446822
+   ],
+   [
+    -6.75,
+    30.0,
+    23.660053037446822
+   ]
+  ],
+  "routed_mm": 35.9,
+  "cut_mm": 56,
+  "clear_of_parts_mm": 0.38,
+  "clear_of_wires_mm": 0.49
+ },
+ {
+  "id": "W3",
+  "from": [
+   "F1",
+   "2"
+  ],
+  "to": [
+   "J1",
+   "1"
+  ],
+  "net": "VBAT",
+  "colour": "red",
+  "awg": 22,
+  "connector_from": "soldered to the fuse leg, heat-shrink",
+  "connector_to": "JST SMP-02V-BC (socket crimp SHF-001T-0.8BS)",
+  "carries": "battery",
+  "straight_mm": 8.8,
+  "length_mm": 30.0,
+  "length_source": "estimate",
+  "ohm": 0.0015882,
+  "dia_mm": 1.6,
+  "points_mm": [
+   [
+    -2.0,
+    33.0,
+    27.660053037446822
+   ],
+   [
+    -2.0,
+    33.0,
+    29.660053037446822
+   ],
+   [
+    -4.5,
+    32.0,
+    27.0
+   ],
+   [
+    -5.0,
+    31.5,
+    26.5
+   ],
+   [
+    -5.5,
+    31.0,
+    26.0
+   ],
+   [
+    -6.0,
+    30.5,
+    25.5
+   ],
+   [
+    -8.5,
+    28.5,
+    23.5
+   ],
+   [
+    -9.25,
+    28.0,
+    23.660053037446822
+   ],
+   [
+    -9.25,
+    30.0,
+    23.660053037446822
+   ]
+  ],
+  "routed_mm": 15.1,
+  "cut_mm": 35,
+  "clear_of_parts_mm": 6.61,
+  "clear_of_wires_mm": 0.32
+ },
+ {
+  "id": "W4",
+  "from": [
+   "J1",
+   "1"
+  ],
+  "to": [
+   "SW1",
+   "VIN"
+  ],
+  "net": "VBAT",
+  "colour": "red",
+  "awg": 22,
+  "connector_from": "JST SMR-02V-B (pin crimp SYM-001T-P0.6)",
+  "connector_to": "soldered from the top into the board's through-hole",
+  "carries": "battery",
+  "straight_mm": 19.8,
+  "length_mm": 45.0,
+  "length_source": "estimate",
+  "ohm": 0.0023822999999999995,
+  "dia_mm": 1.6,
+  "points_mm": [
+   [
+    -9.25,
+    30.0,
+    23.660053037446822
+   ],
+   [
+    -9.25,
+    32.0,
+    23.660053037446822
+   ],
+   [
+    -11.0,
+    30.0,
+    21.0
+   ],
+   [
+    -14.0,
+    29.0,
+    19.5
+   ],
+   [
+    -27.0,
+    24.0,
+    19.230053037446822
+   ],
+   [
+    -27.0,
+    24.0,
+    17.230053037446822
+   ]
+  ],
+  "routed_mm": 25.2,
+  "cut_mm": 45,
+  "clear_of_parts_mm": 1.32,
+  "clear_of_wires_mm": 1.32
+ },
+ {
+  "id": "W5",
+  "from": [
+   "J1",
+   "2"
+  ],
+  "to": [
+   "SW1",
+   "GND"
+  ],
+  "net": "GND",
+  "colour": "black",
+  "awg": 22,
+  "connector_from": "JST SMR-02V-B (pin crimp SYM-001T-P0.6)",
+  "connector_to": "soldered from the top into the board's through-hole",
+  "carries": "battery",
+  "straight_mm": 21.2,
+  "length_mm": 45.0,
+  "length_source": "estimate",
+  "ohm": 0.0023822999999999995,
+  "dia_mm": 1.6,
+  "points_mm": [
+   [
+    -6.75,
+    30.0,
+    23.660053037446822
+   ],
+   [
+    -6.75,
+    32.0,
+    23.660053037446822
+   ],
+   [
+    -13.5,
+    31.0,
+    22.5
+   ],
+   [
+    -16.5,
+    31.0,
+    20.5
+   ],
+   [
+    -23.5,
+    31.0,
+    20.5
+   ],
+   [
+    -27.0,
+    30.0,
+    19.230053037446822
+   ],
+   [
+    -27.0,
+    30.0,
+    17.230053037446822
+   ]
+  ],
+  "routed_mm": 25.4,
+  "cut_mm": 45,
+  "clear_of_parts_mm": 0.32,
+  "clear_of_wires_mm": 0.32
+ },
+ {
+  "id": "W6",
+  "from": [
+   "SW1",
+   "VOUT"
+  ],
+  "to": [
+   "U2",
+   "VIN"
+  ],
+  "net": "VSW",
+  "colour": "red",
+  "awg": 22,
+  "connector_from": "soldered from the top into the board's through-hole",
+  "connector_to": "soldered from the top into the board's through-hole (C1's + leg in the same hole)",
+  "carries": "motors",
+  "straight_mm": 35.9,
+  "length_mm": 65.0,
+  "length_source": "estimate",
+  "ohm": 0.0034411,
+  "dia_mm": 1.6,
+  "points_mm": [
+   [
+    -13.0,
+    24.0,
+    17.230053037446822
+   ],
+   [
+    -13.0,
+    24.0,
+    19.230053037446822
+   ],
+   [
+    -11.5,
+    18.5,
+    19.0
+   ],
+   [
+    -3.5,
+    10.5,
+    21.0
+   ],
+   [
+    7.0,
+    -4.0,
+    20.5
+   ],
+   [
+    8.0,
+    -5.08,
+    20.230053037446822
+   ],
+   [
+    8.0,
+    -5.08,
+    18.230053037446822
+   ]
+  ],
+  "routed_mm": 40.6,
+  "cut_mm": 61,
+  "clear_of_parts_mm": 0.41,
+  "clear_of_wires_mm": 0.41
+ },
+ {
+  "id": "W7",
+  "from": [
+   "SW1",
+   "GND"
+  ],
+  "to": [
+   "U2",
+   "GND"
+  ],
+  "net": "GND",
+  "colour": "black",
+  "awg": 22,
+  "connector_from": "soldered from the top into the board's through-hole",
+  "connector_to": "soldered from the top into the board's through-hole",
+  "carries": "battery",
+  "straight_mm": 51.4,
+  "length_mm": 85.0,
+  "length_source": "estimate",
+  "ohm": 0.004499899999999999,
+  "dia_mm": 1.6,
+  "points_mm": [
+   [
+    -27.0,
+    30.0,
+    17.230053037446822
+   ],
+   [
+    -27.0,
+    30.0,
+    19.230053037446822
+   ],
+   [
+    -14.5,
+    17.5,
+    19.0
+   ],
+   [
+    -9.0,
+    12.0,
+    22.0
+   ],
+   [
+    6.0,
+    -1.5,
+    22.5
+   ],
+   [
+    8.0,
+    -3.0,
+    21.5
+   ],
+   [
+    10.540000000000001,
+    -5.08,
+    20.230053037446822
+   ],
+   [
+    10.540000000000001,
+    -5.08,
+    18.230053037446822
+   ]
+  ],
+  "routed_mm": 56.4,
+  "cut_mm": 76,
+  "clear_of_parts_mm": 0.54,
+  "clear_of_wires_mm": 0.21
+ },
+ {
+  "id": "W8",
+  "from": [
+   "SW1",
+   "VOUT"
+  ],
+  "to": [
+   "U1",
+   "VIN"
+  ],
+  "net": "VSW",
+  "colour": "red",
+  "awg": 26,
+  "connector_from": "soldered from the top into the board's through-hole",
+  "connector_to": "soldered from the top into the board's through-hole",
+  "carries": "regulator",
+  "straight_mm": 28.4,
+  "length_mm": 55.0,
+  "length_source": "estimate",
+  "ohm": 0.007362300000000001,
+  "dia_mm": 1.25,
+  "points_mm": [
+   [
+    -13.0,
+    24.0,
+    17.230053037446822
+   ],
+   [
+    -13.0,
+    24.0,
+    19.230053037446822
+   ],
+   [
+    -34.5,
+    19.5,
+    19.0
+   ],
+   [
+    -41.0,
+    19.0,
+    19.230053037446822
+   ],
+   [
+    -41.0,
+    19.0,
+    17.230053037446822
+   ]
+  ],
+  "routed_mm": 32.5,
+  "cut_mm": 52,
+  "clear_of_parts_mm": 0.49,
+  "clear_of_wires_mm": 0.49
+ },
+ {
+  "id": "W9",
+  "from": [
+   "U1",
+   "VOUT"
+  ],
+  "to": [
+   "D1",
+   "A"
+  ],
+  "net": "5V_REG",
+  "colour": "orange",
+  "awg": 26,
+  "connector_from": "soldered from the top into the board's through-hole",
+  "connector_to": "soldered to D1's anode, heat-shrink",
+  "carries": "logic",
+  "straight_mm": 15.0,
+  "length_mm": 35.0,
+  "length_source": "estimate",
+  "ohm": 0.0046851,
+  "dia_mm": 1.25,
+  "points_mm": [
+   [
+    -41.0,
+    25.0,
+    17.230053037446822
+   ],
+   [
+    -41.0,
+    25.0,
+    19.230053037446822
+   ],
+   [
+    -36.0,
+    20.0,
+    19.5
+   ],
+   [
+    -31.0,
+    16.5,
+    19.0
+   ],
+   [
+    -29.205,
+    15.870000000000001,
+    20.90005303744682
+   ],
+   [
+    -29.205,
+    15.870000000000001,
+    18.90005303744682
+   ]
+  ],
+  "routed_mm": 19.9,
+  "cut_mm": 40,
+  "clear_of_parts_mm": 0.3,
+  "clear_of_wires_mm": 0.3
+ },
+ {
+  "id": "W10",
+  "from": [
+   "U2",
+   "GND"
+  ],
+  "to": [
+   "U3",
+   "GND"
+  ],
+  "net": "GND",
+  "colour": "black",
+  "awg": 26,
+  "connector_from": "soldered from the top into the board's through-hole",
+  "connector_to": "soldered onto the XIAO's castellated pad, from the top",
+  "carries": "regulator",
+  "straight_mm": 39.4,
+  "length_mm": 70.0,
+  "length_source": "estimate",
+  "ohm": 0.0093702,
+  "dia_mm": 1.25,
+  "points_mm": [
+   [
+    10.540000000000001,
+    -5.08,
+    18.230053037446822
+   ],
+   [
+    10.540000000000001,
+    -5.08,
+    20.230053037446822
+   ],
+   [
+    6.5,
+    -5.5,
+    20.0
+   ],
+   [
+    -7.5,
+    -1.0,
+    20.0
+   ],
+   [
+    -8.0,
+    -0.5,
+    20.5
+   ],
+   [
+    -16.0,
+    7.0,
+    20.0
+   ],
+   [
+    -26.665,
+    7.87,
+    19.90005303744682
+   ],
+   [
+    -26.665,
+    7.87,
+    17.90005303744682
+   ]
+  ],
+  "routed_mm": 45.3,
+  "cut_mm": 65,
+  "clear_of_parts_mm": 0.19,
+  "clear_of_wires_mm": 0.19
+ },
+ {
+  "id": "W11",
+  "from": [
+   "U3",
+   "GND"
+  ],
+  "to": [
+   "U1",
+   "GND"
+  ],
+  "net": "GND",
+  "colour": "black",
+  "awg": 26,
+  "connector_from": "soldered onto the XIAO's castellated pad, from the top",
+  "connector_to": "soldered from the top into the board's through-hole",
+  "carries": "regulator",
+  "straight_mm": 20.1,
+  "length_mm": 45.0,
+  "length_source": "estimate",
+  "ohm": 0.006023700000000001,
+  "dia_mm": 1.25,
+  "points_mm": [
+   [
+    -26.665,
+    7.87,
+    17.90005303744682
+   ],
+   [
+    -26.665,
+    7.87,
+    19.90005303744682
+   ],
+   [
+    -28.5,
+    10.0,
+    20.5
+   ],
+   [
+    -29.5,
+    11.0,
+    20.5
+   ],
+   [
+    -31.5,
+    13.5,
+    19.5
+   ],
+   [
+    -34.0,
+    16.0,
+    19.5
+   ],
+   [
+    -41.0,
+    22.0,
+    19.230053037446822
+   ],
+   [
+    -41.0,
+    22.0,
+    17.230053037446822
+   ]
+  ],
+  "routed_mm": 24.4,
+  "cut_mm": 44,
+  "clear_of_parts_mm": 0.1,
+  "clear_of_wires_mm": 0.38
+ },
+ {
+  "id": "W12",
+  "from": [
+   "U2",
+   "VMM"
+  ],
+  "to": [
+   "R1",
+   "1"
+  ],
+  "net": "VMM",
+  "colour": "red",
+  "awg": 28,
+  "connector_from": "soldered from the top into the board's through-hole",
+  "connector_to": "soldered to R1's leg, heat-shrink",
+  "carries": "sense",
+  "straight_mm": 31.9,
+  "length_mm": 60.0,
+  "length_source": "estimate",
+  "ohm": 0.012772200000000001,
+  "dia_mm": 1.1,
+  "points_mm": [
+   [
+    8.0,
+    5.08,
+    18.230053037446822
+   ],
+   [
+    8.0,
+    5.08,
+    20.230053037446822
+   ],
+   [
+    5.5,
+    7.0,
+    20.5
+   ],
+   [
+    -8.0,
+    16.5,
+    21.0
+   ],
+   [
+    -16.5,
+    17.0,
+    21.0
+   ],
+   [
+    -20.5,
+    17.0,
+    21.0
+   ],
+   [
+    -21.584999999999997,
+    16.87,
+    20.90005303744682
+   ],
+   [
+    -21.584999999999997,
+    16.87,
+    18.90005303744682
+   ]
+  ],
+  "routed_mm": 37.3,
+  "cut_mm": 57,
+  "clear_of_parts_mm": 0.38,
+  "clear_of_wires_mm": 0.38
+ },
+ {
+  "id": "W13",
+  "from": [
+   "U3",
+   "D0"
+  ],
+  "to": [
+   "U2",
+   "AIN1"
+  ],
+  "net": "AIN1",
+  "colour": "yellow",
+  "awg": 28,
+  "connector_from": "soldered onto the XIAO's castellated pad, from the top",
+  "connector_to": "soldered from the top into the board's through-hole",
+  "carries": "signal",
+  "straight_mm": 30.0,
+  "length_mm": 55.0,
+  "length_source": "estimate",
+  "ohm": 0.01170785,
+  "dia_mm": 1.1,
+  "points_mm": [
+   [
+    -29.205,
+    -7.87,
+    17.90005303744682
+   ],
+   [
+    -29.205,
+    -7.87,
+    19.90005303744682
+   ],
+   [
+    -27.0,
+    -6.5,
+    21.0
+   ],
+   [
+    -14.5,
+    1.0,
+    21.0
+   ],
+   [
+    -11.0,
+    1.5,
+    21.5
+   ],
+   [
+    -7.0,
+    2.5,
+    21.0
+   ],
+   [
+    -4.0,
+    4.0,
+    20.0
+   ],
+   [
+    -2.16,
+    5.08,
+    20.230053037446822
+   ],
+   [
+    -2.16,
+    5.08,
+    18.230053037446822
+   ]
+  ],
+  "routed_mm": 34.8,
+  "cut_mm": 55,
+  "clear_of_parts_mm": 0.45,
+  "clear_of_wires_mm": 0.27
+ },
+ {
+  "id": "W14",
+  "from": [
+   "U3",
+   "D1"
+  ],
+  "to": [
+   "U2",
+   "AIN2"
+  ],
+  "net": "AIN2",
+  "colour": "green",
+  "awg": 28,
+  "connector_from": "soldered onto the XIAO's castellated pad, from the top",
+  "connector_to": "soldered from the top into the board's through-hole",
+  "carries": "signal",
+  "straight_mm": 30.0,
+  "length_mm": 55.0,
+  "length_source": "estimate",
+  "ohm": 0.01170785,
+  "dia_mm": 1.1,
+  "points_mm": [
+   [
+    -26.665,
+    -7.87,
+    17.90005303744682
+   ],
+   [
+    -26.665,
+    -7.87,
+    19.90005303744682
+   ],
+   [
+    -16.0,
+    -7.0,
+    20.0
+   ],
+   [
+    -8.0,
+    -2.5,
+    20.5
+   ],
+   [
+    -7.5,
+    -2.0,
+    21.0
+   ],
+   [
+    -7.0,
+    -1.5,
+    21.5
+   ],
+   [
+    0.3799999999999999,
+    5.08,
+    20.230053037446822
+   ],
+   [
+    0.3799999999999999,
+    5.08,
+    18.230053037446822
+   ]
+  ],
+  "routed_mm": 35.6,
+  "cut_mm": 56,
+  "clear_of_parts_mm": 0.27,
+  "clear_of_wires_mm": 0.27
+ },
+ {
+  "id": "W15",
+  "from": [
+   "U3",
+   "D8"
+  ],
+  "to": [
+   "U2",
+   "BIN1"
+  ],
+  "net": "BIN1",
+  "colour": "blue",
+  "awg": 28,
+  "connector_from": "soldered onto the XIAO's castellated pad, from the top",
+  "connector_to": "soldered from the top into the board's through-hole",
+  "carries": "signal",
+  "straight_mm": 22.1,
+  "length_mm": 45.0,
+  "length_source": "estimate",
+  "ohm": 0.00957915,
+  "dia_mm": 1.1,
+  "points_mm": [
+   [
+    -16.505,
+    7.87,
+    17.90005303744682
+   ],
+   [
+    -16.505,
+    7.87,
+    19.90005303744682
+   ],
+   [
+    -13.0,
+    7.5,
+    20.0
+   ],
+   [
+    -10.5,
+    6.5,
+    20.5
+   ],
+   [
+    -6.5,
+    6.0,
+    20.5
+   ],
+   [
+    0.0,
+    5.0,
+    19.5
+   ],
+   [
+    5.459999999999999,
+    5.08,
+    20.230053037446822
+   ],
+   [
+    5.459999999999999,
+    5.08,
+    18.230053037446822
+   ]
+  ],
+  "routed_mm": 26.5,
+  "cut_mm": 46,
+  "clear_of_parts_mm": 0.35,
+  "clear_of_wires_mm": 0.32
+ },
+ {
+  "id": "W16",
+  "from": [
+   "U3",
+   "D9"
+  ],
+  "to": [
+   "U2",
+   "BIN2"
+  ],
+  "net": "BIN2",
+  "colour": "violet",
+  "awg": 28,
+  "connector_from": "soldered onto the XIAO's castellated pad, from the top",
+  "connector_to": "soldered from the top into the board's through-hole",
+  "carries": "signal",
+  "straight_mm": 22.1,
+  "length_mm": 45.0,
+  "length_source": "estimate",
+  "ohm": 0.00957915,
+  "dia_mm": 1.1,
+  "points_mm": [
+   [
+    -19.044999999999998,
+    7.87,
+    17.90005303744682
+   ],
+   [
+    -19.044999999999998,
+    7.87,
+    19.90005303744682
+   ],
+   [
+    -17.0,
+    6.5,
+    21.0
+   ],
+   [
+    -16.5,
+    6.0,
+    21.0
+   ],
+   [
+    -16.0,
+    5.5,
+    21.0
+   ],
+   [
+    -15.0,
+    5.0,
+    21.5
+   ],
+   [
+    -3.0,
+    5.0,
+    21.5
+   ],
+   [
+    0.0,
+    3.5,
+    20.0
+   ],
+   [
+    0.5,
+    3.5,
+    19.5
+   ],
+   [
+    1.5,
+    4.5,
+    19.5
+   ],
+   [
+    2.92,
+    5.08,
+    20.230053037446822
+   ],
+   [
+    2.92,
+    5.08,
+    18.230053037446822
+   ]
+  ],
+  "routed_mm": 28.8,
+  "cut_mm": 49,
+  "clear_of_parts_mm": 0.45,
+  "clear_of_wires_mm": 0.3
+ },
+ {
+  "id": "W17",
+  "from": [
+   "U3",
+   "D3"
+  ],
+  "to": [
+   "U2",
+   "SLP"
+  ],
+  "net": "nSLEEP",
+  "colour": "brown",
+  "awg": 28,
+  "connector_from": "soldered onto the XIAO's castellated pad, from the top",
+  "connector_to": "soldered from the top into the board's through-hole (R3's leg in the same hole)",
+  "carries": "signal",
+  "straight_mm": 21.3,
+  "length_mm": 45.0,
+  "length_source": "estimate",
+  "ohm": 0.00957915,
+  "dia_mm": 1.1,
+  "points_mm": [
+   [
+    -21.584999999999997,
+    -7.87,
+    17.90005303744682
+   ],
+   [
+    -21.584999999999997,
+    -7.87,
+    19.90005303744682
+   ],
+   [
+    -19.5,
+    -6.0,
+    21.0
+   ],
+   [
+    -12.0,
+    1.5,
+    22.5
+   ],
+   [
+    -11.5,
+    2.0,
+    22.5
+   ],
+   [
+    -11.0,
+    2.5,
+    22.5
+   ],
+   [
+    -8.5,
+    3.5,
+    21.5
+   ],
+   [
+    -8.0,
+    3.5,
+    21.0
+   ],
+   [
+    -6.5,
+    4.5,
+    20.0
+   ],
+   [
+    -4.7,
+    5.08,
+    20.230053037446822
+   ],
+   [
+    -4.7,
+    5.08,
+    18.230053037446822
+   ]
+  ],
+  "routed_mm": 26.7,
+  "cut_mm": 47,
+  "clear_of_parts_mm": 0.33,
+  "clear_of_wires_mm": 0.32
+ },
+ {
+  "id": "W18",
+  "from": [
+   "U3",
+   "D2"
+  ],
+  "to": [
+   "U2",
+   "FLT"
+  ],
+  "net": "nFAULT",
+  "colour": "grey",
+  "awg": 28,
+  "connector_from": "soldered onto the XIAO's castellated pad, from the top",
+  "connector_to": "soldered from the top into the board's through-hole",
+  "carries": "signal",
+  "straight_mm": 21.3,
+  "length_mm": 45.0,
+  "length_source": "estimate",
+  "ohm": 0.00957915,
+  "dia_mm": 1.1,
+  "points_mm": [
+   [
+    -24.125,
+    -7.87,
+    17.90005303744682
+   ],
+   [
+    -24.125,
+    -7.87,
+    19.90005303744682
+   ],
+   [
+    -19.5,
+    -7.5,
+    20.0
+   ],
+   [
+    -18.0,
+    -6.5,
+    21.0
+   ],
+   [
+    -9.0,
+    -0.5,
+    21.5
+   ],
+   [
+    -8.5,
+    0.0,
+    22.0
+   ],
+   [
+    -7.5,
+    1.0,
+    21.0
+   ],
+   [
+    -7.5,
+    1.5,
+    20.0
+   ],
+   [
+    -7.5,
+    3.0,
+    19.5
+   ],
+   [
+    -7.5,
+    4.5,
+    19.5
+   ],
+   [
+    -7.24,
+    5.08,
+    20.230053037446822
+   ],
+   [
+    -7.24,
+    5.08,
+    18.230053037446822
+   ]
+  ],
+  "routed_mm": 29.3,
+  "cut_mm": 49,
+  "clear_of_parts_mm": 0.45,
+  "clear_of_wires_mm": 0.32
+ },
+ {
+  "id": "W19",
+  "from": [
+   "U2",
+   "AOUT1"
+  ],
+  "to": [
+   "J2",
+   "1"
+  ],
+  "net": "MA1",
+  "colour": "white",
+  "awg": 24,
+  "connector_from": "soldered from the top into the board's through-hole",
+  "connector_to": "JST SMP-02V-BC (socket crimp SHF-001T-0.8BS)",
+  "carries": "motor",
+  "straight_mm": 17.6,
+  "length_mm": 40.0,
+  "length_source": "estimate",
+  "ohm": 0.003368,
+  "dia_mm": 1.4,
+  "points_mm": [
+   [
+    -2.16,
+    -5.08,
+    18.230053037446822
+   ],
+   [
+    -2.16,
+    -5.08,
+    20.230053037446822
+   ],
+   [
+    0.0,
+    -1.0,
+    21.5
+   ],
+   [
+    1.0,
+    0.5,
+    23.0
+   ],
+   [
+    1.0,
+    1.0,
+    23.5
+   ],
+   [
+    1.5,
+    1.5,
+    24.0
+   ],
+   [
+    2.0,
+    2.0,
+    24.5
+   ],
+   [
+    2.5,
+    2.5,
+    24.0
+   ],
+   [
+    3.0,
+    3.0,
+    23.5
+   ],
+   [
+    5.0,
+    5.5,
+    21.5
+   ],
+   [
+    6.65,
+    8.0,
+    20.660053037446822
+   ],
+   [
+    6.65,
+    10.0,
+    20.660053037446822
+   ]
+  ],
+  "routed_mm": 22.2,
+  "cut_mm": 42,
+  "clear_of_parts_mm": 0.46,
+  "clear_of_wires_mm": 0.38
+ },
+ {
+  "id": "W20",
+  "from": [
+   "U2",
+   "AOUT2"
+  ],
+  "to": [
+   "J2",
+   "2"
+  ],
+  "net": "MA2",
+  "colour": "blue",
+  "awg": 24,
+  "connector_from": "soldered from the top into the board's through-hole",
+  "connector_to": "JST SMP-02V-BC (socket crimp SHF-001T-0.8BS)",
+  "carries": "motor",
+  "straight_mm": 17.6,
+  "length_mm": 40.0,
+  "length_source": "estimate",
+  "ohm": 0.003368,
+  "dia_mm": 1.4,
+  "points_mm": [
+   [
+    0.3799999999999999,
+    -5.08,
+    18.230053037446822
+   ],
+   [
+    0.3799999999999999,
+    -5.08,
+    20.230053037446822
+   ],
+   [
+    4.0,
+    -0.5,
+    24.0
+   ],
+   [
+    4.5,
+    0.0,
+    24.5
+   ],
+   [
+    9.15,
+    8.0,
+    20.660053037446822
+   ],
+   [
+    9.15,
+    10.0,
+    20.660053037446822
+   ]
+  ],
+  "routed_mm": 21.8,
+  "cut_mm": 42,
+  "clear_of_parts_mm": 0.46,
+  "clear_of_wires_mm": 0.39
+ },
+ {
+  "id": "W21",
+  "from": [
+   "J2",
+   "1"
+  ],
+  "to": [
+   "M1",
+   "1"
+  ],
+  "net": "MA1",
+  "colour": "white",
+  "awg": 24,
+  "connector_from": "JST SMR-02V-B (pin crimp SYM-001T-P0.6)",
+  "connector_to": "soldered to the motor tab (C3 across the tabs)",
+  "carries": "motor",
+  "straight_mm": 12.1,
+  "length_mm": 35.0,
+  "length_source": "estimate",
+  "ohm": 0.002947,
+  "dia_mm": 1.4,
+  "points_mm": [
+   [
+    6.65,
+    10.0,
+    20.660053037446822
+   ],
+   [
+    6.65,
+    12.0,
+    20.660053037446822
+   ],
+   [
+    17.7,
+    12.8,
+    19.660053037446822
+   ],
+   [
+    17.7,
+    14.8,
+    19.660053037446822
+   ]
+  ],
+  "routed_mm": 15.1,
+  "cut_mm": 35,
+  "clear_of_parts_mm": 1.0,
+  "clear_of_wires_mm": 1.22
+ },
+ {
+  "id": "W22",
+  "from": [
+   "J2",
+   "2"
+  ],
+  "to": [
+   "M1",
+   "2"
+  ],
+  "net": "MA2",
+  "colour": "blue",
+  "awg": 24,
+  "connector_from": "JST SMR-02V-B (pin crimp SYM-001T-P0.6)",
+  "connector_to": "soldered to the motor tab",
+  "carries": "motor",
+  "straight_mm": 5.8,
+  "length_mm": 25.0,
+  "length_source": "estimate",
+  "ohm": 0.002105,
+  "dia_mm": 1.4,
+  "points_mm": [
+   [
+    9.15,
+    10.0,
+    20.660053037446822
+   ],
+   [
+    9.15,
+    12.0,
+    20.660053037446822
+   ],
+   [
+    12.3,
+    12.8,
+    19.660053037446822
+   ],
+   [
+    12.3,
+    14.8,
+    19.660053037446822
+   ]
+  ],
+  "routed_mm": 7.4,
+  "cut_mm": 27,
+  "clear_of_parts_mm": 1.0,
+  "clear_of_wires_mm": 1.0
+ },
+ {
+  "id": "W23",
+  "from": [
+   "U2",
+   "BOUT1"
+  ],
+  "to": [
+   "J3",
+   "1"
+  ],
+  "net": "MB1",
+  "colour": "white",
+  "awg": 24,
+  "connector_from": "soldered from the top into the board's through-hole",
+  "connector_to": "JST SMP-02V-BC (socket crimp SHF-001T-0.8BS)",
+  "carries": "motor",
+  "straight_mm": 5.6,
+  "length_mm": 25.0,
+  "length_source": "estimate",
+  "ohm": 0.002105,
+  "dia_mm": 1.4,
+  "points_mm": [
+   [
+    5.459999999999999,
+    -5.08,
+    18.230053037446822
+   ],
+   [
+    5.459999999999999,
+    -5.08,
+    20.230053037446822
+   ],
+   [
+    6.5,
+    -7.0,
+    21.0
+   ],
+   [
+    6.5,
+    -11.0,
+    21.0
+   ],
+   [
+    6.65,
+    -12.0,
+    20.660053037446822
+   ],
+   [
+    6.65,
+    -10.0,
+    20.660053037446822
+   ]
+  ],
+  "routed_mm": 11.4,
+  "cut_mm": 31,
+  "clear_of_parts_mm": 0.52,
+  "clear_of_wires_mm": 0.8
+ },
+ {
+  "id": "W24",
+  "from": [
+   "U2",
+   "BOUT2"
+  ],
+  "to": [
+   "J3",
+   "2"
+  ],
+  "net": "MB2",
+  "colour": "blue",
+  "awg": 24,
+  "connector_from": "soldered from the top into the board's through-hole",
+  "connector_to": "JST SMP-02V-BC (socket crimp SHF-001T-0.8BS)",
+  "carries": "motor",
+  "straight_mm": 8.3,
+  "length_mm": 30.0,
+  "length_source": "estimate",
+  "ohm": 0.002526,
+  "dia_mm": 1.4,
+  "points_mm": [
+   [
+    2.92,
+    -5.08,
+    18.230053037446822
+   ],
+   [
+    2.92,
+    -5.08,
+    20.230053037446822
+   ],
+   [
+    6.5,
+    -8.5,
+    23.0
+   ],
+   [
+    9.15,
+    -12.0,
+    20.660053037446822
+   ],
+   [
+    9.15,
+    -10.0,
+    20.660053037446822
+   ]
+  ],
+  "routed_mm": 14.6,
+  "cut_mm": 35,
+  "clear_of_parts_mm": 0.77,
+  "clear_of_wires_mm": 0.45
+ },
+ {
+  "id": "W25",
+  "from": [
+   "J3",
+   "1"
+  ],
+  "to": [
+   "M2",
+   "2"
+  ],
+  "net": "MB1",
+  "colour": "white",
+  "awg": 24,
+  "connector_from": "JST SMR-02V-B (pin crimp SYM-001T-P0.6)",
+  "connector_to": "soldered to the motor tab (C4 across the tabs; leads crossed)",
+  "carries": "motor",
+  "straight_mm": 12.1,
+  "length_mm": 35.0,
+  "length_source": "estimate",
+  "ohm": 0.002947,
+  "dia_mm": 1.4,
+  "points_mm": [
+   [
+    6.65,
+    -10.0,
+    20.660053037446822
+   ],
+   [
+    6.65,
+    -8.0,
+    20.660053037446822
+   ],
+   [
+    7.0,
+    -8.0,
+    20.5
+   ],
+   [
+    7.5,
+    -8.5,
+    21.0
+   ],
+   [
+    8.0,
+    -9.0,
+    21.5
+   ],
+   [
+    16.0,
+    -12.5,
+    20.0
+   ],
+   [
+    17.700000000000003,
+    -12.8,
+    19.660053037446822
+   ],
+   [
+    17.700000000000003,
+    -14.8,
+    19.660053037446822
+   ]
+  ],
+  "routed_mm": 16.7,
+  "cut_mm": 37,
+  "clear_of_parts_mm": 0.3,
+  "clear_of_wires_mm": 0.55
+ },
+ {
+  "id": "W26",
+  "from": [
+   "J3",
+   "2"
+  ],
+  "to": [
+   "M2",
+   "1"
+  ],
+  "net": "MB2",
+  "colour": "blue",
+  "awg": 24,
+  "connector_from": "JST SMR-02V-B (pin crimp SYM-001T-P0.6)",
+  "connector_to": "soldered to the motor tab",
+  "carries": "motor",
+  "straight_mm": 5.8,
+  "length_mm": 25.0,
+  "length_source": "estimate",
+  "ohm": 0.002105,
+  "dia_mm": 1.4,
+  "points_mm": [
+   [
+    9.15,
+    -10.0,
+    20.660053037446822
+   ],
+   [
+    9.15,
+    -8.0,
+    20.660053037446822
+   ],
+   [
+    10.0,
+    -8.5,
+    21.5
+   ],
+   [
+    10.5,
+    -8.5,
+    22.0
+   ],
+   [
+    11.0,
+    -9.0,
+    22.5
+   ],
+   [
+    12.0,
+    -11.0,
+    22.5
+   ],
+   [
+    12.0,
+    -12.0,
+    22.0
+   ],
+   [
+    12.0,
+    -12.5,
+    21.5
+   ],
+   [
+    12.300000000000002,
+    -12.8,
+    19.660053037446822
+   ],
+   [
+    12.300000000000002,
+    -14.8,
+    19.660053037446822
+   ]
+  ],
+  "routed_mm": 12.8,
+  "cut_mm": 33,
+  "clear_of_parts_mm": 0.46,
+  "clear_of_wires_mm": 0.37
+ }
+]

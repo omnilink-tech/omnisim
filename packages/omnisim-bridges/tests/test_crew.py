@@ -44,8 +44,8 @@ def test_no_crew_no_tool():
 def _crew(sent):
     done = threading.Event()
 
-    def post(port, text):
-        sent.append((port, text))
+    def post(port, text, details="", sender=""):
+        sent.append((port, text, details, sender))
         done.set()
         return {"response": "on it", "via": "model"}
     c = crew.Crew("Picker", {"Tug": 8766, "Packer": 8767}, lambda: 3.0, post=post, operator="Sam")
@@ -56,10 +56,10 @@ def test_a_message_is_delivered_as_the_senders_own_words(tmp_path, monkeypatch):
     monkeypatch.setenv("OMNILINK_CREW_LOG", str(tmp_path / "crew.jsonl"))
     sent = []
     c, done = _crew(sent)
-    out = c.message("tug", "  Please bring   the cart. ")
+    out = c.message("tug", "  Please bring   the cart. ", "It is at x -1.80.")
     assert out["sent"] and out["to"] == "Tug"
     assert done.wait(5)
-    assert sent == [(8766, "Picker: Please bring the cart.")]
+    assert sent == [(8766, "Picker: Please bring the cart.", "It is at x -1.80.", "Picker")]
     rows = [json.loads(x) for x in (tmp_path / "crew.jsonl").read_text(encoding="utf-8").splitlines()]
     assert rows[0]["kind"] == "message" and rows[0]["from"] == "Picker" and rows[0]["sim_s"] == 3.0
 
@@ -103,6 +103,65 @@ def test_a_delivery_is_marked_crew_so_the_receiver_skips_its_parser(monkeypatch)
         seen["url"], seen["body"] = req.full_url, json.loads(req.data.decode())
         return _Resp()
     monkeypatch.setattr(crew.urllib.request, "urlopen", fake_urlopen)
-    assert crew._post_prompt(8767, "Picker: hello") == {"response": "ok"}
+    assert crew._post_prompt(8767, "Picker: hello", "the cart is at x 1.8", "Picker") == {"response": "ok"}
     assert seen["url"] == "http://127.0.0.1:8767/prompt"
     assert seen["body"]["crew"] is True and seen["body"]["text"] == "Picker: hello"
+    # the details travel BESIDE the turn, never inside the text the gate judges
+    assert seen["body"]["crew_details"] == "the cart is at x 1.8" and "x 1.8" not in seen["body"]["text"]
+
+
+def test_details_reach_the_model_as_live_context_not_as_the_turn():
+    b = _Bridge()
+    crew.crew_tools(b, 8767, spec="Picker=8765,Tug=8766,Packer=8767")
+    crew.note_incoming(b, {"crew": True, "crew_from": "Tug", "crew_details": "  CART at x 1.80,   y 0.00. "})
+    crew.note_incoming(b, {"crew": True, "crew_from": "Tug", "crew_details": ""})          # nothing to file
+
+    class Relay:
+        memory_provider = staticmethod(lambda: "Places: shipping pad.")
+    r = Relay()
+    crew.attach_relay(r, b)
+    ctx = r.memory_provider()
+    assert ctx.startswith("Places: shipping pad.")
+    assert "Tug (sim 12.0 s): CART at x 1.80, y 0.00." in ctx and "not orders" in ctx
+
+
+def test_the_inbox_keeps_only_the_latest_details():
+    b = _Bridge()
+    crew.crew_tools(b, 8767, spec="Picker=8765,Tug=8766,Packer=8767")
+    for i in range(crew.INBOX_KEEP + 3):
+        crew.note_incoming(b, {"crew_from": "Tug", "crew_details": f"fact {i}"})
+    text = crew.inbox_text(b.crew)
+    assert "fact 0" not in text and f"fact {crew.INBOX_KEEP + 2}" in text
+
+
+def test_a_bridge_without_a_crew_is_untouched():
+    class Relay:
+        memory_provider = None
+    r = Relay()
+    crew.attach_relay(r, object())
+    crew.note_incoming(object(), {"crew_details": "x"})
+    assert r.memory_provider is None
+
+
+def test_the_tool_takes_a_request_and_details():
+    tool = crew.crew_tools(_Bridge(), 8765, spec="Picker=8765,Tug=8766")[0]
+    props = tool.parameters["properties"]
+    assert set(props) == {"to", "request", "details"} and tool.parameters["required"] == ["to", "request"]
+    assert "judges that sentence ALONE" in tool.description
+
+
+def test_a_standing_briefing_joins_the_task_text(tmp_path, monkeypatch):
+    path = tmp_path / "briefings.json"
+    path.write_text(json.dumps({"Tug": "You tow CART.", "Picker": "You load it."}), encoding="utf-8")
+    monkeypatch.setenv("OMNILINK_CREW_BRIEFINGS", str(path))
+    monkeypatch.setenv("OMNILINK_CREW_OPERATOR", "Sam")
+    b = _Bridge()
+    crew.crew_tools(b, 8766, spec="Picker=8765,Tug=8766")
+
+    class Relay:
+        main_task = "Operate the robot."
+        memory_provider = None
+    r = Relay()
+    crew.attach_relay(r, b)
+    assert r.main_task.startswith("Operate the robot.") and "Standing briefing from Sam" in r.main_task
+    assert "You tow CART." in r.main_task and "You load it." not in r.main_task

@@ -53,7 +53,8 @@ OmTokenizer::OmTokenizer() :
   mTokenColumn(-1),
   mIndex(-1),
   mAtEnd(false),
-  mErrorOffset(0) {
+  mErrorOffset(0),
+  mExpandUrdfRobots(true) {
 }
 
 OmTokenizer::~OmTokenizer() {
@@ -417,7 +418,7 @@ int OmTokenizer::tokenize(const QString &fileName, const QString &prefix) {
 
   // Native URDF support: expand any URDFRobot { url "..." } blocks into
   // standard Robot { ... } VRML before tokenization.
-  if (contents.contains("URDFRobot"))
+  if (mExpandUrdfRobots && contents.contains("URDFRobot"))
     contents = OmUrdfImporter::expandUrdfRobotBlocks(contents, mFileName);
 
   mStream = new QTextStream(contents);

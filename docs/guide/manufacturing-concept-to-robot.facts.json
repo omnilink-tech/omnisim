@@ -1,0 +1,1526 @@
+{
+ "guide": "docs/guide/manufacturing-concept-to-robot.md",
+ "about": "Every number and claim in the guide, with the file it comes from and how to read it back. tests/test_manufacturing_story_facts.py re-reads each source and checks the value, and checks that the quote is in the guide. Facts of kind 'image' were read by eye from the concept sheets; the test checks only that the image exists.",
+ "facts": [
+  {
+   "id": "edubuddy_size",
+   "claim": "EduBuddy's sheets give 320 x 180 x 145 mm",
+   "value": [
+    320,
+    180,
+    145
+   ],
+   "quote": "320 × 180 × 145 mm",
+   "source": "docs/images/manufacturing/concept/edubuddy_1.png",
+   "extract": {
+    "kind": "image"
+   }
+  },
+  {
+   "id": "edubuddy_weight",
+   "claim": "EduBuddy's weight target is 2.0-2.5 kg",
+   "value": [
+    2.0,
+    2.5
+   ],
+   "quote": "2.0–2.5 kg target",
+   "source": "docs/images/manufacturing/concept/edubuddy_1.png",
+   "extract": {
+    "kind": "image"
+   }
+  },
+  {
+   "id": "edubuddy_arms",
+   "claim": "EduBuddy has two 3-DOF arms (shoulder yaw, elbow pitch, wrist roll)",
+   "value": "3-DOF",
+   "quote": "two 3-DOF arms (shoulder yaw, elbow pitch, wrist roll)",
+   "source": "docs/images/manufacturing/concept/edubuddy_3.png",
+   "extract": {
+    "kind": "image"
+   }
+  },
+  {
+   "id": "sparkrover_low_part_count",
+   "claim": "The SparkRover sheets ask for a low part count",
+   "value": "low part count",
+   "quote": "low part count",
+   "source": "docs/images/manufacturing/concept/sparkrover_2.png",
+   "extract": {
+    "kind": "image"
+   }
+  },
+  {
+   "id": "sheet_weight",
+   "claim": "The SparkRover sheets give 1.5-2.0 kg",
+   "value": [
+    1.5,
+    2.0
+   ],
+   "quote": "≈ 1.5–2.0 kg",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "The sheets' ([\\d.]+)-([\\d.]+) kg was a guess"
+   }
+  },
+  {
+   "id": "sheet_battery",
+   "claim": "The SparkRover sheet gives a 7.4 V 2,500-4,000 mAh battery for about 2-4 hours",
+   "value": [
+    7.4,
+    2500,
+    4000
+   ],
+   "quote": "7.4 V, 2,500–4,000 mAh",
+   "source": "docs/images/manufacturing/concept/sparkrover_1.png",
+   "extract": {
+    "kind": "image"
+   }
+  },
+  {
+   "id": "sheet_wheels",
+   "claim": "The sheets give 55-60 mm (side) and 62-65 mm (front) wheels",
+   "value": [
+    55,
+    60,
+    62,
+    65
+   ],
+   "quote": "55–60 mm (side sheet), 62–65 mm (front sheet)",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "wheel (\\d+)-(\\d+) \\(side sheet\\) vs (\\d+)-(\\d+) \\(front sheet\\)"
+   }
+  },
+  {
+   "id": "sheet_bumper",
+   "claim": "The sheets draw an 8 mm soft edge",
+   "value": 8,
+   "quote": "8 mm soft edge",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "the sheets' (\\d+) mm soft edge does not fit"
+   }
+  },
+  {
+   "id": "decision_no_gripper",
+   "claim": "No gripper: the arms wave, point and gesture",
+   "value": true,
+   "quote": "The arms wave, point and gesture; the sheet's 'carry light objects' is dropped.",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "DECISIONS",
+    "key": "arms",
+    "contains": "the arms wave, point and gesture; the sheet's 'carry light objects' is dropped"
+   }
+  },
+  {
+   "id": "decision_camera",
+   "claim": "A plain RGB camera, no depth",
+   "value": true,
+   "quote": "A plain RGB camera (no depth / ToF)",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "DECISIONS",
+    "key": "camera",
+    "contains": "a plain RGB camera (no depth / ToF)"
+   }
+  },
+  {
+   "id": "decision_2s2p",
+   "claim": "2S2P chosen for runtime: 2S1P gave about 1.4 h against the sheets' 2-4 h",
+   "value": true,
+   "quote": "2S1P gave ~1.4 h of classroom use against the sheets' 2-4 h; 2S2P ~2.8 h for ~95 g more.",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "DECISIONS",
+    "key": "battery",
+    "contains": "2S1P gave ~1.4 h of classroom use against the sheets' 2-4 h; 2S2P ~2.8 h for ~95 g more"
+   }
+  },
+  {
+   "id": "decision_capacity",
+   "claim": "The pack is about 5600 mAh",
+   "value": true,
+   "quote": "~5600 mAh",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "DECISIONS",
+    "key": "battery",
+    "contains": "~5600 mAh"
+   }
+  },
+  {
+   "id": "decision_charging",
+   "claim": "USB-C at 5 V through a 15 W boost charger, not PD",
+   "value": true,
+   "quote": "USB-C at 5 V through a 15 W boost charger, not PD",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "DECISIONS",
+    "key": "battery",
+    "contains": "USB-C charging at 5 V (a 15 W boost charger: not PD)"
+   }
+  },
+  {
+   "id": "decision_shell",
+   "claim": "The shell is printed: injection moulding has no twin",
+   "value": true,
+   "quote": "printed PETG sections",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "DECISIONS",
+    "key": "shell",
+    "contains": "printed PETG sections on the SV08 twin (the sheets' injection-moulded shell has no twin)"
+   }
+  },
+  {
+   "id": "height",
+   "claim": "Designed height",
+   "value": 290.0,
+   "quote": "290 × 210 × 185 mm",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "HEIGHT"
+   }
+  },
+  {
+   "id": "width",
+   "claim": "Designed width",
+   "value": 210.0,
+   "quote": "290 × 210 × 185 mm",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "WIDTH"
+   }
+  },
+  {
+   "id": "depth",
+   "claim": "Designed depth",
+   "value": 185.0,
+   "quote": "290 × 210 × 185 mm",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "DEPTH"
+   }
+  },
+  {
+   "id": "wheel_d",
+   "claim": "Designed wheel diameter",
+   "value": 65.0,
+   "quote": "| 65 mm |",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "WHEEL_D"
+   }
+  },
+  {
+   "id": "track",
+   "claim": "Designed track",
+   "value": 170.0,
+   "quote": "170 mm, 15 mm",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "TRACK"
+   }
+  },
+  {
+   "id": "ground_clearance",
+   "claim": "Designed ground clearance",
+   "value": 15.0,
+   "quote": "170 mm, 15 mm",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "GROUND_CLEARANCE"
+   }
+  },
+  {
+   "id": "mass_ceiling",
+   "claim": "The skeleton's mass ceiling",
+   "value": 2400.0,
+   "quote": "under a 2400 g ceiling",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "MASS_TARGET_G",
+    "index": 1
+   }
+  },
+  {
+   "id": "mass_total",
+   "claim": "The design's total mass",
+   "value": 2397.8,
+   "quote": "**2397.8 g**",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "Mass: \\*\\*([\\d.]+) g\\*\\*"
+   }
+  },
+  {
+   "id": "bumper_t",
+   "claim": "The bumper is 6.5 mm",
+   "value": 6.5,
+   "quote": "6.5 mm TPU",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "py_const",
+    "name": "BUMPER_T"
+   }
+  },
+  {
+   "id": "battery_mix",
+   "claim": "The battery model's classroom mix runtime",
+   "value": 2.68,
+   "quote": "**2.68 h**",
+   "source": "projects/manufacturing/products/spark_rover/README.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| Classroom mix \\| ([\\d.]+) h"
+   }
+  },
+  {
+   "id": "battery_idle",
+   "claim": "The battery model's idle runtime",
+   "value": 4.6,
+   "quote": "4.60 h idle",
+   "source": "projects/manufacturing/products/spark_rover/README.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| Idle \\| ([\\d.]+) h"
+   }
+  },
+  {
+   "id": "battery_driving",
+   "claim": "The battery model's driving runtime",
+   "value": 1.4,
+   "quote": "1.40 h driving",
+   "source": "projects/manufacturing/products/spark_rover/README.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| Driving \\| ([\\d.]+) h"
+   }
+  },
+  {
+   "id": "camera_hfov",
+   "claim": "The camera's horizontal field of view",
+   "value": 66,
+   "quote": "66° horizontal field of view",
+   "source": "projects/manufacturing/products/spark_rover/README.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "It has the module's (\\d+)° horizontal field of view"
+   }
+  },
+  {
+   "id": "shoulder_limits",
+   "claim": "Shoulder range",
+   "value": [
+    -70.0,
+    90.0
+   ],
+   "quote": "Shoulder −70° to 90°",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "joint_limits_feasible`: shoulder \\((-?[\\d.]+), (-?[\\d.]+)\\)"
+   }
+  },
+  {
+   "id": "elbow_limits",
+   "claim": "Elbow range",
+   "value": [
+    -90.0,
+    90.0
+   ],
+   "quote": "elbow −90° to 90°",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\), elbow \\((-?[\\d.]+), (-?[\\d.]+)\\)"
+   }
+  },
+  {
+   "id": "mics",
+   "claim": "Two I2S microphones, not simulated",
+   "value": true,
+   "quote": "two I2S mics",
+   "source": "projects/manufacturing/products/spark_rover/README.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "The two I2S\\s+microphones are not simulated"
+   }
+  },
+  {
+   "id": "base_zone",
+   "claim": "The base zone's edge moved from |y| 70 to 67 mm",
+   "value": [
+    67,
+    70
+   ],
+   "quote": "from |y| 70 to 67 mm",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "boundary at \\|y\\| (\\d+) \\(was (\\d+)\\)"
+   }
+  },
+  {
+   "id": "head_zone",
+   "claim": "The head zone widened from +-60 to +-76 mm",
+   "value": [
+    60,
+    76
+   ],
+   "quote": "from ±60 to ±76 mm",
+   "source": "projects/manufacturing/products/spark_rover/skeleton.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "Widened from \\+-(\\d+) to \\+-(\\d+)"
+   }
+  },
+  {
+   "id": "solids",
+   "claim": "Integration solids",
+   "value": 325,
+   "quote": "**325 solids, 0 interfering, 0 outside their zones**",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "Solids: (\\d+)\\."
+   }
+  },
+  {
+   "id": "interfering",
+   "claim": "Interfering pairs",
+   "value": 0,
+   "quote": "**325 solids, 0 interfering, 0 outside their zones**",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\*\\*(\\d+) interfering\\*\\*"
+   }
+  },
+  {
+   "id": "outside_zones",
+   "claim": "Solids outside their zones",
+   "value": 0,
+   "quote": "**325 solids, 0 interfering, 0 outside their zones**",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "Solids outside their zones: (\\d+)\\."
+   }
+  },
+  {
+   "id": "interfaces",
+   "claim": "Interfaces, none missing a side",
+   "value": [
+    45,
+    0
+   ],
+   "quote": "45 interfaces with none missing a side",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "Interfaces: (\\d+), (\\d+) missing a side"
+   }
+  },
+  {
+   "id": "motor_order",
+   "claim": "The encoders sit 1 mm apart, so the second motor has no path",
+   "value": 1,
+   "quote": "the encoders sit 1 mm apart",
+   "source": "projects/manufacturing/products/spark_rover/assemble.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\((\\d+) mm between the encoders"
+   }
+  },
+  {
+   "id": "bay_wings",
+   "claim": "The bay carrier's wings stood in the shell halves' path: hit 4.5-17 mm out",
+   "value": [
+    4.5,
+    17
+   ],
+   "quote": "4.5–17 mm out",
+   "source": "projects/manufacturing/products/spark_rover/electrical.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "hit ([\\d.]+)-([\\d.]+) mm out"
+   }
+  },
+  {
+   "id": "carriers_no_holes",
+   "claim": "The first carriers had no screw or insert holes",
+   "value": true,
+   "quote": "solid boxes with no screw or insert holes",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "solid boxes with no screw or insert holes"
+   }
+  },
+  {
+   "id": "fcl_cap",
+   "claim": "One FCL manager keeps at most 100,000 contacts",
+   "value": 100000,
+   "quote": "at most 100,000 contacts",
+   "source": "projects/manufacturing/products/spark_rover/integrate.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "at\\s+(?:#\\s*)?most ([\\d,]+) contacts"
+   }
+  },
+  {
+   "id": "fcl_lost",
+   "claim": "At 259 solids it found 110,997 contacts and lost two interferences",
+   "value": [
+    259,
+    110997
+   ],
+   "quote": "At 259 solids it found 110,997 contacts and lost two real interferences",
+   "source": "projects/manufacturing/products/spark_rover/integrate.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "at (\\d+) solids it found ([\\d,]+) and lost two real interferences"
+   }
+  },
+  {
+   "id": "b3",
+   "claim": "B3 was drawn 2.5 mm into the top socket's floor",
+   "value": 2.5,
+   "quote": "B3 was drawn 2.5 mm into the top socket's floor",
+   "source": "projects/manufacturing/products/spark_rover/electrical.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\(([\\d.]+) mm into shell/top_socket\\)"
+   }
+  },
+  {
+   "id": "tp2",
+   "claim": "TP2 straddled the seam, 1.27 mm into the wedge",
+   "value": 1.27,
+   "quote": "1.27 mm into the seam wedge",
+   "source": "projects/manufacturing/products/spark_rover/electrical.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "TP2 \\(y -9\\.\\.9\\) straddled the seam, ([\\d.]+) mm into the wedge"
+   }
+  },
+  {
+   "id": "battery_com_before",
+   "claim": "The pack's mass sat at its lead exit",
+   "value": [
+    -30,
+    -36,
+    45
+   ],
+   "quote": "(−30, −36, 45) mm",
+   "source": "projects/manufacturing/products/spark_rover/robot.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "at its lead exit,\\s*\\((-?\\d+), (-?\\d+), (-?\\d+)\\)"
+   }
+  },
+  {
+   "id": "battery_mass",
+   "claim": "The pack is 200 g",
+   "value": 200,
+   "quote": "The 200 g pack",
+   "source": "projects/manufacturing/products/spark_rover/robot.py",
+   "extract": {
+    "kind": "regex",
+    "pattern": "its (\\d+) g sits at that box's"
+   }
+  },
+  {
+   "id": "cut_free",
+   "claim": "16 of 16 laser and CNC parts cut free",
+   "value": [
+    16,
+    16
+   ],
+   "quote": "All 16 of 16 laser and CNC parts cut free",
+   "source": "projects/manufacturing/products/spark_rover/README.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "(\\d+) of (\\d+) cut free"
+   }
+  },
+  {
+   "id": "machine_min",
+   "claim": "Laser and CNC machine time for the set",
+   "value": 266.5,
+   "quote": "**266.5 min**",
+   "source": "projects/manufacturing/products/spark_rover/release/make/made.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "machine_s_total"
+    ],
+    "scale": 0.016666666666666666,
+    "round": 1
+   }
+  },
+  {
+   "id": "wall_min",
+   "claim": "Engine wall time for the set",
+   "value": 62.2,
+   "quote": "62.2 min of wall time",
+   "source": "projects/manufacturing/products/spark_rover/release/make/made.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "wall_s_total"
+    ],
+    "scale": 0.016666666666666666,
+    "round": 1
+   }
+  },
+  {
+   "id": "sessions",
+   "claim": "Three sessions",
+   "value": 3,
+   "quote": "over three sessions",
+   "source": "projects/manufacturing/products/spark_rover/release/make/made.json",
+   "extract": {
+    "kind": "json_count",
+    "path": [
+     "sessions"
+    ]
+   }
+  },
+  {
+   "id": "parallel",
+   "claim": "Two engines at a time",
+   "value": 2,
+   "quote": "two engines at a time",
+   "source": "projects/manufacturing/products/spark_rover/release/make/made.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "parallel"
+    ]
+   }
+  },
+  {
+   "id": "brackets_time",
+   "claim": "The shoulder brackets: 54.0 min of machine time in 19.9 min of wall time",
+   "value": [
+    54.0,
+    19.9
+   ],
+   "quote": "**54.0 min** of machine time in 19.9 min of wall time",
+   "source": "projects/manufacturing/products/spark_rover/release/make/MAKE.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| shoulder_brackets \\| shoulder_bracket_1 \\| ([\\d.]+) min \\| ([\\d.]+) min"
+   }
+  },
+  {
+   "id": "deck_outline",
+   "claim": "The lower deck's outline against its drawing",
+   "value": [
+    170.15,
+    140.15,
+    170,
+    140
+   ],
+   "quote": "170.15 × 140.15 mm against 170 × 140 drawn",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| deck_lower \\| deck_lower \\| laser \\| yes \\| ([\\d.]+) x ([\\d.]+) \\((\\d+) x (\\d+)\\)"
+   }
+  },
+  {
+   "id": "deck_holes",
+   "claim": "The lower deck's 3.40 mm holes at the bottom face",
+   "value": 3.27,
+   "quote": "measure 3.27 mm",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| deck_lower \\|[^\\n]*?⌀3\\.40: ([\\d.]+) \\(x24\\)"
+   }
+  },
+  {
+   "id": "foot_holes",
+   "claim": "The spine foot's holes, drawn and cut",
+   "value": [
+    3.397,
+    3.396
+   ],
+   "quote": "⌀3.397 mm holes came out at 3.396 mm",
+   "source": "projects/manufacturing/products/spark_rover/release/make/made.json",
+   "extract": {
+    "kind": "json",
+    "paths": [
+     [
+      "jobs",
+      "spine_foot",
+      "parts",
+      "spine_foot",
+      "holes",
+      0,
+      "drawn_d_mm"
+     ],
+     [
+      "jobs",
+      "spine_foot",
+      "parts",
+      "spine_foot",
+      "holes",
+      0,
+      "cut_d_mm"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "passes_6mm",
+   "claim": "6 mm plywood is cut at 6 passes",
+   "value": 6,
+   "quote": "6 mm plywood needs 6 passes, not Sienci's 5.",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "6 mm, (\\d+) passes of"
+   }
+  },
+  {
+   "id": "passes_sienci",
+   "claim": "Sienci's table gives 5 passes",
+   "value": 5,
+   "quote": "6 mm plywood needs 6 passes, not Sienci's 5.",
+   "source": "projects/manufacturing/products/spark_rover/release/make/MAKE.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "6 mm plywood at Sienci's (\\d+) passes"
+   }
+  },
+  {
+   "id": "web",
+   "claim": "At 5 passes a 0.16-0.20 mm web held every 6 mm part",
+   "value": [
+    0.16,
+    0.2
+   ],
+   "quote": "web of 0.16–0.20 mm",
+   "source": "projects/manufacturing/products/spark_rover/release/make/MAKE.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "web of ([\\d.]+)-([\\d.]+) mm on its outline"
+   }
+  },
+  {
+   "id": "printed_mass",
+   "claim": "The printed parts as printed against designed",
+   "value": [
+    587.6,
+    756.4
+   ],
+   "quote": "**587.6 g** against 756.4 g designed",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "weigh ([\\d.]+) g as printed against ([\\d.]+) g designed"
+   }
+  },
+  {
+   "id": "wires_total",
+   "claim": "128 wires in the netlist",
+   "value": 128,
+   "quote": "The netlist has 128 wires",
+   "source": "projects/manufacturing/products/spark_rover/release/electrical/wires_routed.json",
+   "extract": {
+    "kind": "json_count",
+    "path": []
+   }
+  },
+  {
+   "id": "wires_routed",
+   "claim": "127 routed",
+   "value": 127,
+   "quote": "**127 were routed**",
+   "source": "projects/manufacturing/products/spark_rover/release/electrical/wires_routed.json",
+   "extract": {
+    "kind": "json_count",
+    "path": [],
+    "unless": "skipped"
+   }
+  },
+  {
+   "id": "wire_unrouted",
+   "claim": "W128, the cooler's lead, is wired at the factory",
+   "value": true,
+   "quote": "the Pi Active Cooler's own lead, which is wired at the factory",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "1 not routed \\(W128: the Pi Active Cooler's own lead, wired at the factory\\)"
+   }
+  },
+  {
+   "id": "cut_length",
+   "claim": "17.94 m of cut wire",
+   "value": 17.94,
+   "quote": "**17.94 m**",
+   "source": "projects/manufacturing/products/spark_rover/release/electrical/wires_routed.json",
+   "extract": {
+    "kind": "json_sum",
+    "path": [],
+    "field": "cut_mm",
+    "unless": "skipped",
+    "scale": 0.001,
+    "round": 2
+   }
+  },
+  {
+   "id": "cut_estimate",
+   "claim": "19.12 m estimated before routing",
+   "value": 19.12,
+   "quote": "19.12 m estimated",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "electrical's estimate before routing: ([\\d.]+) m"
+   }
+  },
+  {
+   "id": "wire_gap",
+   "claim": "Smallest wire-to-wire gap",
+   "value": 0.31,
+   "quote": "0.31 mm",
+   "source": "projects/manufacturing/products/spark_rover/release/electrical/wires_routed.json",
+   "extract": {
+    "kind": "json_min",
+    "path": [],
+    "field": "clear_of_wires_mm",
+    "unless": "skipped",
+    "round": 2
+   }
+  },
+  {
+   "id": "part_gap",
+   "claim": "Smallest wire-to-part gap",
+   "value": 0.0,
+   "quote": "0 mm: W10 touches one",
+   "source": "projects/manufacturing/products/spark_rover/release/electrical/wires_routed.json",
+   "extract": {
+    "kind": "json_min",
+    "path": [],
+    "field": "clear_of_parts_mm",
+    "unless": "skipped",
+    "round": 2
+   }
+  },
+  {
+   "id": "w10",
+   "claim": "W10 is the wire at 0 mm",
+   "value": true,
+   "quote": "0 mm: W10 touches one",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "W10 reads 0 mm of clearance"
+   }
+  },
+  {
+   "id": "units",
+   "claim": "53 units",
+   "value": 53,
+   "quote": "**53 units in 18 steps**",
+   "source": "projects/manufacturing/products/spark_rover/release/assembly/assembly_log.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "summary",
+     "units"
+    ]
+   }
+  },
+  {
+   "id": "steps",
+   "claim": "18 steps",
+   "value": 18,
+   "quote": "**53 units in 18 steps**",
+   "source": "projects/manufacturing/products/spark_rover/release/assembly/assembly_log.json",
+   "extract": {
+    "kind": "json_count",
+    "path": [
+     "steps"
+    ]
+   }
+  },
+  {
+   "id": "blocked",
+   "claim": "No insertion path blocked",
+   "value": 0,
+   "quote": "No path was blocked",
+   "source": "projects/manufacturing/products/spark_rover/release/assembly/assembly_log.json",
+   "extract": {
+    "kind": "json_count",
+    "path": [
+     "summary",
+     "path_blocked"
+    ]
+   }
+  },
+  {
+   "id": "seat_interference",
+   "claim": "No interference at a seat",
+   "value": 0,
+   "quote": "no unit interfered at its seat",
+   "source": "projects/manufacturing/products/spark_rover/release/assembly/assembly_log.json",
+   "extract": {
+    "kind": "json_count",
+    "path": [
+     "summary",
+     "interference_at_seat"
+    ]
+   }
+  },
+  {
+   "id": "held_by_screws",
+   "claim": "34 units move further than 2 mm when let go: their screws hold them",
+   "value": 34,
+   "quote": "The 34 units held",
+   "source": "projects/manufacturing/products/spark_rover/release/assembly/assembly_log.json",
+   "extract": {
+    "kind": "json_count",
+    "path": [
+     "summary",
+     "falls"
+    ]
+   }
+  },
+  {
+   "id": "tilt",
+   "claim": "Standing tilt",
+   "value": 0.0,
+   "quote": "0.0° of tilt",
+   "source": "projects/manufacturing/products/spark_rover/release/assembly/assembly_log.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "standing_check",
+     "tilt_deg"
+    ]
+   }
+  },
+  {
+   "id": "com_height",
+   "claim": "Centre of mass height standing against designed",
+   "value": [
+    103.15,
+    103.18
+   ],
+   "quote": "103.15 mm up against 103.18 designed",
+   "source": "projects/manufacturing/products/spark_rover/release/assembly/assembly_log.json",
+   "extract": {
+    "kind": "json",
+    "paths": [
+     [
+      "standing_check",
+      "com_height_mm"
+     ],
+     [
+      "standing_check",
+      "designed_com_height_mm"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "bench_carriers",
+   "claim": "The carriers are populated on the bench and go on as one unit",
+   "value": true,
+   "quote": "The electronics carriers are populated on the bench",
+   "source": "projects/manufacturing/products/spark_rover/README.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "The electronics carriers are populated on the bench"
+   }
+  },
+  {
+   "id": "speed",
+   "claim": "Straight speed",
+   "value": 0.694,
+   "quote": "**0.694 m/s at 8.18 V**",
+   "source": "projects/manufacturing/products/spark_rover/release/drive/drive_mu1.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "straight",
+     "steady_speed_m_s"
+    ],
+    "round": 3
+   }
+  },
+  {
+   "id": "bus_v",
+   "claim": "Mean bus voltage on the straight",
+   "value": 8.18,
+   "quote": "**0.694 m/s at 8.18 V**",
+   "source": "projects/manufacturing/products/spark_rover/release/drive/drive_mu1.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "straight",
+     "pack_v_mean"
+    ],
+    "round": 2
+   }
+  },
+  {
+   "id": "predicted",
+   "claim": "No-load prediction at that voltage",
+   "value": 0.696,
+   "quote": "voltage is 0.696 m/s",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| No-load speed at that voltage \\(m/s\\) \\|[^|]*\\|[^|]*\\| ([\\d.]+) \\|",
+    "round": 3
+   }
+  },
+  {
+   "id": "drift",
+   "claim": "Heading drift on the straight",
+   "value": 0.0,
+   "quote": "Heading drift over the metre was 0°",
+   "source": "projects/manufacturing/products/spark_rover/release/drive/drive_mu1.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "straight",
+     "heading_drift_deg"
+    ]
+   }
+  },
+  {
+   "id": "peak_a",
+   "claim": "Peak pack current",
+   "value": 15.7,
+   "quote": "peaked at 15.7 A",
+   "source": "projects/manufacturing/products/spark_rover/release/drive/drive_mu1.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "battery",
+     "i_pack_peak_a"
+    ],
+    "round": 1
+   }
+  },
+  {
+   "id": "v_min",
+   "claim": "Lowest bus voltage",
+   "value": 7.43,
+   "quote": "never dropped below 7.43 V",
+   "source": "projects/manufacturing/products/spark_rover/release/drive/drive_mu1.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "battery",
+     "v_bus_min"
+    ],
+    "round": 2
+   }
+  },
+  {
+   "id": "arm_settle",
+   "claim": "Arms settled error",
+   "value": 0.183,
+   "quote": "within 0.183°",
+   "source": "projects/manufacturing/products/spark_rover/release/drive/drive_mu1.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "arms",
+     "max_abs_error_deg"
+    ]
+   }
+  },
+  {
+   "id": "spin",
+   "claim": "Spin yaw rate",
+   "value": 4.843,
+   "quote": "The spin, 4.843 rad/s",
+   "source": "projects/manufacturing/products/spark_rover/release/drive/drive_mu1.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "spin",
+     "yaw_rate_rad_s"
+    ]
+   }
+  },
+  {
+   "id": "stop",
+   "claim": "Stop distance",
+   "value": 47.669,
+   "quote": "the 47.669 mm stop",
+   "source": "projects/manufacturing/products/spark_rover/release/drive/drive_mu1.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "phases",
+     "stop",
+     "moved_mm"
+    ]
+   }
+  },
+  {
+   "id": "dt",
+   "claim": "2 ms step",
+   "value": 2,
+   "quote": "a 2 ms step",
+   "source": "projects/manufacturing/products/spark_rover/release/drive/drive_mu1.json",
+   "extract": {
+    "kind": "json",
+    "path": [
+     "dt_ms"
+    ]
+   }
+  },
+  {
+   "id": "drawings",
+   "claim": "38 drawings",
+   "value": 38,
+   "quote": "38 SVGs",
+   "source": "projects/manufacturing/products/spark_rover/release/drawings",
+   "extract": {
+    "kind": "glob_count",
+    "glob": [
+     "*.svg"
+    ]
+   }
+  },
+  {
+   "id": "models",
+   "claim": "38 models",
+   "value": 38,
+   "quote": "38 STLs",
+   "source": "projects/manufacturing/products/spark_rover/release/models",
+   "extract": {
+    "kind": "glob_count",
+    "glob": [
+     "*.stl"
+    ]
+   }
+  },
+  {
+   "id": "cam",
+   "claim": "10 laser and CNC programs",
+   "value": 10,
+   "quote": "10 laser and CNC programs",
+   "source": "projects/manufacturing/products/spark_rover/release/cam",
+   "extract": {
+    "kind": "glob_count",
+    "glob": [
+     "*.gcode",
+     "*.nc"
+    ]
+   }
+  },
+  {
+   "id": "bom_total",
+   "claim": "The BOM adds up to 2397.8 g",
+   "value": 2397.8,
+   "quote": "It adds up to 2397.8 g.",
+   "source": "projects/manufacturing/products/spark_rover/release/BOM.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "Total mass, as designed: \\*\\*([\\d.]+) g\\*\\*"
+   }
+  },
+  {
+   "id": "assembly_steps_doc",
+   "claim": "ASSEMBLY.md has 18 steps",
+   "value": 18,
+   "quote": "the 18 steps",
+   "source": "projects/manufacturing/products/spark_rover/release/ASSEMBLY.md",
+   "extract": {
+    "kind": "regex_count",
+    "pattern": "^## \\d+\\. "
+   }
+  },
+  {
+   "id": "front_carrier_support",
+   "claim": "The front carrier needs about 64 g of support for a 75 g part",
+   "value": [
+    64,
+    75
+   ],
+   "quote": "about 64 g of support** to print a 75 g part",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "needs about (\\d+) g of support for a (\\d+) g part"
+   }
+  },
+  {
+   "id": "board_holes",
+   "claim": "Board hole positions assumed on U5, U6, U12, U11",
+   "value": true,
+   "quote": "U5, U6, U12 and U11",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "Board hole positions are assumed\\*\\* on U5 .*?U6 .*?U12 .*?U11"
+   }
+  },
+  {
+   "id": "horn",
+   "claim": "The XC330 horn's dimensions are unverified",
+   "value": true,
+   "quote": "The XC330 servo horn's dimensions are unverified",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "The XC330 horn's dimensions are unverified"
+   }
+  },
+  {
+   "id": "margin",
+   "claim": "Mass margin",
+   "value": 2.2,
+   "quote": "The mass margin is 2.2 g",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\*\\*([\\d.]+) g\\*\\* to spare"
+   }
+  },
+  {
+   "id": "stock_cap",
+   "claim": "The stock holds at most 1984 cells a side",
+   "value": 1984,
+   "quote": "1984-cell stock cap",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "holds at most (\\d+) cells a side"
+   }
+  },
+  {
+   "id": "skeleton_issues",
+   "claim": "The shell lists 15 skeleton changes",
+   "value": 15,
+   "quote": "The shell lists 15 changes",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "skeleton_issues\\*\\*: (\\d+) things"
+   }
+  },
+  {
+   "id": "not_simulated",
+   "claim": "Speaker, touch pads and status LEDs are not simulated",
+   "value": true,
+   "quote": "neither are the speaker, the touch pads or the status LEDs",
+   "source": "projects/manufacturing/products/spark_rover/README.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "The speaker, the touch pads and the status ring's LEDs are not simulated"
+   }
+  },
+  {
+   "id": "simulation_only",
+   "claim": "Simulation only",
+   "value": true,
+   "quote": "No part has been made on a real machine",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "no part has been made on a real machine and no twin has been validated"
+   }
+  },
+  {
+   "id": "printed",
+   "claim": "27 of 27 printed: 2 on the full twin, 25 in ideal mode, all on the fixed bead rule",
+   "value": [
+    27,
+    27,
+    2,
+    25
+   ],
+   "quote": "all 27 printed parts, on the fixed bead rule: 2 on the full twin and 25 in ideal mode",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "(\\d+) of (\\d+) printed parts printed: (\\d+) on the full twin, (\\d+) in ideal mode"
+   }
+  },
+  {
+   "id": "printed_fixed_rule",
+   "claim": "Every current print result is on the fixed bead rule",
+   "value": true,
+   "quote": "on the fixed bead rule",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "Every result is on the fixed bead rule"
+   }
+  },
+  {
+   "id": "twin_parts",
+   "claim": "The two twin-printed parts are the bay carrier and the cooler duct, plate rev02",
+   "value": true,
+   "quote": "the bay carrier and the cooler duct, plate rev02",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| el_bay_carrier \\| rev02 \\| twin \\|.*\\| el_cooler_duct \\| rev02 \\| twin \\|"
+   }
+  },
+  {
+   "id": "rev02_twin",
+   "claim": "rev02 on the twin (fixed rule)",
+   "value": [
+    "2:34:44",
+    "3:09:46",
+    0.81
+   ],
+   "quote": "2:34:44 | 3:09:46 | 0.81×",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| rev02 \\| twin \\|[^\\n]*?\\| (\\d+:\\d\\d:\\d\\d) \\| (\\d+:\\d\\d:\\d\\d) \\| ([\\d.]+)x \\|"
+   }
+  },
+  {
+   "id": "rev02_ideal",
+   "claim": "rev02 in ideal mode (fixed rule)",
+   "value": [
+    "2:34:44",
+    "0:00:26",
+    356
+   ],
+   "quote": "2:34:44 | 0:00:26 | 356×",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| rev02 \\| ideal \\|[^\\n]*?\\| (\\d+:\\d\\d:\\d\\d) \\| (\\d+:\\d\\d:\\d\\d) \\| ([\\d.]+)x \\|"
+   }
+  },
+  {
+   "id": "plate01_ideal",
+   "claim": "plate01 in ideal mode (fixed rule)",
+   "value": [
+    "4:40:19",
+    "0:00:29",
+    580
+   ],
+   "quote": "4:40:19 | 0:00:29 | 580×",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| plate01 \\| ideal \\|[^\\n]*?\\| (\\d+:\\d\\d:\\d\\d) \\| (\\d+:\\d\\d:\\d\\d) \\| ([\\d.]+)x \\|"
+   }
+  },
+  {
+   "id": "bay_carrier_twin",
+   "claim": "The bay carrier on the twin (fixed rule): height and outer surface",
+   "value": [
+    113.45,
+    113.5,
+    -0.007,
+    0.067
+   ],
+   "quote": [
+    "113.45 mm tall against 113.5 drawn",
+    "−0.007 to +0.067 mm"
+   ],
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| el_bay_carrier \\| rev02 \\| twin \\| \\w+ \\| ([\\d.]+) / ([\\d.]+) \\| (-?[\\d.]+) / \\+([\\d.]+) \\|"
+   }
+  },
+  {
+   "id": "shell_ul_ideal",
+   "claim": "The upper left shell section in ideal mode (fixed rule): height and outer surface",
+   "value": [
+    82.05,
+    82.0,
+    -0.045,
+    0.047
+   ],
+   "quote": [
+    "82.05 mm against 82.0 drawn",
+    "−0.045 to +0.047 mm"
+   ],
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| shell_upper_left \\| plate02 \\| ideal \\| \\w+ \\| ([\\d.]+) / ([\\d.]+) \\| (-?[\\d.]+) / \\+([\\d.]+) \\|"
+   }
+  },
+  {
+   "id": "crashes_plate01",
+   "claim": "Ideal-mode nozzle crashes on plate01, before -> after the bead fix",
+   "value": [
+    116,
+    0
+   ],
+   "quote": "went from 116, 96, 152 and 11 to 0",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| plate01 \\| ideal \\| (\\d+) -> (\\d+) \\|"
+   }
+  },
+  {
+   "id": "crashes_plate02",
+   "claim": "Ideal-mode nozzle crashes on plate02, before -> after the bead fix",
+   "value": [
+    96,
+    0
+   ],
+   "quote": "went from 116, 96, 152 and 11 to 0",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| plate02 \\| ideal \\| (\\d+) -> (\\d+) \\|"
+   }
+  },
+  {
+   "id": "crashes_plate06",
+   "claim": "Ideal-mode nozzle crashes on plate06, before -> after the bead fix",
+   "value": [
+    152,
+    0
+   ],
+   "quote": "went from 116, 96, 152 and 11 to 0",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| plate06 \\| ideal \\| (\\d+) -> (\\d+) \\|"
+   }
+  },
+  {
+   "id": "crashes_rev03",
+   "claim": "Ideal-mode nozzle crashes on rev03, before -> after the bead fix",
+   "value": [
+    11,
+    0
+   ],
+   "quote": "went from 116, 96, 152 and 11 to 0",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| rev03 \\| ideal \\| (\\d+) -> (\\d+) \\|"
+   }
+  },
+  {
+   "id": "grams_plate01",
+   "claim": "Ideal-mode grams laid on plate01 unchanged by the bead fix",
+   "value": true,
+   "quote": "with the same grams laid",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| plate01 \\| ideal \\| \\d+ -> \\d+ \\| ([\\d.]+) -> \\1 \\|"
+   }
+  },
+  {
+   "id": "grams_plate02",
+   "claim": "Ideal-mode grams laid on plate02 unchanged by the bead fix",
+   "value": true,
+   "quote": "with the same grams laid",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| plate02 \\| ideal \\| \\d+ -> \\d+ \\| ([\\d.]+) -> \\1 \\|"
+   }
+  },
+  {
+   "id": "grams_plate06",
+   "claim": "Ideal-mode grams laid on plate06 unchanged by the bead fix",
+   "value": true,
+   "quote": "with the same grams laid",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| plate06 \\| ideal \\| \\d+ -> \\d+ \\| ([\\d.]+) -> \\1 \\|"
+   }
+  },
+  {
+   "id": "grams_rev03",
+   "claim": "Ideal-mode grams laid on rev03 unchanged by the bead fix",
+   "value": true,
+   "quote": "with the same grams laid",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| rev03 \\| ideal \\| \\d+ -> \\d+ \\| ([\\d.]+) -> \\1 \\|"
+   }
+  },
+  {
+   "id": "twin_before_fix_labelled",
+   "claim": "Twin runs measured before the fix are labelled so in PRINT.md",
+   "value": true,
+   "quote": "measured before the bead fix and labelled so in PRINT.md",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| twin, before the bead fix \\(2026-11-04\\)"
+   }
+  },
+  {
+   "id": "bead_7mm",
+   "claim": "Before the fix, held plastic became one bead up to about 7 mm wide",
+   "value": 7,
+   "quote": "up to about 7 mm wide",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "one bead up to ~(\\d+) mm wide"
+   }
+  },
+  {
+   "id": "bead_footprint",
+   "claim": "upper_arm_outer_left's ideal footprint Y before -> after the fix",
+   "value": [
+    1.556,
+    0.161
+   ],
+   "quote": "from +1.556 to +0.161 mm",
+   "source": "projects/manufacturing/products/spark_rover/release/make/print/PRINT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\| upper_arm_outer_left \\| plate06 \\| ideal \\| [^|]* \\| [-+.\\d]+ / \\+([\\d.]+) -> [-+.\\d]+ / \\+([\\d.]+) \\|"
+   }
+  },
+  {
+   "id": "ideal_current",
+   "claim": "25 printed parts' current results are ideal-mode",
+   "value": 25,
+   "quote": "25 printed parts' current results are ideal-mode",
+   "source": "projects/manufacturing/products/spark_rover/release/REPORT.md",
+   "extract": {
+    "kind": "regex",
+    "pattern": "\\*\\*(\\d+) printed parts' current results are ideal-mode\\*\\*"
+   }
+  }
+ ]
+}

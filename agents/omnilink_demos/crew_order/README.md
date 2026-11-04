@@ -58,7 +58,11 @@ position, and Tug corrected it as stale before delivering. Draft 5 is cut from i
   kept to the reachable band.
 - `take.py`: hitches the cart, gives each robot one briefing from Sam (its job
   and the floor facts), gives the order, then only watches. Everything lands in
-  `<take>/crew.jsonl` with simulator time.
+  `<take>/crew.jsonl` with simulator time. By default the briefing is STANDING
+  (`--briefing standing`): it joins each robot's own task text through
+  `OMNILINK_CREW_BRIEFINGS`, which is cached, instead of costing a model turn
+  per robot per run. `--briefing prompt` has Sam say it as a chat turn, as
+  the first takes did.
 - `edit.py`: picture on the left, crew channel on the right. Every line is
   verbatim; "…" abridgements go through `abridge.json` and are checked. The cut
   follows the work: wide while the tug moves, the close shot of the pad it is
@@ -83,7 +87,9 @@ independent: its own engine, its own ports, its own agent identity and memory
 (`OMNILINK_AGENT_TAG`). Each run is judged by `take.judge()`. It passes only if
 the final scan measures all three parts in the crate, Sam got a report, and no
 message failed to deliver. Gate refusals are listed per run. A crashed run is
-recorded, never dropped. `montage.py` plays 16 runs side by side at a constant
+recorded, never dropped. `--model` picks the model. The reported campaign
+runs on Sonnet 5.5, measured at about $0.60 per run, against about $1.30 on
+Opus 5.5. `montage.py` plays 16 runs side by side at a constant
 speed, marks each with its verdict, and closes on `summary.json`.
 
 ## What it does not show
@@ -109,9 +115,65 @@ speed, marks each with its verdict, and closes on `summary.json`.
 - The next campaign's run 15 failed. "I'll load them once you confirm it's
   unhitched" was read as a deferred unhitch: the verb sat inside the waiting
   clause, as its condition. A verb now counts only outside the waiting clause.
+- Showcase take 12 failed while campaign 4 was running clean (11 of 11).
+  Tug's model chose an unhitch that the message never named, and the old
+  fallback held "After release I measured…" against it. Now an unnamed tool is
+  judged strictly only when no sentence free of any wait states an order (an
+  imperative, or "please").
+- Campaign 5's run 7 failed. "Red, blue and green are still reported aboard"
+  (passive voice) was read as reported speech. The question and
+  reported-speech rules are now sentence-scoped the same way as deferral.
+  Not scoping the prohibition rule was a deliberate choice: "You may no longer
+  drive into the bay. Drive forward 1 metre." must stay refused. Scoping it was
+  tried and reverted. The crew tool now tells robots not to describe state
+  with "no longer" or "don't" in a message that asks for action.
+- Campaign 5's run 8 was an engine start failure (the arm controllers never
+  paired with the engine). The campaign now marks such runs and redoes them
+  on a resumed pass, and the summary counts them.
+- Campaign 6 got 31 of 33 runs through. Two problems ended it:
+  - It hit the account's 100-agent limit (one agent tag per run; slots now
+    reuse tags).
+  - Run 32 failed on a place name: "on the pick pad … when I let it go" held a
+    wait against a pick. Verbs inside place names ("pick pad", "loading bay")
+    no longer count as the action. The same fix exposed a Python regex whose
+    `` had been mangled into backspace characters.
+- Those findings changed the crew channel itself. A message is now a REQUEST
+  (one imperative sentence, the only part the crewmate's gate judges) plus
+  DETAILS (facts, delivered to the crewmate's model as liveContext). The gate
+  now sees what was asked, not a paragraph of description.
+- The reported campaign (`campaign_sonnet`, Sonnet 5.5, 8 in parallel)
+  stopped at run 80, when the test account's API credit ran out. All 79 runs
+  that finished before that passed: parts measured in the crate, Sam told,
+  no delivery errors, $37.31 in all. Run 80 had already packed and reported
+  when two closing replies were refused for credit. Run 87 was an engine
+  start failure. Runs 81-100 never finished. In run 14 the gate refused a
+  `drive_forward` with a distance nobody had stated (`invented_magnitude`);
+  Tug went by the named place instead. `summary_partial.json` holds those
+  counts, and the montage card says all of it. `campaign.py` now treats
+  provider credit exhaustion like the agent quota (an account fault, redone
+  on resume). The film's showcase is take 14: Opus 5.5, with spoken
+  briefings, recorded after the physical tow landed. Its footnote names
+  Opus, and the card names Sonnet. The first montage cut ended run 7's tile
+  at 0:08 on an early progress note to Sam. A tile now ends at the completion
+  report, by the same rule as the verdict (`take.report_time`).
 - Every gate fix is mirrored in OmniLink's `api/_robot-gate.ts` through the
-  parity fixture. Campaigns 1-3 (`campaign_v1..v3`, 34 runs in all) are kept as
-  evidence. The reported campaign is the fourth, run entirely on the final code.
+  parity fixture. No existing parity verdict changed. Campaigns 1-6
+  (`campaign_v1..v6`) are kept as evidence. The reported campaign is
+  `campaign_sonnet`.
+- Campaign 7 was interrupted when the session that ran it ended
+  (`campaign_v7_interrupted`). Cost then moved the campaigns to Sonnet 5.5,
+  with standing briefings. Sonnet pilot 3 passed 2 of 4 runs, and both
+  failures were the briefing's fault. Picker's briefing said "Packer at
+  shipping unloads the cart" but never said who takes the cart there. Picker
+  asked Packer to unload a cart still at the pick pad, and nobody asked Tug
+  (run 1, timed out). In run 2 the "packed" report went Packer → Picker →
+  Sam, and the take ended while Picker was still writing it. Now Picker asks
+  Tug to take the loaded cart to shipping, Packer reports to Sam itself, and
+  a packed run that has not yet been reported waits 300 s of silence before
+  the take ends (it was 120). Pilot 4 then passed 4 of 4, at about 3.6
+  minutes and $0.60 per run. Opus had covered the same gap by inference.
+  The crew tool also gained CLOSE THE LOOP: whoever finishes a request
+  tells whoever asked.
 - Take 7 died on a bug in the take script (a cp1252 console). Take 8 was
   refused by the gate again: "…I'll load it after that" (the speaker's own plan)
   read as a deferred order. That was a second real false refusal, also fixed in

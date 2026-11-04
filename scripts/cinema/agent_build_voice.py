@@ -107,9 +107,17 @@ def _stable_hash(payload: object) -> str:
 
 def generate(spec: AgentBuildSpec, runtime: Path | None = None, *,
              preflight_checked: bool = False) -> tuple[Path, Path]:
-    """Generate the manifest's narration WAV and timing receipt locally."""
+    """Generate the manifest's narration WAV and timing receipt locally.
+
+    A manifest with ``voice.mode: "none"`` has no narration: nothing is generated, no runtime is
+    needed or downloaded, and ``(None, None)`` is returned.
+    """
     if not preflight_checked:
         preflight(spec)
+    if not spec.voice.narrated:
+        return None, None
+    if spec.voice.engine == "omnivoice":
+        return place_omnivoice(spec)
     root = _runtime_root(runtime)
     deps, model, voices = _runtime_paths(root)
     missing = [path for path in (deps, model, voices) if not path.exists()]
@@ -221,6 +229,105 @@ def generate(spec: AgentBuildSpec, runtime: Path | None = None, *,
         "build_key": build_key,
         "cache": {"hits": cache_hits, "misses": cache_misses, "master_hit": False},
         "performance_direction": "calm first-person expert; conversational emphasis; natural chapter pauses",
+        "segments": records,
+    }, indent=2) + "\n", encoding="utf-8")
+    return output, timings
+
+
+OMNIVOICE_SCHEMA = "omnivoice-narration-v1"
+
+
+def _read_pcm16(path: Path) -> tuple[np.ndarray, int]:
+    import wave  # noqa: PLC0415
+
+    with wave.open(str(path), "rb") as wav:
+        if wav.getnchannels() != 1 or wav.getsampwidth() != 2:
+            raise ValueError(f"{path}: Omnivoice blocks are 16-bit mono WAV")
+        return np.frombuffer(wav.readframes(wav.getnframes()), dtype="<i2"), wav.getframerate()
+
+
+def place_omnivoice(spec: AgentBuildSpec) -> tuple[Path, Path]:
+    """Lay blocks recorded by Omnivoice (``omnivoice build``) into the manifest's windows.
+
+    Omnivoice voices, checks and measures each block itself (Chatterbox, Whisper, UTMOS:
+    social/Omnivoice/README.md); nothing is voiced here and no model is loaded. This writes
+    exactly what the Kokoro path writes: one mono WAV the length of the film, silent until
+    each block's ``start_s``, and the ``.segments.json`` receipt beside it. A block that
+    has changed in the script since it was recorded, or that runs past its window, fails.
+    """
+    source = _output_path(spec, spec.voice.source)
+    recorded = json.loads(source.read_text(encoding="utf-8"))
+    if recorded.get("schema") != OMNIVOICE_SCHEMA:
+        raise ValueError(f"{source}: not an Omnivoice narration manifest ({OMNIVOICE_SCHEMA})")
+    script_path = _output_path(spec, spec.voice.script)
+    blocks = [" ".join(part.split()) for part in script_path.read_text(encoding="utf-8").split("\n\n")
+              if part.strip()]
+    entries = recorded["blocks"]
+    if not len(blocks) == len(entries) == len(spec.voice.blocks):
+        raise ValueError(f"narration has {len(blocks)} blocks, Omnivoice recorded {len(entries)}, "
+                         f"manifest declares {len(spec.voice.blocks)} windows")
+    stale = [i for i, (text, entry) in enumerate(zip(blocks, entries), 1) if text != entry["text"]]
+    if stale:
+        raise ValueError(f"blocks {stale} changed since Omnivoice recorded them; re-run `omnivoice build`")
+
+    sample_rate = int(recorded.get("rate", 24000))
+    output = _output_path(spec, spec.voice.wav)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    timings = output.with_suffix(".segments.json")
+    clips = []
+    for entry in entries:
+        path = source.parent / entry["src"]
+        samples, rate = _read_pcm16(path)
+        if rate != sample_rate:
+            raise ValueError(f"{path}: {rate} Hz, manifest says {sample_rate}")
+        clips.append((path, samples))
+    windows = [window.__dict__ for window in spec.voice.blocks]
+    build_key = _stable_hash({"engine": "omnivoice", "duration_s": spec.duration_s, "windows": windows,
+                              "blocks": [_sha256(path) for path, _ in clips]})
+    try:
+        previous = json.loads(timings.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        previous = {}
+    if previous.get("build_key") == build_key and output.exists() and output.stat().st_size > 0:
+        print(f"[agent-build voice] master cache hit: {output}")
+        return output, timings
+
+    master = np.zeros(round(spec.duration_s * sample_rate), dtype=np.int32)
+    records: list[dict[str, object]] = []
+    overlong: list[str] = []
+    for index, ((path, samples), window, entry) in enumerate(zip(clips, spec.voice.blocks, entries), 1):
+        duration = len(samples) / sample_rate
+        if window.start_s + duration > window.window_end_s + 1e-6:
+            overlong.append(f"block {index}: {duration:.2f}s in {window.window_end_s - window.start_s:.2f}s")
+        offset = round(window.start_s * sample_rate)
+        end = min(len(master), offset + len(samples))
+        master[offset:end] += samples[: end - offset]
+        records.append({
+            "index": index, "start_s": window.start_s,
+            "end_s": round(window.start_s + duration, 3), "duration_s": round(duration, 3),
+            "window_end_s": window.window_end_s, "text": entry["text"],
+            "source_wav": str(path), "sha256": _sha256(path),
+            "beats": [{"at_s": round(window.start_s + beat["at"] / 1000, 3), "ms": beat["ms"],
+                       "text": beat["text"]} for beat in entry["beats"]],
+        })
+        print(f"[agent-build voice] {index:02d} {window.start_s:6.2f}-{window.start_s + duration:6.2f}s (omnivoice)")
+    if overlong:
+        raise RuntimeError("the recorded block runs past its window; widen the window or shorten the copy "
+                           "and re-record — " + ", ".join(overlong))
+
+    import wave  # noqa: PLC0415
+
+    with wave.open(str(output), "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(sample_rate)
+        wav.writeframes(np.clip(master, -32768, 32767).astype("<i2").tobytes())
+    timings.write_text(json.dumps({
+        "engine": "omnivoice", "model": recorded["voice"].get("model"), "voice": recorded["voice"],
+        "shaping": recorded.get("shaping"), "omnivoice_manifest": str(source),
+        "local_generation": True, "master_duration_s": spec.duration_s, "build_key": build_key,
+        "cache": {"hits": 0, "misses": 0, "master_hit": False},
+        "performance_direction": "Omnivoice house narrator: warm, confident, calm, no drama",
         "segments": records,
     }, indent=2) + "\n", encoding="utf-8")
     return output, timings

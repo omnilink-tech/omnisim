@@ -12,6 +12,13 @@ For interactive browsing inside OmniSim itself, run `launch.bat` with no argumen
 
 ## Quick picks
 
+Robot mobility assessment: `python -m omnisim assess sweep --robots husky --out <new-directory>`
+varies physical slopes, contact friction and mounted payloads with immediate
+braking. Add `--refine 12 --confirm 2` to refine and repeat observed transitions.
+The [assessment guide](docs/guide/robot-assessments.md) documents physical wheeled
+coverage and retained evidence. `assess prove` remains the original controlled
+delay-fault demonstration; neither workflow establishes vendor hardware behavior.
+
 | Goal | Demo |
 |---|---|
 | **Find out WHY a robot failed** ⭐ | [The arm drops the box two times in five](#debugging--find-out-why-a-robot-failed) — a real, reproducible fault, diagnosed from `GET /sim/events` alone: no screenshot, no world source, no result file |
@@ -394,6 +401,54 @@ A 32 × 32 field of one-metre cubes (2,666 blocks: grass, dirt, stone, ore, six 
 | Agent loop | `python -m omnisim harness` → `POST /world/load {"path": ..., "light": true}` → edit blocks → `POST /world/screenshot` |
 
 ---
+
+### OmniSim Manufacturing
+
+Machine twins that make parts, and the products made with them: one sector, one command (`python -m omnisim manufacturing`), guide [`projects/manufacturing/README.md`](projects/manufacturing/README.md). Simulated only; no twin has been compared against its real machine yet.
+
+#### CNC twin — a GRBL router you can talk to, milling real parts
+
+A digital twin of a CNC router: a virtual GRBL 1.1 controller on TCP `:2323` that any GRBL sender can drive, a machine built from the Sienci LongMill MK2's CAD, and a block of stock the engine carves where the tool really went. The OmniLink bridge on `:8765` turns plain English into preflighted, gated jobs. Guide and measurements: [`projects/manufacturing/cnc/README.md`](projects/manufacturing/cnc/README.md).
+
+| Demo | World | What it shows |
+|---|---|---|
+| Pockets, by talking | [`cnc_longmill_mk2_twin.omniworld`](projects/samples/demos/worlds/manufacturing/cnc_longmill_mk2_twin.omniworld) | "Cut a 40 mm circle 2 mm deep" in the chat at `http://127.0.0.1:8765/chat`; parts measured against the drawing |
+| 3D parts with tool changes | [`cnc_longmill_mk2_3d.omniworld`](projects/samples/demos/worlds/manufacturing/cnc_longmill_mk2_3d.omniworld) | An STL roughed with a flat end mill and finished with a ball nose (`toolpath3d.py`), M6 between them |
+| Desktop router, no CAD | [`cnc_3018_twin.omniworld`](projects/samples/demos/worlds/manufacturing/cnc_3018_twin.omniworld) | A twin generated from a `$$` dump alone, with limit switches and homing |
+| A product, CNC to finished | [`clothes_rack_assembly.omniworld`](projects/samples/demos/worlds/manufacturing/clothes_rack_assembly.omniworld) | A clothes rack: aluminium connectors milled on the twin ([`cnc_longmill_mk2_aluminium.omniworld`](projects/samples/demos/worlds/manufacturing/cnc_longmill_mk2_aluminium.omniworld)), assembled step by step, then load-tested on Newton ([`clothes_rack_load_test.omniworld`](projects/samples/demos/worlds/manufacturing/clothes_rack_load_test.omniworld)). Guide: [`products/clothes_rack/README.md`](projects/manufacturing/products/clothes_rack/README.md) |
+
+#### A desk robot — three machines, one product
+
+A two-wheeled desk robot whose parts come from all three twins: the deck plates laser-cut from plywood, the motor clamps, wheel rims and electronics tray printed in PLA, the wheel hubs milled from aluminium, around bought Pololu motors and caster. Each part is measured against its drawing, the robot is assembled from them and driven on Newton, and the release folder holds the drawings, machine files, BOM and assembly guide. Guide: [`products/desk_robot/README.md`](projects/manufacturing/products/desk_robot/README.md).
+
+| Demo | World | What it shows |
+|---|---|---|
+| The robot, driving | [`desk_robot_drive_test.omniworld`](projects/samples/demos/worlds/manufacturing/desk_robot_drive_test.omniworld) | The assembled robot runs straight, stops and spins in place; its speed and turn rate against the motors' datasheet |
+
+#### SparkRover Mini — a classroom robot from three machines
+
+A four-wheeled classroom robot with two waving arms and a 5-inch face around a Raspberry Pi 5: the frame laser-cut from plywood and milled from aluminium, the shell, arms, bumpers and electronics carriers printed in PETG and TPU, the face cover routed from acrylic. Each part is measured against its drawing, the robot is assembled from them step by step and driven on Newton, and the release folder holds the drawings, machine files, BOM, wire cut list and assembly guide. The printed parts are still being made on the printer twin; the release marks the ones not yet printed as pending. Guide: [`products/spark_rover/README.md`](projects/manufacturing/products/spark_rover/README.md).
+
+| Demo | World | What it shows |
+|---|---|---|
+| The robot, driving | [`spark_rover_drive_test.omniworld`](projects/samples/demos/worlds/manufacturing/spark_rover_drive_test.omniworld) | The assembled robot drives 1 m straight, stops, spins in place and waves both arms through their limits; its speed and turn rate against the motors' datasheet |
+
+#### Laser twin — cutting and engraving with a GRBL laser
+
+A diode laser on the LongMill (the Sienci LaserBeam 7W, built from Sienci's documentation; the head is schematic): the CNC's virtual GRBL in laser mode decides what the laser pin does (M3, M4, G0 dark), and the engine burns the sheet where the beam really went, calibrated on Sienci's own material table. Guide and measurements: [`projects/manufacturing/laser/README.md`](projects/manufacturing/laser/README.md).
+
+| Demo | World | What it shows |
+|---|---|---|
+| A tag cut from plywood | [`laser_longmill_laserbeam.omniworld`](projects/samples/demos/worlds/manufacturing/laser_longmill_laserbeam.omniworld) | A 30 x 20 mm tag with a hole, cut from 3 mm plywood with Sienci's settings (3 passes) and engraved; `run_job.py` streams it, `inspect_cut.py` finds the tag that fell out and measures it |
+
+#### 3D printer twin — a Sovol SV08, from G-code to a measured part
+
+A digital twin of an FDM printer, built from the machine's own Klipper config: a real slicer (CuraEngine, set from Sovol's OrcaSlicer profile) turns an STL into G-code, the job is planned the way Klipper plans it (square-corner junctions, input shaper, pressure advance), the hotend model decides what plastic actually leaves the nozzle, and the engine lays it where the nozzle really went. Guide and measurements: [`projects/manufacturing/printing/README.md`](projects/manufacturing/printing/README.md).
+
+| Demo | World | What it shows |
+|---|---|---|
+| A calibration cube | [`sv08_printer_twin.omniworld`](projects/samples/demos/worlds/manufacturing/sv08_printer_twin.omniworld) | A 20 mm cube printed layer by layer at the SV08's own speeds, then `inspect_print.py` measures it against the STL |
+| The real machine | [`sv08_printer_twin_cad.omniworld`](projects/samples/demos/worlds/manufacturing/sv08_printer_twin_cad.omniworld) | The same print on the SV08 built from Sovol's CAD (meshes GPL-3.0, see [`PROVENANCE.md`](projects/manufacturing/machines/sovol_sv08/cad/PROVENANCE.md)) |
 
 ## 4. Specialist agent templates *(starter kits)*
 

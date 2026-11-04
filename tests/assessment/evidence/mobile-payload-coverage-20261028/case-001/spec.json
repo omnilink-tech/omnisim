@@ -1,0 +1,21 @@
+{
+  "schema_version": 2,
+  "robot": "jackal",
+  "target_speed_m_s": 0.4116,
+  "brake_delay_s": 0.0,
+  "max_stop_distance_m": 0.25,
+  "max_stop_time_s": 1.5,
+  "settled_speed_m_s": 0.025,
+  "settled_hold_s": 0.4,
+  "settle_s": 1.0,
+  "min_drive_distance_m": 0.3,
+  "speed_hold_s": 0.3,
+  "prepare_timeout_s": 6.0,
+  "observe_after_request_s": 2.5,
+  "timestep_ms": 16,
+  "slope_deg": 0.0,
+  "ground_mu": 0.4,
+  "payload_kg": 2.0,
+  "payload_height_m": 0.2254,
+  "payload_offset_x_m": 0.0
+}

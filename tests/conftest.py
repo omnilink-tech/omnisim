@@ -180,6 +180,76 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus) -> None:  # noqa: 
 # CLI: the Makefile reads the engine-free root-level files from here           #
 # --------------------------------------------------------------------------- #
 
+# --------------------------------------------------------------------------- #
+# 3. manufacturing products: one product's modules at a time                   #
+# --------------------------------------------------------------------------- #
+
+# Each product (projects/manufacturing/products/<name>/) is a folder of plain modules
+# with the same names as the others' (design, electrical, robot, release, ...), and each
+# test file puts its product's folder on sys.path and imports them by those names. In
+# one pytest process the first product imported won every later `import electrical`:
+# `make tests-unit` stopped at collection with "cannot import name 'BOUGHT' from 'design'
+# (clothes_rack)" (2026-11-04). So before a test module is collected, and before each of
+# its tests runs (a module may import more lazily), its product's modules are put back
+# in sys.modules, every other product's are set aside, and its folder goes first on
+# sys.path. A test file's product is the one product folder its source names.
+PRODUCTS_DIR = REPO_ROOT / "projects" / "manufacturing" / "products"
+_PRODUCT_NAMES = tuple(sorted(p.name for p in PRODUCTS_DIR.iterdir() if p.is_dir())) if PRODUCTS_DIR.is_dir() else ()
+_PRODUCT_RX = re.compile(r"products[/\\\"' ,]+(" + "|".join(map(re.escape, _PRODUCT_NAMES)) + r")\b") if _PRODUCT_NAMES else None
+_stashed: dict[str, dict[str, object]] = {}
+
+
+@functools.lru_cache(maxsize=None)
+def product_of_test(path: str) -> str | None:
+    """The product a test module imports from: the one product folder its source names."""
+    if _PRODUCT_RX is None:
+        return None
+    try:
+        src = Path(path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    found = set(_PRODUCT_RX.findall(src))
+    return found.pop() if len(found) == 1 else None
+
+
+def _module_product(mod: object) -> str | None:
+    f = getattr(mod, "__file__", None)
+    if not f:
+        return None
+    try:
+        rel = Path(f).resolve().relative_to(PRODUCTS_DIR)
+    except (ValueError, OSError):
+        return None
+    return rel.parts[0] if len(rel.parts) > 1 else None
+
+
+def use_product(product: str) -> None:
+    """Make `product`'s modules the ones every bare import finds."""
+    for name, mod in list(sys.modules.items()):
+        owner = _module_product(mod)
+        if owner and owner != product:
+            _stashed.setdefault(owner, {})[name] = sys.modules.pop(name)
+    for name, mod in _stashed.pop(product, {}).items():
+        sys.modules.setdefault(name, mod)
+    folder = str(PRODUCTS_DIR / product)
+    if folder in sys.path:
+        sys.path.remove(folder)
+    sys.path.insert(0, folder)
+
+
+def pytest_collectstart(collector: pytest.Collector) -> None:
+    if isinstance(collector, pytest.Module):
+        product = product_of_test(str(collector.path))
+        if product:
+            use_product(product)
+
+
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    product = product_of_test(str(getattr(item, "path", None) or item.fspath))
+    if product:
+        use_product(product)
+
+
 def collectable_test_files(directory: Path) -> list[Path]:
     """Top-level `test_*.py` files of `directory` that a bare pytest would collect
     (pytest.ini ignores test_suite.py / test_sources.py / test_worlds.py)."""

@@ -83,6 +83,8 @@ class WindowsOmniSimPackage(OmniSimPackage):
           "DefaultDirName={autopf}\\" + self.application_name + "\n"
           "DefaultGroupName=OmniLink\n"
           "UninstallDisplayIcon={app}\\msys64\\mingw64\\bin\\omnisim-bin.exe\n"
+          # the setup .exe's own icon; without it Inno Setup ships its default
+          "SetupIconFile=src\\omnisim\\gui\\omnisim.ico\n"
           "PrivilegesRequired=admin\n"
           "UsePreviousPrivileges=no\n"
           "PrivilegesRequiredOverridesAllowed=dialog commandline\n"

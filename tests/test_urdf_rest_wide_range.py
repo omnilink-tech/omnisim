@@ -25,11 +25,25 @@ while the joint believed it was at 0: the PositionSensor read 0 at the rest
 pose, every setPosition() landed `rest` radians off, and the xArm controller
 drove joint3 to a physical -245.6 deg, past the URDF's own -225 deg stop.
 
-Probe: three horizontal fingers on a fixed base, each with <rest>, one with a
-range inside +/-pi (the control), one past -pi, one past +pi. Each finger
-carries a tip link 0.2 m out, whose world position gives the PHYSICAL angle.
-The controller reads the sensors on the first step (they must equal <rest>),
-then commands rest + 0.3 and checks sensor and physical angle agree.
+The second defect (2026-10-23, found on the Ti5 T170 lane 2026-10-19): a
+<rest> on a joint whose limits cover a FULL TURN (+/-3.14, +/-3.1416, or wider)
+was ignored with nothing logged -- the importer's full-revolution early return
+came before it read <rest>, so the joint started at 0 (the T170 shoulders read
+q_start 0.0 at +/-3.14 and the rest angle at +/-3.13). A `continuous` joint
+dropped its <rest> the same way. Both now start at the rest angle.
+
+The same run pins the effort="0" log: the importer's "passive" warning appears
+ONCE (the world pre-scan used to expand every URDFRobot a second time, so every
+importer warning was printed twice), and the engine no longer follows it with a
+"SYNTHETIC position gain" warning claiming OmniSim drives the joint.
+
+Probe: horizontal fingers on a fixed base, each with <rest>: a range inside
++/-pi (the control), one past -pi, one past +pi, three covering a full turn
+(+/-3.14, +/-3.1416, +/-2 pi with a rest beyond pi) and a continuous joint.
+Each finger carries a tip link 0.2 m out, whose world position gives the
+PHYSICAL angle. The controller reads the sensors on the first step (they must
+equal <rest>), then commands rest + 0.3 and checks sensor and physical angle
+agree. One more finger is passive (effort="0") and is left alone.
 
     python -m pytest tests/test_urdf_rest_wide_range.py -v
 
@@ -55,12 +69,18 @@ _BRINGUP_SIGNATURES = (
 TOL = 0.02
 STEP = 0.3
 
-# name: (lower, upper, rest, y offset of the finger on the base)
+# name: (lower, upper, rest, y offset of the finger on the base); no limits = continuous
 JOINTS = {
-    "inside": (-1.5, 1.5, 0.7, 0.15),
-    "past_lo": (-3.927, 0.192, -1.2, 0.0),
-    "past_hi": (-1.693, 3.14159, 1.0, -0.15),
+    "inside": (-1.5, 1.5, 0.7, 0.45),
+    "past_lo": (-3.927, 0.192, -1.2, 0.3),
+    "past_hi": (-1.693, 3.14159, 1.0, 0.15),
+    "full_314": (-3.14, 3.14, 0.9, 0.0),
+    "full_31416": (-3.1416, 3.1416, -0.8, -0.15),
+    "full_2pi": (-6.2832, 6.2832, 4.0, -0.3),
+    "spin": (None, None, -1.0, -0.45),
 }
+# A passive finger (effort="0"), for the log checks; nothing commands it.
+PASSIVE = ("limp", -0.6)
 
 _I = '<inertia ixx=".001" iyy=".001" izz=".001" ixy="0" ixz="0" iyz="0"/>'
 
@@ -69,15 +89,23 @@ def _urdf():
     parts = ['<?xml version="1.0"?>', '<robot name="rest_probe">',
              f'<link name="base"><inertial><mass value="2"/>{_I}</inertial></link>']
     for n, (lo, hi, rest, y) in JOINTS.items():
+        kind, limits = ("continuous", "") if lo is None else ("revolute", f'lower="{lo}" upper="{hi}" ')
         parts += [
             f'<link name="{n}_finger"><inertial><origin xyz=".1 0 0"/><mass value=".2"/>{_I}</inertial></link>',
             f'<link name="{n}_tip"><inertial><mass value=".01"/>{_I}</inertial></link>',
-            f'<joint name="{n}" type="revolute"><parent link="base"/><child link="{n}_finger"/>'
-            f'<origin xyz="0 {y} 0"/><axis xyz="0 1 0"/><limit lower="{lo}" upper="{hi}" effort="50" '
+            f'<joint name="{n}" type="{kind}"><parent link="base"/><child link="{n}_finger"/>'
+            f'<origin xyz="0 {y} 0"/><axis xyz="0 1 0"/><limit {limits}effort="50" '
             f'velocity="3"/><rest>{rest}</rest></joint>',
             f'<joint name="{n}_tip_fix" type="fixed"><parent link="{n}_finger"/><child link="{n}_tip"/>'
             f'<origin xyz=".2 0 0"/></joint>',
         ]
+    n, y = PASSIVE
+    parts += [
+        f'<link name="{n}_finger"><inertial><origin xyz=".1 0 0"/><mass value=".2"/>{_I}</inertial></link>',
+        f'<joint name="{n}" type="revolute"><parent link="base"/><child link="{n}_finger"/>'
+        f'<origin xyz="0 {y} 0"/><axis xyz="0 1 0"/><limit lower="-1.5" upper="1.5" effort="0" '
+        f'velocity="3"/></joint>',
+    ]
     parts.append("</robot>")
     return "\n".join(parts)
 
@@ -168,6 +196,11 @@ def run(tmp_path_factory):
     return readings, physical, text
 
 
+def _wrapped(a):
+    """An angle difference folded into [-pi, pi): a tip position cannot tell 4.3 from 4.3 - 2 pi."""
+    return (a + math.pi) % (2.0 * math.pi) - math.pi
+
+
 @pytest.mark.parametrize("name", list(JOINTS))
 def test_sensor_reads_rest_on_the_first_step(run, name):
     readings, _, _ = run
@@ -184,6 +217,23 @@ def test_sensor_and_physical_angle_agree(run, name):
     assert abs(final - target) < TOL, "%s: the joint must reach its command %.3f; sensor %.4f" % (
         name, target, final)
     assert name in physical, "no trajectory for %s_tip:\n%s" % (name, log[-1500:])
-    assert abs(physical[name] - target) < TOL, (
+    assert abs(_wrapped(physical[name] - target)) < TOL, (
         "%s: commanded %.3f and the sensor agrees, but the link is physically at %.4f rad"
         % (name, target, physical[name]))
+
+
+def test_passive_warning_is_printed_once(run):
+    """The world pre-scan used to expand the URDF too, doubling every importer warning."""
+    _, _, log = run
+    n = PASSIVE[0]
+    lines = [ln for ln in log.splitlines() if "URDF joint '%s'" % n in ln and "no torque" in ln]
+    assert len(lines) == 1, "expected the passive warning for %r once, got %d:\n%s" % (
+        n, len(lines), "\n".join(lines))
+
+
+def test_no_synthetic_gain_warning_for_a_passive_joint(run):
+    """effort="0" is an OFF motor: the engine must not then claim it drives the joint."""
+    _, _, log = run
+    assert "SYNTHETIC position gain" not in log, [ln for ln in log.splitlines() if "SYNTHETIC" in ln]
+    stated = [ln for ln in log.splitlines() if "Motor '%s_motor'" % PASSIVE[0] in ln]
+    assert all("passive" in ln for ln in stated), stated

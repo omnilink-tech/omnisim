@@ -1,0 +1,14 @@
+{
+  "robot": "go2",
+  "duration_s": 32.0,
+  "handover_s": 15,
+  "support_gate": true,
+  "squat_ff_ank": 0.08,
+  "squat_rise_s": 5.5,
+  "squat_descend_s": 3.5,
+  "ground_mu": 2.0,
+  "g1_task": "squat",
+  "ankle_bias": -0.06,
+  "gate_mode": "contact",
+  "morph_ticks": 1
+}

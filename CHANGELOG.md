@@ -11,7 +11,7 @@ the [Attribution](README.md#attribution) section of the README for the
 relationship to upstream. Entries here cover OmniLink's contributions on
 top of that foundation.
 
-> ⚠️ **Only the v8.x and v9.x releases are published in this repository.**
+> ⚠️ **Only the v8.x, v9.x and v10.x releases are published in this repository.**
 > Sections for earlier versions are kept below as the development record — they
 > say what changed and when — but those releases are **not obtainable here**: no
 > tag, no release page, no downloadable archive. Do not read an older section as
@@ -23,6 +23,405 @@ top of that foundation.
 > dependency archives, which `dependencies/Makefile.*` fetches by name.
 
 ---
+
+
+## [v10.0.0] — 2026-11-04
+
+**OmniSim Manufacturing.** Three machine twins — a CNC router, a laser and an FDM printer — each built from its
+own controller config, running the job file the real machine would run, laying or removing material where the
+tool really went, and measuring the part against its drawing. Two robots were taken through them end to end:
+designed, made on the twins, wired, assembled and driven on Newton, each with a release folder of drawings,
+machine files, BOM, assembly guide and measurement report. The SparkRover Mini started as AI-generated concept
+sheets and ends as a design with everything needed to build one, made so far only on the twins.
+
+⚠️ **Simulation only.** No twin has been validated against its real machine, and nothing here has been made on
+a real machine. Every number below is the twin's, measured in the twin, with its conditions next to it. Print
+results come in two modes, **twin** (full physics in the engine) and **ideal** (no engine); an ideal result is
+never a twin result, and each table says which it is.
+
+Also in this release: engine fixes, most found while building the products (a force applied off the centre of
+mass, a Solid's geometry-derived centre of mass, a physics step that raised and was still counted, a Display
+texture the wgpu renderer never uploaded, a Camera frozen by a MillingStock) and two found reproducing robot
+makers' published models (a short-travel slider servo's force, a gripper's fingers read as feet), three
+renderer fixes for still scenes (TAA shimmer, OmniLight rebakes, render-on-change), URDF and mesh import fixes,
+and the robot assessment and service pilots.
+
+### ⚠️ Behaviour changes — read before upgrading
+
+Each has a value-parsed hatch (`=0` restores the old behaviour unless noted) and an engine pin.
+
+- **A force at an offset acts where you apply it, whatever the centre of mass.** The engine sends
+  `addForceWithOffset` (and every propeller thrust) to the runtime as a force plus a torque about the Solid's
+  ORIGIN; newton's `body_f` is a wrench about the centre of mass. On a Solid whose COM is off its origin (any
+  that declares `centerOfMass` + `inertiaMatrix`) the push acted displaced by that offset. Found by the clothes
+  rack load test: one rigid body, COM 1.02 m up, pushed at the bar until the far feet lift, tipped at 23.5 N,
+  62 % of the statics answer (37.8 N). The runtime now re-references the torque, `tau -= (R(q) * body_com) x F`;
+  after the fix: back push 39.15 N (statics 37.8), side 104.03 N (102.6), empty back 9.38 N (8.7), empty side
+  22.16 N (21.3), the 1–8 % excess being the 1 mm lift threshold under a rising force. Hatch
+  `OMNISIM_NEWTON_EXT_WRENCH_AT_COM=0`. Pin `tests/test_newton_ext_wrench_at_com.py`.
+- **A Solid with no `inertiaMatrix` keeps its centre of mass where it is.** The geometry-derived tensor
+  (composed about the Solid's origin) was passed with the COM pinned AT the origin, so `centerOfMass`, and the
+  `boundingObject`'s own centroid, never reached the solver (MuJoCo `ipos` 0); only an explicit `inertiaMatrix`
+  carried its COM. A 40×40×20 mm, 0.1 kg box with its shape 30 mm off its origin rolled 86° off a flat floor in
+  1 s; now 0.05 mm and 0°, like the centred box. The tensor is shifted to the COM (parallel axis) and passed
+  with it; the load log names the moved bodies (`geometry COM: N body(ies) ... largest D mm`). 147 of 147 demo
+  worlds load; 19 have moved bodies (AnyPick objects up to 26 mm, the CNC/laser/printer twins' carriages up to
+  301 mm, the Forklift PROTO's declared COM 578 mm, the tower gantry mast 2 m); SV08 axis tracking, universal
+  pick (14/15) and the desk-robot drive test are unchanged. Hatch `OMNISIM_NEWTON_GEOM_INERTIA_COM=0`. Pin
+  `tests/test_newton_geom_inertia_com.py`.
+- **A physics step that raised is reported, not counted as executed.** `world.step()` raising used to be one
+  WARNING per tick and nothing else: the engine clock and every controller still advanced, so `/sim/step`
+  answered `steps_executed: 250` for a SparkRover assembly scene in which MuJoCo raised
+  `mj_stackAlloc: out of memory` on every step and the moving unit never moved. Now the `.newton.json` sidecar
+  counts raised steps (`step_errors`, `step_errors_streak`, first/last error and when); the first raise is an
+  engine ERROR, later ones WARNINGs at 2, 4, 8, …; `/sim/step` and `/sim/state` carry `physics_ok` and
+  `physics_steps` and a `NEWTON_STEP_FAILED` diagnostic; and **`run-headless` FAILs on any sidecar
+  `step_errors`**. The MuJoCo arena is now a lever: `WorldInfo.newtonArenaMB` / `OMNISIM_NEWTON_ARENA_MB`
+  (`newtonNjmax` / `newtonNconmax` do not size it on the CPU solver). Reproduction, 6,000 static convex boxes
+  plus a 2,700-piece moving body: MuJoCo's own 15 MiB raised every step from the landing; 64 and 512 MiB ran
+  clean, the unit rests, ~244 ms/step. A slightly short arena may DROP contacts instead of raising (a slab fell
+  through its floor): the CPU path now samples `mjWARN_CONTACTFULL` / `CNSTRFULL` and logs one
+  `MUJOCO ARENA FULL` warning per world. Pins `tests/test_physics_step_errors.py`,
+  `tests/test_physics_step_errors_engine.py`.
+- **A slider (prismatic) position servo is at least `effort / travel` stiff.** Every position servo is built
+  `ke = effort*10`, `kd = effort*0.5`: on a hinge that saturates at a 0.1 rad error, on a slider at a 100 mm
+  error, so a slider with a shorter travel could never apply its declared force. Measured on the Kachaka
+  docking pin (0.2 kg, travel 0–12 mm, weight 1.96 N): with its effort raised to 10 N it pushed at most 1.2 N
+  and sat on its lower stop at exactly 0.0 m, where plain MuJoCo 3.11 lifts the same file 11.0 mm. Now a
+  motorised slider with finite limits gets `ke = max(effort*10, effort/travel)` and kd scaled by the same
+  factor; the 10 N pin lifts 9.65 mm, the published 1 N pin still stays down, as in MuJoCo. Unchanged: sliders
+  with ≥ 0.1 m of travel (Robotiq 2F-140), sliders with no limits, and explicit `OMNISIM_NEWTON_TARGET_KE` /
+  `_FINGER_KE`. Stiffer by ×1.4–2.9, so they squeeze harder for the same position target: the Robotiq 2F-85
+  fingers of the omniarm6 worlds, the ALOHA and Piper fingers, `friction_grasp_minimal`'s fingers
+  (`omniarm6_real_pick_place` PASS and `friction_grasp_minimal` HELD with the floor on and off). Hatch
+  `OMNISIM_NEWTON_SLIDER_GAIN_FLOOR=0`. Pin `tests/test_newton_slider_gain_floor.py`.
+- **Only wheels count as what a robot stands on when its root collider is judged.** The 2026-10-17 rule quiets
+  a Robot's root collider that reaches more than 2 mm below its own wheels/feet; it took "feet" from any two
+  branches at one height, so a gripper's two mirror fingers counted. Measured on the Xense TacCap follower
+  standing on its base (base foot 31.5 mm below the fingers): the base was made non-colliding and the gripper
+  fell through the weighing plate. The reference is now taken only from branches that ROLL (a limit-less
+  revolute, or a Hinge2's spin axis, more than ~25° off the up axis); a robot with none (a gripper, an arm, a
+  legged robot) keeps its root collider at any height. In-engine the gripper now weighs 11.2674 N, identical
+  to plain MuJoCo. Wheeled bases are judged exactly as before. Pin `tests/test_newton_robot_root_collider.py`
+  (`FingersAreNotFeet`).
+- **A still scene no longer shimmers under TAA.** Every edge of a still scene moved by a fraction of a pixel
+  frame after frame (the idle CNC twin "vibrated" while its joints moved 5e-12 m). Three faults in the temporal
+  resolve: history was reprojected from the previous frame's jitter; the history depth check used each pixel's
+  own depth, which the jitter flips on a silhouette; and the reactive colour test compared history with one
+  jittered sample. Idle CNC twin, 1896 × 1113 main view, pixels changed by more than 8 levels between frames:
+  10k–59k before, 1.1k–3.2k after (mean change per pixel 1.4 → 0.12 levels; machine `9722d23d12a3`, RTX 3060
+  Laptop). Hatch `OMNISIM_WGPU_TAA_STILL_EDGES=0`. Pin `tests/test_taa_still_scene.py`.
+- **The main view holds a frame that has not changed (render-on-change).** The main view rendered at
+  `WorldInfo.fps` for as long as the simulation ran, whether or not anything moved: the idle LongMill twin held
+  ~49 % GPU, ~61 W, 86–87 °C and thermal throttling. The renderer now hashes everything it feeds the GPU and
+  holds the frame once 12 consecutive frames are identical; GUI repaints, grabs, dumps, recordings, photos and
+  OmniLight bakes always render, and a real frame is drawn at least every 0.5 s. Same idle window after: 23 %
+  GPU, 24.3 W, 63–64 °C. Matrices hash at 1e-6 m / rad, because a servo-held body moves by float noise every
+  step (up to 4e-9 m a frame on the parked LongMill): with exact hashing the idle window still drew at 23–33 %
+  of the 3D engine, now 6.5–10.6 % (Windows' per-process GPU counters; `nvidia-smi pmon` misattributed it to
+  another app). Hatches `OMNISIM_WGPU_RENDER_ON_CHANGE=0`, `OMNISIM_WGPU_RENDER_ON_CHANGE_EXACT=1`. Pin
+  `tests/test_render_hold_servo_noise.py`.
+- **OmniLight no longer rebakes while something deforms.** Its scene key counted the dynamic tail (MillingStock
+  tiles, cloth, soft bodies, granular, tracks, muscles), so 90 s of cutting on the CNC twin rebaked GI 96 times
+  (57 s of BVH + trace on all cores but one, a visible lighting swap about once a second); now once. Deforming
+  geometry is baked as it stands when something else triggers a bake. Hatch `OMNISIM_OMNILIGHT_KEY_DYNAMIC=1`.
+  Pin `tests/test_omnilight_milling_rebake.py`.
+
+### Added — OmniSim Manufacturing
+
+`projects/manufacturing/` is one sector, with one command: `python -m omnisim manufacturing` (`machines`,
+`worlds`, `cad-pack`, and `<process> <tool>` running each process's own script unchanged). Guide:
+[projects/manufacturing/README.md](projects/manufacturing/README.md). Eleven worlds in
+`projects/samples/demos/worlds/manufacturing/`, all catalogued in DEMOS.md and WORLDS.md.
+
+**Setup.** `python -m omnisim manufacturing setup` installs the Python packages the manufacturing stages
+import (`projects/manufacturing/requirements.txt`, 16 pins, CPython 3.12). It shows pip's own list first and
+asks before installing. `manufacturing doctor` reports, per stage and tool, whether it can run and what is
+missing, by name. A stage with a missing package stops before it starts, names the package with its pip pin
+and exits 3, instead of raising ImportError. Measured on a fresh CPython 3.12.9 venv: setup installed 82
+packages in 3 min 43 s (warm pip cache; 1.4 GB), then doctor read every stage ready and
+`product spark_rover check` passed. UltiMaker Cura 5 is needed for slicing and is not downloaded; Python
+3.13 is not supported yet (open3d 0.19.0 has no Windows wheel for it).
+
+**Machine folders.** `machines/<name>/` holds one machine: its controller config, its tool tables or profile,
+and its vendor CAD pack in `cad/` under the vendor's own licence with a `PROVENANCE.md`:
+
+- `longmill_mk2_30x30`: Sienci Labs' LongMill MK2 30×30, from Sienci's GRBL defaults (gSender; 810 × 855 ×
+  120 mm) and its public Onshape assembly. **The CAD pack is CC BY-SA, not Apache-2.0** (see its
+  PROVENANCE.md).
+- `sovol_sv08`: the Sovol SV08 printer, from its Klipper `printer.cfg`, macros and OrcaSlicer profile (numbers
+  only; Sovol's files are not copied) and Sovol's pre-assembled STEP. **The mesh pack is derived from GPL-3.0
+  CAD and is distributed under GPL-3.0**, kept apart with Sovol's LICENSE; 0.79 M triangles (the 1.37 M full
+  pack held an RTX 3060 Laptop at 38–68 % 3D, 53 W, 85 °C while printing). Its placeholder colours are ours.
+- `example_3018`: a schematic 3018-class router from a GRBL `$$` dump with limit switches.
+
+Everything else in the sector, including the manifests and the tools that cut the CAD, is Apache-2.0.
+
+#### The CNC twin (LongMill MK2)
+
+- **A virtual GRBL 1.1 controller on TCP** (`cnc/`): the machine from a GRBL `$$` dump or a FluidNC config;
+  GRBL's interpreter, look-ahead planner and line / real-time protocol, so any GRBL sender connects. Rails keep
+  the physical carriage apart from GRBL's belief (boot offset, switches, end stops, lost steps, `$TWIN`). Whole-
+  job preflight, including `line_too_long` (GRBL's 127-byte receive buffer; one over-long CAM comment failed the
+  first twin run on line 1). Replies are routed per client, as FluidNC routes them per channel. Measured
+  2026-10-31: homing, a 12-line job, `ALARM:2`, reset and jog `error:15` over TCP; both travel corners reached;
+  tracking within 1.1 / 1.4 / 2.1 mm during motion, measured equals commanded at rest.
+- **`MillingStock`, a new node** (`resources/nodes/MillingStock.wrl`): a height-map block carved every physics
+  step by the cutter Solid's REAL pose (flat, ball or V-bit), drawn as 64-cell tiles; only the tiles a cutter
+  changed are re-uploaded and a flat tile is one quad. Engine-written `removedVolume` and `deepestCut`.
+  `OMNISIM_MILLING_STOCK_DUMP=<file>` writes the height map for inspection. Node type appended to the
+  controller ABI (`WB_NODE_MILLING_STOCK`). Why a node: a supervisor-edited `ElevationGrid` cost a whole-grid
+  rebuild, a scene re-walk and a leaked GPU mesh per edit (0.51× real time at 1 mm, GPU out of memory at
+  0.5 mm). ⚠️ It holds at most 1984 cells a side; the SparkRover's long laser sheets are cut in windows and
+  stitched, the cap worked around and not lifted.
+- **3D milling with tool changes**: a machine tool table (`tool_table.py`); M6 the way gSender does it for
+  GRBL 1.1 (on a real board the job stops at the M6 and says why); character-counting streaming; an STL to
+  drop-cutter CAM (`toolpath3d.py`: Z-level roughing, ball-nose raster finishing, helical bores pecking every
+  5 mm). The twin draws and spins its tools and animates a tool change.
+- **The drives move like steppers**: 20 kN position servos fed forward. The rule, now in `core/drives.py` and
+  shared by every machine: feed forward the axis's *effective* inertia, `max(moved mass, dt × kd)`, because
+  Newton's servo-armature bound raises any lighter joint to that.
+- **Measured against the drawing** (`cnc/inspect_part.py`, 2026-11-01): star pocket floor −0.002 … +0.0013 mm,
+  walls 0.006 / 0.007 mm, path deviation max 0.026 mm (p95 0.011); a 70 mm mould (70,443 lines, two tool
+  changes) within −0.012 … +0.024 mm of the program's ideal cut along the normal, 0 points into the STL,
+  volume −0.04 %. Real-time: the star job (670 lines) ran in 118.6 s against a 107.5 s estimate.
+- **A cutting-load model** (`cutting.py`): removed volume to power, torque, tangential force, chip load and
+  spindle load (Makita RT0701C, 700 W) from sourced specific cutting energies. MDF is marked estimated;
+  **acrylic has no published value, so the twin removes acrylic with no load, melt or cracking model.**
+- **Talk to the CNC** (`cnc_bridge.py`): an OmniLink bridge over any GRBL machine (`grbl_link.py`, a sender as
+  a library), so the same bridge can drive a real board. The deterministic parser answers stop / pause /
+  resume / go home without a model; everything else goes to the model and its tool calls pass the gate.
+  Machine checks refuse with named rules (preflight, spindle_off, travel, cut_depth, plunge, busy). Live
+  2026-11-01, model via OmniLink: two pockets milled from plain English, pause / resume mid-cut, a 15 mm pocket
+  in 12 mm stock refused and explained. An OmniKey and a model connection are required.
+- The worlds cap the window at 30 fps (`RENDER_FPS`; physics still steps every 8 ms): the star job ran at 31 %
+  GPU / 31.4 W / 68 °C mean instead of 40 % / 57.9 W / 83 °C at 60 fps, same part.
+
+#### The laser twin (Sienci LaserBeam 7 W on the LongMill)
+
+- `MillingStock toolShape "laser"`: the controller writes `laserPower` every step; the energy is laid along the
+  beam's REAL path as an elliptical Gaussian spot widening out of focus, ablating `F / ablationEnergy` and
+  charring along a skin-to-char ramp. Energy is conserved over the spot's window.
+- `grbl_twin --laser <module>`: GRBL 1.1 laser mode, integrated over every planner sub-step (G0 dark, M3 lit
+  even at rest, M4 scaled by speed and off at rest, GRBL's own PWM computation).
+- The module is Sienci's LaserBeam 7W from Sienci's docs (discontinued); **the head is schematic** (no
+  licensed CAD), its optics are Sienci's.
+- **Calibrated on one row of Sienci's material table** (3 mm plywood, 3 passes: e_v in [15, 26] J/mm³, 20
+  used). The kerf model then predicts 6 mm in 5 passes (Sienci: 5) and 1/4" in 14 (Sienci: 16). Measured
+  2026-11-02, headless: a 30 × 20 mm tag cut free at 29.9 × 19.9 mm at the bottom of the cut, hole 6.06 mm
+  (drawn 6.0), kerf 0.26 mm at the top; 1139 J emitted against 1136 J from the job; M3 burns line ends 74 %
+  deeper than M4. ⚠️ **On full parts the twin needs 6 passes for 6 mm plywood, one more than Sienci's table**:
+  at 5 every SparkRover 6 mm part stayed joined by a 0.16–0.20 mm web on its outline.
+
+#### The printer twin (Sovol SV08)
+
+- **`PrintedPart`, a new node**, the additive twin of MillingStock: every physics step the plastic that left
+  the nozzle is laid along the nozzle Solid's REAL path. Bead height is the gap to what is under it (the bed or
+  earlier plastic); width is what that volume needs; with nothing underneath it is a round strand (a bridge),
+  and plastic from a still nozzle is a blob. `OMNISIM_PRINTED_PART_DUMP` writes the beads. Beads past the
+  renderer's 523,776 are recorded and dumped (before, a large print was measured on half its plastic, silently).
+- **The machine's own chain** (`printing/`): a Klipper config reader; slicing with an installed CuraEngine
+  (Cura's setting formulas evaluated, set from Sovol's OrcaSlicer profile; it caught a real CuraEngine trap, a
+  per-extruder 2.85 mm filament that asked for 38 % of the plastic); a job planner as Klipper's toolhead and
+  extruder plan it (square corner velocity, look-ahead, input shaper, pressure advance); a hotend flow model
+  with the 21 mm³/s melt limit; preflight and `inspect_print.py`.
+- **Measured** (2026-11-02, a 20 mm cube): 2852.27 mm³ out of the nozzle, 2850.18 laid, 100 layers, 375 s
+  planned (Cura estimates 325), outer surface +0.041 mm, height 20.05 mm. Axis tracking 9 µm median once the
+  feed-forward used the effective inertia (it overshot 0.3 mm on the bare masses).
+- **Ideal print mode** (`printing/ideal_print.py`): an engine-free print, the same G-code, Klipper plan, hotend
+  and laying rule with the nozzle exactly where the steppers would put it. It leaves out the axis dynamics
+  (following error, overshoot, servo jitter). Against the twin's own dumps on three parts (cube, desk-robot
+  plate, a 145 g PETG shell section), 2026-11-04: plastic laid identical to 0.1 mm³, same layers and height,
+  outer surface mean +0.018 / +0.045 mm (cube, ideal / twin), +0.001 / +0.022 (plate), +0.010 / +0.013
+  (shell); the twin's part is the larger on every print, by 0.02–0.03 mm a side on the cube and the plate. The
+  shell printed in 21 s (+116 s inspection) instead of 6,551–6,879 s. **An ideal result is not a twin result.**
+- ⚠️ **The bead model's wide beads and false nozzle crashes, found and fixed in this release** (engine
+  `OmPrintedPart` and `printing/ideal_print.py`, kept consistent bead for bead). A step under 0.1 nozzle widths
+  (20 mm/s at 2 ms) counted as "standing still", so a nozzle creeping into a corner held its plastic. It then
+  laid it on the next step's 0.04–0.05 mm chord as one bead up to ~7 mm wide, or, past 0.05 mm³, as a dome
+  0.09–0.21 mm above the tip. Every recorded nozzle crash hit one of those domes; none hit a wide bead. The
+  rule now: "still" is under 0.01 nozzle a step; no bead is wider than the nozzle face (2.5 nozzles, 1 mm);
+  plastic beyond the face, and plastic from a still nozzle, becomes a blob where it left the nozzle; a nozzle
+  standing in its own blob is not a crash. `inspect_print` counts blobs in the outline and footprint.
+  Re-measured in ideal mode on every SparkRover plate: nozzle crashes 116 / 96 / 152 / 11 → 0, grams
+  unchanged; `upper_arm_outer_left` footprint Y +1.556 → +0.161 mm. The SparkRover's full twin prints on the
+  fixed engine are still running at the cut, and its twin rows measured before the fix are labelled so in
+  PRINT.md. Pin: `tests/test_printed_part_bead_width.py`.
+
+#### The products
+
+- **Clothes rack** (`products/clothes_rack/`): a concept (1200 × 500 × 1500 mm, 30 mm tube) redesigned for a
+  router: bought tube, eight identical aluminium clamp halves from one program. One half milled on the
+  LongMill twin through the GRBL sender (146,392 lines, two tool changes, 1 h 59 min of machine time in
+  21.6 min wall): bore depth 14.599 mm (14.600), holes 6.987 mm (7.0) centred within 0.001 mm, within
+  0.014 mm of a perfect machine on the same program. Assembled in ten captioned steps and load-tested on Newton
+  as one rigid body: the concept's 500 mm base tipped at 9.4 N empty, so the base is now 600 mm (11.5 N
+  empty, hand calculation 10.9; 47.8 N with 20 kg of clothes, 46.5).
+- **Desk robot** (`products/desk_robot/`): a two-wheeled robot made on all three twins. Laser: two 3 mm
+  plywood decks cut free at 90.1 × 80.1 mm (drawn 90 × 80), every hole, the OmniSim wordmark engraved 0.125 mm
+  deep. Printer: clamps, rims and tray, 58 layers, 11.65 mm tall (11.7), outer walls −0.05 / +0.07 mm
+  (p05–p95). CNC: two aluminium hubs, OD 15.994 mm (16.0). Bought parts are solids in frames fixed from the
+  makers' own CAD, which is fetched and hash-checked at build time and never committed; the repo carries our
+  models drawn from the vendors' dimension drawings. An FCL clearance check of 53 solids found seven design
+  errors, all fixed. An electrical design (schematic, netlist, power budget, rule checks) and 26 wires routed
+  in 3D. Assembled step by step on Newton (⚠️ its settle check is flaky, about one full run in two) and driven:
+  0.672 m/s straight against 0.679 from the motor datasheet; spin 13.26 rad/s against 13.48 predicted.
+- **SparkRover Mini** (`products/spark_rover/`): **from concept images to a robot.** The concept sheets were
+  generated with an AI image tool; the design corrected their numbers and records every change in
+  `skeleton.py`'s `DECISIONS` (among them no gripper, a plain RGB camera rather than a depth camera, and a 2S2P
+  battery for runtime). A four-wheel classroom robot, 290 × 210 × 185 mm, 2397.8 g against a 2400 g ceiling,
+  around a Raspberry Pi 5, designed by four subsystems (shell, chassis, arms, electrical) against one skeleton
+  contract and integrated with exact geometry. Story: [the concept-to-robot guide](docs/guide/manufacturing-concept-to-robot.md);
+  do it yourself: [make your own product](docs/guide/manufacturing-make-your-own-product.md). The twin's
+  numbers (conditions in `release/REPORT.md`):
+  - integration: 325 solids, 0 interfering, 0 outside their zones (pairwise FCL, interface screws included);
+  - laser and CNC: 16 of 16 parts cut free with every hole, 11 jobs on the LongMill twin;
+  - printing: 27 printed parts, all on the fixed bead rule: **2 on the full SV08 twin** (the bay carrier and
+    the cooler duct) **and 25 in ideal mode**. Their full-twin runs on the fixed engine were still running at the
+    cut; the twin runs measured before the fix stay in PRINT.md, labelled. PRINT.md gives the mode and the bead
+    rule per part;
+  - wiring: 127 of 128 wires routed in 3D, 17.94 m cut (the Pi cooler's own lead is factory-wired);
+  - assembly on Newton: 53 units in 18 steps, 0 blocked, 0 interfering at a seat, stands on all four wheels;
+    screws are placed, not simulated;
+  - drive on Newton (2 ms, MuJoCo CPU, floor μ 1, from full charge): 0.6941 m/s straight against a 0.6964
+    no-load prediction at the 8.184 V mean bus voltage; spin 4.843 rad/s and stop 47.7 mm, both of which
+    depend on the engine's wheel-armature default (2.335 rad/s and 6.8 mm at ratio 10).
+- **Release packs.** Each robot's `release/` folder is what someone needs to build one: an SVG drawing and an
+  STL per made part, the exact laser / CNC / print programs the twins ran, the BOM with sources and the wire
+  cut list, an assembly guide with a picture per step, the electrical folder and the measurement report.
+  `release.py` regenerates the whole folder in one command, without launching an engine.
+
+#### Supporting the products
+
+- **A compiled wire router.** `desk_robot/wiring.py`'s A* search and line test are compiled with numba (the
+  pure-Python search stays the reference) with a windowed distance update: the desk robot's 26 routes are
+  identical, and the SparkRover's 128 went from more than 2 h unfinished to about 90 s.
+- **A battery model** (`spark_rover/battery.py`, standard library only): the 2S2P Molicel P28A pack from its
+  data sheet (curves digitized from the figure's vector paths, ±10 mAh / ±20 mV), R0 plus one RC branch,
+  coulomb counting and the 6.4 V cut-off. It reproduces the 0.56 A and 2.8 A curves within 3 mV, and runs
+  4–7 % shorter than the design's estimate (idle 4.60 h vs 4.79, classroom mix 2.68 vs 2.84, driving 1.40
+  vs 1.51). Not modelled: temperature, ageing, cell imbalance, protection-board trips, self-heating; above
+  about 5 A a cell the model sags more than a real cell (conservative). The drive controller runs the motors
+  on the battery's bus voltage every step (0.694 m/s at 8.18 V mean, 15.7 A peak at the start);
+  `--fixed-pack` reproduces all 316 earlier results.
+- **A camera and a screen on the robot.** A Camera at the Camera Module 3's lens (66° horizontal, 640 × 360)
+  and an 800 × 480 Display on the 5-inch panel's active area, drawing a face, a camera inset and a battery
+  gauge. The drive test is unchanged with them on (about 18 % more wall time). ⚠️ The two I2S microphones are
+  **not simulated** (OmniSim retired its `Microphone` node); the speaker, touch pads and status ring are visual
+  meshes with mass; the screen is lit by the scene, not emissive.
+
+### Changed — brand
+
+- **The OmniSim mark and wordmark are new.** The mark keeps its shape, a dotted sphere lit from the upper
+  left, with the dots now a generated lattice; the wordmark is "OmniSim" in Sora SemiBold. App icons, the GUI
+  splash (which, installed, used to load an unpackaged orb and show none), the Windows installer's `setup.exe`
+  icon, the brand book and the film brand cards use them. The engine binaries carry the new icon and splash
+  only once rebuilt. Sora is listed in NOTICE and THIRD_PARTY_NOTICES.
+
+### Fixed — engine and rendering
+
+- **A Display on a Shape drew white under wgpu.** The renderer never uploaded a Display's texture. A
+  Display-fed `baseColorMap` is now an updatable texture, re-uploaded when the Display redraws (PBRAppearance
+  only). A binary built before this fix shows no face on the SparkRover. Pin `tests/test_display_texture_wgpu.py`.
+- **A Camera on a world with a MillingStock froze every moving body.** The milling collect re-pointed only its
+  own draws after a reallocation, so a cached draw list (every Camera/RangeFinder and the main view) read
+  stale model matrices until the 600-frame rebuild. Now cache-on and cache-off frames are byte-identical; the
+  cache's gain is kept (city_traffic + 320×240 camera: 22.5–24.2 ms/step cached vs 52.8–55.5 uncached). Pin
+  `tests/test_camera_draw_cache_motion.py`.
+- **The GUI window drew no Shape under a bare root Pose** (since 2026-08-21). The root's non-Solid children
+  were walked only for callers with no draw-to-Solid map, and the main view has passed one since the
+  synthetic-data dumps; Camera devices still drew them. Found on the clothes rack assembly world, whose window
+  showed only the floor and sky. Pin `tests/test_main_view_bare_pose.py`.
+- **A mesh on a translated or non-uniformly scaled Collada node shades with the right normals.** `OmMesh` and
+  `OmCadShape` mapped normals with the node's full 4×4 transform; they now take the inverse-transpose of its
+  3×3 and are renormalised. A sphere instanced 20 m up and placed back by its Pose rendered as a flat disc
+  (camera frames differ by up to 162/255); now byte-identical to the untranslated one. Hatch
+  `OMNISIM_MESH_NORMAL_MATRIX_FIX=0`. Pins `tests/test_mesh_normal_matrix.py`,
+  `tests/test_mesh_normal_matrix_render.py`.
+- **A `CadShape` reads every node of its file, not only the root.** A file whose geometry two nodes instance
+  rendered NOTHING (pixel range 5; now 197). Only hand-authored `CadShape` nodes were affected; the URDF
+  importer emits `Mesh`. No hatch.
+- **Capture keeps the simulator window state.** Repeated `Supervisor.exportImage()` calls on Windows maximised
+  a minimised window before every frame and minimised it again afterwards. Pin
+  `tests/test_capture_window_state.py`.
+
+### Fixed — URDF import
+
+Found reproducing the Ti5 T170 humanoid.
+
+- **A `<rest>` start angle is applied on a joint whose limits cover a full turn** (±3.14, ±3.1416 or wider),
+  on a `continuous` joint, with incomplete limits, and on a range lying wholly past ±π; all used to start at
+  0 with nothing logged. A `<rest>` outside the joint's own limits is warned about by name. No shipped robot
+  changes. Prismatic joints still do not read `<rest>`.
+- **Every URDF importer warning was printed twice** (the undeclared-PROTO pre-scan expanded each `URDFRobot`
+  as well as the load; each URDF was also converted twice).
+- **An `effort="0"` joint is no longer reported as driven.** The "SYNTHETIC position gain … OmniSim drives it"
+  warning is now an INFO line saying the joint is passive (still a warning under
+  `OMNISIM_NEWTON_AVAILABLE_TORQUE=0`).
+
+Pins `tests/test_urdf_rest_wide_range.py`, `tests/dev/test_urdf_rest_full_turn.py`.
+
+### Fixed — OmniLink bridges
+
+- **Mobile bridge pose reads stay on the sim thread.** `get_state()` and the `act_*` verbs ran on HTTP threads
+  and called the supervisor directly, racing the controller's channel; now they read an immutable snapshot
+  that `tick()` refreshes every step. Live, Husky, 8 threads polling `/state` while turning (n = 1 each): 44
+  corrupted poses (x, y ~2e-311) before, 0 of 4178 after.
+- **Turn pulses size their rate continuously** (`|remaining| / 2 s`, clamped to the slow and cruise rates):
+  a 0.26 rad pulse used to coast past its target and need a reverse correction; every turn now settles after
+  one correction (±0.26 rad settled 4.6 mrad off, was 8–9). Pins `tests/test_mobile_pose_threading.py`,
+  `tests/test_mobile_turn_pulse_rate.py`.
+- **Crew messages carry a one-sentence request and separate details.** `message_robot`'s REQUEST is what the
+  crewmate's gate judges; the DETAILS reach the receiving model's context. The gate now lets a sentence
+  flagged as a question or reported speech veto only a tool it names (prohibitions stay utterance-wide on
+  purpose), and place names built from verbs ("pick pad") no longer read as the action. Parity cases
+  regenerated.
+
+### Added — robot assessments and service pilots
+
+These ship as source in this release (v9.2.7 needed a separately published add-on). They are simulated
+model / test-controller results, not vendor firmware or hardware validation; machine `9722d23d12a3`, Newton
+1.5.0 / MuJoCo 3.11 CPU. Windows has the prebuilt engine; Linux requires a source build.
+
+- **`python -m omnisim assess`** (`omnisim/assessment/`, `projects/assessments/`): scenario specs, offline
+  oracles, a campaign runner and reports. Husky / Jackal immediate braking over 0–20° slopes, contact μ
+  0.10–0.80 and 0/10/20 kg rigidly mounted loads (a 64-case campaign); Go2 walk/stand/walk transitions with a
+  handover guard; G1 physical standing (no weight-bearing harness; no unassisted humanoid-walking claim);
+  Husky braking and 90° turning on mixed rigid friction patches (76 episodes, 50 PASS / 26 FAIL) and a
+  separate 93-episode split-surface repair (59 PASS / 34 FAIL; 11 of 12 new friction/payload inputs pass and
+  the twelfth still fails approach-speed qualification). Rigid contact coefficients are imposed assumptions,
+  not calibrated real materials. Guides: [robot-assessments.md](docs/guide/robot-assessments.md),
+  [legged-assessments.md](docs/guide/legged-assessments.md), [husky-mixed-surfaces.md](docs/guide/husky-mixed-surfaces.md).
+  Evidence under `tests/assessment/evidence/`.
+- **A Husky mission agent** (`projects/services/husky_mission/`): an OmniLink request becomes a bounded task
+  (visit A, then B, then return to base) with measured arrival, cancellation and an independent typed Stop.
+  The frozen suite passed 26 of 26 valid episodes across 27 attempts (one invalid controller start retained).
+  Known flat empty arena; obstacle avoidance and hardware operation are out of scope.
+- **An OmniArm 6 assurance pilot** (`projects/services/arm_assurance/`): ordered joint poses, persistent Hold,
+  explicit Resume, Cancel and Stop in a configured no-payload cell, with its qualification evidence. A bounded
+  workcell contract, not a collision-safety certificate.
+
+Both pilots need an OmniKey and a model connection for AI requests.
+
+### Internal
+
+- Apache-2.0 headers on the 39 assessment and service source files that lacked one (the licence gate,
+  `tests/sources/test_license.py`, failed on them).
+- Every new `OMNISIM_*` variable is in the regenerated
+  [environment-variable reference](docs/reference/environment-variables.md).
+
+### Known issues (still open)
+
+- **No twin is validated against its real machine**, and nothing in Manufacturing has been made on one.
+- **The SparkRover's full twin prints on the fixed bead rule** (above) were still running at the cut. Its
+  PRINT.md labels every twin row measured before the fix; the fixed-rule twin numbers follow in a 10.0.x.
+- **SparkRover open items** (its REPORT.md is the current list): 25 printed parts' current results are ideal-mode until their fixed-engine twin runs finish;
+  the front carrier needs about 64 g of support for a 75 g part; the board hole positions on U5, U6, U11 and
+  U12 are assumed; the XC330 horn's dimensions are scaled from ROBOTIS' figures, not measured; one routed wire
+  (W10) reads 0 mm clearance on the 1 mm grid; the mass margin is 2.2 g on the design's masses; the spin and
+  the stop depend on the engine's wheel-armature default; the microphones are not simulated.
+- **The desk robot's assembly settle check is flaky**, about one full run in two.
+- **MillingStock holds at most 1984 cells a side.**
 
 
 ## [v9.2.7] — 2026-10-21

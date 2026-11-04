@@ -152,6 +152,7 @@ no theme file. Reading `src/omnisim/gui/OmSplashScreen.cpp`, the splash is drawn
 **procedurally** from the OmniLink palette and loads exactly one image —
 `resources/branding/omnilink/orb/orb.png` — and its own header comment says
 *"No Webots-derived robot screenshots: the splash is pure OmniLink identity"*.
+(Since 2026-11-03 that one image is the OmniSim orb, `resources/images/splash_orb.png`.)
 The `images:` Qt search path (`OmGuiApplication.cpp:97`) points at
 `resources/images`, not the subdirectory, and nothing requested
 `images:splash_images/...`.
@@ -249,7 +250,7 @@ has a rule for cannot discover a category it lacks a rule for.
 | `projects/policies/training/runs/*.npz` | 2 | Apache-2.0 | OmniLink | `np.load(...).files == ['theta', 'meta']`, both `float32`; ES-trainer weight vectors from this repo's own in-engine pipeline. Same artifact class as the 35 `.pt` beside them, which `OWN_WORK` already claims — but that claim is extension-scoped to `('.pt', '.onnx')`, so it cannot reach these | OK — `PROVENANCE.md` added in-dir |
 | `projects/policies/control/gait/datasets/g1_achieved_gait.npz` | 1 | Apache-2.0 | OmniLink | Two `float32` arrays (`q` 256×13, `stand` 13). The **robot's own** recorded walk, phase-binned and symmetrised by the committed `build_achieved_gait.py` — not mocap | OK — `PROVENANCE.md` added in-dir |
 | `projects/omni_quest/controllers/omni_quest_eye/model_seg.npz` | 1 | Apache-2.0 | OmniLink | Ten numeric arrays: a 10→32→16→1 MLP plus input normalisation, 6,096 B. Trained by the committed `tools/train_segmenter.py` on OmniSim-rendered frames; no pretrained backbone | OK — `PROVENANCE.md` added in-dir |
-| `src/omnisim/gui/omnisim.ico` | 1 | Apache-2.0 code / trademark-reserved mark | OmniLink | **md5 `fff029dc38c575156fc3091f224b68e6` — byte-identical to `resources/icons/core/omnisim_doc.ico`**, which `resources/icons/core/license.txt` already records. Path descends from `webots_doc.ico` via `--follow`; the bytes were replaced with the OmniLink orb in `a0859d4d7` | OK — `PROVENANCE.md` added in-dir |
+| `src/omnisim/gui/omnisim.ico` | 1 | Apache-2.0 code / trademark-reserved mark | OmniLink | **md5 `ac181700e9eddfd76e29af2c5319769a` (2026-11-03) — byte-identical to `resources/icons/core/omnisim_doc.ico`**, which `resources/icons/core/license.txt` already records. Path descends from `webots_doc.ico` via `--follow`; the bytes were replaced with the OmniLink orb in `a0859d4d7`, then with the OmniSim app icon on 2026-11-03 | OK — `PROVENANCE.md` added in-dir |
 | `projects/omni_quest/docs/m1_run.gif` | 1 | Apache-2.0 | OmniLink | Added `a8bfb4197` (2026-06-09, *"feat(omni-quest): M1 demo — animated run GIF"*); an animation of this repo's own Omni Quest run, sibling to the three `.png` trajectory plots `OWN_WORK` already claims | ⚠ **UNCOVERED — see 6.3.** Do not add a `PROVENANCE.md` beside it |
 
 Same lesson as `tests/api/controllers/speaker/sound.wav` in §1: **a byte-identical

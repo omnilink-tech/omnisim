@@ -1,0 +1,24 @@
+{
+  "valid": true,
+  "compiled_mass_kg": 76.682,
+  "expected_mass_kg": 76.682,
+  "compiled_floor_friction": [
+    0.1
+  ],
+  "requested_ground_mu": 0.1,
+  "compiled_all_geom_friction": [
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1
+  ],
+  "slope_orientation_verified": true,
+  "compiled_floor_quaternions": [
+    "1.0, 0.0, 0.0, 0.0"
+  ]
+}

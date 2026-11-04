@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "robot": "husky",
+  "model": "projects/robots/clearpath/husky_description/urdf/husky.urdf",
+  "mobile_config": "projects/samples/demos/controllers/omnilink_mobile_bridge/_mobile_configs.py",
+  "world": "projects/assessments/worlds/husky_braking.omniworld",
+  "controller": "projects/assessments/controllers/husky_braking/husky_braking.py",
+  "scope": "Simulation-only deterministic wheel-velocity braking test; not Clearpath firmware or hardware validation"
+}

@@ -61,7 +61,7 @@ _BUNDLE = os.path.join(_ROOT, "msys64", "mingw64", "bin", "newton-runtime", "sit
 
 _ENV = ("OMNISIM_NEWTON_SERVO_ARMATURE_BOUND", "OMNISIM_NEWTON_SERVO_ARMATURE_SCOPE",
         "OMNISIM_NEWTON_TARGET_KD", "OMNISIM_NEWTON_FINGER_KD", "OMNISIM_NEWTON_ARM_KD",
-        "OMNISIM_NEWTON_TARGET_KE", "OMNISIM_NEWTON_FINGER_KE")
+        "OMNISIM_NEWTON_TARGET_KE", "OMNISIM_NEWTON_FINGER_KE", "OMNISIM_NEWTON_SLIDER_GAIN_FLOOR")
 
 
 def _load_runtime():
@@ -106,6 +106,10 @@ class _Env(object):
 JAW_M = 0.0073
 EFFORT = 100.0
 KE, KD = EFFORT * 10.0, EFFORT * 0.5
+JAW_TRAVEL = 0.034
+# what the runtime builds the jaw with since 2026-10-22: a slider's gain is floored
+# at effort/travel, kd scaled alike (tests/test_newton_slider_gain_floor.py)
+KD_JAW = KD * max(1.0, (EFFORT / JAW_TRAVEL) / KE)
 FACE_Q = 0.011      # each pad's inner face reaches the cube's face at this q
 
 
@@ -202,22 +206,30 @@ class ServoArmatureBound(unittest.TestCase):
         added = res["armature"]
         _palm, leader, follower = dofs
         # leader jaw: M_ii is its own 7.3 g (a slider's diagonal is its body mass)
-        self.assertAlmostEqual(added[leader], KD * dt - JAW_M, places=6)
-        self.assertAlmostEqual(float(m.dof_armature[leader]), KD * dt - JAW_M, places=6)
+        self.assertAlmostEqual(added[leader], KD_JAW * dt - JAW_M, places=6)
+        self.assertAlmostEqual(float(m.dof_armature[leader]), KD_JAW * dt - JAW_M, places=6)
         # mimic follower (multiplier 1): the leader's reflected inertia
         self.assertAlmostEqual(added[follower], added[leader], places=9)
         # and MuJoCo's constraint weights now describe the armed joint
-        self.assertLess(float(m.dof_invweight0[leader]), 1.5 / (KD * dt))
+        self.assertLess(float(m.dof_invweight0[leader]), 1.5 / (KD_JAW * dt))
 
     def test_driven_jaws_stop_at_the_part(self):
-        with _Env():
+        # measured 2026-10-17 at the jaw gains of that day (ke = effort*10)
+        with _Env(OMNISIM_NEWTON_SLIDER_GAIN_FLOOR="0"):
             _w, _s, fixed = _pinch(mimic=False)
-        with _Env(OMNISIM_NEWTON_SERVO_ARMATURE_BOUND="0"):
+        with _Env(OMNISIM_NEWTON_SLIDER_GAIN_FLOOR="0", OMNISIM_NEWTON_SERVO_ARMATURE_BOUND="0"):
             _w, _s, stale = _pinch(mimic=False)
         # the defect: the jaws close ~21 mm into a 40 mm part
         self.assertGreater(stale["interference_mm"], 15.0, stale)
         self.assertLess(fixed["interference_mm"], 4.0, fixed)
         self.assertGreater(fixed["rise"], 0.095, fixed)
+        # and at today's default they still stop at the part. The floored jaw servo
+        # (ke 2941 N/m, was 1000) squeezes ~61 N per jaw instead of ~21 N, so the
+        # pads sit deeper in the contact: measured 4.65 mm, not the 21 mm pass-through
+        with _Env():
+            _w, _s, now = _pinch(mimic=False)
+        self.assertLess(now["interference_mm"], 6.0, now)
+        self.assertGreater(now["rise"], 0.095, now)
 
     def test_mimic_follower_squeezes_back(self):
         with _Env():

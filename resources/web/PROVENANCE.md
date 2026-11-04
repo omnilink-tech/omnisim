@@ -45,7 +45,7 @@ The derivation of this fork is recorded in the repository-root `NOTICE`.
 
 | file | terms | note |
 |---|---|---|
-| `resources/web/streaming_viewer/omnisim_icon.png` | Copyright 2026 OmniLink | The **OmniLink dot-sphere orb** brand mark. Added at import as `webots_icon.png` (2,174 bytes) and replaced with the orb by `a0859d4d7` *"branding: OmniLink dot-sphere orb as canonical OmniSim identity"* (26,533 bytes), then renamed by `f1fbf4890`. Its bytes are identical to `resources/images/omnisim.png`, `resources/icons/core/omnisim_doc.png` and both `scripts/packaging/omnisim*.png`. ⚠ **Trademark-reserved:** the Apache grant covers the code, not the marks — see `TRADEMARKS.md`. |
+| `resources/web/streaming_viewer/omnisim_icon.png` | Copyright 2026 OmniLink | The **OmniSim app icon** (the dot-lattice orb on its rounded tile). Added at import as `webots_icon.png` (2,174 bytes), replaced with the OmniLink orb by `a0859d4d7` *"branding: OmniLink dot-sphere orb as canonical OmniSim identity"* (26,533 bytes), renamed by `f1fbf4890`, and regenerated from the OmniSim mark on 2026-11-03 (42,723 bytes, `scripts/branding/build_omnilink_icons.py`). Its bytes are identical to `resources/images/omnisim.png`, `resources/icons/core/omnisim_doc.png` and both `scripts/packaging/omnisim*.png`. ⚠ **Trademark-reserved:** the Apache grant covers the code, not the marks — see `TRADEMARKS.md`. |
 | `resources/web/wwi/images/missing_proto_icon.png` | Apache-2.0, Copyright 2026 OmniLink | added by `b3038e3ae` |
 | `resources/web/wwi/images/missing_texture.png` | Apache-2.0, Copyright 2026 OmniLink | added by `b3038e3ae` |
 

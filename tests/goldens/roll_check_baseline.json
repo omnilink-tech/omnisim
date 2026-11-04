@@ -1280,6 +1280,36 @@
           "moving_fraction": 1.0
         }
       ]
+    },
+    "projects/samples/demos/worlds/manufacturing/desk_robot_drive_test.omniworld": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.3907,
+          "omega_spin_rad_s": 19.9993,
+          "radius_m": 0.01966,
+          "v_roll_mps": 0.3932,
+          "slip_ratio": 0.0064,
+          "moving_fraction": 1.0
+        }
+      ],
+      "note": "measured 2026-11-04 on the live omnisim-bin.exe (roll_check sweep --binary msys64/mingw64/bin/omnisim-bin.exe), not the baseline's omnisim-bin-fixed.exe, which predates .omniworld"
+    },
+    "projects/samples/demos/worlds/manufacturing/spark_rover_drive_test.omniworld": {
+      "verdict": "ROLLING",
+      "robots": [
+        {
+          "verdict": "ROLLING",
+          "v_body_fwd_mps": 0.4491,
+          "omega_spin_rad_s": 13.8462,
+          "radius_m": 0.0325,
+          "v_roll_mps": 0.45,
+          "slip_ratio": 0.0021,
+          "moving_fraction": 1.0
+        }
+      ],
+      "note": "measured 2026-11-04 on the live omnisim-bin.exe (roll_check sweep --binary msys64/mingw64/bin/omnisim-bin.exe), not the baseline's omnisim-bin-fixed.exe, which predates .omniworld"
     }
   }
 }

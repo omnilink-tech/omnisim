@@ -1,0 +1,23 @@
+{
+  "name": "Sienci LaserBeam 7W",
+  "kind": "laser",
+  "status": "discontinued by Sienci Labs; twinned from its published documentation",
+  "optical_w": 7.0,
+  "wavelength_nm": 445,
+  "lens": "G2 (stock, for cutting)",
+  "lens_efficiency": 0.95,
+  "focal_mm": [28, 35],
+  "spot_mm": [0.065, 0.13],
+  "spot_orientation": "assumed: the long side of the spot along machine Y (Sienci does not say how the diode sits in the head)",
+  "beam_half_angle_rad": 0.12,
+  "beam_half_angle_note": "assumed: a beam about 7 mm across focused at about 30 mm (Sienci publishes the focal length, not the beam diameter at the lens)",
+  "grbl": {"30": 255, "31": 0, "32": 1},
+  "sources": {
+    "diode": "https://resources.sienci.com/view/lb-laser-diode/",
+    "lenses": "https://resources.sienci.com/view/lb-lenses/",
+    "materials": "https://resources.sienci.com/view/lb-material-guide/",
+    "gsender_settings": "https://resources.sienci.com/view/lb-gsender-settings/",
+    "lightburn": "https://resources.sienci.com/view/lb-lightburn-settings/",
+    "discontinued": "https://resources.sienci.com/view/lb-manual/"
+  }
+}

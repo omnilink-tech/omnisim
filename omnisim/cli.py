@@ -39,6 +39,7 @@ from .paths import REPO_ROOT
 _TEST_GROUPS = ("api", "cache", "other_api", "physics", "protos", "parser", "rendering")
 _CAPTURE_SCRIPT = REPO_ROOT / "scripts" / "capture" / "omnisim_capture.py"
 _RUN_AGENT_SCRIPT = REPO_ROOT / "scripts" / "dev" / "omnisim_run_agent.py"
+_MANUFACTURING_CLI = REPO_ROOT / "projects" / "manufacturing" / "cli.py"
 
 
 def _forward(script: Path, argv: list[str]) -> int:
@@ -500,6 +501,8 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("byok", help="Connect the model provider that pays for the tokens.")
     sub.add_parser("control-bench", help="Reproducible robotics-control evaluations: freeze, run, verify, report.")
     sub.add_parser("ops-bench", help="Robot operations under change: standing rules, interrupts, disturbances, timed orders.")
+    sub.add_parser("assess", help="Robot mobility assessments: slopes, contact friction, payloads and reproducible failure boundaries.")
+    sub.add_parser("manufacturing", help="OmniSim Manufacturing: machine twins (CNC, 3D printing), their tools, worlds and products.")
 
     return parser
 
@@ -538,6 +541,11 @@ def main() -> int:
     if argv and argv[0] == "control-bench":
         from .control_bench.cli import main as control_bench_main
         return control_bench_main(argv[1:])
+    if argv and argv[0] == "assess":
+        from .assessment.cli import main as assessment_main
+        return assessment_main(argv[1:])
+    if argv and argv[0] == "manufacturing":
+        return _forward(_MANUFACTURING_CLI, argv[1:])
     if argv and argv[0] == "ops-bench":
         from .ops_bench.cli import main as ops_bench_main
         return ops_bench_main(argv[1:])

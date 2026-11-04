@@ -853,6 +853,28 @@ def sidecar_verdict(sidecar_path: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
+def step_error_failure(verdict: dict) -> list[str]:
+    """FAIL lines for a run whose Newton steps RAISED, or [] for a clean one.
+
+    `verdict` is the sidecar (sidecar_verdict). The engine counts every
+    world.step() that raised into `step_errors` (2026-11-04): such a step is
+    skipped -- nothing moves or collides -- while the clock and the controllers
+    advance, so neither the exit code nor a "[OmNewtonBackend] step N" line
+    shows it. An older engine writes no key, which is not a failure.
+    """
+    n = verdict.get("step_errors")
+    if not isinstance(n, int) or isinstance(n, bool) or n <= 0:
+        return []
+    first = (verdict.get("step_first_error") or "").splitlines()
+    return [
+        f"[headless] FAIL: {n} physics step(s) RAISED and were SKIPPED "
+        f"({verdict.get('step_errors_streak', 0)} in a row at the end of the run; the first "
+        f"was step {verdict.get('step_first_error_at')} of this world). Nothing moved or "
+        "collided on those steps, although the sim clock advanced.",
+        f"[headless]   first exception: {first[0] if first else 'not recorded'}",
+    ]
+
+
 def sidecar_device(sidecar_path: Path) -> str | None:
     """runtime.device from the verdict sidecar ("cpu" / "cuda:0"), else None.
 
@@ -1795,6 +1817,15 @@ def run_once(args) -> int:
               "ceiling. Re-run with --duration N")
         print("[headless]   (or --profile) to see how far it gets; a finalize ERROR line, had "
               "there been one, would have FAILed above.")
+        return 1
+    # Physics steps that RAISED (2026-11-04). Checked before "never stepped":
+    # a world whose every step raises also has no "[OmNewtonBackend] step N"
+    # line, and that branch would call it NOT DIAGNOSED when the engine has
+    # counted the failures and kept the exception.
+    _step_fail = step_error_failure(verdict)
+    if _step_fail:
+        for line in _step_fail:
+            print(line)
         return 1
     if sim_never_stepped(content, bool(verdict.get("finalised"))):
         device = sidecar_device(sidecar_path) or device_seen

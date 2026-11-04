@@ -113,6 +113,98 @@ class AgentBuildContractTests(unittest.TestCase):
         self.assertNotIn("MOTION_GRAPHIC:locked_outro", {entry["source"] for entry in entries})
         self.assertEqual(edl["transition_vocabulary"], ["direct_cut"])
 
+    def _no_voice(self) -> dict:
+        payload = agent_build.template()
+        payload["voice"] = {"mode": "none", "reason": "the owner: no narration in any video"}
+        payload["segments"][0]["caption"] = "One build, one test: a short, calm caption."
+        return payload
+
+    def test_no_narration_mode_needs_a_reason_captions_and_no_blocks(self) -> None:
+        spec = agent_build.parse(self._no_voice())
+        self.assertFalse(spec.voice.narrated)
+        self.assertEqual(agent_build._voice_record(spec)["mode"], "none")
+        self.assertEqual(agent_build._voice_record(spec)["skipped_checks"],
+                         list(agent_build.NARRATION_ONLY_CHECKS))
+        for change, message in (
+            (lambda p: p["voice"].pop("reason"), "needs a voice.reason"),
+            (lambda p: p["voice"].update(blocks=[{"start_s": 10.0, "window_end_s": 12.0}]),
+             "declares no voice blocks"),
+            (lambda p: p["segments"][0].pop("caption"), "needs on-screen captions"),
+            (lambda p: p["voice"].update(mode="whisper"), "voice.mode must be one of"),
+        ):
+            payload = self._no_voice()
+            change(payload)
+            with self.assertRaisesRegex(ValueError, message):
+                agent_build.parse(payload)
+
+    def test_caption_longer_than_two_lines_fails_closed(self) -> None:
+        payload = self._no_voice()
+        payload["segments"][0]["caption"] = " ".join(["measured"] * 60)
+        with self.assertRaisesRegex(ValueError, "caption exceeds 2 lines"):
+            agent_build.parse(payload)
+
+    def test_no_narration_voice_generation_is_a_recorded_no_op(self) -> None:
+        from cinema import agent_build_voice
+        spec = agent_build.parse(self._no_voice())
+        self.assertEqual(agent_build_voice.generate(spec, preflight_checked=True), (None, None))
+
+    def test_omnivoice_blocks_are_placed_in_their_windows_not_voiced(self) -> None:
+        import dataclasses
+        import wave
+
+        from cinema import agent_build_voice
+        payload = agent_build.template()
+        windows = payload["voice"]["blocks"]
+        texts = [f"Block {n} says one calm thing." for n in range(1, len(windows) + 1)]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "voice").mkdir()
+            (root / "voice" / "narration.txt").write_text("\n\n".join(texts) + "\n", encoding="utf-8")
+            entries = []
+            for n, text in enumerate(texts, 1):
+                samples = np.full(24000 + 240 * n, 1000 + n, dtype="<i2")  # 1.0x s, a level per block
+                with wave.open(str(root / "voice" / f"block_{n:02d}-x.wav"), "wb") as out:
+                    out.setnchannels(1), out.setsampwidth(2), out.setframerate(24000)
+                    out.writeframes(samples.tobytes())
+                entries.append({"index": n, "src": f"block_{n:02d}-x.wav", "ms": round(len(samples) / 24),
+                                "text": text, "beats": [{"at": 250, "ms": 900, "text": text}]})
+            manifest = {"schema": "omnivoice-narration-v1", "rate": 24000, "shaping": "clean-v5/tempo 0.9/gap 750",
+                        "voice": {"provider": "chatterbox", "model": "chatterbox-multilingual"},
+                        "blocks": entries}
+            (root / "voice" / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            payload["voice"] = {"engine": "omnivoice", "source": "voice/manifest.json",
+                                "script": "voice/narration.txt", "wav": "build/narration.wav", "blocks": windows}
+            spec = dataclasses.replace(agent_build.parse(payload), source_path=root / "agent_build.json")
+            wav, receipt = agent_build_voice.generate(spec, preflight_checked=True)
+            agent_build._verify_voice_silence(wav, spec.intro_duration_s)  # silent intro, mono, integer PCM
+            with wave.open(str(wav), "rb") as master:
+                self.assertEqual(master.getnframes(), round(spec.duration_s * 24000))
+                pcm = np.frombuffer(master.readframes(master.getnframes()), dtype="<i2")
+            for n, window in enumerate(windows, 1):
+                at = round(window["start_s"] * 24000)
+                self.assertEqual(int(pcm[at]), 1000 + n)
+                self.assertEqual(int(pcm[at - 1]), 0)
+            rows = json.loads(receipt.read_text(encoding="utf-8"))["segments"]
+            self.assertEqual([row["duration_s"] for row in rows],
+                             [round((24000 + 240 * n) / 24000, 3) for n in range(1, len(texts) + 1)])
+            self.assertEqual(rows[0]["beats"][0]["at_s"], 10.25)
+            # The preflight then measures the recorded blocks, not an estimate.
+            self.assertEqual(agent_build._measured_block_durations(spec, len(texts)),
+                             [row["duration_s"] for row in rows])
+            # A block edited after it was recorded, or one longer than its window, fails closed.
+            (root / "voice" / "narration.txt").write_text("\n\n".join(["Changed."] + texts[1:]), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, r"blocks \[1\] changed"):
+                agent_build_voice.generate(spec, preflight_checked=True)
+            (root / "voice" / "narration.txt").write_text("\n\n".join(texts), encoding="utf-8")
+            narrow = [dict(w, window_end_s=w["start_s"] + 0.5) for w in windows]
+            payload["voice"]["blocks"] = narrow
+            spec = dataclasses.replace(agent_build.parse(payload), source_path=root / "agent_build.json")
+            with self.assertRaisesRegex(RuntimeError, "runs past its window"):
+                agent_build_voice.generate(spec, preflight_checked=True)
+        payload["voice"].pop("source")
+        with self.assertRaisesRegex(ValueError, "needs voice.source"):
+            agent_build.parse(payload)
+
     def test_missing_or_reordered_evidence_beats_fail_closed(self) -> None:
         payload = agent_build.template()
         payload["segments"] = [item for item in payload["segments"] if item["beat"] != "control"]
@@ -282,6 +374,35 @@ class AgentBuildContractTests(unittest.TestCase):
                     "path": str(path), **facts}):
                 with self.assertRaisesRegex(ValueError, "requests 0.000-12.000s"):
                     agent_build.preflight(spec)
+
+    def test_preflight_checks_a_generated_voice_by_its_measured_lengths(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            payload = agent_build.template()
+            for evidence in payload["evidence"]:
+                path = root / evidence
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("evidence", encoding="utf-8")
+            # Copy the estimator would call far too long for its 10 s window ...
+            long_block = " ".join(["word"] * 60) + "."
+            (root / "narration.txt").write_text("\n\n".join([long_block] + ["Short line."] * 6), encoding="utf-8")
+            manifest = root / "film.json"
+            manifest.write_text(json.dumps(payload), encoding="utf-8")
+            spec = agent_build.parse(manifest)
+            with self.assertRaisesRegex(ValueError, "voice block 1: estimated"):
+                agent_build.preflight(spec, require_captures=False)
+            # ... is accepted once the voice exists and its measured length fits,
+            receipt = root / "build" / "narration.segments.json"
+            receipt.parent.mkdir(parents=True, exist_ok=True)
+            rows = [{"duration_s": 9.5}] + [{"duration_s": 1.0}] * 6
+            receipt.write_text(json.dumps({"segments": rows}), encoding="utf-8")
+            report = agent_build.preflight(spec, require_captures=False)
+            self.assertEqual(report["voice_blocks"][0]["measured_duration_s"], 9.5)
+            # and refused when the measured length does not.
+            rows[0] = {"duration_s": 10.5}
+            receipt.write_text(json.dumps({"segments": rows}), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "the generated 10.50s exceeds"):
+                agent_build.preflight(spec, require_captures=False)
 
     def test_declared_tail_hold_makes_short_source_explicit(self) -> None:
         payload = agent_build.template()

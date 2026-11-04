@@ -12,6 +12,54 @@ simulation to real robots, and give AI agents a workshop to program, test, and d
 
 **You can do all of that simply by talking to it.**
 
+## New in v10: OmniSim Manufacturing — from a concept image to a robot you could build
+
+[![The SparkRover Mini, designed in OmniSim, its parts made on three machine twins, assembled and driven on Newton](docs/images/manufacturing/sparkrover_hero.png)](docs/guide/manufacturing-concept-to-robot.md)
+
+The SparkRover Mini began as a few AI-generated concept sheets: a friendly classroom robot with arms, a face
+and a camera. An AI agent, under human direction, turned it into a design in OmniSim. It corrected the sheets' numbers and wrote down every
+decision: no gripper, a plain camera instead of a depth camera, a 2S2P battery for runtime. It then designed
+the robot as four subsystems against one skeleton and checked 325 solids for interference. It made every part on
+**machine twins** and wired it with 127 routed wires. Finally it assembled the robot on Newton and drove it.
+
+[![The concept sheet's robot beside the simulated SparkRover at a matched angle](docs/images/manufacturing/concept_vs_built.png)](docs/guide/manufacturing-concept-to-robot.md)
+
+- **Three machine twins, each built from the real machine's controller config.** A LongMill MK2 CNC router behind
+  a virtual GRBL 1.1 controller that any GRBL sender can drive. A Sienci LaserBeam 7 W laser on the same machine.
+  A Sovol SV08 printer whose G-code comes from CuraEngine and is planned as Klipper plans it. Material is removed
+  or laid where the tool really went, and each part is measured against its drawing. On the CNC twin a pocket's
+  walls came out within 0.007 mm of what a perfect machine cuts on the same program.
+- **The SparkRover, in the twin's numbers:** 16 of 16 laser and CNC parts cut free. 27 printed parts, all on the
+  corrected bead rule: 2 on the full printer twin and 25 in the engine-free *ideal* mode, with their
+  full-twin runs on the fixed engine to follow. 53 units assembled in 18 steps with none blocked.
+  It drives 0.694 m/s straight on Newton against 0.696 m/s predicted from the motor datasheet at the battery
+  model's bus voltage. The conditions, and every open item, are in its
+  [report](projects/manufacturing/products/spark_rover/release/REPORT.md).
+- **A release pack you could build from.** Its [`release/`](projects/manufacturing/products/spark_rover/release/)
+  folder has an SVG drawing and an STL for every made part, the exact laser, CNC and print programs the twins
+  ran, the BOM, the wire cut list and a step-by-step assembly guide. The
+  [desk robot](projects/manufacturing/products/desk_robot/README.md) has one too.
+
+⚠️ **Simulation only.** No twin has been validated against its real machine, and nothing here has been made on a
+real one. A twin print (full physics) and an ideal print (no engine) are different results, and every table says
+which it is. Not simulated: the robot's microphones, speaker, touch pads and status ring, and cutting load on acrylic. The
+print model's bead rule was corrected in this release; twin prints measured before the fix are labelled so.
+
+**Read the story:** [From concept images to a working robot](docs/guide/manufacturing-concept-to-robot.md) ·
+**Make your own:** [design, make and assemble a product](docs/guide/manufacturing-make-your-own-product.md) ·
+**The sector:** [projects/manufacturing](projects/manufacturing/README.md)
+
+Before the first stage, run `python -m omnisim manufacturing setup`: it shows what pip will install and asks
+first. Then run `python -m omnisim manufacturing doctor`. The slicing stages also need UltiMaker Cura 5, which
+setup does not download.
+
+```bash
+python -m omnisim manufacturing            # the machines, worlds and products
+python -m omnisim manufacturing setup      # the stages' Python packages (pinned, CPython 3.12); asks first
+python -m omnisim manufacturing doctor     # per stage: can it run, and what is missing
+python -m omnisim run-world projects/samples/demos/worlds/manufacturing/spark_rover_drive_test.omniworld
+```
+
 ## Give it an instruction. See it move.
 
 [![OmniLink drives a Husky in OmniSim — watch the full demo](docs/media/omnilink-husky/preview.gif)](docs/media/omnilink-husky/omnilink-husky-live-ai.mp4)
@@ -71,6 +119,110 @@ are itemised in [what OmniSim is worse at](#what-omnisim-is-worse-at).
 > [Take the 20-minute challenge →](BETA.md)
 
 ---
+
+## Find a robot's limits in simulation
+
+**Test where a robot model stops succeeding.** Sweep downhill slopes, tyre/surface
+friction and mounted payloads, measure stopping behavior, and reproduce the
+failures in fresh simulations. The assessment saves a report, per-step traces,
+native captures for confirmation cases, and the exact test conditions.
+
+```powershell
+python -m omnisim assess sweep --robots husky --refine 12 --confirm 2 --workers 2 --out .tmp/husky-assessment
+```
+
+The Husky example tests 0–20° downhill slopes, four friction settings and
+0/10/20 kg mounted loads at a target 0.6 m/s, with **immediate braking throughout**.
+Its stopping requirement is 0.25 m. The report distinguishes braking failures
+from inability to reach speed, sliding, and tipping. These are results for a
+simulated model and test controller, not hardware validation or manufacturer
+ratings. [Run the assessment and inspect the evidence](docs/guide/robot-assessments.md).
+
+For a manufacturer handover, the [US$100 Husky package scope](projects/assessments/packages/husky/SCOPE.md)
+defines a 64-episode reference-controller braking assessment, report, raw evidence
+and reusable tests with an offline Windows runtime. [Build and verify a delivery](docs/guide/robot-assessments.md#deliver-the-fixed-scope-husky-package).
+Production-controller integration and hardware correlation require separate scope.
+
+The [shared assessment package factory](docs/guide/robot-assessment-packages.md)
+defines robot-specific $100 braking packages for the seven physical-wheel task
+adapters. It selects each model's speed, payload fixtures, requirements and
+notices, then requires a qualifying campaign and a checked Windows delivery.
+Use `python -m omnisim assess qualify --robot jackal --workers 1 --out <new-directory>` to
+start Jackal's profile. Other robot classes require task-specific adapters.
+
+The [Go2 and G1 assessments](docs/guide/legged-assessments.md) add two defined
+legged tasks: 17 Go2 walk/stand/walk episodes and 14 G1 standing episodes.
+On machine `9722d23d12a3` (Newton/MuJoCo CPU, 16 ms observations, 2026-10-29),
+a tighter Go2 handover orientation guard changed a reproduced 15 s request
+from a fall at 17.232 s to a completed 32 s task. All 14 candidate runs passed,
+including seven prior timings and four prespecified new fractional timings.
+G1's selected stance passed 32 s and held-out 48/60 s standing checks.
+These are bounded reference-controller simulation results. G1 standing here
+has no support harness; this does not establish unassisted humanoid walking.
+Reports, native comparison videos and public rerun instructions are on the
+[OmniLink service page](https://www.omnilink-agents.com/services/robot-assessments).
+
+The [Husky mixed-surface assessment](docs/guide/husky-mixed-surfaces.md) adds
+braking and 90-degree turning on physical rigid friction patches. Its frozen
+76-episode study compares 0.6 m/s cruise with a 0.35 m/s mapped-surface cap:
+in the shown flat, unloaded μ 0.8→0.04 crossing, braking excursion changes
+from 0.458 to 0.156 m and maximum turning-path error from 0.963 to 0.109 m.
+Both selected task pairs reproduced in fresh confirmations. The cap costs
+throughput; its seven remaining split-surface turning failures are addressed
+by a separate 93-episode reference repair. All seven repaired endpoints and
+all 27 regression conditions pass; 11/12 new friction/payload combinations pass.
+The repair uses a known-map approach, wheel control changes and a lower
+0.18 m/s turn target. One prospective input still fails approach-speed
+qualification (mu 0.30, 17.5 kg), and remains visible in the report.
+Machine `9722d23d12a3`, Newton 1.5.0 / MuJoCo 3.11 CPU, 16 ms,
+eight configured substeps, 2026-10-29. These are imposed contact coefficients,
+not calibrated real materials or hardware limits. The public source add-on,
+complete report and native video are on the service page.
+
+[![Measured Husky slope/friction/payload outcomes with immediate braking](docs/media/assessments/husky-envelope.png)](tests/assessment/evidence/husky-envelope-20261028/report.html)
+
+**Measured example:** at 5° downhill with a 10 kg mounted load, μ=0.10 produced
+1.13 m of travel in the 2.5 s after STOP and the robot was still moving; μ=0.20
+met the same requirement with 0.166 m of travel. Both commanded immediate braking.
+The 64-case campaign includes 48 grid cases, 12 refinement cases and four fresh
+confirmations; the confirmed pass/fail cases reproduced their measured distances
+in these runs. Conditions: 0.6 m/s target, 16 ms samples, CPU solver on machine
+`9722d23d12a3`. [Conditions, source snapshots and all attempts](tests/assessment/evidence/husky-envelope-20261028/README.md).
+
+The braking adapter supports seven physical wheeled-model configurations:
+Husky, Jackal, ROSbot, ROSbot XL, and TurtleBot3 Burger/Waffle/Waffle Pi.
+All seven completed the [35 unloaded/loaded coverage cases](tests/assessment/evidence/mobile-payload-coverage-20261028/README.md);
+these verify the task path, not each robot's failure envelope.
+`python -m omnisim assess robots` lists the full URDF inventory and its task
+coverage; Go2 transitions and G1 standing use the separate adapters above.
+Other legged tasks, arms and drones require their own assessment adapters.
+Windows has the prebuilt package; Linux requires a source build.
+
+## A tested robot mission agent
+
+The [Husky mission agent](projects/services/husky_mission/README.md) turns an
+OmniLink request into a bounded physical task: visit station A, then B, then
+return to base. Visits require measured arrival and a stop; cancellation and
+independent typed Stop interrupt the route. The package includes source,
+acceptance tests and raw simulation evidence. An OmniKey and an active model
+provider are required for AI requests. This pilot uses a known flat empty arena;
+hardware operation and obstacle avoidance are outside its scope.
+
+The frozen suite passed **26/26 valid episodes across 27 attempts**, including
+six live AI episodes. One controller startup was invalid and is retained; the
+unchanged case passed on rerun. [Watch the demo, inspect the report and download
+the public source add-on](https://www.omnilink-agents.com/services/robot-agents).
+
+The [OmniArm 6 assurance pilot](projects/services/arm_assurance/README.md)
+adds ordered joint poses, persistent Hold, explicit Resume, Cancel and Stop in
+a configured no-payload cell. Its 220 live requests completed 40/40 requested
+routes, with no unwanted-motion threshold breaches in 140 designated checks
+and 98 sensor-backed step receipts. The full suite passed 19/20 episodes:
+one route finished before the sequential cancellation test reached it. Three
+separate tests cancelled while the original request was still pending and
+passed. These are simulation results on machine `9722d23d12a3`, not a general
+safety or hallucination guarantee. [Watch the arm and three-robot crew,
+inspect the charts, and download the tests](https://www.omnilink-agents.com/showcase/evidence).
 
 ## How OmniLink compares in OmniSim
 
@@ -381,7 +533,7 @@ vendor-claim: [docs/developer/simulator-comparison.md](docs/developer/simulator-
   integrated.
 - **Not photoreal.** Isaac Sim's RTX renderer is a different class. Ours is wgpu-native (Vulkan / D3D12 / Metal): a real-time raster stack whose global illumination is *baked* — an off-frame path trace into an irradiance probe volume, not per-frame ray tracing.
 - **Sim-to-real is unproven** — zero physical-robot transfer.
-- **No free-standing humanoid walk** — every G1 result uses a weight-bearing balance harness.
+- **No free-standing authored humanoid walk** — authored G1 walking demos use a weight-bearing balance harness. The separate standing assessment uses physical foot support without that harness.
   Quadrupeds carry none.
 - **Newton is young and we removed our fallback.** macOS is untested, so it has no verified physics.
 - **Single-GPU training only.** No multi-GPU or multi-node; Isaac Lab publishes a 16-GPU ladder.
@@ -514,6 +666,7 @@ it — training a policy that does is the open problem.
 | AI coding agent in this repo | [AGENTS.md](AGENTS.md) |
 | Debugging a controller, investigating a failure | [Harness endpoints](docs/developer/harness-endpoint-reference.md) · [agent first moves](docs/developer/agents-first-moves.md#debug-a-controller) · [PROTOCOL.md §7](PROTOCOL.md#7-world-harness) |
 | Picking a demo | [DEMOS.md](DEMOS.md) |
+| Making a product on machine twins | [Concept to robot](docs/guide/manufacturing-concept-to-robot.md) · [Make your own product](docs/guide/manufacturing-make-your-own-product.md) · [projects/manufacturing](projects/manufacturing/README.md) |
 | First-time human contributor | [Developer Quickstart](docs/developer/quickstart.md) |
 | Engine developer | [docs/developer/](docs/developer/) |
 | World author | [Simulation Authoring for Coding Agents](docs/developer/simulation-authoring-for-coding-agents.md) |

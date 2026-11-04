@@ -99,6 +99,7 @@ QPointer<OmSolidMerger> OmSolid::solidMerger() const {
 
 #include <QtCore/QStringList>
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 
@@ -3701,6 +3702,11 @@ void OmSolid::flushPendingNewtonRegistrations() {
   int inertiaFromGeometry = 0;  // composed from the boundingObject
   int inertiaFromPreset = 0;    // neither -> the runtime's mass-scaled preset
   QStringList inertiaPresetNames;
+  // Geometry-derived bodies whose COM is off their origin and now reaches the
+  // solver there (OMNISIM_NEWTON_GEOM_INERTIA_COM), with the largest offset.
+  int geomComBodies = 0;
+  double geomComMaxOffset = 0.0;
+  QString geomComMaxName;
 
   // Force-type TouchSensors exempted from the P3.10c fold this flush
   // (OMNISIM_NEWTON_TOUCH_FORCE) -- registered in a SECOND pass after the
@@ -4273,14 +4279,11 @@ void OmSolid::flushPendingNewtonRegistrations() {
       //     OMNISIM_NEWTON_INERTIA_COM=0 reverts (value-parsed). Nothing that
       //     does not declare an inertiaMatrix is touched by this.
       //
-      // (b) OMNISIM_NEWTON_USE_LINK_COM (default OFF, unchanged): the COM for
-      //     the GEOMETRY-DERIVED case. That tensor is composed about the Solid
-      //     ORIGIN, not about the COM, so moving the COM without also shifting
-      //     the tensor would be inconsistent -- and every existing Newton robot
-      //     (Spot, the huskies, the combat bots) was validated with the COM at
-      //     the link origin. Left opt-in; only re-spelled value-parsed, so `=0`
-      //     now means OFF as the engine's convention requires (it used to be
-      //     presence-gated, where `=0` meant ON).
+      // (b) OMNISIM_NEWTON_USE_LINK_COM (default OFF): the declared COM for a
+      //     body with no explicit tensor. Since 2026-11-03 the geometry-derived
+      //     branch below passes that COM itself, with the tensor SHIFTED to it
+      //     (OMNISIM_NEWTON_GEOM_INERTIA_COM), so this gate now only matters
+      //     under that hatch's revert. Value-parsed: `=0` means OFF.
       const bool explicitTensor = ixx > 0.0 && iyy > 0.0 && izz > 0.0;
       if ((explicitTensor && newtonEnvFlag("OMNISIM_NEWTON_INERTIA_COM", true)) ||
           newtonEnvFlag("OMNISIM_NEWTON_USE_LINK_COM", false)) {
@@ -4453,10 +4456,33 @@ void OmSolid::flushPendingNewtonRegistrations() {
           // own formula) and pass the COM: the declared mass and COM are kept, only
           // the rotational inertia comes from the bounding object. The importer's
           // OMNISIM_URDF_INERTIA_FALLBACK_KEEP_COM=0 stops writing the marker.
-          if (useNative && s->physics() != nullptr && s->physics()->centerOfMass().size() == 1 &&
-              s->physics()->defName() == QLatin1String("URDF_INERTIA_FALLBACK")) {
-            const double ccx = s->mNativeInertia.cx(), ccy = s->mNativeInertia.cy(), ccz = s->mNativeInertia.cz();
-            const double c2 = ccx * ccx + ccy * ccy + ccz * ccz;
+
+          // EVERY GEOMETRY-DERIVED BODY KEEPS ITS COM (2026-11-03). This shift was
+          // scoped to the URDF_INERTIA_FALLBACK marker, so every other Solid with no
+          // inertiaMatrix got its tensor about the ORIGIN passed as if about a COM AT
+          // the origin: its centre of mass -- declared, or the boundingObject's own
+          // centroid -- was simply moved to the Solid origin. A part whose origin is off its material (a
+          // 40x40x20 mm 0.1 kg box with its shape 30 mm from the origin) then rested
+          // with its weight acting outside its own footprint and rolled 86 deg off a
+          // flat floor in 1 s; with an explicit inertiaMatrix it sat still. Default
+          // ON; OMNISIM_NEWTON_GEOM_INERTIA_COM=0 restores the COM at the origin
+          // (value-parsed). A body whose COM is at its origin is byte-identical.
+          const bool geomCom = newtonEnvFlag("OMNISIM_NEWTON_GEOM_INERTIA_COM", true);
+          const bool urdfFallback = s->physics() != nullptr && s->physics()->centerOfMass().size() == 1 &&
+                                    s->physics()->defName() == QLatin1String("URDF_INERTIA_FALLBACK");
+          const double ccx = useNative ? s->mNativeInertia.cx() : 0.0;
+          const double ccy = useNative ? s->mNativeInertia.cy() : 0.0;
+          const double ccz = useNative ? s->mNativeInertia.cz() : 0.0;
+          const double c2 = ccx * ccx + ccy * ccy + ccz * ccz;
+          if (useNative && (urdfFallback || (geomCom && c2 > 0.0))) {
+            if (!urdfFallback) {
+              ++geomComBodies;
+              const double d = std::sqrt(c2);
+              if (d > geomComMaxOffset) {
+                geomComMaxOffset = d;
+                geomComMaxName = s->name();
+              }
+            }
             ixx -= mass * (c2 - ccx * ccx);
             iyy -= mass * (c2 - ccy * ccy);
             izz -= mass * (c2 - ccz * ccz);
@@ -4465,7 +4491,7 @@ void OmSolid::flushPendingNewtonRegistrations() {
             iyz += mass * ccy * ccz;
             cx = ccx; cy = ccy; cz = ccz;
             hasCom = true;
-            urdfFallbackKeptCom = true;
+            urdfFallbackKeptCom = urdfFallback;
           }
           // Even the geometry-correct diagonal can be eig3-degenerate: a square bin
           // has Ixx==Iyy, and Izz is the largest so the diagonal is not descending --
@@ -4960,6 +4986,12 @@ void OmSolid::flushPendingNewtonRegistrations() {
       OmLog::info(QString("[OmNewtonBackend] composite inertia: %1 body(ies) carry the mass, COM and inertia of "
                           "their fixed child links; OMNISIM_NEWTON_COMPOSITE_INERTIA=0 reverts")
                       .arg(compositeInertiaBodies));
+    if (geomComBodies > 0)
+      OmLog::info(QString("[OmNewtonBackend] geometry COM: %1 body(ies) without an inertiaMatrix carry their centre of "
+                          "mass off their origin (largest %2 mm, '%3'); OMNISIM_NEWTON_GEOM_INERTIA_COM=0 reverts")
+                      .arg(geomComBodies)
+                      .arg(geomComMaxOffset * 1000.0, 0, 'f', 1)
+                      .arg(geomComMaxName));
 
     // Inertia provenance. `preset` is the one to read: those bodies have a
     // rotational inertia that no line of the world declares and no geometry
@@ -5144,6 +5176,10 @@ void OmSolid::flushPendingNewtonRegistrations() {
       // declare its own budget instead of needing launch env vars, which a
       // .wbt cannot carry.
       newton->setConstraintBuffers(wi->newtonNjmax(), wi->newtonNconmax());
+      // WorldInfo.newtonArenaMB -> the MuJoCo arena (0 = MuJoCo's own size;
+      // OMNISIM_NEWTON_ARENA_MB overrides). njmax/nconmax above do NOT size it
+      // on the CPU solver, which is why a narrowphase overflow needs its own field.
+      newton->setArenaMB(wi->newtonArenaMB());
       // WorldInfo.newtonGroundMu / newtonContactKe / newtonContactKd /
       // newtonIterations / newtonLsIterations -> the contact model and the
       // MuJoCo solver's iteration counts (per-world; 0 = the runtime default,
@@ -5287,8 +5323,10 @@ void OmSolid::addTorque(const OmVector3 &torque) {
 // force F at world point P becomes (F, (P - bodyOrigin) x F + torque). Returns true if it routed to Newton
 // (the caller then skips the ODE path, whose body is disabled for Newton-backed Solids); false -> not
 // Newton-backed, so the caller has nowhere to route it (there is no ODE) and the force is DROPPED -- the
-// supervisor call sites warn in that case. The body origin from the Newton pose readback approximates the
-// COM as the torque reference -- exact when the Solid's frame is at its COM.
+// supervisor call sites warn in that case. The torque sent here is about the body ORIGIN (the Newton pose
+// readback); newton's body_f wants it about the COM, and the runtime's add_body_force consumer re-references
+// it (tau_com = tau_origin - c x F). Until 2026-11-01 nothing did, and a force at an offset on a body whose
+// COM is off its origin acted displaced by that offset (tests/test_newton_ext_wrench_at_com.py).
 bool OmSolid::applyExternalForceNewton(const OmVector3 &force, const OmVector3 &worldPos,
                                        const OmVector3 &torque) const {
   if (qEnvironmentVariableIsSet("OMNISIM_DEBUG_FORCE")) {

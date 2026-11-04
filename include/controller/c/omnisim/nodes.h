@@ -122,7 +122,9 @@ typedef enum {
   // so inserting rather than appending renumbers every node type behind it.
   WB_NODE_CLOTH,
   WB_NODE_SOFT_BODY,
-  WB_NODE_GRANULAR_BED
+  WB_NODE_GRANULAR_BED,
+  WB_NODE_MILLING_STOCK,
+  WB_NODE_PRINTED_PART
 } WbNodeType;
 
 const char *wb_node_get_name(WbNodeType t);

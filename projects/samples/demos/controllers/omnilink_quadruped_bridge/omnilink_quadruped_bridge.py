@@ -1587,6 +1587,12 @@ def make_handler(bridge: QuadrupedBridge, relay: Any = None):
                     # A CREWMATE's message (omnisim_bridges.crew) always reaches the model:
                     # the parser would answer the sender, who never hears that answer,
                     # and only the model can message back. The gate still vets it.
+                    if body.get("crew"):  # a crewmate's DETAILS go to the model's liveContext, not the turn
+                        try:
+                            from omnisim_bridges.crew import note_incoming
+                            note_incoming(bridge, body)
+                        except Exception:
+                            pass
                     _early = (_shared_short_circuit(bridge, text, "quadruped")
                               if _shared_short_circuit is not None
                               and not body.get("crew") else None)
@@ -1838,6 +1844,11 @@ def setup_omnilink_relay(bridge: QuadrupedBridge, http_port: int = 8765) -> Opti
         if hasattr(relay, "cancel_inflight"):
             bridge.on_operator_halt.append(relay.cancel_inflight)
         print(f"[omnilink_quadruped_bridge] OmniLink relay ON (agent='{agent_name}')")
+        try:  # a crew's details reach the model as liveContext (omnisim_bridges.crew)
+            from omnisim_bridges.crew import attach_relay as crew_attach
+            crew_attach(relay, bridge)
+        except Exception:
+            pass
         return relay
     except Exception as e:
         print(f"[omnilink_quadruped_bridge] OmniLink relay setup failed: {e}")

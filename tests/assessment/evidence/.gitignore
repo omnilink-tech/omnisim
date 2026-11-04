@@ -1,0 +1,23 @@
+# Retain development attempts locally; the guide cites the final proof bundle.
+/development-*/
+/terrain-development-*/
+
+# The cited final proof needs its logs for artifact-hash verification/regrading.
+!/husky-braking-20261028/**/*.log
+!/husky-envelope-20261028/**/*.log
+!/mobile-coverage-20261028/**/*.log
+!/mobile-payload-coverage-20261028/**/*.log
+!/husky-current-natural-failure-20261028/*.log
+!/husky-current-natural-reproduction-20261028/*.log
+!/husky-delivery-1.0.0-20261028/**/*.log
+!/husky-delivery-acceptance-20261028/**/*.log
+!/husky-delivery-1.0.0-20261028-r2/**/*.log
+!/husky-delivery-acceptance-20261028-r2/**/*.log
+!/husky-delivery-1.0.0-20261028-r3/**/*.log
+!/husky-delivery-acceptance-20261028-r3/**/*.log
+!/jackal-package-1.1.0-20261028/**/*.log
+!/jackal-package-1.1.0-20261028-serial/**/*.log
+!/jackal-package-acceptance-1.1.0-20261028/**/*.log
+
+# Development attempts nested inside a dated bundle stay local too.
+/*/development-*/

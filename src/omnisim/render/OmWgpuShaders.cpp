@@ -2016,7 +2016,7 @@ fn fs_main(in : MotionOut) -> @location(0) vec4<f32> {
 struct TaaU {
   invVP  : mat4x4<f32>,
   prevVP : mat4x4<f32>,
-  params : vec4<f32>,  // x = object motion enabled, y = history weight, z = depth/reactive validation, w = history valid
+  params : vec4<f32>,  // x = object motion enabled, y = history weight (< 0: legacy edges), z = depth/reactive validation, w = history valid
 };
 @group(0) @binding(0) var<uniform> u : TaaU;
 @group(0) @binding(1) var curTex : texture_2d<f32>;
@@ -2040,6 +2040,9 @@ struct TaaOut { @location(0) color : vec4<f32>, @location(1) depth : f32 };
 
 @fragment
 fn fs_main(in : VOut) -> TaaOut {
+  // OMNISIM_WGPU_TAA_STILL_EDGES=0 sends a negative weight: the pre-2026-11-01 per-pixel depth
+  // and sample-relative colour change, which made the edges of a still scene shimmer.
+  let stillEdges = u.params.y > 0.0;
   let dims = vec2<f32>(textureDimensions(curTex));
   let pix = vec2<i32>(in.pos.xy);
   let cur = textureLoad(curTex, pix, 0).rgb;
@@ -2050,6 +2053,19 @@ fn fs_main(in : VOut) -> TaaOut {
     for (var sample = 1; sample < i32(textureNumSamples(depthTex)); sample++) {
       let sampleDepth = textureLoad(depthTex, pix, sample);
       if (sampleDepth > z) { z = sampleDepth; nearestSample = sample; }
+    }
+    // ...and the nearest depth of the 3x3 neighbourhood is what reprojects, validates and is
+    // stored. The sub-pixel jitter flips a silhouette pixel's own nearest depth between the
+    // foreground and the background from frame to frame, so a per-pixel depth rejected the
+    // history there every other frame and the outline of every still object shimmered.
+    let last = vec2<i32>(textureDimensions(depthTex)) - vec2<i32>(1);
+    for (var dy = -1; dy <= 1 && stillEdges; dy++) {
+      for (var dx = -1; dx <= 1; dx++) {
+        let q = clamp(pix + vec2<i32>(dx, dy), vec2<i32>(0), last);
+        for (var sample = 0; sample < i32(textureNumSamples(depthTex)); sample++) {
+          z = max(z, textureLoad(depthTex, q, sample));
+        }
+      }
     }
   }
   var result : TaaOut;
@@ -2080,7 +2096,21 @@ fn fs_main(in : VOut) -> TaaOut {
     return result;
   }
   var hist = textureSampleLevel(histTex, samp, puv, 0.0).rgb;
-  var historyWeight = u.params.y;
+  var historyWeight = abs(u.params.y);
+  // neighbourhood of the current frame: 3x3 min/max (the standard anti-ghosting box) and a
+  // 3x3 tent (1-2-1), which is about what jittered samples of a still pixel converge to.
+  var mn = cur;
+  var mx = cur;
+  var tent = vec3<f32>(0.0);
+  for (var dy = -1; dy <= 1; dy = dy + 1) {
+    for (var dx = -1; dx <= 1; dx = dx + 1) {
+      let q = clamp(pix + vec2<i32>(dx, dy), vec2<i32>(0, 0), vec2<i32>(dims) - vec2<i32>(1, 1));
+      let c = textureLoad(curTex, q, 0).rgb;
+      mn = min(mn, c);
+      mx = max(mx, c);
+      tent += c * f32((2 - abs(dx)) * (2 - abs(dy))) / 16.0;
+    }
+  }
   if (u.params.z > 0.5) {
     // Validate all four bilinear taps before blending: sampling color first and
     // checking only the nearest depth leaks foreground color over silhouettes.
@@ -2105,20 +2135,15 @@ fn fs_main(in : VOut) -> TaaOut {
     hist = sum / weight;
     historyWeight *= weight;
     // Depth alone cannot see coplanar motion, animated textures, or glass.
-    // Reduce persistence when color changes; retain accumulation on stable detail.
-    let change = max(max(abs(hist.r-cur.r), abs(hist.g-cur.g)), abs(hist.b-cur.b));
+    // Reduce persistence when color changes; retain accumulation on stable detail. The change
+    // is the smaller of history vs this sample and history vs the tent: on a still edge one
+    // jittered sample always differs from the converged average, so measuring against the
+    // sample alone cut the history on every edge and the outlines of still objects shimmered.
+    let dCur = abs(hist - cur);
+    let dTent = abs(hist - tent);
+    let cCur = max(max(dCur.r, dCur.g), dCur.b);
+    let change = select(cCur, min(cCur, max(max(dTent.r, dTent.g), dTent.b)), stillEdges);
     historyWeight *= 1.0 - 0.8 * smoothstep(0.06, 0.30, change);
-  }
-  // neighbourhood clamp (3x3 min/max of the current frame) — the standard anti-ghosting box
-  var mn = cur;
-  var mx = cur;
-  for (var dy = -1; dy <= 1; dy = dy + 1) {
-    for (var dx = -1; dx <= 1; dx = dx + 1) {
-      let q = clamp(pix + vec2<i32>(dx, dy), vec2<i32>(0, 0), vec2<i32>(dims) - vec2<i32>(1, 1));
-      let c = textureLoad(curTex, q, 0).rgb;
-      mn = min(mn, c);
-      mx = max(mx, c);
-    }
   }
   hist = clamp(hist, mn, mx);
   result.color = vec4<f32>(mix(cur, hist, historyWeight), 1.0);

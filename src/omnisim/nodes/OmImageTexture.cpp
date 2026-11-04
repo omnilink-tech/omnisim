@@ -133,6 +133,8 @@ void OmImageTexture::init() {
   mExternalTextureData = NULL;
   mExternalTextureWidth = 0;
   mExternalTextureHeight = 0;
+  mExternalRevision = 1;
+  mExternalRgbaRevision = 0;
   mImage = NULL;
   mUsedFiltering = 0;
   mIsMainTextureTransparent = true;
@@ -432,8 +434,32 @@ void OmImageTexture::setExternalTexture(const unsigned char *image, int width, i
   mExternalTextureData = image;
   mExternalTextureWidth = width;
   mExternalTextureHeight = height;
+  ++mExternalRevision;
 
   emit changed();
+}
+
+const std::vector<unsigned char> &OmImageTexture::externalRgba8() {
+  if (!isExternalTexture() || mExternalTextureWidth <= 0 || mExternalTextureHeight <= 0) {
+    mExternalRgba.clear();
+    return mExternalRgba;
+  }
+  if (mExternalRgbaRevision == mExternalRevision && !mExternalRgba.empty())
+    return mExternalRgba;
+  // The Display's buffer is one 0xAARRGGBB word a pixel, row 0 at the top (OmDisplay.cpp).
+  const size_t n = static_cast<size_t>(mExternalTextureWidth) * mExternalTextureHeight;
+  mExternalRgba.resize(n * 4u);
+  const unsigned int *src = reinterpret_cast<const unsigned int *>(mExternalTextureData);
+  unsigned char *dst = mExternalRgba.data();
+  for (size_t i = 0; i < n; ++i) {
+    const unsigned int p = src[i];
+    dst[4 * i + 0] = static_cast<unsigned char>((p >> 16) & 0xFF);
+    dst[4 * i + 1] = static_cast<unsigned char>((p >> 8) & 0xFF);
+    dst[4 * i + 2] = static_cast<unsigned char>(p & 0xFF);
+    dst[4 * i + 3] = static_cast<unsigned char>((p >> 24) & 0xFF);
+  }
+  mExternalRgbaRevision = mExternalRevision;
+  return mExternalRgba;
 }
 
 void OmImageTexture::removeExternalTexture() {

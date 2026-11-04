@@ -61,7 +61,8 @@ const int wb_NODE_BALL_JOINT = WB_NODE_BALL_JOINT, wb_NODE_BALL_JOINT_PARAMETERS
 // experimental
 const int wb_NODE_MICROPHONE = WB_NODE_MICROPHONE, wb_NODE_RADIO = WB_NODE_RADIO,
           wb_NODE_GRANULAR_GROUP = WB_NODE_GRANULAR_GROUP, wb_NODE_CLOTH = WB_NODE_CLOTH,
-          wb_NODE_SOFT_BODY = WB_NODE_SOFT_BODY, wb_NODE_GRANULAR_BED = WB_NODE_GRANULAR_BED;
+          wb_NODE_SOFT_BODY = WB_NODE_SOFT_BODY, wb_NODE_GRANULAR_BED = WB_NODE_GRANULAR_BED,
+          wb_NODE_MILLING_STOCK = WB_NODE_MILLING_STOCK, wb_NODE_PRINTED_PART = WB_NODE_PRINTED_PART;
 
 const char *wb_node_get_name(WbNodeType t) {
   switch (t) {
@@ -217,6 +218,10 @@ const char *wb_node_get_name(WbNodeType t) {
       return "SoftBody";
     case WB_NODE_GRANULAR_BED:
       return "GranularBed";
+    case WB_NODE_MILLING_STOCK:
+      return "MillingStock";
+    case WB_NODE_PRINTED_PART:
+      return "PrintedPart";
     case WB_NODE_SOLID:
       return "Solid";
     case WB_NODE_SOLID_REFERENCE:

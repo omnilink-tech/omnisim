@@ -834,6 +834,8 @@ QT_SOURCES = OmAboutBox.cpp \
   OmMassChecker.cpp \
   OmMaterial.cpp \
   OmMatter.cpp \
+  OmMillingStock.cpp \
+  OmPrintedPart.cpp \
   OmMesh.cpp \
   OmMFBool.cpp \
   OmMFColor.cpp \
@@ -1289,7 +1291,7 @@ $(ARM64_MOC_FILES): $(OBJDIR)/arm64/%.moc.cpp: %.hpp
 	@echo "# moc-generating" $@ "(arm64)"
 	@$(MOC) -target arm64-apple-macos-11 $(MOC_FLAGS) $(INCLUDE:-isystem:-I) $< -o $@
 
-launcher/launcher.o: launcher/launcher.rc
+launcher/launcher.o: launcher/launcher.rc gui/omnisim.ico
 	@windres -i $< -o $@ --define _WIN32 --define __WIN32__ --define __WIN95__ --define __GNUWIN32__
 
 $(LAUNCHERW): launcher/launcher.c launcher/launcher.o

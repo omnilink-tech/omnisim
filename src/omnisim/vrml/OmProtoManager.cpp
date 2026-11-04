@@ -338,6 +338,7 @@ QMap<QString, QString> OmProtoManager::undeclaredProtoNodes(const QString &filen
     return protoNodeList;
 
   OmTokenizer tokenizer;
+  tokenizer.setExpandUrdfRobots(false);  // the load converts them; see OmTokenizer.hpp
   tokenizer.tokenize(filename);
   OmParser parser(&tokenizer);
 

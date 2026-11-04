@@ -1,0 +1,46 @@
+# MillingStock — a block of material carved by a CNC cutter, for machining
+# digital twins. Geometry only: where the cutter has been, the material is
+# gone. No cutting forces, chip load, deflection or burning.
+#
+# The block is an axis-aligned height map (a Z-map, the representation
+# 3-axis machining simulators use) carved every physics step by the cutter
+# tip of the Solid named `toolSolid`, swept along its REAL path, so a lagging
+# or stalled axis cuts where the tool actually went.
+#
+# Rendering streams only the tiles the cutter touched, through the renderer's
+# dynamic-draw path (no scene re-collect), so `resolution` can be fine (0.2 mm
+# carves a 180 mm block as 900 x 900 cells). Painted-top look: the top is
+# `skinColor`; any cut deeper than `skinDepth`, and its walls, show `coreColor`.
+#
+# toolShape "laser" makes the tool a laser BEAM instead of a cutter: `toolTip` is
+# the focal point and the controller writes `laserPower` every step. The energy
+# delivered along the beam's REAL path lands as an elliptical Gaussian spot that
+# widens away from focus (`laserSpot`, `beamHalfAngle`); absorbed energy ablates
+# material (`ablationEnergy`) and chars the surface toward `charColor`
+# (`charFluence`), so a slow corner burns deeper and an out-of-focus pass cuts
+# wider and shallower. Energy only: no heat conduction, flame or smoke.
+MillingStock {
+  field SFVec3f    translation    0 0 0              # world position of the block's MINIMUM corner (its bottom)
+  field SFVec3f    size           0.18 0.18 0.012    # extent in metres along world X / Y / Z (strictly positive)
+  field SFFloat    resolution     0.0002             # height-map spacing (m); 0 => 0.0002
+  field SFString   toolSolid      ""                 # name of the Solid that carries the cutter
+  field SFVec3f    toolTip        0 0 0              # cutter tip (laser: focal point) in that Solid's own frame (m)
+  field SFString   toolShape      "flat"             # "flat" (end mill), "ball" (ball nose), "vbit" or "laser"
+  field SFFloat    toolDiameter   0.00635            # cutting diameter (m)
+  field SFFloat    toolAngle      1.5708             # V-bit included angle (rad)
+  field SFVec2f    laserSpot      0.0001 0.0001      # laser: 1/e^2 spot diameters at focus along X and Y (m)
+  field SFFloat    beamHalfAngle  0.08               # laser: half-angle of the cone the lens focuses (rad); the spot widens with it away from focus
+  field SFFloat    laserPower     0                  # laser: power absorbed by the work NOW (W); the controller writes it every step
+  field SFFloat    ablationEnergy 4e9                # laser: absorbed energy that removes one cubic metre of material (J/m^3)
+  field SFFloat    charFluence    5e5                # laser: absorbed fluence that chars the surface 63 % of the way to charColor (J/m^2)
+  field SFColor    charColor      0.09 0.06 0.04     # laser: a fully charred surface
+  field SFBool     cutting        TRUE               # FALSE suspends removal
+  field SFColor    coreColor      0.80 0.64 0.44     # the material under the skin
+  field SFColor    skinColor      0.10 0.14 0.20     # the painted top
+  field SFFloat    skinDepth      0.0002             # a cut deeper than this shows the core (m)
+  field SFFloat    roughness      0.8
+  field SFBool     castShadows    TRUE
+  hiddenField SFFloat removedVolume 0                # m^3 removed since the block was (re)built; engine-written
+  hiddenField SFFloat deepestCut    0                # deepest point below the original top (m); engine-written
+  hiddenField SFFloat depositedEnergy 0              # laser: J delivered onto the block since it was (re)built; engine-written
+}

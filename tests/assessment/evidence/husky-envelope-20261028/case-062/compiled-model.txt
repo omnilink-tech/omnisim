@@ -1,0 +1,40 @@
+nq=11 nv=10 nbody=6 ngeom=8 nu=8 nexclude=10
+opt: timestep=0.002 cone=0 iterations=100 gravity=[np.float64(-0.0), np.float64(-0.0), np.float64(-9.8100004196167)]
+body 0 world                    mass=0 ipos=[0.0, 0.0, 0.0] pos=[0.0, 0.0, 0.0] inertia=[0.0, 0.0, 0.0]
+body 1 body_0                   mass=46.134 ipos=[-0.001, -0.085, 0.062] pos=[0.02, 0.0, 0.229] inertia=[2.049913167953491, 1.7466700077056885, 0.5958524942398071]
+body 2 body_1                   mass=2.637 ipos=[0.0, 0.0, 0.0] pos=[0.256, 0.278, 0.033] inertia=[0.044110000133514404, 0.024669988080859184, 0.024669988080859184]
+body 3 body_2                   mass=2.637 ipos=[0.0, 0.0, 0.0] pos=[0.256, -0.278, 0.033] inertia=[0.044110000133514404, 0.024669988080859184, 0.024669988080859184]
+body 4 body_3                   mass=2.637 ipos=[0.0, 0.0, 0.0] pos=[-0.256, 0.278, 0.033] inertia=[0.044110000133514404, 0.024669988080859184, 0.024669988080859184]
+body 5 body_4                   mass=2.637 ipos=[0.0, 0.0, 0.0] pos=[-0.256, -0.278, 0.033] inertia=[0.044110000133514404, 0.024669988080859184, 0.024669988080859184]
+jnt 0 joint_1                  type=0 limited=0 range=[-10000000000.0, 10000000000.0] stiffness=0 actfrc=[-1000000.0, 1000000.0] (lim=0)
+jnt 1 joint_2                  type=3 limited=0 range=[-10000000000.0, 10000000000.0] stiffness=0 actfrc=[-200.0, 200.0] (lim=1)
+jnt 2 joint_3                  type=3 limited=0 range=[-10000000000.0, 10000000000.0] stiffness=0 actfrc=[-200.0, 200.0] (lim=1)
+jnt 3 joint_4                  type=3 limited=0 range=[-10000000000.0, 10000000000.0] stiffness=0 actfrc=[-200.0, 200.0] (lim=1)
+jnt 4 joint_5                  type=3 limited=0 range=[-10000000000.0, 10000000000.0] stiffness=0 actfrc=[-200.0, 200.0] (lim=1)
+opt cone=0 impratio=1.0 noslip=0 o_solref=[0.02, 1.0] timestep=0.002
+geom 0 shape_0_0                body=0 type=6 condim=3 contype=0 conaff=1 fric=[0.2, 0.005, 0.0] size=[20.0, 3.0, 0.1] pos=[-0.009, 0.0, -0.1] quat=[0.999, 0.0, 0.0436, 0.0] solref=[0.02, 1.0] solimp=[0.9, 0.95, 0.001, 0.5, 2.0]
+geom 1 shape_1_1                body=1 type=6 condim=3 contype=1 conaff=0 fric=[0.2, 0.005, 0.0] size=[0.4937, 0.2855, 0.0619] pos=[0.0, 0.0, 0.062] quat=[1.0, 0.0, 0.0, 0.0] solref=[0.02, 1.0] solimp=[0.9, 0.95, 0.001, 0.5, 2.0]
+geom 2 shape_2_2                body=1 type=6 condim=3 contype=1 conaff=0 fric=[0.2, 0.005, 0.0] size=[0.395, 0.2855, 0.0519] pos=[0.0, 0.0, 0.176] quat=[1.0, 0.0, 0.0, 0.0] solref=[0.02, 1.0] solimp=[0.9, 0.95, 0.001, 0.5, 2.0]
+geom 3 shape_3_3                body=1 type=7 condim=3 contype=1 conaff=0 fric=[0.2, 0.005, 0.0] size=[0.0032, 0.295, 0.3676] pos=[0.079, 0.0, 0.248] quat=[0.0, 0.7071, 0.0, 0.7071] solref=[0.02, 1.0] solimp=[0.9, 0.95, 0.001, 0.5, 2.0]
+geom 4 shape_5_5                body=2 type=3 condim=3 contype=1 conaff=0 fric=[0.2, 0.005, 0.0] size=[0.1651, 0.0571, 0.1651] pos=[0.0, 0.0, 0.0] quat=[0.7071, 0.7071, 0.0, 0.0] solref=[0.02, 1.0] solimp=[0.9, 0.95, 0.001, 0.5, 2.0]
+geom 5 shape_6_6                body=3 type=3 condim=3 contype=1 conaff=0 fric=[0.2, 0.005, 0.0] size=[0.1651, 0.0571, 0.1651] pos=[0.0, 0.0, 0.0] quat=[0.7071, 0.7071, 0.0, 0.0] solref=[0.02, 1.0] solimp=[0.9, 0.95, 0.001, 0.5, 2.0]
+geom 6 shape_7_7                body=4 type=3 condim=3 contype=1 conaff=0 fric=[0.2, 0.005, 0.0] size=[0.1651, 0.0571, 0.1651] pos=[0.0, 0.0, 0.0] quat=[0.7071, 0.7071, 0.0, 0.0] solref=[0.02, 1.0] solimp=[0.9, 0.95, 0.001, 0.5, 2.0]
+geom 7 shape_8_8                body=5 type=3 condim=3 contype=1 conaff=0 fric=[0.2, 0.005, 0.0] size=[0.1651, 0.0571, 0.1651] pos=[0.0, 0.0, 0.0] quat=[0.7071, 0.7071, 0.0, 0.0] solref=[0.02, 1.0] solimp=[0.9, 0.95, 0.001, 0.5, 2.0]
+act 0 gain=[0.0, 0.0, 0.0] bias=[0.0, -0.0, 0.0] trn=[np.int32(1), np.int32(-1)] forcerange=[0.0, 0.0] (lim=0) ctrlrange=[0.0, 0.0] (lim=0)
+act 1 gain=[500.0, 0.0, 0.0] bias=[0.0, 0.0, -500.0] trn=[np.int32(1), np.int32(-1)] forcerange=[0.0, 0.0] (lim=0) ctrlrange=[0.0, 0.0] (lim=0)
+act 2 gain=[0.0, 0.0, 0.0] bias=[0.0, -0.0, 0.0] trn=[np.int32(2), np.int32(-1)] forcerange=[0.0, 0.0] (lim=0) ctrlrange=[0.0, 0.0] (lim=0)
+act 3 gain=[500.0, 0.0, 0.0] bias=[0.0, 0.0, -500.0] trn=[np.int32(2), np.int32(-1)] forcerange=[0.0, 0.0] (lim=0) ctrlrange=[0.0, 0.0] (lim=0)
+act 4 gain=[0.0, 0.0, 0.0] bias=[0.0, -0.0, 0.0] trn=[np.int32(3), np.int32(-1)] forcerange=[0.0, 0.0] (lim=0) ctrlrange=[0.0, 0.0] (lim=0)
+act 5 gain=[500.0, 0.0, 0.0] bias=[0.0, 0.0, -500.0] trn=[np.int32(3), np.int32(-1)] forcerange=[0.0, 0.0] (lim=0) ctrlrange=[0.0, 0.0] (lim=0)
+act 6 gain=[0.0, 0.0, 0.0] bias=[0.0, -0.0, 0.0] trn=[np.int32(4), np.int32(-1)] forcerange=[0.0, 0.0] (lim=0) ctrlrange=[0.0, 0.0] (lim=0)
+act 7 gain=[500.0, 0.0, 0.0] bias=[0.0, 0.0, -500.0] trn=[np.int32(4), np.int32(-1)] forcerange=[0.0, 0.0] (lim=0) ctrlrange=[0.0, 0.0] (lim=0)
+dof 0 damping=0.00 armature=0.0000 frictionloss=0.000
+dof 1 damping=0.00 armature=0.0000 frictionloss=0.000
+dof 2 damping=0.00 armature=0.0000 frictionloss=0.000
+dof 3 damping=0.00 armature=0.0000 frictionloss=0.000
+dof 4 damping=0.00 armature=0.0000 frictionloss=0.000
+dof 5 damping=0.00 armature=0.0000 frictionloss=0.000
+dof 6 damping=0.00 armature=0.0000 frictionloss=0.000
+dof 7 damping=0.00 armature=0.0000 frictionloss=0.000
+dof 8 damping=0.00 armature=0.0000 frictionloss=0.000
+dof 9 damping=0.00 armature=0.0000 frictionloss=0.000

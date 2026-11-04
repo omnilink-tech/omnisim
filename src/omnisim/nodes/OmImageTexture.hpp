@@ -22,6 +22,9 @@
 
 #include <QtCore/QSet>
 
+#include <cstdint>
+#include <vector>
+
 #include <assimp/material.h>
 
 class OmRgb;
@@ -66,6 +69,15 @@ public:
   void setExternalTexture(const unsigned char *image, int width, int height, double ratioX, double ratioY);
   void removeExternalTexture();
 
+  // The wgpu side of an external texture. image() is NULL for one (it has no file), so until
+  // 2026-11-04 no upload site saw it and a Display drew nothing onto its Shape under wgpu. The
+  // feeding node rewrites the pixels in place and calls touchExternalTexture() after each
+  // change; externalRgba8() converts its ARGB32 words to RGBA8 only when the revision moved.
+  bool isExternalTexture() const { return mExternalTexture && mExternalTextureData; }
+  void touchExternalTexture() { ++mExternalRevision; }
+  uint64_t externalRevision() const { return mExternalRevision; }
+  const std::vector<unsigned char> &externalRgba8();
+
   const QString path() const;
 
   void setRole(const QString &role) { mRole = role; }
@@ -95,6 +107,9 @@ private:
   const unsigned char *mExternalTextureData;
   int mExternalTextureWidth;
   int mExternalTextureHeight;
+  uint64_t mExternalRevision;
+  uint64_t mExternalRgbaRevision;
+  std::vector<unsigned char> mExternalRgba;
 
   QImage *mImage;
   int mUsedFiltering;

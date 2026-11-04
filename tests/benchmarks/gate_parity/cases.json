@@ -683,6 +683,117 @@
       ]
     },
     {
+      "utterance": "the parts are still reported aboard. please drive forward 2 metres now.",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "is the cart loaded? please drive forward 2 metres.",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "is the cart loaded?",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "interrogative",
+        "invented_magnitude"
+      ]
+    },
+    {
+      "utterance": "Dana said to drive forward 2 metres. that's all.",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "reported_speech"
+      ]
+    },
+    {
+      "utterance": "the parts are no longer on the shelf. please drive forward 2 metres.",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "prohibition"
+      ]
+    },
+    {
+      "utterance": "don't drive into the weld cell. drive forward 2 metres.",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "prohibition"
+      ]
+    },
+    {
+      "utterance": "the cart is on the pick pad when I let it go; please drive forward 2 metres now.",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "the order is done when the cart stops; drive forward 2 metres.",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "the parking spot is reported clear. please drive forward 2 metres.",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": []
+    },
+    {
+      "utterance": "park at the loading bay after lunch. drive forward 2 metres.",
+      "tool": "drive_forward",
+      "args": {
+        "distance": 2
+      },
+      "surface": null,
+      "registered": false,
+      "rules": [
+        "deferred"
+      ]
+    },
+    {
       "utterance": "reverse 2 metres - sorry, ignore that",
       "tool": "drive_forward",
       "args": {

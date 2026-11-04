@@ -143,7 +143,6 @@ private slots:
   void hideInappropriateToolBarItems();
 
 private:
-  bool mWasMinimized;
   bool mIsScreenshotRequestedFromGui;
   bool mIsDecorationVisible;
   QAction *mPlayAnchor, *mSoundAnchor;

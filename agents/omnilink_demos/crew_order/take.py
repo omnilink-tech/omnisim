@@ -61,7 +61,8 @@ BRIEFINGS = {
                f"must unhitch it before you load it. You can't see the cart yourself, so load it where Tug tells "
                f"you it is. Drop the three parts at z 0.40 at these offsets from the cart's centre: (0, 0), "
                f"(+0.10 m in x, 0) and (+0.05 m in x, +0.10 m in y); the cart's west end is out of your reach. "
-               f"Packer at shipping unloads the cart into the crate."),
+               f"When all three parts are on the cart, ask Tug to take it to Packer at shipping; Packer "
+               f"unloads it there into the crate and tells Sam when the order is packed."),
     "Tug": (f"Sam: Briefing, nothing to do yet. You're Tug. You tow the cart, called CART, which is hitched behind "
             f"you now, its centre {world.CART_BEHIND_M:.2f} m behind yours. There are two yellow pads on the floor: the "
             f"cart must stand on the pick pad at x {PX - world.CART_BEHIND_M:.1f}, y {PY:.1f} for Picker to load it, "
@@ -72,8 +73,20 @@ BRIEFINGS = {
     "Packer": (f"Sam: Briefing, nothing to do yet. You're Packer, the arm at shipping. Parts arrive on a cart Tug "
                f"brings to the yellow pad in front of you; locate_objects shows where they are. The shipping crate "
                f"is beside you at x {CX:.2f}; drop parts into it at z 0.40, at y {CY - 0.10:.2f}, {CY:.2f} and "
-               f"{CY + 0.10:.2f}."),
+               f"{CY + 0.10:.2f}. When every part is in the crate, tell Sam the order is packed, with the "
+               f"positions you measured."),
 }
+
+
+# The briefings without their spoken preamble: what a STANDING briefing says.
+PREAMBLE = "Sam: Briefing, nothing to do yet. "
+TUG_PLACES = {"pick pad stop": (PX, PY), "shipping pad stop": (SX, SY)}
+
+
+def standing_briefings() -> dict:
+    out = {n: t[len(PREAMBLE):] if t.startswith(PREAMBLE) else t for n, t in BRIEFINGS.items()}
+    out["Tug"] += (" Your two stops are saved as places: 'pick pad stop' and 'shipping pad stop'.")
+    return out
 
 
 def post(port, path, body, timeout=240):
@@ -86,6 +99,32 @@ def post(port, path, body, timeout=240):
 def get(port, path, timeout=10):
     with urllib.request.urlopen(f"http://127.0.0.1:{port}{path}", timeout=timeout) as r:
         return json.loads(r.read().decode() or "{}")
+
+
+BRIDGE_SCRIPTS = ("omnilink_arm_bridge.py", "omnilink_mobile_bridge.py", "film_camera.py")
+
+
+def reap_bridges(ports: dict) -> int:
+    """Kill bridge controllers left on THIS run's ports by an engine that died
+    without them. An orphan keeps its port and answers for the next run (2026-10-21:
+    three orphans on 8800-8802 failed every later run in that slot to start)."""
+    try:
+        import psutil
+    except ImportError:
+        return 0
+    wanted = {str(p) for p in ports.values()}
+    n = 0
+    for proc in psutil.process_iter(["pid", "cmdline"]):
+        cmd = proc.info.get("cmdline") or []
+        if not any(c.endswith(BRIDGE_SCRIPTS) for c in cmd):
+            continue
+        if "--port" in cmd and cmd.index("--port") + 1 < len(cmd) and cmd[cmd.index("--port") + 1] in wanted:
+            try:
+                proc.kill()
+                n += 1
+            except Exception:
+                pass
+    return n
 
 
 RATES = {"claude-opus-5-5": (4.0, 0.20, 20.0), "claude-sonnet-5-5": (2.0, 0.20, 10.0)}   # $/MTok in, cached, out
@@ -108,6 +147,31 @@ def _jsonl(path: Path) -> list:
     return out
 
 
+_DONE = re.compile(r"(?i)\bpacked\b|\b(?:in|into) the (?:shipping )?crate\b")
+_NOT_DONE = re.compile(r"(?i)not (?:yet |been )?packed|isn't packed|is not packed|not packed yet|not (?:yet )?in the")
+
+
+def report_time(rows: list):
+    """Simulator time Sam was told the order is DONE, or None: a message to
+    him, sent after Tug delivered the cart to shipping (its last message to
+    Packer), saying the parts are packed or in the crate. A progress update
+    before the delivery does not count, whatever it promises ("Packer will
+    unload into the crate")."""
+    msgs = [m for m in rows if m.get("kind") == "message"]
+    delivered = max((m["sim_s"] for m in msgs if m.get("from") == "Tug" and m.get("to") == "Packer"), default=None)
+    for m in msgs:
+        if m.get("to") != OPERATOR or (delivered is not None and m["sim_s"] < delivered):
+            continue
+        said = f"{m.get('text') or ''} {m.get('details') or ''}"
+        if _DONE.search(said) and not _NOT_DONE.search(said):
+            return m["sim_s"]
+    return None
+
+
+def reported_packed(rows: list) -> bool:
+    return report_time(rows) is not None
+
+
 def judge(take: Path, wall_s: float, model: str = "claude-opus-5-5") -> dict:
     """One run's verdict, from what was measured: every part in the crate
     (the final scan), a report to Sam, and every error the crew log saw."""
@@ -117,7 +181,7 @@ def judge(take: Path, wall_s: float, model: str = "claude-opus-5-5") -> dict:
     parts = {o["def"]: o["world_xyz"] for o in objs}
     packed = len(parts) == 3 and all(in_crate(p) for p in parts.values())
     msgs = [r for r in rows if r["kind"] == "message"]
-    reported = any(m["to"] == OPERATOR for m in msgs)
+    reported = reported_packed(rows)
     # A gate refusal reads "<tool>: <rule>[; <tool>: <rule>]"; anything else
     # (a connection failure, an exception) is a delivery error.
     errs = [str(r["error"]) for r in rows if r["kind"] == "reply" and r.get("error")]
@@ -156,13 +220,16 @@ def main():
     ap.add_argument("--key-file", default="O:/omnilink-keys/omni_key.txt")
     ap.add_argument("--frame-ms", type=int, default=64,
                     help="simulated ms between frames: 64 = every second 32 ms step, smooth at 2x playback")
-    ap.add_argument("--wall-limit-s", type=float, default=1200)
+    ap.add_argument("--wall-limit-s", type=float, default=900)
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--port-base", type=int, default=8765, help="Picker, Tug, Packer on base, +1, +2")
     ap.add_argument("--cams", default=",".join(world.FILM_CAMERAS),
                     help="comma-separated cameras to film (world.CAMERAS); empty = none")
     ap.add_argument("--tag", default="", help="OMNILINK_AGENT_TAG: this run's own agent identity and memory")
     ap.add_argument("--quiet-s", type=float, default=60.0, help="wall s of crew silence after the report that ends a take")
+    ap.add_argument("--briefing", choices=("standing", "prompt"), default="standing",
+                    help="standing: each robot starts with its briefing in its own instructions (no model turn); "
+                         "prompt: Sam says each briefing as a chat turn first (the original takes)")
     a = ap.parse_args()
     ports = world.ports_from(a.port_base)
     cams = tuple(c for c in a.cams.split(",") if c)
@@ -185,6 +252,7 @@ def main():
                OMNILINK_TRACE=str(take / "relay_trace.jsonl"),
                OMNILINK_MODEL_RECORD=str(take / "model_replies.jsonl"),
                OMNILINK_INTENT_STATE_DIR=str(take / "intents"),
+               **({"OMNILINK_CREW_BRIEFINGS": str(take / "briefings.json")} if a.briefing == "standing" else {}),
                OMNILINK_PRESENCE="1", OMNILINK_EVENT_WAKE="1", OMNILINK_MEMORY="0",
                OMNILINK_PROFILE_SYNC="0", OMNILINK_EDGE="0", OMNILINK_USAGE="0")
     if a.tag:
@@ -192,6 +260,12 @@ def main():
     if not a.smoke:
         env["OMNI_KEY"] = Path(a.key_file).read_text(encoding="utf-8").strip()
     env["PATH"] = os.pathsep.join([str(Path(binary).parent / "newton-runtime"), str(Path(binary).parent), env.get("PATH", "")])
+    (take / "briefings.json").write_text(json.dumps(standing_briefings(), indent=1), encoding="utf-8")
+    (take / "meta.json").write_text(json.dumps({"model": a.model, "engine": a.engine, "briefing": a.briefing,
+                                                "port_base": a.port_base, "tag": a.tag}, indent=1), encoding="utf-8")
+    reaped = reap_bridges(ports)
+    if reaped:
+        print(f"reaped {reaped} orphaned bridge(s) on ports {sorted(ports.values())}", flush=True)
     out = open(take / "stdout.log", "w", encoding="utf-8")
     proc = subprocess.Popen([binary, "--batch", "--mode=realtime", "--no-rendering", "--minimize", "--stdout",
                              "--stderr", str(world_path)], cwd=REPO, env=env, stdout=out, stderr=subprocess.STDOUT,
@@ -222,7 +296,14 @@ def main():
         hitch = post(ports["Tug"], "/tool", {"tool": "attach_trolley", "def": "CART"})
         note({"kind": "setup", "sim_s": sim(), "wall": time.time(), "to": "Tug", "text": "attach_trolley CART", "result": hitch})
         print("hitch:", hitch.get("result", hitch), flush=True)
-        for name, text in BRIEFINGS.items():
+        if a.briefing == "standing":
+            note({"kind": "setup", "sim_s": sim(), "wall": time.time(), "to": "all",
+                  "text": "standing briefings", "briefings": standing_briefings()})
+            for place, (x, y) in TUG_PLACES.items():
+                res = post(ports["Tug"], "/tool", {"tool": "remember_place", "name": place, "x": x, "y": y})
+                note({"kind": "setup", "sim_s": sim(), "wall": time.time(), "to": "Tug",
+                      "text": f"remember_place {place} ({x:.2f}, {y:.2f})", "result": res})
+        for name, text in (BRIEFINGS.items() if a.briefing == "prompt" else ()):
             note({"kind": "operator", "sim_s": sim(), "wall": time.time(), "from": OPERATOR, "to": name, "text": text})
             r = post(ports[name], "/prompt", {"text": text, "timeout_s": 200})
             note({"kind": "reply", "sim_s": sim(), "wall": time.time(), "from": name, "to": OPERATOR,
@@ -233,8 +314,14 @@ def main():
         note({"kind": "reply", "sim_s": sim(), "wall": time.time(), "from": "Picker", "to": OPERATOR,
               "text": r.get("response", ""), "via": r.get("via"), "actions": r.get("actions"), "error": r.get("error", "")})
         print(f"order -> Picker: {r.get('response', '')[:200]!r}", flush=True)
-        # Watch only. Done when someone reports to Sam and the crew has been quiet for a while.
-        seen, quiet_since = 0, time.monotonic()
+        # Watch only. Done once every part is MEASURED in the crate, someone has
+        # told Sam it is packed, and the crew has been quiet for a while -- or,
+        # packed but never reported, after a longer silence (300 s: under four
+        # engines a crewmate's last turn can run past two minutes, pilot v3
+        # run 2). A progress update
+        # to Sam ("Order 42 under way") ends nothing (Sonnet pilot run 2 was
+        # cut off mid-load by exactly that).
+        seen, quiet_since, last_scan, packed_now = 0, time.monotonic(), 0.0, False
         while time.monotonic() - t0 < a.wall_limit_s and proc.poll() is None:
             lines = log_path.read_text(encoding="utf-8").splitlines()
             for line in lines[seen:]:
@@ -249,8 +336,16 @@ def main():
                                          "carrying": st.get("carrying")}) + "\n")
             except Exception:
                 pass
-            reported = any(json.loads(l).get("to") == OPERATOR and json.loads(l).get("kind") == "message" for l in lines)
-            if reported and time.monotonic() - quiet_since > a.quiet_s:
+            if time.monotonic() - last_scan > 10:
+                last_scan = time.monotonic()
+                try:
+                    objs = post(ports["Picker"], "/tool", {"tool": "locate_objects"}, timeout=8)
+                    parts = (objs.get("result") or {}).get("objects") or []
+                    packed_now = len(parts) == 3 and all(in_crate(o["world_xyz"]) for o in parts)
+                except Exception:
+                    pass
+            quiet = time.monotonic() - quiet_since
+            if packed_now and ((reported_packed(_jsonl(log_path)) and quiet > a.quiet_s) or quiet > 300):
                 break
             time.sleep(2)
         try:
@@ -258,7 +353,7 @@ def main():
             note({"kind": "final", "sim_s": sim(), "wall": time.time(), "locate_objects": objs})
         except Exception as e:
             note({"kind": "final", "error": str(e)})
-        verdict = judge(take, time.monotonic() - t0)
+        verdict = judge(take, time.monotonic() - t0, a.model)
         (take / "result.json").write_text(json.dumps(verdict, indent=1), encoding="utf-8")
         print("RESULT", json.dumps({k: verdict[k] for k in ("ok", "packed", "reported", "messages", "refusals",
                                                             "delivery_errors", "cost_usd", "wall_s")}), flush=True)
@@ -267,6 +362,7 @@ def main():
         # keeps its port and answers for the next take.
         subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
         proc.wait()
+        reap_bridges(ports)
         out.close()
         world_path.unlink(missing_ok=True)
 

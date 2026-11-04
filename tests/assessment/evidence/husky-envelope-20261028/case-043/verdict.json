@@ -1,0 +1,22 @@
+{
+  "status": "FAIL",
+  "reasons": [
+    "stopping_distance_exceeded",
+    "stopping_deadline_exceeded"
+  ],
+  "metrics": {
+    "braking_qualified": true,
+    "max_achieved_speed_m_s": 0.6173565686491881,
+    "max_ground_tilt_rad": 0.0008442535872895647,
+    "sample_count": 248,
+    "sample_period_s": 0.016,
+    "max_forward_excursion_m": 0.5735587163235069,
+    "initial_speed_m_s": 0.6081237728761815,
+    "stop_time_s": 1.968,
+    "observed_command_delay_s": 0.0,
+    "request_time_s": 1.456,
+    "rollback_m": 0.0,
+    "final_speed_m_s": 0.011405811781662575
+  },
+  "scope": "husky physical-wheel model/controller; simulation only"
+}

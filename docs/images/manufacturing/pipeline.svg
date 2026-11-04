@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 470" width="1200" height="470" role="img" aria-labelledby="t d">
+  <title id="t">SparkRover Mini: from concept to release in OmniSim</title>
+  <desc id="d">Concept, requirements, skeleton, subsystems, integration, then the machine twins (laser, CNC, print), wiring, assembly, the Newton drive test and the release. Simulation only.</desc>
+  <style>
+    .bg { fill: none; }
+    .node { fill: #F6F4EF; stroke: #14140D; stroke-width: 1.5; }
+    .twin { fill: #F6E905; stroke: #14140D; stroke-width: 1.5; }
+    .title { font: 600 17px 'Space Grotesk', 'Segoe UI', ui-sans-serif, system-ui, sans-serif; fill: #14140D; }
+    .sub { font: 400 12.5px 'Space Grotesk', 'Segoe UI', ui-sans-serif, system-ui, sans-serif; fill: #4A4A3E; }
+    .num { font: 500 11px 'JetBrains Mono', ui-monospace, Consolas, monospace; letter-spacing: 0.12em; fill: #6B6A5C; }
+    .lane { font: 500 11px 'JetBrains Mono', ui-monospace, Consolas, monospace; letter-spacing: 0.18em; fill: #6B6A5C; }
+    .foot { font: 400 13px 'Space Grotesk', 'Segoe UI', ui-sans-serif, system-ui, sans-serif; fill: #4A4A3E; }
+    .arrow { stroke: #14140D; stroke-width: 1.8; fill: none; }
+    .head { fill: #14140D; }
+    @media (prefers-color-scheme: dark) {
+      .node { fill: #14140D; stroke: #B4B3A4; }
+      .twin { fill: #F6E905; stroke: #F6E905; }
+      .title { fill: #F6F4EF; }
+      .twin-text .title { fill: #14140D; }
+      .sub { fill: #B4B3A4; }
+      .twin-text .sub { fill: #3A3A10; }
+      .num, .lane { fill: #B4B3A4; }
+      .twin-text .num { fill: #3A3A10; }
+      .foot { fill: #B4B3A4; }
+      .arrow { stroke: #B4B3A4; }
+      .head { fill: #B4B3A4; }
+    }
+  </style>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="head" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+
+  <text class="lane" x="24" y="30">DESIGN</text>
+
+  <!-- row 1: design -->
+  <g>
+    <rect class="node" x="24" y="44" width="200" height="104" rx="14"/>
+    <text class="num" x="42" y="70">01</text>
+    <text class="title" x="42" y="96">Concept</text>
+    <text class="sub" x="42" y="118">AI concept sheets:</text>
+    <text class="sub" x="42" y="135">the look, the features</text>
+  </g>
+  <g>
+    <rect class="node" x="258" y="44" width="200" height="104" rx="14"/>
+    <text class="num" x="276" y="70">02</text>
+    <text class="title" x="276" y="96">Requirements</text>
+    <text class="sub" x="276" y="118">the sheets' numbers checked</text>
+    <text class="sub" x="276" y="135">and corrected</text>
+  </g>
+  <g>
+    <rect class="node" x="492" y="44" width="200" height="104" rx="14"/>
+    <text class="num" x="510" y="70">03</text>
+    <text class="title" x="510" y="96">Skeleton</text>
+    <text class="sub" x="510" y="118">envelope, zones, interfaces,</text>
+    <text class="sub" x="510" y="135">the open decisions</text>
+  </g>
+  <g>
+    <rect class="node" x="726" y="44" width="200" height="104" rx="14"/>
+    <text class="num" x="744" y="70">04</text>
+    <text class="title" x="744" y="96">Subsystems</text>
+    <text class="sub" x="744" y="118">chassis, shell, arms,</text>
+    <text class="sub" x="744" y="135">electrical</text>
+  </g>
+  <g>
+    <rect class="node" x="960" y="44" width="216" height="104" rx="14"/>
+    <text class="num" x="978" y="70">05</text>
+    <text class="title" x="978" y="96">Integration</text>
+    <text class="sub" x="978" y="118">zones, interference (FCL),</text>
+    <text class="sub" x="978" y="135">interfaces, mass</text>
+  </g>
+  <path class="arrow" d="M224,96 L256,96" marker-end="url(#ah)"/>
+  <path class="arrow" d="M458,96 L490,96" marker-end="url(#ah)"/>
+  <path class="arrow" d="M692,96 L724,96" marker-end="url(#ah)"/>
+  <path class="arrow" d="M926,96 L958,96" marker-end="url(#ah)"/>
+
+  <!-- the turn down to row 2 -->
+  <path class="arrow" d="M1068,148 L1068,178 L124,178 L124,212" marker-end="url(#ah)"/>
+
+  <text class="lane" x="140" y="204">MAKE ON THE TWINS, THEN BUILD AND PROVE</text>
+
+  <!-- row 2: the twins -->
+  <g class="twin-text">
+    <rect class="twin" x="24" y="216" width="200" height="56" rx="12"/>
+    <text class="num" x="42" y="240">06</text>
+    <text class="title" x="74" y="241">Laser twin</text>
+    <text class="sub" x="42" y="262">plywood deck and spine</text>
+  </g>
+  <g class="twin-text">
+    <rect class="twin" x="24" y="282" width="200" height="56" rx="12"/>
+    <text class="num" x="42" y="306">06</text>
+    <text class="title" x="74" y="307">CNC twin</text>
+    <text class="sub" x="42" y="328">aluminium foot, brackets</text>
+  </g>
+  <g class="twin-text">
+    <rect class="twin" x="24" y="348" width="200" height="56" rx="12"/>
+    <text class="num" x="42" y="372">06</text>
+    <text class="title" x="74" y="373">Printer twin</text>
+    <text class="sub" x="42" y="394">shell, arms, carriers</text>
+  </g>
+  <g>
+    <rect class="node" x="258" y="258" width="200" height="104" rx="14"/>
+    <text class="num" x="276" y="284">07</text>
+    <text class="title" x="276" y="310">Wiring</text>
+    <text class="sub" x="276" y="332">every wire routed in 3D</text>
+    <text class="sub" x="276" y="349">through the robot</text>
+  </g>
+  <g>
+    <rect class="node" x="492" y="258" width="200" height="104" rx="14"/>
+    <text class="num" x="510" y="284">08</text>
+    <text class="title" x="510" y="310">Assembly</text>
+    <text class="sub" x="510" y="332">unit by unit on Newton,</text>
+    <text class="sub" x="510" y="349">each path swept first</text>
+  </g>
+  <g>
+    <rect class="node" x="726" y="258" width="200" height="104" rx="14"/>
+    <text class="num" x="744" y="284">09</text>
+    <text class="title" x="744" y="310">Newton drive</text>
+    <text class="sub" x="744" y="332">drive, spin and wave,</text>
+    <text class="sub" x="744" y="349">camera and screen on</text>
+  </g>
+  <g>
+    <rect class="node" x="960" y="258" width="216" height="104" rx="14"/>
+    <text class="num" x="978" y="284">10</text>
+    <text class="title" x="978" y="310">Release</text>
+    <text class="sub" x="978" y="332">drawings, models, G-code,</text>
+    <text class="sub" x="978" y="349">BOM, assembly guide</text>
+  </g>
+  <path class="arrow" d="M224,244 L240,244 L240,310 L256,310" marker-end="url(#ah)"/>
+  <path class="arrow" d="M224,310 L256,310"/>
+  <path class="arrow" d="M224,376 L240,376 L240,310 L256,310"/>
+  <path class="arrow" d="M458,310 L490,310" marker-end="url(#ah)"/>
+  <path class="arrow" d="M692,310 L724,310" marker-end="url(#ah)"/>
+  <path class="arrow" d="M926,310 L958,310" marker-end="url(#ah)"/>
+
+  <text class="foot" x="24" y="446">Simulation only: every part is made on a machine twin, none on a real machine, and no twin is validated against its real machine.</text>
+</svg>

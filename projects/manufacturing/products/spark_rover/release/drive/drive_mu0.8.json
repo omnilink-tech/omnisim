@@ -1,0 +1,486 @@
+{
+ "dt_ms": 2,
+ "pack_v": 7.2,
+ "motor": {
+  "no_load_rad_s": 18.8496,
+  "stall_nm": 0.6472,
+  "stall_a": 3.0,
+  "no_load_a": 0.3
+ },
+ "straight": {
+  "distance_m": 1.0008,
+  "time_s": 1.768,
+  "steady_speed_m_s": 0.6117,
+  "steady_window_m": [
+   0.4,
+   1.001
+  ],
+  "wheel_rad_s": 18.84,
+  "wheel_rad_s_each": {
+   "fl": 18.84,
+   "fr": 18.84,
+   "rl": 18.841,
+   "rr": 18.84
+  },
+  "effective_radius_mm": 32.465,
+  "current_a_each": {
+   "fl": 0.301,
+   "fr": 0.301,
+   "rl": 0.301,
+   "rr": 0.301
+  },
+  "heading_drift_deg": 0.0,
+  "lateral_drift_mm": 0.08,
+  "pitch_deg_range": [
+   -0.079,
+   -0.0
+  ],
+  "chassis_z_mm_range": [
+   -0.073,
+   -0.005
+  ]
+ },
+ "spin": {
+  "yaw_rate_rad_s": 4.1331,
+  "wheel_rad_s_each": {
+   "fl": 16.233,
+   "fr": 17.174,
+   "rl": 17.06,
+   "rr": 16.186
+  },
+  "wheel_rad_s_mean": 16.663,
+  "wheel_rad_s_peak": 17.685,
+  "torque_nm_each": {
+   "fl": 0.0898,
+   "fr": 0.0575,
+   "rl": 0.0614,
+   "rr": 0.0914
+  },
+  "current_a_each": {
+   "fl": 0.675,
+   "fr": 0.54,
+   "rl": 0.556,
+   "rr": 0.681
+  },
+  "current_a_mean": 0.613,
+  "current_frac_of_stall_mean": 0.2044,
+  "effective_track_mm": 262.1,
+  "centre_drift_mm_in_2s": 11.27,
+  "window_s": 2.0
+ },
+ "arms": {
+  "hold_s": 1.0,
+  "profile": {
+   "peak_deg_s": 270.0,
+   "accel_deg_s2": 1620.0,
+   "from": "arms.WAVE: 90 deg in 0.5 s, trapezoid in thirds"
+  },
+  "poses": [
+   {
+    "cmd_deg": {
+     "shoulder": 90,
+     "elbow": 0
+    },
+    "move_s": 0.5,
+    "max_tracking_error_deg": 13.089,
+    "robot_moved_mm": 0.088,
+    "chassis_z_dip_mm": -0.095,
+    "shoulder_left": {
+     "settled_deg": 89.817,
+     "error_deg": -0.183,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    },
+    "elbow_left": {
+     "settled_deg": -0.019,
+     "error_deg": -0.019,
+     "settle_s": 0.002,
+     "ripple_deg": 0.0
+    },
+    "shoulder_right": {
+     "settled_deg": 89.817,
+     "error_deg": -0.183,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    },
+    "elbow_right": {
+     "settled_deg": -0.019,
+     "error_deg": -0.019,
+     "settle_s": 0.002,
+     "ripple_deg": 0.0
+    }
+   },
+   {
+    "cmd_deg": {
+     "shoulder": -70,
+     "elbow": 0
+    },
+    "move_s": 0.759,
+    "max_tracking_error_deg": 13.162,
+    "robot_moved_mm": 0.025,
+    "chassis_z_dip_mm": -0.095,
+    "shoulder_left": {
+     "settled_deg": -69.827,
+     "error_deg": 0.173,
+     "settle_s": 0.098,
+     "ripple_deg": 0.0
+    },
+    "elbow_left": {
+     "settled_deg": 0.018,
+     "error_deg": 0.018,
+     "settle_s": 0.002,
+     "ripple_deg": 0.0
+    },
+    "shoulder_right": {
+     "settled_deg": -69.827,
+     "error_deg": 0.173,
+     "settle_s": 0.098,
+     "ripple_deg": 0.0
+    },
+    "elbow_right": {
+     "settled_deg": 0.018,
+     "error_deg": 0.018,
+     "settle_s": 0.002,
+     "ripple_deg": 0.0
+    }
+   },
+   {
+    "cmd_deg": {
+     "shoulder": 0,
+     "elbow": 90
+    },
+    "move_s": 0.5,
+    "max_tracking_error_deg": 12.969,
+    "robot_moved_mm": 0.002,
+    "chassis_z_dip_mm": -0.098,
+    "shoulder_left": {
+     "settled_deg": -0.017,
+     "error_deg": -0.017,
+     "settle_s": 0.086,
+     "ripple_deg": 0.0
+    },
+    "elbow_left": {
+     "settled_deg": 89.981,
+     "error_deg": -0.019,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    },
+    "shoulder_right": {
+     "settled_deg": -0.017,
+     "error_deg": -0.017,
+     "settle_s": 0.086,
+     "ripple_deg": 0.0
+    },
+    "elbow_right": {
+     "settled_deg": 89.981,
+     "error_deg": -0.019,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    }
+   },
+   {
+    "cmd_deg": {
+     "shoulder": 0,
+     "elbow": -90
+    },
+    "move_s": 0.833,
+    "max_tracking_error_deg": 13.109,
+    "robot_moved_mm": 0.016,
+    "chassis_z_dip_mm": -0.099,
+    "shoulder_left": {
+     "settled_deg": 0.02,
+     "error_deg": 0.02,
+     "settle_s": 0.002,
+     "ripple_deg": 0.0
+    },
+    "elbow_left": {
+     "settled_deg": -89.981,
+     "error_deg": 0.019,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    },
+    "shoulder_right": {
+     "settled_deg": 0.02,
+     "error_deg": 0.02,
+     "settle_s": 0.002,
+     "ripple_deg": 0.0
+    },
+    "elbow_right": {
+     "settled_deg": -89.981,
+     "error_deg": 0.019,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    }
+   },
+   {
+    "cmd_deg": {
+     "shoulder": 90,
+     "elbow": 90
+    },
+    "move_s": 0.833,
+    "max_tracking_error_deg": 13.114,
+    "robot_moved_mm": 0.082,
+    "chassis_z_dip_mm": -0.099,
+    "shoulder_left": {
+     "settled_deg": 89.834,
+     "error_deg": -0.166,
+     "settle_s": 0.066,
+     "ripple_deg": 0.0
+    },
+    "elbow_left": {
+     "settled_deg": 89.998,
+     "error_deg": -0.002,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    },
+    "shoulder_right": {
+     "settled_deg": 89.834,
+     "error_deg": -0.166,
+     "settle_s": 0.066,
+     "ripple_deg": 0.0
+    },
+    "elbow_right": {
+     "settled_deg": 89.998,
+     "error_deg": -0.002,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    }
+   },
+   {
+    "cmd_deg": {
+     "shoulder": 90,
+     "elbow": -90
+    },
+    "move_s": 0.833,
+    "max_tracking_error_deg": 13.084,
+    "robot_moved_mm": 0.27,
+    "chassis_z_dip_mm": -0.097,
+    "shoulder_left": {
+     "settled_deg": 89.838,
+     "error_deg": -0.162,
+     "settle_s": 0.002,
+     "ripple_deg": 0.0
+    },
+    "elbow_left": {
+     "settled_deg": -89.998,
+     "error_deg": 0.002,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    },
+    "shoulder_right": {
+     "settled_deg": 89.838,
+     "error_deg": -0.162,
+     "settle_s": 0.002,
+     "ripple_deg": 0.0
+    },
+    "elbow_right": {
+     "settled_deg": -89.998,
+     "error_deg": 0.002,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    }
+   },
+   {
+    "cmd_deg": {
+     "shoulder": 45,
+     "elbow": 45
+    },
+    "move_s": 0.667,
+    "max_tracking_error_deg": 13.106,
+    "robot_moved_mm": 0.274,
+    "chassis_z_dip_mm": -0.133,
+    "shoulder_left": {
+     "settled_deg": 44.867,
+     "error_deg": -0.133,
+     "settle_s": 0.044,
+     "ripple_deg": 0.0
+    },
+    "elbow_left": {
+     "settled_deg": 44.981,
+     "error_deg": -0.019,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    },
+    "shoulder_right": {
+     "settled_deg": 44.867,
+     "error_deg": -0.133,
+     "settle_s": 0.044,
+     "ripple_deg": 0.0
+    },
+    "elbow_right": {
+     "settled_deg": 44.981,
+     "error_deg": -0.019,
+     "settle_s": 0.1,
+     "ripple_deg": 0.0
+    }
+   },
+   {
+    "cmd_deg": {
+     "shoulder": 0,
+     "elbow": 0
+    },
+    "move_s": 0.333,
+    "max_tracking_error_deg": 10.456,
+    "robot_moved_mm": 0.033,
+    "chassis_z_dip_mm": -0.045,
+    "shoulder_left": {
+     "settled_deg": 0.003,
+     "error_deg": 0.003,
+     "settle_s": 0.096,
+     "ripple_deg": 0.0
+    },
+    "elbow_left": {
+     "settled_deg": 0.002,
+     "error_deg": 0.002,
+     "settle_s": 0.098,
+     "ripple_deg": 0.0
+    },
+    "shoulder_right": {
+     "settled_deg": 0.003,
+     "error_deg": 0.003,
+     "settle_s": 0.096,
+     "ripple_deg": 0.0
+    },
+    "elbow_right": {
+     "settled_deg": 0.002,
+     "error_deg": 0.002,
+     "settle_s": 0.098,
+     "ripple_deg": 0.0
+    }
+   }
+  ],
+  "max_abs_error_deg": 0.183,
+  "max_settle_s": 0.1,
+  "robot_moved_mm_while_waving": 0.757
+ },
+ "phases": {
+  "settle": {
+   "t0_s": 0.002,
+   "t1_s": 1.0,
+   "moved_mm": 0.0,
+   "yaw_deg": 0.0
+  },
+  "straight": {
+   "t0_s": 1.002,
+   "t1_s": 2.768,
+   "moved_mm": 1000.83,
+   "yaw_deg": 0.0
+  },
+  "stop": {
+   "t0_s": 2.77,
+   "t1_s": 3.768,
+   "moved_mm": 41.472,
+   "yaw_deg": 0.0
+  },
+  "spin": {
+   "t0_s": 3.77,
+   "t1_s": 7.768,
+   "moved_mm": 17.643,
+   "yaw_deg": -155.364
+  },
+  "stop2": {
+   "t0_s": 7.77,
+   "t1_s": 8.768,
+   "moved_mm": 0.802,
+   "yaw_deg": 12.873
+  },
+  "move_0": {
+   "t0_s": 8.77,
+   "t1_s": 9.268,
+   "moved_mm": 0.169,
+   "yaw_deg": 0.001
+  },
+  "wave_0": {
+   "t0_s": 9.27,
+   "t1_s": 10.268,
+   "moved_mm": 0.079,
+   "yaw_deg": -0.0
+  },
+  "move_1": {
+   "t0_s": 10.27,
+   "t1_s": 11.028,
+   "moved_mm": 0.064,
+   "yaw_deg": 0.0
+  },
+  "wave_1": {
+   "t0_s": 11.03,
+   "t1_s": 12.028,
+   "moved_mm": 0.085,
+   "yaw_deg": 0.0
+  },
+  "move_2": {
+   "t0_s": 12.03,
+   "t1_s": 12.528,
+   "moved_mm": 0.054,
+   "yaw_deg": 0.0
+  },
+  "wave_2": {
+   "t0_s": 12.53,
+   "t1_s": 13.528,
+   "moved_mm": 0.05,
+   "yaw_deg": 0.0
+  },
+  "move_3": {
+   "t0_s": 13.53,
+   "t1_s": 14.362,
+   "moved_mm": 0.028,
+   "yaw_deg": 0.0
+  },
+  "wave_3": {
+   "t0_s": 14.364,
+   "t1_s": 15.362,
+   "moved_mm": 0.042,
+   "yaw_deg": -0.0
+  },
+  "move_4": {
+   "t0_s": 15.364,
+   "t1_s": 16.196,
+   "moved_mm": 0.075,
+   "yaw_deg": 0.0
+  },
+  "wave_4": {
+   "t0_s": 16.198,
+   "t1_s": 17.196,
+   "moved_mm": 0.006,
+   "yaw_deg": 0.0
+  },
+  "move_5": {
+   "t0_s": 17.198,
+   "t1_s": 18.03,
+   "moved_mm": 0.233,
+   "yaw_deg": 0.001
+  },
+  "wave_5": {
+   "t0_s": 18.032,
+   "t1_s": 19.03,
+   "moved_mm": 0.035,
+   "yaw_deg": 0.0
+  },
+  "move_6": {
+   "t0_s": 19.032,
+   "t1_s": 19.698,
+   "moved_mm": 0.19,
+   "yaw_deg": 0.002
+  },
+  "wave_6": {
+   "t0_s": 19.7,
+   "t1_s": 20.698,
+   "moved_mm": 0.082,
+   "yaw_deg": 0.0
+  },
+  "move_7": {
+   "t0_s": 20.7,
+   "t1_s": 21.032,
+   "moved_mm": 0.037,
+   "yaw_deg": 0.0
+  },
+  "wave_7": {
+   "t0_s": 21.034,
+   "t1_s": 22.032,
+   "moved_mm": 0.068,
+   "yaw_deg": 0.0
+  }
+ },
+ "chassis_z_mm_settle": -0.072,
+ "complete": true
+}

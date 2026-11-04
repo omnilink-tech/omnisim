@@ -47,6 +47,8 @@
 #include "OmFog.hpp"
 #include "OmGps.hpp"
 #include "OmGranularBed.hpp"
+#include "OmMillingStock.hpp"
+#include "OmPrintedPart.hpp"
 #include "OmGranularGroup.hpp"
 #include "OmGroup.hpp"
 #include "OmGyro.hpp"
@@ -180,6 +182,10 @@ OmNode *OmConcreteNodeFactory::createNode(const QString &modelName, OmTokenizer 
     return new OmGps(tokenizer);
   if (modelName == "GranularBed")
     return new OmGranularBed(tokenizer);
+  if (modelName == "MillingStock")
+    return new OmMillingStock(tokenizer);
+  if (modelName == "PrintedPart")
+    return new OmPrintedPart(tokenizer);
   if (modelName == "GranularGroup")
     return new OmGranularGroup(tokenizer);
   if (modelName == "Group")
@@ -389,6 +395,10 @@ OmNode *OmConcreteNodeFactory::createCopy(const OmNode &original) {
     return new OmGps(original);
   if (modelName == "GranularBed")
     return new OmGranularBed(original);
+  if (modelName == "MillingStock")
+    return new OmMillingStock(original);
+  if (modelName == "PrintedPart")
+    return new OmPrintedPart(original);
   if (modelName == "GranularGroup")
     return new OmGranularGroup(original);
   if (modelName == "Group")

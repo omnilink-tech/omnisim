@@ -1,0 +1,33 @@
+{
+  "tools": [
+    {
+      "number": 1,
+      "name": "1/4 in single-flute upcut end mill (aluminium)",
+      "shape": "flat",
+      "diameter_mm": 6.35,
+      "flutes": 1,
+      "stickout_mm": 0.0,
+      "flute_mm": 19.0,
+      "shank_mm": 6.35
+    },
+    {
+      "number": 2,
+      "name": "1/4 in 2-flute ball nose",
+      "shape": "ball",
+      "diameter_mm": 6.35,
+      "flutes": 2,
+      "stickout_mm": 3.0,
+      "flute_mm": 19.0,
+      "shank_mm": 6.35
+    }
+  ],
+  "spindle": {
+    "name": "Makita RT0701C trim router",
+    "power_w": 700,
+    "rpm": [
+      10000,
+      30000
+    ],
+    "source": "Sienci Labs product page: https://sienci.com/product/makita-rt0701c-1-25-hp-110v-compact-router/"
+  }
+}

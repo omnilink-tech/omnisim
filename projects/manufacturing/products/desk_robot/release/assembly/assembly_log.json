@@ -1,0 +1,1737 @@
+{
+ "what": "the desk robot assembled step by step on Newton (MuJoCo CPU solver), each step checked",
+ "simulation_only": true,
+ "tolerances": {
+  "seat_mm": 0.2,
+  "penetration_mm": 0.3,
+  "drift_mm": 0.05,
+  "settle_s": 0.5,
+  "approach_mm": 5.0,
+  "increment_mm": 0.5,
+  "refine_mm": 0.05,
+  "holes": "per fastener, from design.CLEARANCE (see each hole's allowed_mm)"
+ },
+ "solver": {
+  "basicTimeStep_ms": 2,
+  "newtonSubsteps": 2,
+  "newtonSolver": "mujoco"
+ },
+ "method": "each part from a kit on the bench to APPROACH_MM off its seat along its fastener axis, onto the seat in INCREMENT_MM set_pose steps (one physics step each, contacts read after each), stopped at the first contact before the seat; released for SETTLE_S under gravity (held if a press-on part); measured from the engine's poses and contacts; then welded into the robot's body where it came to rest, its screw heads and nuts with it",
+ "machine": {
+  "id": "9722d23d12a3",
+  "host": "hc385771a14",
+  "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "cpu": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+  "cores": 16
+ },
+ "joints_from": "bought_parts.joints(r)",
+ "static_clearance": {
+  "available": true,
+  "models": "drawn (prefer_vendor=False)",
+  "solids": 53,
+  "vendor": false,
+  "touching": 42,
+  "threaded": 22,
+  "pressed": [
+   {
+    "a": "gearmotor_left",
+    "b": "motor_clamp_left",
+    "designed_mm": 0.1,
+    "measured_mm": 0.1,
+    "ok": true
+   },
+   {
+    "a": "gearmotor_right",
+    "b": "motor_clamp_right",
+    "designed_mm": 0.1,
+    "measured_mm": 0.1,
+    "ok": true
+   },
+   {
+    "a": "rim_left",
+    "b": "tyre_left",
+    "designed_mm": 0.1,
+    "measured_mm": 0.066,
+    "ok": true
+   },
+   {
+    "a": "rim_right",
+    "b": "tyre_right",
+    "designed_mm": 0.1,
+    "measured_mm": 0.066,
+    "ok": true
+   }
+  ],
+  "interference": []
+ },
+ "steps": [
+  {
+   "step": 1,
+   "title": "The bottom plate",
+   "orientation": "upright on the stand",
+   "parts_added": [
+    "bottom_plate"
+   ],
+   "parts": [
+    {
+     "part": "bottom_plate",
+     "def": "P_BOTTOM_PLATE",
+     "mate": "STAND",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.0,
+     "interference_with": null,
+     "interference_at": null,
+     "seat_error_mm": 0.0106,
+     "axial_error_mm": -0.0106,
+     "hole_misalignment_mm": 0.0,
+     "holes": [],
+     "max_penetration_mm": 0.0106,
+     "penetration_with": "RAIL_L",
+     "penetration_at": [
+      -0.022,
+      0.017,
+      0.015
+     ],
+     "contacts": {
+      "RAIL_L": 20,
+      "RAIL_R": 20
+     },
+     "expected_contacts": [
+      [
+       "RAIL_L"
+      ],
+      [
+       "RAIL_R"
+      ]
+     ],
+     "fastener_clearance": [],
+     "design_checks": [],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "rotation_deg": 0.0
+     }
+    }
+   ],
+   "settle_drift_mm": {
+    "P_BOTTOM_PLATE": 0.0159
+   },
+   "max_drift_mm": 0.0159,
+   "contact_pairs": {
+    "P_BOTTOM_PLATE / RAIL_L": 4,
+    "P_BOTTOM_PLATE / RAIL_R": 4
+   },
+   "screenshot": "physical_step_1.png",
+   "pass": true,
+   "reasons": [],
+   "wall_s": 8.1
+  },
+  {
+   "step": 2,
+   "title": "The caster, under the plate",
+   "orientation": "turned over",
+   "parts_added": [
+    "caster"
+   ],
+   "parts": [
+    {
+     "part": "caster",
+     "def": "P_CASTER",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      -1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.011,
+     "interference_with": "ASSY",
+     "interference_at": [
+      -0.03195,
+      -0.00955,
+      0.01798
+     ],
+     "seat_error_mm": 0.0077,
+     "axial_error_mm": -0.0077,
+     "hole_misalignment_mm": 0.0001,
+     "holes": [
+      {
+       "fastener": "caster_caster_12",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0001,
+       "allowed_mm": 0.45,
+       "pass": true
+      },
+      {
+       "fastener": "caster_caster_13",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0001,
+       "allowed_mm": 0.45,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0077,
+     "penetration_with": "ASSY",
+     "penetration_at": [
+      -0.04405,
+      0.00955,
+      0.01799
+     ],
+     "contacts": {
+      "ASSY": 20
+     },
+     "expected_contacts": [
+      [
+       "ASSY"
+      ]
+     ],
+     "fastener_clearance": [
+      {
+       "check": "caster_caster_12 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "caster_caster_12 nut clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "caster_caster_12 tip clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "caster_caster_13 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "caster_caster_13 nut clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "caster_caster_13 tip clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      }
+     ],
+     "design_checks": [
+      {
+       "check": "caster_caster_12: M1.6 x 8 through its nut, a pitch proud",
+       "grip_mm": 6.107,
+       "engages_mm": 1.893,
+       "needs_mm": 1.65,
+       "pass": true
+      },
+      {
+       "check": "caster_caster_13: M1.6 x 8 through its nut, a pitch proud",
+       "grip_mm": 6.107,
+       "engages_mm": 1.893,
+       "needs_mm": 1.65,
+       "pass": true
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       -0.0002,
+       0.0,
+       0.0077
+      ],
+      "rotation_deg": 0.0
+     }
+    }
+   ],
+   "settle_drift_mm": {
+    "ASSY": 0.0001,
+    "P_CASTER": 0.0004
+   },
+   "max_drift_mm": 0.0004,
+   "contact_pairs": {
+    "ASSY / RAIL_L": 4,
+    "ASSY / RAIL_R": 4,
+    "ASSY / P_CASTER": 4
+   },
+   "screenshot": "physical_step_2.png",
+   "pass": true,
+   "reasons": [],
+   "wall_s": 3.7
+  },
+  {
+   "step": 3,
+   "title": "The motors, in their clamps",
+   "orientation": "upright on the stand",
+   "parts_added": [
+    "motor_L",
+    "motor_R",
+    "clamp_L",
+    "clamp_R"
+   ],
+   "parts": [
+    {
+     "part": "motor_L",
+     "def": "P_MOTOR_L",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.001,
+     "interference_with": "ASSY",
+     "interference_at": [
+      0.00975,
+      0.04,
+      0.018
+     ],
+     "seat_error_mm": 0.0092,
+     "axial_error_mm": -0.0091,
+     "hole_misalignment_mm": 0.0,
+     "holes": [],
+     "max_penetration_mm": 0.0091,
+     "penetration_with": "ASSY",
+     "penetration_at": [
+      0.00975,
+      0.04,
+      0.018
+     ],
+     "contacts": {
+      "ASSY": 20
+     },
+     "expected_contacts": [
+      [
+       "ASSY"
+      ]
+     ],
+     "fastener_clearance": [],
+     "design_checks": [],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       -0.0003,
+       0.0028,
+       -0.0094
+      ],
+      "rotation_deg": 0.0
+     }
+    },
+    {
+     "part": "motor_R",
+     "def": "P_MOTOR_R",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.0,
+     "interference_with": null,
+     "interference_at": null,
+     "seat_error_mm": 0.0078,
+     "axial_error_mm": -0.0078,
+     "hole_misalignment_mm": 0.0,
+     "holes": [],
+     "max_penetration_mm": 0.0078,
+     "penetration_with": "ASSY",
+     "penetration_at": [
+      0.00975,
+      -0.04,
+      0.01799
+     ],
+     "contacts": {
+      "ASSY": 20
+     },
+     "expected_contacts": [
+      [
+       "ASSY"
+      ]
+     ],
+     "fastener_clearance": [],
+     "design_checks": [],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       -0.0002,
+       -0.002,
+       -0.0092
+      ],
+      "rotation_deg": 0.0
+     }
+    },
+    {
+     "part": "clamp_L",
+     "def": "P_CLAMP_L",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.092,
+     "interference_with": "P_MOTOR_L",
+     "interference_at": [
+      0.009,
+      0.03164,
+      0.02799
+     ],
+     "seat_error_mm": 0.087,
+     "axial_error_mm": 0.0853,
+     "hole_misalignment_mm": 0.0171,
+     "holes": [
+      {
+       "fastener": "motor_clamp_clamp_L_9",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0171,
+       "allowed_mm": 0.4,
+       "pass": true
+      },
+      {
+       "fastener": "motor_clamp_clamp_L_11",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0171,
+       "allowed_mm": 0.4,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0048,
+     "penetration_with": "P_MOTOR_L",
+     "penetration_at": [
+      0.009,
+      0.03164,
+      0.02798
+     ],
+     "contacts": {
+      "P_MOTOR_L": 16
+     },
+     "expected_contacts": [
+      [
+       "ASSY",
+       "P_MOTOR_L"
+      ]
+     ],
+     "fastener_clearance": [
+      {
+       "check": "motor_clamp_clamp_L_9 head clear",
+       "max_overlap_mm": 0.085,
+       "with": "ASSY",
+       "at": [
+        0.0064,
+        0.03577,
+        0.01508
+       ],
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_L_9 nut clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_L_9 tip clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_L_11 head clear",
+       "max_overlap_mm": 0.085,
+       "with": "ASSY",
+       "at": [
+        0.0274,
+        0.03577,
+        0.01508
+       ],
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_L_11 nut clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_L_11 tip clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      }
+     ],
+     "design_checks": [
+      {
+       "check": "motor_clamp_clamp_L_9: M2 x 8 through its nut, a pitch proud",
+       "grip_mm": 5.0,
+       "engages_mm": 3.0,
+       "needs_mm": 2.0,
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_L_11: M2 x 8 through its nut, a pitch proud",
+       "grip_mm": 5.0,
+       "engages_mm": 3.0,
+       "needs_mm": 2.0,
+       "pass": true
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       0.0005,
+       0.019,
+       0.0836
+      ],
+      "rotation_deg": 0.0
+     }
+    },
+    {
+     "part": "clamp_R",
+     "def": "P_CLAMP_R",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.092,
+     "interference_with": "P_MOTOR_R",
+     "interference_at": [
+      0.009,
+      -0.03952,
+      0.02799
+     ],
+     "seat_error_mm": 0.0924,
+     "axial_error_mm": 0.0909,
+     "hole_misalignment_mm": 0.0165,
+     "holes": [
+      {
+       "fastener": "motor_clamp_clamp_R_8",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0165,
+       "allowed_mm": 0.4,
+       "pass": true
+      },
+      {
+       "fastener": "motor_clamp_clamp_R_10",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0165,
+       "allowed_mm": 0.4,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0,
+     "penetration_with": null,
+     "penetration_at": null,
+     "contacts": {
+      "P_MOTOR_R": 20
+     },
+     "expected_contacts": [
+      [
+       "ASSY",
+       "P_MOTOR_R"
+      ]
+     ],
+     "fastener_clearance": [
+      {
+       "check": "motor_clamp_clamp_R_8 head clear",
+       "max_overlap_mm": 0.091,
+       "with": "ASSY",
+       "at": [
+        0.0064,
+        -0.03577,
+        0.01508
+       ],
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_R_8 nut clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_R_8 tip clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_R_10 head clear",
+       "max_overlap_mm": 0.091,
+       "with": "ASSY",
+       "at": [
+        0.0274,
+        -0.03577,
+        0.01508
+       ],
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_R_10 nut clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_R_10 tip clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      }
+     ],
+     "design_checks": [
+      {
+       "check": "motor_clamp_clamp_R_8: M2 x 8 through its nut, a pitch proud",
+       "grip_mm": 5.0,
+       "engages_mm": 3.0,
+       "needs_mm": 2.0,
+       "pass": true
+      },
+      {
+       "check": "motor_clamp_clamp_R_10: M2 x 8 through its nut, a pitch proud",
+       "grip_mm": 5.0,
+       "engages_mm": 3.0,
+       "needs_mm": 2.0,
+       "pass": true
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       0.0011,
+       -0.0312,
+       0.061
+      ],
+      "rotation_deg": 0.0
+     }
+    }
+   ],
+   "settle_drift_mm": {
+    "ASSY": 0.0,
+    "P_MOTOR_L": 0.0006,
+    "P_MOTOR_R": 0.0006,
+    "P_CLAMP_L": 0.0009,
+    "P_CLAMP_R": 0.0228
+   },
+   "max_drift_mm": 0.0228,
+   "contact_pairs": {
+    "ASSY / RAIL_L": 4,
+    "ASSY / RAIL_R": 4,
+    "ASSY / P_MOTOR_L": 4,
+    "ASSY / P_MOTOR_R": 4,
+    "P_CLAMP_L / P_MOTOR_L": 4,
+    "P_CLAMP_R / P_MOTOR_R": 4
+   },
+   "screenshot": "physical_step_3.png",
+   "pass": true,
+   "reasons": [],
+   "wall_s": 8.4
+  },
+  {
+   "step": 4,
+   "title": "The electronics tray",
+   "orientation": "upright on the stand",
+   "parts_added": [
+    "tray",
+    "xiao",
+    "drv8833"
+   ],
+   "parts": [
+    {
+     "part": "tray",
+     "def": "P_TRAY",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.004,
+     "interference_with": "ASSY",
+     "interference_at": [
+      -0.033,
+      -0.01009,
+      0.018
+     ],
+     "seat_error_mm": 0.0026,
+     "axial_error_mm": -0.0024,
+     "hole_misalignment_mm": 0.0009,
+     "holes": [
+      {
+       "fastener": "tray_tray_14",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0009,
+       "allowed_mm": 0.4,
+       "pass": true
+      },
+      {
+       "fastener": "tray_tray_15",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0009,
+       "allowed_mm": 0.4,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0024,
+     "penetration_with": "ASSY",
+     "penetration_at": [
+      -0.033,
+      -0.01009,
+      0.018
+     ],
+     "contacts": {
+      "ASSY": 60
+     },
+     "expected_contacts": [
+      [
+       "ASSY"
+      ]
+     ],
+     "fastener_clearance": [
+      {
+       "check": "tray_tray_14 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "tray_tray_14 nut clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "tray_tray_14 tip clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "tray_tray_15 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "tray_tray_15 nut clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "tray_tray_15 tip clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      }
+     ],
+     "design_checks": [
+      {
+       "check": "tray_tray_14: M2 x 8 through its nut, a pitch proud",
+       "grip_mm": 5.0,
+       "engages_mm": 3.0,
+       "needs_mm": 2.0,
+       "pass": true
+      },
+      {
+       "check": "tray_tray_15: M2 x 8 through its nut, a pitch proud",
+       "grip_mm": 5.0,
+       "engages_mm": 3.0,
+       "needs_mm": 2.0,
+       "pass": true
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       0.0007,
+       -0.0,
+       -0.0042
+      ],
+      "rotation_deg": 0.0
+     }
+    },
+    {
+     "part": "xiao",
+     "def": "P_XIAO",
+     "mate": "tray",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.0,
+     "interference_with": null,
+     "interference_at": null,
+     "seat_error_mm": 0.0064,
+     "axial_error_mm": -0.0063,
+     "hole_misalignment_mm": 0.0,
+     "holes": [],
+     "max_penetration_mm": 0.0063,
+     "penetration_with": "P_TRAY",
+     "penetration_at": [
+      -0.014,
+      -0.0085,
+      0.01999
+     ],
+     "contacts": {
+      "P_TRAY": 30
+     },
+     "expected_contacts": [
+      [
+       "P_TRAY"
+      ]
+     ],
+     "fastener_clearance": [],
+     "design_checks": [],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       -0.0005,
+       -0.0,
+       -0.0102
+      ],
+      "rotation_deg": 0.0
+     }
+    },
+    {
+     "part": "drv8833",
+     "def": "P_DRV8833",
+     "mate": "tray",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.0,
+     "interference_with": null,
+     "interference_at": null,
+     "seat_error_mm": 0.0034,
+     "axial_error_mm": -0.0034,
+     "hole_misalignment_mm": 0.0,
+     "holes": [],
+     "max_penetration_mm": 0.0034,
+     "penetration_with": "P_TRAY",
+     "penetration_at": [
+      -0.006,
+      -0.006,
+      0.01999
+     ],
+     "contacts": {
+      "P_TRAY": 30
+     },
+     "expected_contacts": [
+      [
+       "P_TRAY"
+      ]
+     ],
+     "fastener_clearance": [],
+     "design_checks": [],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       0.0009,
+       -0.0,
+       -0.0076
+      ],
+      "rotation_deg": 0.0
+     }
+    }
+   ],
+   "settle_drift_mm": {
+    "ASSY": 0.0,
+    "P_TRAY": 0.0001,
+    "P_XIAO": 0.0004,
+    "P_DRV8833": 0.0
+   },
+   "max_drift_mm": 0.0004,
+   "contact_pairs": {
+    "ASSY / RAIL_L": 4,
+    "ASSY / RAIL_R": 4,
+    "ASSY / P_TRAY": 12,
+    "P_TRAY / P_XIAO": 6,
+    "P_DRV8833 / P_TRAY": 6
+   },
+   "screenshot": "physical_step_4.png",
+   "pass": true,
+   "reasons": [],
+   "wall_s": 6.8
+  },
+  {
+   "step": 5,
+   "title": "The standoffs",
+   "orientation": "upright on the stand",
+   "parts_added": [
+    "standoff_BR",
+    "standoff_BL",
+    "standoff_FR",
+    "standoff_FL"
+   ],
+   "parts": [
+    {
+     "part": "standoff_BR",
+     "def": "P_STANDOFF_BR",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.0,
+     "interference_with": null,
+     "interference_at": null,
+     "seat_error_mm": 0.0284,
+     "axial_error_mm": -0.0281,
+     "hole_misalignment_mm": 0.0038,
+     "holes": [
+      {
+       "fastener": "standoff_bottom_standoff_BR_0",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0038,
+       "allowed_mm": 0.2,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0281,
+     "penetration_with": "ASSY",
+     "penetration_at": [
+      -0.042,
+      -0.03477,
+      0.018
+     ],
+     "contacts": {
+      "ASSY": 25
+     },
+     "expected_contacts": [
+      [
+       "ASSY"
+      ]
+     ],
+     "fastener_clearance": [
+      {
+       "check": "standoff_bottom_standoff_BR_0 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      }
+     ],
+     "design_checks": [
+      {
+       "check": "standoff_bottom_standoff_BR_0: M3 x 8 into its thread, at least 1.5 d",
+       "grip_mm": 3.0,
+       "engages_mm": 5.0,
+       "needs_mm": 4.5,
+       "pass": true
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       -0.0025,
+       -0.0023,
+       -0.006
+      ],
+      "rotation_deg": 0.0
+     }
+    },
+    {
+     "part": "standoff_BL",
+     "def": "P_STANDOFF_BL",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.0,
+     "interference_with": null,
+     "interference_at": null,
+     "seat_error_mm": 0.0048,
+     "axial_error_mm": -0.0034,
+     "hole_misalignment_mm": 0.0033,
+     "holes": [
+      {
+       "fastener": "standoff_bottom_standoff_BL_2",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0033,
+       "allowed_mm": 0.2,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0034,
+     "penetration_with": "ASSY",
+     "penetration_at": [
+      -0.042,
+      0.03327,
+      0.018
+     ],
+     "contacts": {
+      "ASSY": 25
+     },
+     "expected_contacts": [
+      [
+       "ASSY"
+      ]
+     ],
+     "fastener_clearance": [
+      {
+       "check": "standoff_bottom_standoff_BL_2 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      }
+     ],
+     "design_checks": [
+      {
+       "check": "standoff_bottom_standoff_BL_2: M3 x 8 into its thread, at least 1.5 d",
+       "grip_mm": 3.0,
+       "engages_mm": 5.0,
+       "needs_mm": 4.5,
+       "pass": true
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       -0.0026,
+       0.0019,
+       -0.0061
+      ],
+      "rotation_deg": 0.0
+     }
+    },
+    {
+     "part": "standoff_FR",
+     "def": "P_STANDOFF_FR",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.0,
+     "interference_with": null,
+     "interference_at": null,
+     "seat_error_mm": 0.005,
+     "axial_error_mm": -0.0046,
+     "hole_misalignment_mm": 0.0018,
+     "holes": [
+      {
+       "fastener": "standoff_bottom_standoff_FR_4",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0018,
+       "allowed_mm": 0.2,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0046,
+     "penetration_with": "ASSY",
+     "penetration_at": [
+      0.036,
+      -0.03477,
+      0.018
+     ],
+     "contacts": {
+      "ASSY": 25
+     },
+     "expected_contacts": [
+      [
+       "ASSY"
+      ]
+     ],
+     "fastener_clearance": [
+      {
+       "check": "standoff_bottom_standoff_FR_4 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      }
+     ],
+     "design_checks": [
+      {
+       "check": "standoff_bottom_standoff_FR_4: M3 x 8 into its thread, at least 1.5 d",
+       "grip_mm": 3.0,
+       "engages_mm": 5.0,
+       "needs_mm": 4.5,
+       "pass": true
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       0.001,
+       -0.0009,
+       -0.0045
+      ],
+      "rotation_deg": 0.0
+     }
+    },
+    {
+     "part": "standoff_FL",
+     "def": "P_STANDOFF_FL",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.0,
+     "interference_with": null,
+     "interference_at": null,
+     "seat_error_mm": 0.0049,
+     "axial_error_mm": -0.0046,
+     "hole_misalignment_mm": 0.0018,
+     "holes": [
+      {
+       "fastener": "standoff_bottom_standoff_FL_6",
+       "into": "bottom_plate",
+       "misalignment_mm": 0.0018,
+       "allowed_mm": 0.2,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0046,
+     "penetration_with": "ASSY",
+     "penetration_at": [
+      0.036,
+      0.03327,
+      0.018
+     ],
+     "contacts": {
+      "ASSY": 25
+     },
+     "expected_contacts": [
+      [
+       "ASSY"
+      ]
+     ],
+     "fastener_clearance": [
+      {
+       "check": "standoff_bottom_standoff_FL_6 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      }
+     ],
+     "design_checks": [
+      {
+       "check": "standoff_bottom_standoff_FL_6: M3 x 8 into its thread, at least 1.5 d",
+       "grip_mm": 3.0,
+       "engages_mm": 5.0,
+       "needs_mm": 4.5,
+       "pass": true
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       0.0001,
+       0.0023,
+       -0.0046
+      ],
+      "rotation_deg": 0.0
+     }
+    }
+   ],
+   "settle_drift_mm": {
+    "ASSY": 0.0,
+    "P_STANDOFF_BR": 0.0007,
+    "P_STANDOFF_BL": 0.0007,
+    "P_STANDOFF_FR": 0.0004,
+    "P_STANDOFF_FL": 0.0005
+   },
+   "max_drift_mm": 0.0007,
+   "contact_pairs": {
+    "ASSY / RAIL_L": 4,
+    "ASSY / RAIL_R": 4,
+    "ASSY / P_STANDOFF_BR": 5,
+    "ASSY / P_STANDOFF_BL": 5,
+    "ASSY / P_STANDOFF_FR": 5,
+    "ASSY / P_STANDOFF_FL": 5
+   },
+   "screenshot": "physical_step_5.png",
+   "pass": true,
+   "reasons": [],
+   "wall_s": 7.9
+  },
+  {
+   "step": 6,
+   "title": "The wheels: hub, rim, tyre",
+   "orientation": "upright on the stand",
+   "parts_added": [
+    "wheel_L",
+    "wheel_R"
+   ],
+   "parts": [
+    {
+     "part": "wheel_L",
+     "def": "P_WHEEL_L",
+     "mate": "motor_L",
+     "approach_dir": [
+      0,
+      1,
+      0
+     ],
+     "approach_mm": 5.0,
+     "released": false,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.0,
+     "interference_with": null,
+     "interference_at": null,
+     "seat_error_mm": 0.0169,
+     "axial_error_mm": 0.0,
+     "hole_misalignment_mm": 0.0169,
+     "holes": [
+      {
+       "fastener": "wheel_L_D_bore",
+       "into": "motor_L",
+       "misalignment_mm": 0.0169,
+       "allowed_mm": 0.05,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0,
+     "penetration_with": null,
+     "penetration_at": null,
+     "contacts": {},
+     "expected_contacts": [],
+     "fastener_clearance": [],
+     "design_checks": [
+      {
+       "check": "wheel_L hub screws: M2 x 8 into the rim's 1.7 mm holes, at least 2 d",
+       "grip_mm": 4.0,
+       "engages_mm": 4.0,
+       "needs_mm": 4.0,
+       "pass": true
+      },
+      {
+       "check": "wheel_L hub screw heads clear of the gearbox face",
+       "head_k_mm": 2.0,
+       "hub_gap_mm": 2.4,
+       "pass": true,
+       "note": "heads at PCD 11 on the hub's gearbox side; the press-on run below measures it"
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       0.0001,
+       0.0028,
+       -0.0263
+      ],
+      "rotation_deg": 0.0
+     }
+    },
+    {
+     "part": "wheel_R",
+     "def": "P_WHEEL_R",
+     "mate": "motor_R",
+     "approach_dir": [
+      0,
+      -1,
+      0
+     ],
+     "approach_mm": 5.0,
+     "released": false,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.0,
+     "interference_with": null,
+     "interference_at": null,
+     "seat_error_mm": 0.0016,
+     "axial_error_mm": 0.0,
+     "hole_misalignment_mm": 0.0016,
+     "holes": [
+      {
+       "fastener": "wheel_R_D_bore",
+       "into": "motor_R",
+       "misalignment_mm": 0.0016,
+       "allowed_mm": 0.05,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0,
+     "penetration_with": null,
+     "penetration_at": null,
+     "contacts": {},
+     "expected_contacts": [],
+     "fastener_clearance": [],
+     "design_checks": [
+      {
+       "check": "wheel_R hub screws: M2 x 8 into the rim's 1.7 mm holes, at least 2 d",
+       "grip_mm": 4.0,
+       "engages_mm": 4.0,
+       "needs_mm": 4.0,
+       "pass": true
+      },
+      {
+       "check": "wheel_R hub screw heads clear of the gearbox face",
+       "head_k_mm": 2.0,
+       "hub_gap_mm": 2.4,
+       "pass": true,
+       "note": "heads at PCD 11 on the hub's gearbox side; the press-on run below measures it"
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       -0.0001,
+       -0.002,
+       -0.0108
+      ],
+      "rotation_deg": 0.0
+     }
+    }
+   ],
+   "settle_drift_mm": {
+    "ASSY": 0.0001
+   },
+   "max_drift_mm": 0.0001,
+   "contact_pairs": {
+    "ASSY / RAIL_L": 4,
+    "ASSY / RAIL_R": 4
+   },
+   "screenshot": "physical_step_6.png",
+   "pass": true,
+   "reasons": [],
+   "wall_s": 5.2,
+   "spin_check": {
+    "world": "the robot so far with its wheels on hinges, on the stand; the drive controller runs them 1.2 s ahead and 3 s in a spin",
+    "result": {
+     "straight_speed_m_s": 0.0,
+     "straight_wheel_rad_s": 34.362,
+     "straight_effective_radius_mm": 0.001,
+     "spin_yaw_rate_rad_s": 0.0,
+     "spin_wheel_rad_s": 34.558,
+     "spin_wheel_peak_rad_s": 34.561,
+     "spin_effective_track_mm": null,
+     "chassis_z_range_mm": [
+      21.711,
+      21.782
+     ],
+     "heading_drift_deg_straight": -0.0,
+     "dt_ms": 2
+    },
+    "straight_wheel_rad_s_of_no_load": 0.994,
+    "spin_wheel_rad_s_of_no_load": 1.0,
+    "chassis_moved_mm": 0.003,
+    "wheel_contacts_while_spinning": {},
+    "note": "a wheel and the chassis it hangs from are parent and child of one hinge, and MuJoCo never collides those: whether the wheel clears the gearbox is the press-on check above, not this one",
+    "screenshot": "physical_step_6_spin.png",
+    "pass": true,
+    "reasons": [],
+    "wall_s": 12.2
+   }
+  },
+  {
+   "step": 7,
+   "title": "The top plate and the battery",
+   "orientation": "upright on the stand",
+   "parts_added": [
+    "top_plate",
+    "battery"
+   ],
+   "parts": [
+    {
+     "part": "top_plate",
+     "def": "P_TOP_PLATE",
+     "mate": "ASSY",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.011,
+     "interference_with": "ASSY",
+     "interference_at": [
+      0.036,
+      -0.03477,
+      0.04298
+     ],
+     "seat_error_mm": 0.0147,
+     "axial_error_mm": -0.0143,
+     "hole_misalignment_mm": 0.0046,
+     "holes": [
+      {
+       "fastener": "standoff_top_top_plate_1",
+       "into": "standoff_BR",
+       "misalignment_mm": 0.0019,
+       "allowed_mm": 0.2,
+       "pass": true
+      },
+      {
+       "fastener": "standoff_top_top_plate_3",
+       "into": "standoff_BL",
+       "misalignment_mm": 0.0026,
+       "allowed_mm": 0.2,
+       "pass": true
+      },
+      {
+       "fastener": "standoff_top_top_plate_5",
+       "into": "standoff_FR",
+       "misalignment_mm": 0.0044,
+       "allowed_mm": 0.2,
+       "pass": true
+      },
+      {
+       "fastener": "standoff_top_top_plate_7",
+       "into": "standoff_FL",
+       "misalignment_mm": 0.0046,
+       "allowed_mm": 0.2,
+       "pass": true
+      }
+     ],
+     "max_penetration_mm": 0.0098,
+     "penetration_with": "ASSY",
+     "penetration_at": [
+      0.036,
+      -0.03477,
+      0.04298
+     ],
+     "contacts": {
+      "ASSY": 90
+     },
+     "expected_contacts": [
+      [
+       "ASSY"
+      ]
+     ],
+     "fastener_clearance": [
+      {
+       "check": "standoff_top_top_plate_1 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "standoff_top_top_plate_3 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "standoff_top_top_plate_5 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      },
+      {
+       "check": "standoff_top_top_plate_7 head clear",
+       "max_overlap_mm": 0.0,
+       "with": null,
+       "at": null,
+       "pass": true
+      }
+     ],
+     "design_checks": [
+      {
+       "check": "standoff_top_top_plate_1: M3 x 8 into its thread, at least 1.5 d",
+       "grip_mm": 3.0,
+       "engages_mm": 5.0,
+       "needs_mm": 4.5,
+       "pass": true
+      },
+      {
+       "check": "standoff_top_top_plate_3: M3 x 8 into its thread, at least 1.5 d",
+       "grip_mm": 3.0,
+       "engages_mm": 5.0,
+       "needs_mm": 4.5,
+       "pass": true
+      },
+      {
+       "check": "standoff_top_top_plate_5: M3 x 8 into its thread, at least 1.5 d",
+       "grip_mm": 3.0,
+       "engages_mm": 5.0,
+       "needs_mm": 4.5,
+       "pass": true
+      },
+      {
+       "check": "standoff_top_top_plate_7: M3 x 8 into its thread, at least 1.5 d",
+       "grip_mm": 3.0,
+       "engages_mm": 5.0,
+       "needs_mm": 4.5,
+       "pass": true
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       -0.0047,
+       -0.0008,
+       -0.0153
+      ],
+      "rotation_deg": 0.0
+     }
+    },
+    {
+     "part": "battery",
+     "def": "P_BATTERY",
+     "mate": "top_plate",
+     "approach_dir": [
+      0,
+      0,
+      1
+     ],
+     "approach_mm": 5.0,
+     "released": true,
+     "stopped_short_mm": 0.0,
+     "blocked_by": [],
+     "first_contact_points": [],
+     "interference_at_seat_mm": 0.003,
+     "interference_with": "P_TOP_PLATE",
+     "interference_at": [
+      -0.03075,
+      -0.02879,
+      0.04599
+     ],
+     "seat_error_mm": 0.0416,
+     "axial_error_mm": -0.0416,
+     "hole_misalignment_mm": 0.0,
+     "holes": [],
+     "max_penetration_mm": 0.0416,
+     "penetration_with": "P_TOP_PLATE",
+     "penetration_at": [
+      -0.03075,
+      -0.02879,
+      0.04598
+     ],
+     "contacts": {
+      "P_TOP_PLATE": 20
+     },
+     "expected_contacts": [
+      [
+       "P_TOP_PLATE"
+      ]
+     ],
+     "fastener_clearance": [],
+     "design_checks": [
+      {
+       "check": "battery holder clear of the strap slots",
+       "holder_half_x_mm": 31.5,
+       "slot_inner_edge_x_mm": 32.0,
+       "clear_mm": 0.5,
+       "pass": true
+      }
+     ],
+     "pass": true,
+     "reasons": [],
+     "weld_in_robot_frame": {
+      "translation_mm": [
+       -0.0069,
+       -0.0008,
+       -0.0568
+      ],
+      "rotation_deg": 0.0
+     }
+    }
+   ],
+   "settle_drift_mm": {
+    "ASSY": 0.0001,
+    "P_TOP_PLATE": 0.0003,
+    "P_BATTERY": 0.0013
+   },
+   "max_drift_mm": 0.0013,
+   "contact_pairs": {
+    "ASSY / RAIL_L": 4,
+    "ASSY / RAIL_R": 4,
+    "ASSY / P_TOP_PLATE": 20,
+    "P_BATTERY / P_TOP_PLATE": 4
+   },
+   "screenshot": "physical_step_7.png",
+   "pass": true,
+   "reasons": [],
+   "wall_s": 6.9,
+   "standing_check": {
+    "world": "the finished robot as one rigid body (wheels braked) dropped 0.5 mm onto the bench",
+    "contact_ke": "engine default (2500 N/m)",
+    "drift_mm": 0.0,
+    "tilt_deg": 0.174,
+    "plate_underside_mm": 11.536,
+    "designed_plate_underside_mm": 11.66,
+    "contacts": {
+     "BENCH": 45
+    },
+    "contacts_by_foot": {
+     "wheel_L": 4,
+     "wheel_R": 4,
+     "caster": 1
+    },
+    "screenshot": "physical_step_7_standing.png",
+    "pass": true,
+    "reasons": [],
+    "wall_s": 4.0
+   },
+   "drive_check": {
+    "world": "the finished robot on the bench, the drive controller: 1.2 s full ahead, stop, 3 s spin, stop",
+    "result": {
+     "straight_speed_m_s": 0.6703,
+     "straight_wheel_rad_s": 34.264,
+     "straight_effective_radius_mm": 19.562,
+     "spin_yaw_rate_rad_s": 13.2747,
+     "spin_wheel_rad_s": 34.004,
+     "spin_wheel_peak_rad_s": 34.578,
+     "spin_effective_track_mm": 100.22,
+     "chassis_z_range_mm": [
+      38.969,
+      39.185
+     ],
+     "heading_drift_deg_straight": -0.008,
+     "dt_ms": 2
+    },
+    "distance_straight_m": 0.67,
+    "predicted_no_load_speed_m_s": 0.6794,
+    "chassis_z_range_mm": [
+     38.969,
+     39.185
+    ],
+    "after_drive_on_velocity_hold": {
+     "moved_mm_in_0.5s": 0.1054,
+     "translation_mm_robot_frame": [
+      -0.1052,
+      -0.0001,
+      0.0011
+     ],
+     "tilt_deg": 0.211
+    },
+    "screenshot": "physical_step_7_drive.png",
+    "pass": true,
+    "reasons": [],
+    "wall_s": 16.9
+   }
+  }
+ ],
+ "mass_g": 207.48,
+ "error": null,
+ "all_pass": true,
+ "wall_s": 98.3
+}

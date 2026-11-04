@@ -410,6 +410,8 @@ void OmAbstractCamera::collectWgpuDrawsCached(OmWgpuMeshCache &cache, OmWgpuText
     } else if (skipped == 0)
       c.retries = 0;
   }
+  // A Display's screen: its pixels, not its draw, change between collects.
+  OmWgpuSceneRenderer::refreshDisplayTextures(texCache);
   // Dynamic content is appended after the cached prefix every frame (collectDynamicDraws re-points
   // the WHOLE list by index at its end, so the prefix survives any reallocation it causes).
   if (OmWgpuSceneRenderer::sensorDynamicEnabled())

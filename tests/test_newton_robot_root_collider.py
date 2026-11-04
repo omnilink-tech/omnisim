@@ -187,6 +187,71 @@ class RootColliderRule(unittest.TestCase):
         self.assertEqual(w.mark_robot_root_shapes(ch, 0), -1)
 
 
+def _gripper(seconds=1.0, lidar=False):
+    """The Xense TacCap follower as the 2026-10-22 weighing rig stood it: a
+    0.415 kg base on a 60 x 60 x 4 mm foot box, two 0.367 kg mirror fingers on
+    limited hinges whose lowest points sit 31.5 mm above the foot. Free body on
+    a floor; returns (world, base body, root shape ids, base z after ``seconds``)."""
+    w = _rt.World()
+    w.set_up_axis("Z")
+    w.set_gravity(0.0, 0.0, -9.81)
+    w.set_solver_preference("mujoco")
+    floor = w.add_static_body(0.0, 0.0, -0.05)
+    w.add_shape_box(floor, 0.5, 0.5, 0.05)
+    bz = 0.0021
+    base = w.add_body(0.415, 0.0, 0.0, bz, 0, 0, 0, 1, 4e-4, 4e-4, 4e-4)
+    w.mark_robot_root_shapes(base, 0)
+    w.add_shape_box(base, 0.03, 0.03, 0.002)
+    w.mark_robot_root_shapes(base, 1)
+    for y, lo, hi in ((0.02, -0.505, 0.0), (-0.02, 0.0, 0.505)):
+        f = w.add_body(0.367, 0.0, y, bz + 0.0485, 0, 0, 0, 1, 1e-3, 1e-3, 2e-4)
+        w.add_shape_box(f, 0.008, 0.008, 0.015, 0.0, 0.0, 0.0)   # lowest point 31.5 mm above the foot
+        w.add_joint_revolute(base, f, 1.0, 0.0, 0.0, 0.0, y, 0.0485, 0.0, 0.0, 0.0,
+                             11.0, 0.55, lo, hi, 1.1, 1.0)
+    if lidar:
+        # a limit-less joint spinning about the UP axis rolls nothing
+        sp = w.add_body(0.05, 0.0, 0.0, bz + 0.035, 0, 0, 0, 1, 1e-5, 1e-5, 1e-5)
+        w.add_shape_sphere(sp, 0.005)
+        w.add_joint_revolute(base, sp, 0.0, 0.0, 1.0, 0.0, 0.0, 0.035, 0.0, 0.0, 0.0,
+                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    w.finalize()
+    roots = list((getattr(w, "_robot_root_shapes", {}) or {}).get(base, []))
+    for _ in range(int(seconds / 0.002)):
+        w.step(0.002)
+    return w, base, roots, w.body_xform(base)[2]
+
+
+@unittest.skipIf(_rt is None, "newton runtime unavailable: %s" % (_IMPORT_ERROR,))
+class FingersAreNotFeet(unittest.TestCase):
+    """2026-10-22: only a branch that ROLLS is a ground contact. v9.2.7 counted the
+    Xense gripper's two mirror fingers as feet, quieted its base foot ("31.5 mm
+    below") and the gripper fell through the weighing plate."""
+
+    def test_a_gripper_standing_on_its_base_keeps_it(self):
+        w, _b, roots, z = _gripper()
+        self.assertEqual(_collides(w, roots), [True])
+        self.assertGreater(z, -0.005, "the gripper fell through the floor")
+        self.assertNotIn("robot_root_collider_quiet", getattr(w, "_engine_notes", {}) or {})
+        self.assertIn("no wheels", w._engine_notes.get("robot_root_collider", ""))
+
+    def test_a_vertical_spinner_is_not_a_wheel(self):
+        w, _b, roots, z = _gripper(lidar=True)
+        self.assertEqual(_collides(w, roots), [True])
+        self.assertGreater(z, -0.005)
+
+    def test_joint_rolls(self):
+        w = _rt.World()
+        up = (0.0, 0.0, 1.0)
+        rev = dict(kind="revolute", parent=-1, axis=(0.0, 1.0, 0.0), limit_lower=0.0, limit_upper=0.0)
+        self.assertTrue(w._joint_rolls(rev, up))                                         # wheel
+        self.assertTrue(w._joint_rolls(dict(rev, limit_lower=-1e16, limit_upper=1e16), up))  # ROS "no limit"
+        self.assertFalse(w._joint_rolls(dict(rev, limit_lower=-0.5, limit_upper=0.0), up))  # finger / knee
+        self.assertFalse(w._joint_rolls(dict(rev, axis=(0.0, 0.0, 1.0)), up))              # lidar / swivel
+        self.assertFalse(w._joint_rolls(dict(rev, kind="prismatic"), up))
+        self.assertTrue(w._joint_rolls(dict(kind="hinge2", parent=-1, axis=(0.0, 0.0, 1.0),
+                                            axis2=(0.0, 1.0, 0.0)), up))                 # car wheel
+
+
 class EngineHalfShape(unittest.TestCase):
     """Source pins for the engine half (behaviour: tests/test_newton_urdf_fixed_links.py)."""
 

@@ -29,11 +29,13 @@ The derivation of this fork is recorded in the repository-root `NOTICE`.
 * `themes/dusk.png` — theme preview
 * `themes/night.png` — theme preview
 
-## 2. Produced in this repository — 2 files
+## 2. Produced in this repository — 4 files
 
 | file | terms | note |
 |---|---|---|
-| `omnisim.png` | Copyright 2026 OmniLink | The **OmniLink dot-sphere orb** brand mark, used as the application image. Added at import as `webots.png` (65,896 bytes) and replaced with the orb by `a0859d4d7` *"branding: OmniLink dot-sphere orb as canonical OmniSim identity"* (26,533 bytes), then renamed by `88f98e169`. Byte-identical to `resources/icons/core/omnisim_doc.png`, `resources/web/streaming_viewer/omnisim_icon.png` and both `scripts/packaging/omnisim*.png`. ⚠ **Trademark-reserved:** the Apache grant covers the code, not the marks — see `TRADEMARKS.md`. |
+| `omnisim.png` | Copyright 2026 OmniLink | The **OmniSim app icon** (the dot-lattice orb on its rounded tile), used as the application image. Added at import as `webots.png` (65,896 bytes), replaced with the OmniLink orb by `a0859d4d7` *"branding: OmniLink dot-sphere orb as canonical OmniSim identity"* (26,533 bytes), renamed by `88f98e169`, and regenerated from the OmniSim mark on 2026-11-03 (42,723 bytes, `scripts/branding/build_omnilink_icons.py`). Byte-identical to `resources/icons/core/omnisim_doc.png`, `resources/web/streaming_viewer/omnisim_icon.png` and both `scripts/packaging/omnisim*.png`. ⚠ **Trademark-reserved:** the Apache grant covers the code, not the marks — see `TRADEMARKS.md`. |
+| `splash_orb.png` | Copyright 2026 OmniLink | The bare OmniSim orb (640 × 640 RGBA), drawn by the GUI splash screen (`src/omnisim/gui/OmSplashScreen.cpp`). Rendered from `resources/branding/omnisim/svg/orb.svg` by `scripts/branding/render_omnisim_orb.py`, added 2026-11-03. It lives here because `resources/branding/` is not packaged: until then the splash loaded `resources/branding/omnilink/orb/orb.png`, which an installed copy did not have. ⚠ **Trademark-reserved**, as above. |
+| `splash_wordmark.png` | Copyright 2026 OmniLink | The OmniSim wordmark ("OmniSim" in Sora SemiBold, outlined; 780 × 138 RGBA), drawn by the GUI splash screen at half size. Rendered from `resources/branding/omnisim/svg/wordmark.svg` by `scripts/branding/render_omnisim_wordmark.py`, added 2026-11-03; it replaced the splash's typed "OMNISIM" in Raleway Light. Sora is © The Sora Project Authors under the SIL OFL 1.1 (`resources/branding/omnisim/fonts/OFL-Sora.txt`), which allows rendering it into artwork. ⚠ **Trademark-reserved**, as above. |
 | `themes/classic.png` | Apache-2.0, Copyright 2026 OmniLink | theme preview re-rendered in this repository, added by `0c93de28f` |
 
 ## Adding a new asset under `resources/images/`

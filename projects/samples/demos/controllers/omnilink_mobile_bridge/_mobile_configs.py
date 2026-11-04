@@ -149,7 +149,9 @@ inert. Post-fix every ceiling is 1.3-3.5 rad/s, so every preset binds, on
 every base, for the first time -- and it binds in THREE places: the `spin`
 chat verb (`set_velocity(0, spin_speed)`), the `circle` chat verb
 (`set_velocity(cruise*0.6, spin_speed*0.6)`), and the magnitude of each
-`turn` pulse while the residual is above TURN_SLOW_RAD.
+`turn` pulse once the residual exceeds spin_speed * TURN_RATE_HORIZON_S
+(the pulse rate is sized continuously from the remaining angle; the 0.25-rad
+TURN_SLOW_RAD switch it replaced was removed with the short-turn fix).
 
 Measured through the bridge on each base's own chat world, machine
 9722d23d12a3, OmniSim 8.4.0, engine binary sha256 2b44bbbdf9587eb0 -- ALL

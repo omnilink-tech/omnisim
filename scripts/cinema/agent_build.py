@@ -111,6 +111,9 @@ class Segment:
     claim_boundary: str = ""
     act: int = 0
     coverage: str = ""
+    # A lower-third caption burned into the picture for the whole segment (at most
+    # CAPTION_MAX_LINES lines): how a voice="none" film tells its story. Not a subtitle stream.
+    caption: str = ""
 
 
 @dataclass(frozen=True)
@@ -128,6 +131,59 @@ class VoiceSpec:
     wav: str
     voice: str = "am_michael"
     blocks: tuple[VoiceBlock, ...] = ()
+    # "narrated" (the default: a TTS narration mixed over a ducked score) or "none": no
+    # narration at all, the story carried by on-screen captions and plates over the score.
+    # A "none" manifest must say why (`reason`); the narration-only checks are then skipped
+    # and every report records that they were skipped, never that they passed.
+    mode: str = "narrated"
+    reason: str = ""
+    # Who voices a narrated film: "kokoro" (the default, generated here) or "omnivoice":
+    # blocks already recorded by Omnivoice (social/Omnivoice, `omnivoice build`), whose
+    # manifest `source` names; agent-build-voice only places them in their windows.
+    engine: str = "kokoro"
+    source: str = ""
+
+    @property
+    def narrated(self) -> bool:
+        return self.mode != "none"
+
+
+VOICE_ENGINES = ("kokoro", "omnivoice")
+
+
+VOICE_MODES = ("narrated", "none")
+# The checks that exist only because a narration exists; skipped (and reported) without one.
+NARRATION_ONLY_CHECKS = (
+    "voice block windows (first block at the story start, no overlap, natural speed)",
+    "narration block count and per-block duration estimates (preflight)",
+    "narration WAV and timing receipt present (render)",
+    "narration WAV silent through the locked intro, mono (render, verify)",
+    "score side-chain ducking under speech (mix)",
+)
+CAPTION_SIZE = 30
+CAPTION_MAX_LINES = 2
+CAPTION_MAX_WIDTH = 1500
+CAPTION_READ_WPS = 3.0           # a calm reading pace for an on-screen caption
+CAPTION_READ_LEAD_S = 0.8        # time to find the caption after a cut
+
+
+def _measured_block_durations(spec: "AgentBuildSpec", count: int) -> list[float] | None:
+    """The generated narration's own block lengths (its timing receipt beside the WAV), if it exists
+    and matches the script block for block; else None and the preflight estimate applies."""
+    try:
+        path = _resolve(spec, str(Path(spec.voice.wav).with_suffix(".segments.json")))
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+        lengths = [float(row["duration_s"]) for row in receipt.get("segments", [])]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return lengths if len(lengths) == count else None
+
+
+def _voice_record(spec: "AgentBuildSpec") -> dict[str, Any]:
+    """What every report says about the narration: present, or absent and which checks were skipped."""
+    if spec.voice.narrated:
+        return {"mode": "narrated"}
+    return {"mode": "none", "reason": spec.voice.reason, "skipped_checks": list(NARRATION_ONLY_CHECKS)}
 
 
 @dataclass(frozen=True)
@@ -283,6 +339,9 @@ def _parse_segment(raw: dict[str, Any], index: int) -> Segment:
         raise ValueError(
             f"segment {segment_id!r} coverage must be wide, medium, or detail"
         )
+    caption = " ".join(str(raw.get("caption", "")).split())
+    if caption and len(_caption_lines(caption)) > CAPTION_MAX_LINES:
+        raise ValueError(f"segment {segment_id!r} caption exceeds {CAPTION_MAX_LINES} lines at 1080p")
     return Segment(
         id=segment_id, beat=beat, kind=kind, duration_s=duration, purpose=purpose,
         source=source, source_in_s=float(raw.get("source_in_s", 0)),
@@ -293,6 +352,7 @@ def _parse_segment(raw: dict[str, Any], index: int) -> Segment:
         claim_boundary=claim_boundary,
         act=act,
         coverage=coverage,
+        caption=caption,
     )
 
 
@@ -439,10 +499,38 @@ def parse(payload: dict[str, Any] | str | Path) -> AgentBuildSpec:
             previous_by_source[segment.source] = segment.source_in_s + segment.duration_s
 
     voice_raw = data.get("voice") or {}
+    voice_mode = str(voice_raw.get("mode", "narrated")).strip()
+    if voice_mode not in VOICE_MODES:
+        raise ValueError(f"voice.mode must be one of {', '.join(VOICE_MODES)}")
+    if voice_mode == "none":
+        reason = str(voice_raw.get("reason", "")).strip()
+        if not reason:
+            raise ValueError("voice.mode 'none' needs a voice.reason (who decided there is no narration, and why)")
+        if voice_raw.get("blocks"):
+            raise ValueError("voice.mode 'none' declares no voice blocks")
+        if not any(segment.caption for segment in segments):
+            raise ValueError("a film without narration needs on-screen captions (segment.caption) to tell its story")
+        return AgentBuildSpec(
+            source_path=source_path, title=title,
+            slug=str(data.get("slug") or _slugify(title)), question=question,
+            claim=claim, boundary=boundary, evidence=evidence, segments=segments,
+            voice=VoiceSpec(script="", wav="", voice="", blocks=(), mode="none", reason=reason),
+            repository=repository, opening=opening, structure=structure,
+            simulator_footage_ratio_min=simulator_ratio_min, climax_segment=climax_segment,
+            spatial_reorientation_required=spatial_reorientation_required,
+            max_consecutive_detail=max_consecutive_detail,
+            wide_reference_segments=wide_reference_segments,
+        )
     script = str(voice_raw.get("script", "")).strip()
     wav = str(voice_raw.get("wav", "")).strip()
     if not script or not wav:
         raise ValueError("voice.script and voice.wav are required")
+    voice_engine = str(voice_raw.get("engine", "kokoro")).strip()
+    if voice_engine not in VOICE_ENGINES:
+        raise ValueError(f"voice.engine must be one of {', '.join(VOICE_ENGINES)}")
+    voice_source = str(voice_raw.get("source", "")).strip()
+    if voice_engine == "omnivoice" and not voice_source:
+        raise ValueError("voice.engine 'omnivoice' needs voice.source: the Omnivoice manifest.json")
     blocks = tuple(VoiceBlock(
         start_s=float(item["start_s"]), window_end_s=float(item["window_end_s"]),
         speed=float(item.get("speed", 0.98)),
@@ -467,7 +555,8 @@ def parse(payload: dict[str, Any] | str | Path) -> AgentBuildSpec:
         slug=str(data.get("slug") or _slugify(title)), question=question,
         claim=claim, boundary=boundary, evidence=evidence, segments=segments,
         voice=VoiceSpec(script=script, wav=wav,
-                        voice=str(voice_raw.get("voice", "am_michael")), blocks=blocks),
+                        voice=str(voice_raw.get("voice", "am_michael")), blocks=blocks,
+                        engine=voice_engine, source=voice_source),
         repository=repository,
         opening=opening,
         structure=structure,
@@ -774,40 +863,68 @@ def preflight(spec: AgentBuildSpec, *, require_captures: bool = True) -> dict[st
         else:
             errors.append(f"evidence must be a file: {path}")
 
-    script_path = _resolve(spec, spec.voice.script)
     voice_blocks: list[dict[str, Any]] = []
-    if not script_path.exists():
-        errors.append(f"narration script is missing: {script_path}")
-    else:
-        blocks = [part.strip() for part in
-                  script_path.read_text(encoding="utf-8").split("\n\n") if part.strip()]
-        if len(blocks) != len(spec.voice.blocks):
-            errors.append(
-                f"narration has {len(blocks)} blocks; manifest declares "
-                f"{len(spec.voice.blocks)} windows"
-            )
+    captions: list[dict[str, Any]] = []
+    if spec.voice.narrated:
+        script_path = _resolve(spec, spec.voice.script)
+        if not script_path.exists():
+            errors.append(f"narration script is missing: {script_path}")
         else:
-            for index, (text, block) in enumerate(zip(blocks, spec.voice.blocks), 1):
-                estimate, words = _voice_estimate(text, block)
-                window = block.window_end_s - block.start_s
-                # The model remains the final authority.  This catches copy
-                # that is plainly too long while leaving a small estimator
-                # margin for natural pronunciation differences.
-                if estimate > window * 1.10:
-                    errors.append(
-                        f"voice block {index}: estimated {estimate:.2f}s exceeds its "
-                        f"{window:.2f}s window; shorten the {words}-word block"
-                    )
-                elif estimate > window * 0.90:
-                    warnings.append(
-                        f"voice block {index} is close to its limit "
-                        f"({estimate:.2f}s estimated in {window:.2f}s)"
-                    )
-                voice_blocks.append({
-                    "index": index, "words": words,
-                    "estimated_duration_s": round(estimate, 3),
-                    "window_s": round(window, 3),
-                })
+            blocks = [part.strip() for part in
+                      script_path.read_text(encoding="utf-8").split("\n\n") if part.strip()]
+            if len(blocks) != len(spec.voice.blocks):
+                errors.append(
+                    f"narration has {len(blocks)} blocks; manifest declares "
+                    f"{len(spec.voice.blocks)} windows"
+                )
+            else:
+                measured = _measured_block_durations(spec, len(blocks))
+                for index, (text, block) in enumerate(zip(blocks, spec.voice.blocks), 1):
+                    estimate, words = _voice_estimate(text, block)
+                    window = block.window_end_s - block.start_s
+                    if measured is not None:
+                        # The voice already exists: its measured length, not the estimate, must fit.
+                        length = measured[index - 1]
+                        if length > window + 0.02:
+                            errors.append(f"voice block {index}: the generated {length:.2f}s exceeds its "
+                                          f"{window:.2f}s window")
+                        voice_blocks.append({"index": index, "words": words, "measured_duration_s": length,
+                                             "estimated_duration_s": round(estimate, 3),
+                                             "window_s": round(window, 3)})
+                        continue
+                    # The model remains the final authority.  This catches copy
+                    # that is plainly too long while leaving a small estimator
+                    # margin for natural pronunciation differences.
+                    if estimate > window * 1.10:
+                        errors.append(
+                            f"voice block {index}: estimated {estimate:.2f}s exceeds its "
+                            f"{window:.2f}s window; shorten the {words}-word block"
+                        )
+                    elif estimate > window * 0.90:
+                        warnings.append(
+                            f"voice block {index} is close to its limit "
+                            f"({estimate:.2f}s estimated in {window:.2f}s)"
+                        )
+                    voice_blocks.append({
+                        "index": index, "words": words,
+                        "estimated_duration_s": round(estimate, 3),
+                        "window_s": round(window, 3),
+                    })
+    else:
+        # No narration: the captions carry the story, so each must be readable in its segment.
+        for segment in spec.segments:
+            if not segment.caption:
+                continue
+            words = len(re.findall(r"[\w'.-]+", segment.caption))
+            read_s = words / CAPTION_READ_WPS + CAPTION_READ_LEAD_S
+            if read_s > segment.duration_s:
+                errors.append(f"{segment.id}: caption needs about {read_s:.1f}s to read in a "
+                              f"{segment.duration_s:.1f}s segment; shorten its {words} words")
+            elif read_s > segment.duration_s * 0.9:
+                warnings.append(f"{segment.id}: caption is close to its reading limit "
+                                f"({read_s:.1f}s in {segment.duration_s:.1f}s)")
+            captions.append({"segment": segment.id, "words": words, "read_s": round(read_s, 2),
+                             "lines": len(_caption_lines(segment.caption))})
 
     report = {
         "valid": not errors, "style": STYLE_VERSION,
@@ -815,6 +932,7 @@ def preflight(spec: AgentBuildSpec, *, require_captures: bool = True) -> dict[st
         "errors": errors, "warnings": warnings,
         "sources": list(media.values()), "ranges": ranges,
         "evidence": evidence, "voice_blocks": voice_blocks,
+        "voice": _voice_record(spec), "captions": captions,
     }
     if errors:
         raise ValueError("Agent Build preflight failed:\n- " + "\n- ".join(errors))
@@ -829,6 +947,18 @@ def _font(size: int, weight: str = "regular") -> ImageFont.FreeTypeFont:
 def _text_width(text: str, size: int, weight: str = "regular") -> int:
     left, _top, right, _bottom = _font(size, weight).getbbox(text)
     return right - left
+
+
+def _caption_lines(text: str) -> list[str]:
+    """Greedy word wrap of a caption to CAPTION_MAX_WIDTH px at the 1080p caption size."""
+    lines: list[str] = []
+    for word in text.split():
+        trial = f"{lines[-1]} {word}" if lines else word
+        if lines and _text_width(trial, CAPTION_SIZE, "semi") <= CAPTION_MAX_WIDTH:
+            lines[-1] = trial
+        else:
+            lines.append(word)
+    return lines
 
 
 def _ease(value: float) -> float:
@@ -938,7 +1068,8 @@ def render_locked_intro(out_dir: Path, profile: RenderProfile,
 def _make_overlay(segment: Segment, out_path: Path,
                   profile: RenderProfile, *, disclosure: bool = False,
                   omnisim_brand: bool = False) -> Path | None:
-    if segment.overlay is None and not segment.replay_label and not segment.claim_boundary and not disclosure:
+    if (segment.overlay is None and not segment.replay_label and not segment.claim_boundary
+            and not disclosure and not segment.caption):
         return None
     image = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
@@ -970,6 +1101,19 @@ def _make_overlay(segment: Segment, out_path: Path,
         draw.text((x + 29, y + 50), segment.overlay.headline, font=face(27, "bold"), fill=ink)
     if segment.replay_label:
         draw.text((W // 2, SAFE), segment.replay_label.upper(), font=face(17, "semi"), fill=ink, anchor="ma")
+    if segment.caption:
+        # Lower third, centred, inside the safe area and above any claim-boundary band.
+        lines = _caption_lines(segment.caption)
+        cap_font = face(CAPTION_SIZE, "semi")
+        line_h = round(CAPTION_SIZE * 1.42)
+        box_w = max(_text_width(line, CAPTION_SIZE, "semi") for line in lines) + 64
+        box_h = line_h * len(lines) + 30
+        bottom = H - SAFE - (72 if segment.claim_boundary else 0)
+        x0 = (W - box_w) // 2
+        draw.rounded_rectangle((x0, bottom - box_h, x0 + box_w, bottom), radius=14,
+                               fill=(*panel, 214))
+        for k, line in enumerate(lines):
+            draw.text((W // 2, bottom - box_h + 15 + k * line_h), line, font=cap_font, fill=ink, anchor="ma")
     if segment.claim_boundary:
         draw.rounded_rectangle((SAFE, H - SAFE - 58, W - SAFE, H - SAFE), radius=13,
                                fill=(*panel, 232), outline=(66, 65, 51) if omnisim_brand else RED, width=2)
@@ -1291,6 +1435,41 @@ def _mix(spec: AgentBuildSpec, picture: Path, voice: Path, score: Path, output: 
     return output
 
 
+# A film without narration: the score is the whole soundtrack. It plays at the story gain the
+# narrated mix gives its bed, with no speech to duck under, normalised to a music-only loudness
+# a little below speech; the locked intro keeps its softer gain.
+SCORE_ONLY_LOUDNESS_LUFS = -18.0
+
+
+def _mix_score_only(spec: AgentBuildSpec, picture: Path, score: Path, output: Path,
+                    profile: RenderProfile, cache: ArtifactCache) -> Path:
+    key = cache.key("master_mix_score_only", {
+        "picture_sha256": _sha256(picture), "score_sha256": _sha256(score),
+        "intro_score_gain": INTRO_SCORE_GAIN, "story_score_gain": STORY_SCORE_GAIN,
+        "intro_master_gain": INTRO_MASTER_GAIN, "loudness_lufs": SCORE_ONLY_LOUDNESS_LUFS,
+        "intro_duration_s": spec.intro_duration_s,
+    })
+    if cache.hit("master_mix", key, output):
+        return output
+    audio_filter = (
+        f"[1:a]volume='if(lt(t,{spec.intro_duration_s:g}),{INTRO_SCORE_GAIN:.3f},"
+        f"{STORY_SCORE_GAIN:.3f})':eval=frame,"
+        f"loudnorm=I={SCORE_ONLY_LOUDNESS_LUFS:g}:TP=-1.5:LRA=8,"
+        f"volume='if(lt(t,{spec.intro_duration_s:g}),{INTRO_MASTER_GAIN:.3f},1.0)':eval=frame[aout]"
+    )
+    _run([
+        _ffmpeg(), "-y", "-hide_banner", "-loglevel", "error",
+        "-i", str(picture), "-i", str(score),
+        "-filter_complex", audio_filter, "-map", "0:v", "-map", "[aout]",
+        "-t", f"{spec.duration_s:.3f}",
+        "-frames:v", str(round(spec.duration_s * profile.fps)),
+        "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-ar", "48000",
+        "-movflags", "+faststart", str(output),
+    ])
+    cache.store("master_mix", key, output)
+    return output
+
+
 def render(spec: AgentBuildSpec, out_dir: Path | None = None, *,
            profile: RenderProfile = FINAL_PROFILE,
            preflight_checked: bool = False) -> dict[str, Path]:
@@ -1337,29 +1516,33 @@ def render(spec: AgentBuildSpec, out_dir: Path | None = None, *,
     }, indent=2) + "\n", encoding="utf-8")
     picture = _concat(clips, out_dir / "picture.mp4", profile, cache, spec.duration_s)
     score = _generate_score(spec, out_dir / "score.wav", cache)
-    voice = _resolve(spec, spec.voice.wav)
-    if not voice.exists():
-        raise FileNotFoundError(f"narration WAV missing; run agent-build-voice first: {voice}")
-    voice_script = _resolve(spec, spec.voice.script)
-    voice_timings = voice.with_suffix(".segments.json")
-    if not voice_script.exists() or not voice_timings.exists():
-        raise FileNotFoundError("narration script/timing receipt missing; run agent-build-voice first")
     master_name = f"{spec.slug}.mp4" if profile.name == "final" else f"{spec.slug}_proxy.mp4"
-    master = _mix(spec, picture, voice, score, out_dir / master_name, profile, cache)
-
     artifacts = {
         "renderer": Path(__file__).resolve(),
-        "voice_generator": Path(__file__).with_name("agent_build_voice.py").resolve(),
         "manifest": spec.source_path,
         "edit_decision_list": edl_path, "capture_provenance": provenance_path,
-        "narration_script": voice_script, "narration_timings": voice_timings,
-        "narration_wav": voice, "picture": picture, "score": score, "master": master,
     }
+    if spec.voice.narrated:
+        voice = _resolve(spec, spec.voice.wav)
+        if not voice.exists():
+            raise FileNotFoundError(f"narration WAV missing; run agent-build-voice first: {voice}")
+        voice_script = _resolve(spec, spec.voice.script)
+        voice_timings = voice.with_suffix(".segments.json")
+        if not voice_script.exists() or not voice_timings.exists():
+            raise FileNotFoundError("narration script/timing receipt missing; run agent-build-voice first")
+        master = _mix(spec, picture, voice, score, out_dir / master_name, profile, cache)
+        artifacts.update({
+            "voice_generator": Path(__file__).with_name("agent_build_voice.py").resolve(),
+            "narration_script": voice_script, "narration_timings": voice_timings, "narration_wav": voice,
+        })
+    else:
+        master = _mix_score_only(spec, picture, score, out_dir / master_name, profile, cache)
+    artifacts.update({"picture": picture, "score": score, "master": master})
     render_report = out_dir / "render_report.json"
     render_report.write_text(json.dumps({
         "version": 1, "style": STYLE_VERSION, "profile": asdict(profile),
         "elapsed_s": round(time.perf_counter() - started, 3),
-        "cache": cache.report(), "preflight": preflight_report,
+        "cache": cache.report(), "preflight": preflight_report, "voice": _voice_record(spec),
     }, indent=2) + "\n", encoding="utf-8")
     artifacts["render_report"] = render_report
     receipt = out_dir / ("assembly_receipt.json" if profile.name == "final"
@@ -1368,6 +1551,7 @@ def render(spec: AgentBuildSpec, out_dir: Path | None = None, *,
         "version": 1, "style": STYLE_VERSION, "master_duration_s": spec.duration_s,
         "profile": asdict(profile),
         "video_frames": round(spec.duration_s * profile.fps),
+        "voice": _voice_record(spec),
         "opening_contract": ({
             "disclosure": [0.0, 5.0], "story_signature": [5.0, 10.0],
             "first_build_footage_s": 10.0, "voiceover_present_during_intro": False,
@@ -1381,6 +1565,26 @@ def render(spec: AgentBuildSpec, out_dir: Path | None = None, *,
     return {"output_dir": out_dir, "master": master, "edl": edl_path,
             "provenance": provenance_path, "receipt": receipt,
             "render_report": render_report}
+
+
+def _mean_db(path: Path, start: float, duration: float) -> float:
+    out = subprocess.run([_ffmpeg(), "-hide_banner", "-ss", f"{start:.3f}", "-t", f"{duration:.3f}",
+                          "-i", str(path), "-vn", "-af", "volumedetect", "-f", "null", "-"],
+                         capture_output=True, text=True).stderr
+    match = re.search(r"mean_volume:\s*(-?[\d.]+|-inf) dB", out)
+    return float(match.group(1)) if match and match.group(1) != "-inf" else -120.0
+
+
+def _measure_intro_vs_story(master: Path, spec: AgentBuildSpec) -> dict[str, Any]:
+    """The delivered master's locked intro against the story window after it (AGENT_BUILD_FILMS.md,
+    Audio hierarchy: at least 3 dB below)."""
+    if spec.intro_duration_s <= 0:
+        return {"intro_minus_story_db": None, "note": "action opening: no locked intro"}
+    window = min(30.0, spec.content_duration_s)
+    intro = _mean_db(master, 0.0, spec.intro_duration_s)
+    story = _mean_db(master, spec.intro_duration_s, window)
+    return {"intro_mean_db": intro, "story_mean_db": story, "intro_minus_story_db": round(intro - story, 2),
+            "story_window_s": [spec.intro_duration_s, spec.intro_duration_s + window]}
 
 
 def verify(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Any]:
@@ -1420,7 +1624,10 @@ def verify(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Any]:
         path = Path(record["path"])
         if not path.exists() or _sha256(path) != record["sha256"]:
             raise AssertionError(f"receipt-bound artifact changed: {path}")
-    _verify_voice_silence(_resolve(spec, spec.voice.wav), spec.intro_duration_s)
+    if spec.voice.narrated:
+        _verify_voice_silence(_resolve(spec, spec.voice.wav), spec.intro_duration_s)
+    elif receipt.get("voice", {}).get("mode") != "none" or "narration_wav" in receipt.get("artifacts", {}):
+        raise AssertionError("the manifest declares no narration but the assembly receipt does not agree")
 
     probe = json.loads(subprocess.run([
         _ffprobe(), "-v", "error", "-show_entries",
@@ -1452,6 +1659,11 @@ def verify(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Any]:
         "story_signature_s": [5.0, 10.0] if spec.opening == "signature" else None,
         "first_build_footage_s": spec.intro_duration_s, "subtitle_streams": 0,
         "cuts": len(entries) - 1, "outro": False,
+        "voice": _voice_record(spec),
+        "audio_hierarchy": _measure_intro_vs_story(master, spec),
     }
+    if (not spec.voice.narrated and spec.opening == "signature"
+            and report["audio_hierarchy"]["intro_minus_story_db"] > -3.0):
+        raise AssertionError("the locked intro must sit at least 3 dB below the story soundtrack")
     (out_dir / "verification.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     return report

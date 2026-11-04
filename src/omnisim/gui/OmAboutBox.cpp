@@ -27,9 +27,9 @@
 OmAboutBox::OmAboutBox(QWidget *parent) : QDialog(parent) {
   setModal(true);
   setWindowTitle(tr("About OmniSim"));
-  // Brand mark — OmniLink monogram. Source of truth: resources/branding/omnilink/.
-  // The `images:omnisim.png` file is regenerated from orb/orb.png by
-  // scripts/branding/build_omnilink_icons.py, so this load picks up the OmniLink
+  // Brand mark — the OmniSim app icon. Source of truth: resources/branding/omnisim/.
+  // The `images:omnisim.png` file is regenerated from the OmniSim mark by
+  // scripts/branding/build_omnilink_icons.py, so this load picks up the
   // identity automatically.
   QPixmap omniLinkMark("images:omnisim.png");
   QVBoxLayout *layout = new QVBoxLayout();

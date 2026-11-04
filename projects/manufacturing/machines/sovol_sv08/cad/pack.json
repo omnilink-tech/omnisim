@@ -1,0 +1,2063 @@
+{
+ "name": "sovol_sv08",
+ "source": {
+  "url": "https://github.com/Sovol3d/SV08/tree/main/STEP",
+  "file": "0JXHSV08-00000 Frame 3d printer pre-assembled.zip",
+  "licence": "GPL-3.0 (Sovol3d/SV08 LICENSE)",
+  "attribution": "Sovol SV08 CAD, Sovol3d"
+ },
+ "groups": {
+  "frame": {
+   "meshes": [
+    {
+     "file": "meshes/frame_0.stl",
+     "rgba": [
+      0.0,
+      0.475,
+      0.0,
+      1.0
+     ],
+     "faces": 188
+    },
+    {
+     "file": "meshes/frame_1.stl",
+     "rgba": [
+      0.0,
+      0.8,
+      0.243,
+      1.0
+     ],
+     "faces": 112
+    },
+    {
+     "file": "meshes/frame_2.stl",
+     "rgba": [
+      0.0,
+      0.965,
+      1.0,
+      1.0
+     ],
+     "faces": 104
+    },
+    {
+     "file": "meshes/frame_3.stl",
+     "rgba": [
+      0.008,
+      0.008,
+      0.008,
+      1.0
+     ],
+     "faces": 304
+    },
+    {
+     "file": "meshes/frame_4.stl",
+     "rgba": [
+      0.027,
+      0.078,
+      1.0,
+      1.0
+     ],
+     "faces": 52
+    },
+    {
+     "file": "meshes/frame_5.stl",
+     "rgba": [
+      0.039,
+      0.039,
+      0.039,
+      1.0
+     ],
+     "faces": 2862
+    },
+    {
+     "file": "meshes/frame_6.stl",
+     "rgba": [
+      0.043,
+      1.0,
+      0.0,
+      1.0
+     ],
+     "faces": 1356
+    },
+    {
+     "file": "meshes/frame_7.stl",
+     "rgba": [
+      0.047,
+      1.0,
+      0.0,
+      1.0
+     ],
+     "faces": 770
+    },
+    {
+     "file": "meshes/frame_8.stl",
+     "rgba": [
+      0.051,
+      0.051,
+      0.051,
+      1.0
+     ],
+     "faces": 48
+    },
+    {
+     "file": "meshes/frame_9.stl",
+     "rgba": [
+      0.063,
+      0.42,
+      1.0,
+      1.0
+     ],
+     "faces": 1568
+    },
+    {
+     "file": "meshes/frame_10.stl",
+     "rgba": [
+      0.071,
+      0.071,
+      0.071,
+      1.0
+     ],
+     "faces": 436
+    },
+    {
+     "file": "meshes/frame_11.stl",
+     "rgba": [
+      0.09,
+      0.09,
+      0.09,
+      1.0
+     ],
+     "faces": 703
+    },
+    {
+     "file": "meshes/frame_12.stl",
+     "rgba": [
+      0.114,
+      0.114,
+      0.114,
+      1.0
+     ],
+     "faces": 3572
+    },
+    {
+     "file": "meshes/frame_13.stl",
+     "rgba": [
+      0.118,
+      0.118,
+      0.118,
+      1.0
+     ],
+     "faces": 474
+    },
+    {
+     "file": "meshes/frame_14.stl",
+     "rgba": [
+      0.141,
+      0.141,
+      0.141,
+      1.0
+     ],
+     "faces": 7167
+    },
+    {
+     "file": "meshes/frame_15.stl",
+     "rgba": [
+      0.153,
+      1.0,
+      0.063,
+      1.0
+     ],
+     "faces": 9276
+    },
+    {
+     "file": "meshes/frame_16.stl",
+     "rgba": [
+      0.161,
+      0.161,
+      0.161,
+      1.0
+     ],
+     "faces": 492
+    },
+    {
+     "file": "meshes/frame_17.stl",
+     "rgba": [
+      0.184,
+      0.039,
+      1.0,
+      1.0
+     ],
+     "faces": 4719
+    },
+    {
+     "file": "meshes/frame_18.stl",
+     "rgba": [
+      0.2,
+      0.235,
+      0.612,
+      1.0
+     ],
+     "faces": 304
+    },
+    {
+     "file": "meshes/frame_19.stl",
+     "rgba": [
+      0.204,
+      0.204,
+      0.204,
+      1.0
+     ],
+     "faces": 1272
+    },
+    {
+     "file": "meshes/frame_20.stl",
+     "rgba": [
+      0.239,
+      0.239,
+      0.239,
+      1.0
+     ],
+     "faces": 3624
+    },
+    {
+     "file": "meshes/frame_21.stl",
+     "rgba": [
+      0.243,
+      0.631,
+      1.0,
+      1.0
+     ],
+     "faces": 19064
+    },
+    {
+     "file": "meshes/frame_22.stl",
+     "rgba": [
+      0.243,
+      0.631,
+      1.0,
+      1.0
+     ],
+     "faces": 19303
+    },
+    {
+     "file": "meshes/frame_23.stl",
+     "rgba": [
+      0.243,
+      0.631,
+      1.0,
+      1.0
+     ],
+     "faces": 8152
+    },
+    {
+     "file": "meshes/frame_24.stl",
+     "rgba": [
+      0.243,
+      0.631,
+      1.0,
+      1.0
+     ],
+     "faces": 21000
+    },
+    {
+     "file": "meshes/frame_25.stl",
+     "rgba": [
+      0.243,
+      0.631,
+      1.0,
+      1.0
+     ],
+     "faces": 18725
+    },
+    {
+     "file": "meshes/frame_26.stl",
+     "rgba": [
+      0.243,
+      1.0,
+      0.078,
+      1.0
+     ],
+     "faces": 88
+    },
+    {
+     "file": "meshes/frame_27.stl",
+     "rgba": [
+      0.337,
+      0.373,
+      0.412,
+      1.0
+     ],
+     "faces": 200
+    },
+    {
+     "file": "meshes/frame_28.stl",
+     "rgba": [
+      0.353,
+      0.353,
+      0.353,
+      1.0
+     ],
+     "faces": 5716
+    },
+    {
+     "file": "meshes/frame_29.stl",
+     "rgba": [
+      0.376,
+      0.341,
+      0.306,
+      1.0
+     ],
+     "faces": 72
+    },
+    {
+     "file": "meshes/frame_30.stl",
+     "rgba": [
+      0.404,
+      0.447,
+      0.553,
+      1.0
+     ],
+     "faces": 412
+    },
+    {
+     "file": "meshes/frame_31.stl",
+     "rgba": [
+      0.447,
+      0.447,
+      0.447,
+      1.0
+     ],
+     "faces": 1472
+    },
+    {
+     "file": "meshes/frame_32.stl",
+     "rgba": [
+      0.455,
+      0.455,
+      0.455,
+      1.0
+     ],
+     "faces": 2058
+    },
+    {
+     "file": "meshes/frame_33.stl",
+     "rgba": [
+      0.502,
+      0.573,
+      0.0,
+      1.0
+     ],
+     "faces": 224
+    },
+    {
+     "file": "meshes/frame_34.stl",
+     "rgba": [
+      0.522,
+      0.106,
+      0.0,
+      1.0
+     ],
+     "faces": 40
+    },
+    {
+     "file": "meshes/frame_35.stl",
+     "rgba": [
+      0.525,
+      0.525,
+      1.0,
+      1.0
+     ],
+     "faces": 19076
+    },
+    {
+     "file": "meshes/frame_36.stl",
+     "rgba": [
+      0.525,
+      0.525,
+      1.0,
+      1.0
+     ],
+     "faces": 15272
+    },
+    {
+     "file": "meshes/frame_37.stl",
+     "rgba": [
+      0.525,
+      1.0,
+      0.525,
+      1.0
+     ],
+     "faces": 8110
+    },
+    {
+     "file": "meshes/frame_38.stl",
+     "rgba": [
+      0.525,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "faces": 1084
+    },
+    {
+     "file": "meshes/frame_39.stl",
+     "rgba": [
+      0.545,
+      0.035,
+      0.02,
+      1.0
+     ],
+     "faces": 3840
+    },
+    {
+     "file": "meshes/frame_40.stl",
+     "rgba": [
+      0.565,
+      0.533,
+      0.502,
+      1.0
+     ],
+     "faces": 20672
+    },
+    {
+     "file": "meshes/frame_41.stl",
+     "rgba": [
+      0.565,
+      0.533,
+      0.502,
+      1.0
+     ],
+     "faces": 20956
+    },
+    {
+     "file": "meshes/frame_42.stl",
+     "rgba": [
+      0.565,
+      0.533,
+      0.502,
+      1.0
+     ],
+     "faces": 20794
+    },
+    {
+     "file": "meshes/frame_43.stl",
+     "rgba": [
+      0.565,
+      0.533,
+      0.502,
+      1.0
+     ],
+     "faces": 4504
+    },
+    {
+     "file": "meshes/frame_44.stl",
+     "rgba": [
+      0.592,
+      0.592,
+      0.592,
+      1.0
+     ],
+     "faces": 108
+    },
+    {
+     "file": "meshes/frame_45.stl",
+     "rgba": [
+      0.592,
+      0.639,
+      0.855,
+      1.0
+     ],
+     "faces": 7632
+    },
+    {
+     "file": "meshes/frame_46.stl",
+     "rgba": [
+      0.596,
+      0.643,
+      0.863,
+      1.0
+     ],
+     "faces": 1240
+    },
+    {
+     "file": "meshes/frame_47.stl",
+     "rgba": [
+      0.624,
+      0.031,
+      0.0,
+      1.0
+     ],
+     "faces": 12
+    },
+    {
+     "file": "meshes/frame_48.stl",
+     "rgba": [
+      0.624,
+      0.067,
+      0.0,
+      1.0
+     ],
+     "faces": 140
+    },
+    {
+     "file": "meshes/frame_49.stl",
+     "rgba": [
+      0.694,
+      0.694,
+      0.694,
+      1.0
+     ],
+     "faces": 982
+    },
+    {
+     "file": "meshes/frame_50.stl",
+     "rgba": [
+      0.722,
+      0.722,
+      0.769,
+      1.0
+     ],
+     "faces": 18504
+    },
+    {
+     "file": "meshes/frame_51.stl",
+     "rgba": [
+      0.722,
+      0.722,
+      0.769,
+      1.0
+     ],
+     "faces": 9898
+    },
+    {
+     "file": "meshes/frame_52.stl",
+     "rgba": [
+      0.753,
+      0.753,
+      0.753,
+      1.0
+     ],
+     "faces": 80
+    },
+    {
+     "file": "meshes/frame_53.stl",
+     "rgba": [
+      0.776,
+      0.816,
+      0.847,
+      1.0
+     ],
+     "faces": 274
+    },
+    {
+     "file": "meshes/frame_54.stl",
+     "rgba": [
+      0.776,
+      0.863,
+      0.0,
+      1.0
+     ],
+     "faces": 1120
+    },
+    {
+     "file": "meshes/frame_55.stl",
+     "rgba": [
+      0.784,
+      0.784,
+      0.784,
+      1.0
+     ],
+     "faces": 832
+    },
+    {
+     "file": "meshes/frame_56.stl",
+     "rgba": [
+      0.784,
+      0.824,
+      0.847,
+      1.0
+     ],
+     "faces": 19152
+    },
+    {
+     "file": "meshes/frame_57.stl",
+     "rgba": [
+      0.792,
+      1.0,
+      0.004,
+      1.0
+     ],
+     "faces": 284
+    },
+    {
+     "file": "meshes/frame_58.stl",
+     "rgba": [
+      0.8,
+      0.008,
+      0.0,
+      1.0
+     ],
+     "faces": 4214
+    },
+    {
+     "file": "meshes/frame_59.stl",
+     "rgba": [
+      0.8,
+      0.027,
+      0.0,
+      1.0
+     ],
+     "faces": 286
+    },
+    {
+     "file": "meshes/frame_60.stl",
+     "rgba": [
+      0.8,
+      0.051,
+      0.0,
+      1.0
+     ],
+     "faces": 324
+    },
+    {
+     "file": "meshes/frame_61.stl",
+     "rgba": [
+      0.8,
+      0.067,
+      0.0,
+      1.0
+     ],
+     "faces": 62
+    },
+    {
+     "file": "meshes/frame_62.stl",
+     "rgba": [
+      0.8,
+      0.09,
+      0.0,
+      1.0
+     ],
+     "faces": 608
+    },
+    {
+     "file": "meshes/frame_63.stl",
+     "rgba": [
+      0.863,
+      1.0,
+      0.004,
+      1.0
+     ],
+     "faces": 448
+    },
+    {
+     "file": "meshes/frame_64.stl",
+     "rgba": [
+      0.871,
+      0.871,
+      0.871,
+      1.0
+     ],
+     "faces": 3947
+    },
+    {
+     "file": "meshes/frame_65.stl",
+     "rgba": [
+      0.878,
+      1.0,
+      0.0,
+      1.0
+     ],
+     "faces": 1008
+    },
+    {
+     "file": "meshes/frame_66.stl",
+     "rgba": [
+      0.914,
+      0.914,
+      0.922,
+      1.0
+     ],
+     "faces": 7744
+    },
+    {
+     "file": "meshes/frame_67.stl",
+     "rgba": [
+      0.929,
+      0.0,
+      0.0,
+      1.0
+     ],
+     "faces": 231
+    },
+    {
+     "file": "meshes/frame_68.stl",
+     "rgba": [
+      0.929,
+      0.035,
+      0.0,
+      1.0
+     ],
+     "faces": 18
+    },
+    {
+     "file": "meshes/frame_69.stl",
+     "rgba": [
+      0.929,
+      0.047,
+      0.0,
+      1.0
+     ],
+     "faces": 264
+    },
+    {
+     "file": "meshes/frame_70.stl",
+     "rgba": [
+      0.929,
+      0.094,
+      0.0,
+      1.0
+     ],
+     "faces": 38
+    },
+    {
+     "file": "meshes/frame_71.stl",
+     "rgba": [
+      0.929,
+      0.565,
+      0.0,
+      1.0
+     ],
+     "faces": 112
+    },
+    {
+     "file": "meshes/frame_72.stl",
+     "rgba": [
+      0.957,
+      1.0,
+      0.004,
+      1.0
+     ],
+     "faces": 224
+    },
+    {
+     "file": "meshes/frame_73.stl",
+     "rgba": [
+      0.957,
+      1.0,
+      0.02,
+      1.0
+     ],
+     "faces": 1344
+    },
+    {
+     "file": "meshes/frame_74.stl",
+     "rgba": [
+      0.965,
+      1.0,
+      0.02,
+      1.0
+     ],
+     "faces": 448
+    },
+    {
+     "file": "meshes/frame_75.stl",
+     "rgba": [
+      0.973,
+      0.502,
+      0.231,
+      1.0
+     ],
+     "faces": 720
+    },
+    {
+     "file": "meshes/frame_76.stl",
+     "rgba": [
+      1.0,
+      0.0,
+      0.0,
+      1.0
+     ],
+     "faces": 237
+    },
+    {
+     "file": "meshes/frame_77.stl",
+     "rgba": [
+      1.0,
+      0.008,
+      0.0,
+      1.0
+     ],
+     "faces": 82
+    },
+    {
+     "file": "meshes/frame_78.stl",
+     "rgba": [
+      1.0,
+      0.008,
+      0.008,
+      1.0
+     ],
+     "faces": 8
+    },
+    {
+     "file": "meshes/frame_79.stl",
+     "rgba": [
+      1.0,
+      0.02,
+      0.004,
+      1.0
+     ],
+     "faces": 1573
+    },
+    {
+     "file": "meshes/frame_80.stl",
+     "rgba": [
+      1.0,
+      0.02,
+      0.075,
+      1.0
+     ],
+     "faces": 12
+    },
+    {
+     "file": "meshes/frame_81.stl",
+     "rgba": [
+      1.0,
+      0.027,
+      0.008,
+      1.0
+     ],
+     "faces": 652
+    },
+    {
+     "file": "meshes/frame_82.stl",
+     "rgba": [
+      1.0,
+      0.039,
+      0.043,
+      1.0
+     ],
+     "faces": 20
+    },
+    {
+     "file": "meshes/frame_83.stl",
+     "rgba": [
+      1.0,
+      0.063,
+      0.0,
+      1.0
+     ],
+     "faces": 62
+    },
+    {
+     "file": "meshes/frame_84.stl",
+     "rgba": [
+      1.0,
+      0.067,
+      0.004,
+      1.0
+     ],
+     "faces": 112
+    },
+    {
+     "file": "meshes/frame_85.stl",
+     "rgba": [
+      1.0,
+      0.09,
+      0.012,
+      1.0
+     ],
+     "faces": 281
+    },
+    {
+     "file": "meshes/frame_86.stl",
+     "rgba": [
+      1.0,
+      0.09,
+      0.027,
+      1.0
+     ],
+     "faces": 1396
+    },
+    {
+     "file": "meshes/frame_87.stl",
+     "rgba": [
+      1.0,
+      0.114,
+      0.004,
+      1.0
+     ],
+     "faces": 180
+    },
+    {
+     "file": "meshes/frame_88.stl",
+     "rgba": [
+      1.0,
+      0.129,
+      0.0,
+      1.0
+     ],
+     "faces": 24
+    },
+    {
+     "file": "meshes/frame_89.stl",
+     "rgba": [
+      1.0,
+      0.129,
+      0.051,
+      1.0
+     ],
+     "faces": 1173
+    },
+    {
+     "file": "meshes/frame_90.stl",
+     "rgba": [
+      1.0,
+      0.133,
+      0.008,
+      1.0
+     ],
+     "faces": 448
+    },
+    {
+     "file": "meshes/frame_91.stl",
+     "rgba": [
+      1.0,
+      0.145,
+      0.039,
+      1.0
+     ],
+     "faces": 108
+    },
+    {
+     "file": "meshes/frame_92.stl",
+     "rgba": [
+      1.0,
+      0.149,
+      0.0,
+      1.0
+     ],
+     "faces": 2
+    },
+    {
+     "file": "meshes/frame_93.stl",
+     "rgba": [
+      1.0,
+      0.576,
+      0.243,
+      1.0
+     ],
+     "faces": 2802
+    },
+    {
+     "file": "meshes/frame_94.stl",
+     "rgba": [
+      1.0,
+      0.745,
+      0.02,
+      1.0
+     ],
+     "faces": 840
+    },
+    {
+     "file": "meshes/frame_95.stl",
+     "rgba": [
+      1.0,
+      0.776,
+      0.012,
+      1.0
+     ],
+     "faces": 336
+    },
+    {
+     "file": "meshes/frame_96.stl",
+     "rgba": [
+      1.0,
+      0.8,
+      0.522,
+      1.0
+     ],
+     "faces": 76
+    },
+    {
+     "file": "meshes/frame_97.stl",
+     "rgba": [
+      1.0,
+      0.824,
+      0.012,
+      1.0
+     ],
+     "faces": 1372
+    },
+    {
+     "file": "meshes/frame_98.stl",
+     "rgba": [
+      1.0,
+      0.878,
+      0.02,
+      1.0
+     ],
+     "faces": 224
+    },
+    {
+     "file": "meshes/frame_99.stl",
+     "rgba": [
+      1.0,
+      0.906,
+      0.161,
+      1.0
+     ],
+     "faces": 448
+    },
+    {
+     "file": "meshes/frame_100.stl",
+     "rgba": [
+      1.0,
+      0.914,
+      0.008,
+      1.0
+     ],
+     "faces": 224
+    },
+    {
+     "file": "meshes/frame_101.stl",
+     "rgba": [
+      1.0,
+      0.914,
+      0.051,
+      1.0
+     ],
+     "faces": 112
+    },
+    {
+     "file": "meshes/frame_102.stl",
+     "rgba": [
+      1.0,
+      0.929,
+      0.02,
+      1.0
+     ],
+     "faces": 336
+    },
+    {
+     "file": "meshes/frame_103.stl",
+     "rgba": [
+      1.0,
+      0.949,
+      0.184,
+      1.0
+     ],
+     "faces": 448
+    },
+    {
+     "file": "meshes/frame_104.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      0.004,
+      1.0
+     ],
+     "faces": 448
+    },
+    {
+     "file": "meshes/frame_105.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "faces": 18334
+    },
+    {
+     "file": "meshes/frame_106.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "faces": 17229
+    },
+    {
+     "file": "meshes/frame_107.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "faces": 18902
+    },
+    {
+     "file": "meshes/frame_108.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "faces": 10488
+    }
+   ],
+   "parts": 572,
+   "bbox": [
+    [
+     -0.35659,
+     -0.29479,
+     0.0
+    ],
+    [
+     0.35659,
+     0.29479,
+     0.82924
+    ]
+   ]
+  },
+  "gantry": {
+   "meshes": [
+    {
+     "file": "meshes/gantry_0.stl",
+     "rgba": [
+      0.039,
+      0.039,
+      0.039,
+      1.0
+     ],
+     "faces": 4384
+    },
+    {
+     "file": "meshes/gantry_1.stl",
+     "rgba": [
+      0.141,
+      0.141,
+      0.141,
+      1.0
+     ],
+     "faces": 56
+    },
+    {
+     "file": "meshes/gantry_2.stl",
+     "rgba": [
+      0.216,
+      0.216,
+      1.0,
+      1.0
+     ],
+     "faces": 4472
+    },
+    {
+     "file": "meshes/gantry_3.stl",
+     "rgba": [
+      0.243,
+      0.631,
+      1.0,
+      1.0
+     ],
+     "faces": 18124
+    },
+    {
+     "file": "meshes/gantry_4.stl",
+     "rgba": [
+      0.243,
+      0.631,
+      1.0,
+      1.0
+     ],
+     "faces": 13952
+    },
+    {
+     "file": "meshes/gantry_5.stl",
+     "rgba": [
+      0.525,
+      0.525,
+      1.0,
+      1.0
+     ],
+     "faces": 14928
+    },
+    {
+     "file": "meshes/gantry_6.stl",
+     "rgba": [
+      0.565,
+      0.533,
+      0.502,
+      1.0
+     ],
+     "faces": 15156
+    },
+    {
+     "file": "meshes/gantry_7.stl",
+     "rgba": [
+      0.592,
+      0.639,
+      0.855,
+      1.0
+     ],
+     "faces": 556
+    },
+    {
+     "file": "meshes/gantry_8.stl",
+     "rgba": [
+      0.678,
+      0.667,
+      0.0,
+      1.0
+     ],
+     "faces": 224
+    },
+    {
+     "file": "meshes/gantry_9.stl",
+     "rgba": [
+      0.722,
+      0.722,
+      0.769,
+      1.0
+     ],
+     "faces": 18132
+    },
+    {
+     "file": "meshes/gantry_10.stl",
+     "rgba": [
+      0.722,
+      0.722,
+      0.769,
+      1.0
+     ],
+     "faces": 5468
+    },
+    {
+     "file": "meshes/gantry_11.stl",
+     "rgba": [
+      0.8,
+      0.0,
+      0.0,
+      1.0
+     ],
+     "faces": 52
+    },
+    {
+     "file": "meshes/gantry_12.stl",
+     "rgba": [
+      0.8,
+      0.051,
+      0.0,
+      1.0
+     ],
+     "faces": 62
+    },
+    {
+     "file": "meshes/gantry_13.stl",
+     "rgba": [
+      0.8,
+      0.09,
+      0.0,
+      1.0
+     ],
+     "faces": 128
+    },
+    {
+     "file": "meshes/gantry_14.stl",
+     "rgba": [
+      0.863,
+      0.031,
+      0.0,
+      1.0
+     ],
+     "faces": 128
+    },
+    {
+     "file": "meshes/gantry_15.stl",
+     "rgba": [
+      0.929,
+      0.0,
+      0.467,
+      1.0
+     ],
+     "faces": 426
+    },
+    {
+     "file": "meshes/gantry_16.stl",
+     "rgba": [
+      0.929,
+      0.016,
+      0.0,
+      1.0
+     ],
+     "faces": 76
+    },
+    {
+     "file": "meshes/gantry_17.stl",
+     "rgba": [
+      0.929,
+      0.043,
+      0.0,
+      1.0
+     ],
+     "faces": 56
+    },
+    {
+     "file": "meshes/gantry_18.stl",
+     "rgba": [
+      0.957,
+      1.0,
+      0.02,
+      1.0
+     ],
+     "faces": 844
+    },
+    {
+     "file": "meshes/gantry_19.stl",
+     "rgba": [
+      1.0,
+      0.039,
+      0.004,
+      1.0
+     ],
+     "faces": 51
+    },
+    {
+     "file": "meshes/gantry_20.stl",
+     "rgba": [
+      1.0,
+      0.051,
+      0.0,
+      1.0
+     ],
+     "faces": 98
+    },
+    {
+     "file": "meshes/gantry_21.stl",
+     "rgba": [
+      1.0,
+      0.059,
+      0.039,
+      1.0
+     ],
+     "faces": 112
+    },
+    {
+     "file": "meshes/gantry_22.stl",
+     "rgba": [
+      1.0,
+      0.075,
+      0.012,
+      1.0
+     ],
+     "faces": 112
+    },
+    {
+     "file": "meshes/gantry_23.stl",
+     "rgba": [
+      1.0,
+      0.769,
+      0.004,
+      1.0
+     ],
+     "faces": 224
+    },
+    {
+     "file": "meshes/gantry_24.stl",
+     "rgba": [
+      1.0,
+      0.914,
+      0.004,
+      1.0
+     ],
+     "faces": 1176
+    },
+    {
+     "file": "meshes/gantry_25.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "faces": 5944
+    }
+   ],
+   "parts": 137,
+   "bbox": [
+    [
+     -0.34068,
+     -0.22846,
+     0.09263
+    ],
+    [
+     0.17532,
+     0.28004,
+     0.19364
+    ]
+   ]
+  },
+  "beam": {
+   "meshes": [
+    {
+     "file": "meshes/beam_0.stl",
+     "rgba": [
+      0.031,
+      0.306,
+      0.102,
+      1.0
+     ],
+     "faces": 856
+    },
+    {
+     "file": "meshes/beam_1.stl",
+     "rgba": [
+      0.224,
+      0.224,
+      0.306,
+      1.0
+     ],
+     "faces": 2888
+    },
+    {
+     "file": "meshes/beam_2.stl",
+     "rgba": [
+      0.243,
+      0.631,
+      1.0,
+      1.0
+     ],
+     "faces": 15428
+    },
+    {
+     "file": "meshes/beam_3.stl",
+     "rgba": [
+      0.243,
+      0.631,
+      1.0,
+      1.0
+     ],
+     "faces": 14031
+    },
+    {
+     "file": "meshes/beam_4.stl",
+     "rgba": [
+      0.353,
+      0.353,
+      0.353,
+      1.0
+     ],
+     "faces": 4336
+    },
+    {
+     "file": "meshes/beam_5.stl",
+     "rgba": [
+      0.447,
+      0.447,
+      0.447,
+      1.0
+     ],
+     "faces": 1120
+    },
+    {
+     "file": "meshes/beam_6.stl",
+     "rgba": [
+      0.525,
+      0.525,
+      1.0,
+      1.0
+     ],
+     "faces": 2664
+    },
+    {
+     "file": "meshes/beam_7.stl",
+     "rgba": [
+      0.545,
+      0.035,
+      0.02,
+      1.0
+     ],
+     "faces": 2784
+    },
+    {
+     "file": "meshes/beam_8.stl",
+     "rgba": [
+      0.565,
+      0.533,
+      0.502,
+      1.0
+     ],
+     "faces": 14896
+    },
+    {
+     "file": "meshes/beam_9.stl",
+     "rgba": [
+      0.718,
+      0.008,
+      0.008,
+      1.0
+     ],
+     "faces": 1480
+    },
+    {
+     "file": "meshes/beam_10.stl",
+     "rgba": [
+      0.722,
+      0.722,
+      0.769,
+      1.0
+     ],
+     "faces": 19742
+    },
+    {
+     "file": "meshes/beam_11.stl",
+     "rgba": [
+      0.737,
+      0.035,
+      0.0,
+      1.0
+     ],
+     "faces": 83
+    },
+    {
+     "file": "meshes/beam_12.stl",
+     "rgba": [
+      0.863,
+      0.004,
+      0.0,
+      1.0
+     ],
+     "faces": 6
+    },
+    {
+     "file": "meshes/beam_13.stl",
+     "rgba": [
+      0.929,
+      0.839,
+      0.0,
+      1.0
+     ],
+     "faces": 832
+    },
+    {
+     "file": "meshes/beam_14.stl",
+     "rgba": [
+      1.0,
+      0.016,
+      0.004,
+      1.0
+     ],
+     "faces": 312
+    },
+    {
+     "file": "meshes/beam_15.stl",
+     "rgba": [
+      1.0,
+      0.075,
+      0.012,
+      1.0
+     ],
+     "faces": 1313
+    },
+    {
+     "file": "meshes/beam_16.stl",
+     "rgba": [
+      1.0,
+      0.122,
+      0.039,
+      1.0
+     ],
+     "faces": 104
+    },
+    {
+     "file": "meshes/beam_17.stl",
+     "rgba": [
+      1.0,
+      0.157,
+      0.0,
+      1.0
+     ],
+     "faces": 87
+    },
+    {
+     "file": "meshes/beam_18.stl",
+     "rgba": [
+      1.0,
+      0.839,
+      0.027,
+      1.0
+     ],
+     "faces": 104
+    },
+    {
+     "file": "meshes/beam_19.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      0.039,
+      1.0
+     ],
+     "faces": 416
+    },
+    {
+     "file": "meshes/beam_20.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "faces": 3802
+    }
+   ],
+   "parts": 62,
+   "bbox": [
+    [
+     -0.34093,
+     -0.09743,
+     0.12263
+    ],
+    [
+     0.17556,
+     -0.05113,
+     0.16833
+    ]
+   ]
+  },
+  "toolhead": {
+   "meshes": [
+    {
+     "file": "meshes/toolhead_0.stl",
+     "rgba": [
+      0.0,
+      1.0,
+      0.176,
+      1.0
+     ],
+     "faces": 416
+    },
+    {
+     "file": "meshes/toolhead_1.stl",
+     "rgba": [
+      0.012,
+      0.839,
+      1.0,
+      1.0
+     ],
+     "faces": 424
+    },
+    {
+     "file": "meshes/toolhead_2.stl",
+     "rgba": [
+      0.031,
+      0.031,
+      0.031,
+      1.0
+     ],
+     "faces": 16440
+    },
+    {
+     "file": "meshes/toolhead_3.stl",
+     "rgba": [
+      0.031,
+      0.306,
+      0.102,
+      1.0
+     ],
+     "faces": 856
+    },
+    {
+     "file": "meshes/toolhead_4.stl",
+     "rgba": [
+      0.224,
+      0.224,
+      0.306,
+      1.0
+     ],
+     "faces": 2888
+    },
+    {
+     "file": "meshes/toolhead_5.stl",
+     "rgba": [
+      0.243,
+      0.631,
+      1.0,
+      1.0
+     ],
+     "faces": 10098
+    },
+    {
+     "file": "meshes/toolhead_6.stl",
+     "rgba": [
+      0.337,
+      0.373,
+      0.412,
+      1.0
+     ],
+     "faces": 2304
+    },
+    {
+     "file": "meshes/toolhead_7.stl",
+     "rgba": [
+      0.522,
+      0.878,
+      1.0,
+      1.0
+     ],
+     "faces": 2272
+    },
+    {
+     "file": "meshes/toolhead_8.stl",
+     "rgba": [
+      0.525,
+      0.525,
+      1.0,
+      1.0
+     ],
+     "faces": 13940
+    },
+    {
+     "file": "meshes/toolhead_9.stl",
+     "rgba": [
+      0.525,
+      1.0,
+      0.525,
+      1.0
+     ],
+     "faces": 1288
+    },
+    {
+     "file": "meshes/toolhead_10.stl",
+     "rgba": [
+      0.565,
+      0.533,
+      0.502,
+      1.0
+     ],
+     "faces": 17480
+    },
+    {
+     "file": "meshes/toolhead_11.stl",
+     "rgba": [
+      0.565,
+      0.533,
+      0.502,
+      1.0
+     ],
+     "faces": 15472
+    },
+    {
+     "file": "meshes/toolhead_12.stl",
+     "rgba": [
+      0.565,
+      0.533,
+      0.502,
+      1.0
+     ],
+     "faces": 15472
+    },
+    {
+     "file": "meshes/toolhead_13.stl",
+     "rgba": [
+      0.592,
+      0.639,
+      0.855,
+      1.0
+     ],
+     "faces": 7934
+    },
+    {
+     "file": "meshes/toolhead_14.stl",
+     "rgba": [
+      0.596,
+      0.643,
+      0.863,
+      1.0
+     ],
+     "faces": 9210
+    },
+    {
+     "file": "meshes/toolhead_15.stl",
+     "rgba": [
+      0.718,
+      0.008,
+      0.008,
+      1.0
+     ],
+     "faces": 1480
+    },
+    {
+     "file": "meshes/toolhead_16.stl",
+     "rgba": [
+      0.722,
+      0.722,
+      0.769,
+      1.0
+     ],
+     "faces": 9380
+    },
+    {
+     "file": "meshes/toolhead_17.stl",
+     "rgba": [
+      0.784,
+      0.824,
+      0.847,
+      1.0
+     ],
+     "faces": 1272
+    },
+    {
+     "file": "meshes/toolhead_18.stl",
+     "rgba": [
+      0.8,
+      0.137,
+      0.0,
+      1.0
+     ],
+     "faces": 52
+    },
+    {
+     "file": "meshes/toolhead_19.stl",
+     "rgba": [
+      0.863,
+      0.784,
+      0.0,
+      1.0
+     ],
+     "faces": 416
+    },
+    {
+     "file": "meshes/toolhead_20.stl",
+     "rgba": [
+      0.929,
+      0.071,
+      0.0,
+      1.0
+     ],
+     "faces": 24
+    },
+    {
+     "file": "meshes/toolhead_21.stl",
+     "rgba": [
+      1.0,
+      0.0,
+      0.024,
+      1.0
+     ],
+     "faces": 340
+    },
+    {
+     "file": "meshes/toolhead_22.stl",
+     "rgba": [
+      1.0,
+      0.0,
+      1.0,
+      1.0
+     ],
+     "faces": 2
+    },
+    {
+     "file": "meshes/toolhead_23.stl",
+     "rgba": [
+      1.0,
+      0.004,
+      0.0,
+      1.0
+     ],
+     "faces": 100
+    },
+    {
+     "file": "meshes/toolhead_24.stl",
+     "rgba": [
+      1.0,
+      0.027,
+      0.004,
+      1.0
+     ],
+     "faces": 1514
+    },
+    {
+     "file": "meshes/toolhead_25.stl",
+     "rgba": [
+      1.0,
+      0.039,
+      0.004,
+      1.0
+     ],
+     "faces": 200
+    },
+    {
+     "file": "meshes/toolhead_26.stl",
+     "rgba": [
+      1.0,
+      0.039,
+      0.027,
+      1.0
+     ],
+     "faces": 52
+    },
+    {
+     "file": "meshes/toolhead_27.stl",
+     "rgba": [
+      1.0,
+      0.051,
+      0.004,
+      1.0
+     ],
+     "faces": 272
+    },
+    {
+     "file": "meshes/toolhead_28.stl",
+     "rgba": [
+      1.0,
+      0.051,
+      0.02,
+      1.0
+     ],
+     "faces": 537
+    },
+    {
+     "file": "meshes/toolhead_29.stl",
+     "rgba": [
+      1.0,
+      0.059,
+      0.0,
+      1.0
+     ],
+     "faces": 52
+    },
+    {
+     "file": "meshes/toolhead_30.stl",
+     "rgba": [
+      1.0,
+      0.09,
+      0.0,
+      1.0
+     ],
+     "faces": 40
+    },
+    {
+     "file": "meshes/toolhead_31.stl",
+     "rgba": [
+      1.0,
+      0.886,
+      0.0,
+      1.0
+     ],
+     "faces": 1154
+    },
+    {
+     "file": "meshes/toolhead_32.stl",
+     "rgba": [
+      1.0,
+      0.973,
+      0.004,
+      1.0
+     ],
+     "faces": 832
+    },
+    {
+     "file": "meshes/toolhead_33.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      0.525,
+      1.0
+     ],
+     "faces": 408
+    },
+    {
+     "file": "meshes/toolhead_34.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "faces": 19236
+    },
+    {
+     "file": "meshes/toolhead_35.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "faces": 16630
+    },
+    {
+     "file": "meshes/toolhead_36.stl",
+     "rgba": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "faces": 15587
+    }
+   ],
+   "parts": 99,
+   "bbox": [
+    [
+     -0.14098,
+     -0.15384,
+     0.10623
+    ],
+    [
+     -0.06402,
+     -0.05294,
+     0.24719
+    ]
+   ]
+  }
+ },
+ "bodies": [
+  {
+   "group": "gantry",
+   "axis": "z",
+   "parent": "frame"
+  },
+  {
+   "group": "beam",
+   "axis": "y",
+   "parent": "gantry"
+  },
+  {
+   "group": "toolhead",
+   "axis": "x",
+   "parent": "beam"
+  }
+ ],
+ "axis_dirs": {
+  "x": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "y": [
+   0.0,
+   1.0,
+   -0.0
+  ],
+  "z": [
+   0.0,
+   0.0,
+   1.0
+  ]
+ },
+ "cad_pose_s": [
+  156.387,
+  92.302,
+  -1.969
+ ],
+ "tool_tip": [
+  -0.100498,
+  -0.112156,
+  0.106231
+ ],
+ "collet": null,
+ "bed_top_m": null,
+ "masses_kg": {},
+ "extent_m": [
+  0.71318,
+  0.58958,
+  0.82924
+ ],
+ "faces": 789823,
+ "warning": "789823 faces is over the 400000 budget: raise tolerance_mm or drop hidden parts (fasteners) from the CAD"
+}

@@ -2721,11 +2721,18 @@ class OmniLinkRelay:
                                             summary=f"refused: {_rej}",
                                             result=result)
                         called_tools.append(tool_name)
-                        messages.append({
+                        tool_msg = {
                             "role": "tool",
                             "tool_call_id": tc.get("id") or tool_name,
                             "name": tool_name,
-                            "content": json.dumps(result, default=str)})
+                            "content": json.dumps(result, default=str)}
+                        messages.append(tool_msg)
+                        # Refusal is a completed tool exchange too. Keeping
+                        # only the current round's response left persistent
+                        # history with an unanswered assistant call; the next
+                        # operator turn then failed provider pairing checks.
+                        with self._lock:
+                            self._hist_add(tool_msg, handle)
                         continue
                     if handle.lane == "aside" and tool_name in self.MOTION_TOOLS:
                         # This message was judged unable to move the robot,
@@ -2749,11 +2756,14 @@ class OmniLinkRelay:
                                             summary="refused: superseded by a newer order",
                                             result=result)
                         called_tools.append(tool_name)
-                        messages.append({
+                        tool_msg = {
                             "role": "tool",
                             "tool_call_id": tc.get("id") or tool_name,
                             "name": tool_name,
-                            "content": json.dumps(result, default=str)})
+                            "content": json.dumps(result, default=str)}
+                        messages.append(tool_msg)
+                        with self._lock:
+                            self._hist_add(tool_msg, handle)
                         continue
                     _t_tool = time.perf_counter()
                     with handle.execution_gate:

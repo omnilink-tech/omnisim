@@ -1,0 +1,1046 @@
+{
+ "gearmotor": {
+  "meshes": [
+   {
+    "file": "gearmotor_0.stl",
+    "rgb": [
+     0.78,
+     0.62,
+     0.3
+    ],
+    "faces": 12
+   },
+   {
+    "file": "gearmotor_1.stl",
+    "rgb": [
+     0.7,
+     0.7,
+     0.72
+    ],
+    "faces": 124
+   },
+   {
+    "file": "gearmotor_2.stl",
+    "rgb": [
+     0.7,
+     0.7,
+     0.72
+    ],
+    "faces": 376
+   },
+   {
+    "file": "gearmotor_3.stl",
+    "rgb": [
+     0.72,
+     0.72,
+     0.74
+    ],
+    "faces": 180
+   },
+   {
+    "file": "gearmotor_4.stl",
+    "rgb": [
+     0.08,
+     0.08,
+     0.08
+    ],
+    "faces": 12
+   },
+   {
+    "file": "gearmotor_5.stl",
+    "rgb": [
+     0.72,
+     0.45,
+     0.2
+    ],
+    "faces": 24
+   }
+  ]
+ },
+ "caster": {
+  "meshes": [
+   {
+    "file": "caster_0.stl",
+    "rgb": [
+     0.1,
+     0.1,
+     0.11
+    ],
+    "faces": 532
+   },
+   {
+    "file": "caster_1.stl",
+    "rgb": [
+     0.1,
+     0.1,
+     0.11
+    ],
+    "faces": 196
+   },
+   {
+    "file": "caster_2.stl",
+    "rgb": [
+     0.85,
+     0.85,
+     0.87
+    ],
+    "faces": 1280
+   }
+  ]
+ },
+ "xiao": {
+  "meshes": [
+   {
+    "file": "xiao_0.stl",
+    "rgb": [
+     0.03,
+     0.03,
+     0.03
+    ],
+    "faces": 12
+   },
+   {
+    "file": "xiao_1.stl",
+    "rgb": [
+     0.55,
+     0.55,
+     0.57
+    ],
+    "faces": 12
+   },
+   {
+    "file": "xiao_2.stl",
+    "rgb": [
+     0.6,
+     0.6,
+     0.62
+    ],
+    "faces": 12
+   }
+  ]
+ },
+ "drv8833": {
+  "meshes": [
+   {
+    "file": "drv8833_0.stl",
+    "rgb": [
+     0.02,
+     0.27,
+     0.04
+    ],
+    "faces": 12
+   },
+   {
+    "file": "drv8833_1.stl",
+    "rgb": [
+     0.05,
+     0.05,
+     0.05
+    ],
+    "faces": 12
+   }
+  ]
+ },
+ "battery": {
+  "meshes": [
+   {
+    "file": "battery_0.stl",
+    "rgb": [
+     0.08,
+     0.08,
+     0.08
+    ],
+    "faces": 12
+   },
+   {
+    "file": "battery_1.stl",
+    "rgb": [
+     0.08,
+     0.08,
+     0.08
+    ],
+    "faces": 24
+   },
+   {
+    "file": "battery_2.stl",
+    "rgb": [
+     0.08,
+     0.08,
+     0.08
+    ],
+    "faces": 24
+   },
+   {
+    "file": "battery_3.stl",
+    "rgb": [
+     0.15,
+     0.25,
+     0.7
+    ],
+    "faces": 124
+   },
+   {
+    "file": "battery_4.stl",
+    "rgb": [
+     0.15,
+     0.25,
+     0.7
+    ],
+    "faces": 124
+   },
+   {
+    "file": "battery_5.stl",
+    "rgb": [
+     0.15,
+     0.25,
+     0.7
+    ],
+    "faces": 124
+   },
+   {
+    "file": "battery_6.stl",
+    "rgb": [
+     0.15,
+     0.25,
+     0.7
+    ],
+    "faces": 124
+   }
+  ]
+ },
+ "standoff": {
+  "meshes": [
+   {
+    "file": "standoff_0.stl",
+    "rgb": [
+     0.75,
+     0.76,
+     0.78
+    ],
+    "faces": 280
+   }
+  ]
+ },
+ "sw1": {
+  "meshes": [
+   {
+    "file": "sw1_0.stl",
+    "rgb": [
+     0.85,
+     0.85,
+     0.8
+    ],
+    "faces": 12
+   },
+   {
+    "file": "sw1_1.stl",
+    "rgb": [
+     0.15,
+     0.35,
+     0.15
+    ],
+    "faces": 12
+   },
+   {
+    "file": "sw1_2.stl",
+    "rgb": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "faces": 12
+   },
+   {
+    "file": "sw1_3.stl",
+    "rgb": [
+     0.85,
+     0.85,
+     0.85
+    ],
+    "faces": 12
+   }
+  ]
+ },
+ "u1": {
+  "meshes": [
+   {
+    "file": "u1_0.stl",
+    "rgb": [
+     0.85,
+     0.85,
+     0.8
+    ],
+    "faces": 12
+   },
+   {
+    "file": "u1_1.stl",
+    "rgb": [
+     0.15,
+     0.35,
+     0.15
+    ],
+    "faces": 12
+   },
+   {
+    "file": "u1_2.stl",
+    "rgb": [
+     0.2,
+     0.2,
+     0.22
+    ],
+    "faces": 12
+   }
+  ]
+ },
+ "fuse": {
+  "meshes": [
+   {
+    "file": "fuse_0.stl",
+    "rgb": [
+     0.85,
+     0.65,
+     0.1
+    ],
+    "faces": 12
+   }
+  ]
+ },
+ "cap_bulk": {
+  "meshes": [
+   {
+    "file": "cap_bulk_0.stl",
+    "rgb": [
+     0.1,
+     0.2,
+     0.55
+    ],
+    "faces": 124
+   }
+  ]
+ },
+ "diode": {
+  "meshes": [
+   {
+    "file": "diode_0.stl",
+    "rgb": [
+     0.08,
+     0.08,
+     0.08
+    ],
+    "faces": 124
+   }
+  ]
+ },
+ "jst_sm": {
+  "meshes": [
+   {
+    "file": "jst_sm_0.stl",
+    "rgb": [
+     0.95,
+     0.95,
+     0.92
+    ],
+    "faces": 12
+   }
+  ]
+ },
+ "shcs_M1.6x3": {
+  "meshes": [
+   {
+    "file": "shcs_M1.6x3_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M1.6x3_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M1.6x4": {
+  "meshes": [
+   {
+    "file": "shcs_M1.6x4_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M1.6x4_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M1.6x5": {
+  "meshes": [
+   {
+    "file": "shcs_M1.6x5_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M1.6x5_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M1.6x6": {
+  "meshes": [
+   {
+    "file": "shcs_M1.6x6_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M1.6x6_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M1.6x8": {
+  "meshes": [
+   {
+    "file": "shcs_M1.6x8_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M1.6x8_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M1.6x10": {
+  "meshes": [
+   {
+    "file": "shcs_M1.6x10_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M1.6x10_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M1.6x12": {
+  "meshes": [
+   {
+    "file": "shcs_M1.6x12_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M1.6x12_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M1.6x16": {
+  "meshes": [
+   {
+    "file": "shcs_M1.6x16_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M1.6x16_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M1.6x20": {
+  "meshes": [
+   {
+    "file": "shcs_M1.6x20_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M1.6x20_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M1.6x25": {
+  "meshes": [
+   {
+    "file": "shcs_M1.6x25_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M1.6x25_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M2x3": {
+  "meshes": [
+   {
+    "file": "shcs_M2x3_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M2x3_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M2x4": {
+  "meshes": [
+   {
+    "file": "shcs_M2x4_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M2x4_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M2x5": {
+  "meshes": [
+   {
+    "file": "shcs_M2x5_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M2x5_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M2x6": {
+  "meshes": [
+   {
+    "file": "shcs_M2x6_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M2x6_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M2x8": {
+  "meshes": [
+   {
+    "file": "shcs_M2x8_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M2x8_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M2x10": {
+  "meshes": [
+   {
+    "file": "shcs_M2x10_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M2x10_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M2x12": {
+  "meshes": [
+   {
+    "file": "shcs_M2x12_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M2x12_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M2x16": {
+  "meshes": [
+   {
+    "file": "shcs_M2x16_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M2x16_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M2x20": {
+  "meshes": [
+   {
+    "file": "shcs_M2x20_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M2x20_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M2x25": {
+  "meshes": [
+   {
+    "file": "shcs_M2x25_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M2x25_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M3x3": {
+  "meshes": [
+   {
+    "file": "shcs_M3x3_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M3x3_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M3x4": {
+  "meshes": [
+   {
+    "file": "shcs_M3x4_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M3x4_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M3x5": {
+  "meshes": [
+   {
+    "file": "shcs_M3x5_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M3x5_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M3x6": {
+  "meshes": [
+   {
+    "file": "shcs_M3x6_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M3x6_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M3x8": {
+  "meshes": [
+   {
+    "file": "shcs_M3x8_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M3x8_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M3x10": {
+  "meshes": [
+   {
+    "file": "shcs_M3x10_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M3x10_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M3x12": {
+  "meshes": [
+   {
+    "file": "shcs_M3x12_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M3x12_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M3x16": {
+  "meshes": [
+   {
+    "file": "shcs_M3x16_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M3x16_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M3x20": {
+  "meshes": [
+   {
+    "file": "shcs_M3x20_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M3x20_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "shcs_M3x25": {
+  "meshes": [
+   {
+    "file": "shcs_M3x25_0.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 92
+   },
+   {
+    "file": "shcs_M3x25_1.stl",
+    "rgb": [
+     0.12,
+     0.12,
+     0.13
+    ],
+    "faces": 60
+   }
+  ]
+ },
+ "nut_M1.6": {
+  "meshes": [
+   {
+    "file": "nut_M1.6_0.stl",
+    "rgb": [
+     0.7,
+     0.7,
+     0.72
+    ],
+    "faces": 280
+   }
+  ]
+ },
+ "nut_M2": {
+  "meshes": [
+   {
+    "file": "nut_M2_0.stl",
+    "rgb": [
+     0.7,
+     0.7,
+     0.72
+    ],
+    "faces": 280
+   }
+  ]
+ },
+ "nut_M3": {
+  "meshes": [
+   {
+    "file": "nut_M3_0.stl",
+    "rgb": [
+     0.7,
+     0.7,
+     0.72
+    ],
+    "faces": 280
+   }
+  ]
+ }
+}

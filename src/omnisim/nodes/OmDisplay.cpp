@@ -1177,6 +1177,9 @@ void OmDisplay::postPhysicsStep() {
   // even in fast mode
   if (mImageTextures.size() > 0)
     mOverlay->updateTexture();
+  // the wgpu renderer re-uploads a Display-fed texture when its revision moves
+  foreach (OmImageTexture *texture, mImageTextures)
+    texture->touchExternalTexture();
 
   if (mNeedToSetExternalTextures) {
     mNeedToSetExternalTextures = false;

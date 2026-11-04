@@ -157,6 +157,13 @@ public:
   // Read by OmSolid's Newton flush and plumbed to the backend before finalize.
   int newtonNjmax() const { return mNewtonNjmax->value(); }
   int newtonNconmax() const { return mNewtonNconmax->value(); }
+  // MuJoCo arena size in MiB (WorldInfo newtonArenaMB). 0 (default) = unset,
+  // MuJoCo sizes it itself. The arena holds every per-step contact and
+  // collision-pair list on the CPU solver and is fixed at compile; a step that
+  // overflows it raises and is skipped. OMNISIM_NEWTON_ARENA_MB overrides.
+  // Null-safe: a binary run against an older resources tree (WorldInfo.wrl
+  // without the field) must read "unset", not dereference a missing field.
+  int newtonArenaMB() const { return mNewtonArenaMB ? mNewtonArenaMB->value() : 0; }
   bool newtonStatics() const { return mNewtonStatics->value(); }
   // Give robot-wrapper bodies (a URDFRobot's chassis Solid) their OWN
   // boundingObject as a Newton collider, so the robot BODY -- not just its
@@ -261,6 +268,7 @@ private:
   OmSFInt *mNewtonLsIterations;
   OmSFInt *mNewtonNjmax;
   OmSFInt *mNewtonNconmax;
+  OmSFInt *mNewtonArenaMB;
   OmSFBool *mNewtonStatics;
   OmSFBool *mNewtonRobotColliders;
   OmSFBool *mNewtonCompoundColliders;

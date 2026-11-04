@@ -8187,6 +8187,12 @@ def make_handler(bridge: ArmBridge, relay: Any = None):
                         # the cart to my pick cell" and answer the sender, but
                         # that answer never reaches it, and only the model can
                         # message back. The gate still vets what the model does.
+                        if body.get("crew"):  # a crewmate's DETAILS go to the model's liveContext, not the turn
+                            try:
+                                from omnisim_bridges.crew import note_incoming
+                                note_incoming(bridge, body)
+                            except Exception:
+                                pass
                         _early = (shared_short_circuit(bridge, text, "arm")
                                   if shared_short_circuit is not None
                                   and not body.get("crew") else None)
@@ -9410,6 +9416,11 @@ def setup_omnilink_relay(bridge: ArmBridge, http_port: int = 8765) -> Optional[A
                 window_raiser=lambda: bridge.queue_window(
                     "system:the platform asked for your attention"))
         print(f"[omnilink_arm_bridge] OmniLink relay ON (agent='{agent_name}')")
+        try:  # a crew's details reach the model as liveContext (omnisim_bridges.crew)
+            from omnisim_bridges.crew import attach_relay as crew_attach
+            crew_attach(relay, bridge)
+        except Exception:
+            pass
         return relay
     except Exception as e:
         import traceback
@@ -9716,6 +9727,10 @@ def main() -> int:
     bridge.line_master = bool(args.idle_loop == "pick" and cfg.get("ik")
                               and (args.idle_drop or "").strip())
     relay = setup_omnilink_relay(bridge, http_port=args.port)
+    if relay is not None and bridge.intents is not None and hasattr(relay, "turn_hook"):
+        # The HTTP thread's thread-local words are invisible to model tools
+        # on the relay worker. Bind the operator's own turn there as well.
+        relay.turn_hook = bridge.intents.set_turn_text
 
     # Optional: attach a real arm (or its offline-sim VM) through a hardware
     # backend. Opt-in only (--hardware-backend / --hardware-ip, or a backend's

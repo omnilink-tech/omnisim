@@ -230,6 +230,12 @@ develops force *F* is
 bite = F * (1/kp + 1/ke)          kp = 10 * maxForce      ke = newtonContactKe
 ```
 
+> ⚠ **Since 2026-10-22 a slider with finite stops is at least `maxForce / travel`
+> stiff**: `kp = max(10, 1/travel) * maxForce`, travel = maxStop − minStop in metres
+> (`OMNISIM_NEWTON_SLIDER_GAIN_FLOOR=0` restores the plain `10 * maxForce`). Below
+> 0.1 m of travel that is the larger term — a 50 mm finger is `20 * maxForce` — so
+> use it in the bite algebra. A slider with no stops (ladder0 rung 8) is unchanged.
+
 A **larger** `maxForce` means a **stiffer** servo and therefore a **smaller**
 bite for the same force. On rung 8, `maxForce 200` gives `kp = 2000 N/m`, so
 3.0 N is 2.7 mm of bite — under a quarter of the pad's own thickness, and the

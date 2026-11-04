@@ -114,6 +114,10 @@ And **no physics runtime means no physics at all**, not a degraded mode:
 [`step_to_urdf.py`](step-to-urdf.md), 20+ vendor robot packages under
 [`projects/robots/`](../../projects/robots/), and the authoring loop in AGENTS.md
 §5 — load, inspect the scene tree, edit, `POST /world/sync`, screenshot.
+Since v10 also **machine twins** — a CNC router, a laser and an FDM printer built
+from their controller configs — and the robots made with them
+([OmniSim Manufacturing](#omnisim-manufacturing--what-may-be-claimed-v10-2026-11-04),
+with its own boundary: simulation only, no twin validated against its machine).
 
 ⚠️ **Boundary.** A twin here is **a model built from your robot's own
 description** — its URDF, its CAD, its joint limits and inertias — running in
@@ -142,6 +146,18 @@ sim-to-real transfer of learned control is unproven here. Claim the control
 surface. Never claim physics transfer.
 
 ### Give AI agents a workshop to program, test and debug your system
+
+**Additional measured task (2026-10-28):** the physical-wheel mobility assessment
+ships as `python -m omnisim assess sweep`. The [guide](../guide/robot-assessments.md)
+and [64-case Husky campaign](../../tests/assessment/evidence/husky-envelope-20261028/README.md)
+document immediate-braking tests over 0–20° slopes, contact μ 0.10–0.80 and
+0/10/20 kg rigidly mounted loads at a target 0.6 m/s, on CPU machine
+`9722d23d12a3`. Four fresh confirmations reproduced the selected pass/fail
+distances in these runs. Separate campaigns cover seven physical-wheeled model
+configurations in 28 unloaded and seven mounted-payload cases. This is simulated model/test-controller behavior,
+not vendor firmware or hardware validation, a global safety envelope, or a
+general assessment adapter for arms, legs and drones. The inventory distinguishes
+69 URDF variant assets from the seven available physical-wheel task adapters.
 
 **Ships:** the agent-facing HTTP harness (AGENTS.md §5), 46 first-party
 [MCP tools](../../packages/omnisim-mcp/) — 42 of them one call to the same
@@ -472,3 +488,144 @@ exactly as it is: that is an agent using the workshop on somebody's real project
 and telling them what is wrong, which is the clearest demonstration of §4 we
 have. What widens is who else we can now address — the learner and the person
 with an idea, who were previously not in the sentence at all.
+
+
+## Measured assessment extension — 2026-10-29
+
+The reference-controller assessment now includes Go2 walk/stand/walk transitions
+and G1 physical standing. [Protocol, source and evidence](../guide/legged-assessments.md).
+Go2 support/contact checks combined with a shorter blend changed a fall at
+14.272 s to a completed 32 s trial; G1 ankle trim changed a fall at 1.728 s
+to standing through 32 s and held-out 48/60 s checks. Measured on machine
+`9722d23d12a3`, Newton/MuJoCo CPU, 16 ms observations, eight Go2 / four G1 substeps.
+These are bounded simulated reference-controller results, not manufacturer
+firmware or hardware validation. G1 standing has no weight-bearing harness;
+the existing authored walking demonstrations still use one. No unassisted
+humanoid-walking claim is added. Windows has the only prebuilt package; Linux
+requires a source build. Public v9.2.7 needs the separately published source
+add-on for these assessment commands.
+
+Go2 prospective-limit audit: after freezing the candidate, a new 9 s request passed and a 15 s request fell at 17.232 s. The 11/13 s timings were already used during development. Describe the shown 12 s improvement as bounded, with that remaining failure; never call it a general transition fix. The complete protocol has 18 valid episodes, 14 PASS / 4 FAIL.
+
+
+## Go2 handover repair — 2026-10-29, assessment v1.1.0
+
+The prior 15 s failure is repaired within the tested reference fixture: tightening
+handover body tilt from 0.25 to 0.12 rad, while retaining phase/contact checks and
+one-tick blending, changes a fall at 17.232 s to completion of both handovers
+through 32 s. The model, learned policy, actuator gains and physics are unchanged;
+paired compiled solver models match exactly. All 14 candidate trials passed,
+including seven prior timings and four prespecified new timings
+(6.25/9.45/12.35/14.75 s). The full protocol has 17 valid episodes, 14 PASS / 3 FAIL;
+the FAIL cases reproduce the previous guard. The candidate also demonstrates
+>=5 s actual standing, >=3 s return walking and >=0.5 m return progress.
+
+Machine `9722d23d12a3`, Newton 1.5.0 / MuJoCo 3.11 CPU, 16 ms observations,
+configured Go2 substeps 8, flat/contact μ 2.0, no added payload or disturbance.
+The earlier study is retained as history. This establishes the listed simulation
+results, not a universal handover solution or hardware validation. Windows has
+the prebuilt engine; Linux requires a source build. G1's separate standing result
+and its authored walking-demo harness boundary remain unchanged.
+
+## Husky mixed rigid surfaces — 2026-10-29
+
+The [mixed-surface module](../guide/husky-mixed-surfaces.md) measures braking
+and 90-degree turning across full-width and split friction patches. Its frozen
+76 episodes include 48 grid, eight uniform-floor controls, eight confirmations
+and 12 prespecified new-input trials: 50 PASS / 26 FAIL, zero ERROR. In the
+selected flat, unloaded μ 0.8→0.04 crossing, lowering approach/task speed from
+0.6 to 0.35 m/s changes forward braking excursion from 0.458 to 0.156 m and
+maximum path error from 0.963 to 0.109 m, within unchanged task requirements.
+Paired compiled physical models match. Both task pairs repeat; five of six
+capped prospective cases pass. Seven capped cases still fail, all split-surface
+turning. Do not describe the speed cap as a general controller repair, free
+performance improvement, continuous safe envelope or hardware result.
+
+Machine `9722d23d12a3`, Newton 1.5.0 / MuJoCo 3.11 CPU, 16 ms observations,
+eight configured substeps. Reference feedback driver, immediate braking, no
+external force or body pose/velocity write. Rigid contact coefficients are
+imposed assumptions; this study does not qualify wet flooring, water, mud,
+deformable soil or other real materials. Public v9.2.7 needs the source add-on;
+Windows has the prebuilt engine and Linux requires a source build.
+
+
+### Split-surface repair qualification — 2026-10-29
+
+The separate 93-episode repair addresses all seven v1 split-left-turn failures
+without relaxing the original path/goal/heading/24-second requirements. It
+adds a 0.30 m approach corridor for both variants. All seven matched endpoints
+repeat twice, and all 27 unique previously passing capped inputs still pass.
+New coefficients 0.025/0.065/0.14/0.30 crossed with loads 2.5/7.5/17.5 kg:
+11/12 candidate inputs pass, all 12 old-driver inputs fail. The remaining
+candidate input (mu 0.30, 17.5 kg) exceeds the approach upper speed bound:
+0.420247 versus 0.420000 m/s. It remains FAIL. Overall 59 PASS / 34 FAIL,
+zero ERROR; candidate 59/60 PASS. Source and plan were frozen before evaluation.
+
+The repair combines known-map pre-alignment and route shaping, independent
+wheel limits, a 0.18 m/s post-trigger target and stopped endpoint completion.
+Both use the same nominal 0.35 m/s approach cap, but trigger pose/heading differ.
+Do not present this as an isolated controller-gain fix or equal-throughput win.
+On the selected low-side mu 0.04 unloaded split, maximum path error changes
+1.095 to 0.254 m. Same machine/runtime/substeps as above. Physical models match
+between each pair. Known map and localization assumed; no friction estimation,
+production firmware or physical-robot validation. Rigid coefficients are not
+calibrated real materials. The original 76-episode study remains unchanged.
+
+## OmniSim Manufacturing — what may be claimed (v10, 2026-11-04)
+
+Manufacturing is the v10 theme: machine twins that make parts, and robots made
+with them. It sits under the "build digital twins" pillar (§5), and the same
+boundary binds it: a twin here is **a model built from the machine's own
+controller config and, where the vendor publishes it, its CAD**. Each line below
+is a measurement with its source; quote it with its conditions or not at all.
+All were measured on machine `9722d23d12a3` (Ryzen 7 5800H, RTX 3060 Laptop,
+Windows 11), Newton 1.5.0 / MuJoCo CPU.
+
+### Lead with these — measured, in the twin
+
+| Claim | Measurement and conditions | Source |
+|---|---|---|
+| Three machine twins run the job file the real machine would run | CNC: a virtual GRBL 1.1 on TCP that a GRBL sender connects to (homing, a 12-line job, `ALARM:2`, reset, jog `error:15`, 2026-10-31). Laser: GRBL 1.1 laser mode (M3/M4, G0 dark, GRBL's PWM). Printer: G-code from an installed CuraEngine, planned as Klipper plans it | `projects/manufacturing/cnc/README.md`, `laser/README.md`, `printing/README.md` |
+| Material is removed or laid where the tool really went | `MillingStock` carves by the cutter Solid's real pose every physics step; `PrintedPart` lays beads along the nozzle Solid's real path | `src/omnisim/nodes/OmMillingStock.*`, `OmPrintedPart.*` |
+| The CNC twin cuts within microns of a perfect machine on the same program | star pocket: floor −0.002 … +0.0013 mm, walls 0.006 / 0.007 mm, path deviation max 0.026 mm; 70 mm mould within −0.012 … +0.024 mm of the program's ideal cut, volume −0.04 % (LongMill twin, 2026-11-01) | commits `1cb471380`, `0036355aa`; `cnc/README.md` |
+| The laser twin is calibrated on the vendor's table | one row fitted (3 mm plywood, 3 passes); predicted 6 mm in 5 passes (Sienci: 5) and 1/4" in 14 (Sienci: 16); a 30 × 20 mm tag cut free at 29.9 × 19.9 mm, hole 6.06 mm (drawn 6.0) | commit `477d324eb`; `laser/README.md` |
+| The printer twin prints a part and measures it | 20 mm cube: 2852.27 mm³ extruded, 2850.18 laid, 100 layers, outer surface +0.041 mm, height 20.05 mm; axis tracking 9 µm median (SV08 twin, 2026-11-02) | commit `710623c3a`; `printing/README.md` |
+| An ideal (engine-free) print agrees with the twin | three parts, ideal vs twin: plastic laid identical to 0.1 mm³, same layers and height; the twin's part larger by 0.02–0.03 mm a side on the cube and plate, 0.003 mm on the shell's long walls; a 145 g shell in 21 s instead of ~1.9 h | `printing/README.md` "Ideal print (no engine)" |
+| Two robots were designed, made on all three twins, assembled and driven on Newton, with a release pack each | desk robot: decks 90.1 × 80.1 mm (drawn 90 × 80), hubs OD 15.994 (16.0), 0.672 m/s straight vs 0.679 datasheet. SparkRover Mini: 325 solids with 0 interfering; 16 of 16 laser/CNC parts cut free; 27 printed parts (22 twin, 5 ideal only); 127 of 128 wires routed; 53 units assembled in 18 steps with 0 blocked; 0.6941 m/s straight vs 0.6964 predicted at the 8.184 V bus mean | `products/desk_robot/README.md`, `products/spark_rover/release/REPORT.md` |
+| From AI concept images to a buildable design | the SparkRover's concept sheets were AI-generated; the design corrected their numbers and records each decision (no gripper, a plain RGB camera, a 2S2P battery) in `skeleton.py` `DECISIONS`; `release/` carries drawings, STLs, the machine files, the BOM and an assembly guide | `products/spark_rover/skeleton.py`, `docs/guide/manufacturing-concept-to-robot.md` |
+| A load test found a real design fault | the clothes rack's concept 500 mm base tipped at 9.4 N empty on Newton; the 600 mm base raises it to 11.5 N (hand calculation 10.9) | commit `10cf4514a` |
+
+### The boundary — state it wherever Manufacturing appears
+
+- **Simulation only.** No twin has been validated against its real machine,
+  and nothing has been made on a real machine. Say "the twin cuts / prints / measures";
+  never "the machine will", and never quote a twin number as a real part's.
+- **Twin and ideal are different results.** A twin print is full physics in the
+  engine; an ideal print has no engine and no axis dynamics. Name the mode with
+  every print number. Five of the SparkRover's 27 printed parts were printed in
+  ideal mode only.
+- **Calibration is one point.** The laser is fitted to one row of Sienci's table,
+  and on full parts the twin needed **6 passes for 6 mm plywood, one more than
+  Sienci's 5** (at 5 the parts stayed joined by a 0.16–0.20 mm web). Do not say the
+  laser twin matches the vendor's table.
+- **What is not simulated:** cutting load on acrylic (no published value: volume is
+  removed with no load, melt or cracking model); the SparkRover's microphones
+  (`Microphone` is retired), speaker, touch pads and status ring (visual meshes);
+  an emissive screen; and the screws (placed at their seats, not simulated).
+- **The bead model was corrected in v10, and twin numbers say which rule made them.**
+  Before the fix, `PrintedPart` laid plastic held over a creeping nozzle as one bead up
+  to ~7 mm wide, or as a dome the nozzle later "crashed" into. The fixed rule caps a bead
+  at the nozzle face and lays the rest as a blob (CHANGELOG v10.0.0). A twin print
+  measured before the fix is labelled so in its PRINT.md: never quote its p95,
+  footprint or crash count as current.
+- **Open design items stay visible:** the SparkRover's board hole positions on
+  U5, U6, U11 and U12 are assumed; the front carrier needs about 64 g of support for a
+  75 g part; the spin rate and stopping distance depend on the engine's
+  wheel-armature default; the desk robot's assembly settle check is flaky.
+- **Licences.** The LongMill CAD pack is CC BY-SA and the SV08 mesh pack GPL-3.0,
+  each in its machine's `cad/` folder. Vendor STEP files for bought parts (Pololu,
+  Seeed, ROBOTIS) are fetched and hash-checked at build time and never committed;
+  the shipped models are ours, drawn from the vendors' dimension drawings.
+- **No price or throughput comparison with a real machine,** which no twin has been run against, and no "first" or "only".
+  "In seconds instead of hours" is true of ideal versus twin printing, measured
+  above, and of nothing else.

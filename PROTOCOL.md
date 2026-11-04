@@ -2079,7 +2079,7 @@ major bump. The set emitted today (56 codes, regenerated from the source
 | PROTO | `PROTO_RECURSIVE`, `PROTO_BASE_NAME_INVALID`, `PROTO_NAME_MISMATCH`, `PROTO_PARAM_ERROR`, `EXTERNPROTO_DOWNLOAD_FAILED` |
 | Fields / nodes | `UNKNOWN_FIELD_IN_NODE`, `WORLDINFO_PHYSICSBACKEND_MISNAMED` |
 | Assets | `ASSET_DOWNLOAD_FAILED`, `TEXTURE_READ_FAILED`, `MESH_READ_FAILED`, `URDF_MESH_UNRESOLVED` |
-| Newton / physics | `NEWTON_RUNTIME_ABSENT`, `NEWTON_RUNTIME_BROKEN`, `NEWTON_WORLD_NOT_BUILT`, `NEWTON_BODIES_REGISTERED`, `NEWTON_ZERO_DYNAMIC_BODIES`, `NEWTON_STATICS_NOT_REGISTERED`, `NEWTON_ENFORCE_REFUSED`, `NO_PHYSICS_BACKEND`, `NO_STATIC_COLLISION_SURFACE`, `KINEMATIC_ARTICULATION`, `INERTIA_FROM_BOUNDING_OBJECT_UNAVAILABLE`, `CONTACT_PROPERTIES_IGNORED`, `CONTACT_QUERIES_BLIND`, `SOLID_ODE_PIN_INERT`, `RETIRED_ODE_SELECTOR` |
+| Newton / physics | `NEWTON_RUNTIME_ABSENT`, `NEWTON_RUNTIME_BROKEN`, `NEWTON_WORLD_NOT_BUILT`, `NEWTON_STEP_FAILED`, `NEWTON_BODIES_REGISTERED`, `NEWTON_ZERO_DYNAMIC_BODIES`, `NEWTON_STATICS_NOT_REGISTERED`, `NEWTON_ENFORCE_REFUSED`, `NO_PHYSICS_BACKEND`, `NO_STATIC_COLLISION_SURFACE`, `KINEMATIC_ARTICULATION`, `INERTIA_FROM_BOUNDING_OBJECT_UNAVAILABLE`, `CONTACT_PROPERTIES_IGNORED`, `CONTACT_QUERIES_BLIND`, `SOLID_ODE_PIN_INERT`, `RETIRED_ODE_SELECTOR` |
 | Joints | `JOINT_FEATURE_UNIMPLEMENTED`, `JOINT_REGISTRATION_FAILED` |
 | Sensors | `SENSOR_NO_SOURCE`, `OCCLUSION_RAYS_UNANSWERED` |
 | Controller | `CONTROLLER_CRASHED`, `CONTROLLER_EXITED_NONZERO` |
@@ -2313,6 +2313,49 @@ echo until 2026-09-22). The response gains `steps_requested`,
 §7.39. A step under a held pause (§7.38) is single-stepping, and is exact on the
 supervisor clock only.
 
+**⚠️ `steps_executed` counts SUPERVISOR steps, not physics steps (2026-11-04).**
+A Newton step that raises is skipped (nothing moves, collides or reports a
+contact) while the engine clock and every controller still advance, so the
+supervisor runs, and counts, every step of the batch. Measured on a SparkRover
+assembly scene (a ~2,700-box moving unit among ~6,000 static shapes): MuJoCo
+raised `mj_stackAlloc: out of memory, stack overflow` on every step, the unit
+never moved, and `/sim/step` answered `steps_executed: 250`. The response now
+also carries the engine's own count, read from the `.newton.json` sidecar
+around the call:
+
+```json
+"physics_ok": false,
+"physics_steps": { "step_errors_during": 254, "step_errors_total": 366,
+                   "step_errors_streak": 366,
+                   "first_error": "mj_stackAlloc: out of memory, stack overflow at PrimalAllocate, line 1247
+...",
+                   "first_error_at": 19,
+                   "last_error": "...", "last_error_at": 384, "source": "sidecar" },
+"diagnostics": [ { "code": "NEWTON_STEP_FAILED", "severity": "error", "message": "...", "hint": "..." } ]
+```
+
+`step_errors_during` is the failures between the reads before and after the
+call. On a free-running engine that includes the ticks the engine ran on its
+own during the call (254 vs 250 above). `step_errors_total` is the count for
+the current world; the engine resets it per world. `*_at` is the 1-based
+physics step attempt of this world. `physics_ok` is `true` only when the count
+was read and is zero; it is `null` (never assumed `true`) when there was nothing
+to read (`source`: `sidecar_absent`, `sidecar_unreadable`, or
+`not_reported_by_this_engine` for an engine older than the counter). The
+`diagnostics` entry appears only when `step_errors_during > 0`. Do not read a
+pose or a contact from a batch with `physics_ok: false`.
+
+An `mj_stackAlloc` detail means MuJoCo's ARENA overflowed: the per-step
+scratch memory, fixed when the model compiles. `newtonNjmax` / `newtonNconmax`
+do NOT size it on the CPU solver. `WorldInfo.newtonArenaMB` /
+`OMNISIM_NEWTON_ARENA_MB` do. On the reproduction above, MuJoCo's own 15 MiB
+raised from step 19; 64 MiB and 512 MiB ran 250+ steps with 0 failures and
+the unit landed and rested (z 0.005 m), at ~244 ms per step for its
+8,100 contacts. A slightly short arena does not always raise: MuJoCo may
+instead DROP contacts or constraint rows (`mjWARN_CONTACTFULL` /
+`mjWARN_CNSTRFULL`) and the step "succeeds". The engine logs that once per
+world as `MUJOCO ARENA FULL`. It is not counted in `step_errors`.
+
 Proposed fix: docs/developer/agent-native-api.md (archived 2026-09-02, see [docs/ARCHIVE.md](docs/ARCHIVE.md))
 G1 / P2 (`observe`, `observe_every`, per-request `timeout_s`, `return: ["poses"]`).
 
@@ -2398,6 +2441,14 @@ still hold.** As of v9 the body also carries `sim_time_ms`,
 `basic_time_step_ms`, `sim_time_source`, `engine_time_ms`, **`paused`**,
 `lease_remaining_ms`, `break_hit` and `breaks_armed` — documented in **§7.39**,
 which also states why `sim_time_ms` and `engine_time_ms` are different rulers.
+
+Since 2026-11-04 it also carries **`physics_steps`**: the engine's count of
+physics steps that RAISED and were skipped in the current world
+(`step_errors`, `step_errors_streak`, `first_error`, `first_error_at`,
+`last_error`, `last_error_at`, `source`), the same record §7.10 returns as a
+delta. `step_errors` is `null` when there is nothing to read. Both clocks
+advance through a skipped step, so a moving clock does not prove the physics
+ran.
 
 **There is still no `sim_time` field and no `last_load` object.** Earlier text
 for this section listed both; neither has ever been returned. `running` means

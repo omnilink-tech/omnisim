@@ -157,6 +157,18 @@ CASES = [
     # an unnamed tool, the order stated elsewhere without a wait (showcase take 12, 2026-10-21)
     ("the cart is loaded. after release I measured it at x 2. please hitch it and take it forward 2 metres now.", "turn", {"angle_rad": 1.5708}),
     ("the cart is loaded. once the shift ends, sort it out.", "turn", {"angle_rad": 1.5708}),
+    # a question or a report in one sentence does not veto an order in another (campaign 5 run 7)
+    ("the parts are still reported aboard. please drive forward 2 metres now.", "drive_forward", {"distance": 2}),
+    ("is the cart loaded? please drive forward 2 metres.", "drive_forward", {"distance": 2}),
+    ("is the cart loaded?", "drive_forward", {"distance": 2}),
+    ("Dana said to drive forward 2 metres. that's all.", "drive_forward", {"distance": 2}),
+    ("the parts are no longer on the shelf. please drive forward 2 metres.", "drive_forward", {"distance": 2}),
+    ("don't drive into the weld cell. drive forward 2 metres.", "drive_forward", {"distance": 2}),
+    # place names built from verbs, and a verb inside another word (campaign 6 run 32, 2026-10-21)
+    ("the cart is on the pick pad when I let it go; please drive forward 2 metres now.", "drive_forward", {"distance": 2}),
+    ("the order is done when the cart stops; drive forward 2 metres.", "drive_forward", {"distance": 2}),
+    ("the parking spot is reported clear. please drive forward 2 metres.", "drive_forward", {"distance": 2}),
+    ("park at the loading bay after lunch. drive forward 2 metres.", "drive_forward", {"distance": 2}),
     ("reverse 2 metres - sorry, ignore that", "drive_forward", {"distance": -2}),
     ("drive forward and also stay exactly where you are", "drive_forward", {"distance": 1}),
     ("turn left and right at the same time", "turn", {"angle_rad": 1.5708}),

@@ -1,0 +1,3593 @@
+{
+ "what": "SparkRover Mini assembled step by step on Newton (MuJoCo CPU solver), each unit checked",
+ "simulation_only": true,
+ "tolerances": {
+  "seat_mm": 0.2,
+  "fall_mm": 2.0,
+  "nudge_mm": 0.05,
+  "thread_mm": 0.6,
+  "path_step_mm": 0.5,
+  "settle_s": 0.5,
+  "approach_mm": 5.0,
+  "increment_mm": 0.5,
+  "refine_mm": 0.05
+ },
+ "solver": {
+  "basicTimeStep_ms": 2,
+  "newtonSubsteps": 2,
+  "newtonSolver": "mujoco",
+  "newtonContactKe": 50000.0
+ },
+ "machine": {
+  "id": "9722d23d12a3",
+  "host": "hc385771a14",
+  "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "cpu": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+  "cores": 16
+ },
+ "steps": [
+  {
+   "step": 1,
+   "title": "Deck: the two plywood layers, glued",
+   "source": "chassis step 1",
+   "units": [
+    {
+     "unit": "deck_lower",
+     "parts": [
+      "deck_lower"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "rests",
+      "seat_error_mm": 0.023,
+      "drop_mm": -0.023,
+      "rests_on": {
+       "STAND_0": 8,
+       "STAND_1": 8,
+       "STAND_2": 8,
+       "STAND_3": 8
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 514.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "deck_upper",
+     "parts": [
+      "deck_upper"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "deck_upper",
+        "with": "deck_lower"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "rests",
+      "seat_error_mm": 0.197,
+      "drop_mm": 0.093,
+      "rests_on": {
+       "ASSY": 12
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 530.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 0,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 0,
+    "interference": []
+   },
+   "screenshot": "physical_step_1.png",
+   "wall_s": 14.7
+  },
+  {
+   "step": 2,
+   "title": "Gearmotors into their brackets (bench), then each unit on its spacer under the deck",
+   "source": "chassis steps 2-3",
+   "units": [
+    {
+     "unit": "spacer_fl",
+     "parts": [
+      "spacer_fl"
+     ],
+     "path": [
+      {
+       "from": [
+        -0.0,
+        -0.0,
+        -1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "spacer_fl",
+        "with": "deck_lower"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 47.027,
+      "drop_mm": -46.992,
+      "rests_on": {
+       "BENCH": 8
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 542.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "motor_unit_fl",
+     "parts": [
+      "bracket_fl",
+      "motor_fl",
+      "motor_fl_shaft"
+     ],
+     "path": [
+      {
+       "from": [
+        -0.0,
+        -0.0,
+        -1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "gearmotor and bracket joined on the bench, offered up from below",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "bracket_fl",
+        "with": "spacer_fl"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 20.066,
+      "drop_mm": -20.042,
+      "rests_on": {
+       "BENCH": 18
+      },
+      "collision_prims": 130,
+      "released_for_engine_ms": 522.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "spacer_fr",
+     "parts": [
+      "spacer_fr"
+     ],
+     "path": [
+      {
+       "from": [
+        -0.0,
+        -0.0,
+        -1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "spacer_fr",
+        "with": "deck_lower"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 46.996,
+      "drop_mm": -46.961,
+      "rests_on": {
+       "BENCH": 12
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 568.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "motor_unit_fr",
+     "parts": [
+      "bracket_fr",
+      "motor_fr",
+      "motor_fr_shaft"
+     ],
+     "path": [
+      {
+       "from": [
+        -0.0,
+        -0.0,
+        -1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "gearmotor and bracket joined on the bench, offered up from below",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "bracket_fr",
+        "with": "spacer_fr"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 20.066,
+      "drop_mm": -20.042,
+      "rests_on": {
+       "BENCH": 18
+      },
+      "collision_prims": 130,
+      "released_for_engine_ms": 586.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "spacer_rl",
+     "parts": [
+      "spacer_rl"
+     ],
+     "path": [
+      {
+       "from": [
+        -0.0,
+        -0.0,
+        -1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "spacer_rl",
+        "with": "deck_lower"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 47.002,
+      "drop_mm": -46.966,
+      "rests_on": {
+       "BENCH": 8
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 552.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "motor_unit_rl",
+     "parts": [
+      "bracket_rl",
+      "motor_rl",
+      "motor_rl_shaft"
+     ],
+     "path": [
+      {
+       "from": [
+        -0.0,
+        -0.0,
+        -1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "gearmotor and bracket joined on the bench, offered up from below",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "bracket_rl",
+        "with": "spacer_rl"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 20.081,
+      "drop_mm": -20.047,
+      "rests_on": {
+       "BENCH": 16
+      },
+      "collision_prims": 130,
+      "released_for_engine_ms": 560.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "spacer_rr",
+     "parts": [
+      "spacer_rr"
+     ],
+     "path": [
+      {
+       "from": [
+        -0.0,
+        -0.0,
+        -1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "spacer_rr",
+        "with": "deck_lower"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 47.016,
+      "drop_mm": -46.98,
+      "rests_on": {
+       "BENCH": 8
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 564.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "motor_unit_rr",
+     "parts": [
+      "bracket_rr",
+      "motor_rr",
+      "motor_rr_shaft"
+     ],
+     "path": [
+      {
+       "from": [
+        -0.0,
+        -0.0,
+        -1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "gearmotor and bracket joined on the bench, offered up from below",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "bracket_rr",
+        "with": "spacer_rr"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 20.081,
+      "drop_mm": -20.047,
+      "rests_on": {
+       "BENCH": 18
+      },
+      "collision_prims": 130,
+      "released_for_engine_ms": 592.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 48,
+   "fastener_check": {
+    "threaded": 8,
+    "touching": 40,
+    "interference": []
+   },
+   "screenshot": "physical_step_2.png",
+   "wall_s": 39.3
+  },
+  {
+   "step": 3,
+   "title": "Hex adapters and wheels",
+   "source": "chassis step 4",
+   "units": [
+    {
+     "unit": "hex_adapter_fl",
+     "parts": [
+      "hex_adapter_fl"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        1.0,
+        0.0
+       ],
+       "mm": 12.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "rests",
+      "seat_error_mm": 0.076,
+      "drop_mm": -0.062,
+      "rests_on": {
+       "ASSY": 69
+      },
+      "collision_prims": 23,
+      "released_for_engine_ms": 526.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "wheel_fl",
+     "parts": [
+      "wheel_fl"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        1.0,
+        0.0
+       ],
+       "mm": 30.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "wheel_fl",
+        "with": "hex_adapter_fl"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "rests",
+      "seat_error_mm": 0.0,
+      "drop_mm": -0.0,
+      "rests_on": {
+       "BENCH": 12,
+       "ASSY": 258
+      },
+      "collision_prims": 331,
+      "released_for_engine_ms": 536.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "hex_adapter_fr",
+     "parts": [
+      "hex_adapter_fr"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        -1.0,
+        0.0
+       ],
+       "mm": 12.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "rests",
+      "seat_error_mm": 0.081,
+      "drop_mm": -0.064,
+      "rests_on": {
+       "ASSY": 69
+      },
+      "collision_prims": 23,
+      "released_for_engine_ms": 554.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "wheel_fr",
+     "parts": [
+      "wheel_fr"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        -1.0,
+        0.0
+       ],
+       "mm": 30.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "wheel_fr",
+        "with": "hex_adapter_fr"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "rests",
+      "seat_error_mm": 0.0,
+      "drop_mm": -0.0,
+      "rests_on": {
+       "BENCH": 12,
+       "ASSY": 267
+      },
+      "collision_prims": 331,
+      "released_for_engine_ms": 540.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "hex_adapter_rl",
+     "parts": [
+      "hex_adapter_rl"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        1.0,
+        0.0
+       ],
+       "mm": 12.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "rests",
+      "seat_error_mm": 0.077,
+      "drop_mm": -0.065,
+      "rests_on": {
+       "ASSY": 67
+      },
+      "collision_prims": 23,
+      "released_for_engine_ms": 546.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "wheel_rl",
+     "parts": [
+      "wheel_rl"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        1.0,
+        0.0
+       ],
+       "mm": 30.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "wheel_rl",
+        "with": "hex_adapter_rl"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "rests",
+      "seat_error_mm": 0.0,
+      "drop_mm": -0.0,
+      "rests_on": {
+       "BENCH": 12,
+       "ASSY": 277
+      },
+      "collision_prims": 331,
+      "released_for_engine_ms": 516.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "hex_adapter_rr",
+     "parts": [
+      "hex_adapter_rr"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        -1.0,
+        0.0
+       ],
+       "mm": 12.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "rests",
+      "seat_error_mm": 0.08,
+      "drop_mm": -0.064,
+      "rests_on": {
+       "ASSY": 65
+      },
+      "collision_prims": 23,
+      "released_for_engine_ms": 534.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "wheel_rr",
+     "parts": [
+      "wheel_rr"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        -1.0,
+        0.0
+       ],
+       "mm": 30.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "wheel_rr",
+        "with": "hex_adapter_rr"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "rests",
+      "seat_error_mm": 0.0,
+      "drop_mm": -0.0,
+      "rests_on": {
+       "BENCH": 12,
+       "ASSY": 267
+      },
+      "collision_prims": 331,
+      "released_for_engine_ms": 528.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 4,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 4,
+    "interference": []
+   },
+   "screenshot": "physical_step_3.png",
+   "wall_s": 75.0
+  },
+  {
+   "step": 4,
+   "title": "Spine foot, then the spine (its six plates glued on the bench)",
+   "source": "chassis steps 5-6",
+   "units": [
+    {
+     "unit": "spine_foot",
+     "parts": [
+      "spine_foot"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "spine_foot",
+        "with": "deck_upper"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "rests",
+      "seat_error_mm": 0.129,
+      "drop_mm": 0.044,
+      "rests_on": {
+       "ASSY": 12
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 532.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "spine",
+     "parts": [
+      "spine_side_l",
+      "spine_side_r",
+      "spine_rear",
+      "spine_front",
+      "spine_rung_mid",
+      "spine_rung_top"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 30.0
+      }
+     ],
+     "note": "a glued box: placed whole",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "spine_side_l",
+        "with": "spine_foot"
+       },
+       {
+        "part": "spine_side_r",
+        "with": "spine_foot"
+       },
+       {
+        "part": "spine_rear",
+        "with": "spine_foot"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "rests",
+      "seat_error_mm": 0.002,
+      "drop_mm": -0.0,
+      "rests_on": {
+       "ASSY": 93
+      },
+      "collision_prims": 137,
+      "released_for_engine_ms": 538.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 8,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 8,
+    "interference": []
+   },
+   "screenshot": "physical_step_4.png",
+   "wall_s": 35.4
+  },
+  {
+   "step": 5,
+   "title": "Battery under the deck, strapped",
+   "source": "chassis step 8, electrical step 6 (the pack)",
+   "units": [
+    {
+     "unit": "battery",
+     "parts": [
+      "el_BT1"
+     ],
+     "path": [
+      {
+       "from": [
+        -0.0,
+        -0.0,
+        -1.0
+       ],
+       "mm": 30.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 29.506,
+      "drop_mm": -29.506,
+      "rests_on": {
+       "BENCH": 8
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 542.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 1,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 0,
+    "interference": []
+   },
+   "screenshot": "physical_step_5.png",
+   "wall_s": 16.2
+  },
+  {
+   "step": 6,
+   "title": "Shoulder brackets onto the spine",
+   "source": "skeleton.ASSEMBLY_NOTE, arms step 1",
+   "units": [
+    {
+     "unit": "shoulder_bracket_left",
+     "parts": [
+      "shoulder_bracket_left"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        1.0,
+        0.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "shoulder_bracket_left",
+        "with": "spine_side_l"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 94.935,
+      "drop_mm": -94.807,
+      "rests_on": {
+       "ASSY": 82
+      },
+      "collision_prims": 76,
+      "released_for_engine_ms": 536.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "shoulder_bracket_right",
+     "parts": [
+      "shoulder_bracket_right"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        -1.0,
+        0.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "shoulder_bracket_right",
+        "with": "spine_side_r"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 99.108,
+      "drop_mm": -98.99,
+      "rests_on": {
+       "ASSY": 158
+      },
+      "collision_prims": 76,
+      "released_for_engine_ms": 546.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 8,
+   "fastener_check": {
+    "threaded": 8,
+    "touching": 8,
+    "interference": []
+   },
+   "screenshot": "physical_step_6.png",
+   "wall_s": 30.9
+  },
+  {
+   "step": 7,
+   "title": "Bench: populate the bay carrier",
+   "source": "electrical steps 1-3, on the bench",
+   "units": [
+    {
+     "unit": "pi_unit",
+     "parts": [
+      "el_U1",
+      "el_pi_standoffs",
+      "el_U10"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        1.0,
+        0.0
+       ],
+       "mm": 88.0
+      }
+     ],
+     "note": "the Pi on its standoffs with its Active Cooler, as one unit",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       -1.0,
+       0.0,
+       0.0
+      ],
+      "candidates_tried": 3,
+      "path": [
+       {
+        "from": [
+         0.0,
+         1.0,
+         0.0
+        ],
+        "mm": 88.0
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_pi_standoffs",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "falls",
+      "seat_error_mm": 101.832,
+      "drop_mm": -47.24,
+      "rests_on": {
+       "BENCH": 3
+      },
+      "collision_prims": 45,
+      "released_for_engine_ms": 518.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_U5",
+     "parts": [
+      "el_U5"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 100.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       1.0,
+       0.0,
+       0.0
+      ],
+      "candidates_tried": 5,
+      "path": [
+       {
+        "from": [
+         0.0,
+         0.0,
+         1.0
+        ],
+        "mm": 100.0
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_U5",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 104.379,
+      "drop_mm": -69.707,
+      "rests_on": {},
+      "collision_prims": 2,
+      "released_for_engine_ms": 548.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_U6",
+     "parts": [
+      "el_U6"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 85.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       0.0,
+       -1.0,
+       0.0
+      ],
+      "candidates_tried": 5,
+      "path": [
+       {
+        "from": [
+         0.0,
+         0.0,
+         1.0
+        ],
+        "mm": 85.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_U6",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 140.379,
+      "drop_mm": -93.649,
+      "rests_on": {},
+      "collision_prims": 2,
+      "released_for_engine_ms": 558.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_SW1",
+     "parts": [
+      "el_SW1"
+     ],
+     "path": [
+      {
+       "from": [
+        -1.0,
+        -0.0,
+        -0.0
+       ],
+       "mm": 33.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       0.0,
+       -1.0,
+       0.0
+      ],
+      "candidates_tried": 4,
+      "path": [
+       {
+        "from": [
+         -1.0,
+         -0.0,
+         -0.0
+        ],
+        "mm": 33.0
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_SW1",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 152.132,
+      "drop_mm": -125.162,
+      "rests_on": {},
+      "collision_prims": 1,
+      "released_for_engine_ms": 542.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_MA",
+     "parts": [
+      "el_MA"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 100.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       0.0,
+       1.0,
+       -0.0
+      ],
+      "candidates_tried": 5,
+      "path": [
+       {
+        "from": [
+         0.0,
+         0.0,
+         1.0
+        ],
+        "mm": 100.0
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_MA",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 64.006,
+      "drop_mm": -64.006,
+      "rests_on": {
+       "BENCH": 12
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 554.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_MB",
+     "parts": [
+      "el_MB"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 87.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       0.0,
+       1.0,
+       -0.0
+      ],
+      "candidates_tried": 5,
+      "path": [
+       {
+        "from": [
+         0.0,
+         0.0,
+         1.0
+        ],
+        "mm": 87.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_MB",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 3.769,
+      "drop_mm": -3.686,
+      "rests_on": {
+       "ASSY": 12
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 530.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_F1",
+     "parts": [
+      "el_F1"
+     ],
+     "path": [
+      {
+       "from": [
+        -1.0,
+        -0.0,
+        -0.0
+       ],
+       "mm": 41.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       0.0,
+       1.0,
+       -0.0
+      ],
+      "candidates_tried": 4,
+      "path": [
+       {
+        "from": [
+         -1.0,
+         -0.0,
+         -0.0
+        ],
+        "mm": 41.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_F1",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 20.731,
+      "drop_mm": -9.016,
+      "rests_on": {
+       "ASSY": 11
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 582.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_X1",
+     "parts": [
+      "el_X1"
+     ],
+     "path": [
+      {
+       "from": [
+        -1.0,
+        -0.0,
+        -0.0
+       ],
+       "mm": 26.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       0.0,
+       1.0,
+       -0.0
+      ],
+      "candidates_tried": 4,
+      "path": [
+       {
+        "from": [
+         -1.0,
+         -0.0,
+         -0.0
+        ],
+        "mm": 26.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_X1",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 4.056,
+      "drop_mm": -3.995,
+      "rests_on": {
+       "ASSY": 8
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 536.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_X2",
+     "parts": [
+      "el_X2"
+     ],
+     "path": [
+      {
+       "from": [
+        -1.0,
+        -0.0,
+        -0.0
+       ],
+       "mm": 37.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       0.0,
+       1.0,
+       -0.0
+      ],
+      "candidates_tried": 4,
+      "path": [
+       {
+        "from": [
+         -1.0,
+         -0.0,
+         -0.0
+        ],
+        "mm": 37.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_X2",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 2.727,
+      "drop_mm": -2.701,
+      "rests_on": {
+       "ASSY": 12
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 544.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_X3",
+     "parts": [
+      "el_X3"
+     ],
+     "path": [
+      {
+       "from": [
+        -1.0,
+        -0.0,
+        -0.0
+       ],
+       "mm": 37.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       0.0,
+       -1.0,
+       0.0
+      ],
+      "candidates_tried": 4,
+      "path": [
+       {
+        "from": [
+         -1.0,
+         -0.0,
+         -0.0
+        ],
+        "mm": 37.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_X3",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 153.232,
+      "drop_mm": -128.959,
+      "rests_on": {},
+      "collision_prims": 1,
+      "released_for_engine_ms": 536.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_X4",
+     "parts": [
+      "el_X4"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 100.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       1.0,
+       0.0,
+       -0.0
+      ],
+      "candidates_tried": 5,
+      "path": [
+       {
+        "from": [
+         0.0,
+         0.0,
+         1.0
+        ],
+        "mm": 100.0
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_X4",
+        "with": "el_bay_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 62.203,
+      "drop_mm": -61.767,
+      "rests_on": {
+       "BENCH": 6
+      },
+      "collision_prims": 1,
+      "released_for_engine_ms": 526.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "io_board",
+     "parts": [
+      "el_B1",
+      "el_U2",
+      "el_U3",
+      "el_U4",
+      "el_U7"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 46.5
+      },
+      {
+       "from": [
+        -1.0,
+        0.0,
+        0.0
+       ],
+       "mm": 5.0
+      }
+     ],
+     "note": "IO board populated first (Pico, logic ICs, headers)",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       -1.0,
+       0.0,
+       0.0
+      ],
+      "candidates_tried": 13,
+      "path": [
+       {
+        "from": [
+         0.0,
+         0.0,
+         1.0
+        ],
+        "mm": 46.5
+       },
+       {
+        "from": [
+         -1.0,
+         0.0,
+         0.0
+        ],
+        "mm": 5.0
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_B1",
+        "with": "el_bay_carrier"
+       },
+       {
+        "part": "el_B1",
+        "with": "el_insert_B1_0"
+       },
+       {
+        "part": "el_B1",
+        "with": "el_insert_B1_1"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.45,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "falls",
+      "seat_error_mm": 12.723,
+      "drop_mm": -4.036,
+      "rests_on": {
+       "ASSY": 24
+      },
+      "collision_prims": 6,
+      "released_for_engine_ms": 520.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_cooler_duct",
+     "parts": [
+      "el_cooler_duct"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 100.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       -1.0,
+       0.0,
+       0.0
+      ],
+      "candidates_tried": 5,
+      "path": [
+       {
+        "from": [
+         0.0,
+         0.0,
+         1.0
+        ],
+        "mm": 100.0
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_cooler_duct",
+        "with": "el_insert_duct_0"
+       },
+       {
+        "part": "el_cooler_duct",
+        "with": "el_bay_carrier"
+       },
+       {
+        "part": "el_cooler_duct",
+        "with": "el_insert_duct_1"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "shifts",
+      "seat_error_mm": 0.249,
+      "drop_mm": -0.046,
+      "rests_on": {
+       "ASSY": 125
+      },
+      "collision_prims": 26,
+      "released_for_engine_ms": 536.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 29,
+   "bench_fixture": [
+    "el_bay_carrier",
+    "el_insert_bay_row_0",
+    "el_insert_bay_row_1",
+    "el_insert_bay_row_2",
+    "el_insert_bay_row_3",
+    "el_insert_bay_row_4",
+    "el_insert_B1_0",
+    "el_insert_B1_1",
+    "el_insert_duct_0",
+    "el_insert_duct_1"
+   ],
+   "bench_order": [
+    "pi_unit",
+    "el_U5",
+    "el_U6",
+    "el_SW1",
+    "el_MA",
+    "el_MB",
+    "el_F1",
+    "el_X1",
+    "el_X2",
+    "el_X3",
+    "el_X4",
+    "io_board",
+    "el_cooler_duct"
+   ],
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 24,
+    "interference": []
+   },
+   "screenshot": "physical_step_7.png",
+   "wall_s": 103.8
+  },
+  {
+   "step": 8,
+   "title": "The bay carrier, loaded, onto the spine from behind (-x); its screws from inside the spine",
+   "source": "electrical step 3",
+   "units": [
+    {
+     "unit": "bay_carrier_loaded",
+     "parts": [
+      "el_bay_carrier",
+      "el_insert_bay_row_0",
+      "el_insert_bay_row_1",
+      "el_insert_bay_row_2",
+      "el_insert_bay_row_3",
+      "el_insert_bay_row_4",
+      "el_insert_B1_0",
+      "el_insert_B1_1",
+      "el_insert_duct_0",
+      "el_insert_duct_1",
+      "el_U1",
+      "el_pi_standoffs",
+      "el_U10",
+      "el_U5",
+      "el_U6",
+      "el_SW1",
+      "el_MA",
+      "el_MB",
+      "el_F1",
+      "el_X1",
+      "el_X2",
+      "el_X3",
+      "el_X4",
+      "el_B1",
+      "el_U2",
+      "el_U3",
+      "el_U4",
+      "el_U7",
+      "el_cooler_duct",
+      "el_C2",
+      "el_C4",
+      "el_C5",
+      "el_C6",
+      "el_R3",
+      "el_R4",
+      "el_R5",
+      "el_R6",
+      "el_R7",
+      "el_R11",
+      "el_D5",
+      "el_F2",
+      "el_F3",
+      "el_JE1",
+      "el_JM1",
+      "el_JE2",
+      "el_JM2",
+      "el_JE3",
+      "el_JM3",
+      "el_JE4",
+      "el_JM4",
+      "el_screw_B1_0",
+      "el_screw_B1_1",
+      "el_screw_U5_0",
+      "el_screw_U5_1",
+      "el_screw_U6_0",
+      "el_screw_U6_1",
+      "el_screw_duct_0",
+      "el_screw_duct_1"
+     ],
+     "path": [
+      {
+       "from": [
+        -1.0,
+        -0.0,
+        -0.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "the populated carrier as one unit",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_bay_carrier",
+        "with": "spine_rear"
+       },
+       {
+        "part": "el_bay_carrier",
+        "with": "spine_side_r"
+       },
+       {
+        "part": "el_bay_carrier",
+        "with": "spine_rung_mid"
+       },
+       {
+        "part": "el_bay_carrier",
+        "with": "spine_side_l"
+       },
+       {
+        "part": "el_insert_bay_row_0",
+        "with": "spine_rear"
+       },
+       {
+        "part": "el_insert_bay_row_1",
+        "with": "spine_rear"
+       },
+       {
+        "part": "el_insert_bay_row_2",
+        "with": "spine_rear"
+       },
+       {
+        "part": "el_insert_bay_row_3",
+        "with": "spine_rear"
+       },
+       {
+        "part": "el_insert_bay_row_4",
+        "with": "spine_rear"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 5.168,
+      "drop_mm": -4.515,
+      "rests_on": {
+       "ASSY": 306
+      },
+      "collision_prims": 524,
+      "released_for_engine_ms": 538.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 9,
+   "fastener_check": {
+    "threaded": 4,
+    "touching": 4,
+    "interference": []
+   },
+   "screenshot": "physical_step_8.png",
+   "wall_s": 45.1
+  },
+  {
+   "step": 9,
+   "title": "Bench: populate the front carrier",
+   "source": "electrical steps 4-5, on the bench",
+   "units": [
+    {
+     "unit": "el_U9",
+     "parts": [
+      "el_U9"
+     ],
+     "path": [
+      {
+       "from": [
+        -0.0,
+        -0.0,
+        -1.0
+       ],
+       "mm": 91.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       1.0,
+       0.0,
+       0.0
+      ],
+      "candidates_tried": 6,
+      "path": [
+       {
+        "from": [
+         -0.0,
+         -0.0,
+         -1.0
+        ],
+        "mm": 91.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_U9",
+        "with": "el_front_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "falls",
+      "seat_error_mm": 232.266,
+      "drop_mm": -151.806,
+      "rests_on": {},
+      "collision_prims": 3,
+      "released_for_engine_ms": 566.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_U8",
+     "parts": [
+      "el_U8"
+     ],
+     "path": [
+      {
+       "from": [
+        1.0,
+        0.0,
+        0.0
+       ],
+       "mm": 3.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       1.0,
+       0.0,
+       0.0
+      ],
+      "candidates_tried": 1,
+      "path": [
+       {
+        "from": [
+         1.0,
+         0.0,
+         0.0
+        ],
+        "mm": 3.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_U8",
+        "with": "el_front_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 3.5,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 209.453,
+      "drop_mm": -128.822,
+      "rests_on": {},
+      "collision_prims": 1,
+      "released_for_engine_ms": 546.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_LS1",
+     "parts": [
+      "el_LS1"
+     ],
+     "path": [
+      {
+       "from": [
+        1.0,
+        0.0,
+        0.0
+       ],
+       "mm": 18.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       1.0,
+       0.0,
+       0.0
+      ],
+      "candidates_tried": 1,
+      "path": [
+       {
+        "from": [
+         1.0,
+         0.0,
+         0.0
+        ],
+        "mm": 18.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_LS1",
+        "with": "el_insert_LS1_3"
+       },
+       {
+        "part": "el_LS1",
+        "with": "el_front_carrier"
+       },
+       {
+        "part": "el_LS1",
+        "with": "el_insert_LS1_0"
+       },
+       {
+        "part": "el_LS1",
+        "with": "el_insert_LS1_2"
+       },
+       {
+        "part": "el_LS1",
+        "with": "el_insert_LS1_1"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 87.572,
+      "drop_mm": -85.727,
+      "rests_on": {
+       "BENCH": 2
+      },
+      "collision_prims": 27,
+      "released_for_engine_ms": 536.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_U11",
+     "parts": [
+      "el_U11"
+     ],
+     "path": [
+      {
+       "from": [
+        1.0,
+        0.0,
+        0.0
+       ],
+       "mm": 55.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       1.0,
+       0.0,
+       0.0
+      ],
+      "candidates_tried": 1,
+      "path": [
+       {
+        "from": [
+         1.0,
+         0.0,
+         0.0
+        ],
+        "mm": 55.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_U11",
+        "with": "el_front_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 23.668,
+      "drop_mm": -9.451,
+      "rests_on": {
+       "ASSY": 10
+      },
+      "collision_prims": 3,
+      "released_for_engine_ms": 532.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_U12",
+     "parts": [
+      "el_U12"
+     ],
+     "path": [
+      {
+       "from": [
+        1.0,
+        0.0,
+        0.0
+       ],
+       "mm": 55.5
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false,
+      "found_by": "disassembly",
+      "designed_from": [
+       1.0,
+       0.0,
+       0.0
+      ],
+      "candidates_tried": 1,
+      "path": [
+       {
+        "from": [
+         1.0,
+         0.0,
+         0.0
+        ],
+        "mm": 55.5
+       }
+      ]
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_U12",
+        "with": "el_front_carrier"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 149.282,
+      "drop_mm": -132.873,
+      "rests_on": {
+       "BENCH": 12
+      },
+      "collision_prims": 2,
+      "released_for_engine_ms": 550.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 18,
+   "bench_fixture": [
+    "el_front_carrier",
+    "el_insert_head_grid_0",
+    "el_insert_head_grid_1",
+    "el_insert_head_grid_2",
+    "el_insert_head_grid_3",
+    "el_insert_LS1_0",
+    "el_insert_LS1_1",
+    "el_insert_LS1_2",
+    "el_insert_LS1_3"
+   ],
+   "bench_order": [
+    "el_U9",
+    "el_U8",
+    "el_LS1",
+    "el_U11",
+    "el_U12"
+   ],
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 16,
+    "interference": []
+   },
+   "screenshot": "physical_step_9.png",
+   "wall_s": 27.2
+  },
+  {
+   "step": 10,
+   "title": "The front carrier, loaded, onto the spine from the front (+x); its screws from inside the spine",
+   "source": "electrical step 5",
+   "units": [
+    {
+     "unit": "front_carrier_loaded",
+     "parts": [
+      "el_front_carrier",
+      "el_insert_head_grid_0",
+      "el_insert_head_grid_1",
+      "el_insert_head_grid_2",
+      "el_insert_head_grid_3",
+      "el_insert_LS1_0",
+      "el_insert_LS1_1",
+      "el_insert_LS1_2",
+      "el_insert_LS1_3",
+      "el_U9",
+      "el_U8",
+      "el_LS1",
+      "el_U11",
+      "el_U12",
+      "el_MK1",
+      "el_MK2",
+      "el_D3",
+      "el_D4",
+      "el_R8",
+      "el_R9",
+      "el_screw_U9_0",
+      "el_screw_U9_1",
+      "el_screw_U9_2",
+      "el_screw_U9_3",
+      "el_screw_U12_0",
+      "el_screw_U12_1",
+      "el_screw_U11_0",
+      "el_screw_U11_1",
+      "el_screw_LS1_0",
+      "el_screw_LS1_1",
+      "el_screw_LS1_2",
+      "el_screw_LS1_3"
+     ],
+     "path": [
+      {
+       "from": [
+        1.0,
+        0.0,
+        0.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "the populated carrier as one unit",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "el_front_carrier",
+        "with": "spine_side_r"
+       },
+       {
+        "part": "el_front_carrier",
+        "with": "spine_front"
+       },
+       {
+        "part": "el_front_carrier",
+        "with": "spine_rung_top"
+       },
+       {
+        "part": "el_front_carrier",
+        "with": "spine_rung_mid"
+       },
+       {
+        "part": "el_front_carrier",
+        "with": "spine_side_l"
+       },
+       {
+        "part": "el_insert_head_grid_0",
+        "with": "spine_front"
+       },
+       {
+        "part": "el_insert_head_grid_1",
+        "with": "spine_front"
+       },
+       {
+        "part": "el_insert_head_grid_2",
+        "with": "spine_front"
+       },
+       {
+        "part": "el_insert_head_grid_3",
+        "with": "spine_front"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "falls",
+      "seat_error_mm": 336.546,
+      "drop_mm": -133.876,
+      "rests_on": {
+       "BENCH": 2
+      },
+      "collision_prims": 507,
+      "released_for_engine_ms": 570.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 4,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 0,
+    "interference": []
+   },
+   "screenshot": "physical_step_10.png",
+   "wall_s": 46.2
+  },
+  {
+   "step": 11,
+   "title": "Electronics: harness: pack, motors, encoders, servo plugs, FPCs, all before shell step 2; then the shell-mounted parts' leads as their sections go on: the LED strips', charger's and button's with the lower halves (shell step 2), the touch pads' with the upper halves (shell step 4)",
+   "source": "electrical step 6",
+   "units": [],
+   "fasteners": 4,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 0,
+    "interference": []
+   },
+   "screenshot": "physical_step_11.png",
+   "wall_s": 16.6
+  },
+  {
+   "step": 12,
+   "title": "Lower shell halves, slid on along x, lugs under the deck corners",
+   "source": "shell steps 1-2",
+   "units": [
+    {
+     "unit": "shell_lower_front",
+     "parts": [
+      "shell_lower_front",
+      "bumper_front",
+      "diffuser_front",
+      "el_D1",
+      "el_C3",
+      "insert_lower_fl",
+      "insert_lower_fr"
+     ],
+     "path": [
+      {
+       "from": [
+        1.0,
+        0.0,
+        0.0
+       ],
+       "mm": 25.0
+      }
+     ],
+     "note": "bench: bumper, diffuser and LED strip on, inserts in (shell step 1)",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "shell_lower_front",
+        "with": "deck_lower"
+       },
+       {
+        "part": "insert_lower_fl",
+        "with": "deck_lower"
+       },
+       {
+        "part": "insert_lower_fr",
+        "with": "deck_lower"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "falls",
+      "seat_error_mm": 25.45,
+      "drop_mm": -16.179,
+      "rests_on": {
+       "BENCH": 6,
+       "ASSY": 27
+      },
+      "collision_prims": 266,
+      "released_for_engine_ms": 528.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "shell_lower_rear",
+     "parts": [
+      "shell_lower_rear",
+      "bumper_rear",
+      "diffuser_rear",
+      "el_D2",
+      "el_CHG1",
+      "el_B2",
+      "el_S1",
+      "el_R10",
+      "insert_lower_rl",
+      "insert_lower_rr",
+      "insert_lb_seam_0",
+      "insert_lb_seam_1",
+      "insert_charger_0",
+      "insert_charger_1",
+      "insert_button_0",
+      "insert_button_1"
+     ],
+     "path": [
+      {
+       "from": [
+        -1.0,
+        0.0,
+        0.0
+       ],
+       "mm": 25.0
+      }
+     ],
+     "note": "bench: bumper, diffuser and LED strip on, inserts in (shell step 1)",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "shell_lower_rear",
+        "with": "deck_lower"
+       },
+       {
+        "part": "shell_lower_rear",
+        "with": "shell_lower_front"
+       },
+       {
+        "part": "el_CHG1",
+        "with": "el_bay_carrier"
+       },
+       {
+        "part": "insert_lower_rl",
+        "with": "deck_lower"
+       },
+       {
+        "part": "insert_lower_rr",
+        "with": "deck_lower"
+       },
+       {
+        "part": "insert_lb_seam_0",
+        "with": "shell_lower_front"
+       },
+       {
+        "part": "insert_lb_seam_1",
+        "with": "shell_lower_front"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "falls",
+      "seat_error_mm": 20.489,
+      "drop_mm": -1.244,
+      "rests_on": {
+       "ASSY": 39
+      },
+      "collision_prims": 382,
+      "released_for_engine_ms": 546.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 8,
+   "fastener_check": {
+    "threaded": 4,
+    "touching": 8,
+    "interference": []
+   },
+   "screenshot": "physical_step_12.png",
+   "wall_s": 119.8
+  },
+  {
+   "step": 13,
+   "title": "Side seam screws",
+   "source": "shell step 3",
+   "units": [],
+   "fasteners": 2,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 2,
+    "interference": []
+   },
+   "screenshot": "physical_step_13.png",
+   "wall_s": 22.2
+  },
+  {
+   "step": 14,
+   "title": "Upper shell halves, slid on along y onto the spine (left, then right)",
+   "source": "shell steps 1, 4",
+   "units": [
+    {
+     "unit": "shell_upper_left",
+     "parts": [
+      "shell_upper_left",
+      "shoulder_ring_left",
+      "insert_upper_l_low",
+      "insert_upper_l_high",
+      "insert_socket_0",
+      "insert_socket_1",
+      "insert_hatch_0",
+      "insert_hatch_1"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        1.0,
+        0.0
+       ],
+       "mm": 90.0
+      }
+     ],
+     "note": "bench: teal ring glued in, inserts in",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "shell_upper_left",
+        "with": "shell_lower_rear"
+       },
+       {
+        "part": "shell_upper_left",
+        "with": "shell_lower_front"
+       },
+       {
+        "part": "shell_upper_left",
+        "with": "spine_side_l"
+       },
+       {
+        "part": "insert_upper_l_low",
+        "with": "spine_side_l"
+       },
+       {
+        "part": "insert_upper_l_high",
+        "with": "spine_side_l"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "shifts",
+      "seat_error_mm": 0.712,
+      "drop_mm": 0.429,
+      "rests_on": {
+       "ASSY": 148
+      },
+      "collision_prims": 363,
+      "released_for_engine_ms": 568.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "shell_upper_right",
+     "parts": [
+      "shell_upper_right",
+      "shoulder_ring_right",
+      "insert_upper_r_low",
+      "insert_upper_r_high",
+      "insert_socket_2",
+      "insert_socket_3",
+      "insert_hatch_2",
+      "insert_hatch_3"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        -1.0,
+        0.0
+       ],
+       "mm": 90.0
+      }
+     ],
+     "note": "bench: teal ring glued in, inserts in",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "shell_upper_right",
+        "with": "shell_upper_left"
+       },
+       {
+        "part": "shell_upper_right",
+        "with": "spine_side_r"
+       },
+       {
+        "part": "shell_upper_right",
+        "with": "shell_lower_rear"
+       },
+       {
+        "part": "shell_upper_right",
+        "with": "shell_lower_front"
+       },
+       {
+        "part": "insert_upper_r_low",
+        "with": "spine_side_r"
+       },
+       {
+        "part": "insert_upper_r_high",
+        "with": "spine_side_r"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "falls",
+      "seat_error_mm": 3.028,
+      "drop_mm": 0.877,
+      "rests_on": {
+       "ASSY": 270
+      },
+      "collision_prims": 383,
+      "released_for_engine_ms": 536.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 7,
+   "fastener_check": {
+    "threaded": 4,
+    "touching": 7,
+    "interference": []
+   },
+   "screenshot": "physical_step_14.png",
+   "wall_s": 377.9
+  },
+  {
+   "step": 15,
+   "title": "Top slot socket, then the accessory board",
+   "source": "shell step 5, electrical step 7",
+   "units": [
+    {
+     "unit": "top_socket",
+     "parts": [
+      "top_socket"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 20.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "top_socket",
+        "with": "insert_socket_2"
+       },
+       {
+        "part": "top_socket",
+        "with": "insert_socket_1"
+       },
+       {
+        "part": "top_socket",
+        "with": "insert_socket_0"
+       },
+       {
+        "part": "top_socket",
+        "with": "shell_upper_right"
+       },
+       {
+        "part": "top_socket",
+        "with": "insert_socket_3"
+       },
+       {
+        "part": "top_socket",
+        "with": "shell_upper_left"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 0.5,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "shifts",
+      "seat_error_mm": 0.492,
+      "drop_mm": 0.492,
+      "rests_on": {
+       "ASSY": 692
+      },
+      "collision_prims": 102,
+      "released_for_engine_ms": 552.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "el_B3",
+     "parts": [
+      "el_B3"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        0.0,
+        1.0
+       ],
+       "mm": 15.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": null,
+      "physics_blocked_by": [],
+      "released": "rests",
+      "seat_error_mm": 0.001,
+      "drop_mm": -0.001,
+      "rests_on": {
+       "ASSY": 36
+      },
+      "collision_prims": 2,
+      "released_for_engine_ms": 500.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 5,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 4,
+    "interference": []
+   },
+   "screenshot": "physical_step_15.png",
+   "wall_s": 55.7
+  },
+  {
+   "step": 16,
+   "title": "Rear hatch",
+   "source": "shell step 6",
+   "units": [
+    {
+     "unit": "rear_hatch",
+     "parts": [
+      "rear_hatch"
+     ],
+     "path": [
+      {
+       "from": [
+        -1.0,
+        -0.0,
+        -0.0
+       ],
+       "mm": 15.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "rear_hatch",
+        "with": "insert_hatch_0"
+       },
+       {
+        "part": "rear_hatch",
+        "with": "insert_hatch_2"
+       },
+       {
+        "part": "rear_hatch",
+        "with": "shell_upper_right"
+       },
+       {
+        "part": "rear_hatch",
+        "with": "shell_upper_left"
+       },
+       {
+        "part": "rear_hatch",
+        "with": "insert_hatch_3"
+       },
+       {
+        "part": "rear_hatch",
+        "with": "insert_hatch_1"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 2.45,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "shifts",
+      "seat_error_mm": 1.256,
+      "drop_mm": 0.277,
+      "rests_on": {
+       "ASSY": 300
+      },
+      "collision_prims": 298,
+      "released_for_engine_ms": 530.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 4,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 0,
+    "interference": []
+   },
+   "screenshot": "physical_step_16.png",
+   "wall_s": 53.1
+  },
+  {
+   "step": 17,
+   "title": "Face cover, bonded",
+   "source": "shell step 7",
+   "units": [
+    {
+     "unit": "face_cover",
+     "parts": [
+      "face_cover"
+     ],
+     "path": [
+      {
+       "from": [
+        1.0,
+        0.0,
+        0.0
+       ],
+       "mm": 10.0
+      }
+     ],
+     "note": "",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "face_cover",
+        "with": "shell_upper_left"
+       },
+       {
+        "part": "face_cover",
+        "with": "shell_upper_right"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 1.5,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "falls",
+      "seat_error_mm": 161.964,
+      "drop_mm": -145.213,
+      "rests_on": {},
+      "collision_prims": 1,
+      "released_for_engine_ms": 532.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 0,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 0,
+    "interference": []
+   },
+   "screenshot": "physical_step_17.png",
+   "wall_s": 38.5
+  },
+  {
+   "step": 18,
+   "title": "Arm modules, last, from outside",
+   "source": "skeleton.ASSEMBLY_NOTE, arms steps 2-5",
+   "units": [
+    {
+     "unit": "arm_left",
+     "parts": [
+      "shoulder_post_left",
+      "servo_shoulder_horn_left",
+      "servo_shoulder_left",
+      "upper_arm_inner_left",
+      "upper_arm_outer_left",
+      "shoulder_cap_left",
+      "servo_elbow_horn_left",
+      "forearm_inner_left",
+      "forearm_outer_left",
+      "servo_elbow_left",
+      "screw_post_flange_0_left",
+      "screw_post_flange_1_left",
+      "screw_shoulder_horn_0_left",
+      "screw_shoulder_horn_1_left",
+      "screw_shoulder_horn_2_left",
+      "screw_shoulder_horn_3_left",
+      "screw_elbow_horn_0_left",
+      "screw_elbow_horn_1_left",
+      "screw_elbow_horn_2_left",
+      "screw_elbow_horn_3_left",
+      "screw_upper_halves_0_left",
+      "screw_upper_halves_1_left",
+      "screw_upper_halves_2_left",
+      "screw_fore_halves_in_0_left",
+      "screw_fore_halves_root_0_left"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        1.0,
+        0.0
+       ],
+       "mm": 30.0
+      }
+     ],
+     "note": "the arm module (post, servos, links, screws), built on the bench; post through the 40 mm opening",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "shoulder_post_left",
+        "with": "shoulder_bracket_left"
+       },
+       {
+        "part": "screw_post_flange_0_left",
+        "with": "shoulder_bracket_left"
+       },
+       {
+        "part": "screw_post_flange_1_left",
+        "with": "shoulder_bracket_left"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "shifts",
+      "seat_error_mm": 0.407,
+      "drop_mm": 0.033,
+      "rests_on": {
+       "ASSY": 62
+      },
+      "collision_prims": 89,
+      "released_for_engine_ms": 542.0,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    },
+    {
+     "unit": "arm_right",
+     "parts": [
+      "shoulder_post_right",
+      "servo_shoulder_horn_right",
+      "servo_shoulder_right",
+      "upper_arm_inner_right",
+      "upper_arm_outer_right",
+      "shoulder_cap_right",
+      "servo_elbow_horn_right",
+      "forearm_inner_right",
+      "forearm_outer_right",
+      "servo_elbow_right",
+      "screw_post_flange_0_right",
+      "screw_post_flange_1_right",
+      "screw_shoulder_horn_0_right",
+      "screw_shoulder_horn_1_right",
+      "screw_shoulder_horn_2_right",
+      "screw_shoulder_horn_3_right",
+      "screw_elbow_horn_0_right",
+      "screw_elbow_horn_1_right",
+      "screw_elbow_horn_2_right",
+      "screw_elbow_horn_3_right",
+      "screw_upper_halves_0_right",
+      "screw_upper_halves_1_right",
+      "screw_upper_halves_2_right",
+      "screw_fore_halves_in_0_right",
+      "screw_fore_halves_root_0_right"
+     ],
+     "path": [
+      {
+       "from": [
+        0.0,
+        -1.0,
+        0.0
+       ],
+       "mm": 30.0
+      }
+     ],
+     "note": "the arm module (post, servos, links, screws), built on the bench; post through the 40 mm opening",
+     "exact_path": {
+      "clear_start": true,
+      "blocked": false
+     },
+     "at_seat": {
+      "touching": [
+       {
+        "part": "shoulder_post_right",
+        "with": "shoulder_bracket_right"
+       },
+       {
+        "part": "screw_post_flange_0_right",
+        "with": "shoulder_bracket_right"
+       },
+       {
+        "part": "screw_post_flange_1_right",
+        "with": "shoulder_bracket_right"
+       }
+      ],
+      "threaded": [],
+      "interference": []
+     },
+     "newton": {
+      "physics_approach_mm": 5.0,
+      "physics_blocked_at_mm": 4.95,
+      "physics_blocked_by": [
+       "ASSY"
+      ],
+      "released": "shifts",
+      "seat_error_mm": 0.396,
+      "drop_mm": 0.031,
+      "rests_on": {
+       "ASSY": 62
+      },
+      "collision_prims": 89,
+      "released_for_engine_ms": 534.0000000000001,
+      "engine_step_errors": 0,
+      "steps_executed": 250
+     }
+    }
+   ],
+   "fasteners": 0,
+   "fastener_check": {
+    "threaded": 0,
+    "touching": 0,
+    "interference": []
+   },
+   "screenshot": "physical_step_18.png",
+   "wall_s": 192.9
+  }
+ ],
+ "standing_check": {
+  "contacts_by_wheel": {
+   "fl": 4,
+   "fr": 4,
+   "rl": 4,
+   "rr": 4
+  },
+  "other_contacts": 0,
+  "tilt_deg": 0.0,
+  "drift_mm": 0.0,
+  "com_height_mm": 103.15,
+  "designed_com_height_mm": 103.18,
+  "screenshot": "physical_standing.png",
+  "pass": true,
+  "reasons": []
+ },
+ "summary": {
+  "units": 53,
+  "rests": 13,
+  "shifts": [
+   "7:el_cooler_duct (0.249 mm)",
+   "14:shell_upper_left (0.712 mm)",
+   "15:top_socket (0.492 mm)",
+   "16:rear_hatch (1.256 mm)",
+   "18:arm_left (0.407 mm)",
+   "18:arm_right (0.396 mm)"
+  ],
+  "falls": [
+   "2:spacer_fl (47.027 mm)",
+   "2:motor_unit_fl (20.066 mm)",
+   "2:spacer_fr (46.996 mm)",
+   "2:motor_unit_fr (20.066 mm)",
+   "2:spacer_rl (47.002 mm)",
+   "2:motor_unit_rl (20.081 mm)",
+   "2:spacer_rr (47.016 mm)",
+   "2:motor_unit_rr (20.081 mm)",
+   "5:battery (29.506 mm)",
+   "6:shoulder_bracket_left (94.935 mm)",
+   "6:shoulder_bracket_right (99.108 mm)",
+   "7:pi_unit (101.832 mm)",
+   "7:el_U5 (104.379 mm)",
+   "7:el_U6 (140.379 mm)",
+   "7:el_SW1 (152.132 mm)",
+   "7:el_MA (64.006 mm)",
+   "7:el_MB (3.769 mm)",
+   "7:el_F1 (20.731 mm)",
+   "7:el_X1 (4.056 mm)",
+   "7:el_X2 (2.727 mm)",
+   "7:el_X3 (153.232 mm)",
+   "7:el_X4 (62.203 mm)",
+   "7:io_board (12.723 mm)",
+   "8:bay_carrier_loaded (5.168 mm)",
+   "9:el_U9 (232.266 mm)",
+   "9:el_U8 (209.453 mm)",
+   "9:el_LS1 (87.572 mm)",
+   "9:el_U11 (23.668 mm)",
+   "9:el_U12 (149.282 mm)",
+   "10:front_carrier_loaded (336.546 mm)",
+   "12:shell_lower_front (25.45 mm)",
+   "12:shell_lower_rear (20.489 mm)",
+   "14:shell_upper_right (3.028 mm)",
+   "17:face_cover (161.964 mm)"
+  ],
+  "path_blocked": [],
+  "interference_at_seat": [],
+  "standing": true
+ },
+ "error": null,
+ "wall_s": 1548.3
+}

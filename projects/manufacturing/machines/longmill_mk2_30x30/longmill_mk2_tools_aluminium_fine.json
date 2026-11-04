@@ -1,0 +1,34 @@
+{
+  "note": "Aluminium with a fine tool: the 1/4 in single-flute end mill for profiles, and a 1 mm two-flute carbide end mill (5 mm flute, 1/8 in shank) for small bores such as a 3 mm D-shaft bore. Used by the desk robot's wheel hubs.",
+  "tools": [
+    {
+      "number": 1,
+      "name": "1/4 in single-flute upcut end mill (aluminium)",
+      "shape": "flat",
+      "diameter_mm": 6.35,
+      "flutes": 1,
+      "stickout_mm": 0.0,
+      "flute_mm": 19.0,
+      "shank_mm": 6.35
+    },
+    {
+      "number": 3,
+      "name": "1 mm 2-flute carbide end mill, 5 mm flute (aluminium)",
+      "shape": "flat",
+      "diameter_mm": 1.0,
+      "flutes": 2,
+      "stickout_mm": -4.0,
+      "flute_mm": 5.0,
+      "shank_mm": 3.175
+    }
+  ],
+  "spindle": {
+    "name": "Makita RT0701C trim router",
+    "power_w": 700,
+    "rpm": [
+      10000,
+      30000
+    ],
+    "source": "Sienci Labs product page: https://sienci.com/product/makita-rt0701c-1-25-hp-110v-compact-router/"
+  }
+}

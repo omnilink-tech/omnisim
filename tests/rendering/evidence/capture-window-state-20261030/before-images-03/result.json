@@ -1,0 +1,45 @@
+{
+  "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "1a5283b9e47e3037c08c96c084ca9c381d946d2b9857d55370a982cb1174f9ae",
+  "kind": "images",
+  "no_rendering": false,
+  "error": null,
+  "cleanup_errors": [],
+  "samples": 419,
+  "restores_during_capture": 6,
+  "foreground_samples": 199,
+  "nonminimized_samples": 196,
+  "frame_count": 6,
+  "frame_dimensions": [
+    [
+      1896,
+      1113
+    ],
+    [
+      1896,
+      1113
+    ],
+    [
+      1896,
+      1113
+    ],
+    [
+      1896,
+      1113
+    ],
+    [
+      1896,
+      1113
+    ],
+    [
+      1896,
+      1113
+    ]
+  ],
+  "min_frame_change_mean": 18.350948798435066,
+  "done": {
+    "frames": 6
+  },
+  "newton": null,
+  "passed": false
+}

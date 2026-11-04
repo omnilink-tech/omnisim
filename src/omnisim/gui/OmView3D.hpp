@@ -265,6 +265,13 @@ private:
   QWidget *mParentWidget;
   QElapsedTimer mRenderPacingClock;   // monotonic since construction; drives the fixed-rate render throttle in refresh()
   double mNextRenderDueMs = 0.0;      // absolute due time (ms on mRenderPacingClock) of the next throttled render
+  // Render-on-change (renderMainFrameViaWgpu): the signature of the last frame's inputs, how many
+  // consecutive frames carried it, when the GPU last actually rendered, and how many engine-paced
+  // frames were held (the image on screen already was that frame).
+  uint64_t mWgpuFrameSignature = 0;
+  int mWgpuSameSignatureFrames = 0;
+  QElapsedTimer mWgpuLastRealFrame;
+  quint64 mWgpuHeldFrames = 0;
   QElapsedTimer mFpsAccumulationTimer;
   qint64 mRenderedFrameCount = 0;
   static int cView3DNumber;

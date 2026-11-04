@@ -1238,6 +1238,11 @@ def setup_omnilink_relay(state):
                 event_sink=lambda k, p: _relay_event_to_window(state, k, p),
                 window_raiser=lambda: _queue_window(
                     state, "system:the platform asked for your attention"))
+        try:  # a crew's details reach the model as liveContext (omnisim_bridges.crew)
+            from omnisim_bridges.crew import attach_relay as crew_attach
+            crew_attach(relay, state)
+        except Exception:
+            pass
         return relay
     except Exception:
         print("[mavic_omnilink_bridge] OmniLink unavailable. Check your OmniKey and model connection.")
@@ -1618,6 +1623,12 @@ def make_handler(state: BridgeState):
                 # A CREWMATE's message (omnisim_bridges.crew) always reaches the model:
                 # the parser would answer the sender, who never hears that answer,
                 # and only the model can message back. The gate still vets it.
+                if body.get("crew"):  # a crewmate's DETAILS go to the model's liveContext, not the turn
+                    try:
+                        from omnisim_bridges.crew import note_incoming
+                        note_incoming(state, body)
+                    except Exception:
+                        pass
                 _early = (_shared_short_circuit(_StateBridge(state), text,
                                                 "drone")
                           if _shared_short_circuit is not None

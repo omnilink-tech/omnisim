@@ -137,6 +137,13 @@ public:
   // reports an general error on a file without specifying the token
   void reportFileError(const QString &message) const;
 
+  // Expand URDFRobot blocks into Robot VRML while tokenizing (default true). The world
+  // PRE-SCAN (OmProtoManager::undeclaredProtoNodes) turns it off: it reads the same world the
+  // load reads a moment later, so expanding there converted every URDF twice and printed every
+  // importer warning twice (2026-10-23). The expansion emits only base nodes, which that scan
+  // ignores, so it loses nothing.
+  void setExpandUrdfRobots(bool expand) { mExpandUrdfRobots = expand; }
+
   int setErrorOffset(int offset) { return mErrorOffset = offset; }
   void setReferralFile(const QString &file) { mReferralFile = file; }
   const QString &referralFile() const { return mReferralFile; }
@@ -155,6 +162,7 @@ private:
   bool mAtEnd;
   QString mReferralFile;
   int mErrorOffset;
+  bool mExpandUrdfRobots;
 
   QString readLine();
   QChar readChar();

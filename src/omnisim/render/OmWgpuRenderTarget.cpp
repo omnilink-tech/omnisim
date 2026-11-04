@@ -7840,6 +7840,7 @@ bool OmWgpuRenderTarget::clearAndDrawSceneTexturedShadowed(
                                          qEnvironmentVariableIntValue("OMNISIM_WGPU_TAA_VALIDATION") != 0;
   float jitteredVP[16];
   std::memcpy(jitteredVP, viewProj16, 64);
+  float taaJitter[2] = {0.0f, 0.0f};  // this frame's NDC offset, re-applied to the history matrix
   // Shared LightU uniform: 144 B header + 16 B extraMeta + 8x64 B ExtraLight + 4x64 B cascade
   // view-projs + 16 B splits + 16 B per-cascade world texel + 64 B sceneViewProj + 16 B
   // sunDirAmbient + 16 B camPos = 1056 B.
@@ -7915,6 +7916,8 @@ bool OmWgpuRenderTarget::clearAndDrawSceneTexturedShadowed(
         const int hi = static_cast<int>(mFrameCounter % 8);
         const float jx = (hx[hi] - 0.5f) * 2.0f / std::max(1u, mWidth);
         const float jy = (hy[hi] - 0.5f) * 2.0f / std::max(1u, mHeight);
+        taaJitter[0] = jx;
+        taaJitter[1] = jy;
         for (int c = 0; c < 4; ++c) {
           vpJ[c * 4 + 0] += jx * vpJ[c * 4 + 3];
           vpJ[c * 4 + 1] += jy * vpJ[c * 4 + 3];
@@ -9002,6 +9005,23 @@ bool OmWgpuRenderTarget::clearAndDrawSceneTexturedShadowed(
       }
       float invVP[16];
       const float *historyVP = temporalValidation ? jitteredVP : viewProj16;
+      // The previous view-proj is kept UNJITTERED and re-jittered with THIS frame's offset, so a
+      // still surface reprojects onto its own pixel. Reprojecting from the previous frame's own
+      // jitter fetched history up to a pixel away, in a new direction every frame; at 0.9 history
+      // weight the resolved image followed it and every edge of a still scene shimmered (idle CNC
+      // twin: 10k-59k of 2.1M pixels changed by >8 levels per frame). The resolve shader's two
+      // still-edge fixes (3x3 nearest depth, tent-relative colour change) ride the same switch
+      // as the SIGN of the history weight. Value-parsed hatch: OMNISIM_WGPU_TAA_STILL_EDGES=0
+      // restores the old jittered-to-jittered reprojection and the old shader path.
+      static const bool sRejitterHistory = !qEnvironmentVariableIsSet("OMNISIM_WGPU_TAA_STILL_EDGES") ||
+                                           qEnvironmentVariableIntValue("OMNISIM_WGPU_TAA_STILL_EDGES") != 0;
+      float prevVP[16];
+      std::memcpy(prevVP, mTaaMvHistValid ? mTaaMvPrevVP : historyVP, 64);
+      if (mTaaMvHistValid && temporalValidation && sRejitterHistory)
+        for (int c = 0; c < 4; ++c) {
+          prevVP[c * 4 + 0] += taaJitter[0] * prevVP[c * 4 + 3];
+          prevVP[c * 4 + 1] += taaJitter[1] * prevVP[c * 4 + 3];
+        }
       if (!mMotionVectors) mMotionVectors = new OmMotionVectors(device);
       auto *motion = static_cast<OmMotionVectors *>(mMotionVectors);
       const bool motionOn = objectMotionEnabled();
@@ -9012,7 +9032,7 @@ bool OmWgpuRenderTarget::clearAndDrawSceneTexturedShadowed(
                     vpRow3 = vpRowLen(viewProj16, 3);
         motionView = motion->render(queue, mWidth, mHeight, static_cast<WGPUTextureView>(mScnMsaaDepthViewF32),
           static_cast<WGPUSampler>(mScnTexSampler), static_cast<WGPUTextureView>(mScnDefaultWhiteView),
-          historyVP, mTaaMvHistValid ? mTaaMvPrevVP : historyVP, draws, numDraws, mTaaMvHistValid,
+          historyVP, prevVP, draws, numDraws, mTaaMvHistValid,
           beginTimedPass, [&](const OmWgpuSolidDraw &d) {
             return d.translucent || !cull || !sphereOutsideClip(d.modelMatrix16, d.localCenter, d.localRadius,
               viewProj16, vpRow0, vpRow1, vpRow3, false);
@@ -9024,8 +9044,8 @@ bool OmWgpuRenderTarget::clearAndDrawSceneTexturedShadowed(
           motionView && invert4x4ForSsr(historyVP, invVP)) {
         float ub[36];
         std::memcpy(ub + 0, invVP, 64);
-        std::memcpy(ub + 16, mTaaMvHistValid ? mTaaMvPrevVP : historyVP, 64);
-        const float prm[4] = {motionOn && temporalValidation ? 1.0f : 0.0f, 0.90f,
+        std::memcpy(ub + 16, prevVP, 64);
+        const float prm[4] = {motionOn && temporalValidation ? 1.0f : 0.0f, sRejitterHistory ? 0.90f : -0.90f,
                               temporalValidation ? 1.0f : 0.0f, mTaaMvHistValid ? 1.0f : 0.0f};
         std::memcpy(ub + 32, prm, 16);
         wgpuQueueWriteBuffer(queue, static_cast<WGPUBuffer>(mTaaMvUb), 0, ub, 144);
@@ -9073,7 +9093,7 @@ bool OmWgpuRenderTarget::clearAndDrawSceneTexturedShadowed(
             mTaaMvActiveView = mTaaMvView[cur];
             mTaaMvCur = prev;
             mTaaMvHistValid = true;
-            std::memcpy(mTaaMvPrevVP, historyVP, 64);
+            std::memcpy(mTaaMvPrevVP, sRejitterHistory ? viewProj16 : historyVP, 64);
           }
           wgpuBindGroupRelease(tbg);
         }

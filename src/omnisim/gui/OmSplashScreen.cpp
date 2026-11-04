@@ -40,7 +40,6 @@ namespace {
 
   // Wordmark baseline.
   constexpr int kWordmarkTop = kOrbCenterY + kOrbSize / 2 + 24;
-  constexpr int kWordmarkHeight = 120;
 
   // OmniLink brand palette — see resources/branding/omnilink/BRAND.md.
   inline QColor omnilinkBlack() { return QColor(0x00, 0x00, 0x00); }
@@ -53,10 +52,13 @@ OmSplashScreen::OmSplashScreen() {
   base.fill(omnilinkBlack());
   QSplashScreen::setPixmap(base);
 
-  // Load the canonical OmniLink orb directly from the branding source.
-  // 1024×1024 RGBA master — Qt scales smoothly down to kOrbSize.
-  const QString orbPath = OmStandardPaths::resourcesPath() + "branding/omnilink/orb/orb.png";
+  // The OmniSim orb (resources/branding/omnisim/), rendered by
+  // scripts/branding/render_omnisim_orb.py at 2× kOrbSize. It lives in
+  // resources/images/ because resources/branding/ is not packaged.
+  const QString orbPath = OmStandardPaths::resourcesPath() + "images/splash_orb.png";
   mLogo = QImage(orbPath);
+  // The wordmark, outlined from Sora SemiBold by scripts/branding/render_omnisim_wordmark.py.
+  mWordmark = QImage(OmStandardPaths::resourcesPath() + "images/splash_wordmark.png");
 
   // Defaults (QSS theme files may override via the Q_PROPERTY hooks).
   mBackgroundColor = omnilinkBlack();
@@ -158,16 +160,13 @@ void OmSplashScreen::drawContents(QPainter *painter) {
     painter->drawImage(orbRect, mLogo);
   }
 
-  // 5. Wordmark — "OMNISIM" centered below the orb.
-  //    Raleway Light is the only display font the GUI registers (see
-  //    OmGuiApplication::addApplicationFont). Qt falls back gracefully if absent.
-  {
-    QFont font("Raleway", static_cast<int>(82 * dpi), QFont::Light);
-    font.setLetterSpacing(QFont::AbsoluteSpacing, 8.0);
-    painter->setFont(font);
-    painter->setPen(mCompanyColor);
-    const QRect wordmarkRect(0, kWordmarkTop, kW, kWordmarkHeight);
-    painter->drawText(wordmarkRect, Qt::AlignHCenter | Qt::AlignTop, "OMNISIM");
+  // 5. Wordmark — "OmniSim" centered below the orb. It is an image, not text:
+  //    the brand never re-types the wordmark in a fallback font, and Sora is
+  //    not a font the GUI registers. The PNG is rendered at 2x, drawn at half.
+  if (!mWordmark.isNull()) {
+    const QSizeF size(mWordmark.width() / 2.0, mWordmark.height() / 2.0);
+    const QRectF wordmarkRect((kW - size.width()) / 2.0, kWordmarkTop + 8, size.width(), size.height());
+    painter->drawImage(wordmarkRect, mWordmark);
   }
 
   // 6. Mimosa accent bar — short horizontal rule under the wordmark.
