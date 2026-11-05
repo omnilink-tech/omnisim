@@ -58,6 +58,7 @@ the next four lines that use the assigned name:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import io
 import os
 import re
@@ -83,6 +84,40 @@ EXCLUDED_PREFIXES = ("social/", "cloud/", "_scratch/", "distribution/", ".github
 # publish-denied, so citing it made the public tree's drift check fail on v9.0.0.
 EXCLUDED_RE = re.compile(r"^tests/benchmarks/.*/(results?|evidence|frozen)/")
 DOC_ROOTS = ("AGENTS.md", "README.md", "PROTOCOL.md", "CHANGELOG.md")
+
+# The page describes what SHIPS, so a path the public snapshot removes is not scanned.
+# scripts/release/publish_deny.txt exists only in the private tree (it denies itself);
+# in the public tree it is absent and so are the paths it names, so both trees
+# generate the same page. Without this, v10.0.1's public drift check failed: the
+# denied tests/assessment/evidence/ campaigns carry frozen copies of the source, and
+# their reads were counted here but absent there.
+DENY_LIST_REL = "scripts/release/publish_deny.txt"
+
+
+def _load_deny() -> tuple[tuple[str, ...], tuple[str, ...]]:
+    prefixes: list[str] = []
+    globs: list[str] = []
+    try:
+        with open(os.path.join(REPO_ROOT, DENY_LIST_REL), encoding="utf-8") as fh:
+            for raw in fh:
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                (globs if any(c in line for c in "*?[") else prefixes).append(line)
+    except OSError:
+        pass
+    return tuple(prefixes), tuple(globs)
+
+
+DENY_PREFIXES, DENY_GLOBS = _load_deny()
+
+
+def is_denied(path: str) -> bool:
+    for d in DENY_PREFIXES:
+        if path == d.rstrip("/") or path.startswith(d.rstrip("/") + "/"):
+            return True
+    return any(fnmatch.fnmatchcase(path, g) or fnmatch.fnmatchcase(path, g.rstrip("/") + "/*")
+               for g in DENY_GLOBS)
 
 # Order matters twice: a variable is filed under the FIRST area (top to bottom)
 # that reads it, and `harness` must precede `scripts` because it nests inside it.
@@ -129,6 +164,8 @@ def is_scanned(path: str) -> bool:
     if path in (OUTPUT_REL, SELF_REL, TEST_REL):
         return False
     if path.startswith(EXCLUDED_PREFIXES) or EXCLUDED_RE.match(path):
+        return False
+    if is_denied(path):
         return False
     return lang_of(path) is not None
 
@@ -683,8 +720,9 @@ def render(variables: dict) -> str:
     w("re-parsing any `OMNISIM_*` read; `docs/tests/test_env_reference.py` fails whenever the\n")
     w("committed page differs from what the generator produces, so the page cannot drift from\n")
     w("the code. Read sites are `file:line` in the tracked tree (`git ls-files`, source\n")
-    w("extensions only; `social/`, `cloud/`, `_scratch/`, `distribution/` and benchmark result\n")
-    w("directories excluded); a variable is filed under the lowest layer that reads it, so one\n")
+    w("extensions only; `social/`, `cloud/`, `_scratch/`, `distribution/`, benchmark result\n")
+    w("directories and every path the public snapshot removes excluded); a variable is filed\n")
+    w("under the lowest layer that reads it, so one\n")
     w("read anywhere in the engine files it under **Engine** even when scripts read it too, and\n")
     w("its **Kind** is decided by the read sites in that layer (a test asserting on an env dict\n")
     w("or a shell pass-through is listed, but does not outvote the engine).\n\n")

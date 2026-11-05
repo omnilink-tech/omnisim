@@ -304,7 +304,8 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="omnisim",
         description="OmniSim - an open-source robotics workshop for agents. Simulate a "
                     "complete robot on high-fidelity physics, build the digital twin of "
-                    "one you own, and let an agent program, test and debug it. "
+                    "one you own, make its parts on CNC, laser and 3D-printer twins, "
+                    "and let an agent program, test and debug it. "
                     "Start with: doctor, demo.",
     )
     parser.add_argument("-V", "--version", action="version", version=f"omnisim {__version__}")

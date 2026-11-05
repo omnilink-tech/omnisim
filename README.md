@@ -8,7 +8,8 @@ hardware, OmniSim is built for you.
 OmniSim is more than a simulator. It's an open-source robotics workshop designed for agentic
 development — a place where an agent has everything it needs to work on any robotic system. You
 can simulate complete robotic systems with high-fidelity physics, build digital twins, connect
-simulation to real robots, and give AI agents a workshop to program, test, and debug your system.
+simulation to real robots, make the parts on twins of the CNC routers, lasers and 3D printers that build
+them, and give AI agents a workshop to program, test, and debug your system.
 
 **You can do all of that simply by talking to it.**
 
@@ -22,13 +23,50 @@ decision: no gripper, a plain camera instead of a depth camera, a 2S2P battery f
 the robot as four subsystems against one skeleton and checked 325 solids for interference. It made every part on
 **machine twins** and wired it with 127 routed wires. Finally it assembled the robot on Newton and drove it.
 
+### OmniSim runs the machines that make the parts
+
+| CNC router | Laser cutter | 3D printer |
+|---|---|---|
+| [![The LongMill MK2 CNC router twin milling the SparkRover's shoulder brackets from an aluminium blank](docs/images/manufacturing/machine_cnc.png)](projects/manufacturing/cnc/README.md) | [![The Sienci LaserBeam 7 W twin on the LongMill, cutting the SparkRover's upper deck from plywood](docs/images/manufacturing/machine_laser.png)](projects/manufacturing/laser/README.md) | [![The Sovol SV08 printer twin printing a SparkRover shell section](docs/images/manufacturing/machine_printer.png)](projects/manufacturing/printing/README.md) |
+| [![Close up: the router's cutter in the aluminium blank, the brackets' holes and pockets already milled](docs/images/manufacturing/twin_cnc.png)](projects/manufacturing/cnc/README.md) | [![Close up: the deck's holes and outline cut through the plywood](docs/images/manufacturing/twin_laser.png)](projects/manufacturing/laser/README.md) | [![Close up: the shell section's beads laid layer by layer under the nozzle](docs/images/manufacturing/twin_printer.png)](projects/manufacturing/printing/README.md) |
+| **Sienci LongMill MK2** behind a virtual **GRBL 1.1** controller that a GRBL sender connects to over TCP. Here it mills the shoulder brackets from 8 mm 6061 aluminium. | **Sienci LaserBeam 7 W** on the same LongMill, in GRBL laser mode. Here it cuts the upper deck from 3 mm plywood. | **Sovol SV08**, G-code from CuraEngine, planned as its **Klipper** firmware plans it. Here it prints a shell section in PETG. |
+
+These are not animations. Each twin is built from the real machine's controller settings and runs the
+program the real machine would run. The tool's real path removes or lays the material, and each part
+that comes out is measured against its drawing. On the CNC twin a pocket's walls came out within
+0.007 mm of what a perfect machine cuts on the same program.
+
+**Talk to the machine.** The CNC twin has an OmniLink bridge. Say *"cut a circular pocket 50 mm wide and
+2 mm deep, 45 mm left of the origin"* and it plans the toolpath, checks it and mills it. Ask for a pocket
+deeper than the stock allows and it refuses, naming the rule (`cut_depth`), and explains the limit
+(live run, 2026-11-01; an OmniKey is required). The bridge drives the machine through GRBL, so it is built
+to run a real GRBL board as well. It has not been run on one yet.
+
+**Make your own parts, not just ours.** Slice any STL and print it on the SV08 twin. Stream your own GRBL
+job to the CNC or laser twin. Or build a twin of your own router from its GRBL settings.
+
+```bash
+# The LongMill CNC twin: point a GRBL sender at 127.0.0.1:2323, or talk to it at http://127.0.0.1:8765/chat
+python -m omnisim run-world projects/samples/demos/worlds/manufacturing/cnc_longmill_mk2_twin.omniworld
+
+# The laser twin: cut a job, then measure the cut
+python -m omnisim manufacturing laser run projects/samples/demos/worlds/manufacturing/laser_longmill_laserbeam.omniworld \
+    projects/manufacturing/laser/jobs/tag_3mm_plywood.gcode --out .tmp/laser-run
+python -m omnisim manufacturing laser inspect .tmp/laser-run/sheet.zmap --trace .tmp/laser-run/trace.jsonl
+
+# The printer twin: slice your part, then print it
+python projects/manufacturing/printing/cura_slice.py part.stl --out part.gcode
+python projects/manufacturing/printing/world.py --gcode part.gcode --out my_print.omniworld
+python -m omnisim run-world my_print.omniworld
+
+# A twin of your own GRBL machine
+python projects/manufacturing/cnc/world.py --machine my_machine.grbl --out my_cnc.omniworld
+```
+
+### From the concept sheet to a robot you could build
+
 [![The concept sheet's robot beside the simulated SparkRover at a matched angle](docs/images/manufacturing/concept_vs_built.png)](docs/guide/manufacturing-concept-to-robot.md)
 
-- **Three machine twins, each built from the real machine's controller config.** A LongMill MK2 CNC router behind
-  a virtual GRBL 1.1 controller that any GRBL sender can drive. A Sienci LaserBeam 7 W laser on the same machine.
-  A Sovol SV08 printer whose G-code comes from CuraEngine and is planned as Klipper plans it. Material is removed
-  or laid where the tool really went, and each part is measured against its drawing. On the CNC twin a pocket's
-  walls came out within 0.007 mm of what a perfect machine cuts on the same program.
 - **The SparkRover, in the twin's numbers:** 16 of 16 laser and CNC parts cut free. 27 printed parts, all on the
   corrected bead rule: 2 on the full printer twin and 25 in the engine-free *ideal* mode, with their
   full-twin runs on the fixed engine to follow. 53 units assembled in 18 steps with none blocked.

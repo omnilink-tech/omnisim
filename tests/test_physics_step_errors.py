@@ -167,9 +167,14 @@ def runtime():
         spec = importlib.util.spec_from_file_location("_omnisim_newton_runtime_arena", _RUNTIME)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        import mujoco  # noqa: F401
+        import mujoco
     except Exception as exc:  # noqa: BLE001
         pytest.skip("the Newton runtime does not import here: %r" % (exc,))
+    # A bare `mujoco` directory on sys.path imports as an empty namespace package
+    # (v10.0.1's public CI: "module 'mujoco' has no attribute 'MjSpec'").
+    if not hasattr(mujoco, "MjSpec"):
+        pytest.skip("no real MuJoCo here (mujoco imported from %r)"
+                    % (getattr(mujoco, "__path__", None) or getattr(mujoco, "__file__", None),))
     return mod
 
 

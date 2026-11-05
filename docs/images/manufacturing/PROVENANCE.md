@@ -38,6 +38,7 @@ validated against its real machine. What each render shows:
 | `twin_laser.png` | the LongMill laser twin part-way through the deck's G-code (`make.py`'s job) |
 | `twin_cnc.png` | the LongMill router twin part-way through the shoulder brackets' program |
 | `twin_printer.png` | the SV08 printer twin part-way through a shell section's G-code |
+| `machine_cnc.png`, `machine_laser.png`, `machine_printer.png` | the same three twins on the same jobs, from far enough back to show the whole machine at work: the router twin cutting the shoulder brackets, the laser twin cutting the deck, the printer twin at the same instant as `twin_printer.png` |
 | `printed_parts.png` | the printed parts' **models** in their print orientation, not the twin's beads |
 | `exploded.png`, `wiring.png`, `assembly_steps.png` | the design's own solids and `harness.py`'s routed wires, as static scenery |
 | `pipeline.svg` | a hand-written diagram in the OmniSim palette |

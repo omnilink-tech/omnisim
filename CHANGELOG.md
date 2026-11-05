@@ -25,6 +25,38 @@ top of that foundation.
 ---
 
 
+## [v10.0.2] — 2026-11-05
+
+The front page now shows the machines that make the parts, and the last public unit test is green.
+The simulator and the installer are unchanged from v10.0.1.
+
+### Changed
+
+- **The README shows OmniSim Manufacturing's machines, not only the robot.** A new section, "OmniSim
+  runs the machines that make the parts", shows each twin at work and the part coming out of it. The
+  LongMill CNC router mills the shoulder brackets from aluminium. The LaserBeam laser cuts the deck from
+  plywood. The SV08 printer prints a shell section. The section also covers talking to the CNC twin
+  through its OmniLink bridge (the live run of 2026-11-01), and the commands that run each machine on
+  your own parts.
+- **The canonical statement names the machines.** `docs/developer/positioning.md` §4, the README and
+  the introduction guide now say OmniSim can "make the parts on twins of the CNC routers, lasers and 3D
+  printers that build them". §5 gains a "Make the parts on machine twins" pillar with its boundary. Say
+  "the twin cuts / prints", and note that the CNC bridge has not been run on a real board. A stale row
+  that counted 22 of the SparkRover's printed parts as full-twin results now matches the README: 2 twin,
+  25 ideal, on the corrected bead rule.
+
+### Fixed
+
+- **unit-tests on the hosted runner.** Two failures on the v10.0.1 tag:
+  - `test_arena_scope_sets_and_restores_the_compiled_arena` now skips when `mujoco` imports without
+    `MjSpec`. The runner has no MuJoCo, so `import mujoco` found one of the tree's `mujoco/` test
+    directories (`tests/benchmarks/*/mujoco`) as an empty namespace package.
+  - `docs/reference/environment-variables.md` was out of date in the public tree only. The denied
+    `tests/assessment/evidence/` campaigns carry frozen copies of the source, and the generator counted
+    their reads in the private tree. `gen_env_reference.py` now skips every path in
+    `scripts/release/publish_deny.txt`, so both trees generate the same page.
+
+
 ## [v10.0.1] — 2026-11-04
 
 A patch for two public checks that failed on the v10.0.0 tag. Nothing in the simulator, the

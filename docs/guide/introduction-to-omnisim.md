@@ -4,11 +4,12 @@
 
 If you are learning robotics, building a robot, or have an idea but don't have access to the hardware, OmniSim is built for you.
 
-OmniSim is more than a simulator. It is **an open-source robotics workshop designed for agentic development** — a place where an agent has everything it needs to work on any robotic system. You can simulate complete robotic systems with high-fidelity physics, build digital twins, connect simulation to real robots, and give AI agents a workshop to program, test, and debug your system. You can do much of that simply by talking to it.
+OmniSim is more than a simulator. It is **an open-source robotics workshop designed for agentic development** — a place where an agent has everything it needs to work on any robotic system. You can simulate complete robotic systems with high-fidelity physics, build digital twins, connect simulation to real robots, make the parts on twins of the CNC routers, lasers and 3D printers that build them, and give AI agents a workshop to program, test, and debug your system. You can do much of that simply by talking to it.
 
 - **No robot?** Simulate one.
 - **Already have a robot?** Build its digital twin — from its own URDF or CAD.
 - **Don't know how to program it?** Let an agent help build and debug it.
+- **Designed one?** Make its parts on machine twins of a CNC router, a laser and a 3D printer.
 
 The goal is simple: make robotics accessible to anyone with an idea. OmniSim is completely free and open source.
 

@@ -75,14 +75,16 @@ the first and lends you an agent for the second.
 > needs to work on any robotic system.
 >
 > You can simulate complete robotic systems with high-fidelity physics, build
-> digital twins, connect simulation to real robots, and give AI agents a
-> workshop to program, test, and debug your system.
+> digital twins, connect simulation to real robots, make the parts on
+> twins of the CNC routers, lasers and 3D printers that build them, and give AI
+> agents a workshop to program, test, and debug your system.
 >
 > You can do all of that simply by talking to it.
 >
 > **No robot?** Simulate one.
 > **Already have a robot?** Build its digital twin.
 > **Don't know how to program it?** Let an agent help build and debug it.
+> **Designed one?** Make its parts on machine twins.
 >
 > The goal is simple: make robotics accessible to anyone with an idea.
 > OmniSim is completely free and open source.
@@ -118,6 +120,26 @@ Since v10 also **machine twins** — a CNC router, a laser and an FDM printer bu
 from their controller configs — and the robots made with them
 ([OmniSim Manufacturing](#omnisim-manufacturing--what-may-be-claimed-v10-2026-11-04),
 with its own boundary: simulation only, no twin validated against its machine).
+
+### Make the parts on machine twins (v10)
+
+**Show the machines, not only the robot.** A reader who sees only the finished
+SparkRover assumes it was assembled from parts that came from somewhere else.
+The claim is that OmniSim **runs the machines that make the parts**: the LongMill
+CNC and laser twins answer GRBL 1.1 (a GRBL sender streams them a job over TCP),
+the SV08 twin runs CuraEngine G-code planned as Klipper plans it, the tool's real
+path removes or lays the material, and each part is measured against its
+drawing. The CNC twin can also be **talked to** through its OmniLink bridge
+(live run 2026-11-01: a spoken pocket milled, a too-deep one refused by
+`cut_depth`; an OmniKey is required). Every Manufacturing surface shows the
+machines at work beside the robot: the README's three-machine table
+(`docs/images/manufacturing/machine_*.png` over `twin_*.png`) is the pattern.
+
+⚠️ **Boundary.** Say "the twin cuts / prints"; never "OmniSim controls your
+machine". The CNC bridge drives GRBL over a stream, so it is built to run a real
+board, but **it has not been run on one**, and no twin is validated against its
+real machine. The full boundary is in
+[OmniSim Manufacturing](#omnisim-manufacturing--what-may-be-claimed-v10-2026-11-04).
 
 ⚠️ **Boundary.** A twin here is **a model built from your robot's own
 description** — its URDF, its CAD, its joint limits and inertias — running in
@@ -591,8 +613,9 @@ Windows 11), Newton 1.5.0 / MuJoCo CPU.
 | The laser twin is calibrated on the vendor's table | one row fitted (3 mm plywood, 3 passes); predicted 6 mm in 5 passes (Sienci: 5) and 1/4" in 14 (Sienci: 16); a 30 × 20 mm tag cut free at 29.9 × 19.9 mm, hole 6.06 mm (drawn 6.0) | commit `477d324eb`; `laser/README.md` |
 | The printer twin prints a part and measures it | 20 mm cube: 2852.27 mm³ extruded, 2850.18 laid, 100 layers, outer surface +0.041 mm, height 20.05 mm; axis tracking 9 µm median (SV08 twin, 2026-11-02) | commit `710623c3a`; `printing/README.md` |
 | An ideal (engine-free) print agrees with the twin | three parts, ideal vs twin: plastic laid identical to 0.1 mm³, same layers and height; the twin's part larger by 0.02–0.03 mm a side on the cube and plate, 0.003 mm on the shell's long walls; a 145 g shell in 21 s instead of ~1.9 h | `printing/README.md` "Ideal print (no engine)" |
-| Two robots were designed, made on all three twins, assembled and driven on Newton, with a release pack each | desk robot: decks 90.1 × 80.1 mm (drawn 90 × 80), hubs OD 15.994 (16.0), 0.672 m/s straight vs 0.679 datasheet. SparkRover Mini: 325 solids with 0 interfering; 16 of 16 laser/CNC parts cut free; 27 printed parts (22 twin, 5 ideal only); 127 of 128 wires routed; 53 units assembled in 18 steps with 0 blocked; 0.6941 m/s straight vs 0.6964 predicted at the 8.184 V bus mean | `products/desk_robot/README.md`, `products/spark_rover/release/REPORT.md` |
+| Two robots were designed, made on all three twins, assembled and driven on Newton, with a release pack each | desk robot: decks 90.1 × 80.1 mm (drawn 90 × 80), hubs OD 15.994 (16.0), 0.672 m/s straight vs 0.679 datasheet. SparkRover Mini: 325 solids with 0 interfering; 16 of 16 laser/CNC parts cut free; 27 printed parts on the corrected bead rule (2 on the full twin, 25 in ideal mode, their full-twin re-runs on the fixed engine to follow); 127 of 128 wires routed; 53 units assembled in 18 steps with 0 blocked; 0.6941 m/s straight vs 0.6964 predicted at the 8.184 V bus mean | `products/desk_robot/README.md`, `products/spark_rover/release/REPORT.md` |
 | From AI concept images to a buildable design | the SparkRover's concept sheets were AI-generated; the design corrected their numbers and records each decision (no gripper, a plain RGB camera, a 2S2P battery) in `skeleton.py` `DECISIONS`; `release/` carries drawings, STLs, the machine files, the BOM and an assembly guide | `products/spark_rover/skeleton.py`, `docs/guide/manufacturing-concept-to-robot.md` |
+| An operator talks to the CNC twin and it machines | live run 2026-11-01, LongMill twin, model through OmniLink: a spoken 50 mm × 2 mm circular pocket milled by `cut_pocket`; pause, a status question and resume mid-job; a 15 mm-deep request in 12 mm stock refused by `cut_depth` with the 11.5 mm limit explained; removed volume 6,201.3 mm³ (design about 6,164). Needs an OmniKey; `/tool` and Stop work without one | `projects/manufacturing/cnc/README.md` "Talk to it (OmniLink)", `cnc/cnc_bridge.py` |
 | A load test found a real design fault | the clothes rack's concept 500 mm base tipped at 9.4 N empty on Newton; the 600 mm base raises it to 11.5 N (hand calculation 10.9) | commit `10cf4514a` |
 
 ### The boundary — state it wherever Manufacturing appears
@@ -602,8 +625,8 @@ Windows 11), Newton 1.5.0 / MuJoCo CPU.
   never "the machine will", and never quote a twin number as a real part's.
 - **Twin and ideal are different results.** A twin print is full physics in the
   engine; an ideal print has no engine and no axis dynamics. Name the mode with
-  every print number. Five of the SparkRover's 27 printed parts were printed in
-  ideal mode only.
+  every print number. On the corrected bead rule, 25 of the SparkRover's 27
+  printed parts are ideal-mode results so far and 2 are full-twin results.
 - **Calibration is one point.** The laser is fitted to one row of Sienci's table,
   and on full parts the twin needed **6 passes for 6 mm plywood, one more than
   Sienci's 5** (at 5 the parts stayed joined by a 0.16–0.20 mm web). Do not say the
