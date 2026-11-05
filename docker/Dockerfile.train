@@ -4,7 +4,7 @@
 # the in-engine RL trainers run with no further setup. Published to GHCR by
 # .github/workflows/train-image.yml.
 #
-#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v10.0.2 bash
+#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v10.0.3 bash
 #   # inside:
 #   xvfb-run -a bash projects/policies/training/run_quad_walk_rl.sh 600 mytag train headless
 #
@@ -51,8 +51,13 @@
 ARG CUDA_TAG=12.8.1-devel-ubuntu24.04
 FROM nvidia/cuda:${CUDA_TAG}
 
-ARG OMNISIM_TAG=v10.0.2
+ARG OMNISIM_TAG=v10.0.3
 ARG REPO_URL=https://github.com/omnilink-tech/omnisim.git
+# stb is pinned by COMMIT, the one src/stb records in the tree. omichel/stb deleted its
+# patch-1 branch (found 2026-11-05: train-image failed with "Remote branch patch-1 not
+# found"); the commit is still served by hash. tests/test_stb_pin.py keeps this equal
+# to the submodule's gitlink.
+ARG STB_COMMIT=7ee7f4bd2e72d601555e926b725ceac22a93e294
 ARG GPU_VERIFY=0
 ARG JOBS=8
 
@@ -161,7 +166,9 @@ RUN git clone --depth 1 --branch "${OMNISIM_TAG}" "${REPO_URL}" "${OMNISIM_HOME}
     && cd "${OMNISIM_HOME}" \
     && rm -rf src/glm src/stb \
     && git clone -q --depth 1 --branch 1.0.1 https://github.com/g-truc/glm.git src/glm \
-    && git clone -q --depth 1 -b patch-1 https://github.com/omichel/stb.git src/stb
+    && git init -q src/stb \
+    && git -C src/stb fetch -q --depth 1 https://github.com/omichel/stb.git "${STB_COMMIT}" \
+    && git -C src/stb checkout -q FETCH_HEAD
 
 # wgpu-native BEFORE the build, exactly as Dockerfile.runtime does. This image
 # skipped it until 2026-08-29, so every published training image carried a

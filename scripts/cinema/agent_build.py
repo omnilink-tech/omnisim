@@ -208,6 +208,11 @@ class AgentBuildSpec:
     width: int = W
     height: int = H
     opening: str = "signature"
+    # "full" (default): the action opening's disclosure line and the boundary beat's
+    # band are drawn on the frame. "none": a clean frame, by the owner's choice for a
+    # film (2026-11-05, the SparkRover film). Both texts stay required in the manifest
+    # and are carried in verification.json, for the video's description.
+    on_screen_text: str = "full"
 
     @property
     def intro_duration_s(self) -> float:
@@ -396,6 +401,9 @@ def parse(payload: dict[str, Any] | str | Path) -> AgentBuildSpec:
     opening = str(editorial.get("opening", "signature"))
     if opening not in ("signature", "action"):
         raise ValueError("editorial.opening must be 'signature' or 'action'")
+    on_screen_text = str(editorial.get("on_screen_text", "full"))
+    if on_screen_text not in ("full", "none"):
+        raise ValueError("editorial.on_screen_text must be 'full' or 'none'")
     intro_duration = 0.0 if opening == "action" else INTRO_DURATION_S
     # In an action-led story, show the repair before revealing its result.
     required_beats = (("question", "attempt", "control", "method", "evidence", "boundary", "conclusion")
@@ -559,6 +567,7 @@ def parse(payload: dict[str, Any] | str | Path) -> AgentBuildSpec:
                         engine=voice_engine, source=voice_source),
         repository=repository,
         opening=opening,
+        on_screen_text=on_screen_text,
         structure=structure,
         simulator_footage_ratio_min=simulator_ratio_min,
         climax_segment=climax_segment,
@@ -1067,8 +1076,9 @@ def render_locked_intro(out_dir: Path, profile: RenderProfile,
 
 def _make_overlay(segment: Segment, out_path: Path,
                   profile: RenderProfile, *, disclosure: bool = False,
-                  omnisim_brand: bool = False) -> Path | None:
-    if (segment.overlay is None and not segment.replay_label and not segment.claim_boundary
+                  omnisim_brand: bool = False, boundary_band: bool = True) -> Path | None:
+    claim_boundary = segment.claim_boundary if boundary_band else ""
+    if (segment.overlay is None and not segment.replay_label and not claim_boundary
             and not disclosure and not segment.caption):
         return None
     image = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -1108,16 +1118,16 @@ def _make_overlay(segment: Segment, out_path: Path,
         line_h = round(CAPTION_SIZE * 1.42)
         box_w = max(_text_width(line, CAPTION_SIZE, "semi") for line in lines) + 64
         box_h = line_h * len(lines) + 30
-        bottom = H - SAFE - (72 if segment.claim_boundary else 0)
+        bottom = H - SAFE - (72 if claim_boundary else 0)
         x0 = (W - box_w) // 2
         draw.rounded_rectangle((x0, bottom - box_h, x0 + box_w, bottom), radius=14,
                                fill=(*panel, 214))
         for k, line in enumerate(lines):
             draw.text((W // 2, bottom - box_h + 15 + k * line_h), line, font=cap_font, fill=ink, anchor="ma")
-    if segment.claim_boundary:
+    if claim_boundary:
         draw.rounded_rectangle((SAFE, H - SAFE - 58, W - SAFE, H - SAFE), radius=13,
                                fill=(*panel, 232), outline=(66, 65, 51) if omnisim_brand else RED, width=2)
-        draw.text((W // 2, H - SAFE - 29), segment.claim_boundary.upper(),
+        draw.text((W // 2, H - SAFE - 29), claim_boundary.upper(),
                   font=face(18, "semi"), fill=ink, anchor="mm")
     if (profile.width, profile.height) != (W, H):
         image = image.resize((profile.width, profile.height), Image.Resampling.LANCZOS)
@@ -1135,6 +1145,7 @@ def _render_clip(spec: AgentBuildSpec, segment: Segment, index: int, out_dir: Pa
     brand_font = REPO_ROOT / "resources/branding/omnisim/fonts/SpaceGrotesk.ttf"
     key = cache.key("clip", {"source_sha256": _sha256(source),
                              "segment": asdict(segment), "opening": spec.opening,
+                             "on_screen_text": spec.on_screen_text,
                              "action_brand_version": 2 if spec.opening == "action" else None,
                              "action_font_sha256": _sha256(brand_font)
                              if spec.opening == "action" and brand_font.exists() else None})
@@ -1143,8 +1154,9 @@ def _render_clip(spec: AgentBuildSpec, segment: Segment, index: int, out_dir: Pa
         return output
     overlay = _make_overlay(
         segment, out_dir / f"{index:03d}_{segment.id}_overlay.png", profile,
-        disclosure=(spec.opening == "action" and index == 1),
+        disclosure=(spec.opening == "action" and index == 1 and spec.on_screen_text == "full"),
         omnisim_brand=spec.opening == "action",
+        boundary_band=spec.on_screen_text == "full",
     )
     tail_filter = (f"tpad=stop_mode=clone:stop_duration={segment.source_tail_hold_s:.3f},"
                    if segment.source_tail_hold_s > 0 else "")
@@ -1655,7 +1667,13 @@ def verify(spec: AgentBuildSpec, out_dir: Path | None = None) -> dict[str, Any]:
         "master_sha256": _sha256(master), "duration_s": spec.duration_s,
         "frames": round(spec.duration_s * FPS), "intro_voiceover": spec.opening == "action",
         "opening": spec.opening,
-        "disclosure_s": [0.0, 5.0] if spec.opening == "signature" else [0.0, spec.segments[0].duration_s],
+        "disclosure_s": ([0.0, 5.0] if spec.opening == "signature" else
+                         [0.0, spec.segments[0].duration_s] if spec.on_screen_text == "full" else None),
+        "on_screen_text": spec.on_screen_text,
+        "off_screen_texts": ({"disclosure": DISCLOSURE,
+                              "claim_boundary": next((s.claim_boundary for s in spec.segments
+                                                      if s.claim_boundary), "")}
+                             if spec.on_screen_text == "none" else None),
         "story_signature_s": [5.0, 10.0] if spec.opening == "signature" else None,
         "first_build_footage_s": spec.intro_duration_s, "subtitle_streams": 0,
         "cuts": len(entries) - 1, "outro": False,

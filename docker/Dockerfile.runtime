@@ -43,6 +43,11 @@ ARG UBUNTU_TAG=24.04
 FROM ubuntu:${UBUNTU_TAG} AS builder
 
 ARG JOBS=8
+# stb is pinned by COMMIT, the one src/stb records in the tree. omichel/stb deleted its
+# patch-1 branch (found 2026-11-05: train-image failed with "Remote branch patch-1 not
+# found"); the commit is still served by hash. tests/test_stb_pin.py keeps this equal
+# to the submodule's gitlink.
+ARG STB_COMMIT=7ee7f4bd2e72d601555e926b725ceac22a93e294
 
 ENV DEBIAN_FRONTEND=noninteractive \
     OMNISIM_HOME=/opt/omnisim \
@@ -93,7 +98,9 @@ COPY . ${OMNISIM_HOME}
 RUN cd "${OMNISIM_HOME}" \
     && rm -rf src/glm src/stb \
     && git clone -q --depth 1 --branch 1.0.1 https://github.com/g-truc/glm.git src/glm \
-    && git clone -q --depth 1 -b patch-1 https://github.com/omichel/stb.git src/stb
+    && git init -q src/stb \
+    && git -C src/stb fetch -q --depth 1 https://github.com/omichel/stb.git "${STB_COMMIT}" \
+    && git -C src/stb checkout -q FETCH_HEAD
 
 # The build writes docs/list.txt, but .dockerignore excludes docs/ from the
 # context (280 MB, and the Dockerfile prunes it anyway), so the write failed

@@ -25,6 +25,35 @@ top of that foundation.
 ---
 
 
+## [v10.0.3] — 2026-11-05
+
+A patch for the public `train-image` build, which failed on v10.0.2's push for a reason outside
+the tree. The simulator and the installer are unchanged.
+
+### Fixed
+
+- **stb is fetched by commit, not by a branch that no longer exists.** `omichel/stb` deleted
+  its `patch-1` branch, so `docker/Dockerfile.train` stopped at "Remote branch patch-1 not
+  found". `Dockerfile.runtime` and the RunPod bootstrap clone the same branch and would have
+  failed next. All three now fetch the commit `src/stb` records (`7ee7f4bd`, still served by
+  hash, `STB_COMMIT`), `.gitmodules` drops the dead branch line, and
+  `tests/test_stb_pin.py` keeps the three equal to the submodule's gitlink. Submodule
+  checkouts (`git submodule update --init`, `linux-build`) were never affected: they fetch by
+  hash.
+
+### Changed
+
+- **A film with no text on any shot.** `editorial.on_screen_text: "none"` in an Agent Build
+  Film manifest leaves out the action opening's disclosure line and the boundary beat's band.
+  Both texts stay required and are written to `verification.json` (`off_screen_texts`) for the
+  video's description. The default `"full"` is unchanged.
+- **SparkRover printing: a run budget a slow machine can finish.** `make_print.py` gives the
+  twin `time_s / 0.1 + 1800 s` instead of `time_s / 0.7 + 1800 s`, and stops a run whose job
+  time has not advanced for 30 minutes. Four plates (plate01, plate02, plate06, rev03) are
+  re-running on the corrected bead rule, and `PRINT.md` says so. rev01 and rev02 are current
+  full-twin results.
+
+
 ## [v10.0.2] — 2026-11-05
 
 The front page now shows the machines that make the parts, and the last public unit test is green.

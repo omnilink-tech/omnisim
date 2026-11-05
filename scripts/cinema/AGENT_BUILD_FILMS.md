@@ -32,6 +32,13 @@ verification all use this opening contract. The old silent signature remains
 available for existing manifests through the default `"opening": "signature"`.
 The silent-intro rules below apply only to that historical signature profile.
 
+**A clean frame: `"editorial": {"on_screen_text": "none"}`** (default `"full"`). The owner can
+ask for a film with no text on any shot (2026-11-05, the SparkRover film). With it, the
+action opening's disclosure line and the boundary beat's band are not drawn. Both texts
+are still required in the manifest. `verification.json` carries them under
+`off_screen_texts` for the video's description, and its `disclosure_s` is `null`. Captions
+are separate: leave `caption` empty on every segment for a clean frame.
+
 An authored motion diagram can be a `kind: "plate"` segment with a `source`
 video. It receives the same media-range, hash, and delivery checks as a clip,
 while remaining excluded from the real-simulator-footage ratio. This allows
@@ -319,12 +326,11 @@ each block at its window's start, plus the receipt.
 
 #### Films without narration
 
-The owner decided on 2026-11-04 that videos carry no narration or voice-over. Such a film
-declares it in the manifest and tells its story with on-screen captions and plates over the
-score:
+A film may also carry no narration or voice-over. Such a film declares it in the manifest and
+tells its story with on-screen captions and plates over the score:
 
 ```json
-"voice": {"mode": "none", "reason": "Owner decision 2026-11-04: no narration in any video."}
+"voice": {"mode": "none", "reason": "Who decided there is no narration, and why."}
 ```
 
 Each clip segment may carry a `"caption"`: a calm, factual lower third of at most two lines at

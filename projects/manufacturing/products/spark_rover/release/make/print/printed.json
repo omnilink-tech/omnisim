@@ -2534,10 +2534,11 @@
    "stopped": [],
    "superseded": null,
    "current_plate": "rev01",
-   "mode": "ideal",
+   "mode": "twin",
    "bead_rule": "fixed",
    "modes_printed": [
-    "ideal"
+    "ideal",
+    "twin"
    ]
   },
   {
@@ -8206,112 +8207,120 @@
    "replanned_by": {},
    "superseded": false,
    "printed": true,
-   "mode": "ideal",
+   "mode": "twin",
    "bead_rule": "fixed",
    "run": {
     "plate": "rev01",
-    "mode": "ideal",
     "parts": [
      "el_front_carrier"
     ],
     "material": "PETG",
     "support": "everywhere",
     "planned_s": 11310.0,
-    "started": "2026-11-04 17:11:58",
-    "wall_s": 27.2,
+    "engines_on_machine_before": 5,
+    "gpu_c_at_start": 69,
+    "waited_s": 15,
+    "started": "2026-11-04 17:16:48",
+    "wall_s": 15197.4,
     "done": {
+     "kind": "done",
+     "t": 11296.812,
      "planned_s": 11295.811,
      "extruded_mm3": 110525.16,
      "skipped_mm3": 1968.593,
-     "laid_mm3": 110497.12,
-     "dropped_mm3": 28.038,
-     "nozzle_crashes": 0,
-     "peak_flow_mm3_s": 16.83,
-     "beads": 1364883
+     "laid_mm3": 110497.04,
+     "nozzle_crashes": 0
     },
-    "timings": {
-     "plan_s": 9.85,
-     "sample_s": 6.0,
-     "hotend_s": 0.9,
-     "lay_s": 2.32,
-     "total_s": 19.06,
-     "wall_s": 19.42
+    "speed_x_real_time": 0.74,
+    "machine_engines": {
+     "min": 3,
+     "max": 7,
+     "mean": 4.38
     },
-    "returncode": 0,
-    "stderr": ""
+    "our_engines": {
+     "min": 1,
+     "max": 2
+    },
+    "gpu_c_max": 84,
+    "beads": 1348634,
+    "engine_warnings": [
+     "WARNING: Could not listen to extern controllers and robot windows on port 1235. Port 1235 is already in use. Using port 1236 instead. This could be caused by another running instance of OmniSim. You should use the '--port' option to start several instances of OmniSim.",
+     "WARNING: Could not listen to extern controllers and robot windows on port 1234. Port 1234 is already in use. Using port 1236 instead. This could be caused by another running instance of OmniSim. You should use the '--port' option to start several instances of OmniSim.",
+     "INFO: PrintedPart: 523776 beads drawn; later beads are recorded and dumped but not drawn."
+    ]
    },
    "measured": {
     "plate": "rev01",
-    "mode": "ideal",
-    "beads": 1364883,
-    "deposited_mm3": 110497.1,
-    "recorded_mm3": 110496.3,
+    "mode": "twin",
+    "beads": 1348634,
+    "deposited_mm3": 110497.0,
+    "recorded_mm3": 110496.0,
     "unrecorded_fraction": 0.0,
     "laid_g": 140.33,
     "nozzle_crashes": 0,
     "parts": {
      "el_front_carrier": {
-      "beads": 1364883,
-      "blobs": 2872,
-      "deposited_mm3": 110497.1,
-      "recorded_mm3": 110496.3,
+      "beads": 1348634,
+      "blobs": 2540,
+      "deposited_mm3": 110497.0,
+      "recorded_mm3": 110496.0,
       "unrecorded_fraction": 0.0,
       "layers_measured": 284,
       "outer_surface_error_mm": {
-       "mean": 0.0102,
-       "p05": 0.0018,
-       "p95": 0.0256,
-       "min": -2.2233,
-       "max": 0.2195
+       "mean": 0.0198,
+       "p05": -0.0194,
+       "p95": 0.0657,
+       "min": -2.2067,
+       "max": 0.2345
       },
       "size_error_mm": {
-       "x_mean": 0.0592,
-       "y_mean": 0.0658,
+       "x_mean": 0.105,
+       "y_mean": 0.1434,
        "x_range": [
-        0.0394,
-        0.0688
+        0.0742,
+        0.1933
        ],
        "y_range": [
-        0.0404,
-        0.075
+        0.0757,
+        0.2002
        ]
       },
       "height_mm": {
        "printed": 57.05,
        "drawing": 57.0
       },
-      "fill_min": 0.176,
+      "fill_min": 0.174,
       "first_layer": "left out of the surface and footprint",
       "without_wide_beads": {
        "outer_surface_error_mm": {
-        "mean": 0.0102,
-        "p05": 0.0018,
-        "p95": 0.0256,
-        "min": -2.2233,
-        "max": 0.2195
+        "mean": 0.0198,
+        "p05": -0.0194,
+        "p95": 0.0657,
+        "min": -2.2067,
+        "max": 0.2345
        },
        "size_error_mm": {
-        "x_mean": 0.0592,
-        "y_mean": 0.0658
+        "x_mean": 0.105,
+        "y_mean": 0.1434
        }
       },
       "part_g": 75.2,
       "support_or_brim_under_g": 63.69,
       "hanging_strands": {
-       "beads": 34786,
-       "length_mm": 47080.7,
-       "share_of_part_plastic": 0.06567,
-       "at_outline_beads": 1572,
-       "at_outline_length_mm": 2937.0
+       "beads": 33516,
+       "length_mm": 46929.1,
+       "share_of_part_plastic": 0.06517,
+       "at_outline_beads": 1550,
+       "at_outline_length_mm": 3452.7
       },
-      "blobs_in_part": 2247,
+      "blobs_in_part": 1920,
       "wide_beads": {
        "beads": 0,
        "mm3": 0.0,
        "widest_mm": 1.0
       },
-      "inspect_s": 150.9,
-      "mode": "ideal"
+      "inspect_s": 201.0,
+      "mode": "twin"
      }
     }
    },
@@ -8319,95 +8328,122 @@
     "twin": {
      "run": {
       "plate": "rev01",
-      "stopped": "stopped by the coordinator 2026-11-04 03:1x: printed in ideal mode instead",
-      "progress_last": {
-       "wall_s": 5896,
-       "job_s": 6127.63,
-       "beads": 595265,
-       "machine_engines": 4,
-       "our_engines": 2,
-       "gpu_c": 58,
-       "cpu_pct": 43.5
-      }
+      "parts": [
+       "el_front_carrier"
+      ],
+      "material": "PETG",
+      "support": "everywhere",
+      "planned_s": 11310.0,
+      "engines_on_machine_before": 5,
+      "gpu_c_at_start": 69,
+      "waited_s": 15,
+      "started": "2026-11-04 17:16:48",
+      "wall_s": 15197.4,
+      "done": {
+       "kind": "done",
+       "t": 11296.812,
+       "planned_s": 11295.811,
+       "extruded_mm3": 110525.16,
+       "skipped_mm3": 1968.593,
+       "laid_mm3": 110497.04,
+       "nozzle_crashes": 0
+      },
+      "speed_x_real_time": 0.74,
+      "machine_engines": {
+       "min": 3,
+       "max": 7,
+       "mean": 4.38
+      },
+      "our_engines": {
+       "min": 1,
+       "max": 2
+      },
+      "gpu_c_max": 84,
+      "beads": 1348634,
+      "engine_warnings": [
+       "WARNING: Could not listen to extern controllers and robot windows on port 1235. Port 1235 is already in use. Using port 1236 instead. This could be caused by another running instance of OmniSim. You should use the '--port' option to start several instances of OmniSim.",
+       "WARNING: Could not listen to extern controllers and robot windows on port 1234. Port 1234 is already in use. Using port 1236 instead. This could be caused by another running instance of OmniSim. You should use the '--port' option to start several instances of OmniSim.",
+       "INFO: PrintedPart: 523776 beads drawn; later beads are recorded and dumped but not drawn."
+      ]
      },
      "measured": {
       "plate": "rev01",
       "mode": "twin",
-      "beads": 601713,
-      "deposited_mm3": 57152.2,
-      "recorded_mm3": 57151.8,
+      "beads": 1348634,
+      "deposited_mm3": 110497.0,
+      "recorded_mm3": 110496.0,
       "unrecorded_fraction": 0.0,
-      "laid_g": 72.58,
-      "nozzle_crashes": null,
+      "laid_g": 140.33,
+      "nozzle_crashes": 0,
       "parts": {
        "el_front_carrier": {
-        "beads": 601713,
-        "blobs": 1,
-        "deposited_mm3": 57152.2,
-        "recorded_mm3": 57151.8,
+        "beads": 1348634,
+        "blobs": 2540,
+        "deposited_mm3": 110497.0,
+        "recorded_mm3": 110496.0,
         "unrecorded_fraction": 0.0,
-        "layers_measured": 122,
+        "layers_measured": 284,
         "outer_surface_error_mm": {
-         "mean": 0.022,
-         "p05": 0.0043,
-         "p95": 0.0612,
-         "min": -2.2145,
-         "max": 0.2931
+         "mean": 0.0198,
+         "p05": -0.0194,
+         "p95": 0.0657,
+         "min": -2.2067,
+         "max": 0.2345
         },
         "size_error_mm": {
-         "x_mean": 0.09,
-         "y_mean": 0.1477,
+         "x_mean": 0.105,
+         "y_mean": 0.1434,
          "x_range": [
           0.0742,
-          0.177
+          0.1933
          ],
          "y_range": [
-          0.1271,
-          0.1834
+          0.0757,
+          0.2002
          ]
         },
         "height_mm": {
-         "printed": 24.65,
+         "printed": 57.05,
          "drawing": 57.0
         },
-        "fill_min": 0.175,
+        "fill_min": 0.174,
         "first_layer": "left out of the surface and footprint",
         "without_wide_beads": {
          "outer_surface_error_mm": {
-          "mean": 0.0212,
-          "p05": 0.0038,
-          "p95": 0.0612,
-          "min": -2.2044,
-          "max": 0.1948
+          "mean": 0.0198,
+          "p05": -0.0194,
+          "p95": 0.0657,
+          "min": -2.2067,
+          "max": 0.2345
          },
          "size_error_mm": {
-          "x_mean": 0.09,
-          "y_mean": 0.1477
+          "x_mean": 0.105,
+          "y_mean": 0.1434
          }
         },
-        "part_g": 40.27,
-        "support_or_brim_under_g": 22.0,
+        "part_g": 75.2,
+        "support_or_brim_under_g": 63.69,
         "hanging_strands": {
-         "beads": 14531,
-         "length_mm": 24457.2,
-         "share_of_part_plastic": 0.06348,
-         "at_outline_beads": 560,
-         "at_outline_length_mm": 312.7
+         "beads": 33516,
+         "length_mm": 46929.1,
+         "share_of_part_plastic": 0.06517,
+         "at_outline_beads": 1550,
+         "at_outline_length_mm": 3452.7
         },
-        "blobs_in_part": 0,
+        "blobs_in_part": 1920,
         "wide_beads": {
-         "beads": 3802,
-         "mm3": 56.72,
-         "widest_mm": 4.4
+         "beads": 0,
+         "mm3": 0.0,
+         "widest_mm": 1.0
         },
-        "inspect_s": 87.7,
+        "inspect_s": 201.0,
         "mode": "twin"
        }
       }
      },
-     "printed": false,
-     "bead_rule": "pre-fix",
-     "rerun_on_fixed_engine": "in progress"
+     "printed": true,
+     "bead_rule": "fixed",
+     "rerun_on_fixed_engine": null
     },
     "ideal": {
      "run": {
@@ -9570,7 +9606,10 @@
     "finished_before": false,
     "crashes_before": null,
     "laid_g_before": 72.58,
-    "beads_before": 601713
+    "beads_before": 601713,
+    "crashes_after": 0,
+    "laid_g_after": 140.33,
+    "beads_after": 1348634
    },
    "rev02/twin": {
     "finished_before": false,
@@ -9803,7 +9842,11 @@
     "p95_before": 0.0612,
     "fx_before": 0.09,
     "fy_before": 0.1477,
-    "widest_before": 4.4
+    "widest_before": 4.4,
+    "p95_after": 0.0657,
+    "fx_after": 0.105,
+    "fy_after": 0.1434,
+    "widest_after": 1.0
    },
    "el_bay_carrier/rev02/twin": {
     "plate": "rev02",
@@ -10125,5 +10168,11 @@
     "widest_after": 1.0
    }
   }
+ },
+ "summary": {
+  "bead fix": "2026-11-04: PrintedPart's laying rule fixed (no line wider than the nozzle face, held plastic laid as a blob where it left the nozzle, a nozzle under 0.01 nozzle a step is still). Every plate printed again in ideal mode 17:05-17:56 on the fixed rule; the old dumps are kept in .tmp/spark_print/before_bead_fix/ and re-measured by the same inspect_print.",
+  "fixed-engine twin runs": "scratch engine omnisim-bin-v10beads. rev02 17:40-20:36 (0.81x real time) and rev01 17:17-21:30 (0.74x) finished and were measured. plate01, plate02, plate06 and rev03 were restarted at 23:50: a shared machine (a voice worker beside them) ran the twins at 0.25-0.4x, and the old run budget (time_s / 0.7 + 30 min) stopped plate06 at 88 % of its job; plate01's first fixed run was lost to a stand-in monitor's clock bug at 19:37.",
+  "GPU": "the gate held every launch under 75 C; an 80 C reading at 19:00 came from another session's renderer, not these headless engines.",
+  "wall_s_this_run": 9283.4
  }
 }

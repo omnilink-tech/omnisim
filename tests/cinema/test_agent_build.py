@@ -236,6 +236,30 @@ class AgentBuildContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "required beats must first appear in order"):
             agent_build.parse(payload)
 
+    def test_clean_frame_drops_disclosure_and_boundary_band_but_keeps_both_texts(self) -> None:
+        payload = agent_build.template()
+        self.assertEqual(agent_build.parse(payload).on_screen_text, "full")
+        payload['editorial']['on_screen_text'] = 'sometimes'
+        with self.assertRaisesRegex(ValueError, "on_screen_text must be 'full' or 'none'"):
+            agent_build.parse(payload)
+        payload['editorial']['on_screen_text'] = 'none'
+        spec = agent_build.parse(payload)
+        self.assertEqual(spec.on_screen_text, "none")
+        import dataclasses
+        boundary = next(s for s in spec.segments if s.claim_boundary)
+        bare = dataclasses.replace(boundary, overlay=None, caption="", replay_label="")
+        with tempfile.TemporaryDirectory() as tmp:
+            # a clean frame draws nothing for a boundary shot; the default draws its band
+            self.assertIsNone(agent_build._make_overlay(
+                bare, Path(tmp) / "c.png", agent_build.FINAL_PROFILE, boundary_band=False))
+            self.assertIsNotNone(agent_build._make_overlay(
+                bare, Path(tmp) / "d.png", agent_build.FINAL_PROFILE))
+        # the boundary stays required in the manifest even with a clean frame
+        for s in payload['segments']:
+            s.pop('claim_boundary', None)
+        with self.assertRaisesRegex(ValueError, 'boundary beat must carry'):
+            agent_build.parse(payload)
+
     def test_first_footage_and_voice_cannot_move_into_silent_intro(self) -> None:
         payload = agent_build.template()
         payload["segments"][0]["kind"] = "plate"

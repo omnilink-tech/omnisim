@@ -738,6 +738,9 @@ class Gate:
             self.ours -= 1
 
 
+STALL_S = 1800.0
+
+
 def run_plate(pl: dict, gate: Gate, out: Path = OUT, log=print, ticket: int = 0) -> dict:
     """One plate, headless, start to the controller's 'done' (or a timeout). Writes
     out/runs/<plate>/report.json."""
@@ -752,7 +755,11 @@ def run_plate(pl: dict, gate: Gate, out: Path = OUT, log=print, ticket: int = 0)
     subprocess.run([sys.executable, str(PRINTING / "world.py"), "--printer", str(profile), "--gcode", pl["gcode"],
                     "--trace", trace.resolve().as_posix(), "--out", str(world)], check=True, cwd=ROOT,
                    capture_output=True)
-    timeout = pl["time_s"] / 0.7 + 1800.0
+    # The engine's own --duration and our wall clock: generous, since a shared machine can run a
+    # twin at a third of real time or less (2026-11-04: 0.25-0.4x beside a busy voice worker, and
+    # the old time_s / 0.7 + 1800 s killed plate06 at 88 % of its job). A run whose job time stops
+    # advancing for STALL_S of wall time is stopped instead.
+    timeout = pl["time_s"] / 0.1 + 1800.0
     start = gate.acquire(pl["name"], ticket, log)
     env = dict(os.environ, OMNISIM_PRINTED_PART_DUMP=str(beads.resolve()),
                OMNISIM_LOG_PATH=str((run / "omnisim_log.txt").resolve()))
@@ -766,6 +773,7 @@ def run_plate(pl: dict, gate: Gate, out: Path = OUT, log=print, ticket: int = 0)
         proc = subprocess.Popen([sys.executable, "-m", "omnisim", "run-headless", str(world), "--duration",
                                  str(int(timeout))], cwd=ROOT, env=env, stdout=eng_log, stderr=subprocess.STDOUT)
         done, seen, job_t = None, 0, 0.0
+        advanced_t, advanced_at = 0.0, time.time()
         progress, machine, ours, gpus = [], [], [], []
         last = 0.0
         try:
@@ -775,6 +783,11 @@ def run_plate(pl: dict, gate: Gate, out: Path = OUT, log=print, ticket: int = 0)
                     break
                 if time.time() - t0 > timeout:
                     rep["error"] = "timeout"
+                    break
+                if job_t > advanced_t:
+                    advanced_t, advanced_at = job_t, time.time()
+                elif time.time() - advanced_at > STALL_S:
+                    rep["error"] = f"stalled: job time {job_t} s did not advance for {STALL_S:.0f} s of wall time"
                     break
                 time.sleep(10.0)
                 if trace.exists():
