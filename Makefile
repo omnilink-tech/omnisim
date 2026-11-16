@@ -175,7 +175,7 @@ tests-smoke:
 # environment, and a Windows python then raises at Path.home() -- one test
 # module computes it at import and that aborted the whole collection.
 # APPDATA too: Python finds the per-user site-packages under it on Windows, and
-# without it shapely / trimesh / numba vanished and 16 manufacturing test modules
+# without it shapely / trimesh / numba vanished and 16 test modules
 # failed to collect (2026-11-04). $HOME is NOT a fallback for any of the three: under
 # MSYS make it is the MSYS home (C:/msys64/home/<user>), so Python looked for a
 # site-packages that does not exist. On Windows they come from the shell's own

@@ -210,7 +210,7 @@ class AgentBuildSpec:
     opening: str = "signature"
     # "full" (default): the action opening's disclosure line and the boundary beat's
     # band are drawn on the frame. "none": a clean frame, by the owner's choice for a
-    # film (2026-11-05, the SparkRover film). Both texts stay required in the manifest
+    # film (2026-11-05). Both texts stay required in the manifest
     # and are carried in verification.json, for the video's description.
     on_screen_text: str = "full"
 

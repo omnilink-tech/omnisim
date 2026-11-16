@@ -30,7 +30,6 @@ __pycache__/
 *.dmg
 *.gz
 # a product's release ships its print plates gzipped (its release/BOM.md links them)
-!projects/manufacturing/products/*/release/cam/print/*.gcode.gz
 *.iso
 *.jar
 *.rar

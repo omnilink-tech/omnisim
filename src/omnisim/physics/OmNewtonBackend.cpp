@@ -3299,7 +3299,7 @@ int OmNewtonBackend::setWorldGravity(double gx, double gy, double gz) {
 // ⚠ WHY THE FIRST ONE IS AN ERROR. A raised step is not one feature
 // declining (reportPyError's class): the whole world stood still for that
 // tick. The engine clock and every controller still advance, so without this
-// the run looks healthy from outside -- measured 2026-11-04 on a SparkRover
+// the run looks healthy from outside -- measured 2026-11-04 on a large
 // assembly scene (a ~2,700-box moving unit among ~6,000 static shapes):
 // MuJoCo raised "mj_stackAlloc: out of memory, stack overflow at
 // mj_narrowphase" on EVERY step, the unit never moved and had no contacts, and

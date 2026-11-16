@@ -14,7 +14,7 @@
 
 """The MAIN VIEW must draw a Shape under a bare root Pose, and follow it when it moves.
 
-The defect (from 2026-08-21, found and fixed 2026-11-01 on the clothes rack assembly
+The defect (from 2026-08-21, found and fixed 2026-11-01 on an assembly
 world): OmWgpuSceneRenderer::collectWorldDraws walked the root's non-Solid children
 only for callers that passed no draw->Solid map. The main view has passed one since
 the synthetic-data dumps landed (selection tint, pick, instance ids), so every Shape

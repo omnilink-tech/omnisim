@@ -14,7 +14,7 @@
 
 """With TAA on, the main view of a scene where nothing moves must hold still.
 
-The defect (found 2026-11-01, when the owner saw the CNC twin's machine "vibrating"): every
+The defect (found 2026-11-01, when the owner saw a still machine scene "vibrating"): every
 edge of a still scene shimmered by a fraction of a pixel, frame after frame. Three causes in
 the temporal resolve, all fixed together under OMNISIM_WGPU_TAA_STILL_EDGES:
   1. the history was reprojected from the PREVIOUS frame's jitter into this frame's, so a still
@@ -23,7 +23,7 @@ the temporal resolve, all fixed together under OMNISIM_WGPU_TAA_STILL_EDGES:
      between foreground and background on a silhouette, rejecting the history there;
   3. the reactive colour test compared the history with this frame's single jittered sample,
      which on any edge always differs from the converged average, and cut the history.
-Measured on the idle CNC twin (1896 x 1113 main view, machine 9722d23d12a3): 10k-59k pixels
+Measured on an idle machine scene (1896 x 1113 main view, machine 9722d23d12a3): 10k-59k pixels
 changed by more than 8 levels between consecutive frames before, 1.1k-3.2k after.
 
 The engine runs minimised (no main view exists under OMNISIM_NO_WINDOW). The scene is
@@ -142,7 +142,7 @@ def test_a_still_scene_holds_still_under_taa(tmp_path):
     legacy, legacy_counts = _run(tmp_path, "legacy", still_edges=False)
     # the hatch-off run must show the shimmer, or this scene no longer exercises the defect
     assert legacy > 2000, ("the scene did not shimmer even with OMNISIM_WGPU_TAA_STILL_EDGES=0", legacy_counts)
-    # measured 0.32 here (2167 vs 6762 px) and 0.06 on the idle CNC twin, whose many fine edges the
+    # measured 0.32 here (2167 vs 6762 px) and 0.06 on the idle machine scene, whose many fine edges the
     # jittered reprojection hit hardest; what remains is the reactive colour test easing the
     # history on silhouettes, kept so a coplanar colour change still leaves no trail
     assert fixed < 0.5 * legacy, (

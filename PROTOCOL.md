@@ -2316,7 +2316,7 @@ supervisor clock only.
 **⚠️ `steps_executed` counts SUPERVISOR steps, not physics steps (2026-11-04).**
 A Newton step that raises is skipped (nothing moves, collides or reports a
 contact) while the engine clock and every controller still advance, so the
-supervisor runs, and counts, every step of the batch. Measured on a SparkRover
+supervisor runs, and counts, every step of the batch. Measured on a large
 assembly scene (a ~2,700-box moving unit among ~6,000 static shapes): MuJoCo
 raised `mj_stackAlloc: out of memory, stack overflow` on every step, the unit
 never moved, and `/sim/step` answered `steps_executed: 250`. The response now

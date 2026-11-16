@@ -16,7 +16,7 @@
 
 THE DEFECT. `OmNewtonBackend::step()` logged a raised `world.step()` as one
 WARNING per tick and returned. The engine clock and every controller still
-advanced, so the run looked healthy from outside: on a SparkRover assembly
+advanced, so the run looked healthy from outside: on a large assembly
 scene (a ~2,700-box moving unit among ~6,000 static shapes) MuJoCo raised
 "mj_stackAlloc: out of memory, stack overflow at mj_narrowphase" on every step,
 the unit never moved and had no contacts, and the harness's `/sim/step`

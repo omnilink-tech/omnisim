@@ -2518,7 +2518,7 @@ bool OmView3D::renderMainFrameViaWgpu(bool culling, bool offScreen) {
         mix(static_cast<int64_t>(std::lround(sunEnergy3[k] * 32.0)));
       // The dynamic tail (MillingStock, cloth, soft bodies, granular, tracks, muscles) changes its
       // draw and index counts as it deforms, so keying on it rebaked GI back to back for as long
-      // as anything deformed: a CNC twin cutting aluminium rebaked 96 times in 90 s (57 s of
+      // as anything deformed: a MillingStock being cut rebaked 96 times in 90 s (57 s of
       // BVH + trace on all cores but one, 17 % fewer G-code lines, and a visible lighting swap
       // about once a second). Like a moving robot it is static-scene GI's business only when
       // something else triggers a bake, and then it is baked as it stands. Value-parsed hatch:
@@ -2724,7 +2724,7 @@ bool OmView3D::renderMainFrameViaWgpu(bool culling, bool offScreen) {
     // The main view is paced at WorldInfo.fps (60 by default) for as long as the simulation runs,
     // and every one of those frames paid the full stack -- cascaded shadows, GTAO, SSR, bloom,
     // tone map -- whether or not anything had moved. MEASURED 2026-11-01, RTX 3060 Laptop, the
-    // LongMill CNC twin standing IDLE in the window: ~49 % GPU, ~61 W, 86-87 C and thermally
+    // machine scene standing IDLE in the window: ~49 % GPU, ~61 W, 86-87 C and thermally
     // throttled (nvidia-smi reason 0x20), for a picture that did not change; closing the window
     // took it to 18 W. An identical frame is now HELD: the image on screen already is that frame.
     //
@@ -2769,7 +2769,7 @@ bool OmView3D::renderMainFrameViaWgpu(bool culling, bool offScreen) {
         mix(omniExtras.data(), omniExtras.size() * sizeof(float));
       // Model matrices are hashed at 1e-6 (a micrometre, a micro-radian), not bit for bit: a body a
       // servo holds away from its zero moves by float noise every physics step. Measured on the
-      // LongMill twin parked where the connector job ends: 15-58 matrices changed by up to 4e-9 m
+      // machine parked by its servos: 15-58 matrices changed by up to 4e-9 m
       // per frame, the signature changed ~20 times a second, nothing was ever held, and the idle
       // window drew an unchanging picture at 23-33 % of an RTX 3060 Laptop's 3D engine.
       // Value-parsed hatch: OMNISIM_WGPU_RENDER_ON_CHANGE_EXACT=1 hashes the raw bits again.

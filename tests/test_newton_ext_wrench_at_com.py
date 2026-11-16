@@ -22,7 +22,7 @@ body ORIGIN. newton's State.body_f is a wrench about the body's CENTRE OF MASS. 
 agree only when the two coincide, so on any Solid whose COM is off its origin (any
 Solid that declares an inertiaMatrix and a centerOfMass) every addForceWithOffset
 and every propeller thrust acted as if moved by the origin-to-COM offset. Found by a
-clothes rack (COM 1.02 m above its origin): pushed at its bar it tipped at 23.5 N
+tall frame (COM 1.02 m above its origin): pushed at its bar it tipped at 23.5 N
 against the statics answer 37.8 N; re-referenced in the runtime, 39.2 N.
 
 This pins the runtime engine-free on the SOURCE runtime.

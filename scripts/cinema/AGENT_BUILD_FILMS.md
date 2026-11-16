@@ -33,7 +33,7 @@ available for existing manifests through the default `"opening": "signature"`.
 The silent-intro rules below apply only to that historical signature profile.
 
 **A clean frame: `"editorial": {"on_screen_text": "none"}`** (default `"full"`). The owner can
-ask for a film with no text on any shot (2026-11-05, the SparkRover film). With it, the
+ask for a film with no text on any shot (2026-11-05). With it, the
 action opening's disclosure line and the boundary beat's band are not drawn. Both texts
 are still required in the manifest. `verification.json` carries them under
 `off_screen_texts` for the video's description, and its `disclosure_s` is `null`. Captions

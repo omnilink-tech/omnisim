@@ -1493,7 +1493,7 @@ def read_physics_steps(log_path: Path) -> dict:
     A Newton step that RAISES is skipped -- nothing moves or collides for that
     tick -- while the engine clock and every controller still advance, so the
     supervisor's own step count cannot see it. Measured 2026-11-04: MuJoCo's
-    arena overflowed in mj_narrowphase on every step of a SparkRover assembly
+    arena overflowed in mj_narrowphase on every step of a large assembly
     scene, the moving unit never moved, and /sim/step answered
     `steps_executed: 250`. The engine now counts those steps into the verdict
     sidecar (`step_errors`, rewritten on every failing step and on the first

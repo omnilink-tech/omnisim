@@ -75,8 +75,7 @@ the first and lends you an agent for the second.
 > needs to work on any robotic system.
 >
 > You can simulate complete robotic systems with high-fidelity physics, build
-> digital twins, connect simulation to real robots, make the parts on
-> twins of the CNC routers, lasers and 3D printers that build them, and give AI
+> digital twins, connect simulation to real robots, and give AI
 > agents a workshop to program, test, and debug your system.
 >
 > You can do all of that simply by talking to it.
@@ -84,7 +83,6 @@ the first and lends you an agent for the second.
 > **No robot?** Simulate one.
 > **Already have a robot?** Build its digital twin.
 > **Don't know how to program it?** Let an agent help build and debug it.
-> **Designed one?** Make its parts on machine twins.
 >
 > The goal is simple: make robotics accessible to anyone with an idea.
 > OmniSim is completely free and open source.
@@ -116,37 +114,6 @@ And **no physics runtime means no physics at all**, not a degraded mode:
 [`step_to_urdf.py`](step-to-urdf.md), 20+ vendor robot packages under
 [`projects/robots/`](../../projects/robots/), and the authoring loop in AGENTS.md
 §5 — load, inspect the scene tree, edit, `POST /world/sync`, screenshot.
-Since v10 also **machine twins** — a CNC router, a laser and an FDM printer built
-from their controller configs — and the robots made with them
-([OmniSim Manufacturing](#omnisim-manufacturing--what-may-be-claimed-v10-2026-11-04),
-with its own boundary: simulation only, no twin validated against its machine).
-
-### Make the parts on machine twins (v10)
-
-**Show the machines, not only the robot.** A reader who sees only the finished
-SparkRover assumes it was assembled from parts that came from somewhere else.
-The claim is that OmniSim **runs the machines that make the parts**: the LongMill
-CNC and laser twins answer GRBL 1.1 (a GRBL sender streams them a job over TCP),
-the SV08 twin runs CuraEngine G-code planned as Klipper plans it, the tool's real
-path removes or lays the material, and each part is measured against its
-drawing. The CNC twin can also be **talked to** through its OmniLink bridge
-(live run 2026-11-01: a spoken pocket milled, a too-deep one refused by
-`cut_depth`; an OmniKey is required). Every Manufacturing surface shows the
-machines at work beside the robot: the README's three-machine table
-(`docs/images/manufacturing/machine_*.png` over `twin_*.png`) is the pattern.
-
-⚠️ **Boundary.** Say "the twin cuts / prints"; never "OmniSim controls your
-machine". The CNC bridge drives GRBL over a stream, so it is built to run a real
-board, but **it has not been run on one**, and no twin is validated against its
-real machine. The full boundary is in
-[OmniSim Manufacturing](#omnisim-manufacturing--what-may-be-claimed-v10-2026-11-04).
-
-⚠️ **Boundary.** A twin here is **a model built from your robot's own
-description** — its URDF, its CAD, its joint limits and inertias — running in
-Newton. It is not live-synced telemetry from the physical machine, and its
-dynamics are not validated against that machine unless you validate them. Say
-"build a model of your robot", never "a twin that matches your robot's
-behaviour", until somebody measures the second thing.
 
 ### Connect simulation to real robots
 
@@ -592,63 +559,3 @@ On the selected low-side mu 0.04 unloaded split, maximum path error changes
 between each pair. Known map and localization assumed; no friction estimation,
 production firmware or physical-robot validation. Rigid coefficients are not
 calibrated real materials. The original 76-episode study remains unchanged.
-
-## OmniSim Manufacturing — what may be claimed (v10, 2026-11-04)
-
-Manufacturing is the v10 theme: machine twins that make parts, and robots made
-with them. It sits under the "build digital twins" pillar (§5), and the same
-boundary binds it: a twin here is **a model built from the machine's own
-controller config and, where the vendor publishes it, its CAD**. Each line below
-is a measurement with its source; quote it with its conditions or not at all.
-All were measured on machine `9722d23d12a3` (Ryzen 7 5800H, RTX 3060 Laptop,
-Windows 11), Newton 1.5.0 / MuJoCo CPU.
-
-### Lead with these — measured, in the twin
-
-| Claim | Measurement and conditions | Source |
-|---|---|---|
-| Three machine twins run the job file the real machine would run | CNC: a virtual GRBL 1.1 on TCP that a GRBL sender connects to (homing, a 12-line job, `ALARM:2`, reset, jog `error:15`, 2026-10-31). Laser: GRBL 1.1 laser mode (M3/M4, G0 dark, GRBL's PWM). Printer: G-code from an installed CuraEngine, planned as Klipper plans it | `projects/manufacturing/cnc/README.md`, `laser/README.md`, `printing/README.md` |
-| Material is removed or laid where the tool really went | `MillingStock` carves by the cutter Solid's real pose every physics step; `PrintedPart` lays beads along the nozzle Solid's real path | `src/omnisim/nodes/OmMillingStock.*`, `OmPrintedPart.*` |
-| The CNC twin cuts within microns of a perfect machine on the same program | star pocket: floor −0.002 … +0.0013 mm, walls 0.006 / 0.007 mm, path deviation max 0.026 mm; 70 mm mould within −0.012 … +0.024 mm of the program's ideal cut, volume −0.04 % (LongMill twin, 2026-11-01) | commits `1cb471380`, `0036355aa`; `cnc/README.md` |
-| The laser twin is calibrated on the vendor's table | one row fitted (3 mm plywood, 3 passes); predicted 6 mm in 5 passes (Sienci: 5) and 1/4" in 14 (Sienci: 16); a 30 × 20 mm tag cut free at 29.9 × 19.9 mm, hole 6.06 mm (drawn 6.0) | commit `477d324eb`; `laser/README.md` |
-| The printer twin prints a part and measures it | 20 mm cube: 2852.27 mm³ extruded, 2850.18 laid, 100 layers, outer surface +0.041 mm, height 20.05 mm; axis tracking 9 µm median (SV08 twin, 2026-11-02) | commit `710623c3a`; `printing/README.md` |
-| An ideal (engine-free) print agrees with the twin | three parts, ideal vs twin: plastic laid identical to 0.1 mm³, same layers and height; the twin's part larger by 0.02–0.03 mm a side on the cube and plate, 0.003 mm on the shell's long walls; a 145 g shell in 21 s instead of ~1.9 h | `printing/README.md` "Ideal print (no engine)" |
-| Two robots were designed, made on all three twins, assembled and driven on Newton, with a release pack each | desk robot: decks 90.1 × 80.1 mm (drawn 90 × 80), hubs OD 15.994 (16.0), 0.672 m/s straight vs 0.679 datasheet. SparkRover Mini: 325 solids with 0 interfering; 16 of 16 laser/CNC parts cut free; 27 printed parts on the corrected bead rule (2 on the full twin, 25 in ideal mode, their full-twin re-runs on the fixed engine to follow); 127 of 128 wires routed; 53 units assembled in 18 steps with 0 blocked; 0.6941 m/s straight vs 0.6964 predicted at the 8.184 V bus mean | `products/desk_robot/README.md`, `products/spark_rover/release/REPORT.md` |
-| From AI concept images to a buildable design | the SparkRover's concept sheets were AI-generated; the design corrected their numbers and records each decision (no gripper, a plain RGB camera, a 2S2P battery) in `skeleton.py` `DECISIONS`; `release/` carries drawings, STLs, the machine files, the BOM and an assembly guide | `products/spark_rover/skeleton.py`, `docs/guide/manufacturing-concept-to-robot.md` |
-| An operator talks to the CNC twin and it machines | live run 2026-11-01, LongMill twin, model through OmniLink: a spoken 50 mm × 2 mm circular pocket milled by `cut_pocket`; pause, a status question and resume mid-job; a 15 mm-deep request in 12 mm stock refused by `cut_depth` with the 11.5 mm limit explained; removed volume 6,201.3 mm³ (design about 6,164). Needs an OmniKey; `/tool` and Stop work without one | `projects/manufacturing/cnc/README.md` "Talk to it (OmniLink)", `cnc/cnc_bridge.py` |
-| A load test found a real design fault | the clothes rack's concept 500 mm base tipped at 9.4 N empty on Newton; the 600 mm base raises it to 11.5 N (hand calculation 10.9) | commit `10cf4514a` |
-
-### The boundary — state it wherever Manufacturing appears
-
-- **Simulation only.** No twin has been validated against its real machine,
-  and nothing has been made on a real machine. Say "the twin cuts / prints / measures";
-  never "the machine will", and never quote a twin number as a real part's.
-- **Twin and ideal are different results.** A twin print is full physics in the
-  engine; an ideal print has no engine and no axis dynamics. Name the mode with
-  every print number. On the corrected bead rule, 25 of the SparkRover's 27
-  printed parts are ideal-mode results so far and 2 are full-twin results.
-- **Calibration is one point.** The laser is fitted to one row of Sienci's table,
-  and on full parts the twin needed **6 passes for 6 mm plywood, one more than
-  Sienci's 5** (at 5 the parts stayed joined by a 0.16–0.20 mm web). Do not say the
-  laser twin matches the vendor's table.
-- **What is not simulated:** cutting load on acrylic (no published value: volume is
-  removed with no load, melt or cracking model); the SparkRover's microphones
-  (`Microphone` is retired), speaker, touch pads and status ring (visual meshes);
-  an emissive screen; and the screws (placed at their seats, not simulated).
-- **The bead model was corrected in v10, and twin numbers say which rule made them.**
-  Before the fix, `PrintedPart` laid plastic held over a creeping nozzle as one bead up
-  to ~7 mm wide, or as a dome the nozzle later "crashed" into. The fixed rule caps a bead
-  at the nozzle face and lays the rest as a blob (CHANGELOG v10.0.0). A twin print
-  measured before the fix is labelled so in its PRINT.md: never quote its p95,
-  footprint or crash count as current.
-- **Open design items stay visible:** the SparkRover's board hole positions on
-  U5, U6, U11 and U12 are assumed; the front carrier needs about 64 g of support for a
-  75 g part; the spin rate and stopping distance depend on the engine's
-  wheel-armature default; the desk robot's assembly settle check is flaky.
-- **Licences.** The LongMill CAD pack is CC BY-SA and the SV08 mesh pack GPL-3.0,
-  each in its machine's `cad/` folder. Vendor STEP files for bought parts (Pololu,
-  Seeed, ROBOTIS) are fetched and hash-checked at build time and never committed;
-  the shipped models are ours, drawn from the vendors' dimension drawings.
-- **No price or throughput comparison with a real machine,** which no twin has been run against, and no "first" or "only".
-  "In seconds instead of hours" is true of ideal versus twin printing, measured
-  above, and of nothing else.

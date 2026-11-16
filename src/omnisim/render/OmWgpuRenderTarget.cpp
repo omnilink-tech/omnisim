@@ -9008,8 +9008,8 @@ bool OmWgpuRenderTarget::clearAndDrawSceneTexturedShadowed(
       // The previous view-proj is kept UNJITTERED and re-jittered with THIS frame's offset, so a
       // still surface reprojects onto its own pixel. Reprojecting from the previous frame's own
       // jitter fetched history up to a pixel away, in a new direction every frame; at 0.9 history
-      // weight the resolved image followed it and every edge of a still scene shimmered (idle CNC
-      // twin: 10k-59k of 2.1M pixels changed by >8 levels per frame). The resolve shader's two
+      // weight the resolved image followed it and every edge of a still scene shimmered (idle machine
+      // scene: 10k-59k of 2.1M pixels changed by >8 levels per frame). The resolve shader's two
       // still-edge fixes (3x3 nearest depth, tent-relative colour change) ride the same switch
       // as the SIGN of the history weight. Value-parsed hatch: OMNISIM_WGPU_TAA_STILL_EDGES=0
       // restores the old jittered-to-jittered reprojection and the old shader path.

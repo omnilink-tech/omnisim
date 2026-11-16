@@ -17,7 +17,7 @@
 The engine-free half (sidecar reader, harness delta, diagnostics, run-headless,
 the arena hook) is tests/test_physics_step_errors.py, whose docstring has the
 history. Here a slab of 900 one-centimetre convex pieces (one body) drops onto
-a convex floor -- hull-against-hull, as on the SparkRover assembly that found
+a convex floor -- hull-against-hull, as on the large assembly that found
 this -- three times, 1 s each, CPU `newtonSolver "mujoco"`:
 
   arena                               measured 2026-11-04              must be

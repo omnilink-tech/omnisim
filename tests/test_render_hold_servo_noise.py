@@ -14,10 +14,10 @@
 
 """Sub-micrometre float noise on a still body must not stop the main view holding its frames.
 
-The defect (found 2026-11-02, when the owner asked why an idle CNC twin window loaded the GPU):
+The defect (found 2026-11-02, when the owner asked why an idle machine-scene window loaded the GPU):
 render-on-change holds a frame whose signature matches the last ones, and the signature hashed
 every model matrix bit for bit. A body a servo holds away from its zero moves by float noise
-every physics step; on the LongMill twin parked where the clothes-rack connector job ends,
+every physics step; on a machine parked by its servos,
 15-58 matrices changed by up to 4e-9 m per frame, the signature changed ~20 times a second,
 nothing was held, and the idle window drew an unchanging picture at 23-33 % of an RTX 3060
 Laptop's 3D engine (6.5-10.6 % after the fix, the twice-a-second refresh). Matrices are now

@@ -14,7 +14,7 @@
 
 """A Display draws onto its Shape under the wgpu renderer, and a redraw reaches the screen.
 
-The defect (found 2026-11-04 on the SparkRover's face): every wgpu upload site asked an
+The defect (found 2026-11-04 on a robot's face display): every wgpu upload site asked an
 ImageTexture for image(), which is NULL for a Display-fed texture (it has no file), so a Display
 drew nothing onto its Shape: the Shape kept its flat baseColor (white). Fixing the upload was not
 enough. The main view and every camera keep a cached draw list, built before the Display's first

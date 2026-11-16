@@ -20,7 +20,7 @@ the COM pinned AT the origin -- the declared `centerOfMass`, or the boundingObje
 own centroid, never reached the solver (MuJoCo `ipos` 0). Only an explicit
 inertiaMatrix (and the URDF_INERTIA_FALLBACK marker) carried its COM. So a part
 whose origin is off its material had its weight acting at the origin: found by the
-desk-robot assembly (`projects/manufacturing/products/desk_robot/assemble.py`),
+an assembly's parts,
 where a ball caster, gearmotors, a PCB and standoffs, built in the robot's frame,
 tumbled off flat seats they should have rested on.
 

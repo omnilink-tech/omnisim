@@ -15,10 +15,10 @@
 """Cutting a MillingStock must not make OmniLight rebake its GI over and over.
 
 The defect (found 2026-11-02, when the owner saw the lighting "updating all the time" while the
-CNC twin milled a clothes-rack connector): OmniLight rebakes when its scene key changes, and the
+MillingStock was being cut): OmniLight rebakes when its scene key changes, and the
 key counted every draw and every index -- including the dynamic tail (MillingStock tiles, cloth,
 soft bodies, granular, tracks, muscles), whose counts change as it deforms. A cutting block
-rebaked GI back to back: 96 bakes in 90 s on the CNC twin, 57 s of BVH + trace on all cores but
+rebaked GI back to back: 96 bakes in 90 s on a MillingStock scene, 57 s of BVH + trace on all cores but
 one, and a visible lighting swap about once a second. The key now skips the dynamic tail
 (hatch OMNISIM_OMNILIGHT_KEY_DYNAMIC=1 keys on it again).
 

@@ -773,7 +773,7 @@ class World:
         size is FIXED when the model compiles (mjModel.narena; read-only after
         that). The CPU solver cannot grow it: a step that needs more raises
         "mj_stackAlloc: out of memory" and is skipped. MuJoCo's own estimate
-        was 13 MiB on the 2026-11-04 SparkRover scene (a ~2,700-box moving unit
+        was 13 MiB on a 2026-11-04 large assembly scene (a ~2,700-box moving unit
         among ~6,000 static shapes), which overflowed in mj_narrowphase on
         every step. newton exposes no option for it and njmax / nconmax do not
         touch it on the CPU path (they size mujoco_warp's buffers only), so it
@@ -11465,7 +11465,7 @@ class World:
             # newton's body_f is a wrench about the body's CENTRE OF MASS (newton State.body_f docs).
             # Re-reference it: tau_com = tau_origin - c x F, c = the origin-to-COM offset in world.
             # Until 2026-11-01 it was passed through, so a force at an offset on a body whose COM is
-            # not at its origin acted as if moved by that offset: a clothes rack (COM 1.02 m above its
+            # not at its origin acted as if moved by that offset: a tall frame (COM 1.02 m above its
             # origin) pushed at its bar tipped at 62 % of the statics answer. Hatch, value-parsed:
             # OMNISIM_NEWTON_EXT_WRENCH_AT_COM=0 restores the pass-through.
             if not hasattr(self, "_ext_wrench_at_com"):

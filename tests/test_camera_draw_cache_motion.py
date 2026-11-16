@@ -14,7 +14,7 @@
 
 """A Camera with its cached draw list must see things move on the step they move.
 
-The defect (found 2026-11-01 on the CNC twin, fixed the same day): every Camera and
+The defect (found 2026-11-01 on a MillingStock scene, fixed the same day): every Camera and
 RangeFinder keeps a cached draw list (OmAbstractCamera::collectWgpuDrawsCached, the
 default since 2026-09-02) whose draws point into a vector of model matrices. The
 cache refreshes those matrices in place each frame, then appends the dynamic tail
