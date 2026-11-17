@@ -94,7 +94,7 @@ jobs:
           "$PY" -m pip install $FLAGS --upgrade pip
           PINS="$("$PY" scripts/packaging/newton_runtime_pins.py | tr '\n' ' ')"
           echo "pins: $PINS"
-          "$PY" -m pip install $FLAGS $PINS "mujoco==3.11.0" numpy
+          "$PY" -m pip install $FLAGS $PINS numpy
 
       # newton.ModelBuilder() is exactly the FFI smoke the engine performs at
       # startup (OmNewtonBackend). Importing is not enough -- the failure above
@@ -150,7 +150,7 @@ jobs:
           CONTROLLERS="$(python3 scripts/packaging/newton_runtime_pins.py --controllers | tr -d '\r')"
           PINS="$(python3 scripts/packaging/newton_runtime_pins.py | tr -d '\r' | grep -vxF "$CONTROLLERS" | grep -v '^onnxruntime==' | tr '\n' ' ')"
           echo "physics pins under test: $PINS"
-          python3 -m pip install $FLAGS $PINS "mujoco==3.11.0" numpy
+          python3 -m pip install $FLAGS $PINS numpy
           set +e
           OUT=$(python3 -c "import newton; newton.ModelBuilder()" 2>&1)
           RC=$?
