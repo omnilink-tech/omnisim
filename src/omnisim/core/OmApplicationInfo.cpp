@@ -40,7 +40,7 @@ const OmVersion &OmApplicationInfo::version() {
 }
 
 const QString &OmApplicationInfo::omniSimVersion() {
-  static const QString omniSimVersionString = "10.0.3";
+  static const QString omniSimVersionString = "10.1.0";
   return omniSimVersionString;
 }
 

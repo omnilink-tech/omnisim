@@ -44,7 +44,9 @@ import sys
 import urllib.error
 import urllib.request
 
-BASE = os.environ.get("OMNILINK_BASE_URL", "https://www.omnilink-agents.com").rstrip("/")
+from omnisim import platform_http
+
+BASE =os.environ.get("OMNILINK_BASE_URL", "https://www.omnilink-agents.com").rstrip("/")
 CREDENTIALS_ENDPOINT = f"{BASE}/api/user-credentials"
 _TIMEOUT_S = 20
 
@@ -102,18 +104,20 @@ def _request(method: str, url: str, key: str, body: dict | None = None):
         url,
         data=data,
         method=method,
-        headers={
-            "Authorization": f"Bearer {key}",
-            "Accept": "application/json",
-            **({"Content-Type": "application/json"} if data else {}),
-        },
+        # Cloudflare's edge 403s Python's default User-Agent (error 1010,
+        # measured 2026-11-17), so every call names itself.
+        headers=platform_http.headers("byok", key, json_body=bool(data)),
     )
     try:
         with urllib.request.urlopen(req, timeout=_TIMEOUT_S) as resp:
             raw = resp.read().decode("utf-8", "replace") or "{}"
         return resp.status, json.loads(raw), ""
     except urllib.error.HTTPError as exc:
-        raw = exc.read().decode("utf-8", "replace")
+        raw = exc.read().decode("utf-8", "replace") if exc.fp else ""
+        if exc.code in (401, 403) and not platform_http.is_platform_verdict(exc.code, raw):
+            # Not the platform's answer, so not about the key: report it as
+            # "could not reach", which is what it is.
+            return 0, None, platform_http.describe_block(exc.code, raw)
         try:
             parsed = json.loads(raw or "{}")
             detail = parsed.get("error") or parsed.get("message") or raw
@@ -233,6 +237,13 @@ def _add(key: str, provider: str, api_key: str, label: str) -> int:
         print()
         print("  Check it end to end with:  python -m omnisim key --check")
         return 0
+
+    if status == 0:
+        # No answer from the platform (network, or something in front of it
+        # such as the CDN): says nothing about either key.
+        print(f"Could not reach OmniLink: {err}")
+        print("  Nothing was stored. That is not a verdict on either key.")
+        return 1
 
     # The platform's own message is better than anything invented here --
     # it knows why a key was rejected (bad prefix, too short, duplicate).

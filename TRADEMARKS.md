@@ -13,18 +13,20 @@ The following are trademarks of **OmniLink** ("the Marks"):
 - **Word marks**
   - "OmniSim"
   - "OmniLink"
+  - The attribution line *"OmniSim, by OmniLink"*: the form used wherever both names appear (brand guide of 2026-11-16, [`resources/branding/omnisim/BRAND.md`](resources/branding/omnisim/BRAND.md))
   - The tagline *"by OmniLink, for OmniLink agents"* (and close variants such as *"made by OmniLink, for OmniLink"*) — an **attribution and audience** line, still in active use on the splash screen, the About box and the brand artwork
   - The positioning tagline *"An open-source robotics workshop for agents"* (and close variants such as *"a robotics workshop for agents"*) — adopted 2026-09-17; see [docs/developer/positioning.md](docs/developer/positioning.md). It states what the product **is**, and it does not replace the attribution tagline above: both are asserted
   - ⚠️ **Retired:** the positioning tagline *"Where robot software gets debugged"* was asserted 2026-09-14 and **retired 2026-09-17**. It is no longer used on any OmniSim surface and is no longer asserted as a mark
 
 - **Logos and design marks**
-  - The **OmniSim particle-orb** mark — the Fibonacci-lattice dot sphere — in all color variants, and its small-size **glyph** variant
-  - The **OmniSim wordmark** (the `OMNI` + `SIM` lockup with the mimosa accent on `SIM`)
-  - The **OmniLink connector monogram** (the dot-and-bar hexagonal mark) in all color variants
-  - Any composite mark or lockup combining the above with the "OmniSim" or "OmniLink" wordmark
+  - The **OmniSim particle orb**, a 250-dot sphere on latitude rows lit from the upper left, in all color variants, and its small-size **glyph** variant
+  - The **OmniLink circuit sphere**, the connector mark of rounded bars and dots, in all color variants
+  - The **OmniSim** and **OmniLink** wordmarks: each name in Sora SemiBold, mixed case, "Omni" in ink and the second word in mimosa
+  - Any composite mark or lockup combining the above, including the "OmniSim, by OmniLink" co-lockup
+  - Retired forms (the all-caps `OMNISIM` wordmark, the stacked "OMNI / LINK" lockup and the older OmniLink dot orb) remain marks of OmniLink but are no longer used
 
 - **Trade dress and visual identity**
-  - The OmniSim color palette as defined in [`resources/branding/omnisim/BRAND.md`](resources/branding/omnisim/BRAND.md) (near-black / ink / mimosa), and the OmniLink palette in [`resources/branding/omnilink/BRAND.md`](resources/branding/omnilink/BRAND.md) (black / cream / mimosa)
+  - The single OmniLink and OmniSim palette defined in [`resources/branding/omnisim/BRAND.md`](resources/branding/omnisim/BRAND.md): one mimosa (#F6E905) and one near-black (#0A0A06), with ink #F6F4EF
   - The OmniSim splash screen, About box layout, and GUI icon set as shipped in this repository under [`resources/branding/omnisim/`](resources/branding/omnisim/) and [`resources/branding/omnilink/`](resources/branding/omnilink/)
 
 All rights in the Marks are reserved by OmniLink. The Apache 2.0 license covering the code does **not** grant any right to use the Marks (Apache 2.0 §6 explicitly excludes trademark rights).

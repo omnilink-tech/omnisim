@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omnisim-core"
+version = "0.1.0"
+description = "The OmniSim in-process core: the engine's compiled MuJoCo model and the world's unmodified controllers in one Python process. Part of OmniSim, by OmniLink."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "OmniLink", email = "info@omnilink-agents.com" }]
+requires-python = ">=3.10"
+keywords = ["omnisim", "robotics", "simulation", "mujoco", "digital-twin", "cnc"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Robotics",
+]
+# mujoco and numpy are NOT listed: the core must step with the engine's own builds of them, which it takes
+# from the engine's runtime bundle (omnisim_core.runtime), never from this environment.
+dependencies = [
+    "greenlet>=3.0",
+    "numba>=0.59",
+]
+
+[project.urls]
+Homepage      = "https://github.com/omnilink-tech/omnisim"
+Repository    = "https://github.com/omnilink-tech/omnisim"
+Documentation = "https://github.com/omnilink-tech/omnisim/blob/main/docs/developer/core-timeline.md"
+Issues        = "https://github.com/omnilink-tech/omnisim/issues"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

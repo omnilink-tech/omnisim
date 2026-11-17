@@ -249,7 +249,26 @@ def _check_pypi_for_newer_async() -> None:
 
 
 BASE_URL = os.environ.get("OMNILINK_BASE_URL", "https://www.omnilink-agents.com").rstrip("/")
-DEFAULT_ENGINE = os.environ.get("OMNILINK_ENGINE", "g1-engine")
+
+
+def platform_user_agent() -> str:
+    """The User-Agent every urllib call to the platform sends.
+
+    Measured 2026-11-17: Cloudflare's edge in front of the platform answers
+    Python's default `Python-urllib/x.y` with 403 "error code: 1010" before
+    the platform sees the request, so a heartbeat without this never landed.
+    (The `omnilink` SDK uses `requests`, whose agent passes.)
+    """
+    import platform as _platform
+    try:
+        from omnisim_bridges import __version__ as version
+    except Exception:  # pragma: no cover - partial import
+        version = "0"
+    return (f"omnisim-bridges/{version} (relay; Python "
+            f"{_platform.python_version()}; {_platform.system() or 'unknown'})")
+
+
+DEFAULT_ENGINE =os.environ.get("OMNILINK_ENGINE", "g1-engine")
 DEFAULT_TEMPERATURE = float(os.environ.get("OMNILINK_TEMPERATURE", "0.1"))
 # ⚠ PIN THE MODEL, OR A ROBOT CONVERSATION SILENTLY RUNS ON THE WEAKEST TIER.
 # Sending no `model` does NOT mean "the platform picks a good one": g1-engine's
@@ -2069,6 +2088,8 @@ class OmniLinkRelay:
             data=json.dumps(body).encode("utf-8"),
             method="POST",
             headers={"Content-Type": "application/json",
+                     "Accept": "application/json",
+                     "User-Agent": platform_user_agent(),
                      "Authorization": f"Bearer {self.omni_key}"},
         )
         with urllib.request.urlopen(req, timeout=8) as response:

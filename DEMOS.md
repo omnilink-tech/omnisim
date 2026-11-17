@@ -400,6 +400,7 @@ A 32 × 32 field of one-metre cubes (2,666 blocks: grass, dirt, stone, ore, six 
 | Load check | `python -m omnisim run-headless projects/samples/demos/worlds/environments/blockworld.omniworld --until-finalized --fail-on-warning` |
 | Agent loop | `python -m omnisim harness` → `POST /world/load {"path": ..., "light": true}` → edit blocks → `POST /world/screenshot` |
 
+
 ## 4. Specialist agent templates *(starter kits)*
 
 Profile-only OmniLink agents that drive existing bridges. Copy, edit `profile.json`, push via `register.py` — no Python process needed.

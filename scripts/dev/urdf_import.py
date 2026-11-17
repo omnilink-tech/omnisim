@@ -1035,6 +1035,16 @@ def rpy_to_axis_angle(rpy: tuple[float, float, float]) -> tuple[float, float, fl
     return (x, y, z, angle)
 
 
+def _mesh_node(geom: Geometry) -> str:
+    """`Mesh { url ... }`, with `scale` when the URDF <mesh scale> is not unit. Mesh.scale works for both
+    visuals and boundingObjects (docs/reference/mesh.md). Until 2026-11-12 this converter parsed the scale
+    but never wrote it, so a millimetre mesh (scale 0.001) came out 1000x too large, unlike the engine's
+    importer (OmUrdfImporter.cpp), which keeps it."""
+    sx, sy, sz = geom.mesh_scale
+    sc = "" if (sx, sy, sz) == (1.0, 1.0, 1.0) else f" scale {sx} {sy} {sz}"
+    return f'Mesh {{ url "{geom.mesh_path}"{sc} }}'
+
+
 def emit_geometry(geom: Geometry, indent: str) -> str:
     if geom.kind == "box":
         sx, sy, sz = geom.box_size
@@ -1044,7 +1054,7 @@ def emit_geometry(geom: Geometry, indent: str) -> str:
     if geom.kind == "sphere":
         return f"{indent}geometry Sphere {{ radius {geom.sphere_radius} }}\n"
     if geom.kind == "mesh" and geom.mesh_path:
-        return f'{indent}geometry Mesh {{ url "{geom.mesh_path}" }}\n'
+        return f"{indent}geometry {_mesh_node(geom)}\n"
     return ""
 
 
@@ -1058,7 +1068,7 @@ def emit_raw_geometry(geom: Geometry, indent: str) -> str:
     if geom.kind == "sphere":
         return f"{indent}Sphere {{ radius {geom.sphere_radius} }}\n"
     if geom.kind == "mesh" and geom.mesh_path:
-        return f'{indent}Mesh {{ url "{geom.mesh_path}" }}\n'
+        return f"{indent}{_mesh_node(geom)}\n"
     return ""
 
 
@@ -1141,7 +1151,7 @@ def emit_collision_bounding_object(collision: Collision, indent: str) -> str:
         if geom.kind == "sphere":
             return f"{indent}boundingObject Sphere {{ radius {geom.sphere_radius} }}\n"
         if geom.kind == "mesh":
-            return f'{indent}boundingObject Mesh {{ url "{geom.mesh_path}" }}\n'
+            return f"{indent}boundingObject {_mesh_node(geom)}\n"
         return ""
 
     out = [f"{indent}boundingObject Pose {{\n"]

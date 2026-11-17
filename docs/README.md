@@ -1,6 +1,6 @@
 # OmniSim Documentation
 
-This directory holds the documentation for **OmniSim** — an open-source robotics workshop for agents. More than a simulator: a place where an agent has everything it needs to work on any robotic system. Simulate a complete robot with high-fidelity physics, build a digital twin of one you already own, connect it to the real machine, and have an agent program, test and debug the whole thing — while you talk to it. It is driven by AI coding agents: Claude Code builds it, OmniLink runs it. The canonical statement of what OmniSim is, and the honesty gate on what may be claimed about it, is [`developer/positioning.md`](developer/positioning.md).
+This directory holds the documentation for **OmniSim** — an open-source robotics workshop for agents. More than a simulator: a place where an agent has everything it needs to work on any robotic system. Simulate a complete robot with high-fidelity physics, build a digital twin of one you already own, connect it to the real machine across one control surface, and have an agent program, test and debug the whole thing — while you talk to it. It is OmniSim, by OmniLink: OmniLink builds agents that work on robots and machines; OmniSim is their workshop. It is driven by AI coding agents: Claude Code builds it, OmniLink runs it. The canonical statement of what OmniSim is, and the honesty gate on what may be claimed about it, is [`developer/positioning.md`](developer/positioning.md).
 
 The docs are organised into the following books:
 

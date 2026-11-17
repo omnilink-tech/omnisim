@@ -15,6 +15,8 @@ import warp as wp
 import os as _os
 
 # PERF: nothing in this engine differentiates through the simulation, and
+# (⚠ newton's IK would, with its default AUTODIFF Jacobian -- World._ik_solver
+# therefore asks for the ANALYTIC one, which needs no adjoints)
 # warp's default generates a BACKWARD (adjoint) kernel next to every forward
 # one -- roughly doubling codegen / JIT work on every cold kernel cache.
 # Disable it BEFORE `import newton` so newton's own kernel modules are built
@@ -257,6 +259,11 @@ class World:
         # BEFORE add_ground_plane() -- see that method for why the ordering is
         # the whole fix.
         self.builder = newton.ModelBuilder(up_axis=newton.Axis.Z)
+        # Physics FAULTS (2026-11-06): steps that ran but left the world reset or
+        # frozen. C++ step() polls the count EVERY step and logs the first at
+        # ERROR -- see _physics_fault().
+        self._physics_fault_count = 0
+        self._physics_fault_msg = ""
         # CONTACT-ENVELOPE PIN (newton >=1.4). From 1.4 SolverMuJoCo propagates
         # the authored shape gap into MuJoCo's `geom_gap`/`pair_gap`, and any
         # shape without an explicit gap inherits `ModelBuilder.rigid_gap`, whose
@@ -583,15 +590,27 @@ class World:
         # run, which is why C++ plumbs the axis in ensureWorldOpen() and the
         # gravity here (both pre-finalize). Before that fix a Y-up world
         # projected (0,-g,0) onto (0,0,1) and got 0.
+        #
+        # VERSION-TOLERANT (2026-11-06). newton 1.7 REMOVED the scalar form:
+        # `ModelBuilder.gravity` takes a 3-vector only and a scalar RAISES
+        # ("Expected gravity with shape (3,), got ()"). Before this branch the
+        # raise was caught as a warning and finalize then FAILED, so every
+        # world on 1.7 had no physics at all. The scalar is tried first because
+        # a 1.5 builder stores whatever it is given and would only break later;
+        # the vector form is lossless, so on 1.7 nothing is dropped below.
         up = self.builder.up_vector
-        self.builder.gravity = (float(gx) * up[0] + float(gy) * up[1]
-                                + float(gz) * up[2])
+        _gs = float(gx) * up[0] + float(gy) * up[1] + float(gz) * up[2]
+        try:
+            self.builder.gravity = _gs                          # newton <= 1.6
+        except (ValueError, TypeError):
+            self.builder.gravity = (float(gx), float(gy), float(gz))  # >= 1.7
+            return
         # Any component of the requested gravity PERPENDICULAR to up is dropped by
         # the scalar projection. Unreachable from a .wbt today (see above), so say
         # so once rather than letting a future vector-gravity field vanish here.
-        _res = ((float(gx) - self.builder.gravity * up[0]) ** 2
-                + (float(gy) - self.builder.gravity * up[1]) ** 2
-                + (float(gz) - self.builder.gravity * up[2]) ** 2)
+        _res = ((float(gx) - _gs * up[0]) ** 2
+                + (float(gy) - _gs * up[1]) ** 2
+                + (float(gz) - _gs * up[2]) ** 2)
         if _res > 1e-12 and not getattr(self, "_gravity_residual_logged", False):
             self._gravity_residual_logged = True
             self._newton_log(
@@ -773,7 +792,7 @@ class World:
         size is FIXED when the model compiles (mjModel.narena; read-only after
         that). The CPU solver cannot grow it: a step that needs more raises
         "mj_stackAlloc: out of memory" and is skipped. MuJoCo's own estimate
-        was 13 MiB on a 2026-11-04 large assembly scene (a ~2,700-box moving unit
+        was 13 MiB on the 2026-11-04 SparkRover scene (a ~2,700-box moving unit
         among ~6,000 static shapes), which overflowed in mj_narrowphase on
         every step. newton exposes no option for it and njmax / nconmax do not
         touch it on the CPU path (they size mujoco_warp's buffers only), so it
@@ -943,6 +962,32 @@ class World:
             cap_c = _cap("nconmax", "_nconmax_applied")
         else:
             cap_c = _cap("naconmax", "_nconmax_applied")
+        # mujoco_warp's STICKY overflow bitmask (Data.overflow: OR'd every step,
+        # cleared only by reset_data). The peaks below are CURRENT counts sampled
+        # every 30 ticks, so an overflow while a pile settles -- after which the
+        # state may be NaN and nefc small -- was never latched (2026-11-06: a
+        # 20-box tower overflowed njmax 256, went NaN at t=0.1 s and froze, with
+        # no warning). The flag remembers it.
+        _ovf = getattr(d, "overflow", None)
+        if _ovf is not None and not getattr(self, "_constraint_overflow_msg", ""):
+            try:
+                import numpy as _np
+                _bits = int(_np.bitwise_or.reduce(_np.asarray(_ovf.numpy()).ravel()))
+            except Exception:
+                _bits = 0
+            _names = [n for n, b in (("constraint rows (nefc > njmax)", 1), ("constraint nonzeros (njmax_nnz)", 2),
+                                     ("broadphase pairs (nconmax)", 4), ("contacts (narrowphase, nconmax)", 8))
+                      if _bits & b]
+            if _names:
+                self._constraint_overflow_msg = (
+                    "CONSTRAINT BUFFER OVERFLOW by tick %d: mujoco_warp's overflow flag reports %s "
+                    "(njmax=%s, nconmax=%s). mujoco_warp DROPS what does not fit, and an overflowing "
+                    "constraint buffer is measured to turn the whole state NaN (a 20-box tower at "
+                    "njmax 256 went NaN at t=0.1 s). Fix: raise WorldInfo.newtonNjmax / newtonNconmax "
+                    "with HEADROOM, or set OMNISIM_NEWTON_NJMAX / OMNISIM_NEWTON_NCONMAX."
+                    % (int(getattr(self, "_cs_tick", 0)), " and ".join(_names),
+                       _cap("njmax", "_njmax_applied") or "auto", _cap("naconmax", "_nconmax_applied") or "auto"))
+                self._newton_log(self._constraint_overflow_msg)
         prev_j = int(getattr(self, "_cs_peak_nefc", 0))
         prev_c = int(getattr(self, "_cs_peak_ncon", 0))
         if not ((nefc is not None and nefc > prev_j)
@@ -1002,6 +1047,125 @@ class World:
                "contacts AND constraint rows" if (contacts and rows)
                else ("contacts" if contacts else "constraint rows"),
                self._arena_mib(), contacts, rows))
+
+    def _physics_fault(self, msg):
+        """Count a step that RAN but did not produce valid physics (2026-11-06).
+
+        Two failure modes ran under a PASS verdict with step_errors 0, because
+        neither raises:
+          * CPU MuJoCo: a NaN/Inf/huge qacc, qvel or qpos makes mj_step call
+            mj_resetData() -- the WHOLE world jumps back to its authored pose with
+            zero velocity -- and bump a warning counter nobody read (newton does
+            not read it either). Measured: a 10-link passive chain at 4 ms looped
+            back to t=0 every 1.92 s, forever.
+          * the base-divergence guard: body_q went non-finite (the GPU path's
+            failure: no reset, NaN instead), so the guard held the world at its
+            last good pose -- every step, because the solver state stays NaN: a
+            permanent freeze, reported only by a print() to stdout.
+        C++ step() polls ``_physics_fault_count`` every step, logs the first fault
+        at ERROR (run-headless FAILs) and later ones at WARNING on the 2nd, 4th,
+        8th ..., and writes the total into the sidecar as ``physics_faults``.
+        """
+        self._physics_fault_count = int(getattr(self, "_physics_fault_count", 0)) + 1
+        self._physics_fault_msg = str(msg)
+        if self._physics_fault_count == 1:
+            try:
+                self._newton_log("PHYSICS FAULT: " + str(msg))
+            except Exception:
+                pass
+
+    def _divergence_fault_msg(self, np, rows):
+        """The fault text for one step the base-divergence guard caught (rows = bad body rows)."""
+        first = int(rows[0]) if len(rows) else -1
+        rt = self._runtime_body_for_newton(first) if first >= 0 else None
+        held = getattr(self, "_last_good_body_q", None) is not None
+        cause = ""
+        d = getattr(getattr(self, "solver", None), "mjw_data", None)
+        ov = getattr(d, "overflow", None) if d is not None else None
+        if ov is not None:
+            try:
+                bits = int(np.bitwise_or.reduce(np.asarray(ov.numpy()).ravel()))
+            except Exception:
+                bits = 0
+            if bits & 0xF:
+                cause = (" mujoco_warp has flagged a buffer overflow in this world (%s), and an "
+                         "overflowing constraint buffer is measured to turn the state NaN: raise "
+                         "WorldInfo.newtonNjmax / newtonNconmax with headroom."
+                         % ", ".join(n for n, b in (("constraint rows, njmax", 1), ("njmax_nnz", 2),
+                                                    ("broadphase, nconmax", 4), ("contacts, nconmax", 8))
+                                     if bits & b))
+        if not cause:
+            cause = (" Usual causes: motion the time step cannot resolve (try WorldInfo.newtonSubsteps 4 "
+                     "or a smaller basicTimeStep) or, on mujoco_warp, a constraint buffer that is too small "
+                     "(WorldInfo.newtonNjmax / newtonNconmax).")
+        return ("%d body pose(s) went non-finite or beyond %.0f m (first: %s). %s%s"
+                % (len(rows), self._base_guard_max,
+                   ("runtime body %d" % rt) if rt is not None else ("newton body %d" % first),
+                   "The base-divergence guard is holding the WHOLE world at its last good pose with "
+                   "zero velocity; the solver's own state stays bad, so the world stays frozen."
+                   if held else "There is no earlier good pose to hold, so the bad pose is what "
+                   "controllers and the supervisor read.",
+                   cause))
+
+    def _runtime_body_for_newton(self, newton_body):
+        """Index C++ knows a body by (registration order), or None."""
+        try:
+            return self.body_indices.index(int(newton_body))
+        except (ValueError, AttributeError, TypeError):
+            return None
+
+    # MuJoCo-C's state checks (engine_forward.c mj_checkPos / mj_checkVel /
+    # mj_checkAcc): each one, on a bad value, calls mj_resetData and counts.
+    _MJ_RESET_WARNINGS = (("mjWARN_BADQACC", "acceleration (qacc)"),
+                          ("mjWARN_BADQVEL", "velocity (qvel)"),
+                          ("mjWARN_BADQPOS", "position (qpos)"))
+
+    def _sample_solver_resets(self):
+        # CPU MuJoCo only, EVERY step (three host-memory int reads, no device
+        # sync). Zeroes each counter it reports: mj_resetData() itself clears
+        # the counters before re-setting the new one to 1, so a reader comparing
+        # against the last value it saw would miss every reset after the first.
+        solver = self._mjc_solver()
+        if solver is None or not getattr(solver, "use_mujoco_cpu", False):
+            return
+        d = getattr(solver, "mj_data", None)
+        if d is None:
+            return
+        import mujoco
+        hits = []
+        for name, what in self._MJ_RESET_WARNINGS:
+            w = d.warning[int(getattr(mujoco.mjtWarning, name))]
+            if w.number:
+                hits.append((what, int(w.lastinfo)))
+                w.number = 0
+        if not hits:
+            return
+        m = getattr(solver, "mj_model", None)
+        parts = []
+        for what, dof in hits:
+            where = "DOF %d" % dof
+            try:
+                mj_body = int(m.dof_bodyid[dof])
+                jnt = int(m.dof_jntid[dof])
+                jname = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_JOINT, jnt) or ("#%d" % jnt)
+                rt = None
+                mapping = getattr(solver, "mjc_body_to_newton", None)
+                if mapping is not None:
+                    nb = int(mapping.numpy()[0][mj_body])
+                    rt = self._runtime_body_for_newton(nb) if nb >= 0 else None
+                where = "DOF %d (MuJoCo joint %s on MuJoCo body %d%s)" % (
+                    dof, jname, mj_body, (", runtime body %d" % rt) if rt is not None else "")
+            except Exception:
+                pass
+            parts.append("bad %s at %s" % (what, where))
+        self._physics_fault(
+            "MuJoCo found a NaN, Inf or huge value in the state (%s) and RESET THE WHOLE "
+            "WORLD to its authored pose (mj_resetData): every body jumped back to where it "
+            "started, with zero velocity, while the clock kept running. The usual cause is "
+            "motion the time step cannot resolve (a chain whipping, a fast spin, a "
+            "high-speed impact, a very light link on a stiff joint). Remedies: "
+            "WorldInfo.newtonSubsteps 4 (or a smaller basicTimeStep), or find what "
+            "accelerates that joint." % "; ".join(parts))
 
     def add_ground_plane(self):
         """REQUEST the implicit ground plane. Does not add it -- see finalize().
@@ -4293,7 +4457,10 @@ class World:
             target_positions=pos, weight=1.0)]
         rot = None
         if want_rot:
-            rot = wp.zeros(n, dtype=wp.quat, device=dev)
+            # newton >= 1.7 types target_rotations as wp.array[wp.vec4] (x, y, z, w);
+            # a wp.quat array is refused at launch ("expects vec4f ... passed quatf"),
+            # so every rotation solve raised from the 1.7 switch until 2026-11-11.
+            rot = wp.zeros(n, dtype=wp.vec4, device=dev)
             objs.append(newton.ik.IKObjectiveRotation(
                 link_index=int(link_index), link_offset_rotation=wp.quat_identity(),
                 target_rotations=rot, weight=0.5))
@@ -4302,8 +4469,16 @@ class World:
             objs.append(newton.ik.IKObjectiveJointLimit(
                 joint_limit_lower=self.model.joint_limit_lower,
                 joint_limit_upper=self.model.joint_limit_upper, weight=0.1))
+        # ⚠ ANALYTIC Jacobian, never newton's default AUTODIFF. The top of this
+        # file turns warp's backward (adjoint) codegen OFF for speed, so an
+        # autodiff Jacobian here is identically zero: the LM step never moves
+        # and every solve returns its seed. Measured 2026-11-11 on the
+        # test_newton_ik_slots fixture: autodiff 0.156205 m (exactly the
+        # start-to-target distance), analytic 0.000001 m. It went unnoticed
+        # because the residual stays honest -- it just reports "not solved".
         solver = newton.ik.IKSolver(model=self.model, n_problems=n,
-                                    objectives=objs, joint_dof_mask=mask)
+                                    objectives=objs, joint_dof_mask=mask,
+                                    jacobian_mode=newton.ik.IKJacobianType.ANALYTIC)
         nq = int(self.model.joint_coord_count)
         buf = (solver, pos, rot,
                wp.zeros((n, nq), dtype=wp.float32, device=dev),
@@ -4606,7 +4781,225 @@ class World:
         # torque control build the joint in EFFORT mode (no PD actuator) via
         # OMNISIM_NEWTON_TORQUE_MODE. Must be re-sent every tick: joint_f is
         # NOT auto-zeroed across steps.
+        # GEARBOX JOINT: on a slot carrying a declared gearbox this is the MOTOR's
+        # torque; the first force command a slot ever gets may be a declaration
+        # token (see gearbox_attach). Neither touches a world without a gearbox
+        # beyond one set lookup per first command per slot.
+        if dof == 0:
+            _gb = getattr(self, "_gearboxes", None)
+            _sl = int(slot_id)
+            if _gb and _sl in _gb:
+                _gb[_sl]["T_motor"] = float(tau)
+                return
+            _seen = getattr(self, "_gb_seen_slots", None)
+            if _seen is None:
+                _seen = self._gb_seen_slots = set()
+            if _sl not in _seen:
+                _seen.add(_sl)
+                if self._gearbox_try_bind(_sl, float(tau)):
+                    return
         self.joint_forces[self._target_key(slot_id, dof)] = float(tau)
+
+    # ---- GEARBOX JOINT (2026-11-14) -------------------------------------------------------
+    # A compliant reduced-order gearbox between a motor and one revolute joint, coupled at
+    # the PHYSICS SUB-STEP. OPT-IN PER JOINT: nothing here runs unless a controller declares
+    # a gearbox on its motor, so every world that does not is bit-for-bit unchanged.
+    #
+    # WHY HERE. Newton convexifies every mesh collider, so teeth and cycloid lobes cannot
+    # mesh in the solver; an offline gear-contact analysis studies the contact and
+    # writes a reducer model (ratio, backlash, torque-twist curve, efficiency, rotor inertia).
+    # Applied from a controller, that spring runs at the controller step; a stiff gearbox on
+    # a light link needs the sub-step, so the coupling lives here.
+    #
+    # THE MODEL (the same law as gears/reducer.py GearboxJoint):
+    #   twist d = theta_m / N - q_out; T_spring = curve(|d| - backlash/2) beyond the
+    #   deadband, 0 inside it, plus damping c dd/dt while engaged;
+    #   driving (power from motor to output): the output gets eta_f of it; back-driven, the
+    #   rotor feels eta_b of it; the rotor J_m w' = T_motor - reaction / N is integrated with
+    #   inner sub-steps that resolve the rotor-gear frequency; the output joint receives the
+    #   coupling torque in control.joint_f before every physics sub-step. Its PD actuator is
+    #   zeroed (set_joint_gains) and the controller's setTorque on that motor is the MOTOR
+    #   torque from then on (clamped by the motor's own maxTorque in the engine).
+    #
+    # DECLARING ONE (no engine field: the engine passes joints to this runtime as numeric
+    # slots only). A controller appends one JSON line to the channel file
+    #   <tempdir>/omnisim_gearbox_<engine pid>.jsonl  (engine pid = OMNISIM_IPC_NONCE), or
+    #   $OMNISIM_NEWTON_GEARBOX_CMD when set,
+    # {"op": "declare", "token": <float>, "spec": {reducer model fields}}, then sends that
+    # token as the motor's FIRST setTorque. The first force command a slot ever receives makes
+    # the runtime read the channel once; a token match binds the slot. The ack goes to
+    # <channel>.ack. gears/runtime_gearbox.py does all of it. CPU MuJoCo only.
+
+    def _gearbox_channel_path(self):
+        import os as _o
+        import tempfile as _tf
+        p = _o.environ.get("OMNISIM_NEWTON_GEARBOX_CMD")
+        if p:
+            return p
+        return _o.path.join(_tf.gettempdir(), "omnisim_gearbox_%d.jsonl" % _o.getpid())
+
+    def _gearbox_try_bind(self, slot, tau):
+        """First force command on `slot`: is it a declared gearbox token?
+        OMNISIM_NEWTON_GEARBOX (value-parsed, default on): 0/false/off/no ignores every
+        declaration, so the joint takes the torque as a plain joint torque."""
+        import os as _o
+        if (_o.environ.get("OMNISIM_NEWTON_GEARBOX") or "").strip().lower() in ("0", "false", "off", "no"):
+            return False
+        p = self._gearbox_channel_path()
+        try:
+            if not _o.path.exists(p):
+                return False
+            import json as _json
+            decl = None
+            with open(p, "r", encoding="utf-8") as fh:
+                for ln in fh:
+                    ln = ln.strip()
+                    if not ln:
+                        continue
+                    try:
+                        d = _json.loads(ln)
+                    except ValueError:
+                        continue
+                    if d.get("op") == "declare" and float(d.get("token", -1.0)) == tau:
+                        decl = d
+            if decl is None:
+                return False
+            ack = self.gearbox_attach(slot, decl.get("spec") or {})
+        except Exception as e:                                 # noqa: BLE001
+            ack = {"error": repr(e)}
+        ack.update({"token": tau, "slot": int(slot)})
+        self._newton_log("gearbox: %s" % (ack,))
+        try:
+            import json as _json
+            with open(p + ".ack", "a", encoding="utf-8") as af:
+                af.write(_json.dumps(ack) + "\n")
+        except OSError:
+            pass
+        return "error" not in ack
+
+    def gearbox_attach(self, slot, spec):
+        """Put a gearbox on revolute joint `slot` (see the block comment). Returns an ack."""
+        import math as _m
+        sv = self._mjc_solver()
+        if sv is None or not getattr(sv, "use_mujoco_cpu", False):
+            return {"error": "gearbox joints need the CPU MuJoCo solver (not mujoco_warp)"}
+        real = self.slot_to_real_idx.get(int(slot))
+        if real is None:
+            return {"error": "unknown joint slot %r" % (slot,)}
+        qs = self.model.joint_q_start.numpy()
+        qds = self.model.joint_qd_start.numpy()
+        N = float(spec["ratio"])
+        T = [float(v) for v in spec["twist_T_Nm"]]
+        tw = [float(v) for v in spec["twist_rad"]]
+        if len(T) < 2 or len(T) != len(tw) or N <= 0:
+            return {"error": "spec needs ratio > 0 and a torque-twist curve of >= 2 points"}
+        # A segment the contact analysis resolved no twist for (e.g. 0 -> 3 % of rated, all within
+        # its resolution) must not read as infinitely stiff: it set k ~ 1e15 and the rotor's inner
+        # sub-stepping to ~1e6 Python steps per physics step (a geared arm payload world, 2026-11-14).
+        # The stiffness bound comes from segments that twist; a flat segment takes the next
+        # twisting segment's slope, so the curve the coupling uses is strictly increasing.
+        ks_tw = [(T[i] - T[i - 1]) / (tw[i] - tw[i - 1]) for i in range(1, len(T)) if tw[i] - tw[i - 1] > 1e-9]
+        if not ks_tw:
+            return {"error": "the torque-twist curve has no twist"}
+        k_ref = ks_tw[0]
+        tw2 = [tw[0]]
+        for i in range(1, len(T)):
+            dtw = tw[i] - tw2[-1]
+            if dtw <= 1e-9:
+                later = [(T[j] - T[j - 1]) / (tw[j] - tw[j - 1]) for j in range(i + 1, len(T))
+                         if tw[j] - tw[j - 1] > 1e-9]
+                k_use = later[0] if later else k_ref
+                tw2.append(tw2[-1] + max(T[i] - T[i - 1], 0.0) / k_use)
+            else:
+                tw2.append(tw[i])
+        tw = tw2
+        ks = [(T[i] - T[i - 1]) / max(tw[i] - tw[i - 1], 1e-12) for i in range(1, len(T))]
+        k_max = max(ks)
+        J = max(float(spec.get("J_rotor_kgm2", 0.0)), 1e-9)
+        k50 = float(spec.get("k_50_Nm_per_rad") or ks[len(ks) // 2])
+        zeta = float(spec.get("damping_ratio", 0.05))
+        g = {
+            "N": N, "T": T, "tw": tw, "k_last": ks[-1], "half": max(float(spec.get("backlash_rad", 0.0)), 0.0) / 2,
+            "ef": float(spec.get("efficiency_forward", 1.0)), "eb": float(spec.get("efficiency_back", 1.0)),
+            "J": J, "c": 2.0 * zeta * _m.sqrt(k50 * J * N * N), "wb": float(spec.get("omega_blend", 1e-3)),
+            "locked": bool(spec.get("input_locked", False)),
+            "q_idx": int(qs[real]), "dof_idx": int(qds[real]),
+            "T_motor": 0.0, "th_m": None, "w_m": 0.0,
+            # the rotor-gear frequency, resolved with inner steps of omega dt <= 0.25
+            "w_rot": _m.sqrt(k_max / (J * N * N)),
+            "name": str(spec.get("name", "")),
+        }
+        if self.control is None:            # created lazily on a tick with targets; the gearbox
+            self.control = self.model.control()   # writes joint_f before any such tick
+        # zero the joint's PD actuator, if it has one (a passive joint has none: fine)
+        if self._actuator_pair(int(qds[real]))[0] is not None:
+            rc = self.set_joint_gains(int(slot), 0, 0.0, 0.0)
+            if rc != 0:
+                return {"error": "could not zero the joint's PD (set_joint_gains %d)" % rc}
+        if not hasattr(self, "_gearboxes") or self._gearboxes is None:
+            self._gearboxes = {}
+        self._gearboxes[int(slot)] = g
+        self._joint_f_ever = True          # the force-mode (per-substep) path from now on
+        return {"attached": True, "ratio": N, "backlash_rad": 2 * g["half"], "k_max_Nm_per_rad": k_max,
+                "rotor_omega_rad_s": g["w_rot"], "name": g["name"]}
+
+    @staticmethod
+    def _gearbox_elastic(g, x):
+        T, tw = g["T"], g["tw"]
+        if x >= tw[-1]:
+            return T[-1] + g["k_last"] * (x - tw[-1])
+        for i in range(1, len(tw)):
+            if x <= tw[i]:
+                f = (x - tw[i - 1]) / max(tw[i] - tw[i - 1], 1e-15)
+                return T[i - 1] + f * (T[i] - T[i - 1])
+        return T[-1]
+
+    def _gearbox_advance(self, g, dt, th_out, w_out):
+        """Advance one gearbox over dt with the output at (th_out, w_out); the mean torque on
+        the output over dt (N m)."""
+        import math as _m
+        N = g["N"]
+        if g["th_m"] is None:
+            g["th_m"] = th_out * N          # start engaged at the joint's own pose: no snap
+        # inner steps resolve the rotor-gear frequency (omega h <= 0.25); capped as a backstop
+        n = min(max(1, int(_m.ceil(g["w_rot"] * dt / 0.25))), 200)
+        h = dt / n
+        acc = 0.0
+        s = _m.tanh(abs(w_out) / g["wb"])
+        for i in range(n):
+            tho = th_out + w_out * (i + 0.5) * h
+            d = g["th_m"] / N - tho
+            if d > g["half"]:
+                Ts = self._gearbox_elastic(g, d - g["half"]) + g["c"] * (g["w_m"] / N - w_out)
+            elif d < -g["half"]:
+                Ts = -self._gearbox_elastic(g, -d - g["half"]) + g["c"] * (g["w_m"] / N - w_out)
+            else:
+                Ts = 0.0
+            if Ts * w_out >= 0.0:           # the spring drives the output: friction on the output side
+                out, react = Ts * (1.0 - s * (1.0 - g["ef"])), Ts
+            else:                           # back-driven: the rotor feels the loss
+                out, react = Ts, Ts * (1.0 - s * (1.0 - max(g["eb"], 0.0)))
+            if not g["locked"]:
+                g["w_m"] += h * (g["T_motor"] - react / N) / g["J"]
+                g["th_m"] += h * g["w_m"]
+            acc += out
+        return acc / n
+
+    def _gearbox_substep(self, sub_dt):
+        gb = self._gearboxes
+        q = self.state_a.joint_q.numpy()
+        qd = self.state_a.joint_qd.numpy()
+        f = self.control.joint_f.numpy()
+        for g in gb.values():
+            f[g["dof_idx"]] = self._gearbox_advance(g, sub_dt, float(q[g["q_idx"]]), float(qd[g["dof_idx"]]))
+        self.control.joint_f.assign(f)
+
+    def gearbox_state(self, slot):
+        """(rotor angle, rotor speed, motor torque) of a declared gearbox, or None."""
+        g = (getattr(self, "_gearboxes", None) or {}).get(int(slot))
+        if g is None:
+            return None
+        return (g["th_m"], g["w_m"], g["T_motor"])
 
     def _multi_dof_cfgs(self, j, axes):
         """JointDofConfig list for a MOTORISED multi-DoF joint (hinge2 / ball).
@@ -5505,19 +5898,115 @@ class World:
         which is why the first 1.5 run flooded 64k warnings of
         "step raised: Control.joint_target_vel was removed in Newton 1.5").
 
-        The rename is layout-preserving FOR US: `joint_target_q` is DOF-shaped
-        exactly like the old field unless `newton.use_coord_layout_targets` is
-        turned on, and it defaults to False (verified on the vendored 1.5.0).
-        Every index in this file is a qd/DOF index, so nothing needs reindexing
-        -- but if that global is ever flipped, `joint_target_q` becomes
-        coord-shaped and every position target here would land on the wrong
-        joint SILENTLY. Do not enable it without reindexing this file.
+        ⚠ LAYOUT. This returns the RAW array, whose shape depends on the
+        newton version: DOF-shaped under `use_coord_layout_targets = False`
+        (the 1.5 default) and COORDINATE-shaped (matching `joint_q`) under True
+        (the default from 1.6; the DOF layout is deprecated and will be
+        removed). Every index in this file is a qd/DOF index, so NEVER index
+        this array directly: read and write through `_tp_get()` / `_tp_set()`,
+        which translate. Measured 2026-11-06 on newton 1.7.0 before the
+        translation existed: every G1 position target after the free root
+        landed on the NEXT joint (left_hip_roll took left_hip_yaw's target),
+        median joint error 0.28 rad against 0.03-0.09 rad run-to-run noise,
+        with no error raised anywhere.
 
         Resolved per call via getattr so ONE source drives both runtimes.
         """
         c = self.control
         a = getattr(c, "joint_target_q", None)
         return a if a is not None else getattr(c, "joint_target_pos", None)
+
+    def _target_pos_layout(self):
+        """How to map DOF-indexed position targets onto `Control.joint_target_q`.
+
+        Returns None when the model uses the DOF layout (identity: nothing to
+        translate), else `(dof_idx, tq_idx, balls, dof_count)`:
+          dof_idx / tq_idx  int arrays: target for DOF dof_idx[k] lives at
+                            joint_target_q[tq_idx[k]] (every joint whose
+                            coordinate count equals its DOF count: revolute,
+                            prismatic, D6 ...);
+          balls             [(qd_start, q_start)] per BALL joint: 3 DOF-layout
+                            values (extrinsic ZYX Euler angles, the solver's
+                            own DOF-layout convention, kernels.py
+                            apply_mjc_control) become ONE quaternion (x, y, z, w)
+                            at q_start;
+        Any other joint whose coordinate and DOF counts differ (FREE, DISTANCE,
+        and newton 1.7's CABLE / ROD) takes no position target and is skipped.
+        Cached per model object, so a physics rebuild recomputes it.
+        """
+        m = self.model
+        cache = getattr(self, "_tq_layout_cache", None)
+        if cache is not None and cache[0] is m:
+            return cache[1]
+        lay = None
+        if m is not None and bool(getattr(m, "use_coord_layout_targets", False)):
+            np = _np_mod
+            jt = m.joint_type.numpy()
+            n = len(jt)
+            qs = m.joint_q_start.numpy()
+            qds = m.joint_qd_start.numpy()
+            nq = int(m.joint_coord_count)
+            nd = int(m.joint_dof_count)
+            ball = int(newton.JointType.BALL)
+            d_idx, t_idx, balls = [], [], []
+            for j in range(n):
+                q0, d0 = int(qs[j]), int(qds[j])
+                q1 = int(qs[j + 1]) if j + 1 < len(qs) else nq
+                d1 = int(qds[j + 1]) if j + 1 < len(qds) else nd
+                if int(jt[j]) == ball:
+                    balls.append((d0, q0))
+                elif (q1 - q0) == (d1 - d0):
+                    d_idx.extend(range(d0, d1))
+                    t_idx.extend(range(q0, q1))
+            lay = (np.asarray(d_idx, dtype=np.int64), np.asarray(t_idx, dtype=np.int64),
+                   balls, nd)
+        self._tq_layout_cache = (m, lay)
+        return lay
+
+    def _tp_get(self):
+        """DOF-shaped HOST copy of the position targets, whatever the layout."""
+        a = self._ctl_target_pos()
+        if a is None:
+            return None
+        raw = a.numpy()
+        lay = self._target_pos_layout()
+        if lay is None:
+            return raw
+        d_idx, t_idx, balls, nd = lay
+        out = _np_mod.zeros(nd, dtype=raw.dtype)
+        out[d_idx] = raw[t_idx]
+        for d0, q0 in balls:
+            qv = [float(v) for v in raw[q0:q0 + 4]]
+            if sum(v * v for v in qv) < 1e-12:      # never written: no rotation
+                continue
+            e = wp.quat_to_euler(wp.quat(*qv), 2, 1, 0)
+            out[d0:d0 + 3] = (e[0], e[1], e[2])
+        return out
+
+    def _tp_set(self, dof_arr):
+        """Write a DOF-shaped array of position targets into the control array."""
+        a = self._ctl_target_pos()
+        if a is None:
+            return
+        lay = self._target_pos_layout()
+        if lay is None:
+            a.assign(dof_arr)
+            return
+        d_idx, t_idx, balls, _nd = lay
+        # Host mirror of the coordinate-shaped array, kept per control array so
+        # entries this file never owns (a FREE root's 7 slots) keep newton's
+        # values and the per-tick path pays no device read-back.
+        buf = getattr(self, "_tq_coord_host", None)
+        if buf is None or buf[0] is not a:
+            buf = (a, a.numpy())
+            self._tq_coord_host = buf
+        host = buf[1]
+        host[t_idx] = _np_mod.asarray(dof_arr)[d_idx]
+        for d0, q0 in balls:
+            q = wp.quat_from_euler(wp.vec3(float(dof_arr[d0]), float(dof_arr[d0 + 1]),
+                                           float(dof_arr[d0 + 2])), 2, 1, 0)
+            host[q0:q0 + 4] = (q[0], q[1], q[2], q[3])
+        a.assign(host)
 
     def _ctl_target_vel(self):
         """`Control` velocity-target array; see _ctl_target_pos. DOF-shaped on
@@ -5653,12 +6142,19 @@ class World:
         """
         margin = self._cloth_env_float("OMNISIM_CLOTH_CONTACT_MARGIN", 0.01)
         full = self._cloth_env_flag("OMNISIM_CLOTH_FULL_SURFACE_CONTACT", True)
+        # newton 1.6 renamed the keyword: soft_contact_margin is a deprecated
+        # alias of soft_contact_gap (same value, same meaning: the detection-only
+        # distance added to the particle radius). 1.5 has only the old name.
+        import inspect as _insp
+        _gap_kw = ("soft_contact_gap" if "soft_contact_gap"
+                   in _insp.signature(newton.CollisionPipeline.__init__).parameters
+                   else "soft_contact_margin")
         if full:
             try:
                 p = newton.CollisionPipeline(
                     model,
-                    soft_contact_margin=margin,
                     enable_rigid_soft_full_surface_contact=True,
+                    **{_gap_kw: margin},
                 )
                 self._newton_log("cloth: %s CollisionPipeline margin=%.4g "
                                  "full_surface=ON" % (label, margin))
@@ -5671,7 +6167,7 @@ class World:
                     "a coarse sheet can slip out of a gripper. Provision volume SDFs "
                     "on the participating mesh shapes to restore it."
                     % (label, _e))
-        p = newton.CollisionPipeline(model, soft_contact_margin=margin)
+        p = newton.CollisionPipeline(model, **{_gap_kw: margin})
         self._newton_log("cloth: %s CollisionPipeline margin=%.4g full_surface=off"
                          % (label, margin))
         return p
@@ -7439,8 +7935,25 @@ class World:
         # Python double loop over every colliding shape pair in place (12.5 M
         # iterations for 5000 shapes) instead of the vectorised stand-in
         # _fast_find_shape_contact_pairs.
+        #
+        # 1.5 ONLY (2026-11-06). The stand-in is written against newton 1.5's
+        # private `_find_shape_contact_pairs(model, *, allow_filter_blocks)` and
+        # its flat filter-pair set. newton 1.7 rewrote both (filter BLOCKS, a
+        # one-argument method), so installing the 1.5 stand-in there made every
+        # finalize raise "missing 1 required keyword-only argument". It is not
+        # needed there either: a 4,957-block world finalised in 21 s on 1.7's
+        # own enumeration vs 22 s on 1.5 with the stand-in and 29 s without it
+        # (run-headless --until-finalized wall time, same machine). So the
+        # stand-in is installed only where the original still has the 1.5
+        # signature.
         import os as _fpos     # finalize() rebinds _os locally further down
-        if (_fpos.environ.get("OMNISIM_NEWTON_FAST_PAIRS") or "").strip().lower() \
+        import inspect as _fpinsp
+        try:
+            _fp_sig_ok = "allow_filter_blocks" in _fpinsp.signature(
+                self.builder._find_shape_contact_pairs).parameters
+        except (TypeError, ValueError, AttributeError):
+            _fp_sig_ok = False
+        if _fp_sig_ok and (_fpos.environ.get("OMNISIM_NEWTON_FAST_PAIRS") or "").strip().lower() \
                 not in ("0", "false", "off", "no"):
             _orig_pairs = self.builder._find_shape_contact_pairs
             _static_bodies = tuple(int(i) for i in self.static_body_indices)
@@ -7818,6 +8331,29 @@ class World:
             self._nconmax_applied = _nconmax if _nconmax > 0 else 0
             if _save_mjcf:
                 _kw["save_to_mjcf"] = _save_mjcf
+            # OMNISIM_NEWTON_INTEGRATOR (RESEARCH, 2026-11-06; unset = newton's
+            # default, implicitfast). One of euler / rk4 / implicit / implicitfast
+            # / discrete. SolverMuJoCo documents only the first three names but
+            # passes MuJoCo's integer constants through, and mujoco >= 3.13 has
+            # mjINT_DISCRETE, which solves joint/actuator damping and stiffness in
+            # the SAME implicit metric as the constraints (M + h*D + h^2*K). That is
+            # the mismatch the servo-armature bound works around: on the pinch repro
+            # with the bound OFF it stopped the jaws at 1.69 mm (implicitfast 21.59).
+            # An unknown name, or discrete on a mujoco without it, is refused loudly.
+            _integ = (_os.environ.get("OMNISIM_NEWTON_INTEGRATOR") or "").strip().lower()
+            if _integ:
+                import mujoco as _mj_integ
+                _it = _mj_integ.mjtIntegrator
+                _imap = {"euler": "mjINT_EULER", "rk4": "mjINT_RK4", "implicit": "mjINT_IMPLICIT",
+                         "implicitfast": "mjINT_IMPLICITFAST", "discrete": "mjINT_DISCRETE"}
+                _ival = getattr(_it, _imap.get(_integ, ""), None)
+                if _ival is None:
+                    self._newton_log("[OmNewtonBackend] OMNISIM_NEWTON_INTEGRATOR=%r REFUSED: "
+                                     "not one of %s on mujoco %s -- running newton's default"
+                                     % (_integ, sorted(_imap), _mj_integ.__version__))
+                else:
+                    _kw["integrator"] = int(_ival)
+                    self._newton_log("[OmNewtonBackend] integrator %s (OMNISIM_NEWTON_INTEGRATOR)" % _integ)
             try:
                 with self._mj_arena_scope():
                     if self.has_particles():
@@ -8685,12 +9221,12 @@ class World:
         self._mpc_planctr += 1
         # Apply residual + integral bias ON TOP of the controller's nominal targets.
         try:
-            tp = self._ctl_target_pos().numpy()
+            tp = self._tp_get()
             for _i in range(len(self._bal)):
                 _d = int(self._bal_dof[_i])
                 if 0 <= _d < len(tp):
                     tp[_d] += float(self._mpc_nom[_i]) + float(self._mpc_ibias[_i])
-            self._ctl_target_pos().assign(tp)
+            self._tp_set(tp)
             self._mjc_dirty = True
         except Exception as _e:
             self._mpc_log("apply error: %r" % (_e,))
@@ -8765,12 +9301,12 @@ class World:
         JJt = J @ J.T + lam * _np.eye(2)
         dq = J.T @ _np.linalg.solve(JJt, dcom)            # (nbal,) DLS
         dq = _np.clip(dq, -dqmax, dqmax)
-        tp = self._ctl_target_pos().numpy()
+        tp = self._tp_get()
         for _i in range(len(self._bal)):
             _d = int(self._bal_dof[_i])
             if 0 <= _d < len(tp):
                 tp[_d] += float(dq[_i])
-        self._ctl_target_pos().assign(tp)
+        self._tp_set(tp)
         self._mjc_dirty = True
         self._wbc_log_ctr += 1
         if self._wbc_log_ctr % 60 == 1:
@@ -9098,6 +9634,251 @@ class World:
             self._prof_pre = 0.0
             self._prof_collide = 0.0
         return v
+
+    # --- cached conversion launches (OMNISIM_NEWTON_FAST_CONVERT) -----------------
+    # The batched-substep tick still brackets its mj_step calls with newton's
+    # two conversions, and on a small CPU scene they ARE the tick: measured on
+    # the LongMill CNC twin (3 servo slides and a spindle) with
+    # OMNISIM_NEWTON_STEP_PROFILE, ctrl_in 0.69 ms + state_out 0.51 ms around
+    # 0.11 ms of mj_step. Nearly none of that is arithmetic. Each call allocates
+    # fresh warp arrays (ctrl / qfrc / xfrc, and float32 copies of qpos / qvel)
+    # and re-packs every argument of 4 + 2 kernel launches through
+    # wp.launch, whose per-argument type checks and ctypes packing cost tens of
+    # microseconds each on the CPU device.
+    #
+    # This path runs THE SAME KERNELS on the same inputs. Buffers are allocated
+    # once and zeroed per call (newton zero-allocates them per call), and each
+    # launch is recorded once (wp.launch(..., record_cmd=True)) and replayed.
+    # A recorded launch holds raw pointers, so every entry is keyed on the
+    # identity of every array it reads or writes and keeps those arrays alive;
+    # a new array (rebuild_physics, a fresh Control) is a new key. Anything off
+    # the plain single-world CPU shape -- the multi-world template, requested
+    # observables (body_qdd / body_parent_f / qfrc_actuator) -- falls back to
+    # newton's own function.
+    #
+    # The first FAST_CONVERT_VERIFY calls (default 3) run BOTH paths and compare
+    # every output bit for bit; one mismatch turns this path off for the rest
+    # of the run and says so at WARNING. Hatch: OMNISIM_NEWTON_FAST_CONVERT=0.
+    def _fastconv_on(self):
+        v = getattr(self, "_fastconv_flag", None)
+        if v is None:
+            raw = (_os.environ.get("OMNISIM_NEWTON_FAST_CONVERT") or "1").strip().lower()
+            v = raw not in ("0", "false", "off", "no")
+            self._fastconv_flag = v
+            try:
+                self._fastconv_verify_left = max(0, int(_os.environ.get("OMNISIM_NEWTON_FAST_CONVERT_VERIFY", "3")))
+            except ValueError:
+                self._fastconv_verify_left = 3
+            self._fastconv_cache = {}
+            self._fastconv_hits = 0
+            self._fastconv_builds = 0          # recorded-launch sets built (a rebuild per tick = keys churning)
+        return v
+
+    def _fastconv_off(self, why):
+        self._fastconv_flag = False
+        self._fastconv_cache = {}
+        self._newton_log("WARNING: OMNISIM_NEWTON_FAST_CONVERT disabled for this run: %s" % (why,))
+
+    @staticmethod
+    def _fastconv_kmod(sv):
+        import sys as _sys
+        return _sys.modules[type(sv).__module__]
+
+    def _fastconv_ctrl_entry(self, sv, model, state, control, d):
+        """Build (or fetch) the recorded launches for _apply_mjc_control. None = not this shape."""
+        import warp as wp
+        if type(sv)._data_is_mjwarp(d):
+            return None
+        effective_dof_count = model.joint_dof_count - sv._total_loop_joint_dofs
+        if len(d.qfrc_applied) < effective_dof_count:
+            return None                        # newton's single-world-template layout
+        mujoco_ctrl_ns = getattr(control, "mujoco", None) if control is not None else None
+        mujoco_ctrl = getattr(mujoco_ctrl_ns, "ctrl", None) if mujoco_ctrl_ns is not None else None
+        mujoco_attrs = getattr(model, "mujoco", None)
+        dof_ref = getattr(mujoco_attrs, "dof_ref", None) if mujoco_attrs is not None else None
+        refs = (model, state, control, getattr(control, "joint_target_q", None), getattr(control, "joint_target_qd", None),
+                state.joint_q, getattr(control, "joint_f", None), state.body_f, mujoco_ctrl, dof_ref,
+                sv.mjc_actuator_ctrl_source, sv.mjc_actuator_to_newton_idx, sv.mjc_body_to_newton, d)
+        key = ("ctrl",) + tuple(id(r) for r in refs) + (len(d.ctrl), len(d.qfrc_applied), len(d.xfrc_applied))
+        e = self._fastconv_cache.get(key)
+        if e is not None:
+            return e
+        km = self._fastconv_kmod(sv)
+        dev = model.device
+        ctrl = wp.zeros((1, len(d.ctrl)), dtype=wp.float32, device=dev)
+        qfrc = wp.zeros((1, len(d.qfrc_applied)), dtype=wp.float32, device=dev)
+        xfrc = wp.zeros((1, len(d.xfrc_applied)), dtype=wp.spatial_vector, device=dev)
+        nworld = 1
+        joints_per_world = model.joint_count // nworld
+        launches = []
+        if control is not None:
+            if sv.mjc_actuator_ctrl_source is not None and sv.mjc_actuator_to_newton_idx is not None:
+                nu = sv.mjc_actuator_ctrl_source.shape[0]
+                dofs_per_world = model.joint_dof_count // nworld
+                target_q_total = control.joint_target_q.shape[0] if control.joint_target_q is not None else 0
+                target_q_per_world = target_q_total // nworld
+                coords_per_world = model.joint_coord_count // nworld
+                ctrls_per_world = mujoco_ctrl.shape[0] // nworld if mujoco_ctrl is not None else 0
+                launches.append(wp.launch(
+                    km.apply_mjc_control_kernel, dim=(nworld, nu),
+                    inputs=[sv.mjc_actuator_ctrl_source, sv.mjc_actuator_to_newton_idx,
+                            sv.mjc_actuator_to_newton_target_q_idx, sv.mjc_actuator_to_target_q_axis_idx,
+                            sv.mjc_actuator_to_newton_ball_jnt, model.joint_X_c, control.joint_target_q,
+                            control.joint_target_qd, state.joint_q, mujoco_ctrl, dof_ref, target_q_per_world,
+                            coords_per_world, dofs_per_world, ctrls_per_world, joints_per_world,
+                            model.use_coord_layout_targets],
+                    outputs=[ctrl], device=dev, record_cmd=True))
+            launches.append(wp.launch(
+                km.apply_mjc_qfrc_kernel, dim=(nworld, joints_per_world),
+                inputs=[control.joint_f, state.joint_q, model.joint_type, model.joint_child, model.body_flags,
+                        model.joint_q_start, model.joint_qd_start, model.joint_dof_dim, model.joint_X_c,
+                        joints_per_world, sv.mj_qd_start],
+                outputs=[qfrc], device=dev, record_cmd=True))
+        if state.body_f is not None:
+            nbody = sv.mjc_body_to_newton.shape[1]
+            launches.append(wp.launch(
+                km.apply_mjc_body_f_kernel, dim=(nworld, nbody),
+                inputs=[sv.mjc_body_to_newton, model.body_flags, state.body_f, model.body_mass, model.body_world,
+                        model.gravity, sv.mjw_model.body_gravcomp],
+                outputs=[xfrc], device=dev, record_cmd=True))
+        if control is not None and control.joint_f is not None:
+            nbody = sv.mjc_body_to_newton.shape[1]
+            launches.append(wp.launch(
+                km.apply_mjc_free_joint_f_to_body_f_kernel, dim=(nworld, nbody),
+                inputs=[sv.mjc_body_to_newton, model.body_flags, sv.body_free_qd_start, control.joint_f],
+                outputs=[xfrc], device=dev, record_cmd=True))
+        e = {"refs": refs, "ctrl": ctrl, "qfrc": qfrc, "xfrc": xfrc, "launches": launches,
+             "ctrl_np": ctrl.numpy(), "qfrc_np": qfrc.numpy(), "xfrc_np": xfrc.numpy()}
+        if len(self._fastconv_cache) > 16:
+            self._fastconv_cache.clear()      # stale keys pin dead arrays; a rebuild storm must not leak
+        self._fastconv_cache[key] = e
+        self._fastconv_builds += 1
+        return e
+
+    def _fastconv_ctrl(self, sv):
+        """Run _apply_mjc_control through recorded launches. False = the caller runs newton's."""
+        if not self._fastconv_on():
+            return False
+        model, state, control, d = self.model, self.state_a, self.control, sv.mj_data
+        if control is None or control.joint_f is None:
+            if state.body_f is None:
+                return True                    # newton returns here too: nothing to write
+        try:
+            e = self._fastconv_ctrl_entry(sv, model, state, control, d)
+        except Exception as ex:                # an upgrade moved a private name: say so, use newton's
+            self._fastconv_off("control entry: %r" % (ex,))
+            return False
+        if e is None:
+            return False
+        import numpy as np
+        e["ctrl"].zero_()
+        e["qfrc"].zero_()
+        e["xfrc"].zero_()
+        for L in e["launches"]:
+            L.launch()
+        if self._fastconv_verify_left > 0:
+            ref = (np.array(d.ctrl), np.array(d.qfrc_applied), np.array(d.xfrc_applied))
+            sv._apply_mjc_control(model, state, control, d)
+            want = (np.array(d.ctrl), np.array(d.qfrc_applied), np.array(d.xfrc_applied))
+            d.ctrl[:] = ref[0]
+            d.qfrc_applied[:] = ref[1]
+            d.xfrc_applied[:] = ref[2]
+        d.xfrc_applied = e["xfrc_np"]
+        d.ctrl[:] = e["ctrl_np"].flatten()
+        d.qfrc_applied[:] = e["qfrc_np"]
+        if self._fastconv_verify_left > 0:
+            got = (np.array(d.ctrl), np.array(d.qfrc_applied), np.array(d.xfrc_applied))
+            if not all(np.array_equal(a, b) for a, b in zip(got, want)):
+                self._fastconv_off("control conversion differs from newton's on verify call")
+                d.ctrl[:] = want[0]
+                d.qfrc_applied[:] = want[1]
+                d.xfrc_applied[:] = want[2]
+                return True
+            self._fastconv_verify_left -= 1
+        self._fastconv_hits += 1
+        return True
+
+    def _fastconv_out_entry(self, sv, model, state, d, state_prev):
+        import warp as wp
+        if type(sv)._data_is_mjwarp(d):
+            return None
+        effective_coord_count = model.joint_coord_count - sv._total_loop_joint_coords
+        if len(d.qpos) < effective_coord_count:
+            return None
+        if getattr(state, "body_qdd", None) is not None or getattr(state, "body_parent_f", None) is not None:
+            return None                        # observables: newton's path computes them
+        if getattr(getattr(state, "mujoco", None), "qfrc_actuator", None) is not None:
+            return None
+        mujoco_attrs = getattr(model, "mujoco", None)
+        dof_ref = getattr(mujoco_attrs, "dof_ref", None) if mujoco_attrs is not None else None
+        refs = (model, state, state_prev, state.joint_q, state.joint_qd, state.body_q, state.body_qd,
+                state_prev.joint_q, state_prev.joint_qd, dof_ref, sv.mj_q_start, sv.mj_qd_start, d)
+        key = ("out",) + tuple(id(r) for r in refs) + (len(d.qpos), len(d.qvel))
+        e = self._fastconv_cache.get(key)
+        if e is not None:
+            return e
+        km = self._fastconv_kmod(sv)
+        from newton._src.sim.articulation import eval_articulation_fk
+        from newton import BodyFlags as _BF
+        dev = model.device
+        nworld = 1
+        joints_per_world = model.joint_count // nworld
+        qpos = wp.zeros((1, len(d.qpos)), dtype=wp.float32, device=dev)
+        qvel = wp.zeros((1, len(d.qvel)), dtype=wp.float32, device=dev)
+        launches = [wp.launch(
+            km.convert_mj_coords_to_warp_kernel, dim=(nworld, joints_per_world),
+            inputs=[qpos, qvel, joints_per_world, model.joint_type, model.joint_q_start, model.joint_qd_start,
+                    model.joint_dof_dim, model.joint_child, model.joint_X_p, model.joint_X_c, model.body_com,
+                    dof_ref, model.body_flags, state_prev.joint_q, state_prev.joint_qd, sv.mj_q_start,
+                    sv.mj_qd_start],
+            outputs=[state.joint_q, state.joint_qd], device=dev, record_cmd=True)]
+        if model.articulation_count > 0:
+            if dev.is_cuda:
+                return None                    # eval_fk takes a tiled kernel there; not this path
+            launches.append(wp.launch(
+                eval_articulation_fk, dim=model.articulation_count,
+                inputs=[model.articulation_start, model.articulation_end, model.articulation_count, None, None,
+                        model.joint_articulation, state.joint_q, state.joint_qd, model.joint_q_start,
+                        model.joint_qd_start, model.joint_type, model.joint_parent, model.joint_child,
+                        model.joint_X_p, model.joint_X_c, model.joint_axis, model.joint_dof_dim, model.body_com,
+                        model.body_flags, _BF.ALL],
+                outputs=[state.body_q, state.body_qd], device=dev, record_cmd=True))
+        e = {"refs": refs, "qpos": qpos, "qvel": qvel, "qpos_np": qpos.numpy(), "qvel_np": qvel.numpy(),
+             "launches": launches}
+        if len(self._fastconv_cache) > 16:
+            self._fastconv_cache.clear()
+        self._fastconv_cache[key] = e
+        self._fastconv_builds += 1
+        return e
+
+    def _fastconv_out(self, sv, state, state_prev):
+        """Run _update_newton_state through recorded launches. False = the caller runs newton's."""
+        if not self._fastconv_on():
+            return False
+        model, d = self.model, sv.mj_data
+        try:
+            e = self._fastconv_out_entry(sv, model, state, d, state_prev)
+        except Exception as ex:
+            self._fastconv_off("state entry: %r" % (ex,))
+            return False
+        if e is None:
+            return False
+        # newton builds these as wp.array([mj_data.qpos], dtype=float32): the same float64 -> float32 cast
+        e["qpos_np"][0, :] = d.qpos
+        e["qvel_np"][0, :] = d.qvel
+        for L in e["launches"]:
+            L.launch()
+        if self._fastconv_verify_left > 0:
+            import numpy as np
+            got = [a.numpy().copy() for a in (state.joint_q, state.joint_qd, state.body_q, state.body_qd)]
+            sv._update_newton_state(model, state, d, state_prev=state_prev)
+            want = [a.numpy() for a in (state.joint_q, state.joint_qd, state.body_q, state.body_qd)]
+            if not all(np.array_equal(a, b) for a, b in zip(got, want)):
+                self._fastconv_off("state conversion differs from newton's on verify call")
+                return True                    # newton's result is what the state now holds
+            self._fastconv_verify_left -= 1
+        self._fastconv_hits += 1
+        return True
 
     def _mjc_batch_substeps_ok(self, tsid_on, pymod_ss, ext_bf, contacts):
         """May this tick run its substeps as one conversion-bracketed batch?
@@ -11238,9 +12019,11 @@ class World:
                 self._ctl_target_vel().assign(vel_arr)
                 self.joint_targets = {}
             if self.joint_targets_pos and self._ctl_target_pos() is not None:
+                # DOF-shaped host mirror (see _tp_get); _tp_set translates it
+                # to the coordinate layout newton >= 1.6 uses by default.
                 pos_arr = getattr(self, "_target_pos_host", None)
                 if pos_arr is None:
-                    pos_arr = self._ctl_target_pos().numpy()
+                    pos_arr = self._tp_get()
                     self._target_pos_host = pos_arr
                 for key, p in self.joint_targets_pos.items():
                     slot, dof = self._split_target_key(key)
@@ -11260,7 +12043,7 @@ class World:
                     dof_idx = int(qd_start[real_idx]) + dof
                     if 0 <= dof_idx < len(pos_arr):
                         pos_arr[dof_idx] = p
-                self._ctl_target_pos().assign(pos_arr)
+                self._tp_set(pos_arr)
                 self.joint_targets_pos = {}
             if self.joint_forces and hasattr(self.control, "joint_f"):
                 # Torque sink: control.joint_f is DOF(qd)-indexed like
@@ -11302,7 +12085,7 @@ class World:
                     self._q_start_cache = self.model.joint_q_start.numpy()
                 if not hasattr(self, "_qd_start_cache"):
                     self._qd_start_cache = self.model.joint_qd_start.numpy()
-                _tp = self._ctl_target_pos().numpy()
+                _tp = self._tp_get()
                 _tv = self._ctl_target_vel().numpy()
                 _jq = self.state_a.joint_q.numpy()
                 _ke = self.model.joint_target_ke.numpy()
@@ -11465,7 +12248,7 @@ class World:
             # newton's body_f is a wrench about the body's CENTRE OF MASS (newton State.body_f docs).
             # Re-reference it: tau_com = tau_origin - c x F, c = the origin-to-COM offset in world.
             # Until 2026-11-01 it was passed through, so a force at an offset on a body whose COM is
-            # not at its origin acted as if moved by that offset: a tall frame (COM 1.02 m above its
+            # not at its origin acted as if moved by that offset: a clothes rack (COM 1.02 m above its
             # origin) pushed at its bar tipped at 62 % of the statics answer. Hatch, value-parsed:
             # OMNISIM_NEWTON_EXT_WRENCH_AT_COM=0 restores the pass-through.
             if not hasattr(self, "_ext_wrench_at_com"):
@@ -11591,6 +12374,7 @@ class World:
         # state copy. OMNISIM_NEWTON_NO_ODD_GRAPH=1 restores the even-only gate.
         _odd_graph_ok = not _senv["no_odd_graph"]
         _can_graph = (_ext_bf is None
+                      and not getattr(self, "_gearboxes", None)   # gearbox joints recompute per substep
                       and not _pymod_ss           # per-substep module also recomputes in the loop
                       and not _tsid_on            # TSID recomputes torque per-substep (Python in loop)
                       and getattr(self, "_stepn", 0) > 10
@@ -11701,7 +12485,8 @@ class World:
             # dicts -- they were consumed and cleared long before this line.
             _have_ctrl = _tick_has_ctrl
             if _have_ctrl or getattr(self, "_mjc_ctrl_written", False):
-                _sv._apply_mjc_control(self.model, self.state_a, self.control, _sv.mj_data)
+                if not self._fastconv_ctrl(_sv):
+                    _sv._apply_mjc_control(self.model, self.state_a, self.control, _sv.mj_data)
             self._mjc_ctrl_written = _have_ctrl
             _sv.mj_model.opt.timestep = sub_dt
             _mjstep = _sv._mujoco.mj_step
@@ -11728,7 +12513,8 @@ class World:
             # upgrade-fragility. Dead weight carrying the highest risk: deleted.
             # The idea is not refuted, but its v2 must avoid warp writes entirely;
             # see physics-step-cost-optimization-plan.md.)
-            _sv._update_newton_state(self.model, self.state_b, _sv.mj_data, state_prev=self.state_a)
+            if not self._fastconv_out(_sv, self.state_b, self.state_a):
+                _sv._update_newton_state(self.model, self.state_b, _sv.mj_data, state_prev=self.state_a)
             _sv._step += self._n_substeps
             self.state_a, self.state_b = self.state_b, self.state_a
             if self._skip_collide:
@@ -11749,6 +12535,10 @@ class World:
                         self._pymod_fn(self)
                     except Exception as _e:
                         self._mpc_log("pymod_ss error: %r" % (_e,))
+                # GEARBOX JOINTS: the coupling torque for this sub-step (opt-in;
+                # absent unless a controller declared one).
+                if getattr(self, "_gearboxes", None):
+                    self._gearbox_substep(sub_dt)
                 # clear_forces resets external force accumulation each (sub)step
                 # (required by XPBD; see Newton's example_basic_urdf simulate()).
                 self.state_a.clear_forces()
@@ -11850,6 +12640,14 @@ class World:
                     self._sample_arena_full()
             except Exception:
                 pass
+
+        # MuJoCo-C self-RESET watch (CPU path, 2026-11-06). Every step, not every
+        # 30: a reset is a one-step event, and mj_resetData also clears the
+        # arena-full counters read just above. See _physics_fault().
+        try:
+            self._sample_solver_resets()
+        except Exception:
+            pass
 
         # ---- Joint-space readback refresh (maximal-coordinate solvers) --
         # Solvers that integrate MAXIMAL coordinates never maintain
@@ -12178,8 +12976,18 @@ class World:
             try:
                 import numpy as _bgnp
                 _bq = self.state_a.body_q.numpy()
-                _ok = bool(_bgnp.isfinite(_bq).all()) and bool(
-                    (_bgnp.abs(_bq[:, :3]) <= self._base_guard_max).all())
+                # A body is BAD when its pose is non-finite, or when it was
+                # inside the bound at the last good state and has now left it
+                # (2026-11-06). The bound used to apply to every body always, so
+                # a world AUTHORED beyond it (a scene at x = 10 km) failed the
+                # check on step 1, never stored a good pose, and ran its whole
+                # life with no guard at all -- NaN included -- and silently.
+                _bad = ~_bgnp.isfinite(_bq).all(axis=1)
+                _lg = self._last_good_body_q
+                if _lg is not None and _lg.shape == _bq.shape:
+                    _bad |= ((_bgnp.abs(_bq[:, :3]) > self._base_guard_max).any(axis=1)
+                             & (_bgnp.abs(_lg[:, :3]) <= self._base_guard_max).all(axis=1))
+                _ok = not bool(_bad.any())
                 if _ok:
                     # Healthy: remember it; pass through untouched.
                     #
@@ -12208,7 +13016,20 @@ class World:
                     # caches (body_xform/body_vel) instead of re-reading.
                     self._body_q_cache = _bq
                     self._body_qd_cache = _bqd
-                elif self._last_good_body_q is not None:
+                else:
+                    # A fault on EVERY diverged step (2026-11-06): the guard
+                    # used to report only a print() to stdout, once, while it
+                    # held the world frozen for the rest of the run (the
+                    # solver's own state stays non-finite, so this branch
+                    # re-trips every step), all under a PASS verdict.
+                    # The message is built once per freeze: a frozen world
+                    # re-trips every step, and the overflow read is a device sync.
+                    _gm = getattr(self, "_guard_fault_msg", "") if self._base_guard_tripped else ""
+                    if not _gm:
+                        _gm = self._divergence_fault_msg(_bgnp, _bgnp.flatnonzero(_bad))
+                        self._guard_fault_msg = _gm
+                    self._physics_fault(_gm)
+                if not _ok and self._last_good_body_q is not None:
                     # Diverged: restore last good pose, zero all velocities.
                     _zqd = _bgnp.zeros_like(self._last_good_body_qd)
                     self.state_a.body_q.assign(self._last_good_body_q)
@@ -12355,7 +13176,7 @@ class World:
                     tp = None
                     try:
                         if self.control is not None and self._ctl_target_pos() is not None:
-                            tp_arr = self._ctl_target_pos().numpy()
+                            tp_arr = self._tp_get()
                             tp = {int(_s): round(float(tp_arr[int(qds[_r])]), 3)
                                    for _s, _r in self.slot_to_real_idx.items()
                                    if int(qds[_r]) < len(tp_arr)}

@@ -269,6 +269,12 @@ _RULES: tuple[_Rule, ...] = (
        "NEWTON_STEP_FAILED", detail="detail"),
     _r(WARNING, r"^\[(?:Wb|Om)NewtonBackend\] (?P<detail>step raised again: .+)$",
        "NEWTON_STEP_FAILED", detail="detail"),
+    # Steps that RAN but went bad (2026-11-06): MuJoCo-C reset the world, or the
+    # base-divergence guard froze a non-finite world. OmNewtonBackend::step().
+    _r(ERROR, r"^\[(?:Wb|Om)NewtonBackend\] PHYSICS FAULT at step \d+: (?P<detail>.+)$",
+       "NEWTON_PHYSICS_FAULT", detail="detail"),
+    _r(WARNING, r"^\[(?:Wb|Om)NewtonBackend\] (?P<detail>physics fault again: .+)$",
+       "NEWTON_PHYSICS_FAULT", detail="detail"),
     _r(WARNING, r"^\[(?:Wb|Om)NewtonBackend\] (?P<detail>.+? (?:raised:|failed \(no Python error\)).*)$",
        "NEWTON_RUNTIME_BROKEN", detail="detail"),
     _r(WARNING, r"^\[(?:Wb|Om)NewtonBackend\] OMNISIM_NEWTON_SIMULATE_BROKEN is set",
@@ -510,6 +516,15 @@ HINTS: dict[str, str] = {
         "MuJoCo's arena: raise WorldInfo.newtonArenaMB (or OMNISIM_NEWTON_ARENA_MB) and "
         "reload, or collide big moving units as fewer shapes. newtonNjmax/newtonNconmax "
         "do not size it on the CPU solver."),
+    "NEWTON_PHYSICS_FAULT": (
+        "physics steps RAN but did not produce valid physics: either MuJoCo found a "
+        "NaN/Inf/huge value and RESET THE WHOLE WORLD to its authored pose (every body "
+        "jumped back to its start), or a pose went non-finite and the divergence guard is "
+        "holding the world frozen at its last good pose. Read `physics_steps` "
+        "(physics_faults, first_fault) on /sim/step or /sim/state, and do not read a pose "
+        "from after the fault. Usual fixes: WorldInfo.newtonSubsteps 4 (or a smaller "
+        "basicTimeStep) for motion the step cannot resolve; on mujoco_warp, raise "
+        "WorldInfo.newtonNjmax / newtonNconmax when the fault names a buffer overflow."),
     "NEWTON_ZERO_DYNAMIC_BODIES": (
         "read the other diagnostics on this load before anything else: this single "
         "number is downstream of every no-physics cause (NO_PHYSICS_BACKEND, "

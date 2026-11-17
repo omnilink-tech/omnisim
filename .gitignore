@@ -29,7 +29,6 @@ __pycache__/
 *.bz2
 *.dmg
 *.gz
-# a product's release ships its print plates gzipped (its release/BOM.md links them)
 *.iso
 *.jar
 *.rar
@@ -721,3 +720,25 @@ distribution/husky-assessments/
 
 # Built robot-agent deliveries (each embeds a full Windows runtime and a zip).
 distribution/robot-agents/
+
+# Regenerable bulk from twin and cross-simulator runs (2026-11-11): bead dumps from
+# printing/ideal_print.py (4-6 MB each, re-made by the commands in each comparison.md),
+# per-frame PNG dumps behind a clip that is itself tracked, and run arrays. The
+# measured records beside them (*.json, *.csv, *.md, the clips) stay tracked.
+/social/launch/pilots/free_twins_2026-11-11/pidog_clip/frames/
+/social/launch/pilots/emmanuel_xsim_2026-11-11/runs/**/frames/
+/social/launch/pilots/emmanuel_xsim_2026-11-11/runs/**/*.npy
+
+# GrowBot twin (2026-11-11): Brit Cruise's own CAD and MuJoCo model, sent privately, and the
+# meshes decimated from it. Not ours to commit; make_twin.py documents where they come from.
+/projects/robots/growbot/source/
+/projects/robots/growbot/meshes/
+/projects/robots/growbot/worlds/.run_*.omniworld
+/projects/robots/growbot/results/compare/
+/projects/robots/cuborex_cugo/worlds/.run_*.omniworld
+/projects/robots/cuborex_cugo/results/
+/projects/robots/orca/orcahand_v2/results/
+/projects/robots/orca/orcahand_v2/worlds/.run_*.omniworld
+/projects/robots/growbot/results/*/frames/
+/projects/robots/salvius/results/*/frames/
+/projects/robots/salvius/worlds/.run_*.omniworld

@@ -2165,6 +2165,11 @@ namespace OmWgpuSceneRenderer {
     for (OmMillingStock *stock : OmMillingStock::liveStocks()) {
       if (!stock || !stock->isReady() || (hiddenNodes && hiddenNodes->contains(stock)))
         continue;
+      // A block on a moving bed (carrierSolid) is streamed in its load frame and drawn
+      // with the bed's motion since then; a block fixed in the world keeps identity.
+      std::array<float, 16> model = identity;
+      if (stock->hasCarrier())
+        wbMatrixToColumnMajorFloat(stock->carrierMotion(), model.data());
       void *texView = nullptr;
       float texMean[3] = {0.5f, 0.5f, 0.5f};
       if (texCache) {
@@ -2194,7 +2199,7 @@ namespace OmWgpuSceneRenderer {
                                       h);
         if (!ok)
           continue;
-        modelStorage.push_back(identity);
+        modelStorage.push_back(model);
         OmWgpuSolidDraw draw;
         draw.modelMatrix16 = modelStorage.back().data();  // re-pointed by the caller after the loop
         draw.motionId = motionId(stock);

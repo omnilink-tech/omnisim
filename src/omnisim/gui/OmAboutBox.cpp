@@ -45,13 +45,12 @@ OmAboutBox::OmAboutBox(QWidget *parent) : QDialog(parent) {
   connect(versionInfo, &QLabel::linkActivated, &OmDesktopServices::openUrl);
   QDateTime releaseTimestamp;
   releaseTimestamp.setSecsSinceEpoch(OmApplicationInfo::releaseDate());
-  // Mimosa accent (#F6E905) for OmniLink links — matches the canonical brand
-  // palette in resources/branding/omnilink/BRAND.md.
-  versionInfo->setText(QString("<p style='font-size: large;'><b>OmniSim %1</b></p>"
-                               "<p style='color: #555;'>by <a style='color: #000; font-weight: bold; text-decoration: none;' "
-                               "href='https://www.omnilink-agents.com'>OmniLink</a> &middot; %2</p>"
-                               "<p>An open-source robotics workshop for agents &mdash; built by <a style='color: #000; font-weight: bold; text-decoration: none;' "
-                               "href='https://www.omnilink-agents.com'>OmniLink</a>, for OmniLink agents.<br>"
+  // "OmniSim, by OmniLink" is the brand relationship wherever both names
+  // appear (resources/branding/omnisim/BRAND.md §1 and §7).
+  versionInfo->setText(QString("<p style='font-size: large;'><b>OmniSim, by OmniLink</b></p>"
+                               "<p style='color: #555;'>Version %1 &middot; %2</p>"
+                               "<p>An open-source robotics workshop for agents.<br>"
+                               "OmniLink builds agents that work on robots and machines; OmniSim is their workshop.<br>"
                                "Free and open-source, built on top of the <a style='color: #5DADE2;' "
                                "href='https://github.com/cyberbotics/webots'>Webots</a> %3 engine by Cyberbotics Ltd.<br>"
                                "Licensed under the <a style='color: #5DADE2;' "

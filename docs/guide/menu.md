@@ -32,6 +32,7 @@
     - [The Omni Key and the API](omnilink-key-and-api.md)
 - [Physics (Newton)](newton-physics-backend.md)
     - [Friction and Grasping](friction-grasp.md)
+    - [Hydraulic Actuators](hydraulic-actuators.md)
 - [Programming Language Setup](language-setup.md)
     - [Introduction](introduction.md)
     - [Controller Start-up](controller-start-up.md)

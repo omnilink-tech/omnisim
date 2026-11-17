@@ -39,6 +39,16 @@ are still required in the manifest. `verification.json` carries them under
 `off_screen_texts` for the video's description, and its `disclosure_s` is `null`. Captions
 are separate: leave `caption` empty on every segment for a clean frame.
 
+**Opening on the concept art: `"editorial": {"opens_on_concept": true}`** (default `false`).
+The story may open on exactly one `kind: "plate"` segment with a `source` video of the build's
+source concept art (2026-11-05, a film that opens on its AI concept sheets). It stays a
+plate, outside the simulator-footage ratio, and the segment after it must be the real
+question footage every film needs first. One exception: question plates that re-typeset the
+real build session (a terminal set from its transcript) may sit between the concept plate and
+the first clip, which may then be the attempt. Each declares `"transcript": "<provenance
+file>"`, a note naming the transcript and the time of every quoted line; preflight checks it
+exists (2026-11-05, a film's Claude Code shots).
+
 An authored motion diagram can be a `kind: "plate"` segment with a `source`
 video. It receives the same media-range, hash, and delivery checks as a clip,
 while remaining excluded from the real-simulator-footage ratio. This allows

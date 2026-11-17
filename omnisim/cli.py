@@ -39,11 +39,19 @@ from .paths import REPO_ROOT
 _TEST_GROUPS = ("api", "cache", "other_api", "physics", "protos", "parser", "rendering")
 _CAPTURE_SCRIPT = REPO_ROOT / "scripts" / "capture" / "omnisim_capture.py"
 _RUN_AGENT_SCRIPT = REPO_ROOT / "scripts" / "dev" / "omnisim_run_agent.py"
+_CORE_SRC = REPO_ROOT / "packages" / "omnisim-core" / "src"
 
 
 def _forward(script: Path, argv: list[str]) -> int:
     cmd = [sys.executable, str(script), *argv]
     return subprocess.run(cmd, cwd=REPO_ROOT, env=os.environ.copy(), check=False).returncode
+
+
+def _core(argv: list[str]) -> int:
+    """The in-process core (packages/omnisim-core): its own package, so the controllers' `omnisim` stays free."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(_CORE_SRC) + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    return subprocess.run([sys.executable, "-m", "omnisim_core", *argv], cwd=REPO_ROOT, env=env, check=False).returncode
 
 
 def _damage(argv: list[str]) -> int:
@@ -303,7 +311,7 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="omnisim",
         description="OmniSim - an open-source robotics workshop for agents. Simulate a "
                     "complete robot on high-fidelity physics, build the digital twin of "
-                    "one you own, "
+                    "one you own, make its parts on CNC, laser and 3D-printer twins, "
                     "and let an agent program, test and debug it. "
                     "Start with: doctor, demo.",
     )
@@ -502,6 +510,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("control-bench", help="Reproducible robotics-control evaluations: freeze, run, verify, report.")
     sub.add_parser("ops-bench", help="Robot operations under change: standing rules, interrupts, disturbances, timed orders.")
     sub.add_parser("assess", help="Robot mobility assessments: slopes, contact friction, payloads and reproducible failure boundaries.")
+    sub.add_parser("core", help="The in-process core: compile, run, record, replay, branch and diff worlds on it.")
 
     return parser
 
@@ -543,6 +552,8 @@ def main() -> int:
     if argv and argv[0] == "assess":
         from .assessment.cli import main as assessment_main
         return assessment_main(argv[1:])
+    if argv and argv[0] == "core":
+        return _core(argv[1:])
     if argv and argv[0] == "ops-bench":
         from .ops_bench.cli import main as ops_bench_main
         return ops_bench_main(argv[1:])

@@ -454,7 +454,7 @@ If you do want the literal commands — for a container image, say — take them
 #                             train==deploy (a 2026-07-17 pod died this way)
 #   onnxruntime             : the CONTROLLERS' hard inference dependency
 sudo -H python3 -m pip install --break-system-packages --ignore-installed \
-  warp-lang==1.16.0 mujoco-warp==3.11.0 mujoco==3.11.0 newton==1.5.0 \
+  warp-lang==1.18.0 mujoco-warp==3.15.0 mujoco==3.15.0 newton==1.7.0 \
   usd-core==26.5 newton-usd-schemas==0.5.0 \
   numpy onnx onnxscript onnxruntime
 

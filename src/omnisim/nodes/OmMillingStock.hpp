@@ -30,6 +30,7 @@
 // changed is re-uploaded, into the buffer it already has, and nothing re-collects.
 
 #include "OmBaseNode.hpp"
+#include "OmMatrix4.hpp"
 #include "OmVector3.hpp"
 
 #include <chrono>
@@ -95,6 +96,12 @@ public:
   float roughness() const;
   bool castShadows() const;
   bool isReady() const { return !mHeights.empty(); }
+  // carrierSolid: the block rides on that Solid (a moving bed), rigidly, from the pose the
+  // Solid had when the block resolved it (its authored pose at load). This is that motion
+  // since then, row-major; identity for a block fixed in the world. The tiles are streamed
+  // in the block's LOAD frame, so the renderer draws them with this as their model matrix.
+  OmMatrix4 carrierMotion() const;
+  bool hasCarrier() const { return mCarrier != NULL; }
 
   // ---- state a supervisor can read through the hidden fields as well ----------------
   double removedVolume() const { return mRemovedVolume; }
@@ -104,6 +111,7 @@ private slots:
   void onPhysicsStepEnded();
   void rebuild();
   void resolveTool();
+  void resolveCarrier();
   void bumpColorRevision() { ++mColorRevision; }
 
 private:
@@ -125,12 +133,16 @@ private:
   // OMNISIM_MILLING_STOCK_DUMP=<file>: the height map, rewritten at most once a second
   // while the cutter is removing material, so a test can measure the part it made.
   void dumpHeights();
+  // initialHeightMap: start from a height map in the dump's own layout instead of a flat top
+  // (a carved state to film from). false (and a warning) when it does not fit this block.
+  bool loadInitialHeights();
   OmVector3 normalAt(int i, int j) const;
 
   OmSFVector3 *mTranslation;
   OmSFVector3 *mSize;
   OmSFDouble *mResolution;
   OmSFString *mToolSolid;
+  OmSFString *mCarrierSolid;
   OmSFVector3 *mToolTip;
   OmSFString *mToolShape;
   OmSFDouble *mToolDiameter;
@@ -150,9 +162,13 @@ private:
   OmSFBool *mCastShadows;
   OmSFDouble *mRemovedVolumeField;
   OmSFDouble *mDeepestCutField;
+  OmSFString *mInitialHeightMap;
 
   OmSolid *mTool;   // cleared by the Solid's destroyed() signal (resolveTool)
   bool mWarnedNoTool;
+  OmSolid *mCarrier;   // carrierSolid, cleared the same way (resolveCarrier)
+  bool mWarnedNoCarrier;
+  OmMatrix4 mCarrierRefInverse;   // the carrier's pose when resolved, inverted
 
   // Height map: (mNx x mNy) vertex heights above the block's bottom, metres.
   int mNx, mNy;

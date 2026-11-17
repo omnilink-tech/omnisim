@@ -1,6 +1,8 @@
 # OmniSim
 
-**An open-source robotics workshop for agents.**
+**An open-source robotics workshop for agents.** OmniSim, by [OmniLink](https://www.omnilink-agents.com/).
+
+OmniLink builds agents that work on robots and machines; OmniSim is their workshop.
 
 If you're learning robotics, building a robot, or have an idea but don't have access to the
 hardware, OmniSim is built for you.
@@ -24,8 +26,8 @@ to base. [Watch the full 100-second video](docs/media/omnilink-husky/omnilink-hu
 · [Run this demo](docs/guide/omnilink-chat-demos.md). Silent native OmniSim footage;
 waiting removed and motion time-compressed. The preview shows the opening 32 seconds.*
 
-**OmniSim is the free robotics workshop. [OmniLink](https://www.omnilink-agents.com/)
-is the connected AI agent.** OmniLink requires an OmniKey and a model connection,
+**OmniSim is the free robotics workshop. [OmniLink](https://www.omnilink-agents.com/), the company
+behind it, builds the connected AI agent.** OmniLink requires an OmniKey and a model connection,
 including on Free; model usage is billed separately.
 [Connect your account](https://www.omnilink-agents.com/agents/start).
 The recorded result is simulation, not a hardware demonstration.

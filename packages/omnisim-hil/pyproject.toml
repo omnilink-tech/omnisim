@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "omnisim-hil"
 version = "0.1.0"
-description = "Hardware-in-the-loop support for OmniSim: a dependency-free MAVLink v2 codec wire-compatible with PX4 and ArduPilot."
+description = "Hardware-in-the-loop support for OmniSim: a dependency-free MAVLink v2 codec wire-compatible with PX4 and ArduPilot. Part of OmniSim, by OmniLink."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [{ name = "OmniLink", email = "info@omnilink-agents.com" }]

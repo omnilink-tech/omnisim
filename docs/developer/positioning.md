@@ -115,6 +115,7 @@ And **no physics runtime means no physics at all**, not a degraded mode:
 [`projects/robots/`](../../projects/robots/), and the authoring loop in AGENTS.md
 §5 — load, inspect the scene tree, edit, `POST /world/sync`, screenshot.
 
+
 ### Connect simulation to real robots
 
 **Ships:** one control surface over two backends. The same agent tool names,
@@ -263,7 +264,7 @@ without a measurement.**
 | **Pause held across calls** (`POST /sim/pause` / `/sim/resume`) | REAL as of v9, and **leased** — default 30 s, min 1 s, max 300 s, so a client that dies cannot freeze the engine. `POST /sim/step` while held is single-stepping. ⚠️ Measured 2026-09-22 (machine 9722d23d12a3): the step is exact on the **supervisor** clock (10 steps → exactly 80 ms) and **not** on the engine clock (80–112 ms over the same calls, 0–4 basic steps of overshoot), because lifting the pause, stepping and re-queuing the pause is a race the supervisor binding cannot close. The response **reports** `engine_advanced_ms` rather than asserting it. ⚠️ The pause shipped 2026-09-15 and **did not work** until 2026-09-22 — see the note under the table |
 | **Break on event** (`POST /sim/break`, `GET /sim/breaks`, `DELETE /sim/break/<id>`) | REAL as of v9. An armed break takes the pause lease when a matching event fires; `break.hit` carries the match; `POST /sim/step` stops early on it and reports `steps_executed` + `stopped_on_break`, which makes it continue-to-breakpoint. ⚠️ **Two latency regimes, and neither is sub-step.** Held + `/sim/step`: 0 supervisor-ms, `hold_latency_steps` 0, at most one basic step of engine time. FREE-RUNNING: one **supervisor tick**, and a tick is not a basic step — measured from 8 ms to about 600 ms of engine time depending on load. On the three-body `break_drop` fixture the engine outran the controller so far that a whole one-second drop fitted inside one tick and no `contact.began` was emitted at all (`fired: false`). **The reliable workflow is the debugger one: pause, then step.** |
 | **A break that could never fire is REFUSED** | REAL, and it is the headline honesty behaviour rather than a limitation. Light mode is the default and silences 5 of the 11 event types; a break armed on a silenced type comes back `400 BREAK_EVENT_TYPE_UNAVAILABLE` with an `event_type_silenced_in_light_mode` diagnostic naming the producer, the silenced set and the `{"light": false}` workaround. The refusal is **scoped**: `damage.*` survives light mode and is accepted in the same session. A refused break is not armed. |
-| CPU-path determinism (`newtonSolver "mujoco"`, the default) | REAL — bitwise on contact-rich 10-robot scenes across cold launches, and across two machines running the **same binary** |
+| CPU-path determinism (`newtonSolver "mujoco"`, the default) | REAL — bitwise on contact-rich 10-robot scenes across cold launches, and across two machines running the **same binary**. |
 | CI verdicts (`--until-finalized`, `--fail-on-runaway`, `doctor`) | REAL, and rigorous — they fail rather than pass on thin evidence |
 | 46 MCP tools — 42 one call each to the same harness a human uses, plus `robot_prompt` / `robot_tool` / `robot_state` / `robot_events` on a robot's OmniLink bridge | REAL as of v9. The command surface is reachable from an MCP client without curl; the four bridge tools go through the gated paths, never the ungated REST verbs. ⚠️ `robot_events` reads the **robot's** ring, not the harness's `/sim/events` — two rings, two cursors — and it dies with the bridge process |
 | **The robot raises events of its own** (`GET /events` on a bridge, cursor-paged) | REAL as of v9, verified live on a Husky 2026-09-22 (machine 9722d23d12a3): the ring pages and fills, a gate refusal landed on it at sim t=4.688, and `GET /sim/state` carries the totals. Eight bridge-raised types — motion timeout, motion unsettled, joint limit, two fault kinds, gate refusal, contact — plus six forwarded from the harness when one is attached. Every detector was disabled in turn and its tests confirmed to fail, so none of them is an assertion that has never gone red. ⚠️ Contact events are **top-level scope only**: the supervisor's contact query cannot see a URDF robot's sub-links. ⚠️ The ring lives in the bridge process and dies with it — this is a live stream, **not a recording** |
@@ -274,6 +275,7 @@ without a measurement.**
 | Structural fault injection into a named part | REAL (see limits below) |
 | Native URDF / CAD import, 20+ vendor robot packages | REAL — this is what "build a digital twin" rests on; see the §5 boundary on what a twin is |
 | One portable control surface, sim ↔ real, and a ROS 2 sidecar speaking `simulation_interfaces` | REAL **for the software above the driver only.** ⚠️ This row was widened on 2026-09-17 by owner decision, and this is the boundary that came with it: the shipped bridges run against mock drivers, and no policy trained here has been validated on hardware. Prior wording was "hardware is roadmap, not product" — the correction is that the *seam* ships and is documented; the *driver* and its validation do not. |
+
 
 ### The gap — state it, do not hide it
 
@@ -559,3 +561,4 @@ On the selected low-side mu 0.04 unloaded split, maximum path error changes
 between each pair. Known map and localization assumed; no friction estimation,
 production firmware or physical-robot validation. Rigid coefficients are not
 calibrated real materials. The original 76-episode study remains unchanged.
+

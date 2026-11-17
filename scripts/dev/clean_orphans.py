@@ -26,6 +26,19 @@ Two classes of orphan get cleaned:
 
    Roots: projects/robots/<vendor>/<model>, projects/humans
 
+   Two guards keep private, gitignored files alive (2026-11-13: a
+   `git checkout -- <file>` rmtree'd projects/robots/growbot/source, a
+   creator's MuJoCo model and STLs that were never committed and are not
+   ours to commit):
+
+   - A depth-2 root only descends through a VENDOR folder, i.e. one with no
+     tracked file directly in it. projects/robots/growbot/ has its own
+     PROVENANCE.md and scripts, so it is a flat robot, not a vendor, and its
+     subfolders (source/, meshes/, results/) are never candidates.
+   - A folder that an anchored .gitignore rule names (the folder itself or
+     an ancestor, e.g. `/projects/robots/growbot/source/`) is never removed,
+     whatever its depth. Generic rules such as `build/` or `*.o` do not count.
+
 2. Orphan compile outputs. When a .cpp/.hpp is deleted upstream but the
    binary on this clone was previously built, the corresponding .o (and
    moc_/qrc_/.d sidecars) sit in src/<...>/build/{debug,release}/ forever
@@ -43,6 +56,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import shutil
 import subprocess
 import sys
@@ -50,16 +64,18 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 
-# (relative root, depth) -- depth is how many levels below the root we
-# evaluate. depth=0 evaluates the root itself; depth=2 evaluates grandchildren
-# (vendor/model under projects/robots).
-TARGETS: list[tuple[str, int]] = [
-    ("projects/robots", 2),
-    ("projects/humans", 0),
+# (relative root, depth, vendors_only) -- depth is how many levels below the
+# root we evaluate. depth=0 evaluates the root itself; depth=2 evaluates
+# grandchildren (vendor/model under projects/robots). vendors_only: descend
+# only through intermediate folders with no tracked file directly in them, so
+# a flat robot folder (projects/robots/growbot/) is never read as a vendor.
+TARGETS: list[tuple[str, int, bool]] = [
+    ("projects/robots", 2, True),
+    ("projects/humans", 0, False),
     # samples/<category>/controllers/<name> -- hollow controller dirs make
     # the parent controllers.Makefile fail with "No rule to make target
     # 'release'" because it globs subdirs and recurses into each.
-    ("projects/samples", 3),
+    ("projects/samples", 3, False),
 ]
 
 
@@ -87,16 +103,85 @@ def has_untracked_non_ignored(path: Path) -> bool:
     return False
 
 
-def descend(root: Path, levels: int):
+def has_tracked_files_directly(path: Path) -> bool:
+    """True when `path` itself (not a subfolder) holds a tracked file: the
+    mark of a robot folder rather than a vendor folder."""
+    rel = path.relative_to(REPO).as_posix().rstrip("/") + "/"
+    for line in _git(["ls-files", "--", rel]).splitlines():
+        name = line.strip().strip('"')
+        if name.startswith(rel) and "/" not in name[len(rel):]:
+            return True
+    return False
+
+
+def descend(root: Path, levels: int, vendors_only: bool = False, top: bool = True):
     if levels == 0:
         if root.is_dir():
             yield root
         return
     if not root.is_dir():
         return
+    # The target root itself (projects/robots) is a container, not a vendor;
+    # its own Makefile does not make it a robot.
+    if vendors_only and not top and has_tracked_files_directly(root):
+        return
     for child in sorted(root.iterdir()):
         if child.is_dir():
-            yield from descend(child, levels - 1)
+            yield from descend(child, levels - 1, vendors_only, top=False)
+
+
+def _segments_match(pattern_segs: list[str], path_segs: list[str]) -> bool:
+    if not pattern_segs or len(pattern_segs) > len(path_segs):
+        return False
+    return all(fnmatch.fnmatchcase(p, s) for p, s in zip(pattern_segs, path_segs))
+
+
+def explicitly_ignored(path: Path) -> str | None:
+    """Return the .gitignore rule that names `path` (or one of its ancestors)
+    explicitly, or None.
+
+    "Explicitly" means an anchored rule -- one with a slash before its end,
+    like `/projects/robots/growbot/source/` -- whose segments match the
+    folder's leading path segments. Unanchored generic rules (`build/`,
+    `*.o`, `results/`) are what hollow build-debris dirs match, so they do
+    not protect anything.
+    """
+    rel = path.relative_to(REPO).as_posix()
+    result = subprocess.run(
+        ["git", "check-ignore", "-v", "--no-index", rel + "/"],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    line = result.stdout.strip().splitlines()[0] if result.stdout.strip() else ""
+    if "\t" not in line:
+        return None
+    meta, _ = line.split("\t", 1)
+    # <source>:<linenum>:<pattern>; <source> may itself contain ':' (C:/...).
+    parts = meta.rsplit(":", 2)
+    if len(parts) != 3:
+        return None
+    source, _linenum, pattern = parts
+    if not pattern or pattern.startswith("!"):
+        return None
+    body = pattern
+    for suffix in ("/**", "/*"):
+        if body.endswith(suffix):
+            body = body[: -len(suffix)]
+    body = body.rstrip("/")
+    if "/" not in body:
+        return None  # unanchored: matches at any depth, names nothing
+    body = body.lstrip("/")
+    base = ""
+    src = source.replace("\\", "/")
+    if src.endswith("/.gitignore") and not Path(src).is_absolute():
+        base = src[: -len(".gitignore")]
+    full = (base + body).split("/")
+    if _segments_match(full, rel.split("/")):
+        return f"{source}:{_linenum}:{pattern}"
+    return None
 
 
 # Every source kind a Makefile under src/ compiles into a .o -- not just C/C++.
@@ -183,19 +268,28 @@ def empty_parents(root: Path) -> list[Path]:
     return result
 
 
+def orphan_dirs() -> list[Path]:
+    """Hollow project dirs: no tracked file, nothing untracked-not-ignored,
+    and not named by an anchored .gitignore rule."""
+    to_remove: list[Path] = []
+    for rel, depth, vendors_only in TARGETS:
+        for d in descend(REPO / rel, depth, vendors_only):
+            if has_tracked_files(d):
+                continue
+            if has_untracked_non_ignored(d):
+                continue
+            if explicitly_ignored(d):
+                continue
+            to_remove.append(d)
+    return to_remove
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--dry-run", action="store_true", help="show what would be removed without deleting")
     args = parser.parse_args()
 
-    to_remove: list[Path] = []
-    for rel, depth in TARGETS:
-        for d in descend(REPO / rel, depth):
-            if has_tracked_files(d):
-                continue
-            if has_untracked_non_ignored(d):
-                continue
-            to_remove.append(d)
+    to_remove = orphan_dirs()
 
     verb = "would remove" if args.dry_run else "removed"
     if to_remove:
@@ -208,7 +302,7 @@ def main() -> int:
     # Second pass: any vendor-level parent that's now empty (e.g.
     # projects/robots/adept/ with no models left) should also go.
     empties: list[Path] = []
-    for rel, depth in TARGETS:
+    for rel, depth, _vendors_only in TARGETS:
         if depth >= 2:
             empties.extend(empty_parents(REPO / rel))
     if empties:

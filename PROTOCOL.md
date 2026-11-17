@@ -2069,8 +2069,8 @@ plus the handful the harness synthesizes itself, and **`GET /capabilities` →
 `diagnostic_codes` serves the live enumeration** — trust that over any table
 written here. A client MUST treat this enum as open and fall back gracefully on
 an unrecognised code, because new codes are added there without a protocol
-major bump. The set emitted today (56 codes, regenerated from the source
-2026-09-01):
+major bump. The set emitted today (58 codes, regenerated from the source
+2026-11-06):
 
 | Group | Codes |
 |---|---|
@@ -2079,7 +2079,7 @@ major bump. The set emitted today (56 codes, regenerated from the source
 | PROTO | `PROTO_RECURSIVE`, `PROTO_BASE_NAME_INVALID`, `PROTO_NAME_MISMATCH`, `PROTO_PARAM_ERROR`, `EXTERNPROTO_DOWNLOAD_FAILED` |
 | Fields / nodes | `UNKNOWN_FIELD_IN_NODE`, `WORLDINFO_PHYSICSBACKEND_MISNAMED` |
 | Assets | `ASSET_DOWNLOAD_FAILED`, `TEXTURE_READ_FAILED`, `MESH_READ_FAILED`, `URDF_MESH_UNRESOLVED` |
-| Newton / physics | `NEWTON_RUNTIME_ABSENT`, `NEWTON_RUNTIME_BROKEN`, `NEWTON_WORLD_NOT_BUILT`, `NEWTON_STEP_FAILED`, `NEWTON_BODIES_REGISTERED`, `NEWTON_ZERO_DYNAMIC_BODIES`, `NEWTON_STATICS_NOT_REGISTERED`, `NEWTON_ENFORCE_REFUSED`, `NO_PHYSICS_BACKEND`, `NO_STATIC_COLLISION_SURFACE`, `KINEMATIC_ARTICULATION`, `INERTIA_FROM_BOUNDING_OBJECT_UNAVAILABLE`, `CONTACT_PROPERTIES_IGNORED`, `CONTACT_QUERIES_BLIND`, `SOLID_ODE_PIN_INERT`, `RETIRED_ODE_SELECTOR` |
+| Newton / physics | `NEWTON_RUNTIME_ABSENT`, `NEWTON_RUNTIME_BROKEN`, `NEWTON_WORLD_NOT_BUILT`, `NEWTON_STEP_FAILED`, `NEWTON_PHYSICS_FAULT`, `NEWTON_BODIES_REGISTERED`, `NEWTON_ZERO_DYNAMIC_BODIES`, `NEWTON_STATICS_NOT_REGISTERED`, `NEWTON_ENFORCE_REFUSED`, `NO_PHYSICS_BACKEND`, `NO_STATIC_COLLISION_SURFACE`, `KINEMATIC_ARTICULATION`, `INERTIA_FROM_BOUNDING_OBJECT_UNAVAILABLE`, `CONTACT_PROPERTIES_IGNORED`, `CONTACT_QUERIES_BLIND`, `SOLID_ODE_PIN_INERT`, `RETIRED_ODE_SELECTOR` |
 | Joints | `JOINT_FEATURE_UNIMPLEMENTED`, `JOINT_REGISTRATION_FAILED` |
 | Sensors | `SENSOR_NO_SOURCE`, `OCCLUSION_RAYS_UNANSWERED` |
 | Controller | `CONTROLLER_CRASHED`, `CONTROLLER_EXITED_NONZERO` |
@@ -2345,6 +2345,19 @@ to read (`source`: `sidecar_absent`, `sidecar_unreadable`, or
 `diagnostics` entry appears only when `step_errors_during > 0`. Do not read a
 pose or a contact from a batch with `physics_ok: false`.
 
+**Physics faults (since 2026-11-06).** A step can also RUN and still not
+produce valid physics, without raising: CPU MuJoCo found a NaN/Inf/huge
+acceleration, velocity or position and RESET THE WHOLE WORLD to its authored
+pose (`mj_resetData`), or a body pose went non-finite and the base-divergence
+guard is holding the world frozen at its last good pose (the mujoco_warp
+failure, often after a constraint-buffer overflow). Both used to pass with
+`step_errors: 0`. `physics_steps` now also carries `physics_faults_during`,
+`physics_faults_total`, `first_fault`, `first_fault_at` and `last_fault`
+(`null` from an engine older than the counter); `physics_ok` is `false` when
+`physics_faults_during > 0`, with a `NEWTON_PHYSICS_FAULT` diagnostic. The
+engine logs the first fault of a world at ERROR (`[OmNewtonBackend] PHYSICS
+FAULT at step N: ...`), so `run-headless` FAILs.
+
 An `mj_stackAlloc` detail means MuJoCo's ARENA overflowed: the per-step
 scratch memory, fixed when the model compiles. `newtonNjmax` / `newtonNconmax`
 do NOT size it on the CPU solver. `WorldInfo.newtonArenaMB` /
@@ -2446,7 +2459,8 @@ Since 2026-11-04 it also carries **`physics_steps`**: the engine's count of
 physics steps that RAISED and were skipped in the current world
 (`step_errors`, `step_errors_streak`, `first_error`, `first_error_at`,
 `last_error`, `last_error_at`, `source`), the same record §7.10 returns as a
-delta. `step_errors` is `null` when there is nothing to read. Both clocks
+delta, and since 2026-11-06 `physics_faults`, `first_fault`, `first_fault_at`,
+`last_fault` (steps that ran but reset or froze the world; see §7.10). `step_errors` is `null` when there is nothing to read. Both clocks
 advance through a skipped step, so a moving clock does not prove the physics
 ran.
 

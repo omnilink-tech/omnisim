@@ -38,6 +38,8 @@ import urllib.error
 import urllib.request
 import webbrowser
 
+from omnisim import platform_http
+
 #: Short path that redirects to the key page, so this string stays typeable.
 KEY_PAGE = "https://www.omnilink-agents.com/key"
 #: Cheapest authenticated endpoint on the platform: 200 with usage when the
@@ -131,7 +133,9 @@ def _check(key: str) -> int:
 
     req = urllib.request.Request(
         USAGE_ENDPOINT,
-        headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
+        # The User-Agent is not decoration: Cloudflare's edge answers Python's
+        # default one with 403 "error code: 1010" (measured 2026-11-17).
+        headers=platform_http.headers("key", key),
         method="GET",
     )
     try:
@@ -142,12 +146,25 @@ def _check(key: str) -> int:
         #   403 {"error":"Access denied: invalid Omni Key."}  -- key unknown
         #   401 {"error":"Missing Omni Key."}                 -- header absent
         # We only get here with a key set, so both mean the platform would
-        # not take it. Anything else is the platform having a bad day and is
-        # NOT evidence about the key.
+        # not take it -- WHEN THE PLATFORM SAID IT. A 401/403 from the CDN or
+        # a proxy in front (Cloudflare's "error code: 1010") is not, and
+        # neither is anything else: the platform having a bad day is NOT
+        # evidence about the key.
+        body = b""
+        try:
+            body = exc.read() if exc.fp else b""
+        except Exception:
+            pass
+        if exc.code in (401, 403) and not platform_http.is_platform_verdict(exc.code, body):
+            print(f"  Could not verify the key -- {platform_http.describe_block(exc.code, body)}.")
+            print("  That is not a verdict on your key.")
+            return 2
         if exc.code in (401, 403):
             detail = ""
             try:
-                detail = (json.loads(exc.read().decode("utf-8", "replace")) or {}).get("error", "")
+                detail = (json.loads(body.decode("utf-8", "replace")) or {}).get("error", "")
+                if isinstance(detail, dict):
+                    detail = detail.get("message") or detail.get("code") or ""
             except Exception:
                 pass
             print(f"  Key {_redact(key)} was REJECTED by the platform (HTTP {exc.code}).")

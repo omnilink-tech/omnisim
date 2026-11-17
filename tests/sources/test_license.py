@@ -105,6 +105,14 @@ OMNILINK_LICENSE_C, OMNILINK_LICENSE_CPP, OMNILINK_LICENSE_PYTHON = (
     for header in (APACHE2_LICENSE_C, APACHE2_LICENSE_CPP, APACHE2_LICENSE_PYTHON)
 )
 
+# PROPRIETARY files (OmniSim closed its source on 2026-11-17): new OmniLink-only code that is not released under
+# Apache-2.0 opens with this two-line notice; the second line may go on to say who may use it. Policy and its
+# open questions for counsel: docs/legal/HEADER_POLICY_PROPOSAL.md. Files that already carry an Apache header keep
+# it: code released under Apache-2.0 stays Apache-2.0, and Webots-derived files must keep Cyberbotics' notice.
+OMNILINK_PROPRIETARY_CPP = '// Copyright 2026 OmniLink. All rights reserved.\n// Proprietary and confidential.'
+OMNILINK_PROPRIETARY_PYTHON = '# Copyright 2026 OmniLink. All rights reserved.\n# Proprietary and confidential.'
+OMNILINK_PROPRIETARY_C = '/*\n * Copyright 2026 OmniLink. All rights reserved.\n * Proprietary and confidential.'
+
 # --- vendored third-party components -----------------------------------------
 #
 # A vendored Apache-2.0 component carries somebody else's copyright line, so it
@@ -339,16 +347,16 @@ class TestLicense(unittest.TestCase):
                 content = content_file.read()
             if source.endswith('.c') or source.endswith('.h'):
                 style = 'c'
-                accepted = (APACHE2_LICENSE_C, APACHE2_LICENSE_C_MODIFIED, OMNILINK_LICENSE_C)
+                accepted = (APACHE2_LICENSE_C, APACHE2_LICENSE_C_MODIFIED, OMNILINK_LICENSE_C, OMNILINK_PROPRIETARY_C)
             elif source.endswith('.cpp') or source.endswith('.hpp') or source.endswith('.java'):
                 style = 'cpp'
-                accepted = (APACHE2_LICENSE_CPP, OMNILINK_LICENSE_CPP)
+                accepted = (APACHE2_LICENSE_CPP, OMNILINK_LICENSE_CPP, OMNILINK_PROPRIETARY_CPP)
             elif source.endswith('.py') or source.endswith('Makefile'):
                 style = 'python'
                 for pythonHeader in PYTHON_OPTIONAL_HEADERS:
                     if content.startswith(pythonHeader + '\n'):
                         content = content[len(pythonHeader):].lstrip('\n')
-                accepted = (APACHE2_LICENSE_PYTHON, OMNILINK_LICENSE_PYTHON)
+                accepted = (APACHE2_LICENSE_PYTHON, OMNILINK_LICENSE_PYTHON, OMNILINK_PROPRIETARY_PYTHON)
             else:
                 self.fail('Unsupported file extension "%s".' % source)
             if relativePath in VENDORED_PINNED_SOURCES:

@@ -15,8 +15,9 @@
 // Modifications copyright 2026 OmniLink, licensed under the Apache License, Version 2.0.
 //
 // OmniSim splash screen — orb-centered, brand-canon dark composition.
-// No Webots-derived robot screenshots: the splash is pure OmniLink identity
-// (see resources/branding/omnilink/BRAND.md).
+// No Webots-derived robot screenshots: the splash is pure OmniSim identity,
+// "OmniSim, by OmniLink" (see resources/branding/omnisim/BRAND.md §7).
+// Text is set in Inter, registered from resources/fonts/ by OmGuiApplication.
 
 #include "OmSplashScreen.hpp"
 
@@ -41,15 +42,16 @@ namespace {
   // Wordmark baseline.
   constexpr int kWordmarkTop = kOrbCenterY + kOrbSize / 2 + 24;
 
-  // OmniLink brand palette — see resources/branding/omnilink/BRAND.md.
-  inline QColor omnilinkBlack() { return QColor(0x00, 0x00, 0x00); }
-  inline QColor omnilinkCream() { return QColor(0xEE, 0xEE, 0xE0); }
-  inline QColor omnilinkMimosa() { return QColor(0xF6, 0xE9, 0x05); }
+  // Brand palette — see resources/branding/omnisim/BRAND.md §6.
+  inline QColor brandNearBlack() { return QColor(0x0A, 0x0A, 0x06); }
+  inline QColor brandInk() { return QColor(0xF6, 0xF4, 0xEF); }
+  inline QColor brandInkMute() { return QColor(0xB4, 0xB3, 0xA4); }
+  inline QColor brandMimosa() { return QColor(0xF6, 0xE9, 0x05); }
 }  // namespace
 
 OmSplashScreen::OmSplashScreen() {
   QPixmap base(kW, kH);
-  base.fill(omnilinkBlack());
+  base.fill(brandNearBlack());
   QSplashScreen::setPixmap(base);
 
   // The OmniSim orb (resources/branding/omnisim/), rendered by
@@ -61,13 +63,13 @@ OmSplashScreen::OmSplashScreen() {
   mWordmark = QImage(OmStandardPaths::resourcesPath() + "images/splash_wordmark.png");
 
   // Defaults (QSS theme files may override via the Q_PROPERTY hooks).
-  mBackgroundColor = omnilinkBlack();
-  mCompanyColor = omnilinkCream();
-  mTaglineColor = omnilinkMimosa();
-  mVersionColor = QColor(0xAA, 0xAA, 0xA0);
+  mBackgroundColor = brandNearBlack();
+  mCompanyColor = brandInk();
+  mTaglineColor = brandInkMute();
+  mVersionColor = brandInkMute();
   mLoadingColor = QColor(0x88, 0x88, 0x88);
-  mAccentColor = omnilinkMimosa();
-  mStarColor = omnilinkCream();
+  mAccentColor = brandMimosa();
+  mStarColor = brandInk();
 
 #ifdef _WIN32
   setWindowModality(Qt::ApplicationModal);
@@ -88,7 +90,7 @@ void OmSplashScreen::drawContents(QPainter *painter) {
   painter->setRenderHint(QPainter::Antialiasing, true);
   painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-  // 1. Solid black canvas.
+  // 1. Solid near-black canvas.
   painter->fillRect(QRect(0, 0, kW, kH), mBackgroundColor);
 
   // 2. Starfield — deterministic LCG so the field is stable across launches.
@@ -177,19 +179,19 @@ void OmSplashScreen::drawContents(QPainter *painter) {
     painter->fillRect(QRect(barX, barY, barW, 2), mAccentColor);
   }
 
-  // 7. Tagline — small, letterspaced, Mimosa.
+  // 7. "by OmniLink" — Inter Medium, mixed case, ink-mute, under the wordmark
+  //    (BRAND.md §7). No tracking and no caps: the brand retired all-caps names.
   {
-    QFont font("Raleway", static_cast<int>(12 * dpi), QFont::Light);
-    font.setLetterSpacing(QFont::AbsoluteSpacing, 3.5);
+    QFont font("Inter", static_cast<int>(13 * dpi), QFont::Medium);
     painter->setFont(font);
     painter->setPen(mTaglineColor);
-    const QRect taglineRect(0, kWordmarkTop + 104, kW, 26);
-    painter->drawText(taglineRect, Qt::AlignHCenter | Qt::AlignTop, "BY OMNILINK — FOR OMNILINK AGENTS");
+    const QRect taglineRect(0, kWordmarkTop + 102, kW, 28);
+    painter->drawText(taglineRect, Qt::AlignHCenter | Qt::AlignTop, "by OmniLink");
   }
 
   // 8. Loading message (live, mutated during boot).
   {
-    QFont font("Helvetica", static_cast<int>(10 * dpi));
+    QFont font("Inter", static_cast<int>(10 * dpi));
     painter->setFont(font);
     painter->setPen(mLoadingColor);
     const QRect loadingRect(0, kH - 44, kW, 22);
@@ -198,7 +200,7 @@ void OmSplashScreen::drawContents(QPainter *painter) {
 
   // 9. Version, bottom-right.
   {
-    QFont font("Raleway", static_cast<int>(11 * dpi), QFont::Light);
+    QFont font("Inter", static_cast<int>(11 * dpi));
     painter->setFont(font);
     painter->setPen(mVersionColor);
     const QRect versionRect(kW - 220, kH - 28, 200, 20);

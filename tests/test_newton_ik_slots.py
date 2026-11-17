@@ -261,6 +261,28 @@ class NewtonIkSlots(unittest.TestCase):
                                  "slot %d returned %.4f above its limit %.4f"
                                  % (s, a, hi))
 
+    def test_rotation_targets_are_accepted_and_solved(self):
+        """A position + orientation problem must run and reach a reachable pose.
+
+        Pins two newton-1.7 regressions found 2026-11-11: target_rotations became
+        wp.array[wp.vec4] (a wp.quat buffer raised at launch, so every rotation
+        solve failed), and the default AUTODIFF Jacobian is zero under this
+        runtime's forward-only warp codegen (every solve returned its seed).
+        A planar 4R arm has 3 constraints here (x, z, pitch) and 4 joints.
+        """
+        w, ee, slots = self._arm(floating_base=False)
+        for _ in range(2):
+            w.step(1.0 / 240.0)
+        p0 = w.body_xform(ee)[:3]
+        out = w.solve_ik(ee, [p0[0] + 0.12, p0[1], p0[2] - 0.10], slots=slots,
+                         rotations=[0.0, 0.0, 0.0, 1.0], iterations=120)
+        self.assertEqual(len(out), len(slots) + 1)
+        self.assertLess(out[len(slots)], 1e-3,
+                        "a reachable position with a reachable orientation came "
+                        "back %.6f m out" % out[len(slots)])
+        self.assertTrue(any(abs(a) > 1e-3 for a in out[:len(slots)]),
+                        "the solve must move the joints, not return its seed")
+
     def test_batching_returns_one_answer_per_target(self):
         """The batched shape is the whole reason this API exists."""
         w, ee, slots = self._arm()

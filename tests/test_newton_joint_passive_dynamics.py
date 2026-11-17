@@ -52,7 +52,19 @@ import importlib.util
 import os
 import unittest
 
+import sys
+
 import pytest
+
+# The ENGINE runs newton/warp from its bundle, and this machine's Python may carry an
+# older pip copy (seen 2026-11-11: newton 1.5 / warp 1.16 vs the bundle's 1.7 / 1.18).
+# Put the bundle first BEFORE probing, as the other newton tests do: pytest imports every
+# test module before running any, so the first module to import warp picks the copy the
+# whole run uses, and a mixed pair failed inside newton (test_newton_cloth_attach).
+_BUNDLE_SP = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "msys64", "mingw64",
+                          "bin", "newton-runtime", "site-packages")
+if os.path.isdir(_BUNDLE_SP) and os.path.normpath(_BUNDLE_SP) not in sys.path:
+    sys.path.insert(0, os.path.normpath(_BUNDLE_SP))
 
 pytest.importorskip("warp", reason="needs the GPU physics stack (warp)")
 pytest.importorskip("newton", reason="needs the GPU physics stack (newton)")

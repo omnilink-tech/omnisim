@@ -875,6 +875,26 @@ def step_error_failure(verdict: dict) -> list[str]:
     ]
 
 
+def physics_fault_failure(verdict: dict) -> list[str]:
+    """FAIL lines for a run whose physics steps RAN but went bad, or [] (2026-11-06).
+
+    The sidecar's `physics_faults` counts steps after which MuJoCo-C reset the
+    whole world to its authored pose (a NaN/Inf/huge qacc, qvel or qpos), or the
+    base-divergence guard held a non-finite world at its last good pose. Neither
+    raises, so neither is in `step_errors`; both used to pass. An older engine
+    writes no key, which is not a failure.
+    """
+    n = verdict.get("physics_faults")
+    if not isinstance(n, int) or isinstance(n, bool) or n <= 0:
+        return []
+    first = (verdict.get("physics_first_fault") or "").splitlines()
+    return [
+        f"[headless] FAIL: {n} PHYSICS FAULT(S): physics steps ran but did not produce valid "
+        f"physics; the first was step {verdict.get('physics_first_fault_at')} of this world.",
+        f"[headless]   first fault: {first[0][:600] if first else 'not recorded'}",
+    ]
+
+
 def sidecar_device(sidecar_path: Path) -> str | None:
     """runtime.device from the verdict sidecar ("cpu" / "cuda:0"), else None.
 
@@ -1825,6 +1845,11 @@ def run_once(args) -> int:
     _step_fail = step_error_failure(verdict)
     if _step_fail:
         for line in _step_fail:
+            print(line)
+        return 1
+    _fault_fail = physics_fault_failure(verdict)
+    if _fault_fail:
+        for line in _fault_fail:
             print(line)
         return 1
     if sim_never_stepped(content, bool(verdict.get("finalised"))):

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "omnisim-bridges"
 version = "0.1.0"
-description = "OmniLink-driven bridge primitives for OmniSim and real robots. Zero Webots dependency."
+description = "Bridge primitives for OmniLink agents: one control surface for robots in OmniSim and real robots. Part of OmniSim, by OmniLink. Zero Webots dependency."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [{ name = "OmniLink", email = "info@omnilink-agents.com" }]

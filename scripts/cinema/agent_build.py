@@ -114,6 +114,10 @@ class Segment:
     # A lower-third caption burned into the picture for the whole segment (at most
     # CAPTION_MAX_LINES lines): how a voice="none" film tells its story. Not a subtitle stream.
     caption: str = ""
+    # A plate that re-typesets the real build session (a terminal from its transcript): the
+    # path of the provenance note that names the transcript and the time of every quoted line.
+    # Only a plate with a source video can carry it; it stays out of the simulator-footage ratio.
+    transcript: str = ""
 
 
 @dataclass(frozen=True)
@@ -344,6 +348,9 @@ def _parse_segment(raw: dict[str, Any], index: int) -> Segment:
         raise ValueError(
             f"segment {segment_id!r} coverage must be wide, medium, or detail"
         )
+    transcript = str(raw.get("transcript", "")).strip()
+    if transcript and (kind != "plate" or source is None):
+        raise ValueError(f"segment {segment_id!r} transcript is only for a plate with a source video")
     caption = " ".join(str(raw.get("caption", "")).split())
     if caption and len(_caption_lines(caption)) > CAPTION_MAX_LINES:
         raise ValueError(f"segment {segment_id!r} caption exceeds {CAPTION_MAX_LINES} lines at 1080p")
@@ -358,6 +365,7 @@ def _parse_segment(raw: dict[str, Any], index: int) -> Segment:
         act=act,
         coverage=coverage,
         caption=caption,
+        transcript=transcript,
     )
 
 
@@ -395,9 +403,34 @@ def parse(payload: dict[str, Any] | str | Path) -> AgentBuildSpec:
     ids = [segment.id for segment in segments]
     if len(ids) != len(set(ids)):
         raise ValueError("segment ids must be unique")
-    if segments[0].beat != "question" or segments[0].kind != "clip":
-        raise ValueError("the first post-intro segment must be real question/build footage")
     editorial = data.get("editorial") or {}
+    # opens_on_concept (default false): the story may open on exactly ONE plate of the build's
+    # source concept art (a plate with a source video, e.g. AI concept sheets), so the narration
+    # can start where the build did. The plate stays a plate (out of the simulator-footage
+    # ratio) and the segment after it must be the real question footage the default demands.
+    opens_on_concept = editorial.get("opens_on_concept", False)
+    if not isinstance(opens_on_concept, bool):
+        raise ValueError("editorial.opens_on_concept must be true or false")
+    first_footage = 0
+    if opens_on_concept:
+        if segments[0].kind != "plate" or segments[0].source is None or segments[0].beat != "question":
+            raise ValueError("editorial.opens_on_concept needs the first segment to be a question plate "
+                             "with a source video of the concept art")
+        first_footage = 1
+    # After the concept plate, plates that re-typeset the real build session (segment.transcript)
+    # may come before the first clip; the first clip may then be the attempt itself.
+    opening_beats = ("question",)
+    if opens_on_concept:
+        session = first_footage
+        while (session < len(segments) and segments[session].kind == "plate"
+               and segments[session].transcript and segments[session].beat == "question"):
+            session += 1
+        if session > first_footage:
+            first_footage, opening_beats = session, ("question", "attempt")
+    if (len(segments) <= first_footage or segments[first_footage].beat not in opening_beats
+            or segments[first_footage].kind != "clip"):
+        raise ValueError("the first post-intro segment must be real question/build footage"
+                         + (" (after the one concept plate)" if opens_on_concept else ""))
     opening = str(editorial.get("opening", "signature"))
     if opening not in ("signature", "action"):
         raise ValueError("editorial.opening must be 'signature' or 'action'")
@@ -830,6 +863,8 @@ def preflight(spec: AgentBuildSpec, *, require_captures: bool = True) -> dict[st
     media: dict[str, dict[str, Any]] = {}
     ranges: list[dict[str, Any]] = []
     for segment in spec.segments:
+        if segment.transcript and not _resolve(spec, segment.transcript).exists():
+            errors.append(f"{segment.id}: transcript provenance is missing: {segment.transcript}")
         if segment.source is None:
             continue
         source = _resolve(spec, segment.source)

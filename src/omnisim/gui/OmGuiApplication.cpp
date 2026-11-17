@@ -55,6 +55,7 @@
 #include <QtCore/QStringList>
 #include <QtCore/QTimer>
 #include <QtCore/QUrl>
+#include <QtGui/QFont>
 #include <QtGui/QFontDatabase>
 #include <QtGui/QScreen>
 
@@ -121,7 +122,28 @@ OmGuiApplication::OmGuiApplication(int &argc, char **argv) :
   QDir::addSearchPath("images", OmStandardPaths::resourcesPath() + "images");
 
   if (!gSkipStartupChrome) {
-    QFontDatabase::addApplicationFont(OmStandardPaths::fontsPath() + "Raleway-Light.ttf");
+    // Brand faces (resources/branding/omnisim/BRAND.md §5): Inter is the UI
+    // face, Sora SemiBold sets names and titles. Static OFL copies live in
+    // resources/fonts/ (resources/branding/ is not packaged). Raleway-Light is
+    // retired from the GUI; its .ttf stays on disk (retired, not deleted).
+    const QString fontsPath = OmStandardPaths::fontsPath();
+    const int interId = QFontDatabase::addApplicationFont(fontsPath + "Inter-Regular.ttf");
+    QFontDatabase::addApplicationFont(fontsPath + "Inter-Medium.ttf");
+    QFontDatabase::addApplicationFont(fontsPath + "Inter-SemiBold.ttf");
+    QFontDatabase::addApplicationFont(fontsPath + "Sora-SemiBold.ttf");
+    if (interId != -1) {
+      const QStringList interFamilies = QFontDatabase::applicationFontFamilies(interId);
+      if (!interFamilies.isEmpty()) {
+        // Keep the platform's default size (Segoe UI 9 pt on Windows) and its
+        // family as the fallback for glyphs Inter does not cover.
+        QFont uiFont = QApplication::font();
+        uiFont.setFamilies(QStringList() << interFamilies.first() << uiFont.family());
+        QApplication::setFont(uiFont);
+        OmLog::info(QString("[gui] UI font: %1 %2 pt").arg(interFamilies.first()).arg(uiFont.pointSizeF()));
+      }
+    } else {
+      OmLog::warning(QString("[gui] brand font not loaded: %1Inter-Regular.ttf").arg(fontsPath));
+    }
 
     // setup the stylesheet for the application
     updateStyleSheet();

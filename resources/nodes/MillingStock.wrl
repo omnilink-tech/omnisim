@@ -24,6 +24,7 @@ MillingStock {
   field SFVec3f    size           0.18 0.18 0.012    # extent in metres along world X / Y / Z (strictly positive)
   field SFFloat    resolution     0.0002             # height-map spacing (m); 0 => 0.0002
   field SFString   toolSolid      ""                 # name of the Solid that carries the cutter
+  field SFString   carrierSolid   ""                 # name of the Solid the block rides on (a moving bed), from its pose at load; "" = fixed in the world
   field SFVec3f    toolTip        0 0 0              # cutter tip (laser: focal point) in that Solid's own frame (m)
   field SFString   toolShape      "flat"             # "flat" (end mill), "ball" (ball nose), "vbit" or "laser"
   field SFFloat    toolDiameter   0.00635            # cutting diameter (m)
@@ -40,6 +41,7 @@ MillingStock {
   field SFFloat    skinDepth      0.0002             # a cut deeper than this shows the core (m)
   field SFFloat    roughness      0.8
   field SFBool     castShadows    TRUE
+  field SFString   initialHeightMap ""               # start from this height map (the OMZMAP file MillingStock dumps) instead of a flat top; "" = flat. Must match size and resolution
   hiddenField SFFloat removedVolume 0                # m^3 removed since the block was (re)built; engine-written
   hiddenField SFFloat deepestCut    0                # deepest point below the original top (m); engine-written
   hiddenField SFFloat depositedEnergy 0              # laser: J delivered onto the block since it was (re)built; engine-written

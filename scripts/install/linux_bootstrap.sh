@@ -426,13 +426,13 @@ phase_gpu() {
     # Kept identical to scripts/packaging/newton_runtime_pins.py. It had drifted:
     # newton-usd-schemas was added to the SSOT and not here, and without it
     # newton.add_usd hard-fails on this path.
-    PHYS_SPECS="warp-lang==1.16.0 mujoco-warp==3.11.0 mujoco==3.11.0 newton==1.5.0 usd-core==26.5 newton-usd-schemas==0.5.0"
+    PHYS_SPECS="warp-lang==1.18.0 mujoco-warp==3.15.0 mujoco==3.15.0 newton==1.7.0 usd-core==26.5 newton-usd-schemas==0.5.0"
   fi
   log "gpu: physics stack pinned: $PHYS_SPECS"
   # `mujoco` is NOT in the SSOT (it arrives transitively via mujoco-warp), so it
   # is pinned HERE — outside the $PHYS_SPECS branch, so both the SSOT path and
   # the frozen-fallback path get it. It must match mujoco-warp's expected major.
-  $SUDO_H "$PY" -m pip install $PIPFLAGS $PHYS_SPECS "mujoco==3.11.0" numpy onnx onnxscript onnxruntime
+  $SUDO_H "$PY" -m pip install $PIPFLAGS $PHYS_SPECS "mujoco==3.15.0" numpy onnx onnxscript onnxruntime
 
   log "gpu: verifying $PY can import the stack"
   "$PY" - <<'PY_EOF'
@@ -463,7 +463,7 @@ PY_EOF
     # imports scipy.optimize; build_quad_shadow_ghost imports mujoco) runs in
     # THIS interpreter on pods. Each missing wheel cost a campaign phase on
     # 2026-07-17 -- and the crash was misread as a gate FAIL.
-    $SUDO_H "$CPY" -m pip install $CPIPFLAGS numpy scipy "mujoco==3.11.0" onnxruntime
+    $SUDO_H "$CPY" -m pip install $CPIPFLAGS numpy scipy "mujoco==3.15.0" onnxruntime
   fi
 
   # OmniLink must run in the controller interpreter too, not just the engine.

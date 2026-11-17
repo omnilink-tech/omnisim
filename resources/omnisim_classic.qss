@@ -12,18 +12,18 @@ Generic Text: black;
 
 /* main window */
 
-/* OmniLink brand palette — black / cream / mimosa.
-   See resources/branding/omnilink/BRAND.md. */
-/* The OmniLink splash is intentionally brand-canon dark even under the
+/* Brand palette — near-black / ink / mimosa.
+   See resources/branding/omnisim/BRAND.md. */
+/* The OmniSim splash is intentionally brand-canon dark even under the
    classic light theme — splash is an identity surface, not a UI surface. */
 OmSplashScreen {
-  qproperty-backgroundColor: #000000;               /* omnilink.black */
-  qproperty-companyColor: #eeeee0;                  /* omnilink.cream */
-  qproperty-taglineColor: #f6e905;                  /* omnilink.mimosa */
-  qproperty-versionColor: #aaaaa0;
+  qproperty-backgroundColor: #0a0a06;               /* brand near-black */
+  qproperty-companyColor: #f6f4ef;                  /* brand ink */
+  qproperty-taglineColor: #b4b3a4;                  /* brand ink-mute: "by OmniLink" */
+  qproperty-versionColor: #b4b3a4;                  /* brand ink-mute */
   qproperty-loadingColor: #888;
-  qproperty-accentColor: #f6e905;                   /* omnilink.mimosa */
-  qproperty-starColor: #eeeee0;
+  qproperty-accentColor: #f6e905;                   /* brand mimosa */
+  qproperty-starColor: #f6f4ef;                     /* brand ink */
 }
 
 OmNewVersionDialog {

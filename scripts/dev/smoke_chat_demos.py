@@ -257,6 +257,11 @@ def post(path: str, payload: dict, timeout: float = 45, port: int = PORT):
     return post_json(f"http://127.0.0.1:{port}{path}", payload, timeout=timeout)
 
 
+#: Sent on every request; Python's default `Python-urllib/x.y` is refused by
+#: the platform's CDN with 403 "error code: 1010".
+SMOKE_USER_AGENT = "omnisim-dev/1.0 (smoke_chat_demos)"
+
+
 def post_json(url: str, payload: dict, timeout: float = 45,
               headers: dict | None = None) -> dict:
     """One JSON POST. A non-2xx body is PARSED AND RETURNED, not raised.
@@ -265,7 +270,9 @@ def post_json(url: str, payload: dict, timeout: float = 45,
     precisely why a door did not work -- and an exception would collapse both
     into "something went wrong" at the one moment the distinction matters.
     """
-    hdrs = {"Content-Type": "application/json"}
+    # An explicit User-Agent: Cloudflare's edge in front of the platform
+    # answers Python's default one with 403 "error code: 1010" (2026-11-17).
+    hdrs = {"Content-Type": "application/json", "User-Agent": SMOKE_USER_AGENT}
     hdrs.update(headers or {})
     req = urllib.request.Request(url, method="POST",
                                  data=json.dumps(payload).encode(),
@@ -457,7 +464,8 @@ class PlatformDoor:
                            "requires an OmniKey on every plan including Free; "
                            "`python -m omnisim key`")
         try:
-            urllib.request.urlopen(self.base, timeout=10)
+            urllib.request.urlopen(urllib.request.Request(
+                self.base, headers={"User-Agent": SMOKE_USER_AGENT}), timeout=10)
         except urllib.error.HTTPError:
             pass          # any status proves something is listening
         except Exception as exc:

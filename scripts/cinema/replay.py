@@ -32,6 +32,8 @@ SCHEMA = "omnisim_cinematic_replay_v1"
 RENDERER = "blender_cycles"
 DISCLOSURE = "OMNISIM MOTION / CINEMATIC REPLAY"
 ROOT = Path(__file__).resolve().parents[2]
+# BRAND.md §5: captions are Inter (the static OFL file). Space Grotesk, the face used before 2026-11-16, is retired.
+CAPTION_FONT = ROOT / "resources/branding/omnisim/fonts/static/Inter-Medium.ttf"
 PROFILES = {"proxy": {"scale": 50, "samples": 8},
             "final": {"scale": 100, "samples": 32}}
 
@@ -219,7 +221,7 @@ def validate(manifest: Path) -> dict:
     data["output"] = str((manifest.parent / data.get("output", "renders")).resolve())
     for name in ("replay.py", "blender_replay.py"):
         source(str(Path(__file__).with_name(name)))
-    source(str(ROOT / "resources/branding/omnisim/fonts/SpaceGrotesk.ttf"))
+    source(str(CAPTION_FONT))
     data["input_hashes"] = inputs
     data["input_key"] = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
     return data
@@ -314,7 +316,7 @@ def render(manifest: Path, *, profile="proxy", blender=None, device="CPU"):
     version = subprocess.run([executable, "--version"], capture_output=True,
                              text=True, check=True).stdout.splitlines()[0]
     write_json(out / "resolved.json", data)
-    shutil.copyfile(ROOT / "resources/branding/omnisim/fonts/SpaceGrotesk.ttf", out / "brand.ttf")
+    shutil.copyfile(CAPTION_FONT, out / "brand.ttf")
     shots = []
     for shot in data["shots"]:
         folder = out / shot["id"]
@@ -340,7 +342,7 @@ def render(manifest: Path, *, profile="proxy", blender=None, device="CPU"):
                         "-start_number", "1", "-i", str(folder / "frame_%06d.png"),
                         "-frames:v", str(shot["frames"]), "-vf",
                         f"drawtext=fontfile=brand.ttf:text='{DISCLOSURE}':fontsize=h/42:"
-                        "fontcolor=white:x=w*0.035:y=h*0.94:box=1:boxcolor=black@0.6:boxborderw=5",
+                        "fontcolor=0xF6F4EF:x=w*0.035:y=h*0.94:box=1:boxcolor=0x0A0A06@0.6:boxborderw=5",
                         "-c:v", "libx264", "-crf", "16", "-preset", "slow",
                         "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(video)],
                        cwd=out, check=True)

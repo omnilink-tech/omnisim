@@ -242,6 +242,12 @@ def resolve_omnisim_binary(omnisim_home: Path) -> Path:
     the real sim. PATH must already include the bundled mingw64 `bin/` for
     DLL resolution; the capture service prepends it before spawning.
     """
+    # OMNISIM_BINARY names a scratch engine, as it does for the harness and run-headless.
+    override = os.environ.get("OMNISIM_BINARY", "").strip()
+    if override:
+        if not Path(override).is_file():
+            raise RuntimeError(f"OMNISIM_BINARY={override} does not exist")
+        return Path(override)
     if sys.platform == "win32":
         candidates = [
             omnisim_home / "msys64" / "mingw64" / "bin" / "omnisim-bin.exe",

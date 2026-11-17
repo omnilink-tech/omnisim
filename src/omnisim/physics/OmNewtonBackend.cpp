@@ -134,6 +134,17 @@ struct OmNewtonRuntimeState {
   long long lastStepErrorAt = 0;
   long long stepCountAtFinalise = 0; // stepCount is process-lived; attempts are per world
   std::string firstStepError, lastStepError;
+  // Physics FAULTS (2026-11-06): steps that DID run but left the world wrong --
+  // MuJoCo-C hit a bad qacc/qvel/qpos and mj_resetData()'d the whole world back
+  // to its authored pose, or the base-divergence guard froze a non-finite world
+  // at its last good pose. Neither raises, so neither reached stepErrors: both
+  // ran under a PASS verdict with step_errors 0. The runtime counts them in
+  // world._physics_fault_count / _physics_fault_msg; step() polls them, logs the
+  // first at ERROR (so run-headless FAILs) and later ones at WARNING on the
+  // 2nd, 4th, 8th ..., and the sidecar carries the total. Reset in beginWorld().
+  long long physicsFaults = 0;
+  long long firstPhysicsFaultAt = 0;
+  std::string firstPhysicsFault, lastPhysicsFault;
   // What finalizeWorld() wrote into the sidecar, kept so a step failure can
   // rewrite it with the counters without re-asking Python.
   std::string sidecarSolver, sidecarRuntimeJson;
@@ -882,6 +893,9 @@ int OmNewtonBackend::beginWorld() {
   mRuntime->firstStepErrorAt = mRuntime->lastStepErrorAt = 0;
   mRuntime->firstStepError.clear();
   mRuntime->lastStepError.clear();
+  mRuntime->physicsFaults = mRuntime->firstPhysicsFaultAt = 0;
+  mRuntime->firstPhysicsFault.clear();
+  mRuntime->lastPhysicsFault.clear();
   mRuntime->sidecarWritten = false;
   mRuntime->snapValid = false;  // Tier 1a: never serve a prior world's snapshot
   clearJointTargetCache();      // item 5: a new world re-pushes every target
@@ -2782,6 +2796,14 @@ static void writeNewtonVerdictSidecar(const std::string &solver,
       << "\",\"step_first_error_at\":" << rt.firstStepErrorAt << ",\"step_last_error\":\""
       << jsonEscape(rt.lastStepError.substr(0, 600)) << "\",\"step_last_error_at\":" << rt.lastStepErrorAt;
   }
+  // Physics faults: steps that ran but left the world reset or frozen (see the
+  // physicsFaults comment). Always present, like step_errors.
+  f << ",\"physics_faults\":" << rt.physicsFaults;
+  if (rt.physicsFaults > 0) {
+    f << ",\"physics_first_fault\":\"" << jsonEscape(rt.firstPhysicsFault.substr(0, 900))
+      << "\",\"physics_first_fault_at\":" << rt.firstPhysicsFaultAt << ",\"physics_last_fault\":\""
+      << jsonEscape(rt.lastPhysicsFault.substr(0, 900)) << "\"";
+  }
   f << "}";
 }
 
@@ -3453,10 +3475,70 @@ int OmNewtonBackend::step(double dt) {
     } else
       PyErr_Clear();
   }
+  // Physics faults (see OmNewtonRuntimeState::physicsFaults). Polled EVERY step:
+  // one attribute read, and a reset is a one-step event that a coarse poll would
+  // still catch (the count is cumulative) but would date wrongly.
+  long long faultCount = 0;
+  std::string faultMsg;
+  {
+    PyObject *fc = PyObject_GetAttrString(mRuntime->world, "_physics_fault_count");
+    if (fc != nullptr) {
+      faultCount = PyLong_AsLongLong(fc);
+      if (PyErr_Occurred()) {
+        PyErr_Clear();
+        faultCount = 0;
+      }
+      Py_DECREF(fc);
+    } else
+      PyErr_Clear();
+    if (faultCount > mRuntime->physicsFaults) {
+      PyObject *fm = PyObject_GetAttrString(mRuntime->world, "_physics_fault_msg");
+      if (fm != nullptr) {
+        if (PyUnicode_Check(fm)) {
+          const char *cstr = PyUnicode_AsUTF8(fm);
+          if (cstr != nullptr)
+            faultMsg = cstr;
+          else
+            PyErr_Clear();
+        }
+        Py_DECREF(fm);
+      } else
+        PyErr_Clear();
+    }
+  }
   PyGILState_Release(gstate);
   if (!overflowMsg.empty()) {
     mRuntime->constraintOverflowLogged = true;  // ONE warning per world, never per-tick spam
     OmLog::warning(QString::fromStdString("[OmNewtonBackend] " + overflowMsg));
+  }
+  if (faultCount > mRuntime->physicsFaults) {
+    const long long before = mRuntime->physicsFaults;
+    const long long attempt = (mRuntime->stepCount - mRuntime->stepCountAtFinalise) + mRuntime->stepErrors + 1;
+    if (faultMsg.empty())
+      faultMsg = "the runtime counted a physics fault but left no message";
+    mRuntime->physicsFaults = faultCount;
+    mRuntime->lastPhysicsFault = faultMsg;
+    if (before == 0) {
+      mRuntime->firstPhysicsFaultAt = attempt;
+      mRuntime->firstPhysicsFault = faultMsg;
+      newtonError(QString::fromStdString(
+        "[OmNewtonBackend] PHYSICS FAULT at step " + std::to_string(attempt) +
+        ": the step ran but did not produce valid physics. " + faultMsg +
+        " Every further fault is counted: /sim/step and /sim/state report it as "
+        "physics_steps.physics_faults, the .newton.json sidecar as physics_faults."));
+    } else {
+      // WARNING when the total crosses a power of two, never per tick.
+      long long p = 1;
+      while (p <= before)
+        p <<= 1;
+      if (faultCount >= p) {
+        const std::string firstLine = faultMsg.substr(0, faultMsg.find('\n'));
+        newtonWarning(QString::fromStdString("[OmNewtonBackend] physics fault again: " + std::to_string(faultCount) +
+                                             " fault(s) in this world so far; latest: " + firstLine.substr(0, 400)));
+      }
+    }
+    if (mRuntime->sidecarWritten)
+      writeNewtonVerdictSidecar(mRuntime->sidecarSolver, mRuntime->sidecarRuntimeJson, *mRuntime);
   }
   ++mRuntime->stepCount;
 

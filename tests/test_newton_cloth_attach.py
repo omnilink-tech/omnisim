@@ -59,17 +59,14 @@ _BUNDLE = os.path.join(_ROOT, "msys64", "mingw64", "bin", "newton-runtime",
 
 
 def _newton_available():
+    # Bundle FIRST: it is what the engine runs. Trying a pip `import newton` first
+    # tested whatever newton this Python happened to carry (1.5 here, 2026-11-11).
+    if os.path.isdir(_BUNDLE) and _BUNDLE not in sys.path:
+        sys.path.insert(0, _BUNDLE)
     try:
         import newton  # noqa: F401
         return True
     except ImportError:
-        if os.path.isdir(_BUNDLE):
-            sys.path.insert(0, _BUNDLE)
-            try:
-                import newton  # noqa: F401
-                return True
-            except ImportError:
-                return False
         return False
 
 

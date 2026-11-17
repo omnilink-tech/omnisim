@@ -272,6 +272,70 @@ class AgentBuildContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exactly at 10.0 seconds"):
             agent_build.parse(payload)
 
+    def test_opens_on_concept_allows_exactly_one_source_plate_first(self) -> None:
+        payload = agent_build.template()
+        first = payload["segments"][0]
+        concept = {"id": "concept", "act": first.get("act", 0), "beat": "question", "kind": "plate",
+                   "duration_s": 4.0, "source": "captures/concept.mp4", "headline": "Concept art",
+                   "purpose": "The build's source concept art."}
+        payload["segments"].insert(0, concept)
+        # the default still refuses a plate first
+        with self.assertRaisesRegex(ValueError, "first post-intro segment must be real"):
+            agent_build.parse(payload)
+        payload.setdefault("editorial", {})["opens_on_concept"] = True
+        spec = agent_build.parse(payload)
+        self.assertEqual(spec.segments[0].kind, "plate")
+        # the concept plate stays out of the simulator-footage ratio
+        clips = sum(s.duration_s for s in spec.segments if s.kind == "clip")
+        self.assertAlmostEqual(spec.simulator_footage_ratio, clips / spec.content_duration_s)
+        self.assertLess(spec.simulator_footage_ratio, 1.0)
+        # exactly one: a second plate before the footage is refused
+        payload["segments"].insert(1, dict(concept, id="concept_2"))
+        with self.assertRaisesRegex(ValueError, "after the one concept plate"):
+            agent_build.parse(payload)
+        del payload["segments"][1]
+        # the opening plate needs a source video, not a typeset slide
+        payload["segments"][0].pop("source")
+        with self.assertRaisesRegex(ValueError, "opens_on_concept needs the first segment"):
+            agent_build.parse(payload)
+        payload["segments"][0]["source"] = "captures/concept.mp4"
+        payload["editorial"]["opens_on_concept"] = "yes"
+        with self.assertRaisesRegex(ValueError, "opens_on_concept must be true or false"):
+            agent_build.parse(payload)
+
+    def test_session_transcript_plates_may_follow_the_concept_plate(self) -> None:
+        payload = agent_build.template()
+        first = payload["segments"][0]
+        act = first.get("act", 0)
+        concept = {"id": "concept", "act": act, "beat": "question", "kind": "plate", "duration_s": 4.0,
+                   "source": "captures/concept.mp4", "headline": "Concept art", "purpose": "Concept art."}
+        session = {"id": "session", "act": act, "beat": "question", "kind": "plate", "duration_s": 4.0,
+                   "source": "captures/terminal.mp4", "headline": "The session",
+                   "purpose": "The real build session, re-typeset.", "transcript": "terminal/PROVENANCE.md"}
+        # drop the template's question clip: the attempt clip follows the session plates
+        payload["segments"] = [concept, session] + [s for s in payload["segments"] if s["beat"] != "question"]
+        # the template's Act I wide reference was the dropped question clip
+        payload["editorial"]["spatial_reorientation_required"] = False
+        payload["editorial"]["opens_on_concept"] = True
+        spec = agent_build.parse(payload)
+        self.assertEqual(spec.segments[1].transcript, "terminal/PROVENANCE.md")
+        self.assertEqual(spec.segments[2].kind, "clip")
+        self.assertLess(spec.simulator_footage_ratio, 1.0)
+        # a session plate without its provenance is an ordinary plate: refused before footage
+        payload["segments"][1] = {k: v for k, v in session.items() if k != "transcript"}
+        with self.assertRaisesRegex(ValueError, "first post-intro segment must be real"):
+            agent_build.parse(payload)
+        # without opens_on_concept the default is unchanged
+        payload["segments"][1] = session
+        payload["editorial"]["opens_on_concept"] = False
+        with self.assertRaisesRegex(ValueError, "first post-intro segment must be real"):
+            agent_build.parse(payload)
+        # transcript is for plates with a source only
+        payload["editorial"]["opens_on_concept"] = True
+        payload["segments"][2] = dict(payload["segments"][2], transcript="terminal/PROVENANCE.md")
+        with self.assertRaisesRegex(ValueError, "transcript is only for a plate"):
+            agent_build.parse(payload)
+
     def test_source_rewind_requires_visible_analytical_replay(self) -> None:
         payload = agent_build.template()
         payload["segments"][1]["source"] = payload["segments"][0]["source"]

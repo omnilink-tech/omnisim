@@ -71,8 +71,8 @@ def controller_requirements() -> list[str]:
 # Present on BOTH sides and determinism-critical → parity-checked against the
 # standalone trainer requirements. Keys are PyPI names.
 SHARED_STACK: dict[str, str] = {
-    "warp-lang": "1.16.0",
-    "mujoco-warp": "3.11.0",
+    "warp-lang": "1.18.0",
+    "mujoco-warp": "3.15.0",
     # mujoco joined the parity-checked set in the 1.2.0 -> 1.5.0 bump. It was
     # previously pinned NOWHERE except docker/Dockerfile.train and arrived
     # transitively from mujoco-warp -- yet both sides step it, and its
@@ -80,20 +80,20 @@ SHARED_STACK: dict[str, str] = {
     # the 3.8 form raises AttributeError on 3.11.0). An unpinned physics
     # library shared by trainer and deploy is exactly what this file exists to
     # prevent.
-    "mujoco": "3.11.0",
+    "mujoco": "3.15.0",
 }
 
 # Deploy-bundle-only. Pinned for a reproducible bundle; NOT parity-checked
 # (the trainer installs none of these).
 DEPLOY_STACK: dict[str, str] = {
-    "newton": "1.5.0",
+    "newton": "1.7.0",
     "usd-core": "26.5",
     # Newton's codeless USD schema plugin (pure data: plugInfo.json + a
     # generatedSchema.usda, ~90 KB installed, zero deps, Apache-2.0). Newton's
     # `add_usd` importer hard-fails without it (newton/_src/usd/__init__.py
     # raises from require_newton_usd_schemas), so a bundle without it cannot
-    # import USD assets. Matches newton 1.5.0's `importers` extra
-    # (newton-usd-schemas>=0.4.1).
+    # import USD assets. Matches newton 1.7.0's `importers` extra
+    # (newton-usd-schemas>=0.5.0).
     "newton-usd-schemas": "0.5.0",
     # The ONNX inference runtime every shipped RL-deploy controller imports.
     #

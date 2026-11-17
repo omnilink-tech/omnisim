@@ -24,6 +24,7 @@
 #include "OmSFVector3.hpp"
 #include "OmSimulationWorld.hpp"
 #include "OmSolid.hpp"
+#include "OmUrl.hpp"
 #include "OmWorld.hpp"
 #include "OmWorldInfo.hpp"
 
@@ -67,6 +68,7 @@ void OmMillingStock::init() {
   mSize = findSFVector3("size");
   mResolution = findSFDouble("resolution");
   mToolSolid = findSFString("toolSolid");
+  mCarrierSolid = findSFString("carrierSolid");
   mToolTip = findSFVector3("toolTip");
   mToolShape = findSFString("toolShape");
   mToolDiameter = findSFDouble("toolDiameter");
@@ -86,6 +88,7 @@ void OmMillingStock::init() {
   mCastShadows = findSFBool("castShadows");
   mRemovedVolumeField = findSFDouble("removedVolume");
   mDeepestCutField = findSFDouble("deepestCut");
+  mInitialHeightMap = findSFString("initialHeightMap");
 
   mWarnedNoTool = false;
   mNx = mNy = 0;
@@ -98,11 +101,15 @@ void OmMillingStock::init() {
   mRemovedVolume = 0.0;
   mDeepest = 0.0;
   mDeposited = 0.0;
+  // Write the height map (OMZMAP1/2) to this file, at most once a second while material is removed (and once after an
+  // initialHeightMap load): how the CNC twins and `core film` read the part a run made.
   const char *dump = std::getenv("OMNISIM_MILLING_STOCK_DUMP");
   mDumpPath = dump ? dump : "";
   mDumpDirty = false;
   mDumpedOnce = false;
   mTool = NULL;
+  mCarrier = NULL;
+  mWarnedNoCarrier = false;
 }
 
 OmMillingStock::OmMillingStock(OmTokenizer *tokenizer) : OmBaseNode("MillingStock", tokenizer) {
@@ -135,7 +142,9 @@ void OmMillingStock::postFinalize() {
   connect(mSize, &OmSFVector3::changed, this, &OmMillingStock::rebuild);
   connect(mTranslation, &OmSFVector3::changed, this, &OmMillingStock::rebuild);
   connect(mResolution, &OmSFDouble::changed, this, &OmMillingStock::rebuild);
+  connect(mInitialHeightMap, &OmSFString::changed, this, &OmMillingStock::rebuild);
   connect(mToolSolid, &OmSFString::changed, this, &OmMillingStock::resolveTool);
+  connect(mCarrierSolid, &OmSFString::changed, this, &OmMillingStock::resolveCarrier);
   connect(mCoreColor, &OmSFColor::changed, this, &OmMillingStock::bumpColorRevision);
   connect(mSkinColor, &OmSFColor::changed, this, &OmMillingStock::bumpColorRevision);
   connect(mCharColor, &OmSFColor::changed, this, &OmMillingStock::bumpColorRevision);
@@ -177,7 +186,38 @@ void OmMillingStock::resolveTool() {
     connect(mTool, &QObject::destroyed, this, [this]() { mTool = NULL; });
 }
 
+void OmMillingStock::resolveCarrier() {
+  if (mCarrier)
+    disconnect(mCarrier, &QObject::destroyed, this, nullptr);
+  mCarrier = NULL;
+  mHaveLastTip = false;
+  mCarrierRefInverse.setIdentity();
+  const QString name = mCarrierSolid->value();
+  if (name.isEmpty() || OmWorld::instance() == NULL)
+    return;
+  mCarrier = OmWorld::instance()->findSolid(name);
+  if (!mCarrier)
+    return;
+  // The block is where its translation says NOW, with the carrier where it is NOW: every
+  // later motion of the carrier carries the block with it.
+  mCarrierRefInverse = mCarrier->matrix().pseudoInversed();
+  connect(mCarrier, &QObject::destroyed, this, [this]() { mCarrier = NULL; });
+}
+
+OmMatrix4 OmMillingStock::carrierMotion() const {
+  if (!mCarrier)
+    return OmMatrix4();
+  return mCarrier->matrix() * mCarrierRefInverse;
+}
+
 void OmMillingStock::rebuild() {
+  // A rebuild (a new initialHeightMap, size, translation or resolution at run time) must look NEW to the renderer,
+  // which re-uploads a tile only when its revision moves: every tile starts above any revision handed out before.
+  // (Until 2026-11-16 they restarted at 1, so a block rebuilt at run time was drawn with its old tiles.)
+  uint64_t epoch = mSidesRevision;
+  for (const uint64_t r : mTileRevision)
+    epoch = std::max(epoch, r);
+  ++epoch;
   mHeights.clear();
   mTileIndices.clear();
   mTileRevision.clear();
@@ -212,7 +252,7 @@ void OmMillingStock::rebuild() {
 
   mTilesX = (mNx - 1 + kTile - 1) / kTile;
   mTilesY = (mNy - 1 + kTile - 1) / kTile;
-  mTileRevision.assign(static_cast<size_t>(mTilesX) * mTilesY, 1);
+  mTileRevision.assign(static_cast<size_t>(mTilesX) * mTilesY, epoch);
   mFlatJudgedAt.assign(mTileRevision.size(), 0);  // 0 never equals a revision: judge on first use
   mTileFlat.assign(mTileRevision.size(), 1);
   // A flat tile's quad: corners 0 (i0,j0), 1 (i1,j0), 2 (i0,j1), 3 (i1,j1), CCW from +Z.
@@ -246,10 +286,13 @@ void OmMillingStock::rebuild() {
   }
   mSidesIndices.insert(mSidesIndices.end(), {base, base + 1, base + 2, base, base + 2, base + 3});
   ++mSidesRevision;
-  mRemovedVolumeField->setValueFromOde(0.0);
-  mDeepestCutField->setValueFromOde(0.0);
-  mDepositedEnergyField->setValueFromOde(0.0);
+  if (!mInitialHeightMap->value().isEmpty() && loadInitialHeights())
+    mDumpDirty = !mDumpPath.empty();   // the next step writes the loaded map (before any cut)
+  mRemovedVolumeField->setValueFromOde(mRemovedVolume);
+  mDeepestCutField->setValueFromOde(mDeepest);
+  mDepositedEnergyField->setValueFromOde(mDeposited);
   resolveTool();
+  resolveCarrier();
 }
 
 // ---- carving ------------------------------------------------------------------------
@@ -436,11 +479,28 @@ void OmMillingStock::onPhysicsStepEnded() {
       return;
     }
   }
+  if (!mCarrier && !mCarrierSolid->value().isEmpty()) {
+    resolveCarrier();
+    if (!mCarrier) {
+      if (!mWarnedNoCarrier) {
+        mWarnedNoCarrier = true;
+        OmLog::warning(tr("MillingStock: no Solid named '%1' to carry the block; nothing will be cut.")
+                         .arg(mCarrierSolid->value()));
+      }
+      return;
+    }
+  }
   const OmVector3 tipWorld = mTool->matrix() * mToolTip->value();
-  const OmVector3 tip = tipWorld - mOrigin;
+  // On a moving bed the tip is taken back into the block's load frame: what carves is the
+  // tool's motion RELATIVE to the block.
+  const OmVector3 tip = (mCarrier ? carrierMotion().pseudoInversed(tipWorld) : tipWorld) - mOrigin;
   if (!mCutting->value()) {
     mLastTip = tip;
     mHaveLastTip = true;
+    // A dump still owed (the last cut, or a map just loaded) is written while removal is suspended too, so a
+    // supervisor can stop cutting and then read the map it ended on.
+    if (mDumpDirty && (!mDumpedOnce || std::chrono::steady_clock::now() - mDumpedAt >= std::chrono::seconds(1)))
+      dumpHeights();
     return;
   }
   const double before = mRemovedVolume, depositedBefore = mDeposited;
@@ -468,6 +528,58 @@ void OmMillingStock::onPhysicsStepEnded() {
   }
   if (mDumpDirty && (!mDumpedOnce || std::chrono::steady_clock::now() - mDumpedAt >= std::chrono::seconds(1)))
     dumpHeights();
+}
+
+// The file is what dumpHeights() writes (and what omnisim_core.timeline_carve.write_zmap writes):
+// OMZMAP1 for a cutter, OMZMAP2 with the laser's absorbed fluence. It must have been made for
+// a block of this size and resolution; the cells are taken as they are, so carving goes on from
+// them exactly as it would have from the run that made them.
+bool OmMillingStock::loadInitialHeights() {
+  const QString raw = mInitialHeightMap->value();
+  const QString path = OmUrl::computePath(this, "initialHeightMap", raw, true);
+  const auto refuse = [&](const QString &why) {
+    OmLog::warning(tr("MillingStock: initialHeightMap '%1' is not used (%2); the block starts flat.").arg(raw).arg(why));
+    return false;
+  };
+  if (path.isEmpty())
+    return refuse(tr("file not found"));
+  std::ifstream file(std::filesystem::u8path(path.toStdString()), std::ios::binary);
+  if (!file)
+    return refuse(tr("cannot open '%1'").arg(path));
+  char magic[8];
+  int32_t n[2];
+  double d[6];
+  file.read(magic, 8);
+  file.read(reinterpret_cast<char *>(n), sizeof(n));
+  file.read(reinterpret_cast<char *>(d), sizeof(d));
+  const bool v2 = file && std::memcmp(magic, "OMZMAP2", 8) == 0;
+  if (!file || (!v2 && std::memcmp(magic, "OMZMAP1", 8) != 0))
+    return refuse(tr("not an OMZMAP1/OMZMAP2 height map"));
+  double e[2] = {0.0, 0.0};
+  if (v2)
+    file.read(reinterpret_cast<char *>(e), sizeof(e));
+  if (n[0] != mNx || n[1] != mNy || std::fabs(d[0] - mRes) > 1e-12 || std::fabs(d[1] - mTop) > 1e-9)
+    return refuse(tr("it is %1 x %2 cells at %3 m with a %4 m top; this block is %5 x %6 at %7 m with %8 m")
+                    .arg(n[0]).arg(n[1]).arg(d[0]).arg(d[1]).arg(mNx).arg(mNy).arg(mRes).arg(mTop));
+  std::vector<float> heights(mHeights.size());
+  file.read(reinterpret_cast<char *>(heights.data()), static_cast<std::streamsize>(heights.size() * sizeof(float)));
+  std::vector<float> fluence;
+  if (v2) {
+    fluence.resize(mHeights.size());
+    file.read(reinterpret_cast<char *>(fluence.data()), static_cast<std::streamsize>(fluence.size() * sizeof(float)));
+  }
+  if (!file)
+    return refuse(tr("the file is shorter than its %1 x %2 cells").arg(n[0]).arg(n[1]));
+  mHeights.swap(heights);
+  if (v2)
+    mFluence.swap(fluence);
+  mRemovedVolume = d[5];
+  mDeposited = e[0];
+  double lowest = mTop;
+  for (const float h : mHeights)
+    lowest = std::min(lowest, static_cast<double>(h));
+  mDeepest = std::max(0.0, mTop - lowest);
+  return true;
 }
 
 // Layout (little-endian): "OMZMAP1\0", int32 nx, int32 ny, float64 resolution, float64 top,

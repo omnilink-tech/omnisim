@@ -158,6 +158,7 @@ Developer scratch/preview worlds (`*_preview.wbt`, `construction_site_dev.omniwo
 
 These two are the only worlds in the tree whose *point* is that they misbehave. Do not "fix" the faulty one, and do not fold them into `flagship/` — the category boundary is what tells a reader the fault is intentional.
 
+
 ---
 
 ## 2. Generated worlds

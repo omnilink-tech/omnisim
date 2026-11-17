@@ -1485,6 +1485,7 @@ def read_newton_verdict(log_path: Path) -> dict:
 
 
 STEP_FAILED_CODE = "NEWTON_STEP_FAILED"
+PHYSICS_FAULT_CODE = "NEWTON_PHYSICS_FAULT"
 
 
 def read_physics_steps(log_path: Path) -> dict:
@@ -1506,7 +1507,9 @@ def read_physics_steps(log_path: Path) -> dict:
     sidecar = Path(str(log_path) + ".newton.json")
     out: dict = {"step_errors": None, "step_errors_streak": None,
                  "first_error": None, "first_error_at": None,
-                 "last_error": None, "last_error_at": None}
+                 "last_error": None, "last_error_at": None,
+                 "physics_faults": None, "first_fault": None, "first_fault_at": None,
+                 "last_fault": None}
     data = None
     for attempt in range(5):
         try:
@@ -1536,6 +1539,16 @@ def read_physics_steps(log_path: Path) -> dict:
         "last_error_at": data.get("step_last_error_at"),
         "source": "sidecar",
     })
+    # Physics FAULTS (2026-11-06): steps that ran but left the world reset to its
+    # authored pose or frozen by the divergence guard. None (not 0) from an engine
+    # older than the counter.
+    if "physics_faults" in data:
+        out.update({
+            "physics_faults": int(data.get("physics_faults") or 0),
+            "first_fault": data.get("physics_first_fault"),
+            "first_fault_at": data.get("physics_first_fault_at"),
+            "last_fault": data.get("physics_last_fault"),
+        })
     return out
 
 
@@ -1555,6 +1568,14 @@ def physics_steps_delta(before: dict, after: dict) -> dict:
         out["step_errors_during"] = a
     else:
         out["step_errors_during"] = a - b
+    out["physics_faults_total"] = out.pop("physics_faults", None)
+    fb, fa = before.get("physics_faults"), out["physics_faults_total"]
+    if fa is None:
+        out["physics_faults_during"] = None
+    elif fb is None or fa < fb or (b is not None and a is not None and a < b):
+        out["physics_faults_during"] = fa
+    else:
+        out["physics_faults_during"] = fa - fb
     return out
 
 
@@ -5867,7 +5888,22 @@ def make_handler(state: HarnessState):
                     phys = physics_steps_delta(phys_before, read_physics_steps(state.log_path))
                     result["physics_steps"] = phys
                     during = phys.get("step_errors_during")
-                    result["physics_ok"] = None if during is None else during == 0
+                    faults = phys.get("physics_faults_during")
+                    # A fault (world reset or frozen) is as disqualifying as a
+                    # skipped step; an engine too old to count faults leaves
+                    # physics_ok to the step count alone.
+                    result["physics_ok"] = None if during is None else (during == 0 and not faults)
+                    if faults:
+                        result.setdefault("diagnostics", []).append({
+                            "code": PHYSICS_FAULT_CODE,
+                            "severity": "error",
+                            "message": (
+                                f"{faults} physics FAULT(S) while this request ran "
+                                f"({phys.get('physics_faults_total')} in this world): the steps ran "
+                                "but the world was reset to its authored pose or frozen. First: "
+                                f"{(phys.get('first_fault') or 'unknown').splitlines()[0][:400]}"),
+                            "hint": hint_for(PHYSICS_FAULT_CODE),
+                        })
                     if during:
                         # An ENGINE diagnostic code (diagnostic_codes.py), not a
                         # request-error code: named through the constant so the

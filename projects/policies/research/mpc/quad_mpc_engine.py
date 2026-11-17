@@ -243,13 +243,16 @@ def _plan(self, K, H):
 
 def _apply(self):
     g = _trot(self, self._loco_phase)
-    tp = self.control.joint_target_q.numpy()
+    # DOF-indexed through the runtime's layout translation: from newton 1.6
+    # joint_target_q is COORDINATE-shaped by default, and indexing it by DOF
+    # puts every leg target on the next joint (the free root has 7 q / 6 qd).
+    tp = self._tp_get()
     dof = self._loco_dof
     for i in range(NJ):
         di = int(dof[i])
         if 0 <= di < len(tp):
             tp[di] = float(g[i]) + float(self._loco_nom[i])
-    self.control.joint_target_q.assign(tp)
+    self._tp_set(tp)
     self._mjc_dirty = True
 
 

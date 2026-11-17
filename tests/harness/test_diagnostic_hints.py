@@ -40,13 +40,14 @@ ALL_CODES = dc.all_codes()
 
 
 def test_vocabulary_is_the_documented_size():
-    # 41 rule codes + 9 CUDA + NEWTON_ZERO_DYNAMIC_BODIES + UNKNOWN + 5 harness-synthesized.
+    # 42 rule codes + 9 CUDA + NEWTON_ZERO_DYNAMIC_BODIES + UNKNOWN + 5 harness-synthesized.
+    # (42 since NEWTON_PHYSICS_FAULT, 2026-11-06.)
     rule_codes = {r[2] for r in dc._RULES}
-    assert len(rule_codes) == 41
+    assert len(rule_codes) == 42
     assert len(dc.CUDA_CODES) == 9
     assert set(ALL_CODES) == rule_codes | set(dc.CUDA_CODES) | set(dc.SYNTHESIZED_CODES) \
         | set(dc.HARNESS_SYNTHESIZED_CODES) | {"UNKNOWN"}
-    assert len(ALL_CODES) == 57
+    assert len(ALL_CODES) == 58
 
 
 def test_harness_synthesized_codes_agree_with_the_harness():

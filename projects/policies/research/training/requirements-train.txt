@@ -10,15 +10,15 @@
 torch
 
 # NVIDIA Warp — GPU kernels + CUDA-graph capture (bundles its own slim CUDA).
-warp-lang==1.16.0
+warp-lang==1.18.0
 
 # Batched GPU MuJoCo. If this exact version is not on PyPI for your platform,
 # replace this line with the source install:
 #   mujoco_warp @ git+https://github.com/google-deepmind/mujoco_warp
-mujoco-warp==3.11.0
+mujoco-warp==3.15.0
 
 # Loads/builds the MJCF, applies domain-randomization edits, name->id lookups.
-mujoco==3.11.0
+mujoco==3.15.0
 
 numpy
 onnx

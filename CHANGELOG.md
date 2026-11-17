@@ -25,6 +25,79 @@ top of that foundation.
 ---
 
 
+## [v10.1.0] — 2026-11-17
+
+Physics moves to newton 1.7, joints can be driven by hydraulic cylinders, a step that runs but is not
+physics now fails loudly, and a world can run on the in-process core with record, replay, branch and
+diff. OmniSim stays open source (Apache 2.0); OmniLink's commercial products are separate and are not
+part of this repository.
+
+### Changed
+
+- **Physics runtime: newton 1.7.0, warp 1.18.0, mujoco 3.15.0** (pinned 2026-11-06, version-tolerant).
+  newton >= 1.6 stores position targets by coordinate rather than by degree of freedom; the runtime
+  now reads and writes them through one translation (a BALL joint's three angles become one
+  quaternion). Raw indexing had put every G1 target on the next joint with no error. The first run
+  after a Warp upgrade compiles GPU kernels for over 90 s before its first step; warm runs are normal.
+- **The machine-twin tooling is no longer part of the public release.** The `manufacturing` command,
+  its machine twins, products and guides that shipped in v10.0.x are not in this repository.
+  `MillingStock` and `PrintedPart` remain engine nodes.
+- **One OmniLink + OmniSim brand** across the simulator, the docs and the film templates: Sora and
+  Inter (OFL, bundled under `resources/fonts/`), a new splash and About box, refreshed GUI themes.
+
+### Added
+
+- **`omnisim.hydraulics`**: hydraulic cylinders on OmniSim joints. `Cylinder` + `Mount` (pin geometry)
+  + `Pump` + `Valve` in a `Circuit`, run by `Drive` from a controller. Speed is flow-limited, force is
+  capped at relief, push and pull differ, open-centre valves feed the lightest load, pumps wear and
+  cylinders leak and creep. Read `delivered` and `achieved`, not what you asked for.
+  Guide: `docs/guide/hydraulic-actuators.md`; tests `tests/test_hydraulics.py`, `tests/test_hydraulics_engine.py`.
+- **The in-process core** (`packages/omnisim-core`, `python -m omnisim core`): the engine compiles a
+  world once; the core steps that MuJoCo model in one Python process with the world's unmodified
+  controllers, and raises `CoreUnsupported` for a call it does not model. On top of it,
+  `core record`, `replay`, `inspect`, `events`, `branch` and `diff`: a recorded run replays bit for
+  bit, opens at any tick and can be stepped again from any tick with a change.
+  Guide: `docs/developer/core-timeline.md`. ⚠️ This is the core, not the engine or the harness: the
+  engine still has no record, replay or run-diff, and `POST /sim/snapshot` is still not a checkpoint.
+- **A gearbox element in the Newton runtime**: a compliant reduced-order gearbox (ratio, backlash,
+  torque-twist curve, efficiencies, rotor inertia) between a motor and one revolute joint, coupled at
+  every physics sub-step. Opt-in per joint by a controller; `OMNISIM_NEWTON_GEARBOX=0` ignores every
+  declaration. Pin: `tests/test_newton_gearbox_joint.py`.
+- **`MillingStock.initialHeightMap`** (start from a saved height map) and **`MillingStock.carrierSolid`**
+  (a block that rides on a moving Solid). Pin: `tests/test_millingstock_initial_heightmap.py`.
+- **`OMNISIM_NEWTON_INTEGRATOR`** (research, opt-in): euler / rk4 / implicit / implicitfast / discrete.
+  Unset keeps newton's default.
+- **`film_follow_camera`**, a camera controller that follows a body, for film capture.
+
+### Fixed
+
+- **`python -m omnisim key --check` rejected every key, valid or not.** Cloudflare's edge in front of
+  the OmniLink platform refuses Python's default `Python-urllib` User-Agent with HTTP 403
+  "error code: 1010" before the platform sees the request (measured 2026-11-17). Every OmniSim call
+  to the platform (key check, provider key, the bridges' relay heartbeat) now sends its own
+  User-Agent (`omnisim/platform_http.py`), and a 401/403 counts as a verdict on the key only when the
+  platform itself said it. Pins: `tests/test_platform_user_agent.py`,
+  `packages/omnisim-bridges/tests/test_presence_user_agent.py`.
+- **A step that runs but is not physics is now a PHYSICS FAULT.** CPU MuJoCo answers a NaN/Inf/huge
+  acceleration by resetting the whole world to its authored pose, and on `mujoco_warp` a blow-up or an
+  `njmax` overflow froze the world for good; both passed with `step_errors 0`. The engine now logs
+  `PHYSICS FAULT at step N` at ERROR, the sidecar counts `physics_faults`, `/sim/step` returns
+  `physics_ok: false` with `NEWTON_PHYSICS_FAULT`, and `run-headless` FAILs.
+  Pin: `tests/test_newton_physics_faults.py`.
+- **IK solves again on a forward-only warp** (it returned its seed), and newton tests load the
+  bundle's warp first.
+- **A MillingStock rebuilt at run time is drawn with its new tiles** (tile revisions restarted at 1).
+- **`urdf_import.py` keeps `<mesh scale>`**, like the native importer.
+- **`clean_orphans.py` no longer deletes gitignored folders inside flat robot folders.**
+
+### Performance
+
+- **Cached conversion launches in the Newton runtime** (`OMNISIM_NEWTON_FAST_CONVERT`, on by default,
+  `=0` reverts): newton's per-step conversions reuse their kernel launches. Measured on one
+  scene on this laptop: newton's Python step 1.10 → 0.49 ms. The Husky swarm and OmniArm 6 run
+  identically with it on and off. Pin: `tests/test_newton_fast_convert.py`.
+
+
 ## [v10.0.3] — 2026-11-05
 
 A patch for the public `train-image` build, which failed on v10.0.2's push for a reason outside

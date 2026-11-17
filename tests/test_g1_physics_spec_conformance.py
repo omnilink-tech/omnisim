@@ -325,6 +325,14 @@ def _newton_stack_available() -> bool:
     """True only when the full Newton/warp/CUDA stack is importable AND a CUDA
     device is present. Any failure -> Tier 2 skips (it must never break
     collection)."""
+    # The ENGINE runs newton/warp from its bundle, and this machine's Python may carry an
+    # older pip copy (seen 2026-11-11: newton 1.5 / warp 1.16 vs the bundle's 1.7 / 1.18).
+    # Put the bundle first BEFORE probing, as the other newton tests do: pytest imports every
+    # test module before running any, so the first module to import warp picks the copy the
+    # whole run uses, and a mixed pair failed inside newton (test_newton_cloth_attach).
+    bundle = Path(__file__).resolve().parents[1] / "msys64/mingw64/bin/newton-runtime/site-packages"
+    if bundle.is_dir() and str(bundle) not in sys.path:
+        sys.path.insert(0, str(bundle))
     if importlib.util.find_spec("warp") is None:
         return False
     if importlib.util.find_spec("newton") is None:

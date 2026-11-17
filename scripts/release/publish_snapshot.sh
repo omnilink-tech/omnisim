@@ -537,6 +537,23 @@ if [[ -f "$DENY_LIST" ]]; then
     if [[ "$DENIED_MISSING" -gt 0 ]]; then
         log "  ($DENIED_MISSING entries did not match — typo or already moved?)"
     fi
+    # ---- strip private-only blocks from files that ship ---------------------
+    # A file that ships can still carry a private passage (a README section, an
+    # AGENTS.md row, a CLI verb for a held subsystem). Those passages sit between
+    # strip markers (their syntax is in scripts/release/public_strip.py), which
+    # removes them here, stages the result, and fails closed on an unbalanced or
+    # surviving marker. Runs BEFORE the dangling check, so a stripped passage's
+    # links to held files are not reported as dangling.
+    log "stripping private-only blocks…"
+    python "$SCRIPT_DIR/public_strip.py" --root . --git-add \
+        | while IFS= read -r l; do log "  $l"; done
+    [[ "${PIPESTATUS[0]}" -eq 0 ]] || err "public_strip.py failed (unbalanced or surviving marker)"
+    # The generated env-variable page says which variables are "documented nowhere else"; that
+    # depends on which docs ship, so it is regenerated against the public tree (the private page
+    # stays generated against the private one, and each tree's drift test checks its own page).
+    python scripts/dev/gen_env_reference.py >/dev/null \
+        || err "gen_env_reference.py failed in the snapshot worktree"
+    git add -- docs/reference/environment-variables.md
     # ---- dangling-reference check -------------------------------------------
     # The deny-list removes whole files, but it cannot rewrite the files that
     # SURVIVE. A world that loads a held URDF, a catalogue row linking a held

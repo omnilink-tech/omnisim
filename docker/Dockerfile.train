@@ -4,7 +4,7 @@
 # the in-engine RL trainers run with no further setup. Published to GHCR by
 # .github/workflows/train-image.yml.
 #
-#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v10.0.3 bash
+#   docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v10.1.0 bash
 #   # inside:
 #   xvfb-run -a bash projects/policies/training/run_quad_walk_rl.sh 600 mytag train headless
 #
@@ -51,7 +51,7 @@
 ARG CUDA_TAG=12.8.1-devel-ubuntu24.04
 FROM nvidia/cuda:${CUDA_TAG}
 
-ARG OMNISIM_TAG=v10.0.3
+ARG OMNISIM_TAG=v10.1.0
 ARG REPO_URL=https://github.com/omnilink-tech/omnisim.git
 # stb is pinned by COMMIT, the one src/stb records in the tree. omichel/stb deleted its
 # patch-1 branch (found 2026-11-05: train-image failed with "Remote branch patch-1 not
@@ -143,7 +143,7 @@ RUN test "$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')" = "3.1
 RUN python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir --upgrade pip \
     && python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu128 \
     && python3 -m pip install --break-system-packages --ignore-installed --no-cache-dir \
-        'warp-lang==1.16.0' 'newton==1.5.0' 'mujoco==3.11.0' 'mujoco-warp==3.11.0' \
+        'warp-lang==1.18.0' 'newton==1.7.0' 'mujoco==3.15.0' 'mujoco-warp==3.15.0' \
         numpy scipy onnx onnxscript onnxruntime
 
 # Assert the CONVENTION, not the version string. Versions drift; behaviour is
